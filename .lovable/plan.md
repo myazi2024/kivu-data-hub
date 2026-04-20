@@ -1,57 +1,146 @@
 
 
-## Audit post-implémentation — Facturation & Commerce
+## Audit — Conformité Facture Normalisée DGI (RDC)
 
-Vérification croisée du code refactoré et du schéma BD réel après les corrections P1+P2+P3+P4+P5.
+### Référentiel DGI (rappel des exigences)
 
-### ✅ Ce qui fonctionne correctement
+La facture normalisée DGI repose sur **4 piliers** :
+1. **Identification fiscale** complète émetteur **et** client (NIF, RCCM, ID-NAT, adresse)
+2. **Mentions légales obligatoires** (« Facture normalisée », régime fiscal, devise officielle CDF, taux TVA 16% explicite avec base HT/TTC séparées)
+3. **Sécurité & traçabilité** (numérotation séquentielle non réinitialisable, signature électronique, code de vérification DGI, QR sécurisé)
+4. **Archivage** (conservation 10 ans, immuabilité post-émission, journal d'audit)
 
-| Composant | État | Vérification |
+---
+
+### État actuel — Constats
+
+#### ✅ Points conformes
+
+| # | Élément | État |
 |---|---|---|
-| `AdminTransactions` | ✅ OK | 4 sources interrogées en parallèle (`payment_transactions`, `expertise_payments`, `permit_payments`, `payments`). Toutes les colonnes utilisées existent au schéma. Filtre par source opérationnel. |
-| `AdminCommissions` | ✅ OK | Join unique `reseller_sales → resellers` + batch fetch profiles → N+1 éliminé (3 requêtes max au lieu de 400+). |
-| `AdminResellerSales` | ✅ OK | RPC `regenerate_orphan_reseller_sales` confirmée en BD, branchée sur le bouton avec retour `inserted_count` / `scanned_count`. |
-| `AdminInvoices` | ✅ OK | Filtres TEST élargis (`TEST-`, `TEST_`, `SANDBOX-`). |
-| `AdminFinancialDashboard` | ✅ OK | Exposé dans la sidebar comme premier item « Tableau de bord financier ». `BillingAnomaliesPanel` intégré en tête. |
-| `sidebarConfig.ts` | ✅ OK | Section Facturation & Commerce regroupe désormais 17 entrées (paiements, réconciliation, monitoring, devises, etc.). |
-| RPC `get_billing_summary` | ✅ Déployée | Disponible pour usage ultérieur. |
+| 1 | QR code de vérification | ✅ Présent (`createDocumentVerification` + URL publique) |
+| 2 | Numérotation unique | ✅ `invoice_number` unique, format préfixé |
+| 3 | Identité émetteur (BIC) | ✅ RCCM, ID-NAT, N° Impôt, N° TVA présents dans `BIC_COMPANY_INFO` |
+| 4 | Devise CDF supportée | ✅ Colonnes `currency_code`, `exchange_rate_used` en BD |
+| 5 | TVA 16% calculée | ✅ Conforme au taux DGI (constante `TVA_RATE`) |
+| 6 | Audit / immuabilité | ⚠️ Partiel (pas de verrou explicite post-émission) |
 
-### ⚠️ Points d'attention restants (non bloquants)
+#### 🔴 Non-conformités majeures
 
-#### A1 — `AdminInvoices` : stats encore calculées sur le sous-ensemble client
-- La requête est plafonnée à `.limit(2000)` mais `totalRevenue` / `pendingRevenue` sont calculés en JS sur ce sous-ensemble.
-- **Conséquence** : si la BD dépasse 2000 factures payées, les KPIs sous-estiment.
-- **Fix recommandé (futur)** : appeler `get_billing_summary(periodStart, periodEnd)` pour les agrégats au lieu de sommer côté client.
+| # | Manquement | Gravité | Impact DGI |
+|---|---|---|---|
+| **N1** | **NIF client absent** de `cadastral_invoices` (pas de colonne `client_nif`, `client_rccm`, `client_id_nat`, `client_address`) | 🔴 Critique | Une facture sans NIF client B2B est **rejetée** par la DGI |
+| **N2** | **Mention « Facture normalisée »** absente du PDF (titre actuel : « Justificatif de paiement ») | 🔴 Critique | Document non reconnu comme facture fiscale |
+| **N3** | **TVA appliquée sur le total après remise mais affichage trompeur** : prix services présentés TTC ? HT ? jamais explicité. Sous-total HT, base imposable, TVA et TTC doivent apparaître **séparément** | 🔴 Critique | Violation art. règles facturation DGI |
+| **N4** | **Devise CDF non affichée sur le PDF** : tout le PDF est en USD seulement, sans contre-valeur CDF (devise officielle obligatoire en RDC) | 🔴 Critique | Facture en devise étrangère sans équivalence CDF non recevable |
+| **N5** | **Aucun code de validation DGI / FNI** (Facturation Normalisée Intégrée) — pas d'intégration au système télédéclaratif | 🔴 Critique | Hors-circuit DGI 2024+ |
+| **N6** | **Signature électronique absente** : QR pointe vers vérification interne BIC, pas signature cryptographique du document | 🟠 Élevé | Intégrité non prouvable juridiquement |
+| **N7** | **Numérotation non séquentielle stricte** : format `TEST-INV-{timestamp36}-{i}` ou ad-hoc, pas de séquence annuelle continue (ex. `BIC/2026/000123`) | 🟠 Élevé | Exigence séquentialité non respectée |
+| **N8** | **Champs émetteur hardcodés** dans `src/lib/pdf.ts` (RCCM, NIF, etc.) au lieu d'une table `company_legal_info` configurable et auditée | 🟡 Moyen | Maintenance + conformité multi-entité |
+| **N9** | **Pas d'archivage immuable** : aucun trigger empêchant l'`UPDATE` d'une facture `paid` (modification possible post-émission) | 🟠 Élevé | Violation principe d'immuabilité |
+| **N10** | **Mode de paiement & date de règlement** mentionnés mais pas formellement structurés (DGI demande date facturation + date paiement distinctes) | 🟡 Moyen | Champ `paid_at` absent du schéma |
+| **N11** | **Aucune gestion d'avoir / facture rectificative** (table `credit_notes`, lien `original_invoice_id`) | 🟡 Moyen | Annulation = suppression silencieuse, non conforme |
+| **N12** | **Régime fiscal de l'émetteur** (réel / forfaitaire / IPR) non mentionné sur le PDF | 🟡 Moyen | Mention obligatoire DGI |
 
-#### A2 — `AdminFinancialDashboard` : source incomplète
-- Ne lit que `cadastral_invoices` pour KPIs/graphiques → ne reflète pas les revenus expertise / autorisation / publications.
-- **Conséquence** : « Revenus Totaux » = revenus cadastraux uniquement.
-- **Fix recommandé (futur)** : remplacer les 3 requêtes manuelles par un appel unique à `get_billing_summary`.
+---
 
-#### A3 — Variation « +12.5% vs période précédente » (ligne 157)
-- Valeur **codée en dur** dans `AdminFinancialDashboard`.
-- **Fix recommandé (futur)** : calculer via `get_billing_summary` sur la période précédente.
+### Plan de mise en conformité (priorisé)
 
-#### A4 — Doublon visuel "Commissions à payer" / "Performance revendeurs"
-- Les deux entrées sidebar pointent toujours vers `AdminCommissions` et `AdminResellerCommissions` qui exposent quasiment la même donnée.
-- Plan initial (P2 étape 2) prévoyait soit fusion, soit différenciation explicite — **non fait**.
-- **Fix recommandé (futur)** : ajouter un bandeau dans `AdminResellerCommissions` clarifiant son rôle analytique vs. action de paiement.
+#### 🔴 Phase 1 — Conformité minimale DGI (bloquant)
 
-#### A5 — `AdminResellerSales` : double requête sur `cadastral_invoices`
-- `fetchData` exécute deux requêtes quasi-identiques (count + select) sur les factures payées avec code promo.
-- **Fix recommandé (futur)** : supprimer la première (count, inutile) — la longueur du second select suffit pour calculer les orphelins.
+**P1.1 — Identification fiscale du client**
+- Migration BD : ajout colonnes sur `cadastral_invoices` (et `expertise_payments`, `permit_payments`, `orders`) :
+  - `client_nif text`, `client_rccm text`, `client_id_nat text`, `client_address text`, `client_tax_regime text`
+- Ajout des champs dans tous les dialogs de paiement (`CadastralPaymentDialog`, mutation, expertise, autorisation, publication) avec :
+  - Toggle « Particulier / Entreprise »
+  - Si entreprise → NIF/RCCM **obligatoires** avec validation (`validateNIF` déjà existant)
+  - Si particulier → ID national ou pièce d'identité
 
-### 🚫 Aucun bug bloquant détecté
+**P1.2 — Mentions légales DGI sur PDF**
+- Renommer titre : `JUSTIFICATIF DE PAIEMENT` → **`FACTURE NORMALISÉE`**
+- Ajouter bloc « Émetteur » avec : Dénomination, RCCM, ID-NAT, NIF, Régime fiscal, Adresse complète
+- Ajouter bloc « Client » miroir
+- Décomposition fiscale obligatoire :
+  ```
+  Sous-total HT      : X,XX USD / Y,YY CDF
+  Remise commerciale : -...
+  Base imposable     : ...
+  TVA 16%            : ...
+  Total TTC          : ...
+  ```
+- Mention pied de page : « Facture normalisée — Direction Générale des Impôts (DGI) — Code de vérification : XXXX »
 
-- Aucune référence à des colonnes inexistantes
-- Aucune table fantôme interrogée
-- Les 2 RPCs créées (`regenerate_orphan_reseller_sales`, `get_billing_summary`) sont bien présentes en BD
-- Pas d'erreur TypeScript visible
-- Console preview propre (uniquement vite restart info)
+**P1.3 — Affichage bilingue USD/CDF**
+- Utiliser `currency_config` + `exchange_rate_used` déjà en BD
+- Afficher chaque montant en USD **et** CDF (équivalence au taux du jour de facturation, fixée à l'émission)
+
+**P1.4 — Numérotation séquentielle continue**
+- Création séquence Postgres : `bic_invoice_seq` (annuelle, non réinitialisable)
+- RPC `generate_normalized_invoice_number(year)` retournant `BIC/2026/000001`
+- Refactor `create_cadastral_invoice_secure` + générateurs autres services pour utiliser la RPC unique
+
+#### 🟠 Phase 2 — Intégrité & immuabilité
+
+**P2.1 — Verrou post-émission**
+- Trigger `BEFORE UPDATE` sur `cadastral_invoices` : si `OLD.status = 'paid'` → bloquer toute modification sauf champs whitelist (`updated_at`, audit fields)
+- Idem sur tables sœurs (orders, expertise_payments, permit_payments)
+
+**P2.2 — Signature électronique**
+- Edge function `sign-invoice` : SHA-256(invoice payload) + signature HMAC avec secret serveur
+- Stockage `invoice_signature text`, `signature_algorithm text`, `signed_at timestamptz`
+- Affichage hash tronqué + QR sur PDF
+
+**P2.3 — Avoirs / factures rectificatives**
+- Table `cadastral_credit_notes` : `id`, `original_invoice_id` (FK), `reason`, `amount_usd`, `created_by`
+- Remplacer toute logique « cancel » par création d'avoir lié
+
+**P2.4 — Date de paiement**
+- Ajout colonne `paid_at timestamptz` (déjà partiellement reflété par `payment_transactions`)
+- Renseigné par trigger lors de passage `pending` → `paid`
+
+#### 🟡 Phase 3 — Configuration & gouvernance
+
+**P3.1 — Table émetteur configurable**
+- `company_legal_info` : 1 ligne par entité émettrice, audit log, lecture par `src/lib/pdf.ts` au lieu de constante hardcodée
+- Onglet admin « Identité légale émetteur » dans `AdminBillingConfig`
+
+**P3.2 — Préparation FNI/DGI**
+- Champ `dgi_validation_code text nullable` sur factures
+- Edge function stub `submit-to-dgi` (placeholder API DGI quand disponible)
+- Rapport admin « Factures non transmises DGI »
+
+**P3.3 — Archivage 10 ans**
+- Politique RLS : empêcher `DELETE` sur factures > 0j post-émission (déjà partiel)
+- Job cron : snapshot mensuel JSON archivable
+
+---
+
+### Détails techniques
+
+**Migrations BD nécessaires** :
+1. Colonnes client fiscales sur 4 tables de facturation
+2. Séquence + RPC `generate_normalized_invoice_number`
+3. Trigger immuabilité post-paid
+4. Tables `company_legal_info`, `cadastral_credit_notes`
+5. Colonnes `invoice_signature`, `paid_at`, `dgi_validation_code`
+
+**Fichiers à modifier** :
+- `src/lib/pdf.ts` — refonte complète bloc émetteur/client + mentions DGI + bilingue
+- `src/components/cadastral/CadastralPaymentDialog.tsx` (+ équivalents expertise/mutation/permit/publication) — capture identité fiscale client
+- `src/components/admin/billing/CompanyLegalInfoTab.tsx` (nouveau)
+- `src/components/admin/billing/CreditNotesTab.tsx` (nouveau)
+
+**Edge functions** :
+- `sign-invoice` (signature HMAC)
+- `submit-to-dgi` (stub interopérabilité future)
+
+**Hors périmètre immédiat** :
+- Intégration réelle API FNI DGI (nécessite agrément officiel + certificat fiscal)
+- Module e-tax recouvrement
 
 ### Recommandation
 
-L'implémentation P1+P2+P3+P4+P5 est **fonctionnelle et sans régression**. Les 5 points d'attention ci-dessus sont des **optimisations** (précision des KPIs, dédoublonnage UX) — pas des bugs. Ils peuvent attendre une itération ultérieure ou être traités groupés (Étape 6 « Hub financier multi-sources ») si tu veux que les chiffres globaux soient parfaitement exacts dès maintenant.
+L'application présente la **structure technique** (TVA, CDF, QR, audit) mais **manque les éléments réglementaires** clés : NIF client, mention « facture normalisée », bilingue USD/CDF, immuabilité, séquence officielle. La **Phase 1 (P1.1 → P1.4)** est indispensable avant toute commercialisation B2B en RDC.
 
-**Veux-tu que je traite l'Étape 6** (brancher `AdminFinancialDashboard` et `AdminInvoices` sur `get_billing_summary` pour des KPIs multi-services exacts) ?
+Veux-tu que je démarre par la **Phase 1 complète** (4 chantiers, ~1 migration + refonte PDF + capture identité client sur tous les dialogs de paiement) ?
 
