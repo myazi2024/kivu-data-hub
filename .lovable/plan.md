@@ -1,30 +1,44 @@
 
 
-## Audit — Couche « Quartiers RDC » nationale
+## Fix — Restaurer l'accès « Carte Cadastrale » pour le rôle `user`
 
-Plan approuvé précédemment mais non encore implémenté (aucun fichier modifié dans le dernier tour). Je n'ai donc rien à auditer côté code pour cette modification spécifique.
+### Problème
 
-### Deux options
+La route `/cadastral-map` est actuellement protégée par `LandDataAccessGate`, ce qui bloque les utilisateurs avec le rôle `user`. Or, seule la route `/map` (Données foncières — analytics RDC) doit être restreinte. La **Carte Cadastrale** doit rester accessible à tous les utilisateurs authentifiés.
 
-**Option A — Lancer l'implémentation maintenant**
-Exécuter le plan approuvé :
-1. Générer `public/drc-quartiers.geojson` depuis la source humdata (ogr2ogr + simplification)
-2. Créer `src/components/DRCQuartiersAllMap.tsx`
-3. Brancher la condition `selectedSectionType === 'urbaine' && !selectedVille` dans `DRCInteractiveMap.tsx`
-4. Mettre à jour les libellés d'en-tête
-5. Auditer ensuite (imports, régressions sur Goma/territoires/provinces)
+### Correction
 
-**Option B — Auditer un autre changement**
-Si vous faisiez référence à une modification antérieure (CTA Partnership, accès Carte Cadastrale, gate Données foncières), précisez laquelle et je relance l'audit ciblé.
+**1. `src/App.tsx`** — Retirer le wrapper `LandDataAccessGate` autour de `/cadastral-map`. Remplacer par `ProtectedRoute` simple (authentification requise, sans contrainte de rôle) :
 
-### Recommandation
+```tsx
+<Route path="/cadastral-map" element={
+  <ProtectedRoute>
+    <CadastralMap />
+  </ProtectedRoute>
+} />
+```
 
-Option A — la fonctionnalité « Quartiers RDC » est approuvée mais pas encore en place ; il n'y a actuellement rien de nouveau à vérifier. Une fois implémentée, je vérifie systématiquement :
-- Imports résolus (`DRCQuartiersAllMap`, asset GeoJSON 200 OK)
-- Branches conditionnelles non régressives (Goma détaillé prioritaire, territoires rurale inchangés, provinces inchangées)
-- `getQuartierColor` correctement passé, choroplèthe profil opérationnelle
-- Performance acceptable au rendu de 385 polygones SVG
-- Breadcrumb et `setSelectedQuartier` fonctionnels au clic
+La route `/map` reste protégée par `LandDataAccessGate` (inchangée).
 
-Confirmez Option A pour que je lance l'implémentation + audit, ou indiquez la modification à auditer pour Option B.
+**2. `src/components/ui/navigation.tsx`** — Retirer l'affichage du cadenas sur l'entrée « Carte Cadastrale » (desktop ligne ~154 et mobile ligne ~286). Le cadenas reste uniquement sur « Données foncières ».
+
+### Fichiers touchés
+
+| Fichier | Action |
+|---|---|
+| `src/App.tsx` | Remplacer `LandDataAccessGate` par `ProtectedRoute` sur `/cadastral-map` |
+| `src/components/ui/navigation.tsx` | Retirer le cadenas conditionnel sur l'entrée « Carte Cadastrale » uniquement |
+
+### Hors périmètre
+
+- Aucune modification de `LAND_DATA_ROLES` ni du gate (toujours utilisé par `/map`)
+- Aucune modification de la page d'information `LandDataAccessDenied`
+- Routes `/test/*` inchangées
+
+### Validation attendue
+
+- `user` → clic sur « Carte Cadastrale » → accès direct à la carte ✅
+- `user` → clic sur « Données foncières » → page d'information avec CTA `/partnership` ✅
+- Non connecté → `/cadastral-map` redirige vers `/auth` ✅
+- Rôles métier et admin → accès inchangé aux deux cartes ✅
 
