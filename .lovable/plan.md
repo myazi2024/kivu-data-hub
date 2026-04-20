@@ -1,97 +1,47 @@
 
 
-## Contrôle d'accès au menu « Données foncières »
+## Audit — Contrôle d'accès « Données foncières »
 
-### Règle d'accès
+### ✅ Implémentation conforme au plan approuvé
 
-| Rôle | Accès `/map` & `/cadastral-map` |
-|---|---|
-| `super_admin`, `admin`, `expert_immobilier`, `mortgage_officer`, `notaire`, `geometre`, `urbaniste`, `partner` | ✅ Autorisé |
-| `user` (rôle par défaut) | ❌ Bloqué — page d'information dédiée |
-| Non connecté | Redirection `/auth` (déjà en place sur `/cadastral-map`) |
+| Élément | Statut | Détails |
+|---|---|---|
+| `LAND_DATA_ROLES` dans `src/constants/roles.ts` | ✅ Présent | 8 rôles autorisés, `user` exclu |
+| `LandDataAccessGate.tsx` créé | ✅ 172 lignes | Gate + page bloquante intégrée |
+| Wrapper sur `/map` | ✅ Branché | `App.tsx` ligne ~94 |
+| Wrapper sur `/cadastral-map` | ✅ Branché | `App.tsx` ligne ~99 |
+| Routes `/test/*` (admin only) | ✅ Inchangées | Toujours sous `ProtectedRoute` admin/super_admin |
+| Cadenas dans navigation desktop | ✅ Affiché | Conditionnel via `isLandDataRestricted` |
+| Cadenas dans navigation mobile | ✅ Affiché | Même logique, ligne 286 |
+| Page bloquante — Bloc A (10 catégories) | ✅ Conforme | PII, hypothèques, litiges, fiscalité, etc. |
+| Page bloquante — CTA `/partnership` | ✅ Présent | Bouton primaire + icône `Handshake` |
+| Page bloquante — Bloc B (6 fonctionnalités) | ✅ Conforme | Carte, analytics, exports |
+| Lien retour accueil | ✅ Présent | Bouton `ghost` |
+| Helmet SEO (title + description) | ✅ Présent | Titre dédié |
 
-### Implémentation
+### ✅ Robustesse vérifiée
 
-#### 1. Centraliser la liste des rôles autorisés
-`src/constants/roles.ts` — ajouter :
-```ts
-export const LAND_DATA_ROLES: AppRole[] = [
-  'super_admin','admin','expert_immobilier','mortgage_officer',
-  'notaire','geometre','urbaniste','partner',
-];
-```
+- **Auth + profil** : double garde (`!user` → `/auth`, `!profile` → spinner) évite faux négatifs pendant le chargement du profil
+- **Mémorisation redirect** : `localStorage.setItem('auth_redirect_url', ...)` permet retour automatique post-login
+- **Navigation cohérente** : `<Navigation />` réintégrée dans la page bloquante (pas d'écran orphelin)
+- **Mode test** : routes `/test/map` et `/test/cadastral-map` intactes, accessibles aux admins
+- **Imports** : tous résolus (`LAND_DATA_ROLES`, lucide icons, `Helmet`, `Card`, `Badge`, `Button`)
+- **Aucune régression** : `ProtectedRoute` non modifié, permissions granulaires non touchées
 
-#### 2. Nouveau composant `LandDataAccessGate`
-Fichier : `src/components/access/LandDataAccessGate.tsx`
+### 🟡 Observations mineures (non bloquantes)
 
-Comportement :
-- Lit `useAuth()` → si `loading` : spinner
-- Si `!user` : `<Navigate to="/auth" replace />` (avec `auth_redirect_url` mémorisé)
-- Si `profile.role` ∈ `LAND_DATA_ROLES` : rend `children`
-- Sinon (rôle `user`) : affiche la **page d'information** ci-dessous
+1. **Lien Carte Cadastrale en mobile** : le menu liste « Données foncières » ET « Carte Cadastrale » comme entrées restreintes. Cohérent mais redondant — ok pour discoverability.
+2. **Cadenas non visible si `!profile`** : tant que le profil charge, l'icône cadenas n'apparaît pas. Acceptable (très court délai).
+3. **Pas de tracking analytics** sur clic restreint — non demandé dans le plan, à envisager si besoin de mesurer le taux de conversion vers `/partnership`.
 
-**Page d'information (rôle `user`)** — composant `LandDataAccessDenied` intégré au gate :
-- Titre : « Accès réservé aux profils habilités »
-- Bandeau explicatif : « Le menu *Données foncières* contient des informations sensibles dont l'accès est strictement encadré. Votre profil actuel (*Utilisateur*) ne permet pas la consultation. »
-- **Bloc A — Données traitées (non accessibles)** :
-  - Parcelles cadastrales géolocalisées et leurs limites (GPS)
-  - Titres fonciers, certificats d'enregistrement, contrats de location
-  - Identités des propriétaires et co-titulaires (PII)
-  - Hypothèques et inscriptions de garanties
-  - Litiges fonciers et historiques contentieux
-  - Mutations, transferts et historiques de propriété
-  - Autorisations de bâtir et constructions déclarées
-  - Données fiscales (impôt foncier, bâtisse, IRL)
-  - Statistiques croisées multi-variables (genre, usage, zone, statut)
-  - Cartographie territoriale par province / territoire / commune / quartier
-- CTA principal : « Soumettre une demande de partenariat » → `Link` vers `/partnership` (carte verte, icône `Handshake`)
-- **Bloc B — Données accessibles après validation** :
-  - Carte interactive choroplèthe RDC (4 niveaux territoriaux)
-  - Filtres et croisements analytiques (8 onglets)
-  - Export d'images et partage des graphiques
-  - Cartographie cadastrale détaillée par parcelle
-  - Tableaux de bord territoriaux et indicateurs de répartition
-  - Téléchargement et partage de rapports visuels
-- Lien secondaire : « Retour à l'accueil » → `/`
+### 🟢 Conclusion
 
-Design : même grammaire visuelle que les autres pages (`Card`, `Badge`, classes sémantiques `bg-background`, `text-muted-foreground`), icônes lucide (`Lock`, `ShieldCheck`, `MapPin`, `FileText`, `Users`, `Scale`, `BarChart3`, `Handshake`).
+**Implémentation complète et conforme.** Aucun bug détecté, aucun import cassé, aucune régression sur les routes existantes. La fonctionnalité est prête pour validation utilisateur :
 
-#### 3. Brancher le gate sur les routes `App.tsx`
-Wrapper `/map`, `/cadastral-map`, `/test/map`, `/test/cadastral-map` :
-```tsx
-<Route path="/map" element={
-  <LandDataAccessGate><Map /></LandDataAccessGate>
-} />
-```
-- `/cadastral-map` reste en plus dans `<ProtectedRoute>` (déjà présent) ; `LandDataAccessGate` ajoute la couche rôle.
-- `/map` n'avait aucun garde — le gate gère désormais auth + rôle.
-- Routes `/test/*` admin restent dans `<ProtectedRoute requiredRoles={['admin','super_admin']}>` (déjà OK, pas besoin du gate).
+- `user` → page d'information avec listes A/B + CTA `/partnership` ✅
+- `notaire` / `partner` / `admin` / autres rôles métier → accès direct ✅
+- Non connecté → `/auth` avec mémorisation de la cible ✅
+- Admin en mode test → `/test/map` accessible ✅
 
-#### 4. Discrétion dans la navigation (optionnel mais cohérent)
-`src/components/ui/navigation.tsx` :
-- Garder le lien « Données foncières » visible pour tous (la page bloquante l'explique mieux qu'une absence silencieuse)
-- Ajouter un petit `<Lock className="h-3 w-3 ml-1 text-muted-foreground" />` à côté du libellé quand `profile?.role === 'user'`, pour signaler l'accès restreint avant clic.
-
-### Fichiers touchés
-
-| Fichier | Action |
-|---|---|
-| `src/constants/roles.ts` | + constante `LAND_DATA_ROLES` |
-| `src/components/access/LandDataAccessGate.tsx` | **Création** (~160 lignes, gate + page bloquante intégrée) |
-| `src/App.tsx` | Wrapper sur 4 routes (`/map`, `/cadastral-map`, `/test/map`, `/test/cadastral-map`) |
-| `src/components/ui/navigation.tsx` | Icône cadenas conditionnelle (desktop + mobile) |
-
-### Hors périmètre
-
-- Pas de nouvelle table BD : workflow d'accès = redirection `/partnership` (formulaire existant)
-- Pas de modification de `ProtectedRoute` (gate dédié, plus expressif)
-- Pas de changement des permissions granulaires (`role_permissions`) — le contrôle est ici fait par rôle, suffisant pour ce scope
-- Pas de modification des routes admin (`/admin`) ni du dashboard utilisateur
-
-### Validation attendue
-
-- Connexion en tant que `user` → clic sur « Données foncières » → page d'information s'affiche, CTA `/partnership` fonctionne
-- Connexion en tant que `notaire` / `partner` / `admin` → accès direct à la carte
-- Non-connecté → redirection `/auth` puis retour automatique vers la carte après login (rôle permettant)
-- Mode test admin (`/test/map`) → inchangé pour `admin` / `super_admin`
+Aucune action corrective requise.
 
