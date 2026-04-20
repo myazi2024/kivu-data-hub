@@ -1,4 +1,5 @@
 import { useState, useCallback, useMemo } from 'react';
+import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import type { TestDataStats } from './types';
 import { EMPTY_STATS } from './types';
@@ -17,6 +18,16 @@ export const useTestDataStats = () => {
       const { data, error } = await supabase.rpc('count_test_data_stats');
       if (error) {
         console.error('Error loading test data stats via RPC:', error);
+        // P0001 = "Accès refusé" raised by the RPC when the caller is not admin/super_admin.
+        if ((error as { code?: string }).code === 'P0001') {
+          toast.error('Accès refusé', {
+            description: 'Le rôle admin ou super_admin est requis pour consulter les statistiques de test.',
+          });
+        } else {
+          toast.error('Impossible de charger les statistiques de test', {
+            description: error.message,
+          });
+        }
         return;
       }
 
