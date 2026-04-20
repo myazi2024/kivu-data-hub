@@ -122,6 +122,7 @@ export const CadastralCartProvider = ({ children }: { children: ReactNode }) => 
     }, 300);
 
     return () => clearTimeout(timer);
+  }, [parcelsMap, activeParcelNumber]);
 
   // ---------- Purge post-paiement (P6) ----------
   // Sur événement `cadastralPaymentCompleted`, retire uniquement les services
