@@ -54,26 +54,15 @@ const CadastralDocumentView: React.FC<CadastralDocumentViewProps> = ({
   const hasConstruction = !!(parcel.construction_type || parcel.construction_nature || parcel.construction_materials || parcel.construction_year) || building_permits.length > 0;
   const hasHistoryData = ownership_history.length > 0;
   const hasObligationsData = tax_history.length > 0 || mortgage_history.length > 0;
-  const hasDisputesAccess = paidServices.includes('disputes') || (Array.isArray(land_disputes) && land_disputes.length > 0);
+  const hasDisputesAccess = paidServices.includes('land_disputes') || (Array.isArray(land_disputes) && land_disputes.length > 0);
   const hasLocationData = hasParcelData && (!!parcel.province || !!parcel.latitude);
 
-  // Declarative visible sections for numbering
-  const visibleSections: SectionKey[] = [
-    hasParcelData ? 'identification' : null,
-    hasParcelData ? 'owner' : null,
-    hasParcelData && hasConstruction ? 'construction' : null,
-    hasLocationData ? 'location' : null,
-    'history',
-    'obligations',
-    'disputes',
-  ].filter(Boolean) as SectionKey[];
+  // Linear numbering — every rendered section (including locked) gets a sequential number
+  const sectionOrder: SectionKey[] = hasParcelData
+    ? ['identification', 'owner', ...(hasConstruction ? ['construction' as SectionKey] : []), 'location', 'history', 'obligations', 'disputes']
+    : ['identification', 'location', 'history', 'obligations', 'disputes'];
 
-  // If parcel data is missing, collapse identification + owner into one locked section
-  if (!hasParcelData) {
-    // Remove them from visible, they'll be shown as locked
-  }
-
-  const sn = (key: SectionKey) => visibleSections.indexOf(key) + 1;
+  const sn = (key: SectionKey) => sectionOrder.indexOf(key) + 1 || sectionOrder.length + 1;
 
   return (
     <div className="cadastral-document">
@@ -94,7 +83,7 @@ const CadastralDocumentView: React.FC<CadastralDocumentViewProps> = ({
               )}
             </>
           ) : (
-            <SectionCard number={1} icon={<Building className="h-4 w-4" />} title="Identification & Propriétaire">
+            <SectionCard number={sn('identification')} icon={<Building className="h-4 w-4" />} title="Identification & Propriétaire">
               <LockedSection serviceName="Informations générales" onUnlock={onBackToCatalog} />
             </SectionCard>
           )}
@@ -103,7 +92,7 @@ const CadastralDocumentView: React.FC<CadastralDocumentViewProps> = ({
           {hasLocationData ? (
             <LocationSection number={sn('location')} parcel={parcel} boundaryHistory={boundary_history} />
           ) : (
-            <SectionCard number={sn('location') || visibleSections.length + 1} icon={<MapPin className="h-4 w-4" />} title="Localisation & Bornage">
+            <SectionCard number={sn('location')} icon={<MapPin className="h-4 w-4" />} title="Localisation & Bornage">
               <LockedSection serviceName="Localisation & historique" onUnlock={onBackToCatalog} />
             </SectionCard>
           )}

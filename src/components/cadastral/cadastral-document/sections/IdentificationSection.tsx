@@ -53,10 +53,20 @@ const IdentificationSection: React.FC<IdentificationSectionProps> = ({ number, p
             <span className="flex items-center gap-2">
               {formatArea(parcel.surface_calculee_bornes)}
               {surfaceVariance !== null && Math.abs(surfaceVariance) > 1 && (
-                <span className={`text-xs font-medium ${Math.abs(surfaceVariance) > 10 ? 'text-destructive' : 'text-amber-600'}`}>
-                  <AlertTriangle className="inline h-3 w-3 mr-0.5" />
-                  {surfaceVariance > 0 ? '+' : ''}{surfaceVariance.toFixed(1)}%
-                </span>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <button
+                      className={`text-xs font-medium inline-flex items-center gap-0.5 ${Math.abs(surfaceVariance) > 10 ? 'text-destructive' : 'text-[hsl(var(--warning))]'}`}
+                      aria-label="Explication de l'écart de superficie"
+                    >
+                      <AlertTriangle className="inline h-3 w-3 mr-0.5" />
+                      {surfaceVariance > 0 ? '+' : ''}{surfaceVariance.toFixed(1)}%
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent side="top" className="max-w-sm text-sm">
+                    Écart entre la superficie déclarée au titre de propriété et celle calculée à partir des coordonnées GPS des bornes. Un écart {'>'} 10 % peut indiquer une erreur de bornage ou de relevé.
+                  </PopoverContent>
+                </Popover>
               )}
             </span>
           } />

@@ -33,8 +33,11 @@ const getPaymentStatusVariant = (status: string): 'default' | 'destructive' | 's
   }
 };
 
+const ACTIVE_MORTGAGE_STATUSES = ['active', 'Active', 'En cours'];
+const RELEASED_MORTGAGE_STATUSES = ['paid_off', 'released', 'cancelled', 'Éteinte', 'Radiée', 'Annulée'];
+
 const ObligationsSection: React.FC<ObligationsSectionProps> = ({ number, taxHistory, mortgageHistory }) => {
-  const hasActiveMortgage = mortgageHistory.some(m => ['active', 'Active', 'En cours'].includes(m.mortgage_status));
+  const hasActiveMortgage = mortgageHistory.some(m => ACTIVE_MORTGAGE_STATUSES.includes(m.mortgage_status));
 
   return (
     <SectionCard number={number} icon={<Receipt className="h-4 w-4" />} title="Obligations financières">
@@ -83,7 +86,7 @@ const ObligationsSection: React.FC<ObligationsSectionProps> = ({ number, taxHist
           <div className="mb-3">
             <StatusAlert
               variant="warning"
-              icon={<div className="h-2.5 w-2.5 rounded-full bg-amber-500 animate-pulse print:animate-none" />}
+              icon={<div className="h-2.5 w-2.5 rounded-full bg-[hsl(var(--warning))] animate-pulse print:animate-none" />}
               title="Parcelle avec hypothèque active"
             />
           </div>
@@ -93,9 +96,12 @@ const ObligationsSection: React.FC<ObligationsSectionProps> = ({ number, taxHist
           <DocTable headers={['Référence', 'Créancier', 'Montant (USD)', 'Durée', 'Statut', 'Contrat']}>
             {mortgageHistory.map((m) => {
               const totalPaid = m.payments.reduce((sum, p) => sum + p.payment_amount_usd, 0);
-              const isActive = ['active', 'Active', 'En cours'].includes(m.mortgage_status);
+              const isActive = ACTIVE_MORTGAGE_STATUSES.includes(m.mortgage_status);
+              const isReleased = RELEASED_MORTGAGE_STATUSES.includes(m.mortgage_status);
+              const statusLabel = isReleased ? 'Éteinte' : isActive ? 'Active' : 'Défaillante';
+              const statusVariant: 'default' | 'secondary' | 'destructive' = isReleased ? 'default' : isActive ? 'secondary' : 'destructive';
               return (
-                <tr key={m.id} className={isActive ? 'bg-amber-50/50 dark:bg-amber-950/10' : ''}>
+                <tr key={m.id} className={isActive ? 'bg-[hsl(var(--warning-muted))]' : ''}>
                   <td className="font-mono text-xs">{m.reference_number || '—'}</td>
                   <td className="text-sm">
                     {m.creditor_name}
@@ -103,13 +109,11 @@ const ObligationsSection: React.FC<ObligationsSectionProps> = ({ number, taxHist
                   </td>
                   <td className="text-sm">
                     ${m.mortgage_amount_usd.toLocaleString()}
-                    {totalPaid > 0 && <><br /><span className="text-xs text-green-600">Remboursé: ${totalPaid.toLocaleString()}</span></>}
+                    {totalPaid > 0 && <><br /><span className="text-xs text-[hsl(var(--success))]">Remboursé: ${totalPaid.toLocaleString()}</span></>}
                   </td>
                   <td className="text-xs">{m.duration_months} mois</td>
                   <td>
-                    <Badge variant={['paid_off', 'Éteinte'].includes(m.mortgage_status) ? 'default' : isActive ? 'secondary' : 'destructive'} className="text-xs">
-                      {['paid_off', 'Éteinte'].includes(m.mortgage_status) ? 'Éteinte' : isActive ? 'Active' : 'Défaillante'}
-                    </Badge>
+                    <Badge variant={statusVariant} className="text-xs">{statusLabel}</Badge>
                   </td>
                   <td className="text-xs">{formatDate(m.contract_date)}</td>
                 </tr>
@@ -119,7 +123,7 @@ const ObligationsSection: React.FC<ObligationsSectionProps> = ({ number, taxHist
         ) : (
           <StatusAlert
             variant="success"
-            icon={<CheckCircle2 className="h-5 w-5 text-green-600" />}
+            icon={<CheckCircle2 className="h-5 w-5 text-[hsl(var(--success))]" />}
             title="Aucune hypothèque enregistrée"
             description="Parcelle libre de charges hypothécaires"
           />
