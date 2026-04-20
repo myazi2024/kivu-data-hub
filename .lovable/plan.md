@@ -1,94 +1,120 @@
 
 
-## Vérification post-Phase 1 DGI — Aucun bug bloquant
+## Audit — Section "Vue d'ensemble" (admin)
 
-### ✅ Vérifications passées
+### Périmètre audité (3 entrées sidebar)
 
-| Élément | État |
-|---|---|
-| Migrations BD appliquées | ✅ Colonnes `client_*`, `paid_at`, `invoice_signature`, `dgi_validation_code` présentes sur `cadastral_invoices` |
-| Tables nouvelles | ✅ `company_legal_info`, `cadastral_credit_notes`, `bic_invoice_seq_year` créées |
-| RPC + trigger | ✅ `generate_normalized_invoice_number`, `prevent_paid_invoice_mutation` opérationnels |
-| RLS | ✅ Activé sur toutes les nouvelles tables (correctif du 2e migration) |
-| `search_path` fonctions | ✅ Corrigé (warn linter résiduel concerne d'autres fonctions historiques) |
-| `src/lib/pdf.ts` | ✅ Compile, intègre `fetchCompanyLegalInfo`, mention « FACTURE NORMALISÉE », bilingue USD/CDF, décomposition HT/TVA/TTC |
-| `types.ts` | ✅ Régénéré avec les nouvelles tables/RPC |
-| Dev-server | ✅ Aucune erreur de compilation depuis 14:56 (les `[vite] page reload pdf.ts` sont normaux) |
-| Console preview | ✅ Propre (uniquement le warning `RESET_BLANK_CHECK` Lovable, sans rapport) |
+| # | Entrée | Composant | État |
+|---|---|---|---|
+| 1 | Dashboard | `AdminDashboardOverview` | ✅ OK (refonte récente, RPC `get_admin_dashboard_full`) |
+| 2 | Analytics | `AnalyticsDashboard` | 🔴 Bugs critiques (données simulées) |
+| 3 | Config Graphiques | `AdminAnalyticsChartsConfig` | ✅ OK (récemment durci) |
 
-### ⚠️ Écarts vs plan annoncé (à compléter dans une itération suivante)
+### 🔴 Bugs critiques — `AnalyticsDashboard.tsx` (484 lignes)
 
-#### E1 — `ClientFiscalIdentityForm` créé mais **non branché**
-- Le composant existe (`src/components/billing/ClientFiscalIdentityForm.tsx`) et est exporté.
-- **Aucun dialog de paiement ne l'importe** : `CadastralPaymentDialog`, `PermitPaymentDialog`, mutation/expertise/publication continuent de soumettre **sans NIF/RCCM client**.
-- Conséquence : les nouvelles colonnes `client_nif`, `client_rccm`, `client_id_nat`, `client_address`, `client_tax_regime`, `client_type` restent **vides** sur les nouvelles factures → le bloc « FACTURÉ À » du PDF n'affiche rien de plus qu'avant.
+| # | Problème | Ligne | Gravité | Impact |
+|---|---|---|---|---|
+| **B1** | **Activité utilisateurs simulée avec `Math.random()`** | 214-225 | 🔴 Critique | Le graphe « Activité Utilisateurs » affiche des **données fictives** — chaque rechargement change les valeurs. Trompeur pour l'admin. |
+| **B2** | **Répartition territoriale codée en dur** avec ratios fixes (Kinshasa 22%, Nord-Kivu 18%, etc.) | 162-173 | 🔴 Critique | Le PieChart « Répartition Territoriale » n'est **jamais réel** — c'est un simple % du total. La province « Mai-Ndombe » et autres listées n'ont aucun lien avec les utilisateurs réels. |
+| **B3** | `downloadGrowth` et `userGrowth` figés à `0` avec commentaire « Calculer si nécessaire » | 181-182 | 🟠 Élevé | Aucune indication de croissance réelle, contrairement à `revenueGrowth`. |
+| **B4** | Aucun filtre `.lte('created_at', endDate)` — toujours « depuis startDate jusqu'à maintenant » | 78, 84, 90 | 🟠 Élevé | Comparaison période précédente faussée (chevauchement). |
+| **B5** | `payments.amount_usd` lu sans coalescing (`?? 0`) → `NaN` si une ligne a `amount_usd` null | 113, 129 | 🟡 Moyen | KPIs financiers peuvent afficher `$NaN`. |
+| **B6** | Pas de filtre `excludeTest` | global | 🟡 Moyen | Les commandes/utilisateurs TEST polluent les chiffres (vs `Dashboard` qui les exclut). |
+| **B7** | Loading global plein écran (`min-h-dvh`) bloque toute la page tant qu'**une seule** requête n'a pas répondu | 227-233 | 🟡 Moyen | UX : pas de skeleton incrémental. |
+| **B8** | XAxis `tick={{ fontSize: 6 }}` — police illisible | 357, 378 | 🟡 Moyen | Labels axes invisibles. |
+| **B9** | `topPublications` cherche le `payment.publication_id` correspondant **au premier paiement** — un seul matching, pas une somme | 147 | 🟠 Élevé | Revenus top publications sous-estimés. |
 
-#### E2 — `create_cadastral_invoice_secure` n'écrit pas l'identité fiscale
-- La RPC actuelle `INSERT` toujours uniquement `client_email` + `client_name` (extraits du profil).
-- Même si l'UI capturait NIF/RCCM, la RPC ne les transmettrait pas.
-- À refactorer : ajouter paramètres `p_client_type`, `p_client_nif`, `p_client_rccm`, `p_client_id_nat`, `p_client_address`, `p_client_tax_regime` + persistance.
+### 🔴 Doublonnage architectural
 
-#### E3 — Numérotation séquentielle DGI **non utilisée**
-- RPC `generate_normalized_invoice_number(year)` créée mais aucun appelant.
-- Les factures continuent d'être numérotées par le défaut existant (timestamp) → format `BIC/2026/000123` non émis.
+`AnalyticsDashboard` (onglet Analytics) **réimplémente** ce que `AdminDashboardOverview` (onglet Dashboard) fait déjà mieux :
+- KPIs revenus / utilisateurs / publications
+- Comparatif période précédente
+- Top performers
+- Répartition zones (vraie via `top_zones` RPC)
+- Onglet « Comparatif » et « Cohortes » (présents dans les 2 composants)
 
-#### E4 — Régularisation des factures historiques
-- Les factures pré-Phase 1 ont `client_type = NULL`. Le PDF gère bien ce cas (n'affiche pas le bloc), mais cela signifie qu'elles **resteront non conformes DGI** indéfiniment sans rétro-saisie.
+**Conséquence** : maintenance double, données discordantes (un onglet exclut TEST, l'autre non).
 
-### 🚫 Aucun bug bloquant
+### ⚠️ `useAdvancedAnalytics` — problèmes connexes
 
-- Pas d'erreur TS, pas de crash runtime, pas de régression UI
-- Le warning Vite « Failed to resolve AdminLandTitleFeesConfig » dans les logs date de 13:44 — résolu depuis (fichier présent + export default OK)
-- Linter Supabase : 8 warnings, **aucun lié aux nouveaux objets** (warnings préexistants sur d'autres fonctions/buckets)
+- 8 `Promise.all` parallèles **sans cache React Query** → re-fetch complet à chaque changement de période
+- Pas de `staleTime` ni d'invalidation
+- Récupère `select('*')` sur `payments` → over-fetch
 
-### Recommandation
+### 🟢 Ce qui fonctionne (à préserver)
 
-La Phase 1 est **techniquement déployée sans casser l'existant**, mais elle reste **à 50% fonctionnelle** : l'infrastructure (BD + PDF) est prête, l'**alimentation des données** (UI + RPC) ne l'est pas.
+- `AdminDashboardOverview` : RPC unifiée, période + comparaison, KPI cards, alerts panel ✅
+- `AdminAnalyticsChartsConfig` : modes tabs/kpis/charts/filters/cross/sync, audit log ✅
+- Onglets sous-composants Analytics (`PaymentAnalytics`, `CadastralAnalytics`, etc.) : alimentés par `useAdvancedAnalytics` (fiables, requêtes réelles)
 
-### Plan correctif proposé (Phase 1.5 — Branchement)
+---
 
-#### Étape A — RPC enrichie
-Migration : créer `create_cadastral_invoice_secure_v2(parcel, services, discount, client_type, client_nif, client_rccm, client_id_nat, client_address, client_tax_regime)` qui :
-- Persiste les 6 nouveaux champs
-- Appelle `generate_normalized_invoice_number()` pour `invoice_number`
-- Conserve l'ancienne RPC pour rétro-compatibilité (alias)
+### Plan correctif (priorisé)
 
-#### Étape B — Branchement UI (5 dialogs)
-- `CadastralPaymentDialog` → ajouter section `<ClientFiscalIdentityForm />` avant le bouton "Payer"
-- `PermitPaymentDialog` → idem + transmettre à la RPC permit
-- `MutationRequestDialog` (étape paiement) → idem
-- `RealEstateExpertiseRequestDialog` (étape paiement) → idem
-- Dialog publications (orders) → idem
+#### 🔴 P1 — Éliminer les données fictives `AnalyticsDashboard`
 
-Persistance : pré-remplissage depuis le **dernier client_* utilisé** par l'utilisateur (UX) + validation `validateFiscalIdentity()` déjà fournie.
+**P1.1** — Remplacer `generateUserActivity` (Math.random) par une vraie agrégation `daily_active_users` :
+```ts
+// Group profiles + payments par jour réel
+const userActivity = aggregateByDay(users, range, 'created_at');
+```
 
-#### Étape C — Bascule numérotation
-- Trigger BD `BEFORE INSERT` sur `cadastral_invoices` : si `invoice_number` IS NULL → `generate_normalized_invoice_number()`
-- Idem sur `expertise_payments`, `permit_payments`, `orders` (créer colonne `invoice_number` si absente)
+**P1.2** — Remplacer la répartition territoriale hardcodée par les vraies données via `dashFull.top_zones` (RPC `get_admin_dashboard_full` déjà existante) — réutiliser le même pattern que `AdminDashboardOverview`.
 
-#### Étape D — Onglet admin "Identité légale émetteur"
-- Nouveau composant `CompanyLegalInfoTab` dans `AdminBillingConfig` (10e onglet) pour éditer la table `company_legal_info` (cohérence multi-entité, audit log).
+**P1.3** — Calculer `downloadGrowth` et `userGrowth` via une 2e requête sur la période précédente (idem pattern `revenueGrowth`).
+
+**P1.4** — Ajouter `.lte('created_at', endDate.toISOString())` sur les 5 requêtes Supabase concernées.
+
+**P1.5** — Sécuriser : `payment.amount_usd ?? 0` partout.
+
+**P1.6** — Corriger `topPublications` :
+```ts
+const sumByPub = payments.reduce((acc, p) => {
+  acc[p.publication_id] = (acc[p.publication_id] ?? 0) + (p.amount_usd ?? 0);
+  return acc;
+}, {} as Record<string, number>);
+// puis injecter dans publicationStats
+```
+
+**P1.7** — Police XAxis : `fontSize: 11` (au lieu de 6).
+
+#### 🟠 P2 — Déduplication architecturale
+
+**Option A (recommandée)** — Supprimer l'onglet « Vue d'ensemble » de `AnalyticsDashboard` et **rediriger** vers le `Dashboard` admin déjà unifié. Conserver uniquement les 8 onglets spécialisés (Paiements, Cadastral, Business, Territorial, Comparatif, Cohortes, Funnel, Prédictif).
+
+**Option B** — Garder l'onglet mais le brancher 100% sur `useDashboardKPIs` (RPC unifiée) au lieu de réimplémenter.
+
+#### 🟡 P3 — Performance `useAdvancedAnalytics`
+
+- Migrer vers React Query (`useQuery` par sous-section, `staleTime: 60_000`)
+- Sélectionner uniquement les colonnes nécessaires (au lieu de `*`)
+- Ajouter sélecteur `excludeTest` partagé avec le Dashboard
+
+#### 🟡 P4 — UX
+
+- Skeletons par card au lieu du spinner plein écran
+- Aligner le sélecteur de période d'`AnalyticsDashboard` avec celui du Dashboard (`PeriodFilter` partagé)
+- Synchroniser `excludeTest` via `useDashboardSettings`
+
+---
 
 ### Détails techniques
 
-- **Fichiers à modifier (Étape B)** :
-  - `src/components/cadastral/CadastralPaymentDialog.tsx`
-  - `src/components/cadastral/PermitPaymentDialog.tsx`
-  - `src/components/cadastral/MutationRequestDialog.tsx` (ou son sous-composant paiement)
-  - `src/components/cadastral/RealEstateExpertiseRequestDialog.tsx`
-  - Dialog publications (à localiser via `orders` insert)
-  - `src/hooks/useCadastralPayment.tsx` (signature étendue)
-- **Fichiers à créer (Étape D)** :
-  - `src/components/admin/billing/CompanyLegalInfoTab.tsx`
-- **Migrations** :
-  - 1 migration : RPC v2 + triggers numérotation auto + (optionnel) colonnes invoice_number sur tables sœurs
-- **Hors périmètre** : Phase 2 (signature HMAC, immuabilité étendue) et Phase 3 (FNI DGI).
+**Fichiers à modifier** :
+- `src/components/analytics/AnalyticsDashboard.tsx` — refonte onglet "Vue d'ensemble" + corrections P1.1→P1.7
+- `src/hooks/useAdvancedAnalytics.tsx` — migration React Query (P3)
 
-### Priorités
+**Aucune migration BD** nécessaire (les RPC `get_admin_dashboard_full`, `get_admin_statistics` existent déjà).
 
-1. **Étape A + B** indispensables pour rendre la Phase 1 réellement utile (NIF client persisté).
-2. **Étape C** pour passer aux numéros officiels `BIC/2026/000xxx`.
-3. **Étape D** pour rendre l'identité émetteur configurable (sinon valeurs FALLBACK figées).
+**Hors périmètre immédiat** :
+- Refonte complète des 8 sous-onglets Analytics (Funnel/Prédictif sont déjà alimentés par vraies données)
+- Fusion des onglets « Comparatif » dupliqués entre Dashboard et Analytics
 
-Veux-tu que je démarre par les **Étapes A + B + C** (branchement complet du flux DGI) ?
+### Priorités proposées
+
+1. **P1 d'abord** (élimination données fictives) — impact crédibilité immédiat
+2. **P2 (Option A)** — supprimer doublon Vue d'ensemble dans Analytics
+3. **P3 + P4** en finition
+
+Veux-tu que je traite **P1 + P2 (Option A)** d'abord ?
 
