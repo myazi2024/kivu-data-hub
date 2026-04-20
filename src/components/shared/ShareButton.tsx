@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Popover, PopoverAnchor, PopoverContent } from '@/components/ui/popover';
 import { Share2, Copy, Download, MessageCircle, Twitter, Facebook, Linkedin, Link as LinkIcon } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -62,9 +62,8 @@ const ShareButton: React.FC<ShareButtonProps> = ({ getBlob, title, variant = 'ch
         setBusy(false);
         return;
       }
-      // Fallback: open popover (re-open via state — Radix needs the trigger event;
-      // we manage open state manually instead)
-      setOpen(true);
+      // Fallback: toggle popover manually
+      setOpen((o) => !o);
     } catch {
       toast.error("Impossible de générer l'image");
     } finally {
@@ -128,7 +127,7 @@ const ShareButton: React.FC<ShareButtonProps> = ({ getBlob, title, variant = 'ch
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
+      <PopoverAnchor asChild>
         <button
           type="button"
           onClick={handleTriggerClick}
@@ -139,7 +138,7 @@ const ShareButton: React.FC<ShareButtonProps> = ({ getBlob, title, variant = 'ch
         >
           <Share2 className={iconClass} />
         </button>
-      </PopoverTrigger>
+      </PopoverAnchor>
       <PopoverContent
         className="w-56 p-1"
         align="end"
