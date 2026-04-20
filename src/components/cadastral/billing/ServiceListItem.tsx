@@ -34,7 +34,7 @@ const ServiceListItem: React.FC<ServiceListItemProps> = ({
   const category = service.category ?? 'consultation';
   const categoryMeta: Record<string, { label: string; className: string }> = {
     consultation: { label: 'Consultation', className: 'bg-muted text-muted-foreground border-border' },
-    fiscal: { label: 'Fiscal', className: 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30' },
+    fiscal: { label: 'Fiscal', className: 'bg-secondary text-secondary-foreground border-border' },
     juridique: { label: 'Juridique', className: 'bg-destructive/10 text-destructive border-destructive/30' },
   };
   const catInfo = categoryMeta[category] ?? categoryMeta.consultation;
