@@ -63,7 +63,7 @@ export const BillingOverviewTab = () => {
         price_usd: Number(f.amount_usd) || 0, status: f.is_active ? 'actif' : 'inactif', updated_at: f.updated_at,
       }));
       (mutations.data || []).forEach((f: any) => all.push({
-        category: 'Mutation foncière', name: f.fee_name, reference: f.mutation_type || '—',
+        category: 'Mutation foncière', name: f.fee_name, reference: f.description ? String(f.description).slice(0, 30) : '—',
         price_usd: Number(f.amount_usd) || 0, status: f.is_active ? 'actif' : 'inactif', updated_at: f.updated_at,
       }));
       (titles.data || []).forEach((f: any) => all.push({
@@ -71,11 +71,11 @@ export const BillingOverviewTab = () => {
         price_usd: Number(f.base_amount_usd) || 0, status: f.is_active ? 'actif' : 'inactif', updated_at: f.updated_at,
       }));
       (subdivisions.data || []).forEach((f: any) => all.push({
-        category: 'Lotissement', name: f.fee_name, reference: f.fee_type || '—',
-        price_usd: Number(f.amount_usd) || 0, status: f.is_active ? 'actif' : 'inactif', updated_at: f.updated_at,
+        category: 'Lotissement', name: `${f.section_type || '—'} — ${f.location_name || '—'}`, reference: f.section_type || '—',
+        price_usd: Number(f.rate_per_sqm_usd) || 0, status: f.is_active ? 'actif' : 'inactif', updated_at: f.updated_at,
       }));
       (expertise.data || []).forEach((f: any) => all.push({
-        category: 'Expertise', name: f.fee_name, reference: f.fee_type || '—',
+        category: 'Expertise', name: f.fee_name, reference: f.description ? String(f.description).slice(0, 30) : '—',
         price_usd: Number(f.amount_usd) || 0, status: f.is_active ? 'actif' : 'inactif', updated_at: f.updated_at,
       }));
 
