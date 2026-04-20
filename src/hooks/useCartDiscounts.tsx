@@ -105,7 +105,7 @@ export const useCartDiscounts = () => {
           .eq('user_id', userId)
           .maybeSingle();
         if (cancelled || error || !data) return;
-        const remote = data.discounts_data as DiscountMap | null;
+        const remote = data.discounts_data as unknown as DiscountMap | null;
         if (!remote || typeof remote !== 'object') return;
         const localRaw = ConsentAwareStorage.getItem(STORAGE_KEY);
         const localAt = localRaw ? (JSON.parse(localRaw).savedAt || 0) : 0;
