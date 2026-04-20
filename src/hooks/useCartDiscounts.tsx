@@ -1,9 +1,11 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { CookieManager, ConsentAwareStorage } from '@/lib/cookies';
+import { supabase } from '@/integrations/supabase/client';
 
 /**
  * Code de remise mémorisé par parcelle dans le panier.
  * Persiste en localStorage (consent-aware), TTL aligné sur le panier (24h).
+ * P5 : également synchronisé sur Supabase pour les utilisateurs connectés.
  */
 export interface CartDiscountEntry {
   code: string;
@@ -50,12 +52,14 @@ const saveToStorage = (map: DiscountMap) => {
 
 /**
  * Hook léger : code promo par parcelle, partagé entre drawer panier et CadastralBillingPanel.
- * Synchronisation cross-tab via `storage` event.
+ * Synchronisation cross-tab via `storage` event + sync Supabase pour utilisateurs connectés.
  */
 export const useCartDiscounts = () => {
   const [map, setMap] = useState<DiscountMap>(() => loadFromStorage());
+  const [userId, setUserId] = useState<string | null>(null);
+  const skipNextPush = useRef(true); // évite de pousser au mount avant pull
 
-  // Persistance
+  // Persistance locale
   useEffect(() => {
     saveToStorage(map);
   }, [map]);
@@ -73,6 +77,73 @@ export const useCartDiscounts = () => {
       window.removeEventListener('cartDiscountsUpdated', onLocal);
     };
   }, []);
+
+  // Suivi auth
+  useEffect(() => {
+    let mounted = true;
+    supabase.auth.getUser().then(({ data }) => {
+      if (mounted) setUserId(data.user?.id ?? null);
+    });
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUserId(session?.user?.id ?? null);
+    });
+    return () => {
+      mounted = false;
+      sub.subscription.unsubscribe();
+    };
+  }, []);
+
+  // Pull au login : merge distant si plus récent
+  useEffect(() => {
+    if (!userId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data, error } = await supabase
+          .from('cadastral_cart_drafts')
+          .select('discounts_data, updated_at')
+          .eq('user_id', userId)
+          .maybeSingle();
+        if (cancelled || error || !data) return;
+        const remote = data.discounts_data as DiscountMap | null;
+        if (!remote || typeof remote !== 'object') return;
+        const localRaw = ConsentAwareStorage.getItem(STORAGE_KEY);
+        const localAt = localRaw ? (JSON.parse(localRaw).savedAt || 0) : 0;
+        const remoteAt = new Date(data.updated_at).getTime();
+        const localEmpty = Object.keys(map).length === 0;
+        if (remoteAt > localAt || localEmpty) {
+          skipNextPush.current = true;
+          setMap(remote);
+        }
+      } catch (e) {
+        console.error('Cart discounts pull failed:', e);
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId]);
+
+  // Push debounced 800ms
+  useEffect(() => {
+    if (!userId) return;
+    if (skipNextPush.current) {
+      skipNextPush.current = false;
+      return;
+    }
+    const timer = setTimeout(async () => {
+      try {
+        await supabase
+          .from('cadastral_cart_drafts')
+          .upsert(
+            { user_id: userId, discounts_data: map as any },
+            { onConflict: 'user_id' }
+          );
+      } catch (e) {
+        console.error('Cart discounts push failed:', e);
+      }
+    }, 800);
+    return () => clearTimeout(timer);
+  }, [map, userId]);
 
   const set = useCallback((parcelNumber: string, entry: Omit<CartDiscountEntry, 'appliedAt'>) => {
     setMap((prev) => {
