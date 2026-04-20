@@ -71,9 +71,20 @@ export const CadastralCartProvider = ({ children }: { children: ReactNode }) => 
         return;
       }
 
-      // v2 : { parcelsMap, activeParcelNumber, savedAt }
+      // v2/v3 : { parcelsMap, activeParcelNumber, savedAt }
       if (parsed.parcelsMap && typeof parsed.parcelsMap === 'object') {
-        setParcelsMap(parsed.parcelsMap);
+        // Migration v2 → v3 : ajout de addedAt si absent
+        const now = Date.now();
+        const migrated: Record<string, CadastralCartParcel> = {};
+        Object.entries(parsed.parcelsMap as Record<string, any>).forEach(([pn, p], idx) => {
+          migrated[pn] = {
+            parcelNumber: p.parcelNumber ?? pn,
+            parcelLocation: p.parcelLocation ?? '',
+            services: p.services ?? [],
+            addedAt: typeof p.addedAt === 'number' ? p.addedAt : now - (1000 - idx),
+          };
+        });
+        setParcelsMap(migrated);
         setActiveParcelNumber(parsed.activeParcelNumber || null);
         return;
       }
@@ -84,7 +95,7 @@ export const CadastralCartProvider = ({ children }: { children: ReactNode }) => 
       if (legacyParcel && legacyServices.length > 0) {
         const location = legacyServices[0]?.parcel_location || '';
         setParcelsMap({
-          [legacyParcel]: { parcelNumber: legacyParcel, parcelLocation: location, services: legacyServices },
+          [legacyParcel]: { parcelNumber: legacyParcel, parcelLocation: location, services: legacyServices, addedAt: Date.now() },
         });
         setActiveParcelNumber(legacyParcel);
       } else if (legacyParcel) {
