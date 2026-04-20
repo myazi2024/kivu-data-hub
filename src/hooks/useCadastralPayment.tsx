@@ -69,12 +69,15 @@ export const useCadastralPayment = () => {
   /**
    * Crée une facture. Si le paiement n'est pas requis → accès gratuit.
    */
-  const createInvoice = useCallback(async (discountData?: {
-    code: string;
-    amount: number;
-    reseller_id: string;
-    code_id: string;
-  }) => {
+  const createInvoice = useCallback(async (
+    discountData?: {
+      code: string;
+      amount: number;
+      reseller_id: string;
+      code_id: string;
+    },
+    fiscalIdentity?: ClientFiscalIdentity,
+  ) => {
     if (!user) {
       toast({ title: "Authentification requise", description: "Vous devez être connecté pour créer une facture", variant: "destructive" });
       return null;
