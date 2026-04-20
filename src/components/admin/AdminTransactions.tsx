@@ -20,6 +20,7 @@ import {
 
 interface Transaction {
   id: string;
+  source: 'cadastral' | 'expertise' | 'permit' | 'publication';
   type: 'payment' | 'refund' | 'commission' | 'discount';
   amount: number;
   status: string;
@@ -28,6 +29,13 @@ interface Transaction {
   created_at: string;
   reference: string;
 }
+
+const SOURCE_LABELS: Record<string, string> = {
+  cadastral: 'Cadastre',
+  expertise: 'Expertise',
+  permit: 'Autorisation',
+  publication: 'Publication',
+};
 
 const STATUS_MAP: Record<string, StatusType> = {
   completed: 'completed',
