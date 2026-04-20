@@ -1,80 +1,99 @@
 
 
-## Audit du panier `CadastralCartButton` + `useCadastralCart`
+## Audit — Configuration de la facturation (`/admin?tab=billing-config`)
 
-### État actuel
-- **Catalogue** : 5 services par parcelle ($1.5 → $15, 3 catégories : consultation/fiscal/juridique). Total max ≈ $28.49 par parcelle.
-- **Modèle d'achat** : 1 facture = 1 parcelle. Accès permanent (table `cadastral_service_access`, upsert idempotent).
-- **Panier actuel** :
-  - Multi-parcelles (✅ refactor déjà fait), bouton flottant compact (✅).
-  - Checkout reste mono-parcelle via `CadastralBillingPanel` → "Payer cette parcelle" force le changement de parcelle active.
+### Couverture actuelle de l'écran `AdminBillingConfig`
 
-### Problèmes identifiés vs modèle d'affaires
+L'écran actuel ne propose que **3 onglets** :
+1. **Publications** — prix unitaires (table `publications`)
+2. **Services cadastraux** — 5 services par parcelle (table `cadastral_services_config`)
+3. **Frais d'autorisation de bâtir** (permis) — table `permit_fees_config`
 
-| # | Problème | Impact business |
-|---|----------|-----------------|
-| 1 | Aucune **détection des services déjà achetés** dans le panier. L'utilisateur peut ajouter et payer 2× le même service. | Risque de double-paiement, friction post-achat, support. |
-| 2 | Pas de **suggestion "Tout ajouter"** ni de **bundle/forfait parcelle** alors que le pack complet ne coûte que ~$28. | Panier moyen sous-optimal, conversion service par service. |
-| 3 | Le **CTA "Payer"** ne distingue pas la parcelle déjà active (clic inutile) ; aucun feedback si la parcelle n'est plus chargée sur la carte. | UX confuse, double-clics. |
-| 4 | Pas d'**indicateur de remise potentielle** ni champ code dans le drawer (codes promo = levier reseller). | Réduit usage codes partenaires. |
-| 5 | Pas de **persistance par utilisateur connecté** (panier en localStorage seul, lié au device) — TTL 24h OK mais perd le panier au changement d'appareil. | Abandon si reprise sur mobile. |
-| 6 | **Ordre des parcelles** non stable (Object.values) → réordonnancement visuel à chaque mutation. | UX instable. |
-| 7 | Pas de **catégorisation visuelle** dans le drawer (badges Consultation/Fiscal/Juridique invisibles), alors qu'ils existent dans la liste source. | Manque de cohérence UI. |
-| 8 | Pas d'**économie cumulée affichée** ni de pitch valeur ("Obtenez le dossier complet pour $X"). | Perte d'opportunité de conversion. |
-| 9 | Bouton flottant **ne tient pas compte de la mini-cart kiosque** sur les très petites largeurs (collision potentielle si layout change). | Risque cosmétique. |
-| 10 | Pas de **lien direct vers la facture / dashboard** après checkout depuis le panier multi. | Friction parcours. |
+### Services payants NON pris en charge dans cet écran
 
-### Optimisations proposées (priorisées)
+Recensement complet vs. table de configuration et écran admin existant ailleurs :
 
-**P1 — Anti-doublon achat (critique business)**
-- Charger `cadastral_service_access` pour les `parcel_number` du panier au montage du drawer (1 requête batch via `checkMultipleServiceAccess`, déjà disponible).
-- Marquer chaque service "Déjà acheté" + désactiver suppression mais **bloquer l'ajout en amont** dans `addServiceForParcel` quand déjà payé (vérification dans `ServiceListItem` déjà présente — on s'aligne sur la même donnée).
+| Service payant | Table BD | Écran admin dédié | Visible dans Config Facturation ? |
+|---|---|---|---|
+| Publications (kiosque) | `publications` | AdminPublications | ✅ Oui |
+| Services cadastraux (5 services / parcelle) | `cadastral_services_config` | AdminCadastralServices | ✅ Oui |
+| Autorisation de bâtir (permis) | `permit_fees_config` | AdminPermitFeesConfig | ✅ Oui |
+| **Mutation foncière** | `mutation_fees_config` *(à confirmer)* | AdminMutationFeesConfig | ❌ Non |
+| **Titre foncier** (initial / renouvellement / duplicata) | `land_title_fees_by_type` + `land_title_fees_config` | AdminLandTitleRequests (pas de config dédiée) | ❌ Non |
+| **Lotissement (subdivision)** | `subdivision_fees_config` | AdminSubdivisionFeesConfig | ❌ Non |
+| **Expertise immobilière** + **accès certificat** | `expertise_fees_config` | AdminExpertiseFeesConfig | ❌ Non |
+| **Hypothèque (inscription + radiation)** | `cadastral_contribution_config` clé `mortgage_cancellation_fees` | Aucun écran de config dédié | ❌ Non |
+| **Litiges fonciers (frais de levée)** | inconnu / hardcodé | Aucun | ❌ Non |
+| **Fiscalité** (Impôt foncier, Bâtisse, IRL — taux/barèmes) | `cadastral_contribution_config` (probable) | Partiel (AdminTaxHistory = lecture seule) | ❌ Non |
+| **Codes CCC** (valeur USD attribuée) | `cadastral_contribution_config` | AdminContributionConfig | ❌ Non |
+| **Codes de remise** (déjà gérés ailleurs) | `discount_codes` | AdminDiscountCodes | ⚠️ Hors périmètre OK |
 
-**P2 — Bundle parcelle / "Tout ajouter"**
-- Bouton "Ajouter tous les services disponibles ($X.XX)" par parcelle dans la liste des services (`CadastralBillingPanel`).
-- Dans le drawer : afficher économie si remise reseller existe, et CTA "Compléter le dossier" si moins de N services sélectionnés.
+### Constats
 
-**P3 — Drawer enrichi**
-- Badges catégorie (Consultation/Fiscal/Juridique) sur chaque ligne service du drawer.
-- Tri stable des parcelles (par ordre d'ajout — utiliser un `addedAt` timestamp dans `CadastralCartParcel`).
-- Indicateur "parcelle active" (badge "En cours") pour clarifier le bouton "Payer".
+- **8 services payants sur 11** ne sont **pas** consultables/modifiables depuis "Config Facturation" — l'admin doit naviguer dans 6 écrans différents pour ajuster les tarifs.
+- L'écran existe sous un nom (« Configuration de la facturation ») qui suggère un point unique alors qu'il ne couvre que 3 services sur 11.
+- Aucun récapitulatif global des prix actifs (introuvable « combien coûte tel service au total »).
+- Pas de **mise à jour en masse** sur les frais hors-permis (mutation, lotissement, expertise, titre foncier).
+- Pas d'**historique des changements de tarifs** ni de **journal d'audit** visible depuis l'écran.
+- Pas d'**export CSV** des grilles tarifaires.
+- Pas de **frais hypothèque** ni de **frais de levée de litige** configurables nulle part de manière centralisée — risque de valeurs codées en dur.
 
-**P4 — Champ code de remise dans le drawer**
-- Petit input collapsible "J'ai un code promo/CCC" qui valide via `useDiscountCodes` et affiche l'économie projetée. Le code reste mémorisé et appliqué lors du checkout par parcelle.
+### Plan proposé — Refonte de `AdminBillingConfig` en hub unifié
 
-**P5 — Persistance utilisateur (out of scope immédiat)**
-- Synchroniser le panier sur Supabase pour utilisateurs connectés (table `cadastral_cart_drafts`). À planifier séparément (migration BD).
+**Objectif** : faire de cet écran le **point d'entrée unique** de tous les tarifs facturables.
 
-**P6 — Cohérence post-paiement**
-- Après `cadastralPaymentCompleted`, retirer automatiquement les services payés du panier (déjà partiellement géré par `clearServices` sur la parcelle active — étendre pour purger uniquement les services achetés, pas toute la parcelle).
+#### Étape 1 — Élargir la couverture des onglets (P1)
 
-### Étapes d'implémentation proposées (zéro régression)
+Passer de 3 à **8 onglets** :
+1. Publications (existant)
+2. Services cadastraux (existant)
+3. Autorisation de bâtir (existant)
+4. **Mutation foncière** (nouveau — wrap `AdminMutationFeesConfig`)
+5. **Titre foncier** (nouveau — table `land_title_fees_by_type`, lecture/édition)
+6. **Lotissement** (nouveau — wrap `AdminSubdivisionFeesConfig`)
+7. **Expertise + Certificat** (nouveau — wrap `AdminExpertiseFeesConfig`)
+8. **Hypothèque & Litiges** (nouveau — frais radiation + levée litige)
 
-**Étape 1 (P1 + P3 + P6) — sûre, additive** :
-- Ajouter `addedAt: number` dans `CadastralCartParcel` (rétro-compat : fallback `Date.now()` au load).
-- Tri stable + badges catégorie dans le drawer.
-- Hook `useCartAccessCheck` : pour chaque parcelle du panier, requête batch `checkMultipleServiceAccess`. Affichage "Déjà acheté" + désactivation paiement si tous achetés.
-- Listener `cadastralPaymentCompleted` dans `useCadastralCart` qui purge uniquement les services dont l'accès vient d'être accordé (recharge access list, retire matches).
+Pattern : composer les écrans existants via lazy import plutôt que de dupliquer la logique.
 
-**Étape 2 (P2)** :
-- Bouton "Tout ajouter ($X.XX)" dans `CadastralBillingPanel` au-dessus de la liste des services (n'ajoute que ceux disponibles & non déjà payés).
-- Encart "Économisez en complétant votre dossier" dans le drawer si parcelle a < N services.
+#### Étape 2 — Onglet "Vue d'ensemble" (P2)
 
-**Étape 3 (P4)** :
-- Input code promo dans le drawer → stockage local du code validé par parcelle → injection automatique au checkout.
+Premier onglet par défaut : **tableau récapitulatif** de tous les tarifs actifs avec :
+- Service / Catégorie / Prix USD / Statut / Dernière modification
+- Filtres par catégorie et recherche
+- Bouton "Exporter CSV"
 
-**Étape 5 (P5)** : à replanifier (migration BD requise).
+#### Étape 3 — Mise à jour en masse globale (P3)
 
-### Fichiers touchés (Étape 1 uniquement, pour ce tour)
-- `src/hooks/useCadastralCart.tsx` (ajout `addedAt`, listener post-paiement, tri stable)
-- `src/components/cadastral/CadastralCartButton.tsx` (badges catégorie, marquage "Déjà acheté", désactivation conditionnelle du paiement)
-- Nouveau : `src/hooks/useCartAccessCheck.tsx` (hook batch d'accès)
+Étendre l'opération `applyBulkUpdate` aux 5 nouvelles catégories pour permettre `+10%` global sur l'inflation.
 
-### Hors périmètre
-- Pas de changement BD.
-- Pas de touche au flux de paiement edge function.
-- Pas de modification des prix ou catégories.
+#### Étape 4 — Journal d'audit tarifaire (P4)
 
-### Question
-Confirmes-tu qu'on enchaîne avec **Étape 1** (P1+P3+P6 : anti-doublon, badges, tri stable, purge post-paiement) ? Ou veux-tu prioriser autrement (P2 bundle d'abord pour panier moyen, P4 codes promo) ?
+- Ajouter `pricing_change_log` (table à créer) qui trace `service_type`, `service_id`, `old_price`, `new_price`, `changed_by`, `changed_at`
+- Trigger BD sur `publications`, `cadastral_services_config`, `permit_fees_config`, `mutation_fees_config`, `land_title_fees_by_type`, `subdivision_fees_config`, `expertise_fees_config`
+- Onglet "Historique" dans l'écran
+
+#### Étape 5 — Frais hypothèque & litiges configurables (P5)
+
+- Vérifier si `mortgage_cancellation_fees` (clé `cadastral_contribution_config`) est exposé en UI → sinon ajouter formulaire dédié
+- Identifier où le **frais de levée de litige** est défini (probablement codé en dur) → migrer vers `cadastral_contribution_config` clé `dispute_lifting_fee` et exposer
+
+### Détails techniques
+
+- **Fichiers modifiés** : `src/components/admin/AdminBillingConfig.tsx` (refonte tabs)
+- **Fichiers créés** :
+  - `src/components/admin/billing/BillingOverviewTab.tsx`
+  - `src/components/admin/billing/BillingAuditLogTab.tsx`
+  - `src/components/admin/billing/MortgageDisputeFeesTab.tsx`
+- **Migration BD** : table `pricing_change_log` + 7 triggers
+- **Sidebar** : conserver les liens directs existants (Config Frais Mutation, Lotissement, Expert., Permis) — l'écran central devient un raccourci pratique, pas un remplacement
+- **Hors périmètre** : `discount-codes`, `currency-config` (déjà autonomes et bien placés)
+
+### Questions
+
+1. Veux-tu **tout intégrer dans `AdminBillingConfig`** (8 onglets) ou plutôt créer un nouvel écran "Hub Tarifs" laissant `AdminBillingConfig` léger ?
+2. **Étape 4 (audit log)** : on ajoute la table + triggers maintenant ou on la garde pour plus tard ?
+3. **Étape 5 (hypothèque/litiges)** : confirme-t-on que les frais sont actuellement codés en dur ? (je le vérifierai à l'implémentation)
+
+Priorité suggérée : **P1 + P2** d'abord (couverture + vue d'ensemble), puis P3/P4/P5 selon ton besoin.
 
