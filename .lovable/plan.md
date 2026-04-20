@@ -1,69 +1,120 @@
 
 
-## Audit post-implémentation — Bugs détectés dans `BillingOverviewTab` & `MortgageDisputeFeesTab`
+## Audit — Section "Facturation & Commerce" (admin)
 
-L'intégration P1+P2 a introduit **3 bugs de schéma** dans la nouvelle vue d'ensemble. Les 9 onglets s'affichent, mais l'agrégation de la "Vue d'ensemble" échoue silencieusement (catch global) sur 3 sources sur 7 → **chiffres incomplets** dans les cartes de totaux et dans le tableau.
+### Périmètre audité (9 entrées sidebar)
 
-### Bugs identifiés
-
-| # | Fichier | Problème | Impact |
+| # | Entrée | Composant | État |
 |---|---|---|---|
-| 1 | `BillingOverviewTab.tsx` ligne 49 | Requête sur `subdivision_fees_config` — **table inexistante** (vraie table : `subdivision_rate_config`) | Catégorie "Lotissement" toujours vide / erreur 404 PostgREST |
-| 2 | `BillingOverviewTab.tsx` ligne 47 | `mutation_fees_config` → champ `mutation_type` **inexistant** (table plate : `fee_name`, `amount_usd`) | Référence affichée = `'—'` même quand des frais existent (cosmetic mais trompeur) |
-| 3 | `BillingOverviewTab.tsx` ligne 51 | `expertise_fees_config` → champ `fee_type` **inexistant** | Idem (référence vide) |
+| 1 | Config Facturation | `AdminBillingConfig` | OK (refonte 9 onglets récente) |
+| 2 | Devises / Taux | `AdminCurrencyConfig` | OK (audit log présent) |
+| 3 | Factures | `AdminInvoices` | ⚠️ Limites & doublons |
+| 4 | Transactions | `AdminTransactions` | 🔴 Source incomplète |
+| 5 | Commissions | `AdminCommissions` | 🔴 N+1 + doublon avec #6 |
+| 6 | Commissions Revendeurs | `AdminResellerCommissions` | ⚠️ Doublon fonctionnel avec #5 |
+| 7 | Ventes Revendeurs | `AdminResellerSales` | ⚠️ Bouton "regenerate" non fonctionnel |
+| 8 | Revendeurs | `AdminResellers` | OK |
+| 9 | Codes de Remise | `AdminDiscountCodes` | OK |
 
-### Constats secondaires (non bloquants)
+### Problèmes identifiés
 
-- **Toast "Impossible de charger la vue d'ensemble"** s'affiche à chaque ouverture à cause du bug n°1 (la requête sur table absente fait throw). Confusion UX.
-- **`MortgageDisputeFeesTab`** : OK fonctionnellement, mais les valeurs par défaut (50/100/25 USD radiation, 30 USD litige) sont **arbitraires** et ne correspondent pas forcément aux frais réellement appliqués côté services hypothèque/litige existants → à confirmer côté code consommateur dans une étape ultérieure (hors périmètre de ce fix).
-- **9 onglets sur viewport 875px** : `flex-wrap` activé, donc OK, mais visuellement chargé. Acceptable.
+#### 🔴 P1 — `AdminTransactions` ne montre que les `payments`, pas les vraies transactions
+- La source est `payments` (carte/MoMo de cadastral) → **manque** : achats publications (`orders`), demandes payées (mutation, titre, expertise, autorisation, hypothèque, litige).
+- La table unifiée `payment_transactions` (mentionnée dans la mémoire architecture paiement) **n'est pas interrogée**.
+- Conséquence : "Journal des Transactions" affiche un sous-ensemble trompeur. Le calcul "Taux de réussite" est faux à l'échelle plateforme.
 
-### Plan de correction
+#### 🔴 P2 — `AdminCommissions` : requêtes N+1 + doublon avec `AdminResellerCommissions`
+- Pour chaque vente, deux `select().single()` enchaînés (resellers puis profiles). Sur 200+ ventes → 400+ requêtes séquentielles.
+- Doit être remplacé par un join `select('*, resellers(business_name, reseller_code, commission_rate, profiles(...))')` ou un RPC agrégé.
+- **Doublon** : `AdminCommissions` + `AdminResellerCommissions` exposent quasiment la même donnée (reseller_sales). À fusionner ou à différencier explicitement (ex : "Commissions à payer" vs "Performance par revendeur").
 
-#### Fix 1 — Mapper `subdivision_rate_config` correctement
+#### 🔴 P3 — `AdminResellerSales` : bouton "Regénérer orphelins" est un toast vide
+- `regenerateOrphans()` ne fait que `toast.info('…trigger lors du prochain passage…')` — aucune action réelle.
+- Aucune RPC `regenerate_reseller_sales(invoice_ids[])` exposée. À implémenter ou retirer le bouton.
 
-Dans `BillingOverviewTab.tsx`, remplacer la requête `subdivision_fees_config` par :
+#### ⚠️ P4 — `AdminInvoices` : limite 2000 + filtre `TEST-%` incomplet
+- `.limit(2000)` non paginé côté SQL → invisibles au-delà.
+- Le filtre `not('parcel_number', 'ilike', 'TEST-%')` exclut les factures cadastrales TEST mais rate les autres préfixes test (autres services).
+- Stats (`totalRevenue`, `pendingRevenue`) calculées sur le sous-ensemble client, donc **fausses** dès que >2000 factures.
 
-```ts
-(supabase as any).from('subdivision_rate_config').select('id, section_type, location_name, rate_per_sqm_usd, is_active, updated_at')
+#### ⚠️ P5 — Vues éclatées, pas de hub financier
+- Pas d'écran "Tableau de bord financier" (alors que `AdminFinancialDashboard.tsx` existe dans le repo mais n'est **pas exposé** dans la sidebar).
+- L'admin doit naviguer 5 écrans pour répondre à : "Combien on a encaissé ce mois ? Combien on doit aux revendeurs ? Quel taux d'échec MoMo ?".
+
+#### ⚠️ P6 — Anomalies de facturation présentes mais cachées
+- `BillingAnomaliesPanel` existe (3 types : tx complétée/facture impayée, remise sans code, code expiré actif) mais **n'est intégré à aucun écran** de la section.
+
+#### ⚠️ P7 — Réconciliation paiement absente du menu
+- `AdminPaymentReconciliation` et `AdminPaymentMonitoring` existent mais ne figurent **pas** dans la sidebar "Facturation & Commerce" (section "Paiements" séparée).
+- Cohérence à revoir : tout ce qui touche $ devrait être regroupé.
+
+#### ⚠️ P8 — Doublons avec sections "Paiements"
+- Sidebar a aussi : Paiements unifiés, Méthodes de paiement, Mode paiement, Intégration paiement, Monitoring → certains chevauchent Transactions/Factures. Pas de hiérarchie claire.
+
+### Plan de correction proposé
+
+#### Étape 1 (P1, P4) — Source de vérité unique pour transactions/factures
+- `AdminTransactions` : interroger `payment_transactions` (vue/table unifiée) au lieu de `payments` seul. Joindre type de service (publication, mutation, ccc, etc.) pour filtrage.
+- `AdminInvoices` : ajouter pagination serveur (range), retirer le filtre TEST hardcodé (utiliser `is_test_data` ou registry `test_entities_registry` cf. mémoire test-mode).
+- Stats agrégées via RPC `get_billing_summary(date_from, date_to)` plutôt que calcul client.
+
+#### Étape 2 (P2) — Optimiser & dédoublonner commissions
+- Remplacer N+1 par un `select` joint unique dans `AdminCommissions`.
+- Renommer / réorganiser :
+  - `AdminCommissions` → "Commissions à payer" (focus action : marquer payé)
+  - `AdminResellerCommissions` → "Performance revendeurs" (focus analytique)
+  - Sinon fusionner les deux écrans avec un toggle.
+
+#### Étape 3 (P3) — RPC de régénération des ventes orphelines
+- Créer `regenerate_orphan_reseller_sales()` qui scanne `cadastral_invoices` payées avec `discount_code_used` mais sans ligne `reseller_sales` et insère les manquantes (selon trigger existant).
+- Brancher le bouton actuel sur cette RPC + afficher count avant/après.
+
+#### Étape 4 (P5, P6) — Hub financier en tête de section
+- Exposer `AdminFinancialDashboard` comme premier item de la section "Facturation & Commerce" (label "Tableau de bord financier").
+- Y intégrer :
+  - KPIs cumulés (revenus 7j/30j/YTD, par service, par méthode)
+  - `BillingAnomaliesPanel` (déjà existant)
+  - Top revendeurs, taux d'échec MoMo
+  - Liens rapides vers Factures/Transactions filtrés
+
+#### Étape 5 (P7, P8) — Restructurer la sidebar
+Regrouper sous "Facturation & Commerce" tout ce qui touche $ :
 ```
-
-Puis adapter le mapping :
-- `name` = `${section_type} — ${location_name}` (ex: "urban — Gombe")
-- `reference` = `section_type`
-- `price_usd` = `rate_per_sqm_usd` (préciser dans l'UI que c'est un **taux/m²**, pas un montant fixe)
-
-#### Fix 2 — Mutation : retirer `mutation_type`
-
-Champ inexistant → utiliser `description` (tronqué) ou simplement `'—'` pour la colonne Référence. La table mutation_fees_config est plate (frais génériques par mutation, pas typés).
-
-```ts
-(supabase as any).from('mutation_fees_config').select('id, fee_name, description, amount_usd, is_active, updated_at')
-// reference: f.description ? f.description.slice(0, 30) : '—'
+Facturation & Commerce
+├── 📊 Tableau de bord financier (nouveau, expose AdminFinancialDashboard)
+├── 🧾 Factures
+├── 💳 Transactions
+├── 🔄 Réconciliation (déplacé)
+├── 📡 Monitoring paiements (déplacé)
+├── 💰 Commissions (à payer)
+├── 📈 Performance revendeurs
+├── 🏪 Revendeurs
+├── 🎟️ Codes de Remise
+├── ⚙️ Config Facturation
+├── 💱 Devises / Taux
+└── 🛠️ Méthodes de paiement (déplacé)
 ```
-
-#### Fix 3 — Expertise : retirer `fee_type`
-
-Idem — table plate. Utiliser `description` comme référence.
-
-```ts
-(supabase as any).from('expertise_fees_config').select('id, fee_name, description, amount_usd, is_active, updated_at')
-```
-
-#### Fix 4 — Affichage taux/m² pour Lotissement
-
-Dans la colonne "Prix USD" du tableau et dans la carte Total, ajouter une mention `/m²` quand `category === 'Lotissement'` pour éviter la confusion (les frais lotissement sont surfaciques, pas forfaitaires). Le total $ agrégé pour cette catégorie devient une **somme de taux** sans signification métier — afficher `${count} tarifs configurés` au lieu de `Total $X`.
+Le sous-menu "Paiements" actuel devient un alias historique ou est supprimé.
 
 ### Détails techniques
 
-- **Fichiers modifiés** : `src/components/admin/billing/BillingOverviewTab.tsx` uniquement (3 lignes de query + ajustements mapping + condition d'affichage Lotissement)
-- **Aucune migration BD** nécessaire
-- **Aucun nouvel import**
-- **Tests** : ouvrir l'onglet "Vue d'ensemble", vérifier que les 7 catégories s'affichent sans toast d'erreur et que la catégorie Lotissement liste les tarifs configurés
+- **Fichiers modifiés** :
+  - `src/components/admin/AdminTransactions.tsx` (source = payment_transactions)
+  - `src/components/admin/AdminInvoices.tsx` (pagination serveur, RPC stats)
+  - `src/components/admin/AdminCommissions.tsx` (join unique)
+  - `src/components/admin/AdminResellerSales.tsx` (RPC orphelins)
+  - `src/components/admin/sidebarConfig.ts` (regroupement)
+  - `src/pages/Admin.tsx` (nouvelle route `financial-dashboard`)
+- **Fichiers nouveaux** : aucun (réutilise `AdminFinancialDashboard` existant)
+- **Migrations BD** :
+  - `regenerate_orphan_reseller_sales()` (SECURITY DEFINER, admin only)
+  - `get_billing_summary(p_from date, p_to date)` retournant agrégats
+  - Si `payment_transactions` n'est pas une vue prête → créer vue `v_unified_transactions` joignant `payments`, `orders`, `expertise_payments`, etc.
+- **Hors périmètre immédiat** : refonte UX du `AdminFinancialDashboard` (déjà autonome) — simplement l'exposer.
 
-### Hors périmètre (à traiter dans P3/P4/P5)
+### Priorités
 
-- Bulk update étendu (P3)
-- Audit log avec triggers BD (P4)
-- Validation que les frais hypothèque/litige sont bien lus par les services consommateurs (P5)
+1. **P1 + P4 + P5** d'abord (source vérité + hub) → impact maximal sur la fiabilité des chiffres.
+2. **P2 + P3** ensuite (perfs commissions + bouton fonctionnel).
+3. **P7 + P8** (restructuration sidebar) en finition.
 
