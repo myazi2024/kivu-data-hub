@@ -3,13 +3,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, Cell, AreaChart, Area, Legend } from 'recharts';
 import { CHART_HEIGHT as BASE_CH, NoData } from '@/utils/analyticsConstants';
 import { CHART_COLORS, crossBy } from '@/utils/analyticsHelpers';
-import { LucideIcon, Info, Copy, Check, GitBranch, X, BookOpen, TrendingUp } from 'lucide-react';
+import { LucideIcon, Info, GitBranch, X, BookOpen, TrendingUp } from 'lucide-react';
 import { useAppAppearance } from '@/hooks/useAppAppearance';
 import { ChartInsight } from '@/utils/chartInsights';
 import { toPng } from 'html-to-image';
-import { toast } from 'sonner';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CrossVariable } from '@/config/crossVariables';
+import ShareButton from '@/components/shared/ShareButton';
 
 /** Context providing the active filter label string to all chart cards */
 export const FilterLabelContext = createContext<string>('');
@@ -180,48 +180,16 @@ const roundCorners = (dataUrl: string, radius: number): Promise<Blob> => {
   });
 };
 
-const useCopyAsImage = () => {
+const useChartImageBlob = () => {
   const ref = useRef<HTMLDivElement>(null);
-  const [copied, setCopied] = React.useState(false);
-
-  const copy = useCallback(async () => {
-    if (!ref.current) return;
-    try {
-      const dataUrl = await toPng(ref.current, { backgroundColor: 'white', pixelRatio: 2 });
-      const blob = await roundCorners(dataUrl, 24);
-      await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
-      setCopied(true);
-      toast.success('Image copiée dans le presse-papiers');
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      try {
-        const dataUrl = await toPng(ref.current!, { backgroundColor: 'white', pixelRatio: 2 });
-        const blob = await roundCorners(dataUrl, 24);
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.download = 'chart.png';
-        link.href = url;
-        link.click();
-        URL.revokeObjectURL(url);
-        toast.success('Image téléchargée');
-      } catch {
-        toast.error('Impossible de copier l\'image');
-      }
-    }
+  const getBlob = useCallback(async (): Promise<Blob> => {
+    if (!ref.current) throw new Error('No ref');
+    const dataUrl = await toPng(ref.current, { backgroundColor: 'white', pixelRatio: 2 });
+    return roundCorners(dataUrl, 24);
   }, []);
-
-  return { ref, copied, copy };
+  return { ref, getBlob };
 };
 
-const CopyButton: React.FC<{ onClick: () => void; copied: boolean }> = ({ onClick, copied }) => (
-  <button
-    onClick={onClick}
-    className="p-0.5 rounded hover:bg-muted/80 transition-colors text-muted-foreground hover:text-foreground"
-    title="Copier en image"
-  >
-    {copied ? <Check className="h-3 w-3 text-primary" /> : <Copy className="h-3 w-3" />}
-  </button>
-);
 
 /** Cross-variable picker button */
 const CrossVariablePicker: React.FC<{
@@ -309,7 +277,7 @@ export const ChartCard: React.FC<ChartCardProps> = memo(({
   title, icon: Icon, iconColor, colSpan, data, type, color, colorIndex = 0, labelWidth = 90, maxItems = 10, hidden = false, insight,
   crossVariables, rawRecords, groupField,
 }) => {
-  const { ref, copied, copy } = useCopyAsImage();
+  const { ref, getBlob } = useChartImageBlob();
   const filterLabel = useContext(FilterLabelContext);
   const [crossField, setCrossField] = useState<string | null>(null);
   const [focused, setFocused] = useState(false);
@@ -343,7 +311,7 @@ export const ChartCard: React.FC<ChartCardProps> = memo(({
                 onSelect={setCrossField}
               />
             )}
-            <CopyButton onClick={copy} copied={copied} />
+            <ShareButton getBlob={getBlob} title={title} variant="chart" />
           </div>
         </div>
       </CardHeader>
@@ -418,7 +386,7 @@ export const ChartCard: React.FC<ChartCardProps> = memo(({
 export const StackedBarCard: React.FC<StackedBarCardProps> = memo(({
   title, icon: Icon, iconColor, colSpan, data, bars, layout = 'horizontal', labelWidth = 90, maxItems = 8, hidden = false, insight,
 }) => {
-  const { ref, copied, copy } = useCopyAsImage();
+  const { ref, getBlob } = useChartImageBlob();
   const filterLabel = useContext(FilterLabelContext);
   const [focused, setFocused] = useState(false);
   if (hidden) return null;
@@ -436,7 +404,7 @@ export const StackedBarCard: React.FC<StackedBarCardProps> = memo(({
             </div>
             {filterLabel && <ChartFilterSubtitle filterLabel={filterLabel} />}
           </div>
-          <CopyButton onClick={copy} copied={copied} />
+          <ShareButton getBlob={getBlob} title={title} variant="chart" />
         </div>
       </CardHeader>
       <CardContent className="px-2 pb-2 relative">
@@ -485,7 +453,7 @@ interface MultiAreaChartCardProps {
 export const MultiAreaChartCard: React.FC<MultiAreaChartCardProps> = memo(({
   title, icon: Icon, iconColor, colSpan, series, insight,
 }) => {
-  const { ref, copied, copy } = useCopyAsImage();
+  const { ref, getBlob } = useChartImageBlob();
   const filterLabel = useContext(FilterLabelContext);
   const [focused, setFocused] = useState(false);
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(() => new Set(['all']));
@@ -550,7 +518,7 @@ export const MultiAreaChartCard: React.FC<MultiAreaChartCardProps> = memo(({
             </div>
             {filterLabel && <ChartFilterSubtitle filterLabel={filterLabel} />}
           </div>
-          <CopyButton onClick={copy} copied={copied} />
+          <ShareButton getBlob={getBlob} title={title} variant="chart" />
         </div>
         {/* Checkboxes */}
         <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1.5" onClick={e => e.stopPropagation()}>
@@ -596,7 +564,7 @@ export const ColorMappedPieCard: React.FC<MultiDataPieProps> = memo(({
   title, icon: Icon, iconColor, data, colorMap = {}, insight,
   crossVariables, rawRecords, groupField,
 }) => {
-  const { ref, copied, copy } = useCopyAsImage();
+  const { ref, getBlob } = useChartImageBlob();
   const filterLabel = useContext(FilterLabelContext);
   const [crossField, setCrossField] = useState<string | null>(null);
   const [focused, setFocused] = useState(false);
@@ -623,7 +591,7 @@ export const ColorMappedPieCard: React.FC<MultiDataPieProps> = memo(({
                 onSelect={setCrossField}
               />
             )}
-            <CopyButton onClick={copy} copied={copied} />
+            <ShareButton getBlob={getBlob} title={title} variant="chart" />
           </div>
         </div>
       </CardHeader>

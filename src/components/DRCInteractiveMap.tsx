@@ -5,7 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { MapPin, BarChart3, Info, Database, Loader2, Copy, Check, Maximize, Minimize, Clock, RotateCcw } from 'lucide-react';
+import { MapPin, BarChart3, Info, Database, Loader2, Maximize, Minimize, Clock, RotateCcw } from 'lucide-react';
+import ShareButton from '@/components/shared/ShareButton';
 import { toast } from 'sonner';
 import { normalizeTitleType } from '@/utils/titleTypeNormalizer';
 import DRCMapWithTooltip from './DRCMapWithTooltip';
@@ -62,7 +63,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
   const [mapInstance, setMapInstance] = useState<any>(null);
   const [activeMobilePanel, setActiveMobilePanel] = useState<'map' | 'details' | 'analytics'>('map');
   const [isMapZoomed, setIsMapZoomed] = useState(false);
-  const [isCopying, setIsCopying] = useState(false);
+  
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [forcedTab, setForcedTab] = useState<string | null>(null);
   const mapCardRef = React.useRef<HTMLDivElement>(null);
@@ -201,36 +202,14 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [toggleFullscreen]);
 
-  const handleCopyImage = async () => {
-    if (!mapCardRef.current || isCopying) return;
-    setIsCopying(true);
-    try {
-      const html2canvas = (await import('html2canvas')).default;
-      const canvas = await html2canvas(mapCardRef.current, { backgroundColor: null, scale: 2, borderRadius: 12 } as any);
-      const profileSlug = activeProfile?.tabKey || 'rdc-map';
-      const dateSlug = new Date().toISOString().slice(0, 10);
-      const filename = `carte-rdc-${profileSlug}-${dateSlug}.png`;
-      canvas.toBlob(async (blob) => {
-        if (blob) {
-          try {
-            await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
-            toast.success(`Image copiée — ${filename}`);
-          } catch {
-            // Fallback: trigger download with profile-aware filename
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url; a.download = filename; a.click();
-            URL.revokeObjectURL(url);
-            toast.success(`Image téléchargée — ${filename}`);
-          }
-        }
-        setIsCopying(false);
-      }, 'image/png');
-    } catch {
-      toast.error('Impossible de copier l\'image');
-      setIsCopying(false);
-    }
-  };
+  const getMapBlob = useCallback(async (): Promise<Blob> => {
+    if (!mapCardRef.current) throw new Error('No map ref');
+    const html2canvas = (await import('html2canvas')).default;
+    const canvas = await html2canvas(mapCardRef.current, { backgroundColor: null, scale: 2, borderRadius: 12 } as any);
+    return await new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error('toBlob failed')), 'image/png');
+    });
+  }, []);
 
   /** Choropleth color: profile-driven when an analytics tab is active, else default tiers */
   const getProvinceColor = useCallback((province: ProvinceData) => {
@@ -504,18 +483,13 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                         <RotateCcw className="h-3 w-3 text-muted-foreground" />
                       </Button>
                     )}
-                    {/* Bouton copier en image — configurable */}
+                    {/* Bouton partager (image carte) — configurable */}
                     {isChartVisible('map-copy-button') && (
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="h-6 w-6 rounded-full bg-background/80 backdrop-blur-sm border-border/50 shadow-sm"
-                        onClick={handleCopyImage}
-                        title="Copier en image"
-                        disabled={isCopying}
-                      >
-                        {isCopying ? <Check className="h-3 w-3 text-emerald-500" /> : <Copy className="h-3 w-3 text-muted-foreground" />}
-                      </Button>
+                      <ShareButton
+                        getBlob={getMapBlob}
+                        title={`Carte RDC — ${activeProfile?.tabKey || 'vue par défaut'}`}
+                        variant="map"
+                      />
                     )}
                     <Button
                       variant="outline"
