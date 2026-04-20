@@ -186,6 +186,53 @@ const CadastralCartButton: React.FC = () => {
                     })}
                   </ul>
 
+                  {/* P2 — Suggestion bundle : services manquants pour compléter le dossier */}
+                  {(() => {
+                    const inCartIds = new Set(p.services.map((s) => s.id));
+                    const missing = catalogServices.filter(
+                      (cs) => !inCartIds.has(cs.id) && !isOwned(p.parcelNumber, cs.id)
+                    );
+                    if (missing.length === 0 || catalogServices.length === 0) return null;
+                    const missingTotal = missing.reduce((acc, m) => acc + m.price, 0);
+                    return (
+                      <div className="rounded-lg border border-dashed border-primary/30 bg-primary/5 p-2 space-y-1.5">
+                        <div className="flex items-center gap-1.5 text-[11px] text-primary font-medium">
+                          <Sparkles className="h-3 w-3" />
+                          Compléter le dossier
+                        </div>
+                        <p className="text-[10px] text-muted-foreground leading-tight">
+                          {missing.length} service{missing.length > 1 ? 's' : ''} manquant{missing.length > 1 ? 's' : ''} pour ${missingTotal.toFixed(2)}.
+                        </p>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full h-7 text-[11px] border-primary/30 hover:bg-primary/10"
+                          onClick={() => {
+                            missing.forEach((cs) => {
+                              addServiceForParcel(p.parcelNumber, p.parcelLocation, {
+                                id: cs.id,
+                                name: cs.name,
+                                price: cs.price,
+                                description: cs.description,
+                                parcel_number: p.parcelNumber,
+                                parcel_location: p.parcelLocation,
+                                category: (cs as any).category,
+                              });
+                            });
+                            trackEvent('cadastral_cart_complete_bundle', {
+                              parcel_number: p.parcelNumber,
+                              added_count: missing.length,
+                              added_value_usd: missingTotal,
+                            });
+                          }}
+                        >
+                          <Plus className="h-3 w-3 mr-1" />
+                          Tout ajouter (+${missingTotal.toFixed(2)})
+                        </Button>
+                      </div>
+                    );
+                  })()}
+
                   <div className="flex items-center justify-between pt-1 text-xs">
                     <span className="text-muted-foreground">À payer</span>
                     <span className="font-semibold tabular-nums">${subtotal.toFixed(2)}</span>
