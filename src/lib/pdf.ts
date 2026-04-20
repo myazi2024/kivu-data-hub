@@ -4,6 +4,8 @@ import QRCode from 'qrcode';
 import type { CadastralService } from '@/hooks/useCadastralServices';
 import { createDocumentVerification } from '@/lib/documentVerification';
 import { fetchAppLogo } from '@/utils/pdfLogoHelper';
+import { fetchCompanyLegalInfo, TAX_REGIME_LABELS, type CompanyLegalInfo } from '@/hooks/useCompanyLegalInfo';
+import { TVA_RATE } from '@/constants/billing';
 
 // Type minimal pour les factures dans le PDF
 interface CadastralInvoice {
@@ -17,6 +19,12 @@ interface CadastralInvoice {
   client_name?: string | null;
   client_email: string;
   client_organization?: string | null;
+  client_type?: string | null;
+  client_nif?: string | null;
+  client_rccm?: string | null;
+  client_id_nat?: string | null;
+  client_address?: string | null;
+  client_tax_regime?: string | null;
   geographical_zone?: string | null;
   payment_method?: string | null;
   created_at: string;
@@ -24,31 +32,34 @@ interface CadastralInvoice {
   discount_code_used?: string | null;
   discount_amount_usd?: number;
   original_amount_usd?: number;
+  currency_code?: string | null;
+  exchange_rate_used?: number | null;
+  paid_at?: string | null;
+  invoice_signature?: string | null;
+  dgi_validation_code?: string | null;
 }
 
 export type { CadastralInvoice };
 
-// Informations légales complètes de BIC
-const BIC_COMPANY_INFO = {
+// Fallback minimal — la vraie source est `company_legal_info` (table BD)
+const BIC_COMPANY_INFO_FALLBACK = {
   name: "Bureau d'Informations Cadastrales",
   abbreviation: "BIC",
-  fullLegalName: "Bureau d'Informations Cadastrales S.A.R.L.",
-  address: "Avenue Patrice Lumumba, Quartier Himbi II",
-  city: "Goma, Province du Nord-Kivu",
-  country: "République Démocratique du Congo",
-  rccm: "RCCM/GOMA/2024/B/001234",
-  idNat: "01-234-N12345C",
-  numImpot: "A1234567890",
-  numTva: "TVA001234567",
-  email: "contact@bic-congo.cd",
-  phone: "+243 997 123 456",
-  fax: "+243 281 123 457",
-  website: "www.bic-congo.cd",
-  authorizedCapital: "100.000 USD",
-  legalForm: "Société à Responsabilité Limitée (S.A.R.L.)",
-  tradeLicense: "LIC/2024/GOMA/001",
-  establishedYear: "2024"
 };
+
+/** Conversion USD → CDF avec arrondi à 2 décimales */
+function toCDF(amountUsd: number, rate: number): number {
+  return Math.round(amountUsd * rate * 100) / 100;
+}
+
+function formatMoney(amount: number, currency: string): string {
+  return `${amount.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${currency}`;
+}
+
+function formatBilingual(amountUsd: number, rate: number): string {
+  if (!rate || rate === 1) return formatMoney(amountUsd, 'USD');
+  return `${formatMoney(amountUsd, 'USD')}  /  ${formatMoney(toCDF(amountUsd, rate), 'CDF')}`;
+}
 
 export type InvoiceFormat = 'mini' | 'a4';
 
