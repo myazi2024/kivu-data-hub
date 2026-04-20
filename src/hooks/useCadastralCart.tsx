@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode, useCallback, useMemo } from 'react';
 import { CookieManager, ConsentAwareStorage } from '@/lib/cookies';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface CadastralCartService {
   id: string;
@@ -8,6 +9,8 @@ export interface CadastralCartService {
   description?: string;
   parcel_number: string;
   parcel_location: string;
+  /** Optionnel : catégorie du service (consultation/fiscal/juridique). */
+  category?: string;
 }
 
 /**
@@ -18,6 +21,8 @@ export interface CadastralCartParcel {
   parcelNumber: string;
   parcelLocation: string;
   services: CadastralCartService[];
+  /** Timestamp d'ajout (ms epoch) — sert au tri stable du drawer. */
+  addedAt: number;
 }
 
 interface CadastralCartContextType {
@@ -69,9 +74,20 @@ export const CadastralCartProvider = ({ children }: { children: ReactNode }) => 
         return;
       }
 
-      // v2 : { parcelsMap, activeParcelNumber, savedAt }
+      // v2/v3 : { parcelsMap, activeParcelNumber, savedAt }
       if (parsed.parcelsMap && typeof parsed.parcelsMap === 'object') {
-        setParcelsMap(parsed.parcelsMap);
+        // Migration v2 → v3 : ajout de addedAt si absent
+        const now = Date.now();
+        const migrated: Record<string, CadastralCartParcel> = {};
+        Object.entries(parsed.parcelsMap as Record<string, any>).forEach(([pn, p], idx) => {
+          migrated[pn] = {
+            parcelNumber: p.parcelNumber ?? pn,
+            parcelLocation: p.parcelLocation ?? '',
+            services: p.services ?? [],
+            addedAt: typeof p.addedAt === 'number' ? p.addedAt : now - (1000 - idx),
+          };
+        });
+        setParcelsMap(migrated);
         setActiveParcelNumber(parsed.activeParcelNumber || null);
         return;
       }
@@ -82,7 +98,7 @@ export const CadastralCartProvider = ({ children }: { children: ReactNode }) => 
       if (legacyParcel && legacyServices.length > 0) {
         const location = legacyServices[0]?.parcel_location || '';
         setParcelsMap({
-          [legacyParcel]: { parcelNumber: legacyParcel, parcelLocation: location, services: legacyServices },
+          [legacyParcel]: { parcelNumber: legacyParcel, parcelLocation: location, services: legacyServices, addedAt: Date.now() },
         });
         setActiveParcelNumber(legacyParcel);
       } else if (legacyParcel) {
@@ -110,6 +126,51 @@ export const CadastralCartProvider = ({ children }: { children: ReactNode }) => 
     return () => clearTimeout(timer);
   }, [parcelsMap, activeParcelNumber]);
 
+  // ---------- Purge post-paiement (P6) ----------
+  // Sur événement `cadastralPaymentCompleted`, retire uniquement les services
+  // dont l'accès a été accordé pour les parcelles présentes dans le panier.
+  useEffect(() => {
+    const handler = async () => {
+      const { data: userRes } = await supabase.auth.getUser();
+      const userId = userRes.user?.id;
+      if (!userId) return;
+      const snapshot = Object.values(parcelsMap);
+      if (snapshot.length === 0) return;
+      try {
+        const { data, error } = await supabase
+          .from('cadastral_service_access')
+          .select('parcel_number, service_type, expires_at')
+          .eq('user_id', userId)
+          .in('parcel_number', snapshot.map(p => p.parcelNumber));
+        if (error || !data) return;
+        const ownedByParcel = new Map<string, Set<string>>();
+        for (const row of data) {
+          if (row.expires_at && new Date(row.expires_at) <= new Date()) continue;
+          if (!ownedByParcel.has(row.parcel_number)) ownedByParcel.set(row.parcel_number, new Set());
+          ownedByParcel.get(row.parcel_number)!.add(row.service_type);
+        }
+        setParcelsMap(prev => {
+          const next: Record<string, CadastralCartParcel> = {};
+          let changed = false;
+          for (const [pn, p] of Object.entries(prev)) {
+            const owned = ownedByParcel.get(pn);
+            if (!owned || owned.size === 0) { next[pn] = p; continue; }
+            const remaining = p.services.filter(s => !owned.has(s.id));
+            if (remaining.length === p.services.length) { next[pn] = p; continue; }
+            changed = true;
+            if (remaining.length > 0) next[pn] = { ...p, services: remaining };
+          }
+          return changed ? next : prev;
+        });
+      } catch (e) {
+        console.error('Cart purge after payment failed:', e);
+      }
+    };
+    window.addEventListener('cadastralPaymentCompleted', handler);
+    return () => window.removeEventListener('cadastralPaymentCompleted', handler);
+  }, [parcelsMap]);
+
+
   // ---------- API multi-parcelles ----------
   const addServiceForParcel = useCallback((parcelNumber: string, parcelLocation: string, service: CadastralCartService) => {
     setParcelsMap(prev => {
@@ -117,7 +178,7 @@ export const CadastralCartProvider = ({ children }: { children: ReactNode }) => 
       if (existing && existing.services.some(s => s.id === service.id)) return prev;
       const updated: CadastralCartParcel = existing
         ? { ...existing, parcelLocation: existing.parcelLocation || parcelLocation, services: [...existing.services, service] }
-        : { parcelNumber, parcelLocation, services: [service] };
+        : { parcelNumber, parcelLocation, services: [service], addedAt: Date.now() };
       return { ...prev, [parcelNumber]: updated };
     });
   }, []);
@@ -143,7 +204,10 @@ export const CadastralCartProvider = ({ children }: { children: ReactNode }) => 
     });
   }, []);
 
-  const parcels = useMemo<CadastralCartParcel[]>(() => Object.values(parcelsMap), [parcelsMap]);
+  const parcels = useMemo<CadastralCartParcel[]>(
+    () => Object.values(parcelsMap).sort((a, b) => a.addedAt - b.addedAt),
+    [parcelsMap]
+  );
   const getParcelCount = useCallback(() => parcels.length, [parcels]);
   const getTotalAcrossParcels = useCallback(
     () => parcels.reduce((sum, p) => sum + p.services.reduce((s, sv) => s + sv.price, 0), 0),
@@ -169,7 +233,7 @@ export const CadastralCartProvider = ({ children }: { children: ReactNode }) => 
       if (existing && existing.services.some(s => s.id === service.id)) return prev;
       const updated: CadastralCartParcel = existing
         ? { ...existing, services: [...existing.services, service] }
-        : { parcelNumber: pn, parcelLocation: loc, services: [service] };
+        : { parcelNumber: pn, parcelLocation: loc, services: [service], addedAt: Date.now() };
       return { ...prev, [pn]: updated };
     });
     if (!activeParcelNumber) setActiveParcelNumber(pn);
@@ -186,7 +250,7 @@ export const CadastralCartProvider = ({ children }: { children: ReactNode }) => 
         if (existing && existing.services.some(s => s.id === svc.id)) continue;
         next[pn] = existing
           ? { ...existing, services: [...existing.services, svc] }
-          : { parcelNumber: pn, parcelLocation: svc.parcel_location || '', services: [svc] };
+          : { parcelNumber: pn, parcelLocation: svc.parcel_location || '', services: [svc], addedAt: Date.now() };
       }
       return next;
     });
@@ -212,7 +276,7 @@ export const CadastralCartProvider = ({ children }: { children: ReactNode }) => 
       }
       const updated: CadastralCartParcel = existing
         ? { ...existing, services: [...existing.services, service] }
-        : { parcelNumber: pn, parcelLocation: service.parcel_location || '', services: [service] };
+        : { parcelNumber: pn, parcelLocation: service.parcel_location || '', services: [service], addedAt: Date.now() };
       return { ...prev, [pn]: updated };
     });
     if (!activeParcelNumber) setActiveParcelNumber(pn);
