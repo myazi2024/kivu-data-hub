@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode, useCallback, useMemo } from 'react';
 import { CookieManager, ConsentAwareStorage } from '@/lib/cookies';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface CadastralCartService {
   id: string;
@@ -121,7 +122,51 @@ export const CadastralCartProvider = ({ children }: { children: ReactNode }) => 
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [parcelsMap, activeParcelNumber]);
+
+  // ---------- Purge post-paiement (P6) ----------
+  // Sur événement `cadastralPaymentCompleted`, retire uniquement les services
+  // dont l'accès a été accordé pour les parcelles présentes dans le panier.
+  useEffect(() => {
+    const handler = async () => {
+      const { data: userRes } = await supabase.auth.getUser();
+      const userId = userRes.user?.id;
+      if (!userId) return;
+      const snapshot = Object.values(parcelsMap);
+      if (snapshot.length === 0) return;
+      try {
+        const { data, error } = await supabase
+          .from('cadastral_service_access')
+          .select('parcel_number, service_type, expires_at')
+          .eq('user_id', userId)
+          .in('parcel_number', snapshot.map(p => p.parcelNumber));
+        if (error || !data) return;
+        const ownedByParcel = new Map<string, Set<string>>();
+        for (const row of data) {
+          if (row.expires_at && new Date(row.expires_at) <= new Date()) continue;
+          if (!ownedByParcel.has(row.parcel_number)) ownedByParcel.set(row.parcel_number, new Set());
+          ownedByParcel.get(row.parcel_number)!.add(row.service_type);
+        }
+        setParcelsMap(prev => {
+          const next: Record<string, CadastralCartParcel> = {};
+          let changed = false;
+          for (const [pn, p] of Object.entries(prev)) {
+            const owned = ownedByParcel.get(pn);
+            if (!owned || owned.size === 0) { next[pn] = p; continue; }
+            const remaining = p.services.filter(s => !owned.has(s.id));
+            if (remaining.length === p.services.length) { next[pn] = p; continue; }
+            changed = true;
+            if (remaining.length > 0) next[pn] = { ...p, services: remaining };
+          }
+          return changed ? next : prev;
+        });
+      } catch (e) {
+        console.error('Cart purge after payment failed:', e);
+      }
+    };
+    window.addEventListener('cadastralPaymentCompleted', handler);
+    return () => window.removeEventListener('cadastralPaymentCompleted', handler);
+  }, [parcelsMap]);
+
 
   // ---------- API multi-parcelles ----------
   const addServiceForParcel = useCallback((parcelNumber: string, parcelLocation: string, service: CadastralCartService) => {
