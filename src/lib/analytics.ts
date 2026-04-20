@@ -17,7 +17,13 @@ export type AnalyticsEvent =
   | 'user_contribution_delete'
   | 'user_contribution_edit_open'
   | 'user_referral_link_copy'
-  | 'user_account_delete_request';
+  | 'user_account_delete_request'
+  | 'cadastral_service_view'
+  | 'cadastral_service_select'
+  | 'cadastral_service_unselect'
+  | 'cadastral_service_purchase'
+  | 'cadastral_cart_open'
+  | 'cadastral_cart_pay_parcel';
 
 export async function trackEvent(event: AnalyticsEvent, payload?: Record<string, any>) {
   try {
