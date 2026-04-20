@@ -62,39 +62,86 @@ const AdminTransactions = () => {
   const fetchTransactions = async () => {
     try {
       setLoading(true);
-      
-      const { data: payments, error: paymentsError } = await supabase
-        .from('payments')
-        .select('id, amount_usd, status, payment_method, created_at, transaction_id, user_id')
-        .order('created_at', { ascending: false })
-        .limit(2000);
 
-      if (paymentsError) throw paymentsError;
+      // Unified source: query 4 transaction tables in parallel
+      const [pt, exp, per, pay] = await Promise.all([
+        supabase
+          .from('payment_transactions')
+          .select('id, amount_usd, status, payment_method, created_at, transaction_reference, user_id')
+          .order('created_at', { ascending: false })
+          .limit(2000),
+        supabase
+          .from('expertise_payments')
+          .select('id, total_amount_usd, status, payment_method, created_at, transaction_id, user_id')
+          .order('created_at', { ascending: false })
+          .limit(1000),
+        supabase
+          .from('permit_payments')
+          .select('id, total_amount_usd, status, payment_method, created_at, transaction_id, user_id')
+          .order('created_at', { ascending: false })
+          .limit(1000),
+        supabase
+          .from('payments')
+          .select('id, amount_usd, status, payment_method, created_at, transaction_id, user_id')
+          .order('created_at', { ascending: false })
+          .limit(1000),
+      ]);
 
-      const userIds = [...new Set((payments || []).map(p => p.user_id).filter(Boolean))];
-      
+      const allRows: Array<{
+        id: string;
+        source: Transaction['source'];
+        amount: number;
+        status: string;
+        method: string | null;
+        created_at: string;
+        reference: string;
+        user_id: string | null;
+      }> = [];
+
+      (pt.data || []).forEach((r: any) => allRows.push({
+        id: r.id, source: 'cadastral', amount: Number(r.amount_usd || 0),
+        status: r.status, method: r.payment_method, created_at: r.created_at,
+        reference: r.transaction_reference || r.id, user_id: r.user_id,
+      }));
+      (exp.data || []).forEach((r: any) => allRows.push({
+        id: r.id, source: 'expertise', amount: Number(r.total_amount_usd || 0),
+        status: r.status, method: r.payment_method, created_at: r.created_at,
+        reference: r.transaction_id || r.id, user_id: r.user_id,
+      }));
+      (per.data || []).forEach((r: any) => allRows.push({
+        id: r.id, source: 'permit', amount: Number(r.total_amount_usd || 0),
+        status: r.status, method: r.payment_method, created_at: r.created_at,
+        reference: r.transaction_id || r.id, user_id: r.user_id,
+      }));
+      (pay.data || []).forEach((r: any) => allRows.push({
+        id: r.id, source: 'publication', amount: Number(r.amount_usd || 0),
+        status: r.status, method: r.payment_method, created_at: r.created_at,
+        reference: r.transaction_id || r.id, user_id: r.user_id,
+      }));
+
+      const userIds = [...new Set(allRows.map(r => r.user_id).filter(Boolean))] as string[];
       let profilesMap: Record<string, string> = {};
       if (userIds.length > 0) {
         const { data: profiles } = await supabase
           .from('profiles')
           .select('user_id, email')
           .in('user_id', userIds);
-        
         profilesMap = (profiles || []).reduce((acc, p) => {
           acc[p.user_id] = p.email || 'N/A';
           return acc;
         }, {} as Record<string, string>);
       }
 
-      const transactionData: Transaction[] = (payments || []).map((payment) => ({
-        id: payment.id,
-        type: 'payment' as const,
-        amount: Number(payment.amount_usd),
-        status: payment.status,
-        user_email: payment.user_id ? (profilesMap[payment.user_id] || 'N/A') : 'N/A',
-        description: `Paiement ${payment.payment_method}`,
-        created_at: payment.created_at,
-        reference: payment.transaction_id || payment.id
+      const transactionData: Transaction[] = allRows.map(r => ({
+        id: `${r.source}-${r.id}`,
+        source: r.source,
+        type: 'payment',
+        amount: r.amount,
+        status: r.status,
+        user_email: r.user_id ? (profilesMap[r.user_id] || 'N/A') : 'N/A',
+        description: `${SOURCE_LABELS[r.source]} • ${r.method || '—'}`,
+        created_at: r.created_at,
+        reference: r.reference,
       }));
 
       setTransactions(transactionData);
