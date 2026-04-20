@@ -10,6 +10,7 @@ import { useCartAccessCheck } from '@/hooks/useCartAccessCheck';
 import { useCadastralServices } from '@/hooks/useCadastralServices';
 import { trackEvent } from '@/lib/analytics';
 import { cn } from '@/lib/utils';
+import CartParcelDiscountInput from './cart/CartParcelDiscountInput';
 
 /**
  * Mapping catégorie → libellé court + classes sémantiques (design tokens).
@@ -232,6 +233,11 @@ const CadastralCartButton: React.FC = () => {
                       </div>
                     );
                   })()}
+
+                  {/* P4 — Code promo / CCC mémorisé par parcelle */}
+                  {!allOwned && subtotal > 0 && (
+                    <CartParcelDiscountInput parcelNumber={p.parcelNumber} subtotal={subtotal} />
+                  )}
 
                   <div className="flex items-center justify-between pt-1 text-xs">
                     <span className="text-muted-foreground">À payer</span>

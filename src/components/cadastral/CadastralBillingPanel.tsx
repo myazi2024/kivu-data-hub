@@ -15,6 +15,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { CheckCircle } from 'lucide-react';
 import { useCadastralCart } from '@/hooks/useCadastralCart';
+import { useCartDiscounts } from '@/hooks/useCartDiscounts';
 import { useCadastralPayment } from '@/hooks/useCadastralPayment';
 import { useCadastralServices } from '@/hooks/useCadastralServices';
 import { CadastralSearchResult } from '@/hooks/useCadastralSearch';
@@ -83,6 +84,20 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
   const { loading, createInvoice, processMobileMoneyPayment, processStripePayment, processTestPayment, paymentStep, resetPaymentState } = useCadastralPayment();
   const { currencies, selectedCurrency, setSelectedCurrency, convertFromUsd, exchangeRate } = useCurrencyConfig();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { get: getCartDiscount } = useCartDiscounts();
+
+  // P4 — Auto-applique le code promo mémorisé pour cette parcelle
+  React.useEffect(() => {
+    const memorized = getCartDiscount(searchResult.parcel.parcel_number);
+    if (memorized && (!appliedDiscount || appliedDiscount.code !== memorized.code)) {
+      setAppliedDiscount({
+        code: memorized.code,
+        amount: memorized.amount,
+        reseller_id: memorized.reseller_id ?? '',
+        code_id: memorized.code_id,
+      });
+    }
+  }, [searchResult.parcel.parcel_number, getCartDiscount]);
 
   const serviceAvailability = React.useMemo(() => {
     const fallback = legacyAvailability(searchResult);
