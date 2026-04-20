@@ -137,6 +137,11 @@ const CadastralCartButton: React.FC = () => {
                     size="sm"
                     className="w-full h-8 text-xs"
                     onClick={() => {
+                      trackEvent('cadastral_cart_pay_parcel', {
+                        parcel_number: p.parcelNumber,
+                        service_count: p.services.length,
+                        subtotal_usd: subtotal,
+                      });
                       setParcelNumber(p.parcelNumber);
                       setOpen(false);
                     }}
