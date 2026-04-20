@@ -18,6 +18,8 @@ export interface CadastralCartParcel {
   parcelNumber: string;
   parcelLocation: string;
   services: CadastralCartService[];
+  /** Timestamp d'ajout (ms epoch) — sert au tri stable du drawer. */
+  addedAt: number;
 }
 
 interface CadastralCartContextType {
