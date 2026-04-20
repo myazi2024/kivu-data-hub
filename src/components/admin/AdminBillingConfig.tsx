@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,6 +11,19 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
+const BillingOverviewTab = lazy(() => import('./billing/BillingOverviewTab'));
+const MortgageDisputeFeesTab = lazy(() => import('./billing/MortgageDisputeFeesTab'));
+const AdminMutationFeesConfig = lazy(() => import('./AdminMutationFeesConfig'));
+const AdminSubdivisionFeesConfig = lazy(() => import('./AdminSubdivisionFeesConfig'));
+const AdminExpertiseFeesConfig = lazy(() => import('./AdminExpertiseFeesConfig'));
+const AdminLandTitleFeesConfig = lazy(() => import('./AdminLandTitleFeesConfig'));
+
+const LazyFallback = () => (
+  <div className="flex items-center justify-center py-8">
+    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" />
+  </div>
+);
 
 interface Publication {
   id: string;
@@ -244,12 +257,37 @@ const AdminBillingConfig = () => {
         </p>
       </div>
 
-      <Tabs defaultValue="publications" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+      <Tabs defaultValue="overview" className="w-full">
+        <TabsList className="flex flex-wrap h-auto w-full justify-start gap-1">
+          <TabsTrigger value="overview" className="text-xs md:text-sm">Vue d'ensemble</TabsTrigger>
           <TabsTrigger value="publications" className="text-xs md:text-sm">Publications</TabsTrigger>
           <TabsTrigger value="services" className="text-xs md:text-sm">Services</TabsTrigger>
-          <TabsTrigger value="fees" className="text-xs md:text-sm">Frais permis</TabsTrigger>
+          <TabsTrigger value="fees" className="text-xs md:text-sm">Autorisation bâtir</TabsTrigger>
+          <TabsTrigger value="mutations" className="text-xs md:text-sm">Mutation</TabsTrigger>
+          <TabsTrigger value="land-titles" className="text-xs md:text-sm">Titre foncier</TabsTrigger>
+          <TabsTrigger value="subdivisions" className="text-xs md:text-sm">Lotissement</TabsTrigger>
+          <TabsTrigger value="expertise" className="text-xs md:text-sm">Expertise</TabsTrigger>
+          <TabsTrigger value="mortgage-dispute" className="text-xs md:text-sm">Hypothèque & Litiges</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="overview" className="space-y-4">
+          <Suspense fallback={<LazyFallback />}><BillingOverviewTab /></Suspense>
+        </TabsContent>
+        <TabsContent value="mutations" className="space-y-4">
+          <Suspense fallback={<LazyFallback />}><AdminMutationFeesConfig /></Suspense>
+        </TabsContent>
+        <TabsContent value="land-titles" className="space-y-4">
+          <Suspense fallback={<LazyFallback />}><AdminLandTitleFeesConfig /></Suspense>
+        </TabsContent>
+        <TabsContent value="subdivisions" className="space-y-4">
+          <Suspense fallback={<LazyFallback />}><AdminSubdivisionFeesConfig /></Suspense>
+        </TabsContent>
+        <TabsContent value="expertise" className="space-y-4">
+          <Suspense fallback={<LazyFallback />}><AdminExpertiseFeesConfig /></Suspense>
+        </TabsContent>
+        <TabsContent value="mortgage-dispute" className="space-y-4">
+          <Suspense fallback={<LazyFallback />}><MortgageDisputeFeesTab /></Suspense>
+        </TabsContent>
 
         {/* Publications */}
         <TabsContent value="publications" className="space-y-4">
