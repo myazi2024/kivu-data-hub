@@ -397,6 +397,14 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
           </div>
           )}
 
+          {/* DGI : identité fiscale du client (obligatoire) */}
+          {selectedServiceIds.length > 0 && (
+            <ClientFiscalIdentityForm
+              value={fiscalIdentity}
+              onChange={setFiscalIdentity}
+              required
+            />
+          )}
 
           <BillingTotals
             selectedCount={selectedServiceIds.length}
