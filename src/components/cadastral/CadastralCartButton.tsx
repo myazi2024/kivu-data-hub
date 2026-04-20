@@ -49,24 +49,22 @@ const CadastralCartButton: React.FC = () => {
     >
       <SheetTrigger asChild>
         <Button
-          size="lg"
-          className="fixed bottom-3 left-3 z-[1000] shadow-xl rounded-full h-14 pl-4 pr-5 gap-2"
-          aria-label={`Panier cadastral : ${totalServices} service${totalServices > 1 ? 's' : ''}`}
+          size="icon"
+          className="fixed bottom-3 left-3 z-[1000] shadow-lg rounded-full h-11 w-11"
+          aria-label={`Panier cadastral : ${totalServices} service${totalServices > 1 ? 's' : ''} · $${total.toFixed(2)}`}
+          title={`${totalServices} service${totalServices > 1 ? 's' : ''} · $${total.toFixed(2)}`}
         >
-          <div className="relative">
-            <ShoppingCart className="h-5 w-5" />
-            <Badge
-              variant="secondary"
-              className="absolute -top-2 -right-2 h-5 min-w-5 px-1 text-[10px] flex items-center justify-center"
-            >
-              {totalServices}
-            </Badge>
-          </div>
-          <span className="font-semibold tabular-nums">${total.toFixed(2)}</span>
+          <ShoppingCart className="h-5 w-5" />
+          <Badge
+            variant="secondary"
+            className="absolute -top-1 -right-1 h-4 min-w-4 px-1 text-[10px] flex items-center justify-center pointer-events-none"
+          >
+            {totalServices}
+          </Badge>
         </Button>
       </SheetTrigger>
 
-      <SheetContent side="left" className="w-full sm:max-w-md flex flex-col">
+      <SheetContent side="left" className="w-3/4 max-w-[85vw] sm:max-w-sm flex flex-col rounded-r-2xl">
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2">
             <ShoppingCart className="h-5 w-5" />
