@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent } from '@/components/ui/collapsible';
+import { trackEvent } from '@/lib/analytics';
 import type { CadastralService } from '@/hooks/useCadastralServices';
 
 interface ServiceListItemProps {
