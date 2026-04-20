@@ -62,7 +62,7 @@ const Navigation = () => {
   const testPrefix = isTestRoute ? '/test' : '';
   const navItems = useMemo(() => [
     { name: 'Données foncières', href: `${testPrefix}/map`, restricted: isLandDataRestricted },
-    { name: 'Carte Cadastrale', href: `${testPrefix}/cadastral-map`, restricted: isLandDataRestricted },
+    { name: 'Carte Cadastrale', href: `${testPrefix}/cadastral-map`, restricted: false },
   ], [testPrefix, isLandDataRestricted]);
   const monCompteHref = `${testPrefix}/mon-compte`;
 
