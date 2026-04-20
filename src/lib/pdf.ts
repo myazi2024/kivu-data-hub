@@ -4,6 +4,8 @@ import QRCode from 'qrcode';
 import type { CadastralService } from '@/hooks/useCadastralServices';
 import { createDocumentVerification } from '@/lib/documentVerification';
 import { fetchAppLogo } from '@/utils/pdfLogoHelper';
+import { fetchCompanyLegalInfo, TAX_REGIME_LABELS, type CompanyLegalInfo } from '@/hooks/useCompanyLegalInfo';
+import { TVA_RATE } from '@/constants/billing';
 
 // Type minimal pour les factures dans le PDF
 interface CadastralInvoice {
@@ -17,6 +19,12 @@ interface CadastralInvoice {
   client_name?: string | null;
   client_email: string;
   client_organization?: string | null;
+  client_type?: string | null;
+  client_nif?: string | null;
+  client_rccm?: string | null;
+  client_id_nat?: string | null;
+  client_address?: string | null;
+  client_tax_regime?: string | null;
   geographical_zone?: string | null;
   payment_method?: string | null;
   created_at: string;
@@ -24,31 +32,34 @@ interface CadastralInvoice {
   discount_code_used?: string | null;
   discount_amount_usd?: number;
   original_amount_usd?: number;
+  currency_code?: string | null;
+  exchange_rate_used?: number | null;
+  paid_at?: string | null;
+  invoice_signature?: string | null;
+  dgi_validation_code?: string | null;
 }
 
 export type { CadastralInvoice };
 
-// Informations légales complètes de BIC
-const BIC_COMPANY_INFO = {
+// Fallback minimal — la vraie source est `company_legal_info` (table BD)
+const BIC_COMPANY_INFO_FALLBACK = {
   name: "Bureau d'Informations Cadastrales",
   abbreviation: "BIC",
-  fullLegalName: "Bureau d'Informations Cadastrales S.A.R.L.",
-  address: "Avenue Patrice Lumumba, Quartier Himbi II",
-  city: "Goma, Province du Nord-Kivu",
-  country: "République Démocratique du Congo",
-  rccm: "RCCM/GOMA/2024/B/001234",
-  idNat: "01-234-N12345C",
-  numImpot: "A1234567890",
-  numTva: "TVA001234567",
-  email: "contact@bic-congo.cd",
-  phone: "+243 997 123 456",
-  fax: "+243 281 123 457",
-  website: "www.bic-congo.cd",
-  authorizedCapital: "100.000 USD",
-  legalForm: "Société à Responsabilité Limitée (S.A.R.L.)",
-  tradeLicense: "LIC/2024/GOMA/001",
-  establishedYear: "2024"
 };
+
+/** Conversion USD → CDF avec arrondi à 2 décimales */
+function toCDF(amountUsd: number, rate: number): number {
+  return Math.round(amountUsd * rate * 100) / 100;
+}
+
+function formatMoney(amount: number, currency: string): string {
+  return `${amount.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${currency}`;
+}
+
+function formatBilingual(amountUsd: number, rate: number): string {
+  if (!rate || rate === 1) return formatMoney(amountUsd, 'USD');
+  return `${formatMoney(amountUsd, 'USD')}  /  ${formatMoney(toCDF(amountUsd, rate), 'CDF')}`;
+}
 
 export type InvoiceFormat = 'mini' | 'a4';
 
@@ -69,252 +80,382 @@ export async function generateInvoicePDF(
 }
 
 /**
- * Génère un mini-justificatif compact
+ * Génère un mini-justificatif compact (ticket de caisse réduit)
+ * Mention « FACTURE NORMALISÉE » + décomposition HT/TVA/TTC obligatoire DGI
  */
 async function generateMiniInvoicePDF(
   invoice: CadastralInvoice,
   servicesCatalog: CadastralService[],
   filename?: string
 ) {
-  const doc = new jsPDF({ unit: 'mm', format: [80, 120], orientation: 'portrait' });
+  const doc = new jsPDF({ unit: 'mm', format: [80, 160], orientation: 'portrait' });
   const pageWidth = doc.internal.pageSize.getWidth();
   const margin = 5;
   let cursorY = margin;
 
-  // En-tête compact avec logo
+  const company = await fetchCompanyLegalInfo();
+  const exchangeRate = Number(invoice.exchange_rate_used || 1);
+
+  // En-tête
   const miniLogo = await fetchAppLogo();
   if (miniLogo) {
     try {
-      doc.addImage(miniLogo, 'PNG', pageWidth / 2 - 3, cursorY - 3, 6, 6);
-      cursorY += 4;
+      doc.addImage(miniLogo, 'PNG', pageWidth / 2 - 3, cursorY - 2, 6, 6);
+      cursorY += 5;
     } catch { /* ignore logo errors */ }
   }
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(12);
-  doc.text(BIC_COMPANY_INFO.abbreviation, pageWidth / 2, cursorY, { align: 'center' });
-  cursorY += 5;
-  
-  doc.setFontSize(8);
-  doc.setFont('helvetica', 'normal');
-  doc.text("JUSTIFICATIF DE PAIEMENT", pageWidth / 2, cursorY, { align: 'center' });
-  cursorY += 8;
+  doc.setFontSize(11);
+  doc.text(company.trade_name || company.legal_name, pageWidth / 2, cursorY, { align: 'center' });
+  cursorY += 4;
 
-  // Informations facture
-  doc.setFontSize(7);
-  doc.text(`N°: ${invoice.invoice_number}`, margin, cursorY);
-  cursorY += 4;
-  doc.text(`Date: ${new Date(invoice.search_date).toLocaleDateString('fr-FR')}`, margin, cursorY);
-  cursorY += 4;
-  doc.text(`Parcelle: ${invoice.parcel_number}`, margin, cursorY);
-  cursorY += 4;
-  
-  // Statut
-  const statusText = invoice.status === 'paid' ? 'Payée' : 
-                    invoice.status === 'pending' ? 'En attente' : 'Échec';
-  doc.text(`Statut: ${statusText}`, margin, cursorY);
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'bold');
+  doc.text("FACTURE NORMALISÉE", pageWidth / 2, cursorY, { align: 'center' });
+  cursorY += 3;
+  doc.setFontSize(6);
+  doc.setFont('helvetica', 'normal');
+  doc.text(`NIF: ${company.nif} • RCCM: ${company.rccm}`, pageWidth / 2, cursorY, { align: 'center' });
   cursorY += 6;
+
+  // Infos facture
+  doc.setFontSize(7);
+  doc.text(`N°: ${invoice.invoice_number}`, margin, cursorY); cursorY += 3.5;
+  doc.text(`Date: ${new Date(invoice.search_date).toLocaleDateString('fr-FR')}`, margin, cursorY); cursorY += 3.5;
+  doc.text(`Parcelle: ${invoice.parcel_number}`, margin, cursorY); cursorY += 3.5;
+  if (invoice.client_name) { doc.text(`Client: ${invoice.client_name.substring(0, 30)}`, margin, cursorY); cursorY += 3.5; }
+  if (invoice.client_nif) { doc.text(`NIF Client: ${invoice.client_nif}`, margin, cursorY); cursorY += 3.5; }
+
+  const statusText = invoice.status === 'paid' ? 'Payée' : invoice.status === 'pending' ? 'En attente' : 'Échec';
+  doc.text(`Statut: ${statusText}`, margin, cursorY); cursorY += 5;
 
   // Services
   const selectedIds = getSelectedServiceIds(invoice);
   const selectedServices = servicesCatalog.filter(s => selectedIds.includes(s.id));
-  
+
   doc.setFont('helvetica', 'bold');
-  doc.text("Prestations:", margin, cursorY);
-  cursorY += 4;
-  
+  doc.text("Prestations (TTC)", margin, cursorY); cursorY += 3.5;
   doc.setFont('helvetica', 'normal');
-  let subtotal = 0;
+
+  let subtotalTTC = 0;
   selectedServices.forEach(service => {
     const price = Number(service.price);
-    subtotal += price;
-    doc.text(`${service.name}: $${price.toFixed(2)}`, margin, cursorY);
+    subtotalTTC += price;
+    doc.text(`${service.name.substring(0, 26)}`, margin, cursorY);
+    doc.text(`${price.toFixed(2)}$`, pageWidth - margin, cursorY, { align: 'right' });
     cursorY += 3;
   });
 
-  // TVA et Total
-  const discountAmount = Number(invoice.discount_amount_usd || 0);
-  const netAmount = subtotal - discountAmount;
-  const tvaAmount = netAmount * 0.16; // 16% TVA
-  const total = netAmount + tvaAmount;
+  // Décomposition fiscale conforme DGI
+  const discountTTC = Number(invoice.discount_amount_usd || 0);
+  const totalTTC = subtotalTTC - discountTTC;
+  const totalHT = totalTTC / (1 + TVA_RATE);
+  const tvaAmount = totalTTC - totalHT;
 
   cursorY += 2;
-  if (discountAmount > 0) {
-    doc.text(`Remise: -$${discountAmount.toFixed(2)}`, margin, cursorY);
+  doc.setDrawColor(180, 180, 180);
+  doc.line(margin, cursorY, pageWidth - margin, cursorY);
+  cursorY += 3;
+
+  if (discountTTC > 0) {
+    doc.text(`Remise:`, margin, cursorY);
+    doc.text(`-${discountTTC.toFixed(2)}$`, pageWidth - margin, cursorY, { align: 'right' });
     cursorY += 3;
   }
-  doc.text(`TVA 16%: $${tvaAmount.toFixed(2)}`, margin, cursorY);
-  cursorY += 4;
-  
+  doc.text(`Base HT:`, margin, cursorY);
+  doc.text(`${totalHT.toFixed(2)}$`, pageWidth - margin, cursorY, { align: 'right' }); cursorY += 3;
+  doc.text(`TVA 16%:`, margin, cursorY);
+  doc.text(`${tvaAmount.toFixed(2)}$`, pageWidth - margin, cursorY, { align: 'right' }); cursorY += 3.5;
+
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(9);
-  doc.text(`TOTAL: $${total.toFixed(2)} USD`, pageWidth / 2, cursorY, { align: 'center' });
-  cursorY += 8;
+  doc.text(`TOTAL TTC:`, margin, cursorY);
+  doc.text(`${totalTTC.toFixed(2)}$`, pageWidth - margin, cursorY, { align: 'right' });
+  cursorY += 4;
 
-  // Contact
+  if (exchangeRate > 1) {
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7);
+    doc.text(`(${formatMoney(toCDF(totalTTC, exchangeRate), 'CDF')} au taux ${exchangeRate})`,
+      pageWidth / 2, cursorY, { align: 'center' });
+    cursorY += 4;
+  }
+
+  cursorY += 2;
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(6);
-  doc.text(BIC_COMPANY_INFO.phone, pageWidth / 2, cursorY, { align: 'center' });
+  if (company.phone) { doc.text(company.phone, pageWidth / 2, cursorY, { align: 'center' }); cursorY += 2.5; }
+  doc.text(`Régime: ${TAX_REGIME_LABELS[company.tax_regime] || company.tax_regime}`,
+    pageWidth / 2, cursorY, { align: 'center' });
 
-  saveDocument(doc, filename || `mini_justificatif_BIC_${formatDateForFilename()}_${invoice.invoice_number.replace(/[^0-9A-Za-z]/g, '_')}.pdf`);
+  saveDocument(doc, filename || `facture_normalisee_${formatDateForFilename()}_${invoice.invoice_number.replace(/[^0-9A-Za-z]/g, '_')}.pdf`);
 }
 
 /**
- * Génère un justificatif de paiement A4 complet
+ * Génère une facture normalisée DGI (RDC) format A4
+ * Conforme : mention « Facture normalisée », bloc émetteur+client complets,
+ * décomposition HT/TVA/TTC, bilingue USD/CDF, QR vérification.
  */
 async function generateA4InvoicePDF(
   invoice: CadastralInvoice,
   servicesCatalog: CadastralService[],
   filename?: string
 ) {
-  // Persist verification
   let verifyUrl = '';
+  let verificationCode = '';
+  let company: CompanyLegalInfo;
   try {
-    const verification = await createDocumentVerification({
-      documentType: 'invoice',
-      parcelNumber: invoice.parcel_number,
-      clientName: invoice.client_name || null,
-      clientEmail: invoice.client_email,
-      metadata: {
-        invoiceNumber: invoice.invoice_number,
-        totalAmount: invoice.total_amount_usd,
-        status: invoice.status,
-      },
-    });
+    const [verification, companyInfo] = await Promise.all([
+      createDocumentVerification({
+        documentType: 'invoice',
+        parcelNumber: invoice.parcel_number,
+        clientName: invoice.client_name || null,
+        clientEmail: invoice.client_email,
+        metadata: {
+          invoiceNumber: invoice.invoice_number,
+          totalAmount: invoice.total_amount_usd,
+          status: invoice.status,
+        },
+      }),
+      fetchCompanyLegalInfo(),
+    ]);
     if (verification) {
       verifyUrl = verification.verifyUrl;
+      verificationCode = verification.verificationCode;
     }
+    company = companyInfo;
   } catch (e) {
-    console.error('Failed to persist invoice verification:', e);
+    console.error('Failed to init invoice PDF:', e);
+    company = await fetchCompanyLegalInfo();
   }
 
   const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
   const pageWidth = doc.internal.pageSize.getWidth();
-  const margin = 20;
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const margin = 18;
   let cursorY = margin;
 
-  // En-tête ultra compact avec logo
-  const a4Logo = await fetchAppLogo();
-  let logoOffsetX = 0;
-  if (a4Logo) {
-    try {
-      doc.addImage(a4Logo, 'PNG', margin, cursorY - 5, 8, 8);
-      logoOffsetX = 10;
-    } catch { /* ignore logo errors */ }
-  }
-  doc.setTextColor(44, 62, 80);
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(16);
-  doc.text("BIC", margin + logoOffsetX, cursorY);
-  
-  doc.setFontSize(8);
-  doc.setTextColor(127, 140, 141);
-  doc.text("Bureau d'Informations Cadastrales", margin + logoOffsetX + 20, cursorY);
-  
-  // Date et numéro à droite
-  doc.text(`${new Date(invoice.search_date).toLocaleDateString('fr-FR')}`, pageWidth - margin, cursorY, { align: 'right' });
-  doc.text(`N° ${invoice.invoice_number}`, pageWidth - margin, cursorY + 4, { align: 'right' });
+  const exchangeRate = Number(invoice.exchange_rate_used || 1);
 
-  cursorY += 20;
-  // Informations en ligne compacte
+  // ===== EN-TÊTE OFFICIEL =====
+  const a4Logo = await fetchAppLogo();
+  if (a4Logo) {
+    try { doc.addImage(a4Logo, 'PNG', margin, cursorY, 14, 14); } catch { /* */ }
+  }
+
+  doc.setTextColor(33, 37, 41);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(13);
+  doc.text(company.legal_name, margin + 18, cursorY + 5);
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(7.5);
+  doc.setTextColor(80, 80, 80);
+  let emY = cursorY + 9;
+  doc.text(`${company.address_line1}${company.address_line2 ? ', ' + company.address_line2 : ''}`, margin + 18, emY); emY += 3;
+  doc.text(`${company.city}, ${company.province}, ${company.country}`, margin + 18, emY); emY += 3;
+  doc.text(`NIF: ${company.nif}  •  RCCM: ${company.rccm}  •  ID-NAT: ${company.id_nat}`, margin + 18, emY); emY += 3;
+  if (company.tva_number) { doc.text(`N° TVA: ${company.tva_number}  •  Régime: ${TAX_REGIME_LABELS[company.tax_regime] || company.tax_regime}`, margin + 18, emY); emY += 3; }
+  if (company.phone || company.email) {
+    doc.text(`${company.phone || ''}${company.phone && company.email ? '  •  ' : ''}${company.email || ''}`, margin + 18, emY);
+  }
+
+  // Bloc titre + numéro (droite)
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(14);
+  doc.setTextColor(0, 51, 102);
+  doc.text("FACTURE NORMALISÉE", pageWidth - margin, cursorY + 5, { align: 'right' });
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(80, 80, 80);
+  doc.text("Direction Générale des Impôts (DGI) — RDC", pageWidth - margin, cursorY + 9, { align: 'right' });
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(10);
+  doc.setTextColor(33, 37, 41);
+  doc.text(`N° ${invoice.invoice_number}`, pageWidth - margin, cursorY + 14, { align: 'right' });
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8);
+  doc.text(`Date facturation: ${new Date(invoice.search_date).toLocaleDateString('fr-FR')}`, pageWidth - margin, cursorY + 18, { align: 'right' });
+  if (invoice.paid_at) {
+    doc.text(`Date paiement: ${new Date(invoice.paid_at).toLocaleDateString('fr-FR')}`, pageWidth - margin, cursorY + 22, { align: 'right' });
+  }
+
+  cursorY = Math.max(emY, cursorY + 26) + 4;
+
+  doc.setDrawColor(0, 51, 102);
+  doc.setLineWidth(0.4);
+  doc.line(margin, cursorY, pageWidth - margin, cursorY);
+  cursorY += 5;
+
+  // ===== BLOC CLIENT =====
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(9);
+  doc.setTextColor(0, 51, 102);
+  doc.text("FACTURÉ À", margin, cursorY);
+  cursorY += 4;
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8.5);
+  doc.setTextColor(33, 37, 41);
+  const clientName = invoice.client_name || invoice.client_organization || invoice.client_email || '—';
+  doc.text(clientName, margin, cursorY); cursorY += 3.5;
+
+  doc.setFontSize(7.5);
+  doc.setTextColor(80, 80, 80);
+  if (invoice.client_address) {
+    const lines = doc.splitTextToSize(invoice.client_address, (pageWidth - 2 * margin) / 2);
+    lines.forEach((line: string) => { doc.text(line, margin, cursorY); cursorY += 3; });
+  }
+  if (invoice.client_email) { doc.text(`Email: ${invoice.client_email}`, margin, cursorY); cursorY += 3; }
+  if (invoice.client_type === 'company') {
+    if (invoice.client_nif) { doc.text(`NIF: ${invoice.client_nif}`, margin, cursorY); cursorY += 3; }
+    if (invoice.client_rccm) { doc.text(`RCCM: ${invoice.client_rccm}`, margin, cursorY); cursorY += 3; }
+    if (invoice.client_tax_regime) { doc.text(`Régime: ${TAX_REGIME_LABELS[invoice.client_tax_regime] || invoice.client_tax_regime}`, margin, cursorY); cursorY += 3; }
+  } else if (invoice.client_id_nat) {
+    doc.text(`ID National: ${invoice.client_id_nat}`, margin, cursorY); cursorY += 3;
+  }
+
+  // Référence parcelle + statut (droite, à hauteur du bloc client)
+  const statusText = invoice.status === 'paid' ? 'PAYÉE' : invoice.status === 'pending' ? 'EN ATTENTE' : 'ÉCHEC';
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(9);
+  doc.setTextColor(0, 51, 102);
+  doc.text("RÉFÉRENCE", pageWidth - margin, cursorY - 14, { align: 'right' });
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8);
+  doc.setTextColor(33, 37, 41);
+  doc.text(`Parcelle: ${invoice.parcel_number}`, pageWidth - margin, cursorY - 10, { align: 'right' });
+  if (invoice.geographical_zone) {
+    doc.text(`Zone: ${invoice.geographical_zone}`, pageWidth - margin, cursorY - 7, { align: 'right' });
+  }
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(invoice.status === 'paid' ? 39 : 231, invoice.status === 'paid' ? 174 : 76, invoice.status === 'paid' ? 96 : 60);
+  doc.text(`Statut: ${statusText}`, pageWidth - margin, cursorY - 3, { align: 'right' });
+
+  cursorY += 6;
+  doc.setTextColor(33, 37, 41);
+
+  // ===== TABLEAU DES PRESTATIONS =====
   const selectedIds = getSelectedServiceIds(invoice);
   const selectedServices = servicesCatalog.filter(s => selectedIds.includes(s.id));
-  
-  doc.setTextColor(44, 62, 80);
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(10);
-  
-  // Parcelle et statut en une ligne
-  doc.text(`Parcelle ${invoice.parcel_number}`, margin, cursorY);
-  const statusText = invoice.status === 'paid' ? 'Payé' : 'En attente';
-  doc.setTextColor(statusText === 'Payé' ? 39 : 231, statusText === 'Payé' ? 174 : 76, statusText === 'Payé' ? 96 : 60);
-  doc.text(statusText, pageWidth - margin, cursorY, { align: 'right' });
-  
-  cursorY += 8;
-  doc.setTextColor(44, 62, 80);
 
-  // Services en tableau ultra compact
   if (selectedServices.length > 0) {
-    const tableData = selectedServices.map(service => [
-      service.name,
-      `${Number(service.price).toFixed(2)} $`
-    ]);
+    const tableData = selectedServices.map(service => {
+      const priceTTC = Number(service.price);
+      const priceHT = priceTTC / (1 + TVA_RATE);
+      return [
+        service.name,
+        '1',
+        formatMoney(priceHT, 'USD'),
+        formatMoney(priceTTC, 'USD'),
+      ];
+    });
 
     autoTable(doc, {
-      head: [["Service", "Prix"]],
+      head: [["Désignation", "Qté", "Prix unitaire HT", "Total TTC"]],
       body: tableData,
       startY: cursorY,
-      styles: { 
-        fontSize: 9, 
-        cellPadding: 1.5,
-        lineColor: [230, 230, 230],
-        lineWidth: 0.2,
-        textColor: [44, 62, 80]
-      },
-      headStyles: { 
-        fillColor: [250, 250, 250], 
-        textColor: [44, 62, 80],
-        fontStyle: 'normal',
-        fontSize: 9
-      },
+      styles: { fontSize: 8.5, cellPadding: 2, lineColor: [220, 220, 220], lineWidth: 0.2, textColor: [33, 37, 41] },
+      headStyles: { fillColor: [0, 51, 102], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8.5 },
       columnStyles: {
-        0: { cellWidth: (pageWidth - 2 * margin) * 0.7 },
-        1: { cellWidth: (pageWidth - 2 * margin) * 0.3, halign: 'right' }
+        0: { cellWidth: (pageWidth - 2 * margin) * 0.50 },
+        1: { cellWidth: (pageWidth - 2 * margin) * 0.10, halign: 'center' },
+        2: { cellWidth: (pageWidth - 2 * margin) * 0.20, halign: 'right' },
+        3: { cellWidth: (pageWidth - 2 * margin) * 0.20, halign: 'right' },
       },
-      theme: 'plain',
+      theme: 'grid',
       margin: { left: margin, right: margin }
     });
 
-    cursorY = (doc as any).lastAutoTable?.finalY + 5;
+    cursorY = (doc as any).lastAutoTable?.finalY + 6;
   }
 
-  // Calculs compacts
-  const subtotal = selectedServices.reduce((sum, service) => sum + Number(service.price), 0);
-  const discountAmount = Number(invoice.discount_amount_usd || 0);
-  const netAmount = subtotal - discountAmount;
-  const tvaAmount = netAmount * 0.16;
-  const total = netAmount + tvaAmount;
+  // ===== DÉCOMPOSITION FISCALE OBLIGATOIRE DGI =====
+  const subtotalTTC = selectedServices.reduce((sum, s) => sum + Number(s.price), 0);
+  const discountTTC = Number(invoice.discount_amount_usd || 0);
+  const totalTTC = subtotalTTC - discountTTC;
+  const totalHT = totalTTC / (1 + TVA_RATE);
+  const tvaAmount = totalTTC - totalHT;
 
-  // Totaux alignés à droite
-  const rightAlign = pageWidth - margin;
+  const totalsX = pageWidth - margin - 80;
+  const valueX = pageWidth - margin;
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
-  
-  if (discountAmount > 0) {
-    doc.text(`Remise: -${discountAmount.toFixed(2)} $`, rightAlign, cursorY, { align: 'right' });
+  doc.setTextColor(33, 37, 41);
+
+  const writeRow = (label: string, value: string, bold = false) => {
+    doc.setFont('helvetica', bold ? 'bold' : 'normal');
+    doc.text(label, totalsX, cursorY);
+    doc.text(value, valueX, cursorY, { align: 'right' });
+    cursorY += 5;
+  };
+
+  if (discountTTC > 0) {
+    writeRow('Sous-total (TTC)', formatBilingual(subtotalTTC, exchangeRate));
+    writeRow('Remise commerciale', `-${formatBilingual(discountTTC, exchangeRate)}`);
+  }
+  writeRow('Base HT', formatBilingual(totalHT, exchangeRate));
+  writeRow('TVA 16%', formatBilingual(tvaAmount, exchangeRate));
+
+  doc.setFillColor(0, 51, 102);
+  doc.rect(totalsX - 3, cursorY - 4, valueX - totalsX + 6, 8, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(10);
+  doc.text('TOTAL TTC', totalsX, cursorY + 1);
+  doc.text(formatBilingual(totalTTC, exchangeRate), valueX, cursorY + 1, { align: 'right' });
+  cursorY += 12;
+
+  doc.setTextColor(33, 37, 41);
+  doc.setFont('helvetica', 'italic');
+  doc.setFontSize(7);
+  if (exchangeRate > 1) {
+    doc.text(`Taux de change appliqué : 1 USD = ${exchangeRate} CDF (figé à l'émission)`, margin, cursorY);
     cursorY += 4;
   }
-  
-  doc.text(`TVA 16%: ${tvaAmount.toFixed(2)} $`, rightAlign, cursorY, { align: 'right' });
-  cursorY += 6;
 
-  // Total avec emphase
+  // ===== MENTIONS LÉGALES & VÉRIFICATION =====
+  cursorY = Math.max(cursorY, pageHeight - 50);
+
+  doc.setDrawColor(200, 200, 200);
+  doc.setLineWidth(0.2);
+  doc.line(margin, cursorY, pageWidth - margin, cursorY);
+  cursorY += 4;
+
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(11);
-  doc.text(`Total: ${total.toFixed(2)} $`, rightAlign, cursorY, { align: 'right' });
-  
-  cursorY += 15;
+  doc.setFontSize(7.5);
+  doc.setTextColor(0, 51, 102);
+  doc.text("MENTIONS LÉGALES (DGI)", margin, cursorY);
+  cursorY += 3.5;
 
-  // QR code de vérification
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(6.5);
+  doc.setTextColor(80, 80, 80);
+  const mentions = [
+    `Facture normalisée émise conformément à la réglementation fiscale en vigueur en République Démocratique du Congo.`,
+    `Émetteur : ${company.legal_name} — NIF ${company.nif} — RCCM ${company.rccm} — ID-NAT ${company.id_nat} — ${TAX_REGIME_LABELS[company.tax_regime] || company.tax_regime}.`,
+    `TVA appliquée au taux légal de 16%. Tout règlement effectué vaut acceptation des conditions générales de vente.`,
+    invoice.dgi_validation_code ? `Code de validation DGI : ${invoice.dgi_validation_code}` : `Code de vérification : ${verificationCode || invoice.invoice_number}`,
+  ];
+  mentions.forEach(m => {
+    const lines = doc.splitTextToSize(m, pageWidth - 2 * margin - 22);
+    lines.forEach((line: string) => { doc.text(line, margin, cursorY); cursorY += 2.8; });
+  });
+
   if (verifyUrl) {
     try {
-      const qrDataUrl = await QRCode.toDataURL(verifyUrl);
-      doc.addImage(qrDataUrl, 'PNG', margin, 265, 12, 12);
-      doc.setTextColor(127, 140, 141);
+      const qrDataUrl = await QRCode.toDataURL(verifyUrl, { margin: 0, width: 80 });
+      doc.addImage(qrDataUrl, 'PNG', pageWidth - margin - 18, pageHeight - 32, 16, 16);
       doc.setFont('helvetica', 'italic');
       doc.setFontSize(6);
-      doc.text("Scannez pour vérifier", margin + 6, 279, { align: 'center' });
+      doc.setTextColor(80, 80, 80);
+      doc.text("Vérifier l'authenticité", pageWidth - margin - 10, pageHeight - 13, { align: 'center' });
     } catch (e) {
       console.error('QR code generation failed:', e);
     }
   }
 
-  // Pied de page minimaliste
-  doc.setTextColor(127, 140, 141);
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(7);
-  doc.text("BIC - Bureau d'Informations Cadastrales", pageWidth / 2, 280, { align: 'center' });
-
-  saveDocument(doc, filename || `justificatif_BIC_${formatDateForFilename()}_${invoice.invoice_number.replace(/[^0-9A-Za-z]/g, '_')}.pdf`);
+  saveDocument(doc, filename || `facture_normalisee_${formatDateForFilename()}_${invoice.invoice_number.replace(/[^0-9A-Za-z]/g, '_')}.pdf`);
 }
 
 // Fonctions utilitaires
