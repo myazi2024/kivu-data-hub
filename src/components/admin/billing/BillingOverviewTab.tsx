@@ -43,10 +43,10 @@ export const BillingOverviewTab = () => {
         supabase.from('publications').select('id, title, category, price_usd, status, updated_at').is('deleted_at', null),
         supabase.from('cadastral_services_config').select('id, name, service_id, price_usd, is_active, updated_at').is('deleted_at', null),
         supabase.from('permit_fees_config').select('id, fee_name, permit_type, amount_usd, is_active, updated_at'),
-        (supabase as any).from('mutation_fees_config').select('id, fee_name, mutation_type, amount_usd, is_active, updated_at'),
+        (supabase as any).from('mutation_fees_config').select('id, fee_name, description, amount_usd, is_active, updated_at'),
         (supabase as any).from('land_title_fees_by_type').select('id, fee_name, title_type, base_amount_usd, is_active, updated_at'),
-        (supabase as any).from('subdivision_fees_config').select('id, fee_name, fee_type, amount_usd, is_active, updated_at'),
-        (supabase as any).from('expertise_fees_config').select('id, fee_name, fee_type, amount_usd, is_active, updated_at'),
+        (supabase as any).from('subdivision_rate_config').select('id, section_type, location_name, rate_per_sqm_usd, is_active, updated_at'),
+        (supabase as any).from('expertise_fees_config').select('id, fee_name, description, amount_usd, is_active, updated_at'),
       ]);
 
       const all: Row[] = [];
@@ -63,7 +63,7 @@ export const BillingOverviewTab = () => {
         price_usd: Number(f.amount_usd) || 0, status: f.is_active ? 'actif' : 'inactif', updated_at: f.updated_at,
       }));
       (mutations.data || []).forEach((f: any) => all.push({
-        category: 'Mutation foncière', name: f.fee_name, reference: f.mutation_type || '—',
+        category: 'Mutation foncière', name: f.fee_name, reference: f.description ? String(f.description).slice(0, 30) : '—',
         price_usd: Number(f.amount_usd) || 0, status: f.is_active ? 'actif' : 'inactif', updated_at: f.updated_at,
       }));
       (titles.data || []).forEach((f: any) => all.push({
@@ -71,11 +71,11 @@ export const BillingOverviewTab = () => {
         price_usd: Number(f.base_amount_usd) || 0, status: f.is_active ? 'actif' : 'inactif', updated_at: f.updated_at,
       }));
       (subdivisions.data || []).forEach((f: any) => all.push({
-        category: 'Lotissement', name: f.fee_name, reference: f.fee_type || '—',
-        price_usd: Number(f.amount_usd) || 0, status: f.is_active ? 'actif' : 'inactif', updated_at: f.updated_at,
+        category: 'Lotissement', name: `${f.section_type || '—'} — ${f.location_name || '—'}`, reference: f.section_type || '—',
+        price_usd: Number(f.rate_per_sqm_usd) || 0, status: f.is_active ? 'actif' : 'inactif', updated_at: f.updated_at,
       }));
       (expertise.data || []).forEach((f: any) => all.push({
-        category: 'Expertise', name: f.fee_name, reference: f.fee_type || '—',
+        category: 'Expertise', name: f.fee_name, reference: f.description ? String(f.description).slice(0, 30) : '—',
         price_usd: Number(f.amount_usd) || 0, status: f.is_active ? 'actif' : 'inactif', updated_at: f.updated_at,
       }));
 
@@ -134,7 +134,9 @@ export const BillingOverviewTab = () => {
             <CardContent className="p-3">
               <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{t.cat}</div>
               <div className="text-lg font-bold">{t.count} <span className="text-xs font-normal text-muted-foreground">tarifs</span></div>
-              <div className="text-xs text-muted-foreground">Total ${t.sum.toFixed(2)}</div>
+              <div className="text-xs text-muted-foreground">
+                {t.cat === 'Lotissement' ? `${t.count} taux configurés (/m²)` : `Total $${t.sum.toFixed(2)}`}
+              </div>
             </CardContent>
           </Card>
         ))}
@@ -193,7 +195,7 @@ export const BillingOverviewTab = () => {
                     <TableCell className="text-xs"><Badge variant="outline" className="text-[10px]">{r.category}</Badge></TableCell>
                     <TableCell className="text-xs font-medium max-w-[200px] truncate">{r.name}</TableCell>
                     <TableCell className="text-xs text-muted-foreground">{r.reference}</TableCell>
-                    <TableCell className="text-xs text-right font-semibold">${r.price_usd.toFixed(2)}</TableCell>
+                    <TableCell className="text-xs text-right font-semibold">${r.price_usd.toFixed(2)}{r.category === 'Lotissement' ? <span className="text-[10px] font-normal text-muted-foreground">/m²</span> : null}</TableCell>
                     <TableCell>
                       <Badge variant={r.status === 'actif' || r.status === 'published' ? 'default' : 'secondary'} className="text-[10px]">{r.status}</Badge>
                     </TableCell>
