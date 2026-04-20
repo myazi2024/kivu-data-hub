@@ -63,7 +63,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
   const [mapInstance, setMapInstance] = useState<any>(null);
   const [activeMobilePanel, setActiveMobilePanel] = useState<'map' | 'details' | 'analytics'>('map');
   const [isMapZoomed, setIsMapZoomed] = useState(false);
-  const [isCopying, setIsCopying] = useState(false);
+  
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [forcedTab, setForcedTab] = useState<string | null>(null);
   const mapCardRef = React.useRef<HTMLDivElement>(null);
