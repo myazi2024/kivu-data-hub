@@ -779,6 +779,8 @@ const CadastralMap = () => {
           onClose={() => { setShowServiceCatalog(false); cadastralSearch.clearSearch(); }}
         />
       )}
+
+      <CadastralCartButton />
     </div>
   );
 };
