@@ -234,6 +234,11 @@ const CadastralCartButton: React.FC = () => {
                     );
                   })()}
 
+                  {/* P4 — Code promo / CCC mémorisé par parcelle */}
+                  {!allOwned && subtotal > 0 && (
+                    <CartParcelDiscountInput parcelNumber={p.parcelNumber} subtotal={subtotal} />
+                  )}
+
                   <div className="flex items-center justify-between pt-1 text-xs">
                     <span className="text-muted-foreground">À payer</span>
                     <span className="font-semibold tabular-nums">${subtotal.toFixed(2)}</span>
