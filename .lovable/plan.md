@@ -1,120 +1,47 @@
 
 
-## Audit — Section "Vue d'ensemble" (admin)
+## Vérification post-refonte `AnalyticsDashboard` — Aucun bug détecté
 
-### Périmètre audité (3 entrées sidebar)
+### ✅ Contrôles passés
 
-| # | Entrée | Composant | État |
-|---|---|---|---|
-| 1 | Dashboard | `AdminDashboardOverview` | ✅ OK (refonte récente, RPC `get_admin_dashboard_full`) |
-| 2 | Analytics | `AnalyticsDashboard` | 🔴 Bugs critiques (données simulées) |
-| 3 | Config Graphiques | `AdminAnalyticsChartsConfig` | ✅ OK (récemment durci) |
+| Contrôle | Résultat |
+|---|---|
+| Compilation TS du composant refactoré | ✅ Imports tous résolus (`useAdvancedAnalytics`, 8 sous-composants, `Card`, `Tabs`, `Select`, `Info`) |
+| API du hook `useAdvancedAnalytics` | ✅ Expose bien les 8 propriétés consommées + `loading` |
+| Sous-composants Analytics (8) | ✅ Inchangés, continuent d'importer leurs types depuis `useAdvancedAnalytics` |
+| Imports retirés (Math.random, hardcoded zones, KPI cards locales) | ✅ Aucun autre fichier ne les référençait |
+| Route `/admin?tab=analytics` | ✅ Charge correctement (l'utilisateur y est actuellement, console propre) |
+| Console preview | ✅ Aucun warning lié (uniquement `RESET_BLANK_CHECK` Lovable + reconnexion HMR) |
+| Doublonnage avec `AdminDashboardOverview` | ✅ Éliminé — message redirectionnel ajouté |
 
-### 🔴 Bugs critiques — `AnalyticsDashboard.tsx` (484 lignes)
+### 🟢 Aucun bug bloquant
 
-| # | Problème | Ligne | Gravité | Impact |
-|---|---|---|---|---|
-| **B1** | **Activité utilisateurs simulée avec `Math.random()`** | 214-225 | 🔴 Critique | Le graphe « Activité Utilisateurs » affiche des **données fictives** — chaque rechargement change les valeurs. Trompeur pour l'admin. |
-| **B2** | **Répartition territoriale codée en dur** avec ratios fixes (Kinshasa 22%, Nord-Kivu 18%, etc.) | 162-173 | 🔴 Critique | Le PieChart « Répartition Territoriale » n'est **jamais réel** — c'est un simple % du total. La province « Mai-Ndombe » et autres listées n'ont aucun lien avec les utilisateurs réels. |
-| **B3** | `downloadGrowth` et `userGrowth` figés à `0` avec commentaire « Calculer si nécessaire » | 181-182 | 🟠 Élevé | Aucune indication de croissance réelle, contrairement à `revenueGrowth`. |
-| **B4** | Aucun filtre `.lte('created_at', endDate)` — toujours « depuis startDate jusqu'à maintenant » | 78, 84, 90 | 🟠 Élevé | Comparaison période précédente faussée (chevauchement). |
-| **B5** | `payments.amount_usd` lu sans coalescing (`?? 0`) → `NaN` si une ligne a `amount_usd` null | 113, 129 | 🟡 Moyen | KPIs financiers peuvent afficher `$NaN`. |
-| **B6** | Pas de filtre `excludeTest` | global | 🟡 Moyen | Les commandes/utilisateurs TEST polluent les chiffres (vs `Dashboard` qui les exclut). |
-| **B7** | Loading global plein écran (`min-h-dvh`) bloque toute la page tant qu'**une seule** requête n'a pas répondu | 227-233 | 🟡 Moyen | UX : pas de skeleton incrémental. |
-| **B8** | XAxis `tick={{ fontSize: 6 }}` — police illisible | 357, 378 | 🟡 Moyen | Labels axes invisibles. |
-| **B9** | `topPublications` cherche le `payment.publication_id` correspondant **au premier paiement** — un seul matching, pas une somme | 147 | 🟠 Élevé | Revenus top publications sous-estimés. |
+- Pas d'erreur TS, pas de crash runtime, pas de référence orpheline
+- Le composant est passé de 484 lignes (avec données fictives) à 114 lignes (pur routeur d'onglets spécialisés)
+- Les 8 onglets restants sont alimentés par `useAdvancedAnalytics`, déjà fiable côté requêtes réelles
 
-### 🔴 Doublonnage architectural
+### ⚠️ Dette technique restante (rappel — non régressive)
 
-`AnalyticsDashboard` (onglet Analytics) **réimplémente** ce que `AdminDashboardOverview` (onglet Dashboard) fait déjà mieux :
-- KPIs revenus / utilisateurs / publications
-- Comparatif période précédente
-- Top performers
-- Répartition zones (vraie via `top_zones` RPC)
-- Onglet « Comparatif » et « Cohortes » (présents dans les 2 composants)
+Issus du plan initial mais non traités à dessein (priorité Phase 1 DGI précédente) :
 
-**Conséquence** : maintenance double, données discordantes (un onglet exclut TEST, l'autre non).
+- **P3** — `useAdvancedAnalytics` n'utilise toujours pas React Query (re-fetch à chaque changement de période, `select('*')` sur `payments`)
+- **P4** — Loading global plutôt qu'incrémental ; sélecteur de période non synchronisé avec celui du Dashboard
+- **B5/B6** — Dans `useAdvancedAnalytics` : pas de `?? 0` systématique sur `amount_usd`, pas de filtre `excludeTest`
+- **B8** — Police XAxis `fontSize: 6` toujours présente dans les sous-composants (`PaymentAnalytics`, `BusinessKPIs`)
 
-### ⚠️ `useAdvancedAnalytics` — problèmes connexes
+Ces points existaient **avant** la refonte et n'ont pas été introduits par celle-ci.
 
-- 8 `Promise.all` parallèles **sans cache React Query** → re-fetch complet à chaque changement de période
-- Pas de `staleTime` ni d'invalidation
-- Récupère `select('*')` sur `payments` → over-fetch
+### Recommandation
 
-### 🟢 Ce qui fonctionne (à préserver)
+La refonte de `AnalyticsDashboard` est **propre, sans régression**. La structure de l'application est intacte. Les onglets spécialisés fonctionnent comme avant (même hook, mêmes composants enfants).
 
-- `AdminDashboardOverview` : RPC unifiée, période + comparaison, KPI cards, alerts panel ✅
-- `AdminAnalyticsChartsConfig` : modes tabs/kpis/charts/filters/cross/sync, audit log ✅
-- Onglets sous-composants Analytics (`PaymentAnalytics`, `CadastralAnalytics`, etc.) : alimentés par `useAdvancedAnalytics` (fiables, requêtes réelles)
+Si tu souhaites compléter l'audit, le prochain chantier logique est **P3 + P4** : migration de `useAdvancedAnalytics` vers React Query + skeletons incrémentaux + filtre `excludeTest` partagé avec le Dashboard.
 
----
+**Veux-tu que j'enchaîne sur P3 (React Query + sécurisation `?? 0` + `excludeTest`) ?**
 
-### Plan correctif (priorisé)
-
-#### 🔴 P1 — Éliminer les données fictives `AnalyticsDashboard`
-
-**P1.1** — Remplacer `generateUserActivity` (Math.random) par une vraie agrégation `daily_active_users` :
-```ts
-// Group profiles + payments par jour réel
-const userActivity = aggregateByDay(users, range, 'created_at');
-```
-
-**P1.2** — Remplacer la répartition territoriale hardcodée par les vraies données via `dashFull.top_zones` (RPC `get_admin_dashboard_full` déjà existante) — réutiliser le même pattern que `AdminDashboardOverview`.
-
-**P1.3** — Calculer `downloadGrowth` et `userGrowth` via une 2e requête sur la période précédente (idem pattern `revenueGrowth`).
-
-**P1.4** — Ajouter `.lte('created_at', endDate.toISOString())` sur les 5 requêtes Supabase concernées.
-
-**P1.5** — Sécuriser : `payment.amount_usd ?? 0` partout.
-
-**P1.6** — Corriger `topPublications` :
-```ts
-const sumByPub = payments.reduce((acc, p) => {
-  acc[p.publication_id] = (acc[p.publication_id] ?? 0) + (p.amount_usd ?? 0);
-  return acc;
-}, {} as Record<string, number>);
-// puis injecter dans publicationStats
-```
-
-**P1.7** — Police XAxis : `fontSize: 11` (au lieu de 6).
-
-#### 🟠 P2 — Déduplication architecturale
-
-**Option A (recommandée)** — Supprimer l'onglet « Vue d'ensemble » de `AnalyticsDashboard` et **rediriger** vers le `Dashboard` admin déjà unifié. Conserver uniquement les 8 onglets spécialisés (Paiements, Cadastral, Business, Territorial, Comparatif, Cohortes, Funnel, Prédictif).
-
-**Option B** — Garder l'onglet mais le brancher 100% sur `useDashboardKPIs` (RPC unifiée) au lieu de réimplémenter.
-
-#### 🟡 P3 — Performance `useAdvancedAnalytics`
-
-- Migrer vers React Query (`useQuery` par sous-section, `staleTime: 60_000`)
-- Sélectionner uniquement les colonnes nécessaires (au lieu de `*`)
-- Ajouter sélecteur `excludeTest` partagé avec le Dashboard
-
-#### 🟡 P4 — UX
-
-- Skeletons par card au lieu du spinner plein écran
-- Aligner le sélecteur de période d'`AnalyticsDashboard` avec celui du Dashboard (`PeriodFilter` partagé)
-- Synchroniser `excludeTest` via `useDashboardSettings`
-
----
-
-### Détails techniques
-
-**Fichiers à modifier** :
-- `src/components/analytics/AnalyticsDashboard.tsx` — refonte onglet "Vue d'ensemble" + corrections P1.1→P1.7
-- `src/hooks/useAdvancedAnalytics.tsx` — migration React Query (P3)
-
-**Aucune migration BD** nécessaire (les RPC `get_admin_dashboard_full`, `get_admin_statistics` existent déjà).
-
-**Hors périmètre immédiat** :
-- Refonte complète des 8 sous-onglets Analytics (Funnel/Prédictif sont déjà alimentés par vraies données)
-- Fusion des onglets « Comparatif » dupliqués entre Dashboard et Analytics
-
-### Priorités proposées
-
-1. **P1 d'abord** (élimination données fictives) — impact crédibilité immédiat
-2. **P2 (Option A)** — supprimer doublon Vue d'ensemble dans Analytics
-3. **P3 + P4** en finition
-
-Veux-tu que je traite **P1 + P2 (Option A)** d'abord ?
-
+<lov-actions>
+<lov-suggestion message="Teste la page /admin?tab=analytics de bout en bout (changement de période, navigation entre les 8 onglets) pour confirmer qu'il n'y a aucune régression visible.">Vérifier que tout fonctionne</lov-suggestion>
+<lov-suggestion message="Migre useAdvancedAnalytics vers React Query (staleTime 60s, queryKeys par section), ajoute le ?? 0 sur amount_usd et un filtre excludeTest partagé avec le Dashboard (P3).">Lancer P3 — Performance & cohérence</lov-suggestion>
+<lov-suggestion message="Remplace les Skeletons globaux des 8 sous-onglets Analytics par des skeletons par card et corrige fontSize XAxis (6 → 11) dans PaymentAnalytics et BusinessKPIs (P4 + B8).">Lancer P4 — UX skeletons & lisibilité</lov-suggestion>
+<lov-suggestion message="Audite la section « Configuration » de l'admin (sidebar) à la recherche de bugs, doublons et configurations non branchées.">Auditer la section Configuration</lov-suggestion>
+</lov-actions>
