@@ -117,12 +117,78 @@ All colors MUST be HSL.
     --sidebar-accent-foreground: 240 4.8% 95.9%;
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+
+    /* Semantic status tokens */
+    --success: 142 71% 36%;
+    --success-foreground: 0 0% 100%;
+    --success-muted: 142 71% 95%;
+    --success-border: 142 50% 80%;
+    --warning: 38 92% 45%;
+    --warning-foreground: 0 0% 100%;
+    --warning-muted: 38 92% 95%;
+    --warning-border: 38 80% 80%;
+  }
+
+  .dark {
+    --background: 0 0% 7%;
+    --foreground: 0 0% 95%;
+
+    --card: 0 0% 10%;
+    --card-foreground: 0 0% 95%;
+
+    --popover: 0 0% 10%;
+    --popover-foreground: 0 0% 95%;
+
+    --primary: 348 100% 54%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 0 0% 15%;
+    --secondary-foreground: 0 0% 90%;
+
+    --muted: 0 0% 15%;
+    --muted-foreground: 0 0% 65%;
+
+    --accent: 348 100% 54%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 0 0% 20%;
+    --input: 0 0% 15%;
+    --ring: 348 100% 54%;
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+
+    /* Semantic status tokens (dark) */
+    --success: 142 60% 50%;
+    --success-foreground: 0 0% 100%;
+    --success-muted: 142 50% 12%;
+    --success-border: 142 40% 25%;
+    --warning: 38 90% 55%;
+    --warning-foreground: 0 0% 10%;
+    --warning-muted: 38 50% 12%;
+    --warning-border: 38 40% 25%;
   }
 }
 
 @layer base {
   * {
     @apply border-border;
+  }
+
+  /* Cadastral document print rules */
+  @media print {
+    .cadastral-document section {
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
   }
 
   body {
