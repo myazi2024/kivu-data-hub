@@ -734,6 +734,33 @@ export type Database = {
           },
         ]
       }
+      cadastral_cart_drafts: {
+        Row: {
+          cart_data: Json
+          created_at: string
+          discounts_data: Json
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          cart_data?: Json
+          created_at?: string
+          discounts_data?: Json
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          cart_data?: Json
+          created_at?: string
+          discounts_data?: Json
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       cadastral_contribution_audit: {
         Row: {
           action: string

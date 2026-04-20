@@ -58,19 +58,28 @@ const CART_TTL_MS = 24 * 60 * 60 * 1000;
 export const CadastralCartProvider = ({ children }: { children: ReactNode }) => {
   const [parcelsMap, setParcelsMap] = useState<Record<string, CadastralCartParcel>>({});
   const [activeParcelNumber, setActiveParcelNumber] = useState<string | null>(null);
+  const [hydrated, setHydrated] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
 
   // ---------- Hydratation depuis storage (avec migration silencieuse v1 → v2) ----------
   useEffect(() => {
     const consent = CookieManager.getConsentStatus();
-    if (consent === false) return;
+    if (consent === false) {
+      setHydrated(true);
+      return;
+    }
 
     try {
       const saved = ConsentAwareStorage.getItem(STORAGE_KEY);
-      if (!saved) return;
+      if (!saved) {
+        setHydrated(true);
+        return;
+      }
       const parsed = JSON.parse(saved);
       const savedAt = parsed.savedAt || 0;
       if (Date.now() - savedAt > CART_TTL_MS) {
         ConsentAwareStorage.removeItem(STORAGE_KEY);
+        setHydrated(true);
         return;
       }
 
@@ -89,6 +98,7 @@ export const CadastralCartProvider = ({ children }: { children: ReactNode }) => 
         });
         setParcelsMap(migrated);
         setActiveParcelNumber(parsed.activeParcelNumber || null);
+        setHydrated(true);
         return;
       }
 
@@ -104,8 +114,10 @@ export const CadastralCartProvider = ({ children }: { children: ReactNode }) => 
       } else if (legacyParcel) {
         setActiveParcelNumber(legacyParcel);
       }
+      setHydrated(true);
     } catch (error) {
       console.error('Error loading cadastral cart:', error);
+      setHydrated(true);
     }
   }, []);
 
@@ -125,6 +137,84 @@ export const CadastralCartProvider = ({ children }: { children: ReactNode }) => 
 
     return () => clearTimeout(timer);
   }, [parcelsMap, activeParcelNumber]);
+
+  // ---------- P5 : Sync Supabase pour utilisateurs connectés ----------
+  // Suit l'auth (login/logout), tire le panier distant au login (merge "le plus récent gagne"),
+  // et pousse les modifs locales en debounce 800ms.
+  useEffect(() => {
+    let mounted = true;
+    supabase.auth.getUser().then(({ data }) => {
+      if (mounted) setUserId(data.user?.id ?? null);
+    });
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUserId(session?.user?.id ?? null);
+    });
+    return () => {
+      mounted = false;
+      sub.subscription.unsubscribe();
+    };
+  }, []);
+
+  // Pull au login : merge distant si plus récent que local
+  useEffect(() => {
+    if (!hydrated || !userId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data, error } = await supabase
+          .from('cadastral_cart_drafts')
+          .select('cart_data, updated_at')
+          .eq('user_id', userId)
+          .maybeSingle();
+        if (cancelled || error || !data) return;
+        const remote = data.cart_data as any;
+        if (!remote || typeof remote !== 'object' || !remote.parcelsMap) return;
+        const remoteAt = new Date(data.updated_at).getTime();
+        const localRaw = ConsentAwareStorage.getItem(STORAGE_KEY);
+        const localAt = localRaw ? (JSON.parse(localRaw).savedAt || 0) : 0;
+        // Préfère le plus récent ; si local vide, on prend toujours le distant
+        const localEmpty = Object.keys(parcelsMap).length === 0;
+        if (remoteAt > localAt || localEmpty) {
+          const migrated: Record<string, CadastralCartParcel> = {};
+          Object.entries(remote.parcelsMap as Record<string, any>).forEach(([pn, p]) => {
+            migrated[pn] = {
+              parcelNumber: p.parcelNumber ?? pn,
+              parcelLocation: p.parcelLocation ?? '',
+              services: p.services ?? [],
+              addedAt: typeof p.addedAt === 'number' ? p.addedAt : Date.now(),
+            };
+          });
+          setParcelsMap(migrated);
+          if (remote.activeParcelNumber) setActiveParcelNumber(remote.activeParcelNumber);
+        }
+      } catch (e) {
+        console.error('Cart remote pull failed:', e);
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, hydrated]);
+
+  // Push debounced 800ms vers Supabase
+  useEffect(() => {
+    if (!hydrated || !userId) return;
+    const timer = setTimeout(async () => {
+      try {
+        await supabase
+          .from('cadastral_cart_drafts')
+          .upsert(
+            {
+              user_id: userId,
+              cart_data: { parcelsMap, activeParcelNumber } as any,
+            },
+            { onConflict: 'user_id' }
+          );
+      } catch (e) {
+        console.error('Cart remote push failed:', e);
+      }
+    }, 800);
+    return () => clearTimeout(timer);
+  }, [parcelsMap, activeParcelNumber, userId, hydrated]);
 
   // ---------- Purge post-paiement (P6) ----------
   // Sur événement `cadastralPaymentCompleted`, retire uniquement les services
