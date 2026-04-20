@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { trackEvent } from '@/lib/analytics';
 
 const POLL_INTERVAL_MS = 2000;
 const POLL_MAX_ATTEMPTS = 15;
@@ -114,6 +115,44 @@ export const useStripeReturnHandler = () => {
             }
           } else {
             toast.message('Paiement confirmé, synchronisation en cours. Vérifiez dans votre tableau de bord.');
+          }
+        } else if (paymentType === 'cadastral_service') {
+          // Poll la facture cadastrale pour détecter la mise à jour par le webhook
+          let invoiceData: { id: string; parcel_number: string; selected_services: any; total_amount_usd: number } | null = null;
+          for (let i = 0; i < POLL_MAX_ATTEMPTS; i++) {
+            setPollProgress((i + 1) / POLL_MAX_ATTEMPTS);
+            const { data: tx } = await supabase
+              .from('payment_transactions')
+              .select('status, invoice_id')
+              .eq('transaction_reference', sessionId)
+              .maybeSingle();
+            if (tx?.status === 'completed' && tx.invoice_id) {
+              const { data: inv } = await supabase
+                .from('cadastral_invoices')
+                .select('id, parcel_number, selected_services, total_amount_usd')
+                .eq('id', tx.invoice_id)
+                .maybeSingle();
+              if (inv) { invoiceData = inv as any; break; }
+            }
+            if (tx?.status === 'failed') throw new Error('Le paiement cadastral a échoué.');
+            await new Promise(r => setTimeout(r, POLL_INTERVAL_MS));
+          }
+          if (invoiceData) {
+            const services = Array.isArray(invoiceData.selected_services)
+              ? invoiceData.selected_services as string[]
+              : [];
+            trackEvent('cadastral_service_purchase', {
+              parcel_number: invoiceData.parcel_number,
+              invoice_id: invoiceData.id,
+              service_ids: services,
+              service_count: services.length,
+              total_usd: invoiceData.total_amount_usd,
+              payment_method: 'STRIPE',
+            });
+            toast.success('Paiement réussi ! Vos services sont accessibles.');
+            window.dispatchEvent(new CustomEvent('cadastralPaymentCompleted'));
+          } else {
+            toast.message('Paiement confirmé, synchronisation en cours.');
           }
         } else {
           toast.success('Paiement réussi.');
