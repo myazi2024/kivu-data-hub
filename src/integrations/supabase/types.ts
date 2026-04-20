@@ -1762,6 +1762,7 @@ export type Database = {
       }
       cadastral_services_config: {
         Row: {
+          category: string
           created_at: string
           deleted_at: string | null
           description: string | null
@@ -1776,6 +1777,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          category?: string
           created_at?: string
           deleted_at?: string | null
           description?: string | null
@@ -1790,6 +1792,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          category?: string
           created_at?: string
           deleted_at?: string | null
           description?: string | null
