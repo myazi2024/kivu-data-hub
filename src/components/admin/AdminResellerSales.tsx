@@ -59,16 +59,23 @@ const AdminResellerSales = () => {
     fetchData();
   }, []);
 
+  const [regenerating, setRegenerating] = useState(false);
+
   const regenerateOrphans = async () => {
-    // Trigger backfill via RPC-less SQL: simply call the trigger by re-touching invoices
-    // We expose a thin helper: update updated_at to fire generate trigger
-    // Simpler: call a manual insert via backend? Use the trigger by toggling status (no — destructive).
-    // Instead, we re-run the same logic client-side using a dedicated DB function would be best,
-    // but to stay minimal we ask user to re-run migration or expose a regen RPC.
-    // Here we provide a no-op toast prompting admin action.
-    toast.info(
-      'Les ventes manquantes sont régénérées automatiquement par le trigger lors du prochain passage payé. Un re-backfill manuel est disponible via la migration.',
-    );
+    setRegenerating(true);
+    try {
+      const { data, error } = await (supabase as any).rpc('regenerate_orphan_reseller_sales');
+      if (error) throw error;
+      const row = Array.isArray(data) ? data[0] : data;
+      const inserted = row?.inserted_count ?? 0;
+      const scanned = row?.scanned_count ?? 0;
+      toast.success(`${inserted} vente(s) régénérée(s) sur ${scanned} facture(s) orpheline(s) scannée(s).`);
+      await fetchData();
+    } catch (e: any) {
+      toast.error(e?.message ?? 'Échec de la régénération');
+    } finally {
+      setRegenerating(false);
+    }
   };
 
   const totalCommission = sales.reduce((s, x) => s + Number(x.commission_earned_usd ?? 0), 0);
