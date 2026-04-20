@@ -28,6 +28,12 @@ import { evaluateServiceAvailability } from '@/lib/serviceAvailability';
 import BillingHeader from './billing/BillingHeader';
 import ServiceListItem from './billing/ServiceListItem';
 import BillingTotals from './billing/BillingTotals';
+import {
+  ClientFiscalIdentityForm,
+  EMPTY_FISCAL_IDENTITY,
+  validateFiscalIdentity,
+  type ClientFiscalIdentity,
+} from '@/components/billing/ClientFiscalIdentityForm';
 
 interface CadastralBillingPanelProps {
   searchResult: CadastralSearchResult;
@@ -201,18 +207,32 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
       });
       return;
     }
-    
+
+    // DGI : validation identité fiscale client
+    const fiscalError = validateFiscalIdentity(fiscalIdentity);
+    if (fiscalError) {
+      toast({
+        title: "Identification fiscale requise (DGI)",
+        description: fiscalError,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Mémoriser pour la prochaine facture
+    try { localStorage.setItem('bic_last_fiscal_identity', JSON.stringify(fiscalIdentity)); } catch {}
+
     setIsSubmitting(true);
     try {
       if (isPaymentRequired()) {
-        const invoice = await createInvoice(appliedDiscount ?? undefined);
+        const invoice = await createInvoice(appliedDiscount ?? undefined, fiscalIdentity);
         if (invoice) {
           setCurrentInvoice(invoice);
           setShowPaymentDialog(true);
         }
       } else {
         // Paiement non activé — accès gratuit (comme bypass)
-        const invoice = await createInvoice(appliedDiscount ?? undefined);
+        const invoice = await createInvoice(appliedDiscount ?? undefined, fiscalIdentity);
         if (invoice) {
           toast({
             title: "Accès accordé",
