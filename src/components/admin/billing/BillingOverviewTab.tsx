@@ -134,7 +134,9 @@ export const BillingOverviewTab = () => {
             <CardContent className="p-3">
               <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{t.cat}</div>
               <div className="text-lg font-bold">{t.count} <span className="text-xs font-normal text-muted-foreground">tarifs</span></div>
-              <div className="text-xs text-muted-foreground">Total ${t.sum.toFixed(2)}</div>
+              <div className="text-xs text-muted-foreground">
+                {t.cat === 'Lotissement' ? `${t.count} taux configurés (/m²)` : `Total $${t.sum.toFixed(2)}`}
+              </div>
             </CardContent>
           </Card>
         ))}
