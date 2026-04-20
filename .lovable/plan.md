@@ -1,47 +1,34 @@
 
 
-## Audit — Contrôle d'accès « Données foncières »
+## Audit post-implémentation — Contrôle d'accès « Données foncières »
 
-### ✅ Implémentation conforme au plan approuvé
+### ✅ Aucun bug détecté
 
-| Élément | Statut | Détails |
-|---|---|---|
-| `LAND_DATA_ROLES` dans `src/constants/roles.ts` | ✅ Présent | 8 rôles autorisés, `user` exclu |
-| `LandDataAccessGate.tsx` créé | ✅ 172 lignes | Gate + page bloquante intégrée |
-| Wrapper sur `/map` | ✅ Branché | `App.tsx` ligne ~94 |
-| Wrapper sur `/cadastral-map` | ✅ Branché | `App.tsx` ligne ~99 |
-| Routes `/test/*` (admin only) | ✅ Inchangées | Toujours sous `ProtectedRoute` admin/super_admin |
-| Cadenas dans navigation desktop | ✅ Affiché | Conditionnel via `isLandDataRestricted` |
-| Cadenas dans navigation mobile | ✅ Affiché | Même logique, ligne 286 |
-| Page bloquante — Bloc A (10 catégories) | ✅ Conforme | PII, hypothèques, litiges, fiscalité, etc. |
-| Page bloquante — CTA `/partnership` | ✅ Présent | Bouton primaire + icône `Handshake` |
-| Page bloquante — Bloc B (6 fonctionnalités) | ✅ Conforme | Carte, analytics, exports |
-| Lien retour accueil | ✅ Présent | Bouton `ghost` |
-| Helmet SEO (title + description) | ✅ Présent | Titre dédié |
-
-### ✅ Robustesse vérifiée
-
-- **Auth + profil** : double garde (`!user` → `/auth`, `!profile` → spinner) évite faux négatifs pendant le chargement du profil
-- **Mémorisation redirect** : `localStorage.setItem('auth_redirect_url', ...)` permet retour automatique post-login
-- **Navigation cohérente** : `<Navigation />` réintégrée dans la page bloquante (pas d'écran orphelin)
-- **Mode test** : routes `/test/map` et `/test/cadastral-map` intactes, accessibles aux admins
-- **Imports** : tous résolus (`LAND_DATA_ROLES`, lucide icons, `Helmet`, `Card`, `Badge`, `Button`)
-- **Aucune régression** : `ProtectedRoute` non modifié, permissions granulaires non touchées
+| Vérification | Résultat |
+|---|---|
+| Imports résolus (`LAND_DATA_ROLES`, `Lock`, `Navigation`, `Helmet`, etc.) | ✅ Tous présents |
+| `LandDataAccessGate` — gestion lifecycle (loading / !user / !profile / role check) | ✅ 4 branches couvertes |
+| Wrapper sur `/map` et `/cadastral-map` (`App.tsx`) | ✅ Branchés |
+| Routes `/test/map` et `/test/cadastral-map` | ✅ Inchangées (admin only) |
+| Cadenas conditionnel (`isLandDataRestricted`) — desktop ligne 154 + mobile ligne 286 | ✅ Affichage cohérent |
+| `Navigation` réintégrée dans la page bloquante | ✅ Pas d'écran orphelin |
+| Helmet SEO (title + description) | ✅ Présent |
+| CTA `/partnership` + retour `/` | ✅ Fonctionnels |
+| Console preview | ✅ Aucune erreur (uniquement warning HMR Lovable bénin) |
+| `ProtectedRoute` non modifié | ✅ Aucune régression sur autres routes |
 
 ### 🟡 Observations mineures (non bloquantes)
 
-1. **Lien Carte Cadastrale en mobile** : le menu liste « Données foncières » ET « Carte Cadastrale » comme entrées restreintes. Cohérent mais redondant — ok pour discoverability.
-2. **Cadenas non visible si `!profile`** : tant que le profil charge, l'icône cadenas n'apparaît pas. Acceptable (très court délai).
-3. **Pas de tracking analytics** sur clic restreint — non demandé dans le plan, à envisager si besoin de mesurer le taux de conversion vers `/partnership`.
+1. **Profil en cours de chargement** : tant que `profile` est `null`, le gate affiche un spinner. Acceptable mais peut donner une impression de latence si la requête profile est lente. Pas un bug.
+2. **Cadenas dans navigation mobile** : les deux entrées (« Données foncières » + « Carte Cadastrale ») affichent le cadenas — cohérent puisque les deux routes sont gardées.
+3. **Aucune télémétrie sur clic restreint** : non demandé dans le plan ; à envisager si besoin de mesurer la conversion vers `/partnership`.
 
 ### 🟢 Conclusion
 
-**Implémentation complète et conforme.** Aucun bug détecté, aucun import cassé, aucune régression sur les routes existantes. La fonctionnalité est prête pour validation utilisateur :
+L'implémentation est **conforme au plan approuvé**, sans régression ni import cassé. Aucune action corrective requise.
 
 - `user` → page d'information avec listes A/B + CTA `/partnership` ✅
-- `notaire` / `partner` / `admin` / autres rôles métier → accès direct ✅
+- Rôles métier (`notaire`, `partner`, `admin`, etc.) → accès direct ✅
 - Non connecté → `/auth` avec mémorisation de la cible ✅
-- Admin en mode test → `/test/map` accessible ✅
-
-Aucune action corrective requise.
+- Admin en mode test → `/test/map` & `/test/cadastral-map` accessibles ✅
 
