@@ -12,6 +12,7 @@ import { normalizeTitleType } from '@/utils/titleTypeNormalizer';
 import DRCMapWithTooltip from './DRCMapWithTooltip';
 import DRCCommunesMap from './DRCCommunesMap';
 import DRCQuartiersMap from './DRCQuartiersMap';
+import DRCQuartiersAllMap from './DRCQuartiersAllMap';
 import DRCTerritoiresMap from './DRCTerritoiresMap';
 
 import { ProvinceData } from '@/types/province';
