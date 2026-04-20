@@ -10,6 +10,7 @@ export interface CadastralService {
   icon_name?: string | null;
   required_data_fields?: unknown;
   display_order?: number | null;
+  category?: string | null;
 }
 
 /**
@@ -44,6 +45,7 @@ export const useCadastralServices = () => {
         icon_name: service.icon_name ?? null,
         required_data_fields: service.required_data_fields ?? null,
         display_order: service.display_order ?? null,
+        category: (service as any).category ?? 'consultation',
       }));
 
       setServices(mappedServices);

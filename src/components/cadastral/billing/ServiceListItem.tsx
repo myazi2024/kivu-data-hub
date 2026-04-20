@@ -31,6 +31,14 @@ const ServiceListItem: React.FC<ServiceListItemProps> = ({
 }) => {
   const isDisabled = !hasData || isAlreadyPaid;
 
+  const category = service.category ?? 'consultation';
+  const categoryMeta: Record<string, { label: string; className: string }> = {
+    consultation: { label: 'Consultation', className: 'bg-muted text-muted-foreground border-border' },
+    fiscal: { label: 'Fiscal', className: 'bg-secondary text-secondary-foreground border-border' },
+    juridique: { label: 'Juridique', className: 'bg-destructive/10 text-destructive border-destructive/30' },
+  };
+  const catInfo = categoryMeta[category] ?? categoryMeta.consultation;
+
   return (
     <div
       onClick={() => !isDisabled && onToggleSelect()}
@@ -59,12 +67,17 @@ const ServiceListItem: React.FC<ServiceListItemProps> = ({
         </div>
 
         <div className="flex-1 min-w-0">
-          <h4 className={`
-            font-medium leading-tight truncate
-            ${hasData ? 'text-sm text-foreground' : 'text-xs text-muted-foreground'}
-          `}>
-            {service.name}
-          </h4>
+          <div className="flex items-center gap-1.5">
+            <h4 className={`
+              font-medium leading-tight truncate
+              ${hasData ? 'text-sm text-foreground' : 'text-xs text-muted-foreground'}
+            `}>
+              {service.name}
+            </h4>
+            <span className={`shrink-0 hidden sm:inline-flex items-center rounded-full border px-1.5 py-0 text-[9px] font-medium leading-4 ${catInfo.className} ${hasData ? '' : 'opacity-60'}`}>
+              {catInfo.label}
+            </span>
+          </div>
           {isAlreadyPaid ? (
             <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">✓ Déjà acheté</span>
           ) : !hasData ? (
