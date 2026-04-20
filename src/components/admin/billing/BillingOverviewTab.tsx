@@ -195,7 +195,7 @@ export const BillingOverviewTab = () => {
                     <TableCell className="text-xs"><Badge variant="outline" className="text-[10px]">{r.category}</Badge></TableCell>
                     <TableCell className="text-xs font-medium max-w-[200px] truncate">{r.name}</TableCell>
                     <TableCell className="text-xs text-muted-foreground">{r.reference}</TableCell>
-                    <TableCell className="text-xs text-right font-semibold">${r.price_usd.toFixed(2)}</TableCell>
+                    <TableCell className="text-xs text-right font-semibold">${r.price_usd.toFixed(2)}{r.category === 'Lotissement' ? <span className="text-[10px] font-normal text-muted-foreground">/m²</span> : null}</TableCell>
                     <TableCell>
                       <Badge variant={r.status === 'actif' || r.status === 'published' ? 'default' : 'secondary'} className="text-[10px]">{r.status}</Badge>
                     </TableCell>
