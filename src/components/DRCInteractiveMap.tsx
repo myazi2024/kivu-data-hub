@@ -71,12 +71,21 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
   const mapCardRef = React.useRef<HTMLDivElement>(null);
 
   const isMobile = useIsMobile();
-  const swipeRef = useSwipeNavigation<HTMLDivElement>({
+  const prefersReducedMotion = typeof window !== 'undefined'
+    && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  const onAnalyticsPanel = activeMobilePanel === 'analytics';
+  const { ref: swipeRef, isSwiping, swipeDelta } = useSwipeNavigation<HTMLDivElement>({
     enabled: isMobile,
     ignoreSelector: '[data-no-swipe], svg[role="img"], [role="dialog"], [data-radix-popper-content-wrapper]',
+    direction: onAnalyticsPanel ? 'right' : 'left',
     onSwipeLeft: () => setActiveMobilePanel('analytics'),
     onSwipeRight: () => setActiveMobilePanel('map'),
   });
+
+  // Rubber-band: dx limité à ±24px, atténué à 15%
+  const rubberBand = !prefersReducedMotion && isSwiping
+    ? Math.max(-24, Math.min(24, swipeDelta * 0.15))
+    : 0;
 
   // Hint one-shot: indique à l'utilisateur mobile la disponibilité du swipe
   useEffect(() => {
