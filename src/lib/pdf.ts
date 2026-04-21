@@ -64,6 +64,22 @@ function formatBilingual(amountUsd: number, rate: number): string {
 
 export type InvoiceFormat = 'mini' | 'a4';
 
+/** Mapping centralisé des couleurs de statut — partagé entre PDF (jsPDF) et aperçu HTML pour garantir la parité WYSIWYG. */
+export type InvoiceStatusKey = 'paid' | 'pending' | 'failed';
+export const INVOICE_STATUS_COLORS: Record<InvoiceStatusKey, { hex: string; rgb: [number, number, number] }> = {
+  paid:    { hex: '#27ae60', rgb: [39, 174, 96] },
+  pending: { hex: '#e74c3c', rgb: [231, 76, 60] },
+  failed:  { hex: '#c0392b', rgb: [192, 57, 43] },
+};
+export const INVOICE_STATUS_LABELS: Record<InvoiceStatusKey, string> = {
+  paid: 'PAYÉE',
+  pending: 'EN ATTENTE',
+  failed: 'ÉCHEC',
+};
+export function resolveInvoiceStatus(raw: string | null | undefined): InvoiceStatusKey {
+  return raw === 'paid' ? 'paid' : raw === 'pending' ? 'pending' : 'failed';
+}
+
 /** Convertit une couleur hex (#rrggbb) en tuple RGB jsPDF. Fallback sur defaultRgb si invalide. */
 function hexToRgb(hex: string | undefined | null, defaultRgb: [number, number, number]): [number, number, number] {
   if (!hex) return defaultRgb;
@@ -345,7 +361,9 @@ async function generateA4InvoicePDF(
   }
 
   // Référence parcelle + statut (droite, à hauteur du bloc client)
-  const statusText = invoice.status === 'paid' ? 'PAYÉE' : invoice.status === 'pending' ? 'EN ATTENTE' : 'ÉCHEC';
+  const statusKey = resolveInvoiceStatus(invoice.status);
+  const statusText = INVOICE_STATUS_LABELS[statusKey];
+  const statusRgb = INVOICE_STATUS_COLORS[statusKey].rgb;
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(9);
   doc.setTextColor(headerRgb[0], headerRgb[1], headerRgb[2]);
@@ -358,7 +376,7 @@ async function generateA4InvoicePDF(
     doc.text(`Zone: ${invoice.geographical_zone}`, pageWidth - margin, cursorY - 7, { align: 'right' });
   }
   doc.setFont('helvetica', 'bold');
-  doc.setTextColor(invoice.status === 'paid' ? 39 : 231, invoice.status === 'paid' ? 174 : 76, invoice.status === 'paid' ? 96 : 60);
+  doc.setTextColor(statusRgb[0], statusRgb[1], statusRgb[2]);
   doc.text(`Statut: ${statusText}`, pageWidth - margin, cursorY - 3, { align: 'right' });
 
   cursorY += 6;
