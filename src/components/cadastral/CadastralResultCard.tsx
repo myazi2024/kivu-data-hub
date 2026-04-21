@@ -8,6 +8,7 @@ import CadastralInvoice from './CadastralInvoice';
 import CadastralContributionDialog from './CadastralContributionDialog';
 import CadastralDocumentView from './CadastralDocumentView';
 import { supabase } from '@/integrations/supabase/client';
+import { useInvoiceTemplateConfig } from '@/hooks/useInvoiceTemplateConfig';
 
 interface CadastralResultCardProps {
   result: CadastralSearchResult;
@@ -27,6 +28,14 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
   const { parcel, ownership_history, tax_history, mortgage_history, boundary_history, building_permits } = result;
   const { services: catalogServices } = useCadastralServices();
   const { user } = useAuth();
+  const { config: invoiceTplConfig } = useInvoiceTemplateConfig();
+
+  // Sync default format from admin config
+  React.useEffect(() => {
+    if (invoiceTplConfig?.default_format) {
+      setInvoiceFormat(invoiceTplConfig.default_format);
+    }
+  }, [invoiceTplConfig?.default_format]);
 
   const catalogServiceIdsRef = useRef<string[]>([]);
   React.useEffect(() => {

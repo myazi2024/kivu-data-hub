@@ -39,7 +39,13 @@ const buildSampleServices = (): CadastralService[] => ([
 
 const fmt = (n: number) => n.toFixed(2).replace('.', ',');
 
-const InvoicePreviewA4 = ({ config, info }: { config: InvoiceTemplateConfig; info: CompanyLegalInfo }) => {
+const PAYMENT_METHOD_LABELS: Record<string, string> = {
+  mobile_money: 'Mobile Money',
+  card: 'Carte bancaire',
+  bank_transfer: 'Virement bancaire',
+};
+
+const InvoicePreviewA4 = ({ config, info, paymentMethod }: { config: InvoiceTemplateConfig; info: CompanyLegalInfo; paymentMethod: string }) => {
   const total = 50;
   const baseHT = total / (1 + config.tva_rate);
   const tva = total - baseHT;
@@ -95,7 +101,7 @@ const InvoicePreviewA4 = ({ config, info }: { config: InvoiceTemplateConfig; inf
           <p style={{ fontSize: '8pt', fontWeight: 'bold', textTransform: 'uppercase', color: '#6b7280', margin: 0 }}>Référence</p>
           <p style={{ margin: '4px 0 0' }}>Parcelle: <strong>KIN/GOM/2025/0001</strong></p>
           <p style={{ margin: 0, color: '#4b5563' }}>Zone: Gombe</p>
-          <p style={{ margin: 0, color: '#4b5563' }}>Mode: Mobile Money</p>
+          <p style={{ margin: 0, color: '#4b5563' }}>Mode: {PAYMENT_METHOD_LABELS[paymentMethod] || paymentMethod}</p>
         </div>
       </div>
 
@@ -110,13 +116,13 @@ const InvoicePreviewA4 = ({ config, info }: { config: InvoiceTemplateConfig; inf
           </tr>
         </thead>
         <tbody>
-          <tr style={{ borderBottom: '1px solid #e5e7eb' }}>
+          <tr style={{ borderBottom: `1px solid ${config.secondary_color}33` }}>
             <td style={{ padding: '8px 10px' }}>Fiche cadastrale complète</td>
             <td style={{ padding: '8px 10px', textAlign: 'center' }}>1</td>
             <td style={{ padding: '8px 10px', textAlign: 'right' }}>30,00</td>
             <td style={{ padding: '8px 10px', textAlign: 'right' }}>30,00</td>
           </tr>
-          <tr style={{ borderBottom: '1px solid #e5e7eb' }}>
+          <tr style={{ borderBottom: `1px solid ${config.secondary_color}33` }}>
             <td style={{ padding: '8px 10px' }}>Historique de propriété</td>
             <td style={{ padding: '8px 10px', textAlign: 'center' }}>1</td>
             <td style={{ padding: '8px 10px', textAlign: 'right' }}>20,00</td>
@@ -240,6 +246,7 @@ export const InvoicePreviewPanel = () => {
   const { info } = useCompanyLegalInfo();
   const [generating, setGenerating] = useState(false);
   const [format, setFormat] = useState<'a4' | 'mini'>(config.default_format || 'a4');
+  const [paymentMethod, setPaymentMethod] = useState<string>('mobile_money');
   const [scale, setScale] = useState(1);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
@@ -297,15 +304,26 @@ export const InvoicePreviewPanel = () => {
               Mini reçu
             </button>
           </div>
-          <Button variant="ghost" size="sm" onClick={refetch}>
-            <RefreshCw className="h-4 w-4 mr-2" /> Rafraîchir
-          </Button>
+          <div className="flex items-center gap-2">
+            <select
+              value={paymentMethod}
+              onChange={(e) => setPaymentMethod(e.target.value)}
+              className="h-8 text-xs rounded-md border border-border bg-background px-2"
+            >
+              <option value="mobile_money">Mobile Money</option>
+              <option value="card">Carte bancaire</option>
+              <option value="bank_transfer">Virement bancaire</option>
+            </select>
+            <Button variant="ghost" size="sm" onClick={refetch}>
+              <RefreshCw className="h-4 w-4 mr-2" /> Rafraîchir
+            </Button>
+          </div>
         </div>
 
         <div ref={wrapperRef} className="bg-muted/40 rounded-lg p-4 overflow-auto" style={{ minHeight: 400 }}>
           {format === 'a4' ? (
             <div style={{ transform: `scale(${scale})`, transformOrigin: 'top left', width: '210mm', height: `${297 * scale}mm` }}>
-              <InvoicePreviewA4 config={config} info={info} />
+              <InvoicePreviewA4 config={config} info={info} paymentMethod={paymentMethod} />
             </div>
           ) : (
             <div className="py-4">
