@@ -190,6 +190,7 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
         result={result}
         paidServices={paidServices}
         onDownloadPDF={handleDownloadPDF}
+        isDownloadingPDF={isDownloadingInvoice}
       />
     </>
   );
