@@ -207,7 +207,7 @@ async function generateMiniInvoicePDF(
   doc.text(`Régime: ${TAX_REGIME_LABELS[company.tax_regime] || company.tax_regime}`,
     pageWidth / 2, cursorY, { align: 'center' });
 
-  saveDocument(doc, filename || `facture_normalisee_${formatDateForFilename()}_${invoice.invoice_number.replace(/[^0-9A-Za-z]/g, '_')}.pdf`);
+  saveDocument(doc, filename || `facture_normalisee_${formatDateForFilename()}_${invoice.invoice_number.replace(/[^0-9A-Za-z]/g, '_')}.pdf`, options);
 }
 
 /**
@@ -529,7 +529,7 @@ async function generateA4InvoicePDF(
     }
   }
 
-  saveDocument(doc, filename || `facture_normalisee_${formatDateForFilename()}_${invoice.invoice_number.replace(/[^0-9A-Za-z]/g, '_')}.pdf`);
+  saveDocument(doc, filename || `facture_normalisee_${formatDateForFilename()}_${invoice.invoice_number.replace(/[^0-9A-Za-z]/g, '_')}.pdf`, options);
 }
 
 // Fonctions utilitaires
