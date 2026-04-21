@@ -64,6 +64,22 @@ function formatBilingual(amountUsd: number, rate: number): string {
 
 export type InvoiceFormat = 'mini' | 'a4';
 
+/** Mapping centralisé des couleurs de statut — partagé entre PDF (jsPDF) et aperçu HTML pour garantir la parité WYSIWYG. */
+export type InvoiceStatusKey = 'paid' | 'pending' | 'failed';
+export const INVOICE_STATUS_COLORS: Record<InvoiceStatusKey, { hex: string; rgb: [number, number, number] }> = {
+  paid:    { hex: '#27ae60', rgb: [39, 174, 96] },
+  pending: { hex: '#e74c3c', rgb: [231, 76, 60] },
+  failed:  { hex: '#c0392b', rgb: [192, 57, 43] },
+};
+export const INVOICE_STATUS_LABELS: Record<InvoiceStatusKey, string> = {
+  paid: 'PAYÉE',
+  pending: 'EN ATTENTE',
+  failed: 'ÉCHEC',
+};
+export function resolveInvoiceStatus(raw: string | null | undefined): InvoiceStatusKey {
+  return raw === 'paid' ? 'paid' : raw === 'pending' ? 'pending' : 'failed';
+}
+
 /** Convertit une couleur hex (#rrggbb) en tuple RGB jsPDF. Fallback sur defaultRgb si invalide. */
 function hexToRgb(hex: string | undefined | null, defaultRgb: [number, number, number]): [number, number, number] {
   if (!hex) return defaultRgb;
