@@ -63,7 +63,11 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
 
   const [hoveredProvince, setHoveredProvince] = useState<string | null>(null);
   const [mapInstance, setMapInstance] = useState<any>(null);
-  const [activeMobilePanel, setActiveMobilePanel] = useState<'map' | 'details' | 'analytics'>('map');
+  const [activeMobilePanel, setActiveMobilePanel] = useState<'map' | 'analytics'>('map');
+  const [hintShown, setHintShown] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return true;
+    try { return localStorage.getItem('drc-map-swipe-hint-shown') === '1'; } catch { return true; }
+  });
   const [isMapZoomed, setIsMapZoomed] = useState(false);
   
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -74,40 +78,31 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
   const prefersReducedMotion = typeof window !== 'undefined'
     && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
   const onAnalyticsPanel = activeMobilePanel === 'analytics';
-  // Hint one-shot affiché lors du tout premier swipe réussi sur mobile
-  const showSwipeHintOnce = useCallback((direction: 'left' | 'right') => {
-    try {
-      if (localStorage.getItem('drc-map-swipe-hint-shown') === '1') return;
-      const message = direction === 'left'
-        ? 'Astuce : glissez vers la droite pour revenir à la Carte'
-        : 'Astuce : glissez vers la gauche pour ouvrir Analytics';
-      toast(message, {
-        duration: 3500,
+  // Hint one-shot affiché peu après le montage sur mobile (découvrabilité)
+  useEffect(() => {
+    if (!isMobile || hintShown) return;
+    const id = window.setTimeout(() => {
+      toast('Astuce : glissez horizontalement pour passer entre la Carte et Analytics', {
+        duration: 4000,
         icon: '👉',
       });
-      localStorage.setItem('drc-map-swipe-hint-shown', '1');
-    } catch {
-      /* localStorage indisponible */
-    }
-  }, []);
+      try { localStorage.setItem('drc-map-swipe-hint-shown', '1'); } catch { /* noop */ }
+      setHintShown(true);
+    }, 800);
+    return () => window.clearTimeout(id);
+  }, [isMobile, hintShown]);
 
   const { ref: swipeRef, isSwiping, swipeDelta } = useSwipeNavigation<HTMLDivElement>({
     enabled: isMobile,
     ignoreSelector: '[data-swipe-ignore], [role="dialog"], [data-radix-popper-content-wrapper], button, a, input, textarea, select',
     direction: onAnalyticsPanel ? 'right' : 'left',
-    onSwipeLeft: () => {
-      setActiveMobilePanel('analytics');
-      showSwipeHintOnce('left');
-    },
-    onSwipeRight: () => {
-      setActiveMobilePanel('map');
-      showSwipeHintOnce('right');
-    },
+    onSwipeLeft: () => setActiveMobilePanel('analytics'),
+    onSwipeRight: () => setActiveMobilePanel('map'),
   });
 
-  // Rubber-band: dx limité à ±24px, atténué à 15%
+  // Rubber-band: dx limité à ±40px, atténué à 18% (retour tactile plus net)
   const rubberBand = !prefersReducedMotion && isSwiping
-    ? Math.max(-24, Math.min(24, swipeDelta * 0.15))
+    ? Math.max(-40, Math.min(40, swipeDelta * 0.18))
     : 0;
 
 
@@ -348,15 +343,15 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
 
         <div className="lg:hidden fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50">
           <div className="flex flex-col items-center gap-1.5">
-            {/* Pagination dots */}
+            {/* Pagination dots — la dot inactive pulse tant que le hint n'a pas été vu */}
             <div className="flex items-center gap-1.5" role="tablist" aria-label="Vue active">
               <span
                 aria-hidden="true"
-                className={`h-1.5 rounded-full transition-all duration-200 ${onAnalyticsPanel ? 'bg-muted w-1.5' : 'bg-primary w-4'}`}
+                className={`h-1.5 rounded-full transition-all duration-200 ${onAnalyticsPanel ? `bg-muted w-1.5 ${!hintShown ? 'animate-pulse' : ''}` : 'bg-primary w-4'}`}
               />
               <span
                 aria-hidden="true"
-                className={`h-1.5 rounded-full transition-all duration-200 ${onAnalyticsPanel ? 'bg-primary w-4' : 'bg-muted w-1.5'}`}
+                className={`h-1.5 rounded-full transition-all duration-200 ${onAnalyticsPanel ? 'bg-primary w-4' : `bg-muted w-1.5 ${!hintShown ? 'animate-pulse' : ''}`}`}
               />
             </div>
             <div className="flex items-center justify-center gap-1.5 bg-background/95 backdrop-blur-sm border border-border/50 rounded-full px-2.5 py-1.5 shadow-lg">
@@ -380,14 +375,20 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
           />
         )}
 
-        {/* Desktop: grille 2 colonnes | Mobile: 2 panneaux côte à côte */}
-        <div className="flex-1 min-h-0 flex flex-col lg:grid lg:grid-cols-12 gap-1 sm:gap-2 p-1 sm:p-2 pb-14 lg:pb-2">
-          
+        {/* Desktop: grille 2 colonnes | Mobile: track horizontal 200% qui slide */}
+        <div className="flex-1 min-h-0 overflow-hidden p-1 sm:p-2 pb-14 lg:pb-2">
+          <div
+            style={isMobile ? {
+              width: '200%',
+              transform: `translateX(calc(${onAnalyticsPanel ? '-50%' : '0%'} + ${rubberBand}px))`,
+              transition: isSwiping ? 'none' : 'transform 280ms cubic-bezier(.2,.8,.2,1)',
+            } : undefined}
+            className="h-full flex flex-row lg:w-auto lg:grid lg:grid-cols-12 gap-1 sm:gap-2"
+          >
+
           {/* Colonne gauche: Carte + Détails province */}
           <div
-            key={isMobile ? `mobile-left-${activeMobilePanel}` : 'left'}
-            style={isMobile && !onAnalyticsPanel && rubberBand !== 0 ? { transform: `translateX(${rubberBand}px)`, transition: isSwiping ? 'none' : 'transform 280ms ease-out' } : undefined}
-            className={`${activeMobilePanel === 'analytics' ? 'hidden lg:flex' : 'flex animate-fade-in lg:animate-none'} lg:col-span-4 flex-col min-h-0 h-full gap-1 sm:gap-2`}
+            className="w-1/2 lg:w-auto shrink-0 lg:shrink lg:col-span-4 flex flex-col min-h-0 h-full gap-1 sm:gap-2"
           >
             
             {/* Carte RDC */}
@@ -639,9 +640,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
 
           {/* Colonne droite: Analytics */}
           <div
-            key={isMobile ? `mobile-right-${activeMobilePanel}` : 'right'}
-            style={isMobile && onAnalyticsPanel && rubberBand !== 0 ? { transform: `translateX(${rubberBand}px)`, transition: isSwiping ? 'none' : 'transform 280ms ease-out' } : undefined}
-            className={`${activeMobilePanel !== 'analytics' ? 'hidden lg:flex' : 'flex animate-fade-in lg:animate-none'} lg:col-span-8 flex-col min-h-0 h-full`}
+            className="w-1/2 lg:w-auto shrink-0 lg:shrink lg:col-span-8 flex flex-col min-h-0 h-full"
           >
             <Card className="flex-1 flex flex-col overflow-hidden border-border/30 min-h-0">
               <CardHeader className="px-2 py-1 border-b border-border/20 flex-shrink-0">
@@ -682,6 +681,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                 </div>
               </CardContent>
             </Card>
+          </div>
           </div>
         </div>
     </div>
