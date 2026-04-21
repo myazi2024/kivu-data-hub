@@ -1,37 +1,93 @@
 
 
-## Cleanup Lot 3 — Code mort & clarification commissions
+## Refacturation pass-through — workflow & contrôle de cohérence
 
-### Objectifs
-Éliminer les résidus de la refonte commissions/recouvrement et clarifier la séparation des responsabilités entre les modules de paiement aux revendeurs.
+### Contexte
+Aujourd'hui les frais providers (Stripe/MoMo) sont stockés sur `payment_transactions.provider_fee_usd` mais absorbés par BIC (`net_amount_usd` = revenu net). Pour certains contrats (revendeurs grands comptes, partenaires institutionnels), ces frais doivent être **refacturés au client final** sous forme de ligne dédiée — avec une facture pass-through générée automatiquement et un contrôle de cohérence garantissant que ce qui est refacturé = ce qui a été réellement payé au provider.
 
-### Changements
+### Objectif
+Permettre à l'admin de définir des **règles de refacturation** par contrat (revendeur, partenaire, méthode de paiement), générer automatiquement une **facture pass-through** mensuelle agrégeant les frais réellement supportés, et bloquer toute incohérence entre frais providers réels et montants refacturés.
 
-**1. Suppression code mort**
-- Supprimer `src/components/admin/AdminResellerSales.tsx` (plus référencé nulle part — fonctionnalité absorbée par l'onglet « Ventes » de `AdminResellerCommissions`).
-- Vérifier qu'aucun import résiduel ne subsiste (`Admin.tsx`, `sidebarConfig.ts`).
+### Architecture
 
-**2. Clarification sidebar — section Commerce**
-État actuel ambigu : deux entrées proches (`AdminCommissions` = paiements/payouts globaux, `AdminResellerCommissions` = vue revendeurs avec onglet Paiements).
-- Renommer `AdminCommissions` → libellé sidebar « Payouts revendeurs » (table brute des virements émis, vue opérationnelle finance).
-- Garder `AdminResellerCommissions` sous « Commissions revendeurs » (vue analytique/synthèse par revendeur).
-- Ajouter un cross-link en haut de chaque module vers l'autre, avec un encart explicatif court (1 ligne) pour lever l'ambiguïté.
+**1. Table `passthrough_rules`**
+Règles configurables par admin :
+- `scope_type` (`reseller` | `partner` | `payment_method` | `global`)
+- `scope_id` (FK selon scope, null si global)
+- `markup_pct` (marge ajoutée sur les frais, ex: 0 = pass-through pur, 5 = +5%)
+- `min_amount_usd` (seuil minimum pour générer une facture)
+- `billing_cycle` (`monthly` | `quarterly`)
+- `active`, `created_by`, `created_at`
 
-**3. Scaling régénération orphelines**
-- Déplacer la logique de scan orphelins de `AdminResellerCommissions` (limite client 2000 factures) vers une RPC SQL `get_orphan_reseller_invoices_count()` + adapter `regenerate_orphan_reseller_sales` pour traiter sans limite côté serveur.
-- L'UI affiche juste le compteur retourné par la RPC + bouton de régénération.
+**2. Table `passthrough_invoices`**
+Factures pass-through générées :
+- `period_start`, `period_end`, `scope_type`, `scope_id`
+- `total_provider_fees_usd` (somme réelle issue de `payment_transactions`)
+- `markup_amount_usd`, `total_billed_usd`, `currency`
+- `status` (`draft` | `validated` | `sent` | `paid` | `disputed` | `cancelled`)
+- `transaction_count`, `consistency_check_passed` (boolean)
+- `invoice_number` (séquence dédiée `PT-YYYYMM-NNNN`)
+- `pdf_url`, `sent_at`, `paid_at`
 
-**4. Mémoire**
-- Mettre à jour `mem://admin/reseller-commissions-unified-fr.md` pour refléter la séparation finale Payouts vs Commissions et la RPC orphelins serveur.
+**3. Table `passthrough_invoice_lines`**
+Détail ligne par ligne pour traçabilité :
+- `passthrough_invoice_id`, `payment_transaction_id`
+- `provider`, `provider_fee_usd`, `markup_usd`, `billed_usd`
+- `transaction_date`
 
-### Fichiers touchés
-- Suppression : `src/components/admin/AdminResellerSales.tsx`
-- Édition : `src/components/admin/AdminResellerCommissions.tsx`, `src/components/admin/AdminCommissions.tsx`, `src/components/admin/sidebarConfig.ts`
-- Migration SQL : nouvelle RPC `get_orphan_reseller_invoices_count` + ajustement `regenerate_orphan_reseller_sales`
-- Mémoire : `mem://admin/reseller-commissions-unified-fr.md`
+**4. RPC `generate_passthrough_invoices(period_start, period_end)`**
+- SECURITY DEFINER, admin only
+- Pour chaque règle active : agrège les `payment_transactions` du scope sur la période
+- Vérifie `total_billed_usd = sum(provider_fee_usd) * (1 + markup_pct/100)` → `consistency_check_passed`
+- Crée brouillon `passthrough_invoices` + lignes détaillées
+- Skip si total < `min_amount_usd`
+- Idempotent (clé unique scope + période)
+
+**5. RPC `validate_passthrough_invoice(invoice_id)`**
+- Recalcule à partir des `payment_transactions` réelles au moment de la validation
+- Bloque si écart > 0.01 USD entre stocké et recalculé
+- Passe statut `draft` → `validated`, génère `invoice_number`
+
+**6. Trigger `check_passthrough_consistency`**
+- Sur INSERT/UPDATE de `passthrough_invoice_lines`
+- Vérifie cohérence ligne par ligne : `billed_usd = provider_fee_usd * (1 + markup/100)`
+- Refuse l'opération si écart détecté
+
+**7. Cron mensuel `auto_generate_passthrough`**
+- 1er du mois à 02:00 UTC
+- Appelle `generate_passthrough_invoices` pour le mois précédent
+- Notifie admins via `notifications` (canal `finance`)
+
+### UI Admin — module `AdminPassthroughBilling`
+Nouvelle entrée sidebar **Finance → Refacturation pass-through** (`tab=passthrough`).
+
+3 onglets :
+- **Règles** : CRUD `passthrough_rules`, toggle actif/inactif, preview impact (somme frais éligibles 30j)
+- **Factures** : liste `passthrough_invoices` avec filtres période/statut/scope, badge cohérence (vert/rouge), actions valider/envoyer/annuler, drill-down lignes détaillées, export CSV/PDF
+- **Anomalies** : factures avec `consistency_check_passed = false`, factures en `disputed`, transactions éligibles non refacturées (orphelines)
+
+### Sécurité & cohérence
+- RLS : lecture/écriture admin uniquement (`has_role(auth.uid(), 'admin')`)
+- Toutes RPC en SECURITY DEFINER avec `SET search_path = public`
+- Statuts EN normalisés (mémoire `status-normalization-pattern-fr`)
+- Écart de tolérance hardcodé à 0.01 USD (cents)
+- Vue `passthrough_billing_summary` : KPI total facturé, marge, taux de cohérence (mois courant + 12 derniers mois)
+
+### Mémoire à créer
+`mem://admin/passthrough-billing-fr.md` — règles configurables par scope, génération mensuelle automatique, double contrôle cohérence (trigger ligne + RPC validation), idempotence par clé unique scope+période.
+
+### Fichiers
+- Migration SQL : tables + RPC + trigger + cron + RLS
+- `src/components/admin/AdminPassthroughBilling.tsx` (orchestrateur 3 onglets)
+- `src/components/admin/passthrough/PassthroughRulesTab.tsx`
+- `src/components/admin/passthrough/PassthroughInvoicesTab.tsx`
+- `src/components/admin/passthrough/PassthroughAnomaliesTab.tsx`
+- `src/components/admin/passthrough/PassthroughInvoiceDetailDialog.tsx`
+- Édition `src/components/admin/sidebarConfig.ts` + `src/pages/Admin.tsx` (lazy import)
+- Mémoire + mise à jour `mem://index.md`
 
 ### Hors scope
-- Pas de refonte UI des modules existants
-- Pas de changement RLS
-- Pas de modification edge functions
+- Pas d'envoi email automatique (reste manuel dans onglet Factures)
+- Pas de génération PDF avancée (réutilise `generateInvoicePdf` existant)
+- Pas de support multi-devise (USD only en v1, alignement reste de la stack billing)
 
