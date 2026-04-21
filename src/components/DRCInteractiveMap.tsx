@@ -70,6 +70,30 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
   const [forcedTab, setForcedTab] = useState<string | null>(null);
   const mapCardRef = React.useRef<HTMLDivElement>(null);
 
+  const isMobile = useIsMobile();
+  const swipeRef = useSwipeNavigation<HTMLDivElement>({
+    enabled: isMobile,
+    ignoreSelector: '[data-no-swipe], svg[role="img"], [role="dialog"], [data-radix-popper-content-wrapper]',
+    onSwipeLeft: () => setActiveMobilePanel('analytics'),
+    onSwipeRight: () => setActiveMobilePanel('map'),
+  });
+
+  // Hint one-shot: indique à l'utilisateur mobile la disponibilité du swipe
+  useEffect(() => {
+    if (!isMobile) return;
+    try {
+      if (localStorage.getItem('drc-map-swipe-hint-shown') === '1') return;
+      const t = setTimeout(() => {
+        toast('Astuce : glissez horizontalement pour basculer Carte ↔ Analytics', { duration: 3500 });
+        localStorage.setItem('drc-map-swipe-hint-shown', '1');
+      }, 800);
+      return () => clearTimeout(t);
+    } catch {
+      /* localStorage indisponible */
+    }
+  }, [isMobile]);
+
+
   const { isTestRoute } = useTestEnvironment();
   const { data: analytics, isLoading, dataUpdatedAt } = useLandDataAnalytics(isTestRoute);
   const { config: brandingConfig } = useAppAppearance();
