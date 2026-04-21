@@ -253,6 +253,8 @@ async function generateA4InvoicePDF(
   let cursorY = margin;
 
   const exchangeRate = Number(invoice.exchange_rate_used || 1);
+  const headerRgb = hexToRgb(tplCfg.header_color, [0, 51, 102]);
+  const secondaryRgb = hexToRgb(tplCfg.secondary_color, [0, 51, 102]);
 
   // ===== EN-TÊTE OFFICIEL =====
   const a4Logo = await fetchAppLogo();
