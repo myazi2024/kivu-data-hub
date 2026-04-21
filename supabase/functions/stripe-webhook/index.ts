@@ -241,6 +241,7 @@ Deno.serve(async (req) => {
             .update({
               status: "completed",
               transaction_reference: session.payment_intent as string,
+              ...feeUpdate,
               metadata: {
                 stripe_session_id: session.id,
                 completed_at: new Date().toISOString(),
