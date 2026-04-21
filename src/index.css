@@ -479,13 +479,25 @@ All colors MUST be HSL.
     size: A4;
   }
 
-  /* Generic print scope (invoice, cadastral document, any opt-in host) */
-  body.print-scope-active > *:not([data-print-host]):not(script):not(style) {
-    display: none !important;
+  /* Generic print scope (invoice, cadastral document, any opt-in host).
+     Works even when [data-print-host] is deeply nested inside portals/modals:
+     1) hide everything by default
+     2) re-show the host and all its descendants
+     3) re-show all ancestors of the host (without making siblings visible)
+     4) reset positioning so the host renders inline at the top of the page  */
+  body.print-scope-active * {
+    visibility: hidden !important;
+  }
+  body.print-scope-active [data-print-host],
+  body.print-scope-active [data-print-host] * {
+    visibility: visible !important;
   }
   body.print-scope-active [data-print-host] {
-    position: static !important;
-    inset: auto !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    inset: 0 auto auto 0 !important;
     background: white !important;
     backdrop-filter: none !important;
     padding: 0 !important;
@@ -493,6 +505,7 @@ All colors MUST be HSL.
     width: 100% !important;
     max-width: 100% !important;
     max-height: none !important;
+    height: auto !important;
     overflow: visible !important;
     z-index: auto !important;
     box-shadow: none !important;
@@ -500,6 +513,19 @@ All colors MUST be HSL.
   body.print-scope-active [data-print-host] * {
     overflow: visible !important;
     max-height: none !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+  }
+  /* Hide overlays / actions inside the printed host */
+  body.print-scope-active [data-print-host] [data-print-hide],
+  body.print-scope-active [data-print-host] .print\:hidden {
+    display: none !important;
+  }
+  /* Force opaque white card surfaces (avoid bg-black/80 backdrops bleeding) */
+  body.print-scope-active [data-print-host] [class*="bg-black"],
+  body.print-scope-active [data-print-host] [class*="backdrop-blur"] {
+    background: white !important;
+    backdrop-filter: none !important;
   }
 
   /* Legacy ReviewTab scope (now opt-in via .print-review-only) */
