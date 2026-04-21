@@ -340,7 +340,7 @@ async function generateA4InvoicePDF(
   const statusText = invoice.status === 'paid' ? 'PAYÉE' : invoice.status === 'pending' ? 'EN ATTENTE' : 'ÉCHEC';
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(9);
-  doc.setTextColor(0, 51, 102);
+  doc.setTextColor(headerRgb[0], headerRgb[1], headerRgb[2]);
   doc.text("RÉFÉRENCE", pageWidth - margin, cursorY - 14, { align: 'right' });
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);
