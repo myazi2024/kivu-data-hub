@@ -102,7 +102,17 @@ const ReviewTab: React.FC<ReviewTabProps> = ({
           type="button"
           variant="outline"
           size="sm"
-          onClick={() => window.print()}
+          onClick={() => {
+            const cleanup = () => {
+              document.body.classList.remove('print-review-only');
+              window.removeEventListener('afterprint', cleanup);
+            };
+            document.body.classList.add('print-review-only');
+            window.addEventListener('afterprint', cleanup);
+            setTimeout(() => {
+              try { window.print(); } finally { setTimeout(cleanup, 1000); }
+            }, 0);
+          }}
           className="rounded-xl h-8 px-2 md:px-3 gap-1.5 text-xs"
         >
           <Printer className="h-3.5 w-3.5" />

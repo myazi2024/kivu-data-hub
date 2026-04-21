@@ -11,6 +11,7 @@ import { useCadastralServices, CadastralService } from '@/hooks/useCadastralServ
 import { TVA_RATE } from '@/constants/billing';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { usePrintScope } from '@/hooks/usePrintScope';
 
 interface CadastralInvoiceProps {
   isOpen: boolean;
@@ -32,6 +33,7 @@ const CadastralInvoice: React.FC<CadastralInvoiceProps> = ({
   const [dbInvoice, setDbInvoice] = useState<{ discount_amount_usd: number; discount_code_used: string; invoice_number: string } | null>(null);
   const { services: catalogServices } = useCadastralServices();
   const { user } = useAuth();
+  const { printRef, print } = usePrintScope<HTMLDivElement>();
 
   // Charger la facture depuis Supabase au lieu du localStorage
   useEffect(() => {
@@ -161,7 +163,7 @@ const CadastralInvoice: React.FC<CadastralInvoiceProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[1700] bg-black/80 backdrop-blur-sm p-1 md:p-4 flex items-start justify-center overflow-auto">
+    <div ref={printRef} className="fixed inset-0 z-[1700] bg-black/80 backdrop-blur-sm p-1 md:p-4 flex items-start justify-center overflow-auto">
       <Card className="w-full max-w-xl my-1 md:my-0 md:max-h-[95vh] bg-background border shadow-2xl rounded-lg flex flex-col">
         {/* Header - Mobile optimized */}
         <CardHeader className="pb-2 md:pb-4 p-2 md:p-6">
@@ -184,8 +186,8 @@ const CadastralInvoice: React.FC<CadastralInvoiceProps> = ({
                 <Button 
                   variant="outline" 
                   size="sm" 
-                  onClick={() => window.print()} 
-                  className="shrink-0 h-7 w-7 p-0 md:h-9 md:w-9 transition-all duration-300 ease-out bg-background/80 backdrop-blur-sm border-border/50 hover:bg-accent hover:border-primary/30 hover:shadow-hover hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
+                  onClick={print} 
+                  className="shrink-0 h-7 w-7 p-0 md:h-9 md:w-9 transition-all duration-300 ease-out bg-background/80 backdrop-blur-sm border-border/50 hover:bg-accent hover:border-primary/30 hover:shadow-hover hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 print:hidden"
                 >
                   <Printer className="h-3 w-3 md:h-4 md:w-4 transition-colors" />
                 </Button>
@@ -414,9 +416,9 @@ const CadastralInvoice: React.FC<CadastralInvoiceProps> = ({
               <Separator />
 
               {/* Actions */}
-              <div className="flex flex-col gap-2 pt-1 md:pt-2 md:flex-row">
+              <div className="flex flex-col gap-2 pt-1 md:pt-2 md:flex-row print:hidden">
                 <Button 
-                  onClick={() => window.print()}
+                  onClick={print}
                   variant="outline"
                   className="w-full md:flex-1 h-8 text-xs transition-all duration-300 ease-out bg-background/80 backdrop-blur-sm border-border/50 hover:bg-accent hover:border-primary/30 shadow-card hover:shadow-hover hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
                 >
