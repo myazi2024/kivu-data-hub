@@ -1,102 +1,83 @@
 
 
-## Plan — Aperçu visuel réaliste de la facture dans l'admin
+## Audit — Facturation & Commerce (admin)
 
-### Constat
+### Verdict global
 
-L'onglet `Aperçu` du module `Modèle de facture` existe déjà (`InvoicePreviewPanel.tsx`) mais propose seulement :
-- une mini-vignette HTML compacte qui ne ressemble pas au PDF final
-- deux boutons qui forcent le téléchargement d'un PDF (sans visualisation directe)
+**Aucune régression critique** introduite par les derniers changements (Modèle de facture, Aperçu visuel, refonte facture catalogue). L'application reste fonctionnelle, le routage est correct, la base de données est cohérente. Quelques **dettes mineures de cohérence** subsistent et méritent un correctif léger.
 
-→ L'utilisateur ne peut pas **voir** la facture en conditions réelles avant qu'un client ne la reçoive. Il doit télécharger le PDF, l'ouvrir dans un autre logiciel, puis revenir corriger la config. Boucle inefficace.
+### État du module
 
-### Objectif
+| Élément | Statut | Notes |
+|---|---|---|
+| Routage `tab=invoice-template` | OK | `Admin.tsx` ligne 37, lazy chargé |
+| Entrée sidebar | OK | sidebarConfig ligne 78, keywords riches |
+| Table `invoice_template_config` | OK | 10 clés seed actives, types JSONB corrects |
+| RLS lecture/écriture admin | OK | Pattern standard appliqué |
+| `pdf.ts` consomme la config | OK | tva_rate dynamique avec fallback constante |
+| `CompanyLegalInfoForm` upload logo | OK | bucket `app-assets` public, `crypto.randomUUID()` |
+| Aperçu réactif A4/Mini | OK | scale responsive, refetch manuel disponible |
+| Téléchargement facture catalogue | OK | corrigé précédemment (await + toast) |
+| Impression facture catalogue | OK | corrigé précédemment (visibility hidden + portal) |
+| Linter Supabase | OK module | 8 warns globaux préexistants (non liés) |
 
-Offrir dans l'onglet `Aperçu` un **rendu fidèle** des deux formats de facture (A4 + Mini reçu thermique), affiché en pleine page comme un vrai document, qui se met à jour en direct dès qu'on modifie la config dans les autres onglets.
+### Bugs mineurs identifiés (non-bloquants)
 
-### Périmètre fonctionnel
+#### B1 — TVA encore en dur dans 2 composants UI
+`src/components/cadastral/CadastralInvoice.tsx` (lignes 11, 153, 364) et `src/components/cadastral/billing/BillingTotals.tsx` (lignes 9, 96-114) importent toujours `TVA_RATE` depuis `constants/billing.ts`.  
+→ Conséquence : si l'admin change le taux à 18% dans la config, le **PDF se met à jour** mais la facture **affichée à l'écran** (modale + totaux du panier) continue d'afficher 16%.  
+→ Source de vérité non respectée (cf. plan initial).
 
-#### 1. Sélecteur de format
-Boutons-onglets en haut du panneau :
-- `A4` (par défaut) — rendu pleine page 210×297 mm à l'échelle
-- `Mini reçu` — rendu vertical étroit 80 mm thermique
+#### B2 — `default_format` ignoré côté écran utilisateur
+La config admin permet de choisir A4 / Mini par défaut, mais seul l'aperçu admin lit cette valeur. Les composants client (`CadastralResultCard`, `CadastralInvoice`) n'utilisent pas `config.default_format` lors du téléchargement.  
+→ Le réglage admin est partiellement décoratif.
 
-#### 2. Aperçu A4 réaliste
-Un cadre simulant une feuille A4 (proportions 1:√2, ombre portée, fond blanc) contenant :
-- en-tête couleur (`header_color`) avec logo réel + identité émetteur complète (raison sociale, forme juridique, capital, RCCM, ID Nat, NIF, n° TVA, adresse complète, téléphone, email, site)
-- bandeau titre `FACTURE NORMALISÉE` ou `FACTURE` selon `show_dgi_mention`
-- numéro avec préfixe configuré + dates émission/paiement
-- bloc client + bloc référence parcelle/zone
-- tableau des prestations (2 services exemples) avec couleur secondaire
-- bloc totaux (Sous-total, Remise, Base HT, TVA libellée, TTC)
-- conditions de paiement + mentions de pied configurées
-- IBAN/SWIFT/banque émetteur si renseignés
-- vignette QR de vérification si `show_verification_qr` activé
-- numéro DGI fictif
+#### B3 — `payment_method` affichage figé
+Dans `InvoicePreviewPanel` l'aperçu écrit toujours « Mobile Money » en dur (ligne 98), même si l'utilisateur veut visualiser un autre mode. Acceptable pour un sample fixe, mais incohérent avec le reste de l'aperçu qui se met à jour en direct.
 
-#### 3. Aperçu Mini reçu réaliste
-Cadre vertical étroit (~280px de large) avec :
-- en-tête condensé (logo + raison sociale)
-- titre + numéro
-- liste services (sans tableau)
-- totaux empilés
-- pied de page court
-- QR si activé
+#### B4 — `secondary_color` utilisée uniquement pour l'en-tête de tableau
+La couleur secondaire n'apparaît qu'à un seul endroit (ligne 105 `InvoicePreviewA4`). Le PDF réel pourrait l'utiliser à plus d'emplacements pour valoriser le réglage. Faible priorité.
 
-#### 4. Aperçu réactif
-- Lit `useInvoiceTemplateConfig()` et `useCompanyLegalInfo()` en direct
-- Toute modif dans les onglets Identité / Fiscalité / Mise en page se reflète instantanément
-- Bouton « Rafraîchir » pour forcer le rechargement
+#### B5 — Doublon sémantique sidebar
+Deux entrées coexistent dans la même catégorie :
+- `Config Facturation` (`billing-config`) — frais permis/mutation/lotissement/expertise/hypothèques
+- `Modèle de facture` (`invoice-template`) — identité, TVA, mise en page
 
-#### 5. Génération PDF d'exemple (conservé)
-Les deux boutons existants (Aperçu PDF A4 / Mini) restent disponibles en bas, comme **validation finale** du rendu réel produit par `generateInvoicePDF()`.
+Le label `Config Facturation` peut induire en erreur l'admin qui cherche le modèle. Renommage recommandé : `Frais & Tarifs` ou `Tarification services`.
 
-### Architecture
+### Plan de correction proposé
 
-#### Refonte d'un seul fichier
-- `src/components/admin/invoice-template/InvoicePreviewPanel.tsx`
-  - Ajouter un state `format: 'a4' | 'mini'`
-  - Extraire deux sous-composants internes :
-    - `<InvoicePreviewA4 config info />` 
-    - `<InvoicePreviewMini config info />`
-  - Conserver `buildSampleInvoice()` / `buildSampleServices()` pour cohérence avec le PDF réel
-  - Ajouter un wrapper visuel « feuille » avec ombre, ratio A4, échelle responsive (`transform: scale()` adaptatif viewport)
+#### Étape 1 — Centraliser le taux TVA côté écran
+- créer un hook léger `useTvaRate()` qui lit `useInvoiceTemplateConfig()` et retourne `{ rate, label }` avec fallback `TVA_RATE`
+- remplacer les imports `TVA_RATE` dans :
+  - `src/components/cadastral/CadastralInvoice.tsx`
+  - `src/components/cadastral/billing/BillingTotals.tsx`
+- conserver `constants/billing.ts` comme **fallback uniquement** (commentaire explicite)
 
-#### Aucun changement DB / hook / PDF
-- Pas de migration
-- Pas de modification de `useInvoiceTemplateConfig` ni `useCompanyLegalInfo`
-- Pas de modification de `src/lib/pdf.ts`
-- Pas de nouvelle entrée sidebar
+#### Étape 2 — Respecter `default_format` côté client
+- dans `CadastralResultCard.handleDownloadPDF()`, lire `config.default_format` via le hook et le passer à `generateInvoicePDF()`
+- garder un sélecteur si plusieurs formats restent proposés à l'utilisateur final
 
-### Validation attendue
+#### Étape 3 — Renommer l'entrée sidebar
+- `sidebarConfig.ts` ligne 77 : `Config Facturation` → `Frais & Tarifs services`
+- ajouter keywords : `tarif`, `frais`, `prix`
 
-1. `Admin → Facturation et commerce → Modèle de facture → Aperçu`
-2. L'aperçu A4 s'affiche par défaut, à l'échelle, lisible sans télécharger de PDF
-3. Bascule `Mini reçu` → rendu vertical étroit visible
-4. Modifier la couleur d'en-tête dans `Mise en page` → l'aperçu se met à jour immédiatement à la bascule d'onglet
-5. Modifier le RCCM dans `Identité` → visible dans l'aperçu
-6. Désactiver le QR → la vignette QR disparaît de l'aperçu
-7. Changer le taux de TVA → la ligne TVA et le calcul HT changent
-8. Boutons « Aperçu PDF A4/Mini » continuent de produire un PDF téléchargeable identique
+#### Étape 4 — Polish aperçu
+- exposer un sélecteur `payment_method` dans `InvoicePreviewPanel` (Mobile Money / Carte / Virement) qui modifie uniquement le sample
+- élargir l'usage de `secondary_color` (bordure de tableau, séparateurs)
 
 ### Hors périmètre
 
+- Pas de refonte de `AdminBillingConfig` (frais services) — fonctionne, séparation logique justifiée
+- Pas d'intervention sur les 8 warnings Supabase (préexistants, non liés au module)
+- Pas de migration DB nécessaire
 - Pas de modification du moteur PDF
-- Pas d'aperçu pixel-perfect rendu via PDF.js (trop coûteux ; le rendu HTML reste une simulation très fidèle, et le bouton PDF couvre la vérification finale)
-- Pas d'édition WYSIWYG dans l'aperçu (la config se fait dans les autres onglets)
-- Pas d'aperçu multi-langues / multi-devises
 
-### Détail technique
+### Validation attendue
 
-```text
-État actuel
-Onglet Aperçu -> mini-vignette HTML compacte 1 format unique
-              -> 2 boutons téléchargement PDF
-
-État cible
-Onglet Aperçu -> sélecteur A4 / Mini
-              -> rendu fidèle pleine page, fond feuille, échelle responsive
-              -> tous les champs config + identité visibles
-              -> 2 boutons téléchargement PDF conservés en bas
-```
+1. Modifier TVA à 18% → modale `CadastralInvoice` ET totaux panier ET PDF affichent 18%
+2. Choisir `Mini` comme format par défaut → bouton « Télécharger » du catalogue produit un Mini
+3. Sidebar : `Frais & Tarifs services` distinct de `Modèle de facture`
+4. Aperçu admin : sample avec mode paiement variable
+5. Non-régression : impression facture, téléchargement PDF, identité émetteur, audit log
 
