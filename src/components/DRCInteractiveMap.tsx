@@ -682,6 +682,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
               </CardContent>
             </Card>
           </div>
+          </div>
         </div>
     </div>
   );
