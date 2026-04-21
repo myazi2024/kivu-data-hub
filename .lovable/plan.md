@@ -1,38 +1,71 @@
 
 
-## Ajout du champ « Pied de page légal » dans l'onglet Identité
+## Édition complète du pied de page de la facture
 
 ### Constat
-L'onglet **Identité** (`CompanyLegalInfoForm`) regroupe les informations légales de l'entreprise (raison sociale, RCCM, NIF, adresse, contacts) mais n'expose aucun champ pour personnaliser le pied de page légal de la facture.
+Dans l'onglet **Mise en page**, le champ « Texte du pied de page » ne pilote qu'une seule ligne du bloc « MENTIONS LÉGALES (DGI) » du PDF. Les 4 autres lignes sont en dur dans le code (`InvoicePreviewPanel.tsx` + générateur PDF) :
+1. Phrase d'introduction (« Facture normalisée émise conformément… »)
+2. Ligne émetteur (NIF / RCCM / ID-NAT / régime) — auto-générée depuis `company_legal_info`
+3. Ligne TVA + conditions de paiement
+4. Code de validation DGI — auto-généré
+5. `config.footer_text` (seul champ éditable aujourd'hui)
 
-Aujourd'hui, le pied de page est édité dans l'onglet **Mise en page** via `config.footer_text` (table `invoice_template_config`). Cela crée une confusion : l'utilisateur cherche logiquement le footer dans Identité (car c'est du contenu légal/textuel), pas dans Mise en page (qui devrait rester dédié au visuel : couleurs, format, QR).
+L'utilisateur ne peut donc pas modifier la phrase d'intro ni la formulation de la mention TVA.
 
 ### Solution
-Déplacer le champ **Texte du pied de page** de l'onglet Mise en page vers l'onglet Identité, et y ajouter un second champ **Conditions de paiement** (même logique : c'est du contenu légal, pas de la mise en page).
-
-L'onglet Mise en page conservera uniquement les éléments visuels : couleurs, format par défaut, QR de vérification.
+Étendre le schéma de configuration pour exposer **chaque ligne textuelle du footer** comme un champ éditable indépendant, regroupés dans une nouvelle section dédiée de l'onglet **Mise en page**.
 
 ### Changements
 
-**1. `CompanyLegalInfoForm.tsx`**
-- Ajouter une nouvelle section **« Mentions légales de la facture »** en bas du formulaire (après les contacts).
-- Deux `Textarea` :
-  - Conditions de paiement (lié à `config.payment_terms`)
-  - Texte du pied de page (lié à `config.footer_text`)
-- Utiliser `useInvoiceTemplate()` pour accéder à `config`, `setConfigDraft`, `isConfigDirty`, `saveConfig`.
-- Le bouton « Enregistrer » de l'onglet Identité sauvegarde à la fois `info` (via `saveInfo`) et `config` (via `saveConfig`) si l'un des deux est dirty.
-- Badge « Modifications non enregistrées » déclenché si `isInfoDirty || isConfigDirty`.
+**1. Schéma `invoice_template_config`** (migration SQL)
+Ajouter 3 nouvelles clés de configuration (avec valeurs par défaut = textes actuellement en dur) :
+- `footer_intro_text` — phrase d'intro (par défaut : « Facture normalisée émise conformément à la réglementation fiscale… »)
+- `footer_tva_mention` — gabarit avec placeholder `{tva_rate}` (par défaut : « TVA appliquée au taux de {tva_rate}. »)
+- `footer_show_emitter_line` — booléen pour masquer/afficher la ligne émetteur
+- `footer_show_dgi_code` — booléen pour masquer/afficher la ligne « Code de validation DGI »
 
-**2. `InvoiceLayoutForm.tsx`**
-- Retirer les blocs Conditions de paiement et Texte du pied de page.
-- Conserver uniquement : couleurs (principale + secondaire), format par défaut, switch QR de vérification.
-- Mettre à jour la `CardDescription` pour refléter le scope visuel pur.
+Le champ existant `footer_text` reste inchangé (ligne libre en bas).
 
-**3. Aperçu temps réel**
-- Aucune modification : `InvoicePreviewPanel` consomme déjà `config.footer_text` et `config.payment_terms` via le contexte partagé. L'aperçu se met à jour automatiquement quel que soit l'onglet d'édition.
+**2. Type `InvoiceTemplateConfig` + defaults** (`useInvoiceTemplateConfig.ts`)
+Ajouter les 4 clés au type et à `DEFAULT_INVOICE_TEMPLATE_CONFIG` avec leurs valeurs par défaut actuelles.
+
+**3. UI — `InvoiceLayoutForm.tsx`**
+Nouvelle section **« Pied de page (mentions légales)»** regroupant :
+- Textarea **Texte d'introduction** (`footer_intro_text`)
+- Textarea **Mention TVA** (`footer_tva_mention`) avec aide indiquant le placeholder `{tva_rate}` disponible
+- Switch **Afficher la ligne émetteur (NIF/RCCM/ID-NAT)** (`footer_show_emitter_line`)
+- Switch **Afficher le code de validation DGI** (`footer_show_dgi_code`)
+- Textarea existant **Texte libre du pied de page** (`footer_text`) — renommer le label en « Ligne complémentaire libre » pour clarifier
+
+Réordonner pour que toutes les options du footer soient visuellement regroupées.
+
+**4. Aperçu — `InvoicePreviewPanel.tsx`**
+Remplacer les chaînes en dur du bloc « MENTIONS LÉGALES » par les nouveaux champs config :
+- Ligne 1 → `config.footer_intro_text` (fallback ancien texte si vide)
+- Ligne 2 → conditionnée par `config.footer_show_emitter_line`
+- Ligne 3 → `config.footer_tva_mention` avec `{tva_rate}` interpolé + `config.payment_terms`
+- Ligne 4 → conditionnée par `config.footer_show_dgi_code`
+- Ligne 5 → `config.footer_text` (inchangé)
+
+Appliquer la même logique au mini-reçu pour les champs pertinents.
+
+**5. Générateur PDF** (`src/lib/pdf/...`)
+Répliquer exactement les mêmes substitutions dans le code générant le bloc footer du PDF A4 (et mini si applicable) afin que l'aperçu reste un miroir fidèle du document final.
+
+### Sécurité & cohérence
+- Pas de changement RLS : les nouvelles clés héritent de la policy existante de `invoice_template_config`.
+- Audit log : déjà couvert par `bulk_update_invoice_template_config` dans `saveConfig`.
+- Sanitisation : interpolation `{tva_rate}` simple par `String.replace`, pas d'eval.
 
 ### Hors scope
-- Pas de migration SQL (les champs existent déjà dans `invoice_template_config`)
-- Pas de changement du contexte `InvoiceTemplateContext` ni des hooks de fetch
-- Pas de refonte visuelle des autres onglets
+- Pas d'éditeur WYSIWYG (textareas suffisent).
+- Pas de support multilingue du footer (FR uniquement, comme aujourd'hui).
+- Pas de modification de `CompanyLegalInfoForm` (l'identité reste séparée du footer).
+
+### Fichiers
+- Migration SQL : insertion des 4 nouvelles clés par défaut dans `invoice_template_config`
+- `src/hooks/useInvoiceTemplateConfig.ts` (type + defaults)
+- `src/components/admin/invoice-template/InvoiceLayoutForm.tsx` (nouvelle section)
+- `src/components/admin/invoice-template/InvoicePreviewPanel.tsx` (rendu dynamique)
+- Fichier(s) du générateur PDF dans `src/lib/pdf/` (mêmes substitutions)
 
