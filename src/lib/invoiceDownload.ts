@@ -9,7 +9,8 @@
  */
 import { fetchInvoiceTemplateConfig } from '@/hooks/useInvoiceTemplateConfig';
 import { supabase } from '@/integrations/supabase/client';
-import type { CadastralInvoice, CadastralService, InvoiceFormat } from '@/lib/pdf';
+import type { CadastralInvoice, InvoiceFormat } from '@/lib/pdf';
+import type { CadastralService } from '@/hooks/useCadastralServices';
 
 interface DownloadOptions {
   /** Force un format spécifique. Sinon : `default_format` admin → 'a4'. */
