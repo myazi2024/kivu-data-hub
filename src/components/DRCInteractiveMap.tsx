@@ -74,33 +74,41 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
   const prefersReducedMotion = typeof window !== 'undefined'
     && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
   const onAnalyticsPanel = activeMobilePanel === 'analytics';
+  // Hint one-shot affiché lors du tout premier swipe réussi sur mobile
+  const showSwipeHintOnce = useCallback((direction: 'left' | 'right') => {
+    try {
+      if (localStorage.getItem('drc-map-swipe-hint-shown') === '1') return;
+      const message = direction === 'left'
+        ? 'Astuce : glissez vers la droite pour revenir à la Carte'
+        : 'Astuce : glissez vers la gauche pour ouvrir Analytics';
+      toast(message, {
+        duration: 3500,
+        icon: '👉',
+      });
+      localStorage.setItem('drc-map-swipe-hint-shown', '1');
+    } catch {
+      /* localStorage indisponible */
+    }
+  }, []);
+
   const { ref: swipeRef, isSwiping, swipeDelta } = useSwipeNavigation<HTMLDivElement>({
     enabled: isMobile,
     ignoreSelector: '[data-swipe-ignore], [role="dialog"], [data-radix-popper-content-wrapper], button, a, input, textarea, select',
     direction: onAnalyticsPanel ? 'right' : 'left',
-    onSwipeLeft: () => setActiveMobilePanel('analytics'),
-    onSwipeRight: () => setActiveMobilePanel('map'),
+    onSwipeLeft: () => {
+      setActiveMobilePanel('analytics');
+      showSwipeHintOnce('left');
+    },
+    onSwipeRight: () => {
+      setActiveMobilePanel('map');
+      showSwipeHintOnce('right');
+    },
   });
 
   // Rubber-band: dx limité à ±24px, atténué à 15%
   const rubberBand = !prefersReducedMotion && isSwiping
     ? Math.max(-24, Math.min(24, swipeDelta * 0.15))
     : 0;
-
-  // Hint one-shot: indique à l'utilisateur mobile la disponibilité du swipe
-  useEffect(() => {
-    if (!isMobile) return;
-    try {
-      if (localStorage.getItem('drc-map-swipe-hint-shown') === '1') return;
-      const t = setTimeout(() => {
-        toast('Astuce : glissez horizontalement pour basculer Carte ↔ Analytics', { duration: 3500 });
-        localStorage.setItem('drc-map-swipe-hint-shown', '1');
-      }, 800);
-      return () => clearTimeout(t);
-    } catch {
-      /* localStorage indisponible */
-    }
-  }, [isMobile]);
 
 
   const { isTestRoute } = useTestEnvironment();
