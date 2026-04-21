@@ -4175,6 +4175,224 @@ export type Database = {
         }
         Relationships: []
       }
+      passthrough_invoice_lines: {
+        Row: {
+          billed_usd: number
+          created_at: string
+          id: string
+          invoice_id: string | null
+          markup_pct: number
+          markup_usd: number
+          passthrough_invoice_id: string
+          payment_method: string | null
+          payment_transaction_id: string
+          provider: string
+          provider_fee_usd: number
+          reseller_id: string | null
+          transaction_date: string
+        }
+        Insert: {
+          billed_usd?: number
+          created_at?: string
+          id?: string
+          invoice_id?: string | null
+          markup_pct?: number
+          markup_usd?: number
+          passthrough_invoice_id: string
+          payment_method?: string | null
+          payment_transaction_id: string
+          provider: string
+          provider_fee_usd?: number
+          reseller_id?: string | null
+          transaction_date: string
+        }
+        Update: {
+          billed_usd?: number
+          created_at?: string
+          id?: string
+          invoice_id?: string | null
+          markup_pct?: number
+          markup_usd?: number
+          passthrough_invoice_id?: string
+          payment_method?: string | null
+          payment_transaction_id?: string
+          provider?: string
+          provider_fee_usd?: number
+          reseller_id?: string | null
+          transaction_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "passthrough_invoice_lines_passthrough_invoice_id_fkey"
+            columns: ["passthrough_invoice_id"]
+            isOneToOne: false
+            referencedRelation: "passthrough_invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "passthrough_invoice_lines_payment_transaction_id_fkey"
+            columns: ["payment_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "payment_transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      passthrough_invoice_seq_year: {
+        Row: {
+          last_value: number
+          year: number
+        }
+        Insert: {
+          last_value?: number
+          year: number
+        }
+        Update: {
+          last_value?: number
+          year?: number
+        }
+        Relationships: []
+      }
+      passthrough_invoices: {
+        Row: {
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          consistency_check_passed: boolean
+          consistency_notes: string | null
+          created_at: string
+          currency: string
+          id: string
+          invoice_number: string | null
+          markup_amount_usd: number
+          markup_pct: number
+          paid_at: string | null
+          pdf_url: string | null
+          period_end: string
+          period_start: string
+          rule_id: string | null
+          scope_id: string | null
+          scope_label: string | null
+          scope_type: string
+          sent_at: string | null
+          status: string
+          total_billed_usd: number
+          total_provider_fees_usd: number
+          transaction_count: number
+          updated_at: string
+          validated_at: string | null
+          validated_by: string | null
+        }
+        Insert: {
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          consistency_check_passed?: boolean
+          consistency_notes?: string | null
+          created_at?: string
+          currency?: string
+          id?: string
+          invoice_number?: string | null
+          markup_amount_usd?: number
+          markup_pct?: number
+          paid_at?: string | null
+          pdf_url?: string | null
+          period_end: string
+          period_start: string
+          rule_id?: string | null
+          scope_id?: string | null
+          scope_label?: string | null
+          scope_type: string
+          sent_at?: string | null
+          status?: string
+          total_billed_usd?: number
+          total_provider_fees_usd?: number
+          transaction_count?: number
+          updated_at?: string
+          validated_at?: string | null
+          validated_by?: string | null
+        }
+        Update: {
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          consistency_check_passed?: boolean
+          consistency_notes?: string | null
+          created_at?: string
+          currency?: string
+          id?: string
+          invoice_number?: string | null
+          markup_amount_usd?: number
+          markup_pct?: number
+          paid_at?: string | null
+          pdf_url?: string | null
+          period_end?: string
+          period_start?: string
+          rule_id?: string | null
+          scope_id?: string | null
+          scope_label?: string | null
+          scope_type?: string
+          sent_at?: string | null
+          status?: string
+          total_billed_usd?: number
+          total_provider_fees_usd?: number
+          transaction_count?: number
+          updated_at?: string
+          validated_at?: string | null
+          validated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "passthrough_invoices_rule_id_fkey"
+            columns: ["rule_id"]
+            isOneToOne: false
+            referencedRelation: "passthrough_rules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      passthrough_rules: {
+        Row: {
+          active: boolean
+          billing_cycle: string
+          created_at: string
+          created_by: string | null
+          id: string
+          markup_pct: number
+          min_amount_usd: number
+          notes: string | null
+          scope_id: string | null
+          scope_label: string | null
+          scope_type: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          billing_cycle?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          markup_pct?: number
+          min_amount_usd?: number
+          notes?: string | null
+          scope_id?: string | null
+          scope_label?: string | null
+          scope_type: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          billing_cycle?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          markup_pct?: number
+          min_amount_usd?: number
+          notes?: string | null
+          scope_id?: string | null
+          scope_label?: string | null
+          scope_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       payment_methods_config: {
         Row: {
           api_credentials: Json | null
@@ -6518,6 +6736,21 @@ export type Database = {
         }
         Relationships: []
       }
+      passthrough_billing_summary: {
+        Row: {
+          draft_count: number | null
+          inconsistent_count: number | null
+          invoice_count: number | null
+          month: string | null
+          paid_count: number | null
+          sent_count: number | null
+          total_billed_usd: number | null
+          total_fees_usd: number | null
+          total_markup_usd: number | null
+          validated_count: number | null
+        }
+        Relationships: []
+      }
       payment_methods_public: {
         Row: {
           config_type: string | null
@@ -6853,6 +7086,18 @@ export type Database = {
         Args: { p_year?: number }
         Returns: string
       }
+      generate_passthrough_invoices: {
+        Args: { p_period_end: string; p_period_start: string }
+        Returns: {
+          invoice_id: string
+          message: string
+          scope_id: string
+          scope_type: string
+          status: string
+          total_billed_usd: number
+          transaction_count: number
+        }[]
+      }
       generate_permit_number: {
         Args: { permit_type: string; province: string }
         Returns: string
@@ -6927,6 +7172,35 @@ export type Database = {
         }[]
       }
       get_current_user_role: { Args: never; Returns: string }
+      get_eligible_passthrough_transactions: {
+        Args: {
+          p_period_end: string
+          p_period_start: string
+          p_scope_id: string
+          p_scope_type: string
+        }
+        Returns: {
+          invoice_id: string
+          payment_method: string
+          provider: string
+          provider_fee_usd: number
+          reseller_id: string
+          transaction_date: string
+          transaction_id: string
+        }[]
+      }
+      get_eligible_passthrough_transactions_count: {
+        Args: {
+          p_period_end: string
+          p_period_start: string
+          p_scope_id: string
+          p_scope_type: string
+        }
+        Returns: {
+          total_fees_usd: number
+          txn_count: number
+        }[]
+      }
       get_inactive_users: {
         Args: { _threshold_days?: number }
         Returns: {
@@ -7109,6 +7383,10 @@ export type Database = {
         Args: { contribution_id: string }
         Returns: string
       }
+      next_passthrough_invoice_number: {
+        Args: { p_period_start: string }
+        Returns: string
+      }
       publish_scheduled_articles: { Args: never; Returns: number }
       purge_old_audit_logs: { Args: { _days?: number }; Returns: Json }
       purge_test_billing_data: { Args: { p_reason?: string }; Returns: Json }
@@ -7192,6 +7470,10 @@ export type Database = {
       }
       validate_file_upload: {
         Args: { allowed_types: string[]; file_name: string; file_size: number }
+        Returns: Json
+      }
+      validate_passthrough_invoice: {
+        Args: { p_invoice_id: string }
         Returns: Json
       }
       validate_reseller_code: { Args: { code_input: string }; Returns: boolean }

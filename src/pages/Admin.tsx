@@ -46,6 +46,7 @@ const tabComponents: Record<string, React.LazyExoticComponent<any>> = {
   'commissions': lazy(() => import('@/components/admin/AdminCommissions')),
   'reseller-commissions': lazy(() => import('@/components/admin/AdminResellerCommissions')),
   'unified-payments': lazy(() => import('@/components/admin/AdminUnifiedPayments')),
+  'passthrough': lazy(() => import('@/components/admin/AdminPassthroughBilling')),
   'resellers': lazy(() => import('@/components/admin/AdminResellers')),
   'discount-codes': lazy(() => import('@/components/admin/AdminDiscountCodes')),
   'cadastral-map': lazy(() => import('@/components/admin/AdminCadastralMap')),

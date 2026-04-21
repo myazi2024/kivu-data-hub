@@ -67,6 +67,7 @@ export const menuItems: AdminMenuSection[] = [
       { icon: CreditCard, label: 'Paiements', value: 'payments', badge: 'payments', keywords: ['transaction', 'payer', 'encaissement', 'mobile money', 'visa'] },
       { icon: DollarSign, label: 'Payouts revendeurs', value: 'commissions', badge: null, keywords: ['payout', 'virement', 'paiement', 'gain', 'marge', 'à payer', 'opérationnel', 'finance'] },
       { icon: Percent, label: 'Commissions revendeurs', value: 'reseller-commissions', badge: null, keywords: ['agent', 'partenaire', 'commission', 'analytique', 'synthèse', 'vente', 'revendeur', 'pipeline'] },
+      { icon: ArrowLeftRight, label: 'Refacturation pass-through', value: 'passthrough', badge: null, keywords: ['frais', 'provider', 'stripe', 'momo', 'refacturation', 'markup', 'passthrough'] },
       { icon: ShoppingCart, label: 'Revendeurs', value: 'resellers', badge: null, keywords: ['agent', 'distributeur', 'partenaire'] },
       { icon: Tag, label: 'Codes de Remise', value: 'discount-codes', badge: null, keywords: ['promo', 'réduction', 'coupon', 'remise'] },
       { icon: Smartphone, label: 'Moyens de Paiement', value: 'payment-methods', badge: null, keywords: ['mobile money', 'carte', 'virement', 'méthode'] },
