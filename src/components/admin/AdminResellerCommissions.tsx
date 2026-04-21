@@ -50,7 +50,7 @@ const AdminResellerCommissions = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [{ data: sumData, error: sumErr }, { data: salesData, error: salesErr }, { data: paidInv }] =
+      const [{ data: sumData, error: sumErr }, { data: salesData, error: salesErr }, { data: orphanData }] =
         await Promise.all([
           supabase.from('reseller_commissions_summary' as any).select('*'),
           supabase
@@ -58,12 +58,7 @@ const AdminResellerCommissions = () => {
             .select(`*, resellers!reseller_sales_reseller_id_fkey(business_name), cadastral_invoices!reseller_sales_invoice_id_fkey(invoice_number)`)
             .order('created_at', { ascending: false })
             .limit(500),
-          supabase
-            .from('cadastral_invoices')
-            .select('id')
-            .eq('status', 'paid')
-            .not('discount_code_used', 'is', null)
-            .limit(2000),
+          (supabase as any).rpc('get_orphan_reseller_invoices_count'),
         ]);
       if (sumErr) throw sumErr;
       if (salesErr) throw salesErr;
@@ -78,8 +73,7 @@ const AdminResellerCommissions = () => {
           invoice_number: s.cadastral_invoices?.invoice_number || 'N/A',
         })) as SaleRow[]
       );
-      const salesInv = new Set((salesData || []).map((s: any) => s.invoice_id));
-      setOrphanCount((paidInv || []).filter((i) => !salesInv.has(i.id)).length);
+      setOrphanCount(Number(orphanData ?? 0));
     } catch (e: any) {
       console.error('Reseller commissions fetch error:', e);
       toast.error('Erreur lors du chargement');
@@ -124,6 +118,11 @@ const AdminResellerCommissions = () => {
 
   return (
     <div className="space-y-4">
+      <Card className="p-3 bg-muted/40 border-dashed">
+        <p className="text-xs text-muted-foreground">
+          📊 <strong>Vue analytique par revendeur</strong> — synthèse, ventes générées et historique. Pour générer un batch de virements, va sur <strong>Payouts revendeurs</strong>.
+        </p>
+      </Card>
       <Card className="p-4">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div>

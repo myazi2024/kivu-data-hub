@@ -188,6 +188,11 @@ const AdminCommissions = () => {
 
   return (
     <div className="space-y-6">
+      <Card className="p-3 bg-muted/40 border-dashed">
+        <p className="text-xs text-muted-foreground">
+          💸 <strong>Vue opérationnelle finance</strong> — table brute des commissions à verser, sélection multiple et marquage payé. Pour la synthèse analytique par revendeur, va sur <strong>Commissions revendeurs</strong>.
+        </p>
+      </Card>
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-4">
         <Card>
