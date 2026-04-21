@@ -76,6 +76,10 @@ export const menuItems: AdminMenuSection[] = [
       { icon: Receipt, label: 'Frais & Tarifs services', value: 'billing-config', badge: null, keywords: ['tarif', 'frais', 'prix', 'permis', 'mutation', 'expertise', 'hypothèque', 'lotissement'] },
       { icon: FileText, label: 'Modèle de facture', value: 'invoice-template', badge: null, keywords: ['template', 'modèle', 'facture', 'identité', 'logo', 'tva', 'rccm', 'dgi', 'mise en page', 'aperçu', 'pdf'] },
       { icon: ArrowLeftRight, label: 'Devises / Taux', value: 'currency-config', badge: null, keywords: ['dollar', 'franc', 'euro', 'change', 'conversion', 'monnaie'] },
+      { icon: FileText, label: 'Avoirs', value: 'credit-notes', badge: null, keywords: ['avoir', 'note de crédit', 'annulation', 'remboursement comptable', 'av-'] },
+      { icon: ArrowLeftRight, label: 'Remboursements', value: 'refunds', badge: null, keywords: ['refund', 'rembourser', 'retour', 'annulation paiement'] },
+      { icon: Bell, label: 'Relances impayées', value: 'invoice-reminders', badge: null, keywords: ['relance', 'impayé', 'rappel', 'overdue', 'recouvrement'] },
+      { icon: FileSearch, label: 'Export FEC', value: 'fec-export', badge: null, keywords: ['export', 'fec', 'comptable', 'comptabilité', 'csv', 'fiscal'] },
     ],
   },
   {
