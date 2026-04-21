@@ -79,7 +79,7 @@ export const InvoiceTemplateProvider = ({ children }: { children: ReactNode }) =
             .insert({ config_key: k, config_value: v as any, is_active: true });
         }
       }
-      await logAuditAction('bulk_update_invoice_template_config', TABLE_CONFIG, undefined, undefined, patch as Record<string, unknown>);
+      await logAuditAction('bulk_update_invoice_template_config', TABLE_CONFIG, undefined, undefined, patch as unknown as Record<string, unknown>);
       setPersistedConfig(config);
       return true;
     } catch (e) {
