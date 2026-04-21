@@ -118,6 +118,8 @@ const maskMobileMoneyFromProvider = (p: PaymentProvider): LocalMobileMoney => ({
   merchantCode: maskApiKey(p.api_credentials.merchantCode),
   apiKey: maskApiKey(p.api_credentials.apiKey),
   secretKey: maskApiKey(p.api_credentials.secretKey),
+  fee_percent: Number(p.fee_percent ?? 0),
+  fee_fixed_usd: Number(p.fee_fixed_usd ?? 0),
 });
 
 const maskBankCardFromProvider = (p: PaymentProvider): LocalBankCard => ({
@@ -126,12 +128,14 @@ const maskBankCardFromProvider = (p: PaymentProvider): LocalBankCard => ({
   publicKey: maskApiKey(p.api_credentials.publicKey),
   secretKey: maskApiKey(p.api_credentials.secretKey),
   webhookSecret: maskApiKey(p.api_credentials.webhookSecret),
+  fee_percent: Number(p.fee_percent ?? 0),
+  fee_fixed_usd: Number(p.fee_fixed_usd ?? 0),
 });
 
 const DEFAULT_MOBILE_MONEY: LocalMobileMoney[] = [
-  { provider_id: 'airtel_money', provider_name: 'Airtel Money', is_enabled: true, apiKey: '', merchantCode: '', secretKey: '' },
-  { provider_id: 'orange_money', provider_name: 'Orange Money', is_enabled: true, apiKey: '', merchantCode: '', secretKey: '' },
-  { provider_id: 'mpesa', provider_name: 'M-Pesa', is_enabled: true, apiKey: '', merchantCode: '', secretKey: '' },
+  { provider_id: 'airtel_money', provider_name: 'Airtel Money', is_enabled: true, apiKey: '', merchantCode: '', secretKey: '', fee_percent: 1.5, fee_fixed_usd: 0 },
+  { provider_id: 'orange_money', provider_name: 'Orange Money', is_enabled: true, apiKey: '', merchantCode: '', secretKey: '', fee_percent: 1.5, fee_fixed_usd: 0 },
+  { provider_id: 'mpesa', provider_name: 'M-Pesa', is_enabled: true, apiKey: '', merchantCode: '', secretKey: '', fee_percent: 1.5, fee_fixed_usd: 0 },
 ];
 
 const DEFAULT_BANK_CARD: LocalBankCard = {
@@ -140,6 +144,8 @@ const DEFAULT_BANK_CARD: LocalBankCard = {
   publicKey: '',
   secretKey: '',
   webhookSecret: '',
+  fee_percent: 2.9,
+  fee_fixed_usd: 0.30,
 };
 
 // ─── Component ───────────────────────────────────────────────────────────────
