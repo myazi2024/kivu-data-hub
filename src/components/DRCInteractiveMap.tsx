@@ -103,6 +103,23 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
     onSwipeRight: () => setActiveMobilePanel('map'),
   });
 
+  // Reset scroll + focus management quand le panneau mobile change (UX + a11y)
+  useEffect(() => {
+    if (!isMobile) return;
+    // Laisse la transition slide se jouer avant de bouger le focus
+    const id = window.setTimeout(() => {
+      if (onAnalyticsPanel) {
+        // Reset scroll Analytics + focus sur le titre
+        const scrollEl = analyticsColRef.current?.querySelector('[data-radix-scroll-area-viewport]') as HTMLElement | null;
+        if (scrollEl) scrollEl.scrollTop = 0;
+        analyticsTitleRef.current?.focus({ preventScroll: true });
+      } else {
+        mapTitleRef.current?.focus({ preventScroll: true });
+      }
+    }, 300);
+    return () => window.clearTimeout(id);
+  }, [activeMobilePanel, isMobile, onAnalyticsPanel]);
+
   // Rubber-band: dx limité à ±40px, atténué à 18% (retour tactile plus net)
   const rubberBand = !prefersReducedMotion && isSwiping
     ? Math.max(-40, Math.min(40, swipeDelta * 0.18))
