@@ -55,33 +55,32 @@ export function useCompanyLegalInfo() {
   const [info, setInfo] = useState<CompanyLegalInfo | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const load = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('company_legal_info')
+        .select('*')
+        .eq('is_active', true)
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error || !data) setInfo(FALLBACK);
+      else setInfo(data as CompanyLegalInfo);
+    } catch {
+      setInfo(FALLBACK);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     let active = true;
-    (async () => {
-      try {
-        const { data, error } = await supabase
-          .from('company_legal_info')
-          .select('*')
-          .eq('is_active', true)
-          .order('updated_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
-        if (!active) return;
-        if (error || !data) {
-          setInfo(FALLBACK);
-        } else {
-          setInfo(data as CompanyLegalInfo);
-        }
-      } catch {
-        if (active) setInfo(FALLBACK);
-      } finally {
-        if (active) setLoading(false);
-      }
-    })();
+    (async () => { if (active) await load(); })();
     return () => { active = false; };
   }, []);
 
-  return { info: info || FALLBACK, loading };
+  return { info: info || FALLBACK, loading, refetch: load };
 }
 
 export async function fetchCompanyLegalInfo(): Promise<CompanyLegalInfo> {

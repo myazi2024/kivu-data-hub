@@ -64,6 +64,14 @@ function formatBilingual(amountUsd: number, rate: number): string {
 
 export type InvoiceFormat = 'mini' | 'a4';
 
+/** Convertit une couleur hex (#rrggbb) en tuple RGB jsPDF. Fallback sur defaultRgb si invalide. */
+function hexToRgb(hex: string | undefined | null, defaultRgb: [number, number, number]): [number, number, number] {
+  if (!hex) return defaultRgb;
+  const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex.trim());
+  if (!m) return defaultRgb;
+  return [parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16)];
+}
+
 /**
  * Génère un PDF de justificatif de paiement avec format sélectionnable
  */
@@ -245,6 +253,8 @@ async function generateA4InvoicePDF(
   let cursorY = margin;
 
   const exchangeRate = Number(invoice.exchange_rate_used || 1);
+  const headerRgb = hexToRgb(tplCfg.header_color, [0, 51, 102]);
+  const secondaryRgb = hexToRgb(tplCfg.secondary_color, [0, 51, 102]);
 
   // ===== EN-TÊTE OFFICIEL =====
   const a4Logo = await fetchAppLogo();
@@ -272,7 +282,7 @@ async function generateA4InvoicePDF(
   // Bloc titre + numéro (droite)
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(14);
-  doc.setTextColor(0, 51, 102);
+  doc.setTextColor(headerRgb[0], headerRgb[1], headerRgb[2]);
   const titleLabel = tplCfg.show_dgi_mention ? "FACTURE NORMALISÉE" : "FACTURE";
   doc.text(titleLabel, pageWidth - margin, cursorY + 5, { align: 'right' });
   doc.setFontSize(8);
@@ -294,15 +304,14 @@ async function generateA4InvoicePDF(
 
   cursorY = Math.max(emY, cursorY + 26) + 4;
 
-  doc.setDrawColor(0, 51, 102);
-  doc.setLineWidth(0.4);
+  doc.setDrawColor(headerRgb[0], headerRgb[1], headerRgb[2]);
   doc.line(margin, cursorY, pageWidth - margin, cursorY);
   cursorY += 5;
 
   // ===== BLOC CLIENT =====
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(9);
-  doc.setTextColor(0, 51, 102);
+  doc.setTextColor(headerRgb[0], headerRgb[1], headerRgb[2]);
   doc.text("FACTURÉ À", margin, cursorY);
   cursorY += 4;
 
@@ -331,7 +340,7 @@ async function generateA4InvoicePDF(
   const statusText = invoice.status === 'paid' ? 'PAYÉE' : invoice.status === 'pending' ? 'EN ATTENTE' : 'ÉCHEC';
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(9);
-  doc.setTextColor(0, 51, 102);
+  doc.setTextColor(headerRgb[0], headerRgb[1], headerRgb[2]);
   doc.text("RÉFÉRENCE", pageWidth - margin, cursorY - 14, { align: 'right' });
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);
@@ -368,7 +377,7 @@ async function generateA4InvoicePDF(
       body: tableData,
       startY: cursorY,
       styles: { fontSize: 8.5, cellPadding: 2, lineColor: [220, 220, 220], lineWidth: 0.2, textColor: [33, 37, 41] },
-      headStyles: { fillColor: [0, 51, 102], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8.5 },
+      headStyles: { fillColor: secondaryRgb, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8.5 },
       columnStyles: {
         0: { cellWidth: (pageWidth - 2 * margin) * 0.50 },
         1: { cellWidth: (pageWidth - 2 * margin) * 0.10, halign: 'center' },
@@ -409,7 +418,7 @@ async function generateA4InvoicePDF(
   writeRow('Base HT', formatBilingual(totalHT, exchangeRate));
   writeRow(tplCfg.tva_label, formatBilingual(tvaAmount, exchangeRate));
 
-  doc.setFillColor(0, 51, 102);
+  doc.setFillColor(headerRgb[0], headerRgb[1], headerRgb[2]);
   doc.rect(totalsX - 3, cursorY - 4, valueX - totalsX + 6, 8, 'F');
   doc.setTextColor(255, 255, 255);
   doc.setFont('helvetica', 'bold');
@@ -436,7 +445,7 @@ async function generateA4InvoicePDF(
 
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(7.5);
-  doc.setTextColor(0, 51, 102);
+  doc.setTextColor(headerRgb[0], headerRgb[1], headerRgb[2]);
   doc.text("MENTIONS LÉGALES (DGI)", margin, cursorY);
   cursorY += 3.5;
 
