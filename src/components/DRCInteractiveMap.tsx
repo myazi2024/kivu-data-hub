@@ -416,7 +416,11 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
               <Card ref={mapCardRef} className="analytics-panel border-0 flex-1 overflow-hidden flex flex-col">
                 <CardContent className="p-0 flex-1 flex flex-col relative min-h-0">
                   <div className="bg-muted/20 px-2 py-0.5 border-b border-border/30 flex-shrink-0">
-                    <h2 className="text-[10px] sm:text-xs font-medium text-foreground flex items-center gap-1">
+                    <h2
+                      ref={mapTitleRef}
+                      tabIndex={-1}
+                      className="text-[10px] sm:text-xs font-medium text-foreground flex items-center gap-1 outline-none"
+                    >
                       <MapPin className="h-3 w-3 text-primary" />
                       <span>{selectedTerritoire ? `${selectedTerritoire} — ${selectedProvince?.name || ''}` : selectedSectionType === 'rurale' && selectedProvince ? `Territoires — ${selectedProvince.name}` : selectedSectionType === 'rurale' ? 'Territoires — RDC' : selectedVille ? `${selectedVille}${selectedCommune ? ` — ${selectedCommune}` : ''}${selectedQuartier ? ` — ${selectedQuartier}` : ''}` : selectedProvince ? `${activeProfile ? `${activeProfile.label} — ` : ''}${selectedProvince.name}` : activeProfile ? `${activeProfile.label} — République Démocratique du Congo` : 'République Démocratique du Congo'}</span>
                     </h2>
