@@ -346,7 +346,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
         <div className="flex-1 min-h-0 flex flex-col lg:grid lg:grid-cols-12 gap-1 sm:gap-2 p-1 sm:p-2 pb-14 lg:pb-2">
           
           {/* Colonne gauche: Carte + Détails province */}
-          <div className={`${activeMobilePanel === 'analytics' ? 'hidden lg:flex' : 'flex'} lg:col-span-4 flex-col min-h-0 h-full gap-1 sm:gap-2`}>
+          <div key={isMobile ? `mobile-left-${activeMobilePanel}` : 'left'} className={`${activeMobilePanel === 'analytics' ? 'hidden lg:flex' : 'flex animate-fade-in lg:animate-none'} lg:col-span-4 flex-col min-h-0 h-full gap-1 sm:gap-2`}>
             
             {/* Carte RDC */}
             <div className={`flex flex-col min-h-0 transition-all duration-300 w-full ${selectedProvince ? 'h-1/2 lg:h-auto' : 'h-full lg:h-auto'} lg:flex-[3]`}>
@@ -596,7 +596,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
           </div>
 
           {/* Colonne droite: Analytics */}
-          <div className={`${activeMobilePanel !== 'analytics' ? 'hidden lg:flex' : 'flex'} lg:col-span-8 flex-col min-h-0 h-full`}>
+          <div key={isMobile ? `mobile-right-${activeMobilePanel}` : 'right'} className={`${activeMobilePanel !== 'analytics' ? 'hidden lg:flex' : 'flex animate-fade-in lg:animate-none'} lg:col-span-8 flex-col min-h-0 h-full`}>
             <Card className="flex-1 flex flex-col overflow-hidden border-border/30 min-h-0">
               <CardHeader className="px-2 py-1 border-b border-border/20 flex-shrink-0">
                 <div className="flex items-center justify-between">
