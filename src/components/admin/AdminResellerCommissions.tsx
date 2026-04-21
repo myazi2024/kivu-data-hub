@@ -118,6 +118,11 @@ const AdminResellerCommissions = () => {
 
   return (
     <div className="space-y-4">
+      <Card className="p-3 bg-muted/40 border-dashed">
+        <p className="text-xs text-muted-foreground">
+          📊 <strong>Vue analytique par revendeur</strong> — synthèse, ventes générées et historique. Pour générer un batch de virements, va sur <strong>Payouts revendeurs</strong>.
+        </p>
+      </Card>
       <Card className="p-4">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div>
