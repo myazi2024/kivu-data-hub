@@ -1,103 +1,220 @@
 
+## Fix — Facture catalogue de services : téléchargement KO, impression KO, mise en page à reconstruire
 
-## Fix — Impression de la facture du catalogue de services
+### Diagnostic
 
-### Cause racine
+Trois défauts se cumulent sur la facture du catalogue de services :
 
-Le composant `CadastralInvoice.tsx` (modal qui s'ouvre après paiement avec le bouton « Imprimer ») appelle bien `window.print()` (ligne 187 et 419), mais **la sortie est entièrement blanche**.
+1. **Impression encore cassée**
+   - `CadastralInvoice` utilise `usePrintScope()`, mais la facture est rendue dans une modale/portal.
+   - La règle actuelle de `src/index.css` cible surtout les enfants directs de `body`, ce qui ne couvre pas correctement le DOM réel d’un portal Radix.
+   - Résultat : aperçu vide, partiel, ou structure d’impression incorrecte.
 
-Pourquoi : `src/index.css` (ligne 472-498) contient une règle d'impression globale très agressive :
+2. **Téléchargement PDF fragile**
+   - Dans `src/components/cadastral/CadastralResultCard.tsx`, `handleDownloadPDF()` appelle `generateInvoicePDF(...)` sans `await`.
+   - Il n’y a pas d’état de chargement ni de feedback utilisateur fiable.
+   - Le payload transmis au générateur PDF est partiel, donc la génération peut être incohérente ou échouer silencieusement.
 
-```css
-@media print {
-  body * { visibility: hidden; }
-  #review-print-area,
-  #review-print-area * { visibility: visible !important; }
-  #review-print-area { position: absolute; top: 0; left: 0; ... }
-}
-```
+3. **Facture UI mal structurée**
+   - `src/components/cadastral/CadastralInvoice.tsx` affiche un justificatif compact “mobile modal”, pas une vraie facture lisible.
+   - Les infos de paiement reposent encore sur `localStorage`.
+   - Les montants sont recalculés côté UI alors que la facture persistée doit rester la source de vérité.
+   - Le rendu n’a pas la hiérarchie attendue pour un document officiel.
 
-Cette règle a été conçue pour l'onglet `ReviewTab` du formulaire CCC, mais elle s'applique **à tout le site**. Conséquence : quand l'utilisateur clique « Imprimer » dans la facture cadastrale, **tout le `body` devient invisible** et seule la zone `#review-print-area` (qui n'existe pas dans la modale facture) reste visible → page blanche.
+### Correctifs à appliquer
 
-Symptôme additionnel : même en l'absence de cette règle, la modale a une racine `fixed inset-0 bg-black/80 backdrop-blur-sm` non scopée pour l'impression → le fond noir s'imprimerait sur toute la page.
+#### 1. Corriger le scope d’impression pour les portals
+**Fichiers :**
+- `src/index.css`
+- `src/hooks/usePrintScope.ts`
 
-### Périmètre touché
+Travaux :
+- remplacer la logique d’impression trop dépendante de `body > *`
+- rendre le scope compatible avec les modales Radix rendues dans un portal
+- masquer correctement overlay, actions, boutons et chrome d’interface
+- forcer un rendu papier propre :
+  - fond blanc
+  - pas de backdrop noir
+  - pas d’ombres
+  - pas de scroll interne
+  - largeur/espacement lisibles sur A4
 
-Tous les flux qui appellent `window.print()` hors de `ReviewTab` sont cassés de la même manière :
+Objectif : la facture s’imprime correctement même si elle vit dans un portal.
 
-| Composant | Ligne | État impression |
-|---|---|---|
-| `CadastralInvoice.tsx` | 187, 419 | ❌ blanc |
-| `cadastral-document/DocumentToolbar.tsx` | 52 | ❌ blanc (la fiche parcellaire aussi !) |
-| `ccc-tabs/ReviewTab.tsx` | 105 | ✅ OK (scope `#review-print-area`) |
+#### 2. Refaire la structure visuelle de la facture écran
+**Fichier : `src/components/cadastral/CadastralInvoice.tsx`**
 
-Donc **deux bugs identiques** sont corrigés par la même solution.
+Transformer la modale actuelle en document lisible avec sections claires :
 
-### Correctif
+- en-tête BIC / identité émetteur
+- titre document + numéro de facture
+- date d’émission / date de paiement
+- bloc client
+- bloc parcelle / zone / mode de paiement
+- tableau des prestations
+- bloc sous-total / remise / TVA / total
+- bloc QR / vérification / mentions légales
+- barre d’actions séparée, visible écran seulement
 
-#### 1. Scoper la règle existante au seul `ReviewTab`
+Améliorations de layout :
+- typographie moins compacte
+- meilleur espacement vertical
+- vraie grille desktop
+- tableau de services au lieu d’une simple liste de cartes
+- suppression des éléments décoratifs qui gênent l’impression
 
-Dans `src/index.css`, remplacer le sélecteur racine `body *` par une portée conditionnelle activée uniquement quand un attribut `data-print-scope="review"` est présent sur `<html>`. Plus simple : encapsuler **toutes** les règles `#review-print-area` dans une nouvelle classe activable.
+#### 3. Utiliser la facture DB comme source de vérité
+**Fichier : `src/components/cadastral/CadastralInvoice.tsx`**
 
-Approche retenue (minimaliste, sans toucher au comportement de `ReviewTab`) :
+Au lieu de charger seulement quelques champs, récupérer la facture payée complète et afficher :
+- `invoice_number`
+- `client_name`, `client_email`, `client_address`, `client_type`
+- `payment_method`
+- `search_date`, `created_at`, `paid_at`
+- `original_amount_usd`, `discount_amount_usd`, `total_amount_usd`
+- `currency_code`, `exchange_rate_used`
+- `dgi_validation_code` si disponible
+- `geographical_zone`
 
-- `body.print-review-only *` au lieu de `body *`
-- `ReviewTab` ajoute `document.body.classList.add('print-review-only')` avant `window.print()` et le retire après (`onafterprint`)
+Règle métier :
+- la DB pilote les montants affichés
+- le catalogue sert seulement à enrichir les noms/descriptions des services liés à `selected_services`
 
-#### 2. Ajouter un scope d'impression propre pour la modale facture
+#### 4. Supprimer la dépendance fragile à `localStorage`
+**Fichier : `src/components/cadastral/CadastralInvoice.tsx`**
 
-Dans `CadastralInvoice.tsx` :
-- ajouter un wrapper `id="invoice-print-area"` autour de `<Card>`
-- ajouter dans `index.css` un bloc `@media print` dédié :
-  - masquer `body > *:not(.invoice-print-host)` 
-  - rendre la modale en flux normal (sans `fixed`, sans backdrop noir)
-  - cacher boutons / barre fermeture
+Retirer :
+- la lecture de `currentCadastralInvoice`
+- le fallback “Mobile Money ****”
 
-#### 3. Ajouter un scope d'impression pour la fiche parcellaire
+La méthode de paiement affichée doit provenir de la facture persistée.  
+Si certaines métadonnées de paiement ne sont pas stockées, afficher un libellé propre et neutre, sans inventer d’information.
 
-Dans `cadastral-document/CadastralDocumentView.tsx` :
-- ajouter `id="cadastral-doc-print-area"` sur le wrapper racine `.cadastral-document`
-- règle CSS similaire à la facture
-- le `print:hidden` déjà présent sur `DocumentToolbar` continuera à fonctionner
+#### 5. Fiabiliser le téléchargement PDF
+**Fichier : `src/components/cadastral/CadastralResultCard.tsx`**
 
-#### 4. Pattern unifié recommandé
+Refactor de `handleDownloadPDF()` :
+- récupérer la facture complète
+- construire un payload complet et cohérent pour `generateInvoicePDF()`
+- `await generateInvoicePDF(...)`
+- entourer d’un `try/catch`
+- ajouter un état `isDownloadingInvoice`
+- désactiver le bouton pendant la génération
+- afficher un toast succès/erreur utile
 
-Plutôt que de répéter la même mécanique 3 fois, créer un petit hook `usePrintScope(scopeId)` qui :
-- ajoute une classe `print-scope-active` au `body`
-- définit une variable CSS `--print-scope-id` lue par une règle générique
-- gère `beforeprint` / `afterprint` pour nettoyer
+Objectif :
+- clic utilisateur = comportement visible
+- pas d’échec silencieux
+- PDF cohérent avec la facture affichée
 
-Une seule règle CSS générique :
-```css
-@media print {
-  body.print-scope-active > *:not([data-print-host]) { display: none !important; }
-  body.print-scope-active [data-print-host] { position: static; background: white; ... }
-}
-```
+#### 6. Harmoniser facture écran et facture PDF
+**Fichiers :**
+- `src/components/cadastral/CadastralInvoice.tsx`
+- `src/lib/pdf.ts`
 
-Chaque composant imprimable ajoute juste `data-print-host` sur sa racine et appelle `usePrintScope()` au lieu de `window.print()` direct.
+Aligner :
+- numéro de facture
+- client
+- parcelle
+- date
+- méthode de paiement
+- services
+- sous-total / remise / TVA / total
+- terminologie du document
+
+Le PDF reste le livrable téléchargeable, mais la facture à l’écran doit en être une version fidèle.
+
+#### 7. Ajouter les états UX manquants
+**Fichiers :**
+- `src/components/cadastral/CadastralInvoice.tsx`
+- `src/components/cadastral/CadastralResultCard.tsx`
+
+Prévoir :
+- chargement facture
+- erreur de chargement
+- facture introuvable
+- génération PDF en cours
+- boutons désactivés pendant l’action
+- message clair si aucune facture payée n’est disponible
 
 ### Validation attendue
 
-1. Catalogue de services → payer un service → modale facture → bouton Imprimer
-   - Aperçu d'impression affiche la facture sur fond blanc, sans backdrop noir, sans boutons
-2. Fiche parcellaire → bouton Imprimer dans toolbar
-   - Aperçu affiche le document complet, toolbar masquée, croquis SVG conservé
-3. Formulaire CCC → onglet Envoi → bouton Imprimer
-   - Comportement inchangé (régression à éviter)
-4. Vérification : `Ctrl+P` n'importe où ailleurs ne déclenche aucun masquage parasite
+#### Cas 1 — Impression
+- ouvrir une facture après paiement
+- cliquer sur “Imprimer”
+- résultat attendu :
+  - aperçu non vide
+  - pas de fond noir
+  - pas de boutons
+  - document lisible et structuré
+  - montants et services visibles
+
+#### Cas 2 — Téléchargement PDF
+- cliquer sur “Télécharger le justificatif”
+- résultat attendu :
+  - téléchargement déclenché
+  - pas d’erreur silencieuse
+  - toast cohérent si problème
+  - PDF lisible et complet
+
+#### Cas 3 — Cohérence métier
+- même numéro de facture entre UI et PDF
+- mêmes montants entre UI, PDF et DB
+- mêmes services achetés
+- méthode de paiement correcte
+- infos client/parcelle correctes
+
+#### Cas 4 — Non-régression
+- impression de `CadastralDocumentView` toujours fonctionnelle
+- impression de `ReviewTab` CCC inchangée
+- génération du rapport cadastral non impactée
 
 ### Fichiers à modifier
 
-- `src/index.css` (refonte du bloc `@media print`)
-- `src/components/cadastral/CadastralInvoice.tsx` (wrapper + hook)
-- `src/components/cadastral/cadastral-document/CadastralDocumentView.tsx` (wrapper + hook)
-- `src/components/cadastral/ccc-tabs/ReviewTab.tsx` (migration vers le hook)
-- `src/hooks/usePrintScope.ts` (nouveau, ~20 lignes)
+- `src/index.css`
+- `src/hooks/usePrintScope.ts`
+- `src/components/cadastral/CadastralInvoice.tsx`
+- `src/components/cadastral/CadastralResultCard.tsx`
+- éventuellement `src/lib/pdf.ts` pour harmoniser le contrat de données facture
+
+### Détail technique
+
+```text
+Bug impression actuel
+modal/portal Radix
+-> usePrintScope marque la cible
+-> CSS print masque mal le reste du DOM
+-> la cible imprimable n'est pas isolée correctement
+-> impression vide ou dégradée
+
+Flux corrigé
+modal ouverte
+-> body.print-scope-active
+-> CSS compatible portal
+-> seule la facture utile reste visible
+-> rendu papier propre
+```
+
+```text
+Bug téléchargement actuel
+click download
+-> fetch facture
+-> generateInvoicePDF async non awaité
+-> pas d'état loading
+-> pas de feedback fiable
+
+Flux corrigé
+click download
+-> loading on
+-> fetch facture complète
+-> await generateInvoicePDF
+-> toast succès/erreur
+-> loading off
+```
 
 ### Hors périmètre
 
-- Pas de modification du PDF généré (`generateInvoicePDF` / `generateCadastralReport`) — le bouton Télécharger PDF fonctionne déjà, c'est uniquement l'impression navigateur qui est cassée
-- Pas de refonte de la modale `CadastralInvoice` (déjà fonctionnelle visuellement)
-- Pas de changement sur `CadastralResultsDialog` (n'a pas de bouton Imprimer propre)
-
+- pas de refonte du schéma `cadastral_invoices`
+- pas de redesign global du catalogue de services
+- pas de changement du moteur du rapport cadastral complet
+- pas d’ajout d’un nouvel historique documentaire ici
