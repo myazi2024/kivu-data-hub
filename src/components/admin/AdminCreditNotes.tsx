@@ -87,9 +87,9 @@ const AdminCreditNotes = () => {
 
       await logBillingAudit({
         action: 'credit_note_issued',
-        table_name: 'cadastral_credit_notes',
-        record_id: created.id,
-        new_values: { credit_note_number: created.credit_note_number, amount_usd: amt, reason },
+        tableName: 'cadastral_credit_notes',
+        recordId: created.id,
+        newValues: { credit_note_number: created.credit_note_number, amount_usd: amt, reason },
       });
 
       return created;

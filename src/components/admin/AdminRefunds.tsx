@@ -104,9 +104,9 @@ const AdminRefunds = () => {
 
       await logBillingAudit({
         action: 'refund_initiated',
-        table_name: 'payment_refunds',
-        record_id: (created as any).id,
-        new_values: { amount_usd: amt, reason, invoice_id: inv.id },
+        tableName: 'payment_refunds',
+        recordId: (created as any).id,
+        newValues: { amount_usd: amt, reason, invoice_id: inv.id },
       });
 
       return created;
