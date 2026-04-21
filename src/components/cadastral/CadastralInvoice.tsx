@@ -219,9 +219,9 @@ const CadastralInvoice: React.FC<CadastralInvoiceProps> = ({
         {/* Close warning — hidden on print */}
         {showCloseWarning && (
           <div data-print-hide className="p-3 md:p-4 border-b">
-            <Alert className="border-orange-200 bg-orange-50">
-              <AlertTriangle className="h-4 w-4 text-orange-600" />
-              <AlertDescription className="text-orange-800">
+            <Alert className="border-warning/40 bg-warning/10">
+              <AlertTriangle className="h-4 w-4 text-warning" />
+              <AlertDescription className="text-foreground">
                 <p className="font-medium text-sm mb-1">Cette facture ne sera plus accessible après fermeture.</p>
                 <p className="text-xs mb-3">Téléchargez-la avant de fermer.</p>
                 <div className="flex flex-wrap gap-2">
