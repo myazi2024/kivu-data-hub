@@ -78,40 +78,31 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
   const prefersReducedMotion = typeof window !== 'undefined'
     && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
   const onAnalyticsPanel = activeMobilePanel === 'analytics';
-  // Hint one-shot affiché lors du tout premier swipe réussi sur mobile
-  const showSwipeHintOnce = useCallback((direction: 'left' | 'right') => {
-    try {
-      if (localStorage.getItem('drc-map-swipe-hint-shown') === '1') return;
-      const message = direction === 'left'
-        ? 'Astuce : glissez vers la droite pour revenir à la Carte'
-        : 'Astuce : glissez vers la gauche pour ouvrir Analytics';
-      toast(message, {
-        duration: 3500,
+  // Hint one-shot affiché peu après le montage sur mobile (découvrabilité)
+  useEffect(() => {
+    if (!isMobile || hintShown) return;
+    const id = window.setTimeout(() => {
+      toast('Astuce : glissez horizontalement pour passer entre la Carte et Analytics', {
+        duration: 4000,
         icon: '👉',
       });
-      localStorage.setItem('drc-map-swipe-hint-shown', '1');
-    } catch {
-      /* localStorage indisponible */
-    }
-  }, []);
+      try { localStorage.setItem('drc-map-swipe-hint-shown', '1'); } catch { /* noop */ }
+      setHintShown(true);
+    }, 800);
+    return () => window.clearTimeout(id);
+  }, [isMobile, hintShown]);
 
   const { ref: swipeRef, isSwiping, swipeDelta } = useSwipeNavigation<HTMLDivElement>({
     enabled: isMobile,
     ignoreSelector: '[data-swipe-ignore], [role="dialog"], [data-radix-popper-content-wrapper], button, a, input, textarea, select',
     direction: onAnalyticsPanel ? 'right' : 'left',
-    onSwipeLeft: () => {
-      setActiveMobilePanel('analytics');
-      showSwipeHintOnce('left');
-    },
-    onSwipeRight: () => {
-      setActiveMobilePanel('map');
-      showSwipeHintOnce('right');
-    },
+    onSwipeLeft: () => setActiveMobilePanel('analytics'),
+    onSwipeRight: () => setActiveMobilePanel('map'),
   });
 
-  // Rubber-band: dx limité à ±24px, atténué à 15%
+  // Rubber-band: dx limité à ±40px, atténué à 18% (retour tactile plus net)
   const rubberBand = !prefersReducedMotion && isSwiping
-    ? Math.max(-24, Math.min(24, swipeDelta * 0.15))
+    ? Math.max(-40, Math.min(40, swipeDelta * 0.18))
     : 0;
 
 
