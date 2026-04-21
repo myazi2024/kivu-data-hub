@@ -426,7 +426,6 @@ export const useCadastralPayment = () => {
         .update({
           status: 'paid',
           payment_method: 'TEST',
-          payment_id: txn.id,
           updated_at: new Date().toISOString(),
         })
         .eq('id', invoiceId);
