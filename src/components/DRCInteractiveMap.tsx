@@ -377,7 +377,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                   
                    <div className="flex-1 min-h-0 overflow-hidden flex items-center justify-center p-1">
                     {selectedSectionType === 'rurale' || (selectedTerritoire && selectedProvince) ? (
-                      <div key="territoires" className="w-full h-full animate-scale-in">
+                      <div key="territoires" data-no-swipe className="w-full h-full animate-scale-in">
                         <DRCTerritoiresMap
                           province={selectedProvince?.name}
                           territoire={selectedTerritoire}
