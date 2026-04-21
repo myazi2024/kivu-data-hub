@@ -75,16 +75,22 @@ function hexToRgb(hex: string | undefined | null, defaultRgb: [number, number, n
 /**
  * Génère un PDF de justificatif de paiement avec format sélectionnable
  */
+export interface InvoicePdfOptions {
+  /** Si true, ouvre le PDF dans un nouvel onglet au lieu de le télécharger (pour la comparaison admin). */
+  openInNewTab?: boolean;
+}
+
 export async function generateInvoicePDF(
   invoice: CadastralInvoice,
   servicesCatalog: CadastralService[],
   format: InvoiceFormat = 'a4',
-  filename?: string
+  filename?: string,
+  options?: InvoicePdfOptions
 ) {
   if (format === 'mini') {
-    return generateMiniInvoicePDF(invoice, servicesCatalog, filename);
+    return generateMiniInvoicePDF(invoice, servicesCatalog, filename, options);
   } else {
-    return generateA4InvoicePDF(invoice, servicesCatalog, filename);
+    return generateA4InvoicePDF(invoice, servicesCatalog, filename, options);
   }
 }
 
@@ -95,7 +101,8 @@ export async function generateInvoicePDF(
 async function generateMiniInvoicePDF(
   invoice: CadastralInvoice,
   servicesCatalog: CadastralService[],
-  filename?: string
+  filename?: string,
+  options?: InvoicePdfOptions
 ) {
   const doc = new jsPDF({ unit: 'mm', format: [80, 160], orientation: 'portrait' });
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -200,7 +207,7 @@ async function generateMiniInvoicePDF(
   doc.text(`Régime: ${TAX_REGIME_LABELS[company.tax_regime] || company.tax_regime}`,
     pageWidth / 2, cursorY, { align: 'center' });
 
-  saveDocument(doc, filename || `facture_normalisee_${formatDateForFilename()}_${invoice.invoice_number.replace(/[^0-9A-Za-z]/g, '_')}.pdf`);
+  saveDocument(doc, filename || `facture_normalisee_${formatDateForFilename()}_${invoice.invoice_number.replace(/[^0-9A-Za-z]/g, '_')}.pdf`, options);
 }
 
 /**
@@ -211,7 +218,8 @@ async function generateMiniInvoicePDF(
 async function generateA4InvoicePDF(
   invoice: CadastralInvoice,
   servicesCatalog: CadastralService[],
-  filename?: string
+  filename?: string,
+  options?: InvoicePdfOptions
 ) {
   let verifyUrl = '';
   let verificationCode = '';
@@ -435,6 +443,47 @@ async function generateA4InvoicePDF(
     cursorY += 4;
   }
 
+  // ===== CONDITIONS DE PAIEMENT + COORDONNÉES BANCAIRES =====
+  const hasBank = !!(company.bank_name || company.bank_account || company.bank_swift);
+  if (tplCfg.payment_terms || hasBank) {
+    cursorY += 2;
+    doc.setDrawColor(220, 220, 220);
+    doc.setLineWidth(0.2);
+    doc.line(margin, cursorY, pageWidth - margin, cursorY);
+    cursorY += 4;
+
+    if (tplCfg.payment_terms) {
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8);
+      doc.setTextColor(headerRgb[0], headerRgb[1], headerRgb[2]);
+      doc.text('CONDITIONS DE PAIEMENT', margin, cursorY);
+      cursorY += 3.5;
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7.5);
+      doc.setTextColor(80, 80, 80);
+      const ptLines = doc.splitTextToSize(tplCfg.payment_terms, (pageWidth - 2 * margin) / 2 - 4);
+      ptLines.forEach((line: string) => { doc.text(line, margin, cursorY); cursorY += 3; });
+    }
+
+    if (hasBank) {
+      const bankX = pageWidth / 2 + 2;
+      let bankY = cursorY - (tplCfg.payment_terms ? (doc.splitTextToSize(tplCfg.payment_terms, (pageWidth - 2 * margin) / 2 - 4).length * 3) : 0);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8);
+      doc.setTextColor(headerRgb[0], headerRgb[1], headerRgb[2]);
+      doc.text('COORDONNÉES BANCAIRES', bankX, bankY);
+      bankY += 3.5;
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7.5);
+      doc.setTextColor(80, 80, 80);
+      if (company.bank_name) { doc.text(`Banque : ${company.bank_name}`, bankX, bankY); bankY += 3; }
+      if (company.bank_account) { doc.text(`IBAN : ${company.bank_account}`, bankX, bankY); bankY += 3; }
+      if (company.bank_swift) { doc.text(`SWIFT : ${company.bank_swift}`, bankX, bankY); bankY += 3; }
+      cursorY = Math.max(cursorY, bankY);
+    }
+    cursorY += 2;
+  }
+
   // ===== MENTIONS LÉGALES & VÉRIFICATION =====
   cursorY = Math.max(cursorY, pageHeight - 50);
 
@@ -480,7 +529,7 @@ async function generateA4InvoicePDF(
     }
   }
 
-  saveDocument(doc, filename || `facture_normalisee_${formatDateForFilename()}_${invoice.invoice_number.replace(/[^0-9A-Za-z]/g, '_')}.pdf`);
+  saveDocument(doc, filename || `facture_normalisee_${formatDateForFilename()}_${invoice.invoice_number.replace(/[^0-9A-Za-z]/g, '_')}.pdf`, options);
 }
 
 // Fonctions utilitaires
@@ -495,7 +544,18 @@ function formatDateForFilename(): string {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 }
 
-function saveDocument(doc: jsPDF, filename: string) {
+function saveDocument(doc: jsPDF, filename: string, options?: InvoicePdfOptions) {
+  if (options?.openInNewTab) {
+    try {
+      const blob = doc.output('blob');
+      const blobUrl = URL.createObjectURL(blob);
+      window.open(blobUrl, '_blank');
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
+      return;
+    } catch (e) {
+      console.error('Open PDF in new tab failed, falling back to download:', e);
+    }
+  }
   try {
     doc.save(filename);
   } catch (e) {
