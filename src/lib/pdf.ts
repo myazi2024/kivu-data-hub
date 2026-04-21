@@ -273,11 +273,14 @@ async function generateA4InvoicePDF(
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(14);
   doc.setTextColor(0, 51, 102);
-  doc.text("FACTURE NORMALISÉE", pageWidth - margin, cursorY + 5, { align: 'right' });
+  const titleLabel = tplCfg.show_dgi_mention ? "FACTURE NORMALISÉE" : "FACTURE";
+  doc.text(titleLabel, pageWidth - margin, cursorY + 5, { align: 'right' });
   doc.setFontSize(8);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(80, 80, 80);
-  doc.text("Direction Générale des Impôts (DGI) — RDC", pageWidth - margin, cursorY + 9, { align: 'right' });
+  if (tplCfg.show_dgi_mention) {
+    doc.text("Direction Générale des Impôts (DGI) — RDC", pageWidth - margin, cursorY + 9, { align: 'right' });
+  }
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(10);
   doc.setTextColor(33, 37, 41);
@@ -351,7 +354,7 @@ async function generateA4InvoicePDF(
   if (selectedServices.length > 0) {
     const tableData = selectedServices.map(service => {
       const priceTTC = Number(service.price);
-      const priceHT = priceTTC / (1 + TVA_RATE);
+      const priceHT = priceTTC / (1 + tvaRate);
       return [
         service.name,
         '1',
@@ -383,7 +386,7 @@ async function generateA4InvoicePDF(
   const subtotalTTC = selectedServices.reduce((sum, s) => sum + Number(s.price), 0);
   const discountTTC = Number(invoice.discount_amount_usd || 0);
   const totalTTC = subtotalTTC - discountTTC;
-  const totalHT = totalTTC / (1 + TVA_RATE);
+  const totalHT = totalTTC / (1 + tvaRate);
   const tvaAmount = totalTTC - totalHT;
 
   const totalsX = pageWidth - margin - 80;
@@ -404,7 +407,7 @@ async function generateA4InvoicePDF(
     writeRow('Remise commerciale', `-${formatBilingual(discountTTC, exchangeRate)}`);
   }
   writeRow('Base HT', formatBilingual(totalHT, exchangeRate));
-  writeRow('TVA 16%', formatBilingual(tvaAmount, exchangeRate));
+  writeRow(tplCfg.tva_label, formatBilingual(tvaAmount, exchangeRate));
 
   doc.setFillColor(0, 51, 102);
   doc.rect(totalsX - 3, cursorY - 4, valueX - totalsX + 6, 8, 'F');
