@@ -45,6 +45,9 @@ export const MapScopeLegend: React.FC<MapScopeLegendProps> = ({
               </>
             )}
       </div>
+      <div className="mt-0.5 pt-0.5 border-t border-border/20 text-[8px] text-muted-foreground/70 italic" title="Quartiers : OpenStreetMap / HDX — ODbL">
+        Quartiers © OSM / HDX
+      </div>
     </div>
   );
 };

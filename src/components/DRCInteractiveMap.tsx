@@ -338,8 +338,8 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                         ? `Territoires de la province de ${selectedProvince.name}`
                         : selectedSectionType === 'rurale'
                         ? 'Carte des 164 territoires de la RDC'
-                        : selectedVille && selectedCommune && selectedVille.toLowerCase() === 'goma'
-                        ? `Découpage des quartiers de la commune de ${selectedCommune} — ${selectedVille}`
+                        : selectedVille && selectedCommune
+                        ? `Découpage des quartiers de la commune de ${selectedCommune} — ${selectedVille}${selectedVille.toLowerCase() !== 'goma' ? ' (source OSM/HDX)' : ''}`
                         : selectedVille
                         ? `Découpage communal de la ville de ${selectedVille}`
                         : selectedProvince
@@ -351,7 +351,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                   
                    <div className="flex-1 min-h-0 overflow-hidden flex items-center justify-center p-1">
                     {selectedSectionType === 'rurale' || (selectedTerritoire && selectedProvince) ? (
-                      <div key="territoires" className="w-full h-full animate-fade-in">
+                      <div key="territoires" className="w-full h-full animate-scale-in">
                         <DRCTerritoiresMap
                           province={selectedProvince?.name}
                           territoire={selectedTerritoire}
@@ -360,6 +360,11 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                           getEntityColor={getTerritoireColor}
                           profileLabel={activeProfile?.legendTitle}
                           onTerritoireSelect={(name) => {
+                            // Toggle: re-clicking selected territoire dezooms
+                            if (selectedTerritoire && selectedTerritoire.toLowerCase() === name.toLowerCase()) {
+                              setSelectedTerritoire(undefined);
+                              return;
+                            }
                             if (!selectedProvince) {
                               const provinceName = getProvinceForTerritoire(name);
                               if (provinceName) {
@@ -375,23 +380,30 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                           }}
                         />
                       </div>
-                    ) : selectedVille && selectedCommune && selectedVille.toLowerCase() === 'goma' ? (
-                      <div key="quartiers" className="w-full h-full animate-fade-in">
+                    ) : selectedVille && selectedCommune ? (
+                      <div key={`quartiers-${selectedVille}`} className="w-full h-full animate-scale-in">
                         <DRCQuartiersMap
                           ville={selectedVille}
                           commune={selectedCommune}
                           quartier={selectedQuartier}
-                          onQuartierSelect={setSelectedQuartier}
+                          dataSource={selectedVille.toLowerCase() === 'goma' ? 'goma' : 'national'}
+                          onQuartierSelect={(name) => {
+                            // Toggle: re-clicking selected quartier dezooms
+                            setSelectedQuartier(prev => (prev && prev.toLowerCase() === name.toLowerCase()) ? undefined : name);
+                          }}
                           getEntityColor={getQuartierColor}
                           profileLabel={activeProfile?.legendTitle}
                         />
                       </div>
                     ) : selectedVille ? (
-                      <div key="communes" className="w-full h-full animate-fade-in">
+                      <div key="communes" className="w-full h-full animate-scale-in">
                         <DRCCommunesMap
                           ville={selectedVille}
                           commune={selectedCommune}
-                          onCommuneSelect={setSelectedCommune}
+                          onCommuneSelect={(name) => {
+                            // Toggle: re-clicking selected commune dezooms
+                            setSelectedCommune(prev => (prev && prev.toLowerCase() === name.toLowerCase()) ? undefined : name);
+                          }}
                           getEntityColor={getCommuneColor}
                           profileLabel={activeProfile?.legendTitle}
                         />

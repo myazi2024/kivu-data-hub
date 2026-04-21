@@ -96,9 +96,9 @@ export function computeBBox(features: { geometry: any }[], selectedName?: string
   return { minLng: minLng - padLng, maxLng: maxLng + padLng, minLat: minLat - padLat, maxLat: maxLat + padLat };
 }
 
-const ANIM_DURATION = 400;
+const DEFAULT_ANIM_DURATION = 600;
 
-export function useAnimatedBbox(targetBbox: BBox): BBox {
+export function useAnimatedBbox(targetBbox: BBox, durationMs: number = DEFAULT_ANIM_DURATION): BBox {
   const [animBbox, setAnimBbox] = useState<BBox>(targetBbox);
   const animRef = useRef<{ start: number; from: BBox; to: BBox }>({ start: 0, from: targetBbox, to: targetBbox });
   const isFirstRender = useRef(true);
@@ -117,8 +117,9 @@ export function useAnimatedBbox(targetBbox: BBox): BBox {
 
     let rafId: number;
     const tick = (now: number) => {
-      const t = Math.min((now - animRef.current.start) / ANIM_DURATION, 1);
-      const ease = t * (2 - t); // easeOutQuad
+      const t = Math.min((now - animRef.current.start) / durationMs, 1);
+      // easeOutCubic — aligned with DRCMapWithTooltip province-level animation
+      const ease = 1 - Math.pow(1 - t, 3);
       const lerp = (a: number, b: number) => a + (b - a) * ease;
       const next: BBox = {
         minLng: lerp(animRef.current.from.minLng, animRef.current.to.minLng),
@@ -132,7 +133,7 @@ export function useAnimatedBbox(targetBbox: BBox): BBox {
     rafId = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(rafId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [targetBbox]);
+  }, [targetBbox, durationMs]);
 
   return animBbox;
 }
