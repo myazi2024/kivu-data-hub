@@ -6,6 +6,7 @@ import { createDocumentVerification } from '@/lib/documentVerification';
 import { fetchAppLogo } from '@/utils/pdfLogoHelper';
 import { fetchCompanyLegalInfo, TAX_REGIME_LABELS, type CompanyLegalInfo } from '@/hooks/useCompanyLegalInfo';
 import { TVA_RATE } from '@/constants/billing';
+import { fetchInvoiceTemplateConfig, DEFAULT_INVOICE_TEMPLATE_CONFIG } from '@/hooks/useInvoiceTemplateConfig';
 
 // Type minimal pour les factures dans le PDF
 interface CadastralInvoice {
@@ -93,7 +94,8 @@ async function generateMiniInvoicePDF(
   const margin = 5;
   let cursorY = margin;
 
-  const company = await fetchCompanyLegalInfo();
+  const [company, tplCfg] = await Promise.all([fetchCompanyLegalInfo(), fetchInvoiceTemplateConfig()]);
+  const tvaRate = tplCfg.tva_rate ?? TVA_RATE;
   const exchangeRate = Number(invoice.exchange_rate_used || 1);
 
   // En-tête
@@ -109,10 +111,12 @@ async function generateMiniInvoicePDF(
   doc.text(company.trade_name || company.legal_name, pageWidth / 2, cursorY, { align: 'center' });
   cursorY += 4;
 
-  doc.setFontSize(8);
-  doc.setFont('helvetica', 'bold');
-  doc.text("FACTURE NORMALISÉE", pageWidth / 2, cursorY, { align: 'center' });
-  cursorY += 3;
+  if (tplCfg.show_dgi_mention) {
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'bold');
+    doc.text("FACTURE NORMALISÉE", pageWidth / 2, cursorY, { align: 'center' });
+    cursorY += 3;
+  }
   doc.setFontSize(6);
   doc.setFont('helvetica', 'normal');
   doc.text(`NIF: ${company.nif} • RCCM: ${company.rccm}`, pageWidth / 2, cursorY, { align: 'center' });
@@ -149,7 +153,7 @@ async function generateMiniInvoicePDF(
   // Décomposition fiscale conforme DGI
   const discountTTC = Number(invoice.discount_amount_usd || 0);
   const totalTTC = subtotalTTC - discountTTC;
-  const totalHT = totalTTC / (1 + TVA_RATE);
+  const totalHT = totalTTC / (1 + tvaRate);
   const tvaAmount = totalTTC - totalHT;
 
   cursorY += 2;
@@ -164,7 +168,7 @@ async function generateMiniInvoicePDF(
   }
   doc.text(`Base HT:`, margin, cursorY);
   doc.text(`${totalHT.toFixed(2)}$`, pageWidth - margin, cursorY, { align: 'right' }); cursorY += 3;
-  doc.text(`TVA 16%:`, margin, cursorY);
+  doc.text(`${tplCfg.tva_label}:`, margin, cursorY);
   doc.text(`${tvaAmount.toFixed(2)}$`, pageWidth - margin, cursorY, { align: 'right' }); cursorY += 3.5;
 
   doc.setFont('helvetica', 'bold');
