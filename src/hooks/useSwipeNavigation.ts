@@ -165,6 +165,17 @@ export function useSwipeNavigation<T extends HTMLElement = HTMLDivElement>({
         /* noop */
       }
 
+      // Anti-clic fantôme : bloque le prochain click synthétique généré par le tap
+      const suppressClick = (ev: Event) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+      };
+      window.addEventListener('click', suppressClick, { capture: true, once: true });
+      // Sécurité : retire le listener après 400ms s'il n'a pas été déclenché
+      window.setTimeout(() => {
+        window.removeEventListener('click', suppressClick, { capture: true } as any);
+      }, 400);
+
       if (goingLeft) {
         cbRef.current.onSwipeLeft?.();
       } else {
