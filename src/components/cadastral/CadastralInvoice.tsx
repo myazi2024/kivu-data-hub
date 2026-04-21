@@ -8,7 +8,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { CadastralSearchResult } from '@/hooks/useCadastralSearch';
 import { useCadastralServices } from '@/hooks/useCadastralServices';
-import { TVA_RATE } from '@/constants/billing';
+import { useTvaRate } from '@/hooks/useTvaRate';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { usePrintScope } from '@/hooks/usePrintScope';
@@ -104,6 +104,7 @@ const CadastralInvoice: React.FC<CadastralInvoiceProps> = ({
   const { services: catalogServices } = useCadastralServices();
   const { user } = useAuth();
   const { printRef, print } = usePrintScope<HTMLDivElement>();
+  const { rate: tvaRate, label: tvaLabel } = useTvaRate();
 
   // Load full invoice from DB (source of truth)
   useEffect(() => {
@@ -150,10 +151,10 @@ const CadastralInvoice: React.FC<CadastralInvoiceProps> = ({
     const subtotal = dbInvoice?.original_amount_usd ?? subtotalCatalog;
     const discount = dbInvoice?.discount_amount_usd ?? 0;
     const net = Math.max(0, subtotal - discount);
-    const tva = net * TVA_RATE;
+    const tva = net * tvaRate;
     const total = dbInvoice?.total_amount_usd ?? net + tva;
     return { subtotal, discount, tva, net, total };
-  }, [selectedServices, dbInvoice]);
+  }, [selectedServices, dbInvoice, tvaRate]);
 
   // QR code (verification link)
   useEffect(() => {
@@ -361,7 +362,7 @@ const CadastralInvoice: React.FC<CadastralInvoiceProps> = ({
                     </div>
                   )}
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">TVA ({(TVA_RATE * 100).toFixed(0)}%)</span>
+                    <span className="text-muted-foreground">{tvaLabel || `TVA (${(tvaRate * 100).toFixed(0)}%)`}</span>
                     <span className="tabular-nums">${totals.tva.toFixed(2)}</span>
                   </div>
                   <Separator className="my-1" />

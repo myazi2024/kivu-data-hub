@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import DiscountCodeInput from '../DiscountCodeInput';
 import CurrencySelector from '@/components/payment/CurrencySelector';
 import { formatCurrency } from '@/utils/formatters';
-import { TVA_RATE } from '@/constants/billing';
+import { useTvaRate } from '@/hooks/useTvaRate';
 import type { CurrencyCode } from '@/hooks/useCurrencyConfig';
 
 interface AppliedDiscount {
@@ -51,6 +51,7 @@ const BillingTotals: React.FC<BillingTotalsProps> = ({
   isPaymentRequired,
   onProceed,
 }) => {
+  const { rate: TVA_RATE, label: tvaLabel } = useTvaRate();
   const discountedAmount = appliedDiscount ? Math.max(0, totalAmount - appliedDiscount.amount) : totalAmount;
   const hasSelection = selectedCount > 0;
 
@@ -93,7 +94,7 @@ const BillingTotals: React.FC<BillingTotalsProps> = ({
               </div>
             )}
             <div className="flex items-center justify-between text-muted-foreground">
-              <span>{`TVA (${(TVA_RATE * 100).toFixed(0)}%)`}</span>
+              <span>{tvaLabel || `TVA (${(TVA_RATE * 100).toFixed(0)}%)`}</span>
               <span>{formatCurrency(convertFromUsd(discountedAmount * TVA_RATE), selectedCurrency)}</span>
             </div>
           </div>
