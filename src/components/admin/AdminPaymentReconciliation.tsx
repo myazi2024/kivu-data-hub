@@ -214,6 +214,9 @@ const AdminPaymentReconciliation = () => {
       </Card>
 
       {/* Anomalies (P1) */}
+      <TestModeBanner />
+
+      {/* Anomalies (P1) */}
       <BillingAnomaliesPanel />
 
       {/* Stats */}
@@ -304,7 +307,7 @@ const AdminPaymentReconciliation = () => {
                       {transaction.amount_usd.toFixed(2)}
                     </div>
                     {transaction.status === 'pending' && (
-                      <Button variant="outline" size="sm" className="h-6 text-[10px] px-2" onClick={() => handleReconcile(transaction.id)}>
+                      <Button variant="outline" size="sm" className="h-6 text-[10px] px-2" onClick={() => setReconcileTarget(transaction)}>
                         <CheckCircle2 className="h-2.5 w-2.5 mr-0.5" />
                         Réconcilier
                       </Button>
@@ -334,6 +337,53 @@ const AdminPaymentReconciliation = () => {
           </div>
         )}
       </Card>
+
+      {/* B3 — Réconciliation manuelle : motif obligatoire + audit */}
+      <Dialog open={!!reconcileTarget} onOpenChange={(o) => !o && setReconcileTarget(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-sm">Réconcilier la transaction</DialogTitle>
+            <DialogDescription className="text-xs">
+              Cette action est tracée dans l'audit (motif obligatoire).
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="text-[11px] text-muted-foreground">
+              Réf : <span className="font-mono">{reconcileTarget?.transaction_reference || reconcileTarget?.id.slice(0, 8)}</span>
+              {' • '}${reconcileTarget?.amount_usd.toFixed(2)}
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium">Motif *</label>
+              <Select value={reconcileReason} onValueChange={setReconcileReason}>
+                <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Choisir un motif…" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="provider_confirmed">Confirmé chez le PSP (preuve externe)</SelectItem>
+                  <SelectItem value="bank_settlement">Réception bancaire vérifiée</SelectItem>
+                  <SelectItem value="customer_evidence">Preuve client (capture, SMS)</SelectItem>
+                  <SelectItem value="manual_correction">Correction manuelle (incident technique)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium">Note interne</label>
+              <Textarea
+                value={reconcileNote}
+                onChange={(e) => setReconcileNote(e.target.value)}
+                placeholder="Référence externe, ticket, contact…"
+                className="text-xs min-h-[64px]"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" size="sm" onClick={() => setReconcileTarget(null)} disabled={reconciling}>
+              Annuler
+            </Button>
+            <Button size="sm" onClick={submitReconciliation} disabled={!reconcileReason || reconciling}>
+              {reconciling ? 'Réconciliation…' : 'Confirmer & tracer'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

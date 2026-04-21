@@ -190,60 +190,43 @@ const AdminBillingConfig = () => {
 
   const applyBulkUpdate = async (category: 'publications' | 'services' | 'fees') => {
     if (!bulkPercentage) {
-      toast({
-        title: "Erreur",
-        description: "Veuillez entrer un pourcentage",
-        variant: "destructive"
-      });
+      toast({ title: "Erreur", description: "Veuillez entrer un pourcentage", variant: "destructive" });
+      return;
+    }
+    const percentage = parseFloat(bulkPercentage);
+    if (isNaN(percentage) || percentage <= 0 || percentage > 100) {
+      toast({ title: "Erreur", description: "Pourcentage invalide (0 < p ≤ 100)", variant: "destructive" });
       return;
     }
 
-    const percentage = parseFloat(bulkPercentage);
-    const multiplier = bulkOperation === 'increase' ? (1 + percentage / 100) : (1 - percentage / 100);
+    const tableMap: Record<typeof category, string> = {
+      publications: 'publications',
+      services: 'cadastral_services_config',
+      fees: 'permit_fees_config',
+    };
 
     try {
-      if (category === 'publications') {
-        const updates = publications.map(pub => ({
-          id: pub.id,
-          price_usd: Math.max(0, pub.price_usd * multiplier)
-        }));
-
-        for (const update of updates) {
-          await supabase.from('publications').update({ price_usd: update.price_usd }).eq('id', update.id);
-        }
-      } else if (category === 'services') {
-        const updates = services.map(service => ({
-          id: service.id,
-          price_usd: Math.max(0, service.price_usd * multiplier)
-        }));
-
-        for (const update of updates) {
-          await supabase.from('cadastral_services_config').update({ price_usd: update.price_usd }).eq('id', update.id);
-        }
-      } else if (category === 'fees') {
-        const updates = permitFees.map(fee => ({
-          id: fee.id,
-          amount_usd: Math.max(0, fee.amount_usd * multiplier)
-        }));
-
-        for (const update of updates) {
-          await supabase.from('permit_fees_config').update({ amount_usd: update.amount_usd }).eq('id', update.id);
-        }
-      }
+      // B6 — RPC transactionnelle + audit unique côté SQL
+      const { data, error } = await (supabase as any).rpc('bulk_update_service_prices', {
+        p_table: tableMap[category],
+        p_operation: bulkOperation,
+        p_percentage: percentage,
+      });
+      if (error) throw error;
 
       toast({
         title: "Mise à jour en masse effectuée",
-        description: `Tous les prix ont été ${bulkOperation === 'increase' ? 'augmentés' : 'diminués'} de ${percentage}%`
+        description: `${(data as any)?.updated_count ?? 0} prix ${bulkOperation === 'increase' ? 'augmentés' : 'diminués'} de ${percentage}% (transactionnel)`,
       });
 
       fetchAllPricing();
       setBulkPercentage('');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error applying bulk update:', error);
       toast({
         title: "Erreur",
-        description: "Impossible d'appliquer la mise à jour en masse",
-        variant: "destructive"
+        description: error?.message || "Impossible d'appliquer la mise à jour en masse",
+        variant: "destructive",
       });
     }
   };
