@@ -33,11 +33,49 @@ Deno.serve(async (req) => {
       { auth: { persistSession: false } }
     );
 
+    // Helper: retrieve real Stripe fee from a payment_intent (Lot 2 — provider fees tracking)
+    const fetchStripeFee = async (paymentIntentId: string | null | undefined): Promise<{ fee_usd: number; raw: any } | null> => {
+      if (!paymentIntentId) return null;
+      try {
+        const pi = await stripe.paymentIntents.retrieve(paymentIntentId, { expand: ['latest_charge.balance_transaction'] });
+        const charge: any = (pi as any).latest_charge;
+        const bt: any = charge?.balance_transaction;
+        if (!bt) return null;
+        // Stripe fee is in the smallest unit of bt.currency. We assume USD reporting; convert cents → USD.
+        const fee_usd = Number(bt.fee || 0) / 100;
+        return {
+          fee_usd,
+          raw: {
+            source: 'stripe_balance_transaction',
+            currency: bt.currency,
+            fee: bt.fee,
+            fee_details: bt.fee_details || [],
+            net: bt.net,
+            balance_transaction_id: bt.id,
+            retrieved_at: new Date().toISOString(),
+          },
+        };
+      } catch (err) {
+        console.error('fetchStripeFee error:', err);
+        return null;
+      }
+    };
+
     switch (event.type) {
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;
         const metadata = session.metadata || {};
         const paymentType = metadata.payment_type;
+
+        // Retrieve real provider fee once per session (used by all branches)
+        const feeInfo = await fetchStripeFee(session.payment_intent as string | null);
+        const feeUpdate = feeInfo
+          ? {
+              provider_fee_usd: feeInfo.fee_usd,
+              provider_fee_currency: 'USD',
+              provider_fee_raw: feeInfo.raw,
+            }
+          : {};
 
         if (paymentType === "cadastral_service" && metadata.invoice_id) {
           await supabase
@@ -45,6 +83,7 @@ Deno.serve(async (req) => {
             .update({
               status: "completed",
               transaction_reference: session.payment_intent as string,
+              ...feeUpdate,
               metadata: { stripe_session_id: session.id, completed_at: new Date().toISOString() }
             })
             .eq("transaction_reference", session.id);
