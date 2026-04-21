@@ -1,140 +1,103 @@
 
-## Fix — Paiement test cadastral : la simulation Mobile Money casse sur `cadastral_invoices.payment_id`
+
+## Fix — Impression de la facture du catalogue de services
 
 ### Cause racine
 
-Le message affiché côté UI (`Traitement en cours, confirmer le paiement sur votre téléphone`) montre que ce n’est pas le bouton `Simuler le paiement (test)` qui est en cause, mais le flux **Mobile Money**.
+Le composant `CadastralInvoice.tsx` (modal qui s'ouvre après paiement avec le bouton « Imprimer ») appelle bien `window.print()` (ligne 187 et 419), mais **la sortie est entièrement blanche**.
 
-Dans ce flux :
+Pourquoi : `src/index.css` (ligne 472-498) contient une règle d'impression globale très agressive :
 
-1. `process-mobile-money-payment` crée une ligne dans `payment_transactions` puis la passe à `status='completed'` en simulation.
-2. Le trigger SQL `sync_invoice_on_tx_completed()` s’exécute.
-3. Ce trigger fait :
-```sql
-UPDATE public.cadastral_invoices
-   SET status = 'paid', payment_id = NEW.id, updated_at = now()
- WHERE id = NEW.invoice_id;
-```
-4. Or `cadastral_invoices.payment_id` référence **`public.payments(id)`**, alors que `NEW.id` vient de **`payment_transactions(id)`**.
-5. Résultat : violation FK `cadastral_invoices_payment_id_fkey`.
-
-### Pourquoi le bug persiste
-
-Le correctif précédent a bien retiré `payment_id: txn.id` de `useCadastralPayment.tsx`, mais l’erreur se produit maintenant **côté base**, via le trigger automatique sur `payment_transactions`. Donc le frontend n’est plus la source du problème principal.
-
-### Travaux à appliquer
-
-#### 1. Corriger le trigger SQL de synchronisation facture/transaction
-Créer une migration Supabase pour modifier `public.sync_invoice_on_tx_completed()` afin de :
-
-- continuer à mettre `status='paid'`
-- continuer à mettre `updated_at=now()`
-- **ne plus écrire `payment_id = NEW.id`**
-
-Version attendue :
-```sql
-UPDATE public.cadastral_invoices
-   SET status = 'paid',
-       updated_at = now()
- WHERE id = NEW.invoice_id
-   AND status <> 'paid';
+```css
+@media print {
+  body * { visibility: hidden; }
+  #review-print-area,
+  #review-print-area * { visibility: visible !important; }
+  #review-print-area { position: absolute; top: 0; left: 0; ... }
+}
 ```
 
-#### 2. Audit de cohérence sur les autres flux cadastral
-Le même anti-pattern existe aussi dans `supabase/functions/stripe-webhook/index.ts` :
+Cette règle a été conçue pour l'onglet `ReviewTab` du formulaire CCC, mais elle s'applique **à tout le site**. Conséquence : quand l'utilisateur clique « Imprimer » dans la facture cadastrale, **tout le `body` devient invisible** et seule la zone `#review-print-area` (qui n'existe pas dans la modale facture) reste visible → page blanche.
 
-```ts
-.update({
-  status: "paid",
-  payment_id: session.id,
-  updated_at: ...
-})
+Symptôme additionnel : même en l'absence de cette règle, la modale a une racine `fixed inset-0 bg-black/80 backdrop-blur-sm` non scopée pour l'impression → le fond noir s'imprimerait sur toute la page.
+
+### Périmètre touché
+
+Tous les flux qui appellent `window.print()` hors de `ReviewTab` sont cassés de la même manière :
+
+| Composant | Ligne | État impression |
+|---|---|---|
+| `CadastralInvoice.tsx` | 187, 419 | ❌ blanc |
+| `cadastral-document/DocumentToolbar.tsx` | 52 | ❌ blanc (la fiche parcellaire aussi !) |
+| `ccc-tabs/ReviewTab.tsx` | 105 | ✅ OK (scope `#review-print-area`) |
+
+Donc **deux bugs identiques** sont corrigés par la même solution.
+
+### Correctif
+
+#### 1. Scoper la règle existante au seul `ReviewTab`
+
+Dans `src/index.css`, remplacer le sélecteur racine `body *` par une portée conditionnelle activée uniquement quand un attribut `data-print-scope="review"` est présent sur `<html>`. Plus simple : encapsuler **toutes** les règles `#review-print-area` dans une nouvelle classe activable.
+
+Approche retenue (minimaliste, sans toucher au comportement de `ReviewTab`) :
+
+- `body.print-review-only *` au lieu de `body *`
+- `ReviewTab` ajoute `document.body.classList.add('print-review-only')` avant `window.print()` et le retire après (`onafterprint`)
+
+#### 2. Ajouter un scope d'impression propre pour la modale facture
+
+Dans `CadastralInvoice.tsx` :
+- ajouter un wrapper `id="invoice-print-area"` autour de `<Card>`
+- ajouter dans `index.css` un bloc `@media print` dédié :
+  - masquer `body > *:not(.invoice-print-host)` 
+  - rendre la modale en flux normal (sans `fixed`, sans backdrop noir)
+  - cacher boutons / barre fermeture
+
+#### 3. Ajouter un scope d'impression pour la fiche parcellaire
+
+Dans `cadastral-document/CadastralDocumentView.tsx` :
+- ajouter `id="cadastral-doc-print-area"` sur le wrapper racine `.cadastral-document`
+- règle CSS similaire à la facture
+- le `print:hidden` déjà présent sur `DocumentToolbar` continuera à fonctionner
+
+#### 4. Pattern unifié recommandé
+
+Plutôt que de répéter la même mécanique 3 fois, créer un petit hook `usePrintScope(scopeId)` qui :
+- ajoute une classe `print-scope-active` au `body`
+- définit une variable CSS `--print-scope-id` lue par une règle générique
+- gère `beforeprint` / `afterprint` pour nettoyer
+
+Une seule règle CSS générique :
+```css
+@media print {
+  body.print-scope-active > *:not([data-print-host]) { display: none !important; }
+  body.print-scope-active [data-print-host] { position: static; background: white; ... }
+}
 ```
 
-Problème :
-- `session.id` Stripe n’est pas un `payments.id`
-- c’est potentiellement une seconde source de casse ou de dette
-
-Correction prévue :
-- retirer aussi l’écriture de `payment_id` sur `cadastral_invoices` dans ce handler
-- conserver la traçabilité via `payment_transactions.invoice_id` + `transaction_reference`
-
-#### 3. Garder le modèle de traçabilité cohérent
-Le lien métier correct pour les services cadastraux devient :
-
-```text
-cadastral_invoices.id
-   ↑
-payment_transactions.invoice_id
-```
-
-et non :
-
-```text
-cadastral_invoices.payment_id -> payment_transactions.id
-```
-
-Le champ `cadastral_invoices.payment_id` reste inchangé en base pour compatibilité historique, mais n’est plus alimenté par les flux cadastraux tant qu’il référence `payments`.
-
-#### 4. Vérifier le bouton test dédié
-Conserver le fix déjà fait dans `src/hooks/useCadastralPayment.tsx` :
-- ne pas réintroduire `payment_id` dans `processTestPayment`
-
-Aucune autre modification front nécessaire pour cette erreur spécifique.
-
-### Fichiers concernés
-
-- `supabase/migrations/<new_migration>.sql`
-- `supabase/functions/stripe-webhook/index.ts`
-- vérification de non-régression dans :
-  - `src/hooks/useCadastralPayment.tsx`
-  - `supabase/functions/process-mobile-money-payment/index.ts`
+Chaque composant imprimable ajoute juste `data-print-host` sur sa racine et appelle `usePrintScope()` au lieu de `window.print()` direct.
 
 ### Validation attendue
 
-#### Cas 1 — Mobile Money en mode test
-- Catalogue cadastral
-- ouvrir paiement
-- choisir Mobile Money
-- lancer le paiement en simulation
-- attendre l’auto-complétion
-- résultat attendu :
-  - pas de toast FK rouge
-  - facture passe à `paid`
-  - services débloqués
-  - event `cadastralPaymentCompleted` déclenché
+1. Catalogue de services → payer un service → modale facture → bouton Imprimer
+   - Aperçu d'impression affiche la facture sur fond blanc, sans backdrop noir, sans boutons
+2. Fiche parcellaire → bouton Imprimer dans toolbar
+   - Aperçu affiche le document complet, toolbar masquée, croquis SVG conservé
+3. Formulaire CCC → onglet Envoi → bouton Imprimer
+   - Comportement inchangé (régression à éviter)
+4. Vérification : `Ctrl+P` n'importe où ailleurs ne déclenche aucun masquage parasite
 
-#### Cas 2 — Bouton `Simuler le paiement (test)`
-- cliquer sur le bouton dédié
-- résultat attendu :
-  - aucun toast d’erreur
-  - facture `paid`
-  - accès accordé
+### Fichiers à modifier
 
-#### Cas 3 — Vérification DB
-- `payment_transactions` contient la transaction simulée
-- `cadastral_invoices.status = 'paid'`
-- `cadastral_invoices.payment_id` reste `NULL` pour le flux cadastral test/mobile money
-- aucune violation FK
+- `src/index.css` (refonte du bloc `@media print`)
+- `src/components/cadastral/CadastralInvoice.tsx` (wrapper + hook)
+- `src/components/cadastral/cadastral-document/CadastralDocumentView.tsx` (wrapper + hook)
+- `src/components/cadastral/ccc-tabs/ReviewTab.tsx` (migration vers le hook)
+- `src/hooks/usePrintScope.ts` (nouveau, ~20 lignes)
 
 ### Hors périmètre
 
-- Pas de redesign complet du schéma `cadastral_invoices.payment_id`
-- Pas de refonte du système `payments` global
-- Pas de changement UX sur le texte “Confirmez le paiement sur votre téléphone”, même s’il est un peu trompeur en mode simulation
+- Pas de modification du PDF généré (`generateInvoicePDF` / `generateCadastralReport`) — le bouton Télécharger PDF fonctionne déjà, c'est uniquement l'impression navigateur qui est cassée
+- Pas de refonte de la modale `CadastralInvoice` (déjà fonctionnelle visuellement)
+- Pas de changement sur `CadastralResultsDialog` (n'a pas de bouton Imprimer propre)
 
-### Détail technique
-
-```text
-Flux fautif actuel
-payment_transactions.completed
-  -> trigger sync_invoice_on_tx_completed
-    -> cadastral_invoices.payment_id = payment_transactions.id
-    -> FK cassée (attend payments.id)
-
-Flux corrigé
-payment_transactions.completed
-  -> trigger sync_invoice_on_tx_completed
-    -> cadastral_invoices.status = 'paid'
-    -> traçabilité via payment_transactions.invoice_id
-```
