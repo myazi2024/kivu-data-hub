@@ -4,7 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { usePeriodFilter } from '@/hooks/usePeriodFilter';
 import { PeriodFilter } from '@/components/admin/dashboard/PeriodFilter';
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { DollarSign, TrendingUp, TrendingDown, CreditCard, FileText, Percent } from 'lucide-react';
+import { DollarSign, TrendingUp, TrendingDown, CreditCard, FileText, Percent, Wallet } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import TestModeBanner from '@/components/admin/billing/TestModeBanner';
 import BillingAnomaliesPanel from '@/components/admin/billing/BillingAnomaliesPanel';
@@ -34,6 +34,7 @@ const AdminFinancialDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [current, setCurrent] = useState<BillingSummary | null>(null);
   const [previous, setPrevious] = useState<BillingSummary | null>(null);
+  const [netRevenue, setNetRevenue] = useState<{ gross: number; fees: number; net: number }>({ gross: 0, fees: 0, net: 0 });
 
   useEffect(() => {
     void fetchData();
@@ -47,7 +48,7 @@ const AdminFinancialDashboard = () => {
       const durationMs = end.getTime() - start.getTime();
       const prevStart = new Date(start.getTime() - durationMs);
 
-      const [{ data: curData, error: curErr }, { data: prevData, error: prevErr }] = await Promise.all([
+      const [{ data: curData, error: curErr }, { data: prevData, error: prevErr }, { data: netData }] = await Promise.all([
         (supabase as any).rpc('get_billing_summary', {
           p_from: start.toISOString(),
           p_to: end.toISOString(),
@@ -56,6 +57,12 @@ const AdminFinancialDashboard = () => {
           p_from: prevStart.toISOString(),
           p_to: start.toISOString(),
         }),
+        (supabase as any)
+          .from('payment_transactions')
+          .select('amount_usd, provider_fee_usd, net_amount_usd')
+          .eq('status', 'completed')
+          .gte('created_at', start.toISOString())
+          .lte('created_at', end.toISOString()),
       ]);
 
       if (curErr) console.error('billing summary current:', curErr);
@@ -63,10 +70,21 @@ const AdminFinancialDashboard = () => {
 
       setCurrent((curData as BillingSummary) || null);
       setPrevious((prevData as BillingSummary) || null);
+
+      if (Array.isArray(netData)) {
+        const gross = netData.reduce((s: number, r: any) => s + Number(r.amount_usd || 0), 0);
+        const fees = netData.reduce((s: number, r: any) => s + Number(r.provider_fee_usd || 0), 0);
+        const net = netData.reduce((s: number, r: any) => s + Number(r.net_amount_usd || 0), 0);
+        setNetRevenue({ gross, fees, net });
+      } else {
+        setNetRevenue({ gross: 0, fees: 0, net: 0 });
+      }
     } finally {
       setLoading(false);
     }
   };
+
+  const feePercent = netRevenue.gross > 0 ? (netRevenue.fees / netRevenue.gross) * 100 : 0;
 
   const totalRevenue = Number(current?.total_revenue_usd || 0);
   const totalTransactions = Number(current?.total_transactions || 0);
@@ -109,7 +127,19 @@ const AdminFinancialDashboard = () => {
       <PeriodFilter periodType={periodType} onPeriodChange={setPeriodType} />
 
       {/* KPIs */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Marge nette</CardTitle>
+            <Wallet className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600 dark:text-green-400">${netRevenue.net.toFixed(2)}</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Frais providers : −${netRevenue.fees.toFixed(2)} ({feePercent.toFixed(2)}%)
+            </p>
+          </CardContent>
+        </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Revenus Totaux</CardTitle>

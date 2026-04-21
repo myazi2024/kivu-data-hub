@@ -178,6 +178,17 @@ Deno.serve(async (req) => {
       throw new Error('Payment provider not available');
     }
 
+    // Compute provider fee from config (Lot 2 — provider fees tracking)
+    const feePercent = Number(providerConfig.fee_percent || 0);
+    const feeFixedUsd = Number(providerConfig.fee_fixed_usd || 0);
+    const computedFeeUsd = Math.round(((amount_usd * feePercent) / 100 + feeFixedUsd) * 10000) / 10000;
+    const feeBreakdown = {
+      source: 'provider_config',
+      fee_percent: feePercent,
+      fee_fixed_usd: feeFixedUsd,
+      computed_at: new Date().toISOString(),
+    };
+
     // Create payment transaction record
     const { data: transaction, error: txError } = await supabase
       .from('payment_transactions')
@@ -213,6 +224,9 @@ Deno.serve(async (req) => {
           .update({
             status: 'completed',
             transaction_reference: `TEST-${Date.now()}`,
+            provider_fee_usd: computedFeeUsd,
+            provider_fee_currency: 'USD',
+            provider_fee_raw: { ...feeBreakdown, simulated: true },
             metadata: {
               ...transaction.metadata,
               simulated: true,
@@ -254,6 +268,9 @@ Deno.serve(async (req) => {
           .from('payment_transactions')
           .update({
             status: 'completed',
+            provider_fee_usd: computedFeeUsd,
+            provider_fee_currency: 'USD',
+            provider_fee_raw: feeBreakdown,
             metadata: {
               ...transaction.metadata,
               provider_simulated: true,
