@@ -1,0 +1,1 @@
+ALTER VIEW public.revenue_net_by_period SET (security_invoker = true);
