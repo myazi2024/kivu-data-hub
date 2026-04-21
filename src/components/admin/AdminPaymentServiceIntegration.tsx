@@ -361,57 +361,127 @@ const AdminPaymentServiceIntegration: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Statistiques financières */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Revenus Catalogue Brut</p>
-                <p className="text-2xl font-bold">${getTotalEstimatedRevenue().toFixed(2)}</p>
-              </div>
-              <DollarSign className="h-8 w-8 text-blue-500" />
+      {/* Statistiques financières — données réelles */}
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div>
+              <CardTitle className="text-base flex items-center gap-2">
+                <DollarSign className="h-5 w-5" />
+                Marge réelle (transactions complétées)
+              </CardTitle>
+              <CardDescription>
+                Données issues de <code className="text-xs">revenue_net_by_period</code> — frais providers tracés transaction par transaction
+              </CardDescription>
             </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Revenus Nets Estimés</p>
-                <p className="text-2xl font-bold text-green-600 dark:text-green-400">
-                  ${getEstimatedNetRevenue().toFixed(2)}
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Après frais transaction
-                </p>
-              </div>
-              <TrendingUp className="h-8 w-8 text-green-500" />
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" size="sm" disabled={backfilling || loadingRevenue}>
+                  {backfilling ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                  )}
+                  Backfill frais historiques
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Lancer le backfill des frais providers ?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Cette action applique une estimation des frais (selon <code>fee_percent</code> + <code>fee_fixed_usd</code> de chaque méthode) à toutes les transactions complétées qui n'ont pas de frais enregistrés. Les transactions ayant déjà un fee réel ne seront pas touchées.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Annuler</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleBackfill}>Confirmer</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {loadingRevenue ? (
+            <div className="flex items-center justify-center py-6">
+              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
             </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Frais Estimés</p>
-                <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">
-                  ${(getTotalEstimatedRevenue() - getEstimatedNetRevenue()).toFixed(2)}
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  ~{(((getTotalEstimatedRevenue() - getEstimatedNetRevenue()) / getTotalEstimatedRevenue()) * 100).toFixed(1)}% du total
-                </p>
+          ) : !realRevenue || realRevenue.txCount === 0 ? (
+            <Alert>
+              <Info className="h-4 w-4" />
+              <AlertDescription>
+                Aucune transaction complétée pour l'instant. Les KPIs s'afficheront dès le premier paiement réussi.
+              </AlertDescription>
+            </Alert>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="p-4 rounded-lg border bg-muted/30">
+                  <p className="text-xs font-medium text-muted-foreground">Brut encaissé</p>
+                  <p className="text-2xl font-bold mt-1">${realRevenue.gross.toFixed(2)}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{realRevenue.txCount} transaction(s)</p>
+                </div>
+                <div className="p-4 rounded-lg border bg-muted/30">
+                  <p className="text-xs font-medium text-muted-foreground">Frais providers réels</p>
+                  <p className="text-2xl font-bold text-orange-600 dark:text-orange-400 mt-1">
+                    −${realRevenue.fees.toFixed(2)}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">{effectiveFeePct.toFixed(2)}% effectif</p>
+                </div>
+                <div className="p-4 rounded-lg border bg-muted/30">
+                  <p className="text-xs font-medium text-muted-foreground">Marge nette</p>
+                  <p className="text-2xl font-bold text-green-600 dark:text-green-400 mt-1">
+                    ${realRevenue.net.toFixed(2)}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">après frais</p>
+                </div>
+                <div className="p-4 rounded-lg border bg-muted/30">
+                  <p className="text-xs font-medium text-muted-foreground">Catalogue brut (référence)</p>
+                  <p className="text-2xl font-bold mt-1">${getTotalEstimatedRevenue().toFixed(2)}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{services.length} service(s)</p>
+                </div>
               </div>
-              <AlertCircle className="h-8 w-8 text-orange-500" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
 
-      {/* Tableau de compatibilité */}
-      <Tabs defaultValue="compatibility" className="w-full">
+              {Object.keys(realRevenue.byProvider).length > 0 && (
+                <div className="mt-4">
+                  <p className="text-sm font-medium mb-2">Répartition par provider</p>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Provider</TableHead>
+                        <TableHead className="text-right">Transactions</TableHead>
+                        <TableHead className="text-right">Brut</TableHead>
+                        <TableHead className="text-right">Frais</TableHead>
+                        <TableHead className="text-right">Net</TableHead>
+                        <TableHead className="text-right">% effectif</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {Object.entries(realRevenue.byProvider).map(([prov, v]) => {
+                        const pct = v.gross > 0 ? (v.fees / v.gross) * 100 : 0;
+                        return (
+                          <TableRow key={prov}>
+                            <TableCell className="font-medium">{providerLabel(prov)}</TableCell>
+                            <TableCell className="text-right">{v.tx}</TableCell>
+                            <TableCell className="text-right">${v.gross.toFixed(2)}</TableCell>
+                            <TableCell className="text-right text-orange-600 dark:text-orange-400">
+                              −${v.fees.toFixed(2)}
+                            </TableCell>
+                            <TableCell className="text-right text-green-600 dark:text-green-400 font-semibold">
+                              ${v.net.toFixed(2)}
+                            </TableCell>
+                            <TableCell className="text-right">{pct.toFixed(2)}%</TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </>
+          )}
+        </CardContent>
+      </Card>
+
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="compatibility">Compatibilité</TabsTrigger>
           <TabsTrigger value="fees">Analyse des Frais</TabsTrigger>
