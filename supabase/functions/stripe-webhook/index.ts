@@ -53,7 +53,6 @@ Deno.serve(async (req) => {
             .from("cadastral_invoices")
             .update({
               status: "paid",
-              payment_id: session.id,
               updated_at: new Date().toISOString()
             })
             .eq("id", metadata.invoice_id);
