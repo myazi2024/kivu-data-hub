@@ -1262,6 +1262,13 @@ export type Database = {
             referencedRelation: "cadastral_invoices"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "cadastral_contributor_codes_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices_aging"
+            referencedColumns: ["invoice_id"]
+          },
         ]
       }
       cadastral_credit_note_seq_year: {
@@ -1333,6 +1340,13 @@ export type Database = {
             referencedRelation: "cadastral_invoices"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "cadastral_credit_notes_original_invoice_id_fkey"
+            columns: ["original_invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices_aging"
+            referencedColumns: ["invoice_id"]
+          },
         ]
       }
       cadastral_invoices: {
@@ -1351,6 +1365,7 @@ export type Database = {
           dgi_validation_code: string | null
           discount_amount_usd: number | null
           discount_code_used: string | null
+          due_date: string | null
           exchange_rate_used: number
           geographical_zone: string | null
           id: string
@@ -1387,6 +1402,7 @@ export type Database = {
           dgi_validation_code?: string | null
           discount_amount_usd?: number | null
           discount_code_used?: string | null
+          due_date?: string | null
           exchange_rate_used?: number
           geographical_zone?: string | null
           id?: string
@@ -1423,6 +1439,7 @@ export type Database = {
           dgi_validation_code?: string | null
           discount_amount_usd?: number | null
           discount_code_used?: string | null
+          due_date?: string | null
           exchange_rate_used?: number
           geographical_zone?: string | null
           id?: string
@@ -2004,6 +2021,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "cadastral_invoices"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cadastral_service_access_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices_aging"
+            referencedColumns: ["invoice_id"]
           },
         ]
       }
@@ -3212,12 +3236,16 @@ export type Database = {
           id: string
           invoice_id: string
           metadata: Json | null
+          note: string | null
           recipient: string
           reminder_number: number
+          sent_at: string
           sent_by: string
+          sent_by_name: string | null
           sent_by_user: string | null
           status: string
           subject: string | null
+          template_used: string | null
         }
         Insert: {
           channel?: string
@@ -3226,12 +3254,16 @@ export type Database = {
           id?: string
           invoice_id: string
           metadata?: Json | null
+          note?: string | null
           recipient: string
           reminder_number?: number
+          sent_at?: string
           sent_by?: string
+          sent_by_name?: string | null
           sent_by_user?: string | null
           status?: string
           subject?: string | null
+          template_used?: string | null
         }
         Update: {
           channel?: string
@@ -3240,12 +3272,16 @@ export type Database = {
           id?: string
           invoice_id?: string
           metadata?: Json | null
+          note?: string | null
           recipient?: string
           reminder_number?: number
+          sent_at?: string
           sent_by?: string
+          sent_by_name?: string | null
           sent_by_user?: string | null
           status?: string
           subject?: string | null
+          template_used?: string | null
         }
         Relationships: [
           {
@@ -3254,6 +3290,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "cadastral_invoices"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_reminders_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices_aging"
+            referencedColumns: ["invoice_id"]
           },
         ]
       }
@@ -4242,6 +4285,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "cadastral_invoices"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_refunds_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices_aging"
+            referencedColumns: ["invoice_id"]
           },
         ]
       }
@@ -5350,11 +5400,25 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "reseller_sales_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices_aging"
+            referencedColumns: ["invoice_id"]
+          },
+          {
             foreignKeyName: "reseller_sales_payment_id_fkey"
             columns: ["payment_id"]
             isOneToOne: false
             referencedRelation: "payments"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reseller_sales_reseller_id_fkey"
+            columns: ["reseller_id"]
+            isOneToOne: false
+            referencedRelation: "reseller_commissions_summary"
+            referencedColumns: ["reseller_id"]
           },
           {
             foreignKeyName: "reseller_sales_reseller_id_fkey"
@@ -6314,6 +6378,13 @@ export type Database = {
             referencedRelation: "cadastral_invoices"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "cadastral_contributor_codes_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices_aging"
+            referencedColumns: ["invoice_id"]
+          },
         ]
       }
       cadastral_parcels_public: {
@@ -6393,6 +6464,57 @@ export type Database = {
           stale_articles: number | null
           total_downloads: number | null
           total_views: number | null
+        }
+        Relationships: []
+      }
+      invoices_aging: {
+        Row: {
+          aging_bucket: string | null
+          client_email: string | null
+          client_name: string | null
+          client_organization: string | null
+          created_at: string | null
+          currency_code: string | null
+          days_overdue: number | null
+          due_date: string | null
+          invoice_id: string | null
+          invoice_number: string | null
+          last_reminder_sent_at: string | null
+          reminder_count: number | null
+          status: string | null
+          total_amount_usd: number | null
+        }
+        Insert: {
+          aging_bucket?: never
+          client_email?: string | null
+          client_name?: string | null
+          client_organization?: string | null
+          created_at?: string | null
+          currency_code?: string | null
+          days_overdue?: never
+          due_date?: string | null
+          invoice_id?: string | null
+          invoice_number?: string | null
+          last_reminder_sent_at?: never
+          reminder_count?: never
+          status?: string | null
+          total_amount_usd?: number | null
+        }
+        Update: {
+          aging_bucket?: never
+          client_email?: string | null
+          client_name?: string | null
+          client_organization?: string | null
+          created_at?: string | null
+          currency_code?: string | null
+          days_overdue?: never
+          due_date?: string | null
+          invoice_id?: string | null
+          invoice_number?: string | null
+          last_reminder_sent_at?: never
+          reminder_count?: never
+          status?: string | null
+          total_amount_usd?: number | null
         }
         Relationships: []
       }
@@ -6506,6 +6628,21 @@ export type Database = {
           service_label: string | null
           stale_30d: number | null
           total: number | null
+        }
+        Relationships: []
+      }
+      reseller_commissions_summary: {
+        Row: {
+          commission_paid_usd: number | null
+          commission_pending_usd: number | null
+          commission_rate: number | null
+          last_payout_at: string | null
+          reseller_code: string | null
+          reseller_id: string | null
+          reseller_name: string | null
+          sales_count: number | null
+          total_commission_usd: number | null
+          total_sales_usd: number | null
         }
         Relationships: []
       }
