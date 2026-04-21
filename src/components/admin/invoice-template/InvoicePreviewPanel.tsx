@@ -538,7 +538,7 @@ export const InvoicePreviewPanel = () => {
                 </SelectContent>
               </Select>
               {loadingInvoice && <p className="text-xs text-muted-foreground">Chargement de la facture...</p>}
-              {realInvoice && <p className="text-xs text-amber-600">Facture réelle chargée — aperçu reflète ses vraies données.</p>}
+              {realInvoice && <p className="text-xs text-warning">Facture réelle chargée — aperçu reflète ses vraies données.</p>}
             </div>
 
             <div className="flex items-end gap-2 justify-end">
