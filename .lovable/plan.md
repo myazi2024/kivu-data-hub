@@ -1,220 +1,124 @@
 
-## Fix — Facture catalogue de services : téléchargement KO, impression KO, mise en page à reconstruire
 
-### Diagnostic
+## Plan — Espace admin : Modèle de facture unifié
 
-Trois défauts se cumulent sur la facture du catalogue de services :
+### Constat
 
-1. **Impression encore cassée**
-   - `CadastralInvoice` utilise `usePrintScope()`, mais la facture est rendue dans une modale/portal.
-   - La règle actuelle de `src/index.css` cible surtout les enfants directs de `body`, ce qui ne couvre pas correctement le DOM réel d’un portal Radix.
-   - Résultat : aperçu vide, partiel, ou structure d’impression incorrecte.
+La section `Admin → Facturation et commerce → Factures` (`AdminInvoices.tsx`) ne sait que **lister et exporter** les factures émises. Aucun écran ne permet de paramétrer **l'apparence et le contenu légal** de la facture utilisée par TOUTE l'application :
 
-2. **Téléchargement PDF fragile**
-   - Dans `src/components/cadastral/CadastralResultCard.tsx`, `handleDownloadPDF()` appelle `generateInvoicePDF(...)` sans `await`.
-   - Il n’y a pas d’état de chargement ni de feedback utilisateur fiable.
-   - Le payload transmis au générateur PDF est partiel, donc la génération peut être incohérente ou échouer silencieusement.
+- catalogue de services cadastraux (`CadastralInvoice`, `CadastralResultCard`)
+- paiement cadastral (`CadastralPaymentDialog`)
+- dashboard client (`CadastralClientDashboard`)
+- tous les PDF générés par `src/lib/pdf.ts → generateInvoicePDF()` (formats A4 + mini)
 
-3. **Facture UI mal structurée**
-   - `src/components/cadastral/CadastralInvoice.tsx` affiche un justificatif compact “mobile modal”, pas une vraie facture lisible.
-   - Les infos de paiement reposent encore sur `localStorage`.
-   - Les montants sont recalculés côté UI alors que la facture persistée doit rester la source de vérité.
-   - Le rendu n’a pas la hiérarchie attendue pour un document officiel.
+Or ces sorties consomment déjà :
+- la table `company_legal_info` (identité émetteur, RCCM, NIF, TVA, IBAN, logo)
+- la constante `TVA_RATE` (16%) figée dans `src/constants/billing.ts`
+- des libellés DGI, formats de numéro et mentions codés en dur dans `pdf.ts`
 
-### Correctifs à appliquer
+→ Aucun admin ne peut éditer ces éléments aujourd'hui sans toucher au code.
 
-#### 1. Corriger le scope d’impression pour les portals
-**Fichiers :**
-- `src/index.css`
-- `src/hooks/usePrintScope.ts`
+### Objectif
 
-Travaux :
-- remplacer la logique d’impression trop dépendante de `body > *`
-- rendre le scope compatible avec les modales Radix rendues dans un portal
-- masquer correctement overlay, actions, boutons et chrome d’interface
-- forcer un rendu papier propre :
-  - fond blanc
-  - pas de backdrop noir
-  - pas d’ombres
-  - pas de scroll interne
-  - largeur/espacement lisibles sur A4
+Créer un nouvel onglet admin **« Modèle de facture »** dans `Facturation et commerce`, source unique de vérité pour la mise en page et les données légales de toutes les factures de l'application.
 
-Objectif : la facture s’imprime correctement même si elle vit dans un portal.
+### Périmètre fonctionnel
 
-#### 2. Refaire la structure visuelle de la facture écran
-**Fichier : `src/components/cadastral/CadastralInvoice.tsx`**
+#### 1. Identité émetteur (table `company_legal_info`)
+- Raison sociale, nom commercial, forme juridique, capital
+- RCCM, ID Nat, NIF, n° TVA, régime fiscal
+- Adresse complète (ligne 1, ligne 2, ville, province, pays)
+- Téléphone, email, site web
+- Logo (upload via storage `app-assets`)
+- Coordonnées bancaires (banque, IBAN, SWIFT)
+- Toggle `is_active`
 
-Transformer la modale actuelle en document lisible avec sections claires :
+#### 2. Paramètres fiscaux et monétaires
+- Taux de TVA (déplacer `TVA_RATE` de `constants/billing.ts` vers `system_settings` ou nouvelle table `invoice_template_config`)
+- Devise principale + devises secondaires affichées
+- Affichage HT/TVA/TTC obligatoire DGI on/off
+- Mention « FACTURE NORMALISÉE » on/off
+- Format de numérotation (préfixe, séquence)
 
-- en-tête BIC / identité émetteur
-- titre document + numéro de facture
-- date d’émission / date de paiement
-- bloc client
-- bloc parcelle / zone / mode de paiement
-- tableau des prestations
-- bloc sous-total / remise / TVA / total
-- bloc QR / vérification / mentions légales
-- barre d’actions séparée, visible écran seulement
+#### 3. Mise en page du document
+- Format par défaut : A4 / Mini reçu thermique
+- Couleurs primaire/secondaire de l'en-tête
+- Pied de page : mentions légales personnalisables
+- Conditions de paiement (texte libre)
+- Note de bas de facture (texte libre)
+- Affichage QR de vérification on/off
 
-Améliorations de layout :
-- typographie moins compacte
-- meilleur espacement vertical
-- vraie grille desktop
-- tableau de services au lieu d’une simple liste de cartes
-- suppression des éléments décoratifs qui gênent l’impression
+#### 4. Aperçu en direct
+- Mini-preview du rendu A4 et du rendu mini dans la modale
+- Bouton « Générer un exemple PDF » qui appelle `generateInvoicePDF()` avec une facture fictive
 
-#### 3. Utiliser la facture DB comme source de vérité
-**Fichier : `src/components/cadastral/CadastralInvoice.tsx`**
+### Architecture proposée
 
-Au lieu de charger seulement quelques champs, récupérer la facture payée complète et afficher :
-- `invoice_number`
-- `client_name`, `client_email`, `client_address`, `client_type`
-- `payment_method`
-- `search_date`, `created_at`, `paid_at`
-- `original_amount_usd`, `discount_amount_usd`, `total_amount_usd`
-- `currency_code`, `exchange_rate_used`
-- `dgi_validation_code` si disponible
-- `geographical_zone`
+#### Nouveaux fichiers
+- `src/components/admin/AdminInvoiceTemplate.tsx` — onglet principal avec sous-onglets Identité / Fiscalité / Mise en page / Aperçu
+- `src/components/admin/invoice-template/CompanyLegalInfoForm.tsx` — édition `company_legal_info`
+- `src/components/admin/invoice-template/InvoiceFiscalSettingsForm.tsx` — TVA, devises, mentions DGI
+- `src/components/admin/invoice-template/InvoiceLayoutForm.tsx` — couleurs, pied de page, QR
+- `src/components/admin/invoice-template/InvoicePreviewPanel.tsx` — aperçu live + bouton PDF démo
+- `src/hooks/useInvoiceTemplateConfig.ts` — read/write paramètres (basé sur le pattern `useContributionConfig`)
 
-Règle métier :
-- la DB pilote les montants affichés
-- le catalogue sert seulement à enrichir les noms/descriptions des services liés à `selected_services`
+#### Migration DB
+Nouvelle table `invoice_template_config` (clé/valeur typée) :
+```
+config_key TEXT, config_value JSONB, description TEXT, is_active BOOLEAN
+```
+Avec seed initial pour : `tva_rate`, `tva_label`, `default_format`, `show_dgi_mention`, `header_color`, `footer_text`, `payment_terms`, `show_verification_qr`, `invoice_number_prefix`.
 
-#### 4. Supprimer la dépendance fragile à `localStorage`
-**Fichier : `src/components/cadastral/CadastralInvoice.tsx`**
+RLS : lecture publique, écriture admin/super_admin (pattern déjà utilisé pour `cadastral_contribution_config`).
 
-Retirer :
-- la lecture de `currentCadastralInvoice`
-- le fallback “Mobile Money ****”
+#### Refactor `src/lib/pdf.ts`
+- Lire `invoice_template_config` au début de `generateInvoicePDF()` (en plus de `fetchCompanyLegalInfo()`)
+- Remplacer les valeurs codées en dur par les valeurs config
+- `TVA_RATE` reste comme fallback dans `constants/billing.ts` mais devient secondaire
 
-La méthode de paiement affichée doit provenir de la facture persistée.  
-Si certaines métadonnées de paiement ne sont pas stockées, afficher un libellé propre et neutre, sans inventer d’information.
+#### Intégration sidebar
+- Ajouter une entrée `invoice-template` dans `src/components/admin/sidebarConfig.ts` sous catégorie « Facturation et commerce »
+- Ajouter le mapping lazy dans `src/pages/Admin.tsx` :
+  ```ts
+  'invoice-template': lazy(() => import('@/components/admin/AdminInvoiceTemplate'))
+  ```
 
-#### 5. Fiabiliser le téléchargement PDF
-**Fichier : `src/components/cadastral/CadastralResultCard.tsx`**
-
-Refactor de `handleDownloadPDF()` :
-- récupérer la facture complète
-- construire un payload complet et cohérent pour `generateInvoicePDF()`
-- `await generateInvoicePDF(...)`
-- entourer d’un `try/catch`
-- ajouter un état `isDownloadingInvoice`
-- désactiver le bouton pendant la génération
-- afficher un toast succès/erreur utile
-
-Objectif :
-- clic utilisateur = comportement visible
-- pas d’échec silencieux
-- PDF cohérent avec la facture affichée
-
-#### 6. Harmoniser facture écran et facture PDF
-**Fichiers :**
-- `src/components/cadastral/CadastralInvoice.tsx`
-- `src/lib/pdf.ts`
-
-Aligner :
-- numéro de facture
-- client
-- parcelle
-- date
-- méthode de paiement
-- services
-- sous-total / remise / TVA / total
-- terminologie du document
-
-Le PDF reste le livrable téléchargeable, mais la facture à l’écran doit en être une version fidèle.
-
-#### 7. Ajouter les états UX manquants
-**Fichiers :**
-- `src/components/cadastral/CadastralInvoice.tsx`
-- `src/components/cadastral/CadastralResultCard.tsx`
-
-Prévoir :
-- chargement facture
-- erreur de chargement
-- facture introuvable
-- génération PDF en cours
-- boutons désactivés pendant l’action
-- message clair si aucune facture payée n’est disponible
+### Sécurité
+- RLS stricte : `has_role(auth.uid(), 'admin'|'super_admin')` pour UPDATE/INSERT
+- `logAuditAction()` (utilitaire existant `supabaseConfigUtils.ts`) à chaque modification
+- Upload logo via bucket existant `app-assets` avec `crypto.randomUUID()`
 
 ### Validation attendue
 
-#### Cas 1 — Impression
-- ouvrir une facture après paiement
-- cliquer sur “Imprimer”
-- résultat attendu :
-  - aperçu non vide
-  - pas de fond noir
-  - pas de boutons
-  - document lisible et structuré
-  - montants et services visibles
+1. `Admin → Facturation et commerce → Modèle de facture` affiche les 4 sous-onglets
+2. Modifier le RCCM → nouvelle facture PDF (catalogue services) reflète le changement
+3. Modifier le taux de TVA à 18% → nouvelle facture A4 affiche 18%
+4. Désactiver le QR → nouvelle facture A4 sans QR
+5. Bouton « Aperçu PDF » génère un exemple avec la config courante
+6. Audit log enregistre chaque modification
+7. Non-régression : `CadastralInvoice` modale écran et impression continuent de fonctionner
 
-#### Cas 2 — Téléchargement PDF
-- cliquer sur “Télécharger le justificatif”
-- résultat attendu :
-  - téléchargement déclenché
-  - pas d’erreur silencieuse
-  - toast cohérent si problème
-  - PDF lisible et complet
+### Hors périmètre
 
-#### Cas 3 — Cohérence métier
-- même numéro de facture entre UI et PDF
-- mêmes montants entre UI, PDF et DB
-- mêmes services achetés
-- méthode de paiement correcte
-- infos client/parcelle correctes
-
-#### Cas 4 — Non-régression
-- impression de `CadastralDocumentView` toujours fonctionnelle
-- impression de `ReviewTab` CCC inchangée
-- génération du rapport cadastral non impactée
-
-### Fichiers à modifier
-
-- `src/index.css`
-- `src/hooks/usePrintScope.ts`
-- `src/components/cadastral/CadastralInvoice.tsx`
-- `src/components/cadastral/CadastralResultCard.tsx`
-- éventuellement `src/lib/pdf.ts` pour harmoniser le contrat de données facture
+- Pas de refonte du moteur PDF (`pdf.ts` reste, on injecte juste la config)
+- Pas de redesign d'`AdminInvoices` (liste des factures inchangée)
+- Pas de templates multiples par type de service (un seul modèle global pour cette itération)
+- Pas de gestion multi-établissements
 
 ### Détail technique
 
 ```text
-Bug impression actuel
-modal/portal Radix
--> usePrintScope marque la cible
--> CSS print masque mal le reste du DOM
--> la cible imprimable n'est pas isolée correctement
--> impression vide ou dégradée
+État actuel
+identité émetteur -> company_legal_info (DB) ✓ mais pas d'UI admin
+TVA               -> constants/billing.ts (code) ✗ non éditable
+mentions DGI      -> pdf.ts (code) ✗ non éditable
+format A4/mini    -> choix utilisateur runtime ✗ pas de défaut admin
+couleurs/pied     -> pdf.ts (code) ✗ non éditable
 
-Flux corrigé
-modal ouverte
--> body.print-scope-active
--> CSS compatible portal
--> seule la facture utile reste visible
--> rendu papier propre
+État cible
+identité émetteur -> company_legal_info (DB) + UI AdminInvoiceTemplate
+fiscalité/format  -> invoice_template_config (DB) + UI
+mise en page      -> invoice_template_config (DB) + UI
+pdf.ts            -> consomme les deux sources, fallback constants
 ```
 
-```text
-Bug téléchargement actuel
-click download
--> fetch facture
--> generateInvoicePDF async non awaité
--> pas d'état loading
--> pas de feedback fiable
-
-Flux corrigé
-click download
--> loading on
--> fetch facture complète
--> await generateInvoicePDF
--> toast succès/erreur
--> loading off
-```
-
-### Hors périmètre
-
-- pas de refonte du schéma `cadastral_invoices`
-- pas de redesign global du catalogue de services
-- pas de changement du moteur du rapport cadastral complet
-- pas d’ajout d’un nouvel historique documentaire ici
