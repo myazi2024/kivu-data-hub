@@ -76,7 +76,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
   const onAnalyticsPanel = activeMobilePanel === 'analytics';
   const { ref: swipeRef, isSwiping, swipeDelta } = useSwipeNavigation<HTMLDivElement>({
     enabled: isMobile,
-    ignoreSelector: '[data-no-swipe], svg[role="img"], [role="dialog"], [data-radix-popper-content-wrapper]',
+    ignoreSelector: '[data-swipe-ignore], [role="dialog"], [data-radix-popper-content-wrapper], button, a, input, textarea, select',
     direction: onAnalyticsPanel ? 'right' : 'left',
     onSwipeLeft: () => setActiveMobilePanel('analytics'),
     onSwipeRight: () => setActiveMobilePanel('map'),
