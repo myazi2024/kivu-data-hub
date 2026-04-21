@@ -64,6 +64,14 @@ function formatBilingual(amountUsd: number, rate: number): string {
 
 export type InvoiceFormat = 'mini' | 'a4';
 
+/** Convertit une couleur hex (#rrggbb) en tuple RGB jsPDF. Fallback sur defaultRgb si invalide. */
+function hexToRgb(hex: string | undefined | null, defaultRgb: [number, number, number]): [number, number, number] {
+  if (!hex) return defaultRgb;
+  const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex.trim());
+  if (!m) return defaultRgb;
+  return [parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16)];
+}
+
 /**
  * Génère un PDF de justificatif de paiement avec format sélectionnable
  */
