@@ -96,9 +96,9 @@ export function computeBBox(features: { geometry: any }[], selectedName?: string
   return { minLng: minLng - padLng, maxLng: maxLng + padLng, minLat: minLat - padLat, maxLat: maxLat + padLat };
 }
 
-const DEFAULT_ANIM_DURATION = 600;
+const ANIM_DURATION = 400;
 
-export function useAnimatedBbox(targetBbox: BBox, durationMs: number = DEFAULT_ANIM_DURATION): BBox {
+export function useAnimatedBbox(targetBbox: BBox): BBox {
   const [animBbox, setAnimBbox] = useState<BBox>(targetBbox);
   const animRef = useRef<{ start: number; from: BBox; to: BBox }>({ start: 0, from: targetBbox, to: targetBbox });
   const isFirstRender = useRef(true);
@@ -117,9 +117,8 @@ export function useAnimatedBbox(targetBbox: BBox, durationMs: number = DEFAULT_A
 
     let rafId: number;
     const tick = (now: number) => {
-      const t = Math.min((now - animRef.current.start) / durationMs, 1);
-      // easeOutCubic — harmonisé avec DRCMapWithTooltip
-      const ease = 1 - Math.pow(1 - t, 3);
+      const t = Math.min((now - animRef.current.start) / ANIM_DURATION, 1);
+      const ease = t * (2 - t); // easeOutQuad
       const lerp = (a: number, b: number) => a + (b - a) * ease;
       const next: BBox = {
         minLng: lerp(animRef.current.from.minLng, animRef.current.to.minLng),
