@@ -259,12 +259,16 @@ const AdminPaymentServiceIntegration: React.FC = () => {
     return services.reduce((sum, service) => sum + service.price, 0);
   };
 
-  const getEstimatedNetRevenue = () => {
-    // Estimation basée sur distribution 50% Stripe, 50% Mobile Money
-    const totalRevenue = getTotalEstimatedRevenue();
-    const stripeFees = totalRevenue * 0.5 * (transactionFees.stripe.percentage / 100);
-    const mobileMoneyFees = totalRevenue * 0.5 * (transactionFees.mobile_money.percentage / 100);
-    return totalRevenue - stripeFees - mobileMoneyFees;
+  const effectiveFeePct = realRevenue && realRevenue.gross > 0
+    ? (realRevenue.fees / realRevenue.gross) * 100
+    : 0;
+
+  const providerLabel = (key: string) => {
+    if (key === 'stripe') return 'Stripe';
+    if (key === 'mpesa') return 'M-Pesa';
+    if (key === 'orange_money') return 'Orange Money';
+    if (key === 'airtel_money') return 'Airtel Money';
+    return key;
   };
 
   if (configLoading || servicesLoading) {
