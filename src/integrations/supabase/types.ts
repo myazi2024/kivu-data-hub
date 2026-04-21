@@ -6938,6 +6938,7 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_orphan_reseller_invoices_count: { Args: never; Returns: number }
       get_parcel_contribution_history: {
         Args: { p_parcel_id: string }
         Returns: {
