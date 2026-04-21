@@ -304,8 +304,7 @@ async function generateA4InvoicePDF(
 
   cursorY = Math.max(emY, cursorY + 26) + 4;
 
-  doc.setDrawColor(0, 51, 102);
-  doc.setLineWidth(0.4);
+  doc.setDrawColor(headerRgb[0], headerRgb[1], headerRgb[2]);
   doc.line(margin, cursorY, pageWidth - margin, cursorY);
   cursorY += 5;
 
