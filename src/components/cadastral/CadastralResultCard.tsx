@@ -17,6 +17,7 @@ interface CadastralResultCardProps {
 }
 
 const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClose, selectedServices = [], onPaymentSuccess }) => {
+  const [isDownloadingInvoice, setIsDownloadingInvoice] = useState(false);
   const [showBillingPanel, setShowBillingPanel] = useState(true);
   const [paidServices, setPaidServices] = useState<string[]>([]);
   const [showInvoice, setShowInvoice] = useState(false);
