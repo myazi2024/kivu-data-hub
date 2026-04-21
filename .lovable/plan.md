@@ -1,175 +1,133 @@
 
 
-## Audit détaillé — Facturation & Commerce (admin)
+## Audit ciblé — Aperçu Facture (WYSIWYG)
 
 ### Verdict global
 
-Module **fonctionnel mais hétérogène** : 19 entrées sidebar regroupent 4 sous-domaines (KPI, journaux, configuration, commissions) qui se chevauchent. Aucune régression bloquante, mais des **doublons fonctionnels**, des **plafonds clients** et des **incohérences UX** dégradent l'expérience admin et la fiabilité des chiffres.
+L'onglet **Aperçu** affiche bien un rendu visuel A4 / Mini en direct, mais **ce n'est pas un vrai WYSIWYG** : deux moteurs de rendu coexistent (HTML React pour l'aperçu, jsPDF pour le PDF généré) et leurs sorties divergent sur plusieurs points. Le sample est aussi trop figé pour valider tous les cas réels.
 
-### État détaillé (19 modules)
+### État actuel
 
-| Module | Statut | Observation |
-|---|---|---|
-| Tableau de bord financier | OK | RPC `get_billing_summary`, comparaison période précédente |
-| Factures | ⚠️ | Stats RPC OK, mais **liste plafonnée à 2000** — voir B1 |
-| Transactions | ⚠️ | 4 tables fusionnées en 5000 lignes max client-side — voir B2 |
-| Réconciliation | ⚠️ | Pas de pagination serveur, **action « Réconcilier » sans audit log** — voir B3 |
-| Monitoring paiements | ⚠️ | `select('*')` **sans `limit`** → risque mémoire — voir B4 |
-| Paiements | OK | Edge function pour update statut |
-| Commissions à payer | OK | Join + batch profiles |
-| Performance revendeurs | OK | — |
-| Ventes Revendeurs | OK | Détection orphelins + régénération |
-| Revendeurs | OK | — |
-| Codes de Remise | OK | — |
-| Moyens de Paiement | OK | — |
-| Mode de Paiement | OK | Audit + dialog confirmation |
-| Intégration Services | OK | Compatibility scoring |
-| Vue Unifiée | ⚠️ | 5 sources × 500 lignes — **double emploi avec Transactions** — voir B5 |
-| Frais & Tarifs services | ⚠️ | 7 onglets, **bulk update non transactionnel + sans audit** — voir B6 |
-| Modèle de facture | OK | Récemment refondu |
-| Devises / Taux | OK | Audit log présent |
+| Élément | Aperçu HTML | PDF généré | Cohérent ? |
+|---|---|---|---|
+| Couleur en-tête | `config.header_color` ✅ | **bleu fixe `#003366`** | ❌ |
+| Couleur secondaire | `config.secondary_color` ✅ | bleu fixe (head table) | ❌ |
+| Bloc client entreprise (NIF/RCCM) | jamais affiché (sample = particulier) | conditionnel | ❌ |
+| Remise commerciale | toujours `0,00` | conditionnelle si `discount > 0` | ❌ |
+| Statut PAYÉE/PENDING | toujours « Payée » | dynamique | ❌ |
+| Code DGI | sample « DGI-PREVIEW-XXXX » | `dgi_validation_code` réel | ⚠️ |
+| Coordonnées bancaires | conditionnel | conditionnel | ✅ |
+| QR code | placeholder visuel | QR réel encodé | ⚠️ |
+| Mini reçu | monochrome | monochrome | ✅ |
+| Bouton Rafraîchir | ne refetch que `config` | — | ❌ identité figée |
+| Mode paiement | sélectable mais A4 seulement | dynamique | ⚠️ |
 
-### Bugs et incohérences identifiés
+### Bugs / écarts identifiés
 
-#### B1 — Stats locales divergent des stats serveur (`AdminInvoices`)
-La table affiche 2000 dernières factures (`limit(2000)`), filtre les TEST côté client, puis recalcule `totalDiscounts` sur cet échantillon. Si le compte total dépasse 2000 ou si beaucoup de TEST sont mêlés, le KPI **« Remises Totales »** est sous-estimé et incohérent avec **« Revenus Totaux »** (qui vient du RPC).
-→ Effet : remontées admin contradictoires.
+#### W1 — Couleurs admin ignorées par le PDF
+Dans `src/lib/pdf.ts` (`generateA4InvoicePDF`), toutes les `setTextColor` / `setFillColor` sont en dur (`[0, 51, 102]`, `[33, 37, 41]`…). Conséquence : modifier `header_color` / `secondary_color` dans l'admin met à jour l'aperçu HTML **mais pas le PDF réellement émis aux clients**. Régression du principe WYSIWYG.
 
-#### B2 — `AdminTransactions` dépend de jointures profiles client-side
-Charge 4 tables en parallèle (5 000 lignes max), puis fait un second appel pour mapper user_id → email. Sur gros volumes : latence forte, doublons possibles entre `payments` (publication) et `payment_transactions` (cadastre) car aucune dédup par référence externe.
-→ Effet : transactions comptées deux fois si trigger sync présent.
+#### W2 — Sample non représentatif (cas absents)
+Le composant `buildSampleInvoice` est figé : particulier, payée, sans remise, mode `mobile_money`. Impossible de visualiser :
+- une facture entreprise (avec NIF/RCCM/Régime fiscal)
+- une facture avec remise commerciale
+- une facture en attente / échouée
+- un statut autre que payé
 
-#### B3 — Réconciliation manuelle sans audit ni séparation des rôles
-`AdminPaymentReconciliation.handleReconcile()` passe un statut à `completed` directement (`.update({ status: 'completed' })`) :
-- pas de `logBillingAudit()` ni `logAuditAction()` (alors que la fonction existe `src/utils/billingAudit.ts`)
-- pas de raison/commentaire obligatoire
-- pas de vérification que la transaction a vraiment abouti côté provider
-→ Risque : faux positifs, fraude interne, pas de traçabilité réglementaire.
+L'admin ne peut donc pas valider le rendu de tous les scénarios métier.
 
-#### B4 — Requête sans `limit` (`AdminPaymentMonitoring`)
-```ts
-.from('payment_transactions').select('*').order('created_at', { ascending: false })
+#### W3 — Refetch incomplet
+Le bouton « Rafraîchir » appelle `useInvoiceTemplateConfig.refetch()` mais pas `useCompanyLegalInfo` → si l'admin vient de modifier le logo/raison sociale, l'aperçu reste périmé tant que la page n'est pas rechargée.
+
+#### W4 — Mode paiement non passé au Mini
+Le sélecteur `paymentMethod` n'est passé qu'à `InvoicePreviewA4`. `InvoicePreviewMini` n'expose même pas le mode → asymétrie d'aperçu.
+
+#### W5 — Code DGI sample dur
+Texte « DGI-PREVIEW-XXXX-XXXX » et « PREVIEW-XXXX » écrits en clair → un admin novice peut croire que c'est un vrai code DGI échantillon. Devrait dire `« Code DGI ‒ injecté à la génération »` avec style placeholder.
+
+#### W6 — Échelle non recalculée au changement de contenu
+`useEffect([format])` ne se redéclenche pas quand le logo asynchrone se charge ni quand `info` change → décalage visuel à la 1ère ouverture si logo lent.
+
+#### W7 — Pas de toggle « afficher coordonnées bancaires »
+Le PDF les affiche conditionnellement (selon `info.bank_name`), l'aperçu aussi, mais aucun moyen de tester le rendu sans bank info en restant sur les vraies données (il faudrait vider le formulaire pour tester).
+
+#### W8 — Aperçu PDF réel du sample uniquement
+Les boutons « Aperçu PDF A4/Mini » génèrent toujours le sample. Aucune option pour générer le PDF d'**une facture existante** depuis l'admin afin de comparer l'aperçu HTML avec le PDF réel. Workflow QA absent.
+
+### Plan de correction
+
+#### Étape 1 — Vrai WYSIWYG : aligner le PDF sur la config admin
+Modifier `src/lib/pdf.ts` (`generateA4InvoicePDF`) pour :
+- convertir `tplCfg.header_color` (#hex) en RGB et l'utiliser pour : titre « FACTURE NORMALISÉE », ligne séparatrice, en-têtes de section (« FACTURÉ À », « RÉFÉRENCE »), bandeau TOTAL TTC.
+- utiliser `tplCfg.secondary_color` pour : entête tableau (`headStyles.fillColor`).
+- helper `hexToRgb()` partagé.
+
+Critère d'acceptation : changer header_color en `#16a34a` dans l'admin → l'aperçu **et** le PDF affichent du vert.
+
+#### Étape 2 — Sample paramétrable
+Ajouter au-dessus de l'aperçu un panneau « Variantes de simulation » (3 sélecteurs compacts) :
+- Type client : Particulier / Entreprise (déclenche affichage NIF/RCCM/Régime)
+- Statut : Payée / En attente / Échec
+- Remise : 0% / 10% / 25%
+- Mode paiement (existant) : déjà OK, juste le passer aussi au Mini
+
+Reflété simultanément dans `InvoicePreviewA4`, `InvoicePreviewMini` et le sample injecté dans `generateInvoicePDF` lors de l'aperçu PDF.
+
+#### Étape 3 — Refetch identité + recompute scale
+- `handleRefresh` appelle `refetch()` config **et** `useCompanyLegalInfo.refetch()`
+- Ajouter `info` aux dépendances du `useEffect` de scale + observer le logo via `onLoad`
+
+#### Étape 4 — Aperçu d'une facture existante
+Ajouter dans la barre d'outils un sélecteur optionnel « Charger une facture existante » (combobox récente 20 dernières factures). Si choisi : remplace le sample par les vraies données ; bouton « Télécharger PDF » utilise `downloadInvoicePDF(invoice)`.
+
+#### Étape 5 — UX placeholders DGI et code de vérification
+Remplacer « DGI-PREVIEW-XXXX-XXXX » par un cadre `bg-amber-50 text-amber-700` :
+> « Le code DGI réel sera injecté lors de la génération de chaque facture »
+
+#### Étape 6 — Toggle « avec/sans coordonnées bancaires »
+Petit switch dans la barre d'outils qui force l'affichage/masquage du bloc IBAN dans l'aperçu **uniquement** (n'altère pas la config réelle).
+
+### Détail technique
+
+```text
+Avant
+admin change header_color #16a34a
+  -> aperçu HTML : vert ✅
+  -> PDF généré  : bleu (#003366 hardcodé) ❌
+  -> WYSIWYG cassé
+
+Après
+admin change header_color #16a34a
+  -> aperçu HTML  : vert ✅
+  -> PDF généré   : vert ✅ (hexToRgb(tplCfg.header_color))
+  -> WYSIWYG OK
 ```
-Pas de `.limit()`. Plafond Supabase silencieux à 1000, mais sur 50k transactions le payload devient lourd à chaque ouverture du tab.
-→ Effet : ralentissements, KPI calculés sur 1000 lignes uniquement.
 
-#### B5 — Doublon « Transactions » ↔ « Vue Unifiée »
-Les deux modules agrègent quasiment les mêmes sources (factures cadastre, payment_transactions, expertise, mutation, titre foncier). « Vue Unifiée » ajoute land_title/mutation, « Transactions » ajoute permit/publication. Aucune n'est exhaustive, et l'admin ne sait pas laquelle utiliser.
-→ Effet : confusion + sources de vérité multiples.
-
-#### B6 — Bulk update prix non atomique (`AdminBillingConfig.applyBulkUpdate`)
-Boucle séquentielle d'`UPDATE` un par un :
-```ts
-for (const update of updates) await supabase.from(...).update(...).eq('id', update.id);
+```text
+Variantes simulation (sélecteurs aperçu)
+  Type client   : [Particulier|Entreprise]
+  Statut        : [Payée|En attente|Échec]
+  Remise        : [0%|10%|25%]
+  Mode paiement : [MM|Carte|Virement]   <-- existant, étendu au Mini
+  Bank info     : [Affiché|Masqué]      <-- nouveau toggle local
+  Source data   : [Sample|Facture réelle ▼]   <-- nouveau combobox
 ```
-- Pas de transaction → si erreur au milieu, état incohérent (50% des prix modifiés)
-- Pas de `logBillingAudit()` global avant/après
-- Pas de prévisualisation des nouveaux prix avant commit
-- Pas de bouton « annuler » / rollback
-→ Risque commercial direct.
-
-#### B7 — `CadastralPaymentDialog.handleDownloadReceipt()` ignore le format admin
-```ts
-generateInvoicePDF(invoiceData, [], 'a4');  // hardcoded
-```
-Pas de lecture de `useInvoiceTemplateConfig().default_format`, contrairement à `CadastralResultCard` (corrigé). Le `servicesCatalog` est vide (`[]`) → le PDF affiche "Service inconnu" pour chaque ligne.
-→ Effet : reçu post-paiement dégradé.
-
-#### B8 — `CadastralClientDashboard.generatePDFInvoice()` même problème
-Pas de format admin lu, mais au moins `catalogServices` est passé. À harmoniser via un helper unique `downloadInvoicePDF(invoice)` qui internalise format + catalogue.
-
-#### B9 — Anomalies non actionnables
-`BillingAnomaliesPanel` liste 3 types d'anomalies (tx complétée/facture impayée, remise sans code, code expiré actif) mais **aucun bouton de résolution** : pas de « marquer comme résolu », pas de lien profond vers la facture/transaction concernée. L'admin doit copier l'ID et chercher manuellement dans un autre onglet.
-
-#### B10 — Test mode invisible sur plusieurs tabs
-`TestModeBanner` n'est affiché que dans `AdminFinancialDashboard`. Quand le mode test est ON, les chiffres de `Factures`, `Transactions`, `Vue Unifiée`, `Réconciliation` mélangent prod + test sans avertissement.
-
-#### B11 — Sidebar « Paiements » badge incohérent
-Le badge `payments` (count `useAdminPendingCounts`) pointe vers `AdminPayments` qui ne couvre que les paiements **publications** (table `payments`). Les paiements cadastraux/expertise/permit pending ne sont pas comptés ici → admin pense qu'il n'y a rien à traiter.
-
-#### B12 — `BillingOverviewTab` lit 7 tables sans pagination ni cache
-À chaque changement d'onglet `Frais & Tarifs services → Vue d'ensemble`, 7 SELECT en parallèle sont relancés. Pas de `useQuery`, pas de cache.
-→ Effet : latence, charge DB inutile.
-
-### Optimisations recommandées
-
-| # | Action | Impact |
-|---|---|---|
-| O1 | Migrer `AdminInvoices` vers RPC `get_invoices_paginated(filters, page, size)` | Stats fiables, pas de plafond client |
-| O2 | Créer une vue SQL `unified_payments_view` consommée par UN SEUL onglet (« Transactions ») et **supprimer** « Vue Unifiée » | -1 module, source unique |
-| O3 | Wrapper `downloadInvoicePDF(invoice, services?)` dans `src/lib/invoiceDownload.ts` qui lit `default_format` + résout le catalogue → utilisé par 4 call-sites | Cohérence UX |
-| O4 | RPC `bulk_update_prices(table, percentage, op)` côté SQL, transactionnelle + audit | B6 résolu |
-| O5 | Boutons d'action sur `BillingAnomaliesPanel` (mark resolved + deeplink) | B9 résolu |
-| O6 | Afficher `<TestModeBanner />` dans 5 tabs (Factures, Transactions, Réconciliation, Monitoring, Vue Unifiée) | B10 résolu |
-| O7 | Étendre `useAdminPendingCounts` pour inclure expertise_payments + permit_payments + payment_transactions pending → badge global « Paiements à traiter » | B11 résolu |
-| O8 | Ajouter `useQuery` (`@tanstack/react-query`) à `BillingOverviewTab` | B12 résolu |
-
-### Fonctionnalités absentes / à créer
-
-#### F1 — Avoirs / notes de crédit
-Aucun mécanisme pour émettre un avoir lié à une facture déjà payée (remboursement partiel, annulation post-livraison). Obligatoire DGI.
-→ Nouvelle table `credit_notes` + UI dédiée + numérotation `AV-…`.
-
-#### F2 — Workflow remboursement
-`AdminPayments.updatePaymentStatus()` peut passer à « refunded » mais **rien ne crédite Mobile Money / Stripe**. Pas d'edge function `process-refund`.
-→ Effet : statut DB ≠ état réel chez le PSP.
-
-#### F3 — Export comptable normalisé
-Aucun export FEC (Fichier des Écritures Comptables) ni format compatible expert-comptable RDC. Seuls des CSV bruts sont disponibles.
-→ Ajouter `exportFEC(period)` qui produit le fichier réglementaire.
-
-#### F4 — Relances factures impayées
-Pas de cron/edge function qui relance par email les factures `pending` > 48h. La table existe (`cadastral_invoices.status = 'pending'`), mais aucun automatisme.
-
-#### F5 — Multi-établissement / multi-entité
-`company_legal_info` ne supporte qu'une seule entité émettrice active. Si BIC ouvre une succursale (Lubumbashi), pas de moyen d'émettre depuis une seconde identité.
-
-#### F6 — Liaison Facture ↔ Demande de service
-Une facture cadastre ne porte aucune référence vers la demande qui l'a générée (CCC, mutation, expertise, permis). `AdminInvoices` ne permet pas de cliquer sur une facture pour voir la demande source. Réciproquement, les onglets demandes ne montrent pas la facture liée.
-→ Ajouter colonne `source_request_id` + `source_request_type` sur `cadastral_invoices` + composant `<InvoiceLink />`.
-
-#### F7 — Tableau de bord revendeurs auto-service
-Les revendeurs n'ont pas d'espace dédié pour suivre leurs ventes/commissions. Tout est admin-only. Hors périmètre admin mais découle du module.
-
-### Plan de correction prioritaire
-
-#### Sprint 1 — Sécurité & fiabilité (bloquants)
-1. **B3** — Audit + raison obligatoire sur la réconciliation manuelle (`AdminPaymentReconciliation`)
-2. **B4** — Ajouter `.limit(1000)` explicite + pagination serveur sur `AdminPaymentMonitoring`
-3. **B6** — RPC SQL `bulk_update_service_prices` transactionnelle avec audit
-4. **B11** — Étendre `useAdminPendingCounts` pour englober tous les paiements pending
-
-#### Sprint 2 — UX et cohérence
-5. **B5 + O2** — Supprimer « Vue Unifiée » ; enrichir « Transactions » via vue SQL `unified_payments_view`
-6. **B7 + B8 + O3** — Helper `downloadInvoicePDF()` partagé par les 4 call-sites
-7. **B10** — Bannière test mode dans 5 tabs concernés
-8. **B9** — Actions (résoudre + deeplink) sur `BillingAnomaliesPanel`
-9. **B1** — RPC `get_invoices_paginated` consommée par `AdminInvoices`
-10. **B12** — `useQuery` sur `BillingOverviewTab`
-
-#### Sprint 3 — Fonctionnalités absentes (non urgentes mais structurantes)
-11. **F1** — Avoirs / notes de crédit (table + UI + numérotation)
-12. **F2** — Edge function `process-refund` (Stripe + Mobile Money)
-13. **F4** — Cron de relance factures impayées
-14. **F6** — Liaison facture ↔ demande source
-15. **F3** — Export FEC
 
 ### Hors périmètre
 
-- Pas de refonte du moteur PDF (`pdf.ts` stable)
-- Pas de migration des 7 tables de fees (déjà cohérentes)
-- Pas de modification des edge functions de paiement existantes
-- Pas de F5 (multi-entité) sans demande métier explicite
-- Pas de F7 (espace revendeur) — concerne le côté client
+- Pas de refonte du moteur jsPDF (juste paramétrer les couleurs)
+- Pas de toggle multi-devises USD/CDF (déjà bilingue automatique)
+- Pas d'éditeur drag-and-drop des sections (overkill métier)
+- Pas de sauvegarde des variantes simulées (stateful local uniquement)
 
-### Validation attendue après sprint 1+2
+### Validation attendue
 
-1. Réconciliation manuelle exige un motif + apparaît dans `audit_logs`
-2. `Vue Unifiée` supprimée, `Transactions` couvre 100% des paiements via vue SQL
-3. Téléchargement reçu post-paiement (`CadastralPaymentDialog`) respecte le format admin et affiche les vrais services
-4. Badge sidebar « Paiements » reflète tous les paiements pending (cadastre + expertise + permit + publications)
-5. Anomalies cliquables (lien profond) + bouton « marquer résolu »
-6. `AdminInvoices` charge 50 lignes par page via RPC, stats serveur partout
-7. Mode test affiche une bannière sur tous les tabs financiers
-8. Bulk update prix : tout-ou-rien + ligne d'audit unique avec ancien/nouveau prix par item
+1. Couleur d'en-tête modifiée dans l'admin → reflétée à l'identique dans aperçu HTML **et** PDF téléchargé
+2. Couleur secondaire → entête tableau du PDF change
+3. Sélecteur « Entreprise » → bloc NIF/RCCM/Régime apparaît dans l'aperçu (A4 et Mini)
+4. Sélecteur « Remise 25% » → ligne « Remise commerciale » apparaît avec montant
+5. Bouton Rafraîchir → logo, raison sociale et config rechargés
+6. Combobox facture existante → aperçu rendu sur vraies données + PDF correspondant
+7. Texte DGI sample : style placeholder explicite, plus aucun risque de confusion
+8. Toggle bank info → bloc IBAN apparaît/disparaît instantanément
 
