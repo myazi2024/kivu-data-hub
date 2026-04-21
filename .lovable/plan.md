@@ -1,123 +1,114 @@
 
 
-## Audit conformité WYSIWYG — Aperçu vs PDF facture
+## Audit conformité WYSIWYG — Aperçu de la facture (résiduel)
 
 ### Verdict
 
-L'aperçu HTML et le PDF généré utilisent **deux moteurs distincts** (React/CSS vs jsPDF) qui ne produisent pas le même rendu. La couleur d'en-tête est synchronisée mais **la structure visuelle diverge sur ~10 points**, dont certains très visibles (logo émetteur, bandeau coloré complet, bloc identifiants, équivalent CDF, footer).
+La structure macro (en-tête bicolonne, tableau HT/TTC, bandeau total, mentions DGI 5 lignes, conditions+banque, QR bas-droite) est désormais **alignée** entre l'aperçu HTML et le PDF. Mais **12 divergences résiduelles** subsistent, principalement sur les **données affichées** : l'aperçu HTML utilise des constantes en dur même quand une vraie facture est chargée, ce qui casse le principe WYSIWYG dès qu'on quitte le sample.
 
-### Divergences identifiées (HTML aperçu ↔ PDF généré)
+### Divergences résiduelles (preview ↔ PDF)
 
-| # | Élément | Aperçu HTML | PDF généré | Écart |
+| # | Élément | Aperçu HTML | PDF généré | Impact |
 |---|---|---|---|---|
-| D1 | **En-tête émetteur** | Bandeau `header_color` plein largeur, fond coloré, texte blanc, logo intégré dedans | Logo + texte sombre sur fond blanc, **pas de bandeau coloré** | Visuel radicalement différent |
-| D2 | **Bloc identifiants RCCM/NIF/ID-NAT/TVA** | Barre grise horizontale dédiée sous l'en-tête | Inclus dans le bloc émetteur, fondu dans les lignes | Hiérarchie différente |
-| D3 | **Mention « DGI — RDC »** sous le titre | Absente | Présente (`Direction Générale des Impôts (DGI) — RDC`) | PDF ajoute une ligne |
-| D4 | **Tableau prestations colonnes** | Désignation / Qté / **P.U. (USD)** / Montant | Désignation / Qté / **Prix unitaire HT** / **Total TTC** | Libellés et sémantique différents (HT vs TTC) |
-| D5 | **Bloc totaux** | Sous-total + Base HT + TVA + TOTAL TTC + équivalent CDF (taux figé 2800) | Base HT + TVA + TOTAL TTC + ligne taux change si rate>1 | Ordre/présence variable |
-| D6 | **Mentions DGI placeholder** | Cadre amber `bg-#fef3c7` avec texte explicite « code injecté à la génération » | Bloc « MENTIONS LÉGALES (DGI) » avec 5 lignes de texte légal réel | Contenu totalement différent |
-| D7 | **Conditions de paiement + Coordonnées bancaires** | Section dédiée 2/3 de largeur | Absentes du PDF (jamais rendues) | **Manquant dans le PDF** |
-| D8 | **QR vérification** | Placeholder damier centré avec libellé | QR réel petit (16mm) en bas à droite | Position et taille différentes |
-| D9 | **Footer** | Texte centré italique sous bordure haute | Footer absent (texte inclus dans mentions DGI) | Visuel différent |
-| D10 | **Mini reçu** | Logo + en-tête centré, blocs séparés par tirets, statut coloré | Logo 6mm, pas de séparation visuelle équivalente, statut texte | Mise en page divergente |
+| R1 | **Source du logo** | `info.logo_url` (CompanyLegalInfo) | `fetchAppLogo()` (app_appearance_config) | Logos potentiellement différents |
+| R2 | **Taille logo A4** | 53×53 px (≈14mm flou via scale) | 14×14 mm strict | Rendu visuel différent |
+| R3 | **N° de facture** | toujours `${prefix}-PREVIEW-0001` | `invoice.invoice_number` (vrai N°) | Vraie facture mal numérotée dans l'aperçu |
+| R4 | **Données client** | hardcodées `Jean Mukendi`/`SARL Mukendi & Frères` | `invoice.client_*` | Client réel jamais reflété |
+| R5 | **Liste prestations** | 2 services fixes en dur | `selected_services` joints au catalogue | Aperçu ≠ contenu réel facture |
+| R6 | **Taux de change** | `SAMPLE_EXCHANGE_RATE = 2800` constant | `invoice.exchange_rate_used` | Conversion CDF erronée pour vraie facture |
+| R7 | **Date facturation** | `new Date()` du jour | `invoice.search_date` (date de la facture) | Date du jour vs date d'émission |
+| R8 | **Statut couleurs** | pending=`#e74c3c` failed=`#c0392b` | pending et failed = RGB(231,76,60) | Codes couleur désynchronisés |
+| R9 | **QR vérification** | damier décoratif fixe | QR réel encodant verifyUrl | Impossible de QA visuellement le QR |
+| R10 | **Position mentions DGI** | `position:absolute; bottom:18mm` (fixe) | `Math.max(cursorY, pageHeight-50)` (flux) | Si contenu déborde, le PDF pousse, l'aperçu chevauche |
+| R11 | **Mode paiement** | sélecteur exposé mais jamais affiché | jamais affiché | Sélecteur trompeur (no-op) |
+| R12 | **Adresse client preview** | « Avenue de la Paix 12, Kinshasa » en dur | wrap auto via `splitTextToSize` | Lignes longues ne wrappent pas pareil |
 
-### Causes racines
+### Cause racine
 
-1. **Deux implémentations indépendantes** : `InvoicePreviewA4` (React inline-styles) et `generateA4InvoicePDF` (jsPDF impératif) ont été écrites séparément, sans contrat partagé.
-2. **Pas de spec visuelle source** : aucune définition unique « voici la facture » ; chaque moteur a improvisé une mise en page.
-3. **Sections asymétriques** : conditions/banque rendues dans HTML mais oubliées dans PDF ; mentions DGI rendues en PDF mais simplifiées dans HTML.
+Lorsqu'une **vraie facture** est chargée via le combobox, seul `effectiveVariants` est dérivé (clientType, status, discountPct, paymentMethod). Les composants `InvoicePreviewA4` et `InvoicePreviewMini` reçoivent `variants` mais **jamais l'objet `invoice` ni `services`** : ils continuent à rendre le sample hardcodé. Le mode "facture réelle" n'a donc d'effet que sur le téléchargement PDF, pas sur l'aperçu HTML.
 
-### Plan de correction — Aligner l'aperçu HTML sur le PDF (source de vérité)
+### Plan de correction
 
-Le **PDF est la sortie réelle** envoyée aux clients et auditée DGI : c'est lui qui doit servir de référence. On modifie l'aperçu HTML pour qu'il **reproduise visuellement** la sortie jsPDF, section par section.
+#### Étape 1 — Faire descendre la facture & les services dans les composants preview
 
-#### Étape 1 — Refonte `InvoicePreviewA4` pour matcher le PDF
+Ajouter aux props :
+```ts
+{ config, info, variants, invoice?, services?, verificationCodePreview? }
+```
 
-Remplacer l'en-tête actuel (bandeau coloré) par la disposition PDF :
-- Logo (14mm équiv) + raison sociale en gros + adresse + identifiants en lignes successives sur fond blanc
-- À droite : titre `FACTURE NORMALISÉE` en `header_color`, sous-ligne « Direction Générale des Impôts (DGI) — RDC », N°, dates
-- Ligne séparatrice horizontale en `header_color`
+- Si `invoice` fourni : rendre tous les champs depuis `invoice` (numéro, dates, client_name/email/nif/rccm/id_nat/address, parcel_number, geographical_zone, exchange_rate_used, dgi_validation_code).
+- Si non fourni : conserver la logique sample actuelle.
+- Idem pour `services` : itérer sur `selected_services` joints au catalogue chargé en parallèle.
 
-Reconstruire les sections dans l'ordre exact du PDF :
-1. En-tête bicolonne (émetteur gauche / titre+N° droite)
-2. Ligne séparatrice colorée
-3. `FACTURÉ À` (titre coloré) + données client + bloc `RÉFÉRENCE` à droite avec statut coloré dynamique
-4. Tableau prestations avec colonnes **Désignation / Qté / Prix unitaire HT / Total TTC** (et non plus PU USD/Montant)
-5. Bloc totaux aligné à droite : Sous-total (si remise) → Remise → Base HT → TVA → bandeau TOTAL TTC sur fond `header_color`
-6. Ligne taux de change italique (si exchangeRate>1)
-7. Section `MENTIONS LÉGALES (DGI)` avec les 5 lignes réelles (mention normalisée, émetteur, taux TVA, code DGI/vérification, footer_text) — **et non plus le placeholder amber**
-8. QR code en bas à droite (16mm) avec libellé « Vérifier l'authenticité »
+#### Étape 2 — Unifier la source du logo
 
-#### Étape 2 — Refonte `InvoicePreviewMini` pour matcher le PDF mini
+Modifier `InvoicePreviewA4` et `InvoicePreviewMini` pour appeler `fetchAppLogo()` (même source que le PDF) au lieu de `info.logo_url`. Stocker dans un state local + passer en prop. Préserver la mise en cache existante du helper.
 
-Aligner sur la sortie `generateMiniInvoicePDF` :
-- Logo 6mm centré, raison sociale, mention `FACTURE NORMALISÉE`, NIF/RCCM
-- Lignes infos facture (N°, date, parcelle, client, NIF client, statut)
-- Section « Prestations (TTC) » avec lignes service + prix
-- Décomposition fiscale (Base HT, TVA, TOTAL TTC) avec ligne séparatrice
-- Équivalent CDF si exchangeRate>1
-- Téléphone + régime fiscal centrés
+Alternative : faire pointer le PDF sur `company_legal_info.logo_url` (mais ce champ n'existe pas → choix 1 retenu).
 
-#### Étape 3 — Sample représentatif des données PDF
+#### Étape 3 — Aligner les dimensions du logo
 
-Aligner `buildSampleInvoice` sur ce que le PDF attend :
-- `dgi_validation_code` peuplé (ex. `DGI-SAMPLE-2025-0001`) pour démontrer le rendu réel des mentions légales
-- `verificationCode` factice transmis au composant pour afficher le code dans les mentions
-- `exchangeRate` pris depuis sample (ex. 2800) → ligne taux affichée à l'identique
+Logo A4 : passer de 53×53px à un cadre `width:14mm; height:14mm` (équivalent strict PDF). Logo Mini : déjà 22×22px ≈ 6mm, conserver.
 
-#### Étape 4 — Section Conditions/Banque
+#### Étape 4 — Synchroniser les codes couleur du statut
 
-Choix : **retirer du HTML** (puisque absente du PDF), OU **ajouter au PDF**. 
-Recommandation : **ajouter au PDF** dans `generateA4InvoicePDF` juste avant les mentions DGI, en respectant le toggle `showBank` quand bank info présente. Cela conserve la valeur métier du bloc et garantit que ce qui est vu = ce qui est livré.
+Aligner `STATUS_COLORS` du preview sur la logique du PDF :
+- paid → RGB(39,174,96) = `#27ae60` ✅
+- pending → RGB(231,76,60) = `#e74c3c` ✅
+- failed → utiliser **la même couleur que pending** dans le PDF (R8) OU corriger le PDF pour distinguer (recommandé : couleur plus sombre pour failed). Choix : harmoniser preview ET PDF avec un mapping commun exporté depuis `src/lib/pdf.ts`.
 
-#### Étape 5 — Tests de conformité visuelle
+#### Étape 5 — Mentions DGI en flux normal
 
-Ajouter dans `InvoicePreviewPanel` un bouton **« Comparer aperçu ↔ PDF »** qui :
-- ouvre le PDF généré dans un nouvel onglet (au lieu de télécharger)
-- permet à l'admin de comparer côte à côte sans téléchargement
+Retirer `position:absolute; bottom:18mm` de la section MENTIONS LÉGALES dans `InvoicePreviewA4`. Les placer en fin de flux comme dans le PDF, avec `marginTop: auto` (flexbox column) ou simplement à la suite. Garder le QR positionné absolu dans le coin bas-droit (cohérent PDF).
+
+#### Étape 6 — QR code réel dans l'aperçu
+
+Quand une vraie facture est chargée, générer côté preview un vrai QR via la même librairie `qrcode` (déjà dépendance) avec l'URL `verifyUrl` que le PDF utilisera. Pour le sample, conserver un placeholder mais avec une note "QR généré à l'émission".
+
+#### Étape 7 — Retirer le sélecteur Mode paiement (ou l'utiliser)
+
+Choix simple : **retirer** le sélecteur de la barre Variantes puisqu'il n'apparaît ni dans le HTML ni dans le PDF (R11).
+Choix riche : ajouter une ligne `Mode de règlement : <method>` dans la section CONDITIONS DE PAIEMENT, dans HTML **et** PDF. Recommandation : retirer (plus simple, métier non demandeur).
+
+#### Étape 8 — Fixer prefix preview lorsque facture réelle
+
+Dans `InvoicePreviewA4`/`Mini`, si `invoice` fourni : `N° {invoice.invoice_number}`. Sinon : `N° {config.invoice_number_prefix}-PREVIEW-0001`.
 
 ### Détail technique
 
 ```text
-Avant (divergence)
-HTML : [bandeau header_color] [logo+nom blancs] [titre blanc à droite]
-       [barre grise RCCM/NIF/ID-NAT/TVA]
-       [client] [référence]
-       [tableau: Désignation|Qté|P.U.USD|Montant]
-       [totaux: sous-total/remise/HT/TVA/TTC]
-       [conditions paiement + banque]
-       [QR placeholder centré]
-       [footer italique]
+Avant
+preview                                           PDF
+─────                                             ───
+clientName  : "Jean Mukendi" (hardcoded)          → invoice.client_name
+N°          : "{prefix}-PREVIEW-0001" (hardcoded) → invoice.invoice_number
+date        : new Date() (today)                  → invoice.search_date
+exchangeRate: 2800 (constant)                     → invoice.exchange_rate_used
+services    : 2 mocks                             → catalogue.filter(selected)
+logo        : info.logo_url                       → fetchAppLogo()
 
-PDF  : [logo + nom sombre sur blanc] [titre header_color à droite + DGI]
-       [identifiants intégrés au bloc émetteur]
-       [ligne header_color]
-       [FACTURÉ À coloré] [RÉFÉRENCE colorée + statut coloré]
-       [tableau: Désignation|Qté|Prix unitaire HT|Total TTC]
-       [totaux: HT/TVA/TTC bandeau coloré + taux change]
-       (pas de conditions/banque)
-       [MENTIONS LÉGALES DGI 5 lignes]
-       [QR 16mm en bas à droite]
+Après (facture réelle chargée)
+preview      = PDF       (même logo, mêmes données, même N°, mêmes prestations)
+preview ≠ PDF (sample)   = OK, sample sert à simuler
 
-Après (WYSIWYG)
-Les deux : structure identique, source PDF = vérité, HTML = miroir CSS
+WYSIWYG vrai = preview(invoice) === PDF(invoice) cellule par cellule
 ```
 
 ### Critères de validation
 
-1. Capture d'écran de l'aperçu A4 et page 1 du PDF : **mise en page identique** (en-tête, ordre des blocs, colonnes du tableau, bandeau total)
-2. Mention « Direction Générale des Impôts (DGI) — RDC » présente sous le titre dans les deux
-3. Tableau : colonnes **Désignation / Qté / Prix unitaire HT / Total TTC** dans les deux
-4. Mentions légales DGI : 5 lignes texte réel dans les deux (plus de placeholder amber dans HTML)
-5. Conditions paiement + coordonnées bancaires : présentes dans les deux (ou retirées des deux)
-6. QR : position bas-droite identique
-7. Mini reçu : ordre et séparateurs identiques
-8. Sample affiche un `dgi_validation_code` cohérent dans les mentions, plus aucun écart visuel restant
+1. Charger facture réelle X dans le combobox → aperçu affiche le **vrai N°**, le **vrai client**, la **vraie date**, le **vrai taux**, les **vraies prestations**
+2. Logo identique (même fichier, même taille équivalente) entre aperçu et PDF téléchargé
+3. Statut "failed" : même couleur dans aperçu et PDF
+4. Mentions DGI : pas de chevauchement avec le contenu (flux naturel)
+5. QR : visuellement identique (même contenu encodé) entre aperçu et PDF
+6. Sélecteur "Mode paiement" retiré OU effectivement affiché dans les deux sorties
+7. Sample (sans facture réelle) reste fonctionnel et représentatif
+8. Bouton "Comparer ↔ PDF" : ouverture côte à côte → zéro divergence visible champ par champ
 
 ### Hors périmètre
 
-- Pas de changement de moteur (jsPDF reste le générateur final)
-- Pas de modification des couleurs config (header/secondary OK)
-- Pas de refonte du flux de génération PDF (seulement ajout section bank/conditions)
-- Pas de modification du format mini ticket dimensions (80×160mm)
+- Pas de refonte du moteur jsPDF (toujours impératif)
+- Pas de migration de `app_appearance_config.logo_url` vers `company_legal_info` (séparation conservée, juste unification de la source côté preview)
+- Pas d'éditeur de mise en page admin
+- Pas de support multi-page A4 dans l'aperçu (sample tient sur 1 page)
 
