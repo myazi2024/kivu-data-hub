@@ -411,7 +411,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                   
                    <div className="flex-1 min-h-0 overflow-hidden flex items-center justify-center p-1">
                     {selectedSectionType === 'rurale' || (selectedTerritoire && selectedProvince) ? (
-                      <div key="territoires" data-no-swipe className="w-full h-full animate-scale-in">
+                      <div key="territoires" className="w-full h-full animate-scale-in">
                         <DRCTerritoiresMap
                           province={selectedProvince?.name}
                           territoire={selectedTerritoire}
@@ -441,7 +441,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                         />
                       </div>
                     ) : selectedVille && selectedCommune ? (
-                      <div key={`quartiers-${selectedVille}`} data-no-swipe className="w-full h-full animate-scale-in">
+                      <div key={`quartiers-${selectedVille}`} className="w-full h-full animate-scale-in">
                         <DRCQuartiersMap
                           ville={selectedVille}
                           commune={selectedCommune}
@@ -456,7 +456,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                         />
                       </div>
                     ) : selectedVille ? (
-                      <div key="communes" data-no-swipe className="w-full h-full animate-scale-in">
+                      <div key="communes" className="w-full h-full animate-scale-in">
                         <DRCCommunesMap
                           ville={selectedVille}
                           commune={selectedCommune}
@@ -469,7 +469,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                         />
                       </div>
                     ) : (
-                      <div key="provinces" data-no-swipe className="w-full h-full flex items-center justify-center animate-fade-in" style={{ transform: 'scale(0.9)', transformOrigin: 'center center' }}>
+                      <div key="provinces" className="w-full h-full flex items-center justify-center animate-fade-in" style={{ transform: 'scale(0.9)', transformOrigin: 'center center' }}>
                         <DRCMapWithTooltip
                           provincesData={provincesData}
                           selectedProvince={selectedProvince?.id || null}
