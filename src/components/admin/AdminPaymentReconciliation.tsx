@@ -3,7 +3,11 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+} from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { RefreshCw, CreditCard, Search, CheckCircle2, XCircle, AlertTriangle, DollarSign, Download } from 'lucide-react';
@@ -12,6 +16,8 @@ import { fr } from 'date-fns/locale';
 import { usePagination } from '@/hooks/usePagination';
 import { PaginationControls } from '@/components/shared/PaginationControls';
 import BillingAnomaliesPanel from '@/components/admin/billing/BillingAnomaliesPanel';
+import TestModeBanner from '@/components/admin/billing/TestModeBanner';
+import { logBillingAudit } from '@/utils/billingAudit';
 
 interface PaymentTransaction {
   id: string;
@@ -34,6 +40,12 @@ const AdminPaymentReconciliation = () => {
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterProvider, setFilterProvider] = useState<string>('all');
 
+  // Reconciliation dialog state (B3 — motif obligatoire + audit)
+  const [reconcileTarget, setReconcileTarget] = useState<PaymentTransaction | null>(null);
+  const [reconcileReason, setReconcileReason] = useState('');
+  const [reconcileNote, setReconcileNote] = useState('');
+  const [reconciling, setReconciling] = useState(false);
+
   useEffect(() => {
     fetchTransactions();
   }, []);
@@ -44,7 +56,8 @@ const AdminPaymentReconciliation = () => {
       const { data, error } = await supabase
         .from('payment_transactions')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(2000);
 
       if (error) throw error;
       setTransactions(data || []);
@@ -56,21 +69,51 @@ const AdminPaymentReconciliation = () => {
     }
   };
 
-  const handleReconcile = async (transactionId: string) => {
+  const submitReconciliation = async () => {
+    if (!reconcileTarget) return;
+    if (!reconcileReason) {
+      toast.error('Sélectionnez un motif de réconciliation');
+      return;
+    }
+    setReconciling(true);
     try {
+      const oldStatus = reconcileTarget.status;
       const { error } = await supabase
         .from('payment_transactions')
-        .update({ 
+        .update({
           status: 'completed',
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         })
-        .eq('id', transactionId);
+        .eq('id', reconcileTarget.id);
 
       if (error) throw error;
-      toast.success('Transaction réconciliée');
+
+      // Audit log obligatoire
+      await logBillingAudit({
+        tableName: 'payment_transactions',
+        recordId: reconcileTarget.id,
+        action: 'manual_reconcile',
+        oldValues: { status: oldStatus },
+        newValues: {
+          status: 'completed',
+          reason: reconcileReason,
+          note: reconcileNote || null,
+          amount_usd: reconcileTarget.amount_usd,
+          provider: reconcileTarget.provider,
+          reference: reconcileTarget.transaction_reference,
+        },
+      });
+
+      toast.success('Transaction réconciliée et tracée');
+      setReconcileTarget(null);
+      setReconcileReason('');
+      setReconcileNote('');
       fetchTransactions();
     } catch (error) {
+      console.error(error);
       toast.error('Erreur lors de la réconciliation');
+    } finally {
+      setReconciling(false);
     }
   };
 
