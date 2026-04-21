@@ -355,7 +355,7 @@ const CadastralInvoice: React.FC<CadastralInvoiceProps> = ({
                     <span className="tabular-nums">${totals.subtotal.toFixed(2)}</span>
                   </div>
                   {totals.discount > 0 && (
-                    <div className="flex justify-between text-green-700">
+                    <div className="flex justify-between text-success">
                       <span>Remise{dbInvoice.discount_code_used ? ` (${dbInvoice.discount_code_used})` : ''}</span>
                       <span className="tabular-nums">-${totals.discount.toFixed(2)}</span>
                     </div>
