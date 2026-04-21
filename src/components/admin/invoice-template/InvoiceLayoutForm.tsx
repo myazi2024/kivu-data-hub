@@ -61,11 +61,7 @@ export const InvoiceLayoutForm = () => {
         <div className="space-y-2">
           <Label>Conditions de paiement</Label>
           <Textarea rows={2} value={config.payment_terms} onChange={(e) => setConfigDraft({ payment_terms: e.target.value })} />
-        </div>
-
-        <div className="space-y-2">
-          <Label>Texte du pied de page</Label>
-          <Textarea rows={3} value={config.footer_text} onChange={(e) => setConfigDraft({ footer_text: e.target.value })} />
+          <p className="text-xs text-muted-foreground">Reprises dans la mention TVA du pied de page.</p>
         </div>
 
         <div className="flex items-center justify-between rounded-lg border p-4">
@@ -74,6 +70,75 @@ export const InvoiceLayoutForm = () => {
             <p className="text-xs text-muted-foreground mt-1">Affiche le QR de vérification publique sur les factures.</p>
           </div>
           <Switch checked={config.show_verification_qr} onCheckedChange={(v) => setConfigDraft({ show_verification_qr: v })} />
+        </div>
+
+        {/* ===== PIED DE PAGE (MENTIONS LÉGALES) ===== */}
+        <div className="space-y-4 rounded-lg border p-4 bg-muted/30">
+          <div>
+            <h3 className="text-base font-semibold">Pied de page (mentions légales)</h3>
+            <p className="text-xs text-muted-foreground mt-1">
+              Personnalisez chaque ligne du bloc « MENTIONS LÉGALES (DGI) » affiché en bas des factures.
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Texte d'introduction</Label>
+            <Textarea
+              rows={2}
+              value={config.footer_intro_text}
+              onChange={(e) => setConfigDraft({ footer_intro_text: e.target.value })}
+              placeholder="Facture normalisée émise conformément…"
+            />
+            <p className="text-xs text-muted-foreground">
+              Affiché uniquement si la mention DGI est activée (onglet Fiscalité).
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Mention TVA</Label>
+            <Textarea
+              rows={2}
+              value={config.footer_tva_mention}
+              onChange={(e) => setConfigDraft({ footer_tva_mention: e.target.value })}
+              placeholder="TVA appliquée au taux de {tva_rate}."
+            />
+            <p className="text-xs text-muted-foreground">
+              Placeholder disponible : <code className="px-1 py-0.5 rounded bg-background border">{'{tva_rate}'}</code> (remplacé par le taux configuré). Les conditions de paiement sont concaténées à la suite.
+            </p>
+          </div>
+
+          <div className="flex items-center justify-between rounded-lg border p-3 bg-background">
+            <div>
+              <Label className="text-sm">Afficher la ligne émetteur</Label>
+              <p className="text-xs text-muted-foreground mt-1">NIF / RCCM / ID-NAT / régime fiscal de l'entreprise.</p>
+            </div>
+            <Switch
+              checked={config.footer_show_emitter_line}
+              onCheckedChange={(v) => setConfigDraft({ footer_show_emitter_line: v })}
+            />
+          </div>
+
+          <div className="flex items-center justify-between rounded-lg border p-3 bg-background">
+            <div>
+              <Label className="text-sm">Afficher le code de validation DGI</Label>
+              <p className="text-xs text-muted-foreground mt-1">Ligne « Code de validation DGI : … » ou code de vérification.</p>
+            </div>
+            <Switch
+              checked={config.footer_show_dgi_code}
+              onCheckedChange={(v) => setConfigDraft({ footer_show_dgi_code: v })}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Ligne complémentaire libre</Label>
+            <Textarea
+              rows={2}
+              value={config.footer_text}
+              onChange={(e) => setConfigDraft({ footer_text: e.target.value })}
+              placeholder="Merci pour votre confiance…"
+            />
+            <p className="text-xs text-muted-foreground">Dernière ligne du pied de page (laisser vide pour ne rien afficher).</p>
+          </div>
         </div>
 
         <div className="flex justify-end gap-2 pt-4 border-t">
