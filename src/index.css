@@ -468,26 +468,49 @@ All colors MUST be HSL.
   background: hsl(var(--muted)) !important;
 }
 
-/* ═══ Print styles for ReviewTab ═══ */
+/* ═══ Print styles ═══
+   Generic scope: when body has `print-scope-active`, only the element
+   carrying [data-print-host] (and its subtree) is printed. Activated via
+   the usePrintScope() hook. Legacy ReviewTab keeps its #review-print-area
+   rules but they now only apply when body has `print-review-only`. */
 @media print {
   @page {
     margin: 1.5cm;
     size: A4;
   }
 
-  /* Hide EVERYTHING by default */
-  body * {
+  /* Generic print scope (invoice, cadastral document, any opt-in host) */
+  body.print-scope-active > *:not([data-print-host]):not(script):not(style) {
+    display: none !important;
+  }
+  body.print-scope-active [data-print-host] {
+    position: static !important;
+    inset: auto !important;
+    background: white !important;
+    backdrop-filter: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: none !important;
+    overflow: visible !important;
+    z-index: auto !important;
+    box-shadow: none !important;
+  }
+  body.print-scope-active [data-print-host] * {
+    overflow: visible !important;
+    max-height: none !important;
+  }
+
+  /* Legacy ReviewTab scope (now opt-in via .print-review-only) */
+  body.print-review-only * {
     visibility: hidden;
   }
-
-  /* Show only the review print area and its children */
-  #review-print-area,
-  #review-print-area * {
+  body.print-review-only #review-print-area,
+  body.print-review-only #review-print-area * {
     visibility: visible !important;
   }
-
-  /* Position it at the top, full width */
-  #review-print-area {
+  body.print-review-only #review-print-area {
     position: absolute;
     top: 0;
     left: 0;
@@ -496,15 +519,13 @@ All colors MUST be HSL.
     padding: 0 !important;
     margin: 0 !important;
   }
-
-  /* Hide ALL buttons, scrollbars, tab triggers, navigation, sticky bars */
-  #review-print-area button,
-  #review-print-area [role="button"],
-  #review-print-area [role="tablist"],
-  #review-print-area nav,
-  #review-print-area .sticky,
-  #review-print-area [data-state],
-  #review-print-area .scrollbar-hide {
+  body.print-review-only #review-print-area button,
+  body.print-review-only #review-print-area [role="button"],
+  body.print-review-only #review-print-area [role="tablist"],
+  body.print-review-only #review-print-area nav,
+  body.print-review-only #review-print-area .sticky,
+  body.print-review-only #review-print-area [data-state],
+  body.print-review-only #review-print-area .scrollbar-hide {
     display: none !important;
   }
 
