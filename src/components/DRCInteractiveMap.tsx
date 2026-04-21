@@ -375,14 +375,20 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
           />
         )}
 
-        {/* Desktop: grille 2 colonnes | Mobile: 2 panneaux côte à côte */}
-        <div className="flex-1 min-h-0 flex flex-col lg:grid lg:grid-cols-12 gap-1 sm:gap-2 p-1 sm:p-2 pb-14 lg:pb-2">
-          
+        {/* Desktop: grille 2 colonnes | Mobile: track horizontal 200% qui slide */}
+        <div className="flex-1 min-h-0 overflow-hidden p-1 sm:p-2 pb-14 lg:pb-2">
+          <div
+            style={isMobile ? {
+              width: '200%',
+              transform: `translateX(calc(${onAnalyticsPanel ? '-50%' : '0%'} + ${rubberBand}px))`,
+              transition: isSwiping ? 'none' : 'transform 280ms cubic-bezier(.2,.8,.2,1)',
+            } : undefined}
+            className="h-full flex flex-row lg:w-auto lg:grid lg:grid-cols-12 gap-1 sm:gap-2"
+          >
+
           {/* Colonne gauche: Carte + Détails province */}
           <div
-            key={isMobile ? `mobile-left-${activeMobilePanel}` : 'left'}
-            style={isMobile && !onAnalyticsPanel && rubberBand !== 0 ? { transform: `translateX(${rubberBand}px)`, transition: isSwiping ? 'none' : 'transform 280ms ease-out' } : undefined}
-            className={`${activeMobilePanel === 'analytics' ? 'hidden lg:flex' : 'flex animate-fade-in lg:animate-none'} lg:col-span-4 flex-col min-h-0 h-full gap-1 sm:gap-2`}
+            className="w-1/2 lg:w-auto shrink-0 lg:shrink lg:col-span-4 flex flex-col min-h-0 h-full gap-1 sm:gap-2"
           >
             
             {/* Carte RDC */}
