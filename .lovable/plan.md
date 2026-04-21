@@ -1,124 +1,102 @@
 
 
-## Plan — Espace admin : Modèle de facture unifié
+## Plan — Aperçu visuel réaliste de la facture dans l'admin
 
 ### Constat
 
-La section `Admin → Facturation et commerce → Factures` (`AdminInvoices.tsx`) ne sait que **lister et exporter** les factures émises. Aucun écran ne permet de paramétrer **l'apparence et le contenu légal** de la facture utilisée par TOUTE l'application :
+L'onglet `Aperçu` du module `Modèle de facture` existe déjà (`InvoicePreviewPanel.tsx`) mais propose seulement :
+- une mini-vignette HTML compacte qui ne ressemble pas au PDF final
+- deux boutons qui forcent le téléchargement d'un PDF (sans visualisation directe)
 
-- catalogue de services cadastraux (`CadastralInvoice`, `CadastralResultCard`)
-- paiement cadastral (`CadastralPaymentDialog`)
-- dashboard client (`CadastralClientDashboard`)
-- tous les PDF générés par `src/lib/pdf.ts → generateInvoicePDF()` (formats A4 + mini)
-
-Or ces sorties consomment déjà :
-- la table `company_legal_info` (identité émetteur, RCCM, NIF, TVA, IBAN, logo)
-- la constante `TVA_RATE` (16%) figée dans `src/constants/billing.ts`
-- des libellés DGI, formats de numéro et mentions codés en dur dans `pdf.ts`
-
-→ Aucun admin ne peut éditer ces éléments aujourd'hui sans toucher au code.
+→ L'utilisateur ne peut pas **voir** la facture en conditions réelles avant qu'un client ne la reçoive. Il doit télécharger le PDF, l'ouvrir dans un autre logiciel, puis revenir corriger la config. Boucle inefficace.
 
 ### Objectif
 
-Créer un nouvel onglet admin **« Modèle de facture »** dans `Facturation et commerce`, source unique de vérité pour la mise en page et les données légales de toutes les factures de l'application.
+Offrir dans l'onglet `Aperçu` un **rendu fidèle** des deux formats de facture (A4 + Mini reçu thermique), affiché en pleine page comme un vrai document, qui se met à jour en direct dès qu'on modifie la config dans les autres onglets.
 
 ### Périmètre fonctionnel
 
-#### 1. Identité émetteur (table `company_legal_info`)
-- Raison sociale, nom commercial, forme juridique, capital
-- RCCM, ID Nat, NIF, n° TVA, régime fiscal
-- Adresse complète (ligne 1, ligne 2, ville, province, pays)
-- Téléphone, email, site web
-- Logo (upload via storage `app-assets`)
-- Coordonnées bancaires (banque, IBAN, SWIFT)
-- Toggle `is_active`
+#### 1. Sélecteur de format
+Boutons-onglets en haut du panneau :
+- `A4` (par défaut) — rendu pleine page 210×297 mm à l'échelle
+- `Mini reçu` — rendu vertical étroit 80 mm thermique
 
-#### 2. Paramètres fiscaux et monétaires
-- Taux de TVA (déplacer `TVA_RATE` de `constants/billing.ts` vers `system_settings` ou nouvelle table `invoice_template_config`)
-- Devise principale + devises secondaires affichées
-- Affichage HT/TVA/TTC obligatoire DGI on/off
-- Mention « FACTURE NORMALISÉE » on/off
-- Format de numérotation (préfixe, séquence)
+#### 2. Aperçu A4 réaliste
+Un cadre simulant une feuille A4 (proportions 1:√2, ombre portée, fond blanc) contenant :
+- en-tête couleur (`header_color`) avec logo réel + identité émetteur complète (raison sociale, forme juridique, capital, RCCM, ID Nat, NIF, n° TVA, adresse complète, téléphone, email, site)
+- bandeau titre `FACTURE NORMALISÉE` ou `FACTURE` selon `show_dgi_mention`
+- numéro avec préfixe configuré + dates émission/paiement
+- bloc client + bloc référence parcelle/zone
+- tableau des prestations (2 services exemples) avec couleur secondaire
+- bloc totaux (Sous-total, Remise, Base HT, TVA libellée, TTC)
+- conditions de paiement + mentions de pied configurées
+- IBAN/SWIFT/banque émetteur si renseignés
+- vignette QR de vérification si `show_verification_qr` activé
+- numéro DGI fictif
 
-#### 3. Mise en page du document
-- Format par défaut : A4 / Mini reçu thermique
-- Couleurs primaire/secondaire de l'en-tête
-- Pied de page : mentions légales personnalisables
-- Conditions de paiement (texte libre)
-- Note de bas de facture (texte libre)
-- Affichage QR de vérification on/off
+#### 3. Aperçu Mini reçu réaliste
+Cadre vertical étroit (~280px de large) avec :
+- en-tête condensé (logo + raison sociale)
+- titre + numéro
+- liste services (sans tableau)
+- totaux empilés
+- pied de page court
+- QR si activé
 
-#### 4. Aperçu en direct
-- Mini-preview du rendu A4 et du rendu mini dans la modale
-- Bouton « Générer un exemple PDF » qui appelle `generateInvoicePDF()` avec une facture fictive
+#### 4. Aperçu réactif
+- Lit `useInvoiceTemplateConfig()` et `useCompanyLegalInfo()` en direct
+- Toute modif dans les onglets Identité / Fiscalité / Mise en page se reflète instantanément
+- Bouton « Rafraîchir » pour forcer le rechargement
 
-### Architecture proposée
+#### 5. Génération PDF d'exemple (conservé)
+Les deux boutons existants (Aperçu PDF A4 / Mini) restent disponibles en bas, comme **validation finale** du rendu réel produit par `generateInvoicePDF()`.
 
-#### Nouveaux fichiers
-- `src/components/admin/AdminInvoiceTemplate.tsx` — onglet principal avec sous-onglets Identité / Fiscalité / Mise en page / Aperçu
-- `src/components/admin/invoice-template/CompanyLegalInfoForm.tsx` — édition `company_legal_info`
-- `src/components/admin/invoice-template/InvoiceFiscalSettingsForm.tsx` — TVA, devises, mentions DGI
-- `src/components/admin/invoice-template/InvoiceLayoutForm.tsx` — couleurs, pied de page, QR
-- `src/components/admin/invoice-template/InvoicePreviewPanel.tsx` — aperçu live + bouton PDF démo
-- `src/hooks/useInvoiceTemplateConfig.ts` — read/write paramètres (basé sur le pattern `useContributionConfig`)
+### Architecture
 
-#### Migration DB
-Nouvelle table `invoice_template_config` (clé/valeur typée) :
-```
-config_key TEXT, config_value JSONB, description TEXT, is_active BOOLEAN
-```
-Avec seed initial pour : `tva_rate`, `tva_label`, `default_format`, `show_dgi_mention`, `header_color`, `footer_text`, `payment_terms`, `show_verification_qr`, `invoice_number_prefix`.
+#### Refonte d'un seul fichier
+- `src/components/admin/invoice-template/InvoicePreviewPanel.tsx`
+  - Ajouter un state `format: 'a4' | 'mini'`
+  - Extraire deux sous-composants internes :
+    - `<InvoicePreviewA4 config info />` 
+    - `<InvoicePreviewMini config info />`
+  - Conserver `buildSampleInvoice()` / `buildSampleServices()` pour cohérence avec le PDF réel
+  - Ajouter un wrapper visuel « feuille » avec ombre, ratio A4, échelle responsive (`transform: scale()` adaptatif viewport)
 
-RLS : lecture publique, écriture admin/super_admin (pattern déjà utilisé pour `cadastral_contribution_config`).
-
-#### Refactor `src/lib/pdf.ts`
-- Lire `invoice_template_config` au début de `generateInvoicePDF()` (en plus de `fetchCompanyLegalInfo()`)
-- Remplacer les valeurs codées en dur par les valeurs config
-- `TVA_RATE` reste comme fallback dans `constants/billing.ts` mais devient secondaire
-
-#### Intégration sidebar
-- Ajouter une entrée `invoice-template` dans `src/components/admin/sidebarConfig.ts` sous catégorie « Facturation et commerce »
-- Ajouter le mapping lazy dans `src/pages/Admin.tsx` :
-  ```ts
-  'invoice-template': lazy(() => import('@/components/admin/AdminInvoiceTemplate'))
-  ```
-
-### Sécurité
-- RLS stricte : `has_role(auth.uid(), 'admin'|'super_admin')` pour UPDATE/INSERT
-- `logAuditAction()` (utilitaire existant `supabaseConfigUtils.ts`) à chaque modification
-- Upload logo via bucket existant `app-assets` avec `crypto.randomUUID()`
+#### Aucun changement DB / hook / PDF
+- Pas de migration
+- Pas de modification de `useInvoiceTemplateConfig` ni `useCompanyLegalInfo`
+- Pas de modification de `src/lib/pdf.ts`
+- Pas de nouvelle entrée sidebar
 
 ### Validation attendue
 
-1. `Admin → Facturation et commerce → Modèle de facture` affiche les 4 sous-onglets
-2. Modifier le RCCM → nouvelle facture PDF (catalogue services) reflète le changement
-3. Modifier le taux de TVA à 18% → nouvelle facture A4 affiche 18%
-4. Désactiver le QR → nouvelle facture A4 sans QR
-5. Bouton « Aperçu PDF » génère un exemple avec la config courante
-6. Audit log enregistre chaque modification
-7. Non-régression : `CadastralInvoice` modale écran et impression continuent de fonctionner
+1. `Admin → Facturation et commerce → Modèle de facture → Aperçu`
+2. L'aperçu A4 s'affiche par défaut, à l'échelle, lisible sans télécharger de PDF
+3. Bascule `Mini reçu` → rendu vertical étroit visible
+4. Modifier la couleur d'en-tête dans `Mise en page` → l'aperçu se met à jour immédiatement à la bascule d'onglet
+5. Modifier le RCCM dans `Identité` → visible dans l'aperçu
+6. Désactiver le QR → la vignette QR disparaît de l'aperçu
+7. Changer le taux de TVA → la ligne TVA et le calcul HT changent
+8. Boutons « Aperçu PDF A4/Mini » continuent de produire un PDF téléchargeable identique
 
 ### Hors périmètre
 
-- Pas de refonte du moteur PDF (`pdf.ts` reste, on injecte juste la config)
-- Pas de redesign d'`AdminInvoices` (liste des factures inchangée)
-- Pas de templates multiples par type de service (un seul modèle global pour cette itération)
-- Pas de gestion multi-établissements
+- Pas de modification du moteur PDF
+- Pas d'aperçu pixel-perfect rendu via PDF.js (trop coûteux ; le rendu HTML reste une simulation très fidèle, et le bouton PDF couvre la vérification finale)
+- Pas d'édition WYSIWYG dans l'aperçu (la config se fait dans les autres onglets)
+- Pas d'aperçu multi-langues / multi-devises
 
 ### Détail technique
 
 ```text
 État actuel
-identité émetteur -> company_legal_info (DB) ✓ mais pas d'UI admin
-TVA               -> constants/billing.ts (code) ✗ non éditable
-mentions DGI      -> pdf.ts (code) ✗ non éditable
-format A4/mini    -> choix utilisateur runtime ✗ pas de défaut admin
-couleurs/pied     -> pdf.ts (code) ✗ non éditable
+Onglet Aperçu -> mini-vignette HTML compacte 1 format unique
+              -> 2 boutons téléchargement PDF
 
 État cible
-identité émetteur -> company_legal_info (DB) + UI AdminInvoiceTemplate
-fiscalité/format  -> invoice_template_config (DB) + UI
-mise en page      -> invoice_template_config (DB) + UI
-pdf.ts            -> consomme les deux sources, fallback constants
+Onglet Aperçu -> sélecteur A4 / Mini
+              -> rendu fidèle pleine page, fond feuille, échelle responsive
+              -> tous les champs config + identité visibles
+              -> 2 boutons téléchargement PDF conservés en bas
 ```
 
