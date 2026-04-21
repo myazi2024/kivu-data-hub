@@ -6,6 +6,7 @@ import { createDocumentVerification } from '@/lib/documentVerification';
 
 import DocumentToolbar from './DocumentToolbar';
 import DocumentHeader from './DocumentHeader';
+import { usePrintScope } from '@/hooks/usePrintScope';
 import DocumentFooter from './DocumentFooter';
 import { SectionCard, LockedSection } from './primitives';
 
@@ -35,6 +36,7 @@ const CadastralDocumentView: React.FC<CadastralDocumentViewProps> = ({
 
   const [verificationCode, setVerificationCode] = useState<string | null>(null);
   const [verifyUrl, setVerifyUrl] = useState<string | null>(null);
+  const { printRef, print } = usePrintScope<HTMLDivElement>();
 
   useEffect(() => {
     let cancelled = false;
@@ -65,8 +67,8 @@ const CadastralDocumentView: React.FC<CadastralDocumentViewProps> = ({
   const sn = (key: SectionKey) => sectionOrder.indexOf(key) + 1 || sectionOrder.length + 1;
 
   return (
-    <div className="cadastral-document">
-      <DocumentToolbar onBackToCatalog={onBackToCatalog} onDownloadReport={onDownloadReport} />
+    <div ref={printRef} className="cadastral-document">
+      <DocumentToolbar onBackToCatalog={onBackToCatalog} onDownloadReport={onDownloadReport} onPrint={print} />
 
       <div className="bg-background rounded-xl shadow-lg border border-border/50 print:shadow-none print:border-0 print:rounded-none overflow-hidden">
         <DocumentHeader parcel={parcel} />

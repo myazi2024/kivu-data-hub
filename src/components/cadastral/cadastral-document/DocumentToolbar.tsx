@@ -6,9 +6,10 @@ import { toast } from 'sonner';
 interface DocumentToolbarProps {
   onBackToCatalog: () => void;
   onDownloadReport: () => void | Promise<void>;
+  onPrint?: () => void;
 }
 
-const DocumentToolbar: React.FC<DocumentToolbarProps> = ({ onBackToCatalog, onDownloadReport }) => {
+const DocumentToolbar: React.FC<DocumentToolbarProps> = ({ onBackToCatalog, onDownloadReport, onPrint }) => {
   const [downloading, setDownloading] = useState(false);
 
   const handleDownload = async () => {
@@ -49,7 +50,7 @@ const DocumentToolbar: React.FC<DocumentToolbarProps> = ({ onBackToCatalog, onDo
       <Button
         variant="outline"
         size="sm"
-        onClick={() => window.print()}
+        onClick={() => (onPrint ? onPrint() : window.print())}
         className="text-xs"
         aria-label="Imprimer la fiche cadastrale"
         title="Imprimer (Ctrl+P)"
