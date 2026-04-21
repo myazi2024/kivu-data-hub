@@ -311,7 +311,7 @@ async function generateA4InvoicePDF(
   // ===== BLOC CLIENT =====
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(9);
-  doc.setTextColor(0, 51, 102);
+  doc.setTextColor(headerRgb[0], headerRgb[1], headerRgb[2]);
   doc.text("FACTURÉ À", margin, cursorY);
   cursorY += 4;
 
