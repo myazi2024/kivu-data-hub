@@ -113,7 +113,7 @@ const AdminTvaReporting = () => {
               <Stat label="TVA à reverser" value={`$${declaration.tva_to_pay_usd.toFixed(2)}`} highlight />
             </div>
             {declaration.credit_note_total_usd > 0 && (
-              <div className="text-xs text-amber-600 border-t pt-2">
+              <div className="text-xs text-warning border-t pt-2">
                 Avoirs émis sur la période : ${declaration.credit_note_total_usd.toFixed(2)} (à déduire de la base imposable)
               </div>
             )}
