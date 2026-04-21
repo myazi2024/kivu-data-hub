@@ -19,6 +19,8 @@ interface DownloadOptions {
   services?: CadastralService[];
   /** Nom de fichier optionnel. */
   filename?: string;
+  /** Ouvre le PDF dans un nouvel onglet au lieu de le télécharger (mode comparaison). */
+  openInNewTab?: boolean;
 }
 
 let cachedServices: CadastralService[] | null = null;
@@ -43,5 +45,5 @@ export async function downloadInvoicePDF(
     options.services ? Promise.resolve(options.services) : loadServicesCatalog(),
   ]);
   const format: InvoiceFormat = options.format ?? (config?.default_format ?? 'a4');
-  await generateInvoicePDF(invoice, services, format, options.filename);
+  await generateInvoicePDF(invoice, services, format, options.filename, { openInNewTab: options.openInNewTab });
 }
