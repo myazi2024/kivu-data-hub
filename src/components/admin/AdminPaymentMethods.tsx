@@ -664,6 +664,38 @@ const AdminPaymentMethods: React.FC = () => {
                     )}
                 </div>
 
+                {/* Fee config */}
+                <div className="grid grid-cols-2 gap-3 pt-2 border-t">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="bc-fee-pct" className="text-xs md:text-sm">
+                      Frais (%)
+                    </Label>
+                    <Input
+                      id="bc-fee-pct"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={bankCard.fee_percent}
+                      onChange={(e) => updateBC('fee_percent', parseFloat(e.target.value) || 0)}
+                      className="text-sm"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="bc-fee-fix" className="text-xs md:text-sm">
+                      Frais fixe (USD)
+                    </Label>
+                    <Input
+                      id="bc-fee-fix"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={bankCard.fee_fixed_usd}
+                      onChange={(e) => updateBC('fee_fixed_usd', parseFloat(e.target.value) || 0)}
+                      className="text-sm"
+                    />
+                  </div>
+                </div>
+
                 {/* Test connection */}
                 <div className="flex items-center gap-2">
                   <Button
