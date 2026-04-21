@@ -1,22 +1,36 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  AlertTriangle, 
-  CheckCircle2, 
-  TrendingUp, 
-  DollarSign, 
+import { Button } from '@/components/ui/button';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import {
+  AlertTriangle,
+  CheckCircle2,
+  TrendingUp,
+  DollarSign,
   CreditCard,
   Smartphone,
   Shield,
   AlertCircle,
   Info,
-  Loader2
+  Loader2,
+  RefreshCw,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { usePaymentConfig } from '@/hooks/usePaymentConfig';
 import { useCadastralServices } from '@/hooks/useCadastralServices';
@@ -38,6 +52,14 @@ interface ServiceProviderCompatibility {
   };
 }
 
+interface RealRevenueAggregate {
+  gross: number;
+  fees: number;
+  net: number;
+  txCount: number;
+  byProvider: Record<string, { gross: number; fees: number; net: number; tx: number }>;
+}
+
 const AdminPaymentServiceIntegration: React.FC = () => {
   const { paymentMode, availableMethods, isPaymentRequired, loading: configLoading } = usePaymentConfig();
   const { services, loading: servicesLoading } = useCadastralServices();
@@ -47,11 +69,14 @@ const AdminPaymentServiceIntegration: React.FC = () => {
     issues: [] as string[],
     warnings: [] as string[]
   });
+  const [realRevenue, setRealRevenue] = useState<RealRevenueAggregate | null>(null);
+  const [loadingRevenue, setLoadingRevenue] = useState(true);
+  const [backfilling, setBackfilling] = useState(false);
 
-  // Frais de transaction standards
+  // Frais de transaction standards (fallback display)
   const transactionFees: TransactionFees = {
     stripe: { percentage: 2.9, fixed: 0.30 },
-    mobile_money: { percentage: 3.5 }
+    mobile_money: { percentage: 1.5 }
   };
 
   // Limites de paiement par provider
@@ -60,6 +85,66 @@ const AdminPaymentServiceIntegration: React.FC = () => {
     airtel_money: { min: 1, max: 500 },
     orange_money: { min: 1, max: 500 },
     mpesa: { min: 1, max: 1000 }
+  };
+
+  // Load real net revenue from view
+  const loadRealRevenue = useCallback(async () => {
+    setLoadingRevenue(true);
+    try {
+      const { data, error } = await (supabase as any)
+        .from('revenue_net_by_period')
+        .select('*');
+      if (error) throw error;
+
+      const agg: RealRevenueAggregate = { gross: 0, fees: 0, net: 0, txCount: 0, byProvider: {} };
+      (data || []).forEach((row: any) => {
+        const gross = Number(row.gross_revenue_usd) || 0;
+        const fees = Number(row.total_fees_usd) || 0;
+        const net = Number(row.net_revenue_usd) || 0;
+        const tx = Number(row.transaction_count) || 0;
+        const provider = row.provider || 'unknown';
+        agg.gross += gross;
+        agg.fees += fees;
+        agg.net += net;
+        agg.txCount += tx;
+        if (!agg.byProvider[provider]) agg.byProvider[provider] = { gross: 0, fees: 0, net: 0, tx: 0 };
+        agg.byProvider[provider].gross += gross;
+        agg.byProvider[provider].fees += fees;
+        agg.byProvider[provider].net += net;
+        agg.byProvider[provider].tx += tx;
+      });
+      setRealRevenue(agg);
+    } catch (err) {
+      console.error('Failed to load real revenue', err);
+      setRealRevenue({ gross: 0, fees: 0, net: 0, txCount: 0, byProvider: {} });
+    } finally {
+      setLoadingRevenue(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadRealRevenue();
+  }, [loadRealRevenue]);
+
+  const handleBackfill = async () => {
+    setBackfilling(true);
+    try {
+      const { data, error } = await (supabase as any).rpc('backfill_provider_fees', {
+        p_from: null,
+        p_to: null,
+      });
+      if (error) throw error;
+      const result = (data as any) || {};
+      toast.success('Backfill terminé', {
+        description: `${result.updated_count ?? 0} transactions mises à jour, ~$${Number(result.total_fees_estimated_usd ?? 0).toFixed(2)} de frais estimés.`,
+      });
+      await loadRealRevenue();
+    } catch (err: any) {
+      console.error('Backfill failed', err);
+      toast.error('Échec du backfill', { description: err.message || 'Réservé aux administrateurs.' });
+    } finally {
+      setBackfilling(false);
+    }
   };
 
   useEffect(() => {
