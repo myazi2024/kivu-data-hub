@@ -343,15 +343,15 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
 
         <div className="lg:hidden fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50">
           <div className="flex flex-col items-center gap-1.5">
-            {/* Pagination dots */}
+            {/* Pagination dots — la dot inactive pulse tant que le hint n'a pas été vu */}
             <div className="flex items-center gap-1.5" role="tablist" aria-label="Vue active">
               <span
                 aria-hidden="true"
-                className={`h-1.5 rounded-full transition-all duration-200 ${onAnalyticsPanel ? 'bg-muted w-1.5' : 'bg-primary w-4'}`}
+                className={`h-1.5 rounded-full transition-all duration-200 ${onAnalyticsPanel ? `bg-muted w-1.5 ${!hintShown ? 'animate-pulse' : ''}` : 'bg-primary w-4'}`}
               />
               <span
                 aria-hidden="true"
-                className={`h-1.5 rounded-full transition-all duration-200 ${onAnalyticsPanel ? 'bg-primary w-4' : 'bg-muted w-1.5'}`}
+                className={`h-1.5 rounded-full transition-all duration-200 ${onAnalyticsPanel ? 'bg-primary w-4' : `bg-muted w-1.5 ${!hintShown ? 'animate-pulse' : ''}`}`}
               />
             </div>
             <div className="flex items-center justify-center gap-1.5 bg-background/95 backdrop-blur-sm border border-border/50 rounded-full px-2.5 py-1.5 shadow-lg">
