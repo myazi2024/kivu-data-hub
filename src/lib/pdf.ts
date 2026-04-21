@@ -6,6 +6,7 @@ import { createDocumentVerification } from '@/lib/documentVerification';
 import { fetchAppLogo } from '@/utils/pdfLogoHelper';
 import { fetchCompanyLegalInfo, TAX_REGIME_LABELS, type CompanyLegalInfo } from '@/hooks/useCompanyLegalInfo';
 import { TVA_RATE } from '@/constants/billing';
+import { fetchInvoiceTemplateConfig, DEFAULT_INVOICE_TEMPLATE_CONFIG } from '@/hooks/useInvoiceTemplateConfig';
 
 // Type minimal pour les factures dans le PDF
 interface CadastralInvoice {
@@ -93,7 +94,8 @@ async function generateMiniInvoicePDF(
   const margin = 5;
   let cursorY = margin;
 
-  const company = await fetchCompanyLegalInfo();
+  const [company, tplCfg] = await Promise.all([fetchCompanyLegalInfo(), fetchInvoiceTemplateConfig()]);
+  const tvaRate = tplCfg.tva_rate ?? TVA_RATE;
   const exchangeRate = Number(invoice.exchange_rate_used || 1);
 
   // En-tête
@@ -109,10 +111,12 @@ async function generateMiniInvoicePDF(
   doc.text(company.trade_name || company.legal_name, pageWidth / 2, cursorY, { align: 'center' });
   cursorY += 4;
 
-  doc.setFontSize(8);
-  doc.setFont('helvetica', 'bold');
-  doc.text("FACTURE NORMALISÉE", pageWidth / 2, cursorY, { align: 'center' });
-  cursorY += 3;
+  if (tplCfg.show_dgi_mention) {
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'bold');
+    doc.text("FACTURE NORMALISÉE", pageWidth / 2, cursorY, { align: 'center' });
+    cursorY += 3;
+  }
   doc.setFontSize(6);
   doc.setFont('helvetica', 'normal');
   doc.text(`NIF: ${company.nif} • RCCM: ${company.rccm}`, pageWidth / 2, cursorY, { align: 'center' });
@@ -149,7 +153,7 @@ async function generateMiniInvoicePDF(
   // Décomposition fiscale conforme DGI
   const discountTTC = Number(invoice.discount_amount_usd || 0);
   const totalTTC = subtotalTTC - discountTTC;
-  const totalHT = totalTTC / (1 + TVA_RATE);
+  const totalHT = totalTTC / (1 + tvaRate);
   const tvaAmount = totalTTC - totalHT;
 
   cursorY += 2;
@@ -164,7 +168,7 @@ async function generateMiniInvoicePDF(
   }
   doc.text(`Base HT:`, margin, cursorY);
   doc.text(`${totalHT.toFixed(2)}$`, pageWidth - margin, cursorY, { align: 'right' }); cursorY += 3;
-  doc.text(`TVA 16%:`, margin, cursorY);
+  doc.text(`${tplCfg.tva_label}:`, margin, cursorY);
   doc.text(`${tvaAmount.toFixed(2)}$`, pageWidth - margin, cursorY, { align: 'right' }); cursorY += 3.5;
 
   doc.setFont('helvetica', 'bold');
@@ -204,8 +208,9 @@ async function generateA4InvoicePDF(
   let verifyUrl = '';
   let verificationCode = '';
   let company: CompanyLegalInfo;
+  let tplCfg = DEFAULT_INVOICE_TEMPLATE_CONFIG;
   try {
-    const [verification, companyInfo] = await Promise.all([
+    const [verification, companyInfo, cfg] = await Promise.all([
       createDocumentVerification({
         documentType: 'invoice',
         parcelNumber: invoice.parcel_number,
@@ -218,16 +223,20 @@ async function generateA4InvoicePDF(
         },
       }),
       fetchCompanyLegalInfo(),
+      fetchInvoiceTemplateConfig(),
     ]);
     if (verification) {
       verifyUrl = verification.verifyUrl;
       verificationCode = verification.verificationCode;
     }
     company = companyInfo;
+    tplCfg = cfg;
   } catch (e) {
     console.error('Failed to init invoice PDF:', e);
     company = await fetchCompanyLegalInfo();
+    tplCfg = await fetchInvoiceTemplateConfig();
   }
+  const tvaRate = tplCfg.tva_rate ?? TVA_RATE;
 
   const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -264,11 +273,14 @@ async function generateA4InvoicePDF(
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(14);
   doc.setTextColor(0, 51, 102);
-  doc.text("FACTURE NORMALISÉE", pageWidth - margin, cursorY + 5, { align: 'right' });
+  const titleLabel = tplCfg.show_dgi_mention ? "FACTURE NORMALISÉE" : "FACTURE";
+  doc.text(titleLabel, pageWidth - margin, cursorY + 5, { align: 'right' });
   doc.setFontSize(8);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(80, 80, 80);
-  doc.text("Direction Générale des Impôts (DGI) — RDC", pageWidth - margin, cursorY + 9, { align: 'right' });
+  if (tplCfg.show_dgi_mention) {
+    doc.text("Direction Générale des Impôts (DGI) — RDC", pageWidth - margin, cursorY + 9, { align: 'right' });
+  }
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(10);
   doc.setTextColor(33, 37, 41);
@@ -342,7 +354,7 @@ async function generateA4InvoicePDF(
   if (selectedServices.length > 0) {
     const tableData = selectedServices.map(service => {
       const priceTTC = Number(service.price);
-      const priceHT = priceTTC / (1 + TVA_RATE);
+      const priceHT = priceTTC / (1 + tvaRate);
       return [
         service.name,
         '1',
@@ -374,7 +386,7 @@ async function generateA4InvoicePDF(
   const subtotalTTC = selectedServices.reduce((sum, s) => sum + Number(s.price), 0);
   const discountTTC = Number(invoice.discount_amount_usd || 0);
   const totalTTC = subtotalTTC - discountTTC;
-  const totalHT = totalTTC / (1 + TVA_RATE);
+  const totalHT = totalTTC / (1 + tvaRate);
   const tvaAmount = totalTTC - totalHT;
 
   const totalsX = pageWidth - margin - 80;
@@ -395,7 +407,7 @@ async function generateA4InvoicePDF(
     writeRow('Remise commerciale', `-${formatBilingual(discountTTC, exchangeRate)}`);
   }
   writeRow('Base HT', formatBilingual(totalHT, exchangeRate));
-  writeRow('TVA 16%', formatBilingual(tvaAmount, exchangeRate));
+  writeRow(tplCfg.tva_label, formatBilingual(tvaAmount, exchangeRate));
 
   doc.setFillColor(0, 51, 102);
   doc.rect(totalsX - 3, cursorY - 4, valueX - totalsX + 6, 8, 'F');
@@ -431,18 +443,22 @@ async function generateA4InvoicePDF(
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(6.5);
   doc.setTextColor(80, 80, 80);
+  const tvaPctLabel = `${(tvaRate * 100).toFixed(tvaRate * 100 % 1 === 0 ? 0 : 2)}%`;
   const mentions = [
-    `Facture normalisée émise conformément à la réglementation fiscale en vigueur en République Démocratique du Congo.`,
+    tplCfg.show_dgi_mention
+      ? `Facture normalisée émise conformément à la réglementation fiscale en vigueur en République Démocratique du Congo.`
+      : `Facture émise par ${company.legal_name}.`,
     `Émetteur : ${company.legal_name} — NIF ${company.nif} — RCCM ${company.rccm} — ID-NAT ${company.id_nat} — ${TAX_REGIME_LABELS[company.tax_regime] || company.tax_regime}.`,
-    `TVA appliquée au taux légal de 16%. Tout règlement effectué vaut acceptation des conditions générales de vente.`,
+    `TVA appliquée au taux de ${tvaPctLabel}. ${tplCfg.payment_terms || 'Tout règlement effectué vaut acceptation des conditions générales de vente.'}`,
     invoice.dgi_validation_code ? `Code de validation DGI : ${invoice.dgi_validation_code}` : `Code de vérification : ${verificationCode || invoice.invoice_number}`,
-  ];
+    tplCfg.footer_text,
+  ].filter(Boolean) as string[];
   mentions.forEach(m => {
     const lines = doc.splitTextToSize(m, pageWidth - 2 * margin - 22);
     lines.forEach((line: string) => { doc.text(line, margin, cursorY); cursorY += 2.8; });
   });
 
-  if (verifyUrl) {
+  if (verifyUrl && tplCfg.show_verification_qr) {
     try {
       const qrDataUrl = await QRCode.toDataURL(verifyUrl, { margin: 0, width: 80 });
       doc.addImage(qrDataUrl, 'PNG', pageWidth - margin - 18, pageHeight - 32, 16, 16);

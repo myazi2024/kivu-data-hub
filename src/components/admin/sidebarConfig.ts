@@ -75,6 +75,7 @@ export const menuItems: AdminMenuSection[] = [
       { icon: Layers, label: 'Intégration Services', value: 'payment-integration', badge: null, keywords: ['api', 'webhook', 'connexion', 'service'] },
       { icon: Layers, label: 'Vue Unifiée', value: 'unified-payments', badge: null, keywords: ['unifié', 'agrégé', 'tous paiements', 'sources'] },
       { icon: Receipt, label: 'Config Facturation', value: 'billing-config', badge: null, keywords: ['facture', 'devis', 'paramètres', 'template'] },
+      { icon: FileText, label: 'Modèle de facture', value: 'invoice-template', badge: null, keywords: ['template', 'modèle', 'facture', 'identité', 'logo', 'tva', 'rccm', 'dgi', 'mise en page', 'aperçu', 'pdf'] },
       { icon: ArrowLeftRight, label: 'Devises / Taux', value: 'currency-config', badge: null, keywords: ['dollar', 'franc', 'euro', 'change', 'conversion', 'monnaie'] },
     ],
   },
