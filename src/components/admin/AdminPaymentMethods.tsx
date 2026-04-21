@@ -274,6 +274,8 @@ const AdminPaymentMethods: React.FC = () => {
           secretKey: p.secretKey,
         },
         display_order: i,
+        fee_percent: Number(p.fee_percent) || 0,
+        fee_fixed_usd: Number(p.fee_fixed_usd) || 0,
       }));
 
       const bcProviders: PaymentProvider[] = [
@@ -290,6 +292,8 @@ const AdminPaymentMethods: React.FC = () => {
             webhookSecret: bankCard.webhookSecret,
           },
           display_order: 0,
+          fee_percent: Number(bankCard.fee_percent) || 0,
+          fee_fixed_usd: Number(bankCard.fee_fixed_usd) || 0,
         },
       ];
 
