@@ -63,7 +63,11 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
 
   const [hoveredProvince, setHoveredProvince] = useState<string | null>(null);
   const [mapInstance, setMapInstance] = useState<any>(null);
-  const [activeMobilePanel, setActiveMobilePanel] = useState<'map' | 'details' | 'analytics'>('map');
+  const [activeMobilePanel, setActiveMobilePanel] = useState<'map' | 'analytics'>('map');
+  const [hintShown, setHintShown] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return true;
+    try { return localStorage.getItem('drc-map-swipe-hint-shown') === '1'; } catch { return true; }
+  });
   const [isMapZoomed, setIsMapZoomed] = useState(false);
   
   const [isFullscreen, setIsFullscreen] = useState(false);
