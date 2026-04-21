@@ -338,8 +338,8 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                         ? `Territoires de la province de ${selectedProvince.name}`
                         : selectedSectionType === 'rurale'
                         ? 'Carte des 164 territoires de la RDC'
-                        : selectedVille && selectedCommune && selectedVille.toLowerCase() === 'goma'
-                        ? `Découpage des quartiers de la commune de ${selectedCommune} — ${selectedVille}`
+                        : selectedVille && selectedCommune
+                        ? `Découpage des quartiers de la commune de ${selectedCommune} — ${selectedVille}${selectedVille.toLowerCase() !== 'goma' ? ' (source OSM/HDX)' : ''}`
                         : selectedVille
                         ? `Découpage communal de la ville de ${selectedVille}`
                         : selectedProvince
