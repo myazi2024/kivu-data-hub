@@ -283,6 +283,7 @@ async function generateA4InvoicePDF(
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(14);
   doc.setTextColor(headerRgb[0], headerRgb[1], headerRgb[2]);
+  const titleLabel = tplCfg.show_dgi_mention ? "FACTURE NORMALISÉE" : "FACTURE";
   doc.text(titleLabel, pageWidth - margin, cursorY + 5, { align: 'right' });
   doc.setFontSize(8);
   doc.setFont('helvetica', 'normal');
