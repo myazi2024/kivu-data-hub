@@ -73,6 +73,9 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [forcedTab, setForcedTab] = useState<string | null>(null);
   const mapCardRef = React.useRef<HTMLDivElement>(null);
+  const analyticsColRef = React.useRef<HTMLDivElement>(null);
+  const analyticsTitleRef = React.useRef<HTMLSpanElement>(null);
+  const mapTitleRef = React.useRef<HTMLHeadingElement>(null);
 
   const isMobile = useIsMobile();
   const prefersReducedMotion = typeof window !== 'undefined'
