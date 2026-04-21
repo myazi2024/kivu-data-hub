@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, FileDown, RefreshCw, Info } from 'lucide-react';
+import { Loader2, FileDown, RefreshCw, Info, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
 import { useInvoiceTemplateConfig, type InvoiceTemplateConfig } from '@/hooks/useInvoiceTemplateConfig';
 import { useCompanyLegalInfo, type CompanyLegalInfo, TAX_REGIME_LABELS } from '@/hooks/useCompanyLegalInfo';
@@ -25,19 +25,22 @@ interface SimVariants {
   showBank: boolean;
 }
 
-const PAYMENT_METHOD_LABELS: Record<string, string> = {
-  mobile_money: 'Mobile Money',
-  card: 'Carte bancaire',
-  bank_transfer: 'Virement bancaire',
+const STATUS_LABELS: Record<StatusVariant, string> = {
+  paid: 'PAYÉE',
+  pending: 'EN ATTENTE',
+  failed: 'ÉCHEC',
 };
 
-const STATUS_LABELS: Record<StatusVariant, string> = {
-  paid: 'Payée',
-  pending: 'En attente',
-  failed: 'Échec',
+const STATUS_COLORS: Record<StatusVariant, string> = {
+  paid: '#27ae60',
+  pending: '#e74c3c',
+  failed: '#c0392b',
 };
 
 const SAMPLE_TOTAL = 50;
+const SAMPLE_EXCHANGE_RATE = 2800;
+const SAMPLE_DGI_CODE = 'DGI-SAMPLE-2025-0001';
+const SAMPLE_VERIFICATION_CODE = 'VER-PREVIEW-XXXX';
 
 const buildSampleInvoice = (prefix: string, v: SimVariants): CadastralInvoice => {
   const discountAmount = (SAMPLE_TOTAL * v.discountPct) / 100;
@@ -65,9 +68,10 @@ const buildSampleInvoice = (prefix: string, v: SimVariants): CadastralInvoice =>
     updated_at: new Date().toISOString(),
     paid_at: v.status === 'paid' ? new Date().toISOString() : null,
     currency_code: 'USD',
-    exchange_rate_used: 2800,
+    exchange_rate_used: SAMPLE_EXCHANGE_RATE,
     discount_amount_usd: discountAmount,
     original_amount_usd: SAMPLE_TOTAL,
+    dgi_validation_code: SAMPLE_DGI_CODE,
   };
 };
 
@@ -76,17 +80,13 @@ const buildSampleServices = (): CadastralService[] => ([
   { id: 'svc-preview-2', service_id: 'svc-preview-2', name: 'Historique de propriété', description: '', price: 20, category: 'cadastre', icon_name: 'history', is_active: true } as any,
 ]);
 
-const fmt = (n: number) => n.toFixed(2).replace('.', ',');
+const fmt = (n: number) => n.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const fmtBilingual = (usd: number, rate: number) => rate > 1 ? `${fmt(usd)} USD  /  ${fmt(usd * rate)} CDF` : `${fmt(usd)} USD`;
 
-const StatusBadge = ({ status }: { status: StatusVariant }) => {
-  const colors: Record<StatusVariant, string> = {
-    paid: '#27ae60',
-    pending: '#e67e22',
-    failed: '#c0392b',
-  };
-  return <span style={{ color: colors[status], fontWeight: 'bold' }}>{STATUS_LABELS[status].toUpperCase()}</span>;
-};
-
+/**
+ * APERÇU A4 — miroir visuel exact du PDF généré par `generateA4InvoicePDF` (src/lib/pdf.ts).
+ * Source de vérité : le PDF. Toute évolution doit être faite côté PDF puis reflétée ici.
+ */
 const InvoicePreviewA4 = ({ config, info, variants }: { config: InvoiceTemplateConfig; info: CompanyLegalInfo; variants: SimVariants }) => {
   const subtotal = SAMPLE_TOTAL;
   const discount = (subtotal * variants.discountPct) / 100;
@@ -95,156 +95,195 @@ const InvoicePreviewA4 = ({ config, info, variants }: { config: InvoiceTemplateC
   const tva = total - baseHT;
   const dateStr = new Date().toLocaleDateString('fr-FR');
   const isCompany = variants.clientType === 'company';
-  const showBank = variants.showBank && (info.bank_name || info.bank_account);
+  const hasBank = !!(info.bank_name || info.bank_account || info.bank_swift);
+  const showBank = variants.showBank && hasBank;
+  const services = [
+    { name: 'Fiche cadastrale complète', priceTTC: 30 },
+    { name: 'Historique de propriété', priceTTC: 20 },
+  ];
+  const tvaPctLabel = `${(config.tva_rate * 100).toFixed(config.tva_rate * 100 % 1 === 0 ? 0 : 2)}%`;
 
   return (
     <div
-      className="bg-white text-black mx-auto shadow-2xl border border-border"
-      style={{ width: '210mm', minHeight: '297mm', padding: '15mm', fontFamily: 'Helvetica, Arial, sans-serif', fontSize: '10pt' }}
+      className="bg-white text-black mx-auto shadow-2xl border border-border relative"
+      style={{ width: '210mm', minHeight: '297mm', padding: '18mm', fontFamily: 'Helvetica, Arial, sans-serif', fontSize: '8.5pt', color: '#212529' }}
     >
-      {/* Header */}
-      <div style={{ backgroundColor: config.header_color, color: '#fff', padding: '12px 16px', borderRadius: '4px' }}>
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex items-start gap-3">
-            {info.logo_url && (
-              <img src={info.logo_url} alt="Logo" style={{ width: 56, height: 56, objectFit: 'contain', background: '#fff', borderRadius: 4, padding: 2 }} />
-            )}
-            <div style={{ fontSize: '9pt', lineHeight: 1.4 }}>
-              <p style={{ fontSize: '12pt', fontWeight: 'bold', margin: 0 }}>{info.legal_name}</p>
-              {info.legal_form && <p style={{ margin: 0, opacity: 0.9 }}>{info.legal_form}{info.capital_amount ? ` • Capital : ${info.capital_amount}` : ''}</p>}
-              <p style={{ margin: 0, opacity: 0.9 }}>{info.address_line1}{info.address_line2 ? `, ${info.address_line2}` : ''}</p>
-              <p style={{ margin: 0, opacity: 0.9 }}>{info.city}, {info.province}, {info.country}</p>
-              {(info.phone || info.email) && <p style={{ margin: 0, opacity: 0.9 }}>{info.phone}{info.phone && info.email ? ' • ' : ''}{info.email}</p>}
-              {info.website && <p style={{ margin: 0, opacity: 0.9 }}>{info.website}</p>}
-            </div>
-          </div>
-          <div className="text-right" style={{ fontSize: '9pt' }}>
-            <p style={{ fontSize: '14pt', fontWeight: 'bold', margin: 0 }}>{config.show_dgi_mention ? 'FACTURE NORMALISÉE' : 'FACTURE'}</p>
-            <p style={{ margin: '4px 0 0' }}>N° {config.invoice_number_prefix}-PREVIEW-0001</p>
-            <p style={{ margin: 0, opacity: 0.9 }}>Émise le {dateStr}</p>
-            {variants.status === 'paid' && <p style={{ margin: 0, opacity: 0.9 }}>Payée le {dateStr}</p>}
-          </div>
-        </div>
-      </div>
-
-      {/* Identifiants légaux */}
-      <div style={{ marginTop: 12, padding: '6px 10px', background: '#f3f4f6', borderRadius: 4, fontSize: '8.5pt', display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-        <span><strong>RCCM:</strong> {info.rccm}</span>
-        <span><strong>ID Nat:</strong> {info.id_nat}</span>
-        <span><strong>NIF:</strong> {info.nif}</span>
-        {info.tva_number && <span><strong>N° TVA:</strong> {info.tva_number}</span>}
-      </div>
-
-      {/* Client + Référence */}
-      <div className="grid grid-cols-2 gap-6" style={{ marginTop: 16 }}>
-        <div>
-          <p style={{ fontSize: '8pt', fontWeight: 'bold', textTransform: 'uppercase', color: '#6b7280', margin: 0 }}>Facturé à</p>
-          <p style={{ margin: '4px 0 0', fontWeight: 600 }}>{isCompany ? 'SARL Mukendi & Frères' : 'Jean Mukendi'}</p>
-          <p style={{ margin: 0, color: '#4b5563' }}>client@example.cd</p>
-          <p style={{ margin: 0, color: '#4b5563' }}>Avenue de la Paix 12, Kinshasa</p>
-          {isCompany ? (
-            <>
-              <p style={{ margin: 0, color: '#4b5563' }}>NIF: A1234567B</p>
-              <p style={{ margin: 0, color: '#4b5563' }}>RCCM: CD/KIN/RCCM/24-B-12345</p>
-              <p style={{ margin: 0, color: '#4b5563' }}>Régime: {TAX_REGIME_LABELS['reel']}</p>
-            </>
-          ) : (
-            <p style={{ margin: 0, color: '#4b5563' }}>ID National: 01-A123-B456789</p>
+      {/* ===== EN-TÊTE BICOLONNE (miroir PDF) ===== */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16 }}>
+        {/* Émetteur (gauche) */}
+        <div style={{ display: 'flex', gap: 8, flex: 1 }}>
+          {info.logo_url && (
+            <img src={info.logo_url} alt="" style={{ width: 53, height: 53, objectFit: 'contain' }} />
           )}
+          <div style={{ fontSize: '7.5pt', lineHeight: 1.4, color: '#505050' }}>
+            <p style={{ margin: 0, fontSize: '13pt', fontWeight: 'bold', color: '#212529' }}>{info.legal_name}</p>
+            <p style={{ margin: 0 }}>{info.address_line1}{info.address_line2 ? `, ${info.address_line2}` : ''}</p>
+            <p style={{ margin: 0 }}>{info.city}, {info.province}, {info.country}</p>
+            <p style={{ margin: 0 }}>NIF: {info.nif}  •  RCCM: {info.rccm}  •  ID-NAT: {info.id_nat}</p>
+            {info.tva_number && <p style={{ margin: 0 }}>N° TVA: {info.tva_number}  •  Régime: {TAX_REGIME_LABELS[info.tax_regime] || info.tax_regime}</p>}
+            {(info.phone || info.email) && <p style={{ margin: 0 }}>{info.phone}{info.phone && info.email ? '  •  ' : ''}{info.email}</p>}
+          </div>
         </div>
-        <div className="text-right">
-          <p style={{ fontSize: '8pt', fontWeight: 'bold', textTransform: 'uppercase', color: '#6b7280', margin: 0 }}>Référence</p>
-          <p style={{ margin: '4px 0 0' }}>Parcelle: <strong>KIN/GOM/2025/0001</strong></p>
-          <p style={{ margin: 0, color: '#4b5563' }}>Zone: Gombe</p>
-          <p style={{ margin: 0, color: '#4b5563' }}>Mode: {PAYMENT_METHOD_LABELS[variants.paymentMethod] || variants.paymentMethod}</p>
-          <p style={{ margin: '4px 0 0' }}>Statut: <StatusBadge status={variants.status} /></p>
+        {/* Titre + N° (droite) */}
+        <div style={{ textAlign: 'right', minWidth: 200 }}>
+          <p style={{ margin: 0, fontSize: '14pt', fontWeight: 'bold', color: config.header_color }}>
+            {config.show_dgi_mention ? 'FACTURE NORMALISÉE' : 'FACTURE'}
+          </p>
+          {config.show_dgi_mention && (
+            <p style={{ margin: '2px 0 0', fontSize: '8pt', color: '#505050' }}>Direction Générale des Impôts (DGI) — RDC</p>
+          )}
+          <p style={{ margin: '6px 0 0', fontSize: '10pt', fontWeight: 'bold', color: '#212529' }}>N° {config.invoice_number_prefix}-PREVIEW-0001</p>
+          <p style={{ margin: '2px 0 0', fontSize: '8pt' }}>Date facturation: {dateStr}</p>
+          {variants.status === 'paid' && <p style={{ margin: '2px 0 0', fontSize: '8pt' }}>Date paiement: {dateStr}</p>}
         </div>
       </div>
 
-      {/* Tableau prestations */}
-      <table style={{ width: '100%', marginTop: 16, borderCollapse: 'collapse', fontSize: '9.5pt' }}>
+      {/* Ligne séparatrice header_color */}
+      <div style={{ marginTop: 6, height: 1, background: config.header_color }} />
+
+      {/* ===== BLOC CLIENT + RÉFÉRENCE ===== */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, marginTop: 8 }}>
+        <div style={{ flex: 1 }}>
+          <p style={{ margin: 0, fontSize: '9pt', fontWeight: 'bold', color: config.header_color }}>FACTURÉ À</p>
+          <p style={{ margin: '4px 0 0', fontSize: '8.5pt', fontWeight: 600 }}>{isCompany ? 'SARL Mukendi & Frères' : 'Jean Mukendi'}</p>
+          <div style={{ fontSize: '7.5pt', color: '#505050', lineHeight: 1.5 }}>
+            <p style={{ margin: 0 }}>Avenue de la Paix 12, Kinshasa</p>
+            <p style={{ margin: 0 }}>Email: client@example.cd</p>
+            {isCompany ? (
+              <>
+                <p style={{ margin: 0 }}>NIF: A1234567B</p>
+                <p style={{ margin: 0 }}>RCCM: CD/KIN/RCCM/24-B-12345</p>
+                <p style={{ margin: 0 }}>Régime: {TAX_REGIME_LABELS['reel']}</p>
+              </>
+            ) : (
+              <p style={{ margin: 0 }}>ID National: 01-A123-B456789</p>
+            )}
+          </div>
+        </div>
+        <div style={{ textAlign: 'right', minWidth: 160 }}>
+          <p style={{ margin: 0, fontSize: '9pt', fontWeight: 'bold', color: config.header_color }}>RÉFÉRENCE</p>
+          <p style={{ margin: '4px 0 0', fontSize: '8pt' }}>Parcelle: KIN/GOM/2025/0001</p>
+          <p style={{ margin: 0, fontSize: '8pt' }}>Zone: Gombe</p>
+          <p style={{ margin: '4px 0 0', fontSize: '8pt', fontWeight: 'bold', color: STATUS_COLORS[variants.status] }}>
+            Statut: {STATUS_LABELS[variants.status]}
+          </p>
+        </div>
+      </div>
+
+      {/* ===== TABLEAU PRESTATIONS (colonnes alignées PDF) ===== */}
+      <table style={{ width: '100%', marginTop: 12, borderCollapse: 'collapse', fontSize: '8.5pt' }}>
         <thead>
           <tr style={{ backgroundColor: config.secondary_color, color: '#fff' }}>
-            <th style={{ textAlign: 'left', padding: '8px 10px' }}>Désignation</th>
-            <th style={{ textAlign: 'center', padding: '8px 10px', width: 60 }}>Qté</th>
-            <th style={{ textAlign: 'right', padding: '8px 10px', width: 100 }}>P.U. (USD)</th>
-            <th style={{ textAlign: 'right', padding: '8px 10px', width: 100 }}>Montant</th>
+            <th style={{ textAlign: 'left', padding: '4px 6px', width: '50%' }}>Désignation</th>
+            <th style={{ textAlign: 'center', padding: '4px 6px', width: '10%' }}>Qté</th>
+            <th style={{ textAlign: 'right', padding: '4px 6px', width: '20%' }}>Prix unitaire HT</th>
+            <th style={{ textAlign: 'right', padding: '4px 6px', width: '20%' }}>Total TTC</th>
           </tr>
         </thead>
         <tbody>
-          <tr style={{ borderBottom: `1px solid ${config.secondary_color}33` }}>
-            <td style={{ padding: '8px 10px' }}>Fiche cadastrale complète</td>
-            <td style={{ padding: '8px 10px', textAlign: 'center' }}>1</td>
-            <td style={{ padding: '8px 10px', textAlign: 'right' }}>30,00</td>
-            <td style={{ padding: '8px 10px', textAlign: 'right' }}>30,00</td>
-          </tr>
-          <tr style={{ borderBottom: `1px solid ${config.secondary_color}33` }}>
-            <td style={{ padding: '8px 10px' }}>Historique de propriété</td>
-            <td style={{ padding: '8px 10px', textAlign: 'center' }}>1</td>
-            <td style={{ padding: '8px 10px', textAlign: 'right' }}>20,00</td>
-            <td style={{ padding: '8px 10px', textAlign: 'right' }}>20,00</td>
-          </tr>
+          {services.map((s, i) => {
+            const ht = s.priceTTC / (1 + config.tva_rate);
+            return (
+              <tr key={i} style={{ borderBottom: '1px solid #dcdcdc' }}>
+                <td style={{ padding: '4px 6px' }}>{s.name}</td>
+                <td style={{ padding: '4px 6px', textAlign: 'center' }}>1</td>
+                <td style={{ padding: '4px 6px', textAlign: 'right' }}>{fmt(ht)} USD</td>
+                <td style={{ padding: '4px 6px', textAlign: 'right' }}>{fmt(s.priceTTC)} USD</td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
 
-      {/* Totaux */}
-      <div style={{ marginTop: 12, marginLeft: 'auto', width: '50%', fontSize: '9.5pt' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0' }}><span>Sous-total</span><span>{fmt(subtotal)} USD</span></div>
+      {/* ===== TOTAUX (alignés droite, miroir PDF) ===== */}
+      <div style={{ marginTop: 8, marginLeft: 'auto', width: '55%', fontSize: '9pt' }}>
         {discount > 0 && (
-          <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', color: '#c0392b' }}>
-            <span>Remise commerciale ({variants.discountPct}%)</span><span>-{fmt(discount)} USD</span>
-          </div>
+          <>
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0' }}>
+              <span>Sous-total (TTC)</span><span>{fmtBilingual(subtotal, SAMPLE_EXCHANGE_RATE)}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0' }}>
+              <span>Remise commerciale</span><span>-{fmtBilingual(discount, SAMPLE_EXCHANGE_RATE)}</span>
+            </div>
+          </>
         )}
-        <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', borderTop: '1px solid #e5e7eb' }}><span>Base HT</span><span>{fmt(baseHT)} USD</span></div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0' }}><span>{config.tva_label}</span><span>{fmt(tva)} USD</span></div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 10px', marginTop: 4, background: config.header_color, color: '#fff', fontWeight: 'bold', borderRadius: 3 }}>
-          <span>TOTAL TTC</span><span>{fmt(total)} USD</span>
+        <div style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0' }}>
+          <span>Base HT</span><span>{fmtBilingual(baseHT, SAMPLE_EXCHANGE_RATE)}</span>
         </div>
-        <p style={{ margin: '4px 0 0', fontSize: '7.5pt', color: '#6b7280', textAlign: 'right' }}>Équivalent : {fmt(total * 2800)} CDF (taux 2 800)</p>
+        <div style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0' }}>
+          <span>{config.tva_label}</span><span>{fmtBilingual(tva, SAMPLE_EXCHANGE_RATE)}</span>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 8px', marginTop: 2, background: config.header_color, color: '#fff', fontWeight: 'bold', fontSize: '10pt' }}>
+          <span>TOTAL TTC</span><span>{fmtBilingual(total, SAMPLE_EXCHANGE_RATE)}</span>
+        </div>
       </div>
 
-      {/* Mentions DGI — placeholder explicite */}
-      {config.show_dgi_mention && (
-        <div style={{ marginTop: 16, padding: 8, border: '1px dashed #9ca3af', borderRadius: 4, fontSize: '8pt', color: '#374151' }}>
-          <p style={{ margin: 0 }}><strong>Mention DGI :</strong> Facture normalisée conforme à la réglementation fiscale RDC.</p>
-          <p style={{ margin: '4px 0 0', padding: '4px 6px', background: '#fef3c7', color: '#92400e', borderRadius: 3, fontStyle: 'italic' }}>
-            Le code de validation DGI réel sera injecté lors de la génération de chaque facture.
-          </p>
-        </div>
+      {SAMPLE_EXCHANGE_RATE > 1 && (
+        <p style={{ margin: '6px 0 0', fontSize: '7pt', fontStyle: 'italic', color: '#212529' }}>
+          Taux de change appliqué : 1 USD = {SAMPLE_EXCHANGE_RATE} CDF (figé à l'émission)
+        </p>
       )}
 
-      {/* Conditions + banque + QR */}
-      <div className="grid grid-cols-3 gap-4" style={{ marginTop: 16, fontSize: '8pt' }}>
-        <div style={{ gridColumn: 'span 2' }}>
-          <p style={{ fontWeight: 'bold', margin: 0 }}>Conditions de paiement</p>
-          <p style={{ margin: '2px 0 8px', color: '#4b5563' }}>{config.payment_terms}</p>
-          {showBank && (
-            <>
-              <p style={{ fontWeight: 'bold', margin: 0 }}>Coordonnées bancaires</p>
-              <p style={{ margin: '2px 0', color: '#4b5563' }}>
-                {info.bank_name && <>Banque : {info.bank_name}<br /></>}
-                {info.bank_account && <>IBAN : {info.bank_account}<br /></>}
-                {info.bank_swift && <>SWIFT : {info.bank_swift}</>}
-              </p>
-            </>
-          )}
+      {/* ===== CONDITIONS + COORDONNÉES BANCAIRES (miroir PDF) ===== */}
+      {(config.payment_terms || showBank) && (
+        <>
+          <div style={{ marginTop: 10, height: 1, background: '#dcdcdc' }} />
+          <div style={{ display: 'flex', gap: 16, marginTop: 6 }}>
+            {config.payment_terms && (
+              <div style={{ flex: 1 }}>
+                <p style={{ margin: 0, fontSize: '8pt', fontWeight: 'bold', color: config.header_color }}>CONDITIONS DE PAIEMENT</p>
+                <p style={{ margin: '2px 0 0', fontSize: '7.5pt', color: '#505050' }}>{config.payment_terms}</p>
+              </div>
+            )}
+            {showBank && (
+              <div style={{ flex: 1 }}>
+                <p style={{ margin: 0, fontSize: '8pt', fontWeight: 'bold', color: config.header_color }}>COORDONNÉES BANCAIRES</p>
+                <div style={{ fontSize: '7.5pt', color: '#505050', lineHeight: 1.5 }}>
+                  {info.bank_name && <p style={{ margin: 0 }}>Banque : {info.bank_name}</p>}
+                  {info.bank_account && <p style={{ margin: 0 }}>IBAN : {info.bank_account}</p>}
+                  {info.bank_swift && <p style={{ margin: 0 }}>SWIFT : {info.bank_swift}</p>}
+                </div>
+              </div>
+            )}
+          </div>
+        </>
+      )}
+
+      {/* ===== MENTIONS LÉGALES DGI (5 lignes texte réel) ===== */}
+      <div style={{ position: 'absolute', bottom: '18mm', left: '18mm', right: '18mm' }}>
+        <div style={{ height: 1, background: '#c8c8c8' }} />
+        <p style={{ margin: '4px 0 2px', fontSize: '7.5pt', fontWeight: 'bold', color: config.header_color }}>MENTIONS LÉGALES (DGI)</p>
+        <div style={{ fontSize: '6.5pt', color: '#505050', lineHeight: 1.5, paddingRight: 80 }}>
+          <p style={{ margin: 0 }}>
+            {config.show_dgi_mention
+              ? 'Facture normalisée émise conformément à la réglementation fiscale en vigueur en République Démocratique du Congo.'
+              : `Facture émise par ${info.legal_name}.`}
+          </p>
+          <p style={{ margin: 0 }}>
+            Émetteur : {info.legal_name} — NIF {info.nif} — RCCM {info.rccm} — ID-NAT {info.id_nat} — {TAX_REGIME_LABELS[info.tax_regime] || info.tax_regime}.
+          </p>
+          <p style={{ margin: 0 }}>
+            TVA appliquée au taux de {tvaPctLabel}. {config.payment_terms || 'Tout règlement effectué vaut acceptation des conditions générales de vente.'}
+          </p>
+          <p style={{ margin: 0 }}>Code de validation DGI : {SAMPLE_DGI_CODE}</p>
+          <p style={{ margin: 0 }}>{config.footer_text}</p>
         </div>
+
+        {/* QR vérification bas-droite (16mm équiv ≈ 60px) */}
         {config.show_verification_qr && (
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ width: 80, height: 80, margin: '0 auto', background: 'repeating-conic-gradient(#000 0% 25%, #fff 0% 50%) 50% / 12px 12px', border: '1px solid #000' }} />
-            <p style={{ margin: '4px 0 0', fontSize: '7pt', color: '#6b7280' }}>QR de vérification (placeholder)</p>
+          <div style={{ position: 'absolute', right: 0, bottom: 0, textAlign: 'center' }}>
+            <div style={{ width: 60, height: 60, background: 'repeating-conic-gradient(#000 0% 25%, #fff 0% 50%) 50% / 10px 10px', border: '1px solid #000' }} />
+            <p style={{ margin: '2px 0 0', fontSize: '6pt', fontStyle: 'italic', color: '#505050' }}>Vérifier l'authenticité</p>
           </div>
         )}
-      </div>
-
-      {/* Footer */}
-      <div style={{ marginTop: 24, paddingTop: 8, borderTop: '1px solid #e5e7eb', fontSize: '7.5pt', color: '#6b7280', textAlign: 'center', fontStyle: 'italic' }}>
-        {config.footer_text}
       </div>
     </div>
   );
 };
 
+/**
+ * APERÇU MINI — miroir visuel exact du PDF `generateMiniInvoicePDF`.
+ */
 const InvoicePreviewMini = ({ config, info, variants }: { config: InvoiceTemplateConfig; info: CompanyLegalInfo; variants: SimVariants }) => {
   const subtotal = SAMPLE_TOTAL;
   const discount = (subtotal * variants.discountPct) / 100;
@@ -253,65 +292,70 @@ const InvoicePreviewMini = ({ config, info, variants }: { config: InvoiceTemplat
   const tva = total - baseHT;
   const dateStr = new Date().toLocaleDateString('fr-FR');
   const isCompany = variants.clientType === 'company';
+  const services = [
+    { name: 'Fiche cadastrale complète', price: 30 },
+    { name: 'Historique de propriété', price: 20 },
+  ];
 
   return (
     <div
       className="bg-white text-black mx-auto shadow-2xl border border-border"
-      style={{ width: 280, padding: 12, fontFamily: 'monospace', fontSize: '10px', lineHeight: 1.4 }}
+      style={{ width: 280, padding: 12, fontFamily: 'Helvetica, Arial, sans-serif', fontSize: '8.5px', color: '#000', lineHeight: 1.5 }}
     >
-      <div style={{ textAlign: 'center', borderBottom: '1px dashed #000', paddingBottom: 8 }}>
-        {info.logo_url && <img src={info.logo_url} alt="" style={{ width: 40, height: 40, objectFit: 'contain', margin: '0 auto 4px' }} />}
+      {/* En-tête centré (logo + nom + mention + identifiants) — pas de séparateur tirets, fidèle au PDF */}
+      <div style={{ textAlign: 'center' }}>
+        {info.logo_url && <img src={info.logo_url} alt="" style={{ width: 22, height: 22, objectFit: 'contain', margin: '0 auto 2px' }} />}
         <p style={{ margin: 0, fontWeight: 'bold', fontSize: '11px' }}>{info.legal_name}</p>
-        <p style={{ margin: 0 }}>{info.address_line1}</p>
-        <p style={{ margin: 0 }}>{info.city}</p>
-        <p style={{ margin: 0 }}>NIF: {info.nif}</p>
-        <p style={{ margin: 0 }}>RCCM: {info.rccm}</p>
+        {config.show_dgi_mention && <p style={{ margin: 0, fontWeight: 'bold', fontSize: '8px' }}>FACTURE NORMALISÉE</p>}
+        <p style={{ margin: 0, fontSize: '6px' }}>NIF: {info.nif} • RCCM: {info.rccm}</p>
       </div>
 
-      <div style={{ textAlign: 'center', padding: '6px 0', borderBottom: '1px dashed #000' }}>
-        <p style={{ margin: 0, fontWeight: 'bold' }}>{config.show_dgi_mention ? 'FACTURE NORMALISÉE' : 'FACTURE'}</p>
-        <p style={{ margin: 0 }}>N° {config.invoice_number_prefix}-PREVIEW-0001</p>
-        <p style={{ margin: 0 }}>{dateStr}</p>
-        <p style={{ margin: 0 }}>Statut : <StatusBadge status={variants.status} /></p>
+      {/* Infos facture (alignées gauche, sans séparateur visuel — comme PDF) */}
+      <div style={{ marginTop: 6, fontSize: '7px' }}>
+        <p style={{ margin: 0 }}>N°: {config.invoice_number_prefix}-PREVIEW-0001</p>
+        <p style={{ margin: 0 }}>Date: {dateStr}</p>
+        <p style={{ margin: 0 }}>Parcelle: KIN/GOM/2025/0001</p>
+        <p style={{ margin: 0 }}>Client: {isCompany ? 'SARL Mukendi & Frères' : 'Jean Mukendi'}</p>
+        {isCompany && <p style={{ margin: 0 }}>NIF Client: A1234567B</p>}
+        <p style={{ margin: 0 }}>Statut: {variants.status === 'paid' ? 'Payée' : variants.status === 'pending' ? 'En attente' : 'Échec'}</p>
       </div>
 
-      <div style={{ padding: '6px 0', borderBottom: '1px dashed #000' }}>
-        <p style={{ margin: 0 }}>Client : {isCompany ? 'SARL Mukendi & Frères' : 'Jean Mukendi'}</p>
-        {isCompany && <p style={{ margin: 0 }}>NIF Client : A1234567B</p>}
-        <p style={{ margin: 0 }}>Parcelle : KIN/GOM/2025/0001</p>
-        <p style={{ margin: 0 }}>Mode : {PAYMENT_METHOD_LABELS[variants.paymentMethod] || variants.paymentMethod}</p>
+      {/* Prestations (TTC) */}
+      <div style={{ marginTop: 6, fontSize: '7px' }}>
+        <p style={{ margin: 0, fontWeight: 'bold' }}>Prestations (TTC)</p>
+        {services.map((s, i) => (
+          <div key={i} style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <span>{s.name.substring(0, 26)}</span><span>{s.price.toFixed(2)}$</span>
+          </div>
+        ))}
       </div>
 
-      <div style={{ padding: '6px 0', borderBottom: '1px dashed #000' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Fiche cadastrale</span><span>30,00</span></div>
-        <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Hist. propriété</span><span>20,00</span></div>
-      </div>
-
-      <div style={{ padding: '6px 0', borderBottom: '1px dashed #000' }}>
+      {/* Décomposition fiscale avec ligne séparatrice (miroir PDF) */}
+      <div style={{ marginTop: 4, paddingTop: 4, borderTop: '1px solid #b4b4b4', fontSize: '7px' }}>
         {discount > 0 && (
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-            <span>Remise ({variants.discountPct}%)</span><span>-{fmt(discount)}</span>
+            <span>Remise:</span><span>-{discount.toFixed(2)}$</span>
           </div>
         )}
-        <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Base HT</span><span>{fmt(baseHT)}</span></div>
-        <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>{config.tva_label}</span><span>{fmt(tva)}</span></div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '12px', marginTop: 4 }}><span>TOTAL</span><span>{fmt(total)} USD</span></div>
+        <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Base HT:</span><span>{baseHT.toFixed(2)}$</span></div>
+        <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>{config.tva_label}:</span><span>{tva.toFixed(2)}$</span></div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '9px', marginTop: 2 }}>
+          <span>TOTAL TTC:</span><span>{total.toFixed(2)}$</span>
+        </div>
       </div>
 
-      {config.show_dgi_mention && (
-        <p style={{ margin: '6px 0 0', textAlign: 'center', fontSize: '9px', padding: '3px', background: '#fef3c7', color: '#92400e', fontStyle: 'italic' }}>
-          Code DGI ‒ injecté à la génération
+      {/* Équivalent CDF centré */}
+      {SAMPLE_EXCHANGE_RATE > 1 && (
+        <p style={{ margin: '4px 0 0', textAlign: 'center', fontSize: '7px' }}>
+          ({fmt(total * SAMPLE_EXCHANGE_RATE)} CDF au taux {SAMPLE_EXCHANGE_RATE})
         </p>
       )}
 
-      {config.show_verification_qr && (
-        <div style={{ textAlign: 'center', marginTop: 8 }}>
-          <div style={{ width: 60, height: 60, margin: '0 auto', background: 'repeating-conic-gradient(#000 0% 25%, #fff 0% 50%) 50% / 10px 10px', border: '1px solid #000' }} />
-          <p style={{ margin: '2px 0 0', fontSize: '8px' }}>Vérification (placeholder)</p>
-        </div>
-      )}
-
-      <p style={{ margin: '8px 0 0', textAlign: 'center', fontSize: '9px', fontStyle: 'italic' }}>{config.footer_text}</p>
+      {/* Téléphone + régime fiscal centrés */}
+      <div style={{ marginTop: 6, textAlign: 'center', fontSize: '6px' }}>
+        {info.phone && <p style={{ margin: 0 }}>{info.phone}</p>}
+        <p style={{ margin: 0 }}>Régime: {TAX_REGIME_LABELS[info.tax_regime] || info.tax_regime}</p>
+      </div>
     </div>
   );
 };
@@ -340,13 +384,11 @@ export const InvoicePreviewPanel = () => {
     showBank: true,
   });
 
-  // Source de données : sample ou facture réelle
   const [dataSource, setDataSource] = useState<'sample' | string>('sample');
   const [recentInvoices, setRecentInvoices] = useState<RecentInvoiceOption[]>([]);
   const [realInvoice, setRealInvoice] = useState<CadastralInvoice | null>(null);
   const [loadingInvoice, setLoadingInvoice] = useState(false);
 
-  // Charger 20 dernières factures
   useEffect(() => {
     (async () => {
       const { data } = await supabase
@@ -358,33 +400,21 @@ export const InvoicePreviewPanel = () => {
     })();
   }, []);
 
-  // Quand on choisit une facture réelle, la charger entièrement
   useEffect(() => {
-    if (dataSource === 'sample') {
-      setRealInvoice(null);
-      return;
-    }
+    if (dataSource === 'sample') { setRealInvoice(null); return; }
     setLoadingInvoice(true);
     (async () => {
-      const { data } = await supabase
-        .from('cadastral_invoices')
-        .select('*')
-        .eq('id', dataSource)
-        .maybeSingle();
+      const { data } = await supabase.from('cadastral_invoices').select('*').eq('id', dataSource).maybeSingle();
       if (data) setRealInvoice(data as unknown as CadastralInvoice);
       setLoadingInvoice(false);
     })();
   }, [dataSource]);
 
-  // Compute scale to fit A4 into wrapper width — recompute when info/logo change
   useEffect(() => {
     const compute = () => {
-      if (!wrapperRef.current || format !== 'a4') {
-        setScale(1);
-        return;
-      }
+      if (!wrapperRef.current || format !== 'a4') { setScale(1); return; }
       const w = wrapperRef.current.clientWidth;
-      const A4_PX = 794; // 210mm at 96dpi
+      const A4_PX = 794;
       setScale(Math.min(1, (w - 32) / A4_PX));
     };
     compute();
@@ -397,20 +427,21 @@ export const InvoicePreviewPanel = () => {
     toast.success('Aperçu rafraîchi');
   };
 
-  const handleGenerate = async (fmtKey: 'a4' | 'mini') => {
+  const handleGenerate = async (fmtKey: 'a4' | 'mini', openInNewTab = false) => {
     setGenerating(true);
     try {
       if (realInvoice) {
-        await downloadInvoicePDF(realInvoice, { format: fmtKey });
+        await downloadInvoicePDF(realInvoice, { format: fmtKey, openInNewTab });
       } else {
         await generateInvoicePDF(
           buildSampleInvoice(config.invoice_number_prefix, variants),
           buildSampleServices(),
           fmtKey,
-          `apercu_facture_${fmtKey}.pdf`
+          `apercu_facture_${fmtKey}.pdf`,
+          { openInNewTab },
         );
       }
-      toast.success('Aperçu PDF généré');
+      toast.success(openInNewTab ? 'PDF ouvert dans un nouvel onglet' : 'Aperçu PDF généré');
     } catch (e: any) {
       toast.error(e.message || 'Erreur génération PDF');
     } finally {
@@ -418,7 +449,6 @@ export const InvoicePreviewPanel = () => {
     }
   };
 
-  // Variantes effectives — si facture réelle chargée, on dérive depuis ses champs
   const effectiveVariants: SimVariants = useMemo(() => {
     if (!realInvoice) return variants;
     const subtotal = Number(realInvoice.original_amount_usd || realInvoice.total_amount_usd);
@@ -441,46 +471,31 @@ export const InvoicePreviewPanel = () => {
       <CardHeader>
         <CardTitle>Aperçu de la facture</CardTitle>
         <CardDescription>
-          Rendu fidèle (A4 ou mini reçu thermique) mis à jour en direct selon la configuration.
-          Les couleurs, mentions DGI et identité émetteur sont synchronisées entre l'aperçu HTML et le PDF généré.
+          Aperçu HTML <strong>miroir fidèle</strong> du PDF généré (mêmes sections, mêmes colonnes, même bandeau total).
+          Le bouton « Comparer ↔ PDF » ouvre le PDF réel dans un onglet à côté pour validation visuelle.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Barre format + actions */}
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="inline-flex rounded-md border border-border p-1 bg-muted">
-            <button
-              onClick={() => setFormat('a4')}
-              className={`px-4 py-1.5 text-sm rounded transition ${format === 'a4' ? 'bg-background shadow-sm font-semibold' : 'text-muted-foreground'}`}
-            >
-              A4
-            </button>
-            <button
-              onClick={() => setFormat('mini')}
-              className={`px-4 py-1.5 text-sm rounded transition ${format === 'mini' ? 'bg-background shadow-sm font-semibold' : 'text-muted-foreground'}`}
-            >
-              Mini reçu
-            </button>
+            <button onClick={() => setFormat('a4')} className={`px-4 py-1.5 text-sm rounded transition ${format === 'a4' ? 'bg-background shadow-sm font-semibold' : 'text-muted-foreground'}`}>A4</button>
+            <button onClick={() => setFormat('mini')} className={`px-4 py-1.5 text-sm rounded transition ${format === 'mini' ? 'bg-background shadow-sm font-semibold' : 'text-muted-foreground'}`}>Mini reçu</button>
           </div>
           <Button variant="ghost" size="sm" onClick={handleRefresh}>
             <RefreshCw className="h-4 w-4 mr-2" /> Rafraîchir config + identité
           </Button>
         </div>
 
-        {/* Panneau variantes de simulation */}
         <div className="rounded-lg border border-border bg-muted/30 p-3 space-y-3">
           <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase">
             <Info className="h-3.5 w-3.5" /> Variantes de simulation
           </div>
 
-          {/* Source de données */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div className="space-y-1">
               <Label className="text-xs">Source des données</Label>
               <Select value={dataSource} onValueChange={setDataSource}>
-                <SelectTrigger className="h-8 text-xs">
-                  <SelectValue />
-                </SelectTrigger>
+                <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="sample">Sample (paramétrable)</SelectItem>
                   {recentInvoices.map((inv) => (
@@ -496,15 +511,10 @@ export const InvoicePreviewPanel = () => {
 
             <div className="flex items-end gap-2 justify-end">
               <Label htmlFor="bank-toggle" className="text-xs cursor-pointer">Coordonnées bancaires</Label>
-              <Switch
-                id="bank-toggle"
-                checked={variants.showBank}
-                onCheckedChange={(v) => setVariants({ ...variants, showBank: v })}
-              />
+              <Switch id="bank-toggle" checked={variants.showBank} onCheckedChange={(v) => setVariants({ ...variants, showBank: v })} />
             </div>
           </div>
 
-          {/* Variantes (désactivées si facture réelle) */}
           <fieldset disabled={!!realInvoice} className={realInvoice ? 'opacity-50 pointer-events-none' : ''}>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               <div className="space-y-1">
@@ -567,6 +577,10 @@ export const InvoicePreviewPanel = () => {
         </div>
 
         <div className="flex flex-wrap gap-3 justify-end pt-4 border-t">
+          <Button variant="secondary" onClick={() => handleGenerate(format, true)} disabled={generating}>
+            {generating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <ExternalLink className="h-4 w-4 mr-2" />}
+            Comparer ↔ PDF (nouvel onglet)
+          </Button>
           <Button variant="outline" onClick={() => handleGenerate('mini')} disabled={generating}>
             {generating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <FileDown className="h-4 w-4 mr-2" />}
             {realInvoice ? 'Télécharger PDF Mini' : 'Aperçu PDF Mini'}
