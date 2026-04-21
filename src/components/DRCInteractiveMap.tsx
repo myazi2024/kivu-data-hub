@@ -73,6 +73,9 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [forcedTab, setForcedTab] = useState<string | null>(null);
   const mapCardRef = React.useRef<HTMLDivElement>(null);
+  const analyticsColRef = React.useRef<HTMLDivElement>(null);
+  const analyticsTitleRef = React.useRef<HTMLSpanElement>(null);
+  const mapTitleRef = React.useRef<HTMLHeadingElement>(null);
 
   const isMobile = useIsMobile();
   const prefersReducedMotion = typeof window !== 'undefined'
@@ -99,6 +102,23 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
     onSwipeLeft: () => setActiveMobilePanel('analytics'),
     onSwipeRight: () => setActiveMobilePanel('map'),
   });
+
+  // Reset scroll + focus management quand le panneau mobile change (UX + a11y)
+  useEffect(() => {
+    if (!isMobile) return;
+    // Laisse la transition slide se jouer avant de bouger le focus
+    const id = window.setTimeout(() => {
+      if (onAnalyticsPanel) {
+        // Reset scroll Analytics + focus sur le titre
+        const scrollEl = analyticsColRef.current?.querySelector('[data-radix-scroll-area-viewport]') as HTMLElement | null;
+        if (scrollEl) scrollEl.scrollTop = 0;
+        analyticsTitleRef.current?.focus({ preventScroll: true });
+      } else {
+        mapTitleRef.current?.focus({ preventScroll: true });
+      }
+    }, 300);
+    return () => window.clearTimeout(id);
+  }, [activeMobilePanel, isMobile, onAnalyticsPanel]);
 
   // Rubber-band: dx limité à ±40px, atténué à 18% (retour tactile plus net)
   const rubberBand = !prefersReducedMotion && isSwiping
@@ -396,7 +416,11 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
               <Card ref={mapCardRef} className="analytics-panel border-0 flex-1 overflow-hidden flex flex-col">
                 <CardContent className="p-0 flex-1 flex flex-col relative min-h-0">
                   <div className="bg-muted/20 px-2 py-0.5 border-b border-border/30 flex-shrink-0">
-                    <h2 className="text-[10px] sm:text-xs font-medium text-foreground flex items-center gap-1">
+                    <h2
+                      ref={mapTitleRef}
+                      tabIndex={-1}
+                      className="text-[10px] sm:text-xs font-medium text-foreground flex items-center gap-1 outline-none"
+                    >
                       <MapPin className="h-3 w-3 text-primary" />
                       <span>{selectedTerritoire ? `${selectedTerritoire} — ${selectedProvince?.name || ''}` : selectedSectionType === 'rurale' && selectedProvince ? `Territoires — ${selectedProvince.name}` : selectedSectionType === 'rurale' ? 'Territoires — RDC' : selectedVille ? `${selectedVille}${selectedCommune ? ` — ${selectedCommune}` : ''}${selectedQuartier ? ` — ${selectedQuartier}` : ''}` : selectedProvince ? `${activeProfile ? `${activeProfile.label} — ` : ''}${selectedProvince.name}` : activeProfile ? `${activeProfile.label} — République Démocratique du Congo` : 'République Démocratique du Congo'}</span>
                     </h2>
@@ -640,6 +664,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
 
           {/* Colonne droite: Analytics */}
           <div
+            ref={analyticsColRef}
             className="w-1/2 lg:w-auto shrink-0 lg:shrink lg:col-span-8 flex flex-col min-h-0 h-full"
           >
             <Card className="flex-1 flex flex-col overflow-hidden border-border/30 min-h-0">
@@ -647,7 +672,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-[11px] sm:text-xs font-medium text-foreground flex items-center gap-1">
                     <BarChart3 className="h-3.5 w-3.5 text-primary" />
-                    <span>Analytics</span>
+                    <span ref={analyticsTitleRef} tabIndex={-1} className="outline-none">Analytics</span>
                   </CardTitle>
                   {dataUpdatedAt > 0 && (
                     <Badge variant="outline" className="text-[9px] px-1.5 py-0 gap-0.5 font-normal text-muted-foreground">
