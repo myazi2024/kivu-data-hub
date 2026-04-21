@@ -17,6 +17,7 @@ interface CadastralResultCardProps {
 }
 
 const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClose, selectedServices = [], onPaymentSuccess }) => {
+  const [isDownloadingInvoice, setIsDownloadingInvoice] = useState(false);
   const [showBillingPanel, setShowBillingPanel] = useState(true);
   const [paidServices, setPaidServices] = useState<string[]>([]);
   const [showInvoice, setShowInvoice] = useState(false);
@@ -76,57 +77,76 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
     }
   };
 
-  const handleDownloadPDF = () => {
-    const fetchAndGeneratePDF = async () => {
-      try {
-        const { data: dbInvoice } = await supabase
-          .from('cadastral_invoices')
-          .select('*')
-          .eq('parcel_number', result.parcel.parcel_number)
-          .eq('user_id', user?.id || '')
-          .eq('status', 'paid')
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
+  const handleDownloadPDF = async () => {
+    if (isDownloadingInvoice) return;
+    setIsDownloadingInvoice(true);
+    const { toast } = await import('sonner');
+    const loadingId = toast.loading('Génération du justificatif PDF…');
+    try {
+      const { data: dbInvoice, error } = await supabase
+        .from('cadastral_invoices')
+        .select('*')
+        .eq('parcel_number', result.parcel.parcel_number)
+        .eq('user_id', user?.id || '')
+        .eq('status', 'paid')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
-        if (!dbInvoice) {
-          const { toast } = await import('sonner');
-          toast.error('Aucune facture payée trouvée pour cette parcelle');
-          return;
-        }
-
-        const invoice = {
-          id: dbInvoice.id,
-          user_id: dbInvoice.user_id,
-          invoice_number: dbInvoice.invoice_number,
-          parcel_number: dbInvoice.parcel_number,
-          selected_services: Array.isArray(dbInvoice.selected_services) 
-            ? dbInvoice.selected_services as string[]
-            : typeof dbInvoice.selected_services === 'string' 
-              ? JSON.parse(dbInvoice.selected_services as string) 
-              : [],
-          search_date: dbInvoice.search_date || dbInvoice.created_at,
-          total_amount_usd: Number(dbInvoice.total_amount_usd),
-          status: dbInvoice.status,
-          created_at: dbInvoice.created_at,
-          updated_at: dbInvoice.updated_at,
-          client_name: dbInvoice.client_name,
-          client_email: dbInvoice.client_email,
-          client_organization: dbInvoice.client_organization || null,
-          geographical_zone: dbInvoice.geographical_zone || `${result.parcel.commune}, ${result.parcel.quartier}`,
-          discount_amount_usd: Number(dbInvoice.discount_amount_usd || 0),
-          original_amount_usd: Number(dbInvoice.original_amount_usd || dbInvoice.total_amount_usd),
-          payment_method: dbInvoice.payment_method
-        };
-
-        const { generateInvoicePDF } = await import('@/lib/pdf');
-        generateInvoicePDF(invoice, catalogServices, invoiceFormat);
-      } catch (e) {
-        console.error('Error generating PDF from DB invoice:', e);
+      if (error) throw error;
+      if (!dbInvoice) {
+        toast.dismiss(loadingId);
+        toast.error('Aucune facture payée trouvée pour cette parcelle');
+        return;
       }
-    };
-    
-    fetchAndGeneratePDF();
+
+      const invoice = {
+        id: dbInvoice.id,
+        user_id: dbInvoice.user_id,
+        invoice_number: dbInvoice.invoice_number,
+        parcel_number: dbInvoice.parcel_number,
+        selected_services: Array.isArray(dbInvoice.selected_services)
+          ? dbInvoice.selected_services as string[]
+          : typeof dbInvoice.selected_services === 'string'
+            ? JSON.parse(dbInvoice.selected_services as string)
+            : [],
+        search_date: dbInvoice.search_date || dbInvoice.created_at,
+        total_amount_usd: Number(dbInvoice.total_amount_usd),
+        status: dbInvoice.status,
+        created_at: dbInvoice.created_at,
+        updated_at: dbInvoice.updated_at,
+        client_name: dbInvoice.client_name,
+        client_email: dbInvoice.client_email,
+        client_organization: dbInvoice.client_organization || null,
+        client_type: dbInvoice.client_type || null,
+        client_address: dbInvoice.client_address || null,
+        client_nif: dbInvoice.client_nif || null,
+        client_rccm: dbInvoice.client_rccm || null,
+        client_id_nat: dbInvoice.client_id_nat || null,
+        client_tax_regime: dbInvoice.client_tax_regime || null,
+        geographical_zone: dbInvoice.geographical_zone || `${result.parcel.commune}, ${result.parcel.quartier}`,
+        discount_amount_usd: Number(dbInvoice.discount_amount_usd || 0),
+        discount_code_used: dbInvoice.discount_code_used || null,
+        original_amount_usd: Number(dbInvoice.original_amount_usd || dbInvoice.total_amount_usd),
+        currency_code: dbInvoice.currency_code || 'USD',
+        exchange_rate_used: Number(dbInvoice.exchange_rate_used || 1),
+        paid_at: dbInvoice.paid_at || null,
+        payment_method: dbInvoice.payment_method,
+        invoice_signature: dbInvoice.invoice_signature || null,
+        dgi_validation_code: dbInvoice.dgi_validation_code || null,
+      };
+
+      const { generateInvoicePDF } = await import('@/lib/pdf');
+      await generateInvoicePDF(invoice, catalogServices, invoiceFormat);
+      toast.dismiss(loadingId);
+      toast.success('Justificatif PDF téléchargé');
+    } catch (e) {
+      console.error('Error generating PDF from DB invoice:', e);
+      toast.dismiss(loadingId);
+      toast.error("Impossible de générer le PDF. Veuillez réessayer.");
+    } finally {
+      setIsDownloadingInvoice(false);
+    }
   };
 
   const handleDownloadReport = () => {
@@ -170,6 +190,7 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
         result={result}
         paidServices={paidServices}
         onDownloadPDF={handleDownloadPDF}
+        isDownloadingPDF={isDownloadingInvoice}
       />
     </>
   );
