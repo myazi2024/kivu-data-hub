@@ -51,6 +51,8 @@ interface LocalMobileMoney {
   merchantCode: string;
   apiKey: string;
   secretKey: string;
+  fee_percent: number;
+  fee_fixed_usd: number;
 }
 
 interface LocalBankCard {
@@ -59,6 +61,8 @@ interface LocalBankCard {
   publicKey: string;
   secretKey: string;
   webhookSecret: string;
+  fee_percent: number;
+  fee_fixed_usd: number;
 }
 
 interface AuditEntry {
