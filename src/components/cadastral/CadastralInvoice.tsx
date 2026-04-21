@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { X, Download, FileText, CheckCircle, AlertTriangle, QrCode, Printer } from 'lucide-react';
+import { X, Download, FileText, CheckCircle, AlertTriangle, QrCode, Printer, Loader2 } from 'lucide-react';
 import QRCode from 'qrcode';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { CadastralSearchResult } from '@/hooks/useCadastralSearch';
-import { useCadastralServices, CadastralService } from '@/hooks/useCadastralServices';
+import { useCadastralServices } from '@/hooks/useCadastralServices';
 import { TVA_RATE } from '@/constants/billing';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -19,445 +19,393 @@ interface CadastralInvoiceProps {
   result: CadastralSearchResult;
   paidServices: string[];
   onDownloadPDF: () => void;
+  isDownloadingPDF?: boolean;
 }
+
+interface DbInvoice {
+  invoice_number: string;
+  client_name: string | null;
+  client_email: string | null;
+  client_address: string | null;
+  client_organization: string | null;
+  client_type: string | null;
+  payment_method: string | null;
+  search_date: string | null;
+  created_at: string;
+  paid_at: string | null;
+  original_amount_usd: number;
+  discount_amount_usd: number;
+  discount_code_used: string | null;
+  total_amount_usd: number;
+  currency_code: string | null;
+  exchange_rate_used: number | null;
+  dgi_validation_code: string | null;
+  geographical_zone: string | null;
+}
+
+const PAYMENT_METHOD_LABELS: Record<string, string> = {
+  airtel_money: 'Airtel Money',
+  orange_money: 'Orange Money',
+  mpesa: 'M-Pesa',
+  vodacom_mpesa: 'M-Pesa',
+  stripe: 'Carte bancaire (Stripe)',
+  card: 'Carte bancaire',
+  test: 'Paiement test (mode sandbox)',
+};
+
+const formatPaymentMethod = (raw: string | null | undefined): string => {
+  if (!raw) return 'Non spécifié';
+  return PAYMENT_METHOD_LABELS[raw] || raw;
+};
+
+const formatDate = (iso: string | null | undefined): string => {
+  if (!iso) return '—';
+  try {
+    return new Date(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  } catch {
+    return '—';
+  }
+};
+
+const formatDateTime = (iso: string | null | undefined): string => {
+  if (!iso) return '—';
+  try {
+    const d = new Date(iso);
+    return `${d.toLocaleDateString('fr-FR')} à ${d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`;
+  } catch {
+    return '—';
+  }
+};
+
+const BIC_COMPANY_INFO = {
+  name: "Bureau d'Informations Cadastrales",
+  abbreviation: 'BIC',
+  address: 'Avenue Patrice Lumumba, Goma, Nord-Kivu, RDC',
+  rccm: 'RCCM/GOMA/2024/B/001234',
+  idNat: '01-234-N12345C',
+  numImpot: 'A1234567890',
+  email: 'contact@bic-congo.cd',
+  phone: '+243 997 123 456',
+};
 
 const CadastralInvoice: React.FC<CadastralInvoiceProps> = ({
   isOpen,
   onClose,
   result,
   paidServices,
-  onDownloadPDF
+  onDownloadPDF,
+  isDownloadingPDF = false,
 }) => {
   const [showCloseWarning, setShowCloseWarning] = useState(false);
   const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
-  const [dbInvoice, setDbInvoice] = useState<{ discount_amount_usd: number; discount_code_used: string; invoice_number: string } | null>(null);
+  const [dbInvoice, setDbInvoice] = useState<DbInvoice | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const { services: catalogServices } = useCadastralServices();
   const { user } = useAuth();
   const { printRef, print } = usePrintScope<HTMLDivElement>();
 
-  // Charger la facture depuis Supabase au lieu du localStorage
+  // Load full invoice from DB (source of truth)
   useEffect(() => {
     if (!isOpen || !user) return;
-    const fetchInvoice = async () => {
-      try {
-        const { data } = await supabase
-          .from('cadastral_invoices')
-          .select('discount_amount_usd, discount_code_used, invoice_number')
-          .eq('parcel_number', result.parcel.parcel_number)
-          .eq('user_id', user.id)
-          .eq('status', 'paid')
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .single();
-        if (data) {
-          setDbInvoice({
-            discount_amount_usd: data.discount_amount_usd || 0,
-            discount_code_used: data.discount_code_used || '',
-            invoice_number: data.invoice_number || '',
-          });
-        }
-      } catch (e) {
-        console.log('Facture non trouvée en DB, fallback localStorage:', e);
-        // Fallback localStorage pour compatibilité
-        try {
-          const stored = localStorage.getItem('currentCadastralInvoice');
-          if (stored) {
-            const parsed = JSON.parse(stored);
-            setDbInvoice({
-              discount_amount_usd: parsed.discount_amount_usd || 0,
-              discount_code_used: parsed.discount_code_used || '',
-              invoice_number: '',
-            });
-          }
-        } catch { /* ignore */ }
+    let cancelled = false;
+    setLoading(true);
+    setLoadError(null);
+    (async () => {
+      const { data, error } = await supabase
+        .from('cadastral_invoices')
+        .select('invoice_number, client_name, client_email, client_address, client_organization, client_type, payment_method, search_date, created_at, paid_at, original_amount_usd, discount_amount_usd, discount_code_used, total_amount_usd, currency_code, exchange_rate_used, dgi_validation_code, geographical_zone')
+        .eq('parcel_number', result.parcel.parcel_number)
+        .eq('user_id', user.id)
+        .eq('status', 'paid')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (cancelled) return;
+      if (error) {
+        setLoadError("Erreur lors du chargement de la facture.");
+      } else if (!data) {
+        setLoadError("Aucune facture payée trouvée pour cette parcelle.");
+      } else {
+        setDbInvoice({
+          ...data,
+          original_amount_usd: Number(data.original_amount_usd ?? data.total_amount_usd ?? 0),
+          discount_amount_usd: Number(data.discount_amount_usd ?? 0),
+          total_amount_usd: Number(data.total_amount_usd ?? 0),
+          exchange_rate_used: data.exchange_rate_used != null ? Number(data.exchange_rate_used) : 1,
+        });
       }
-    };
-    fetchInvoice();
+      setLoading(false);
+    })();
+    return () => { cancelled = true; };
   }, [isOpen, user, result.parcel.parcel_number]);
 
-  const handleClose = () => {
-    setShowCloseWarning(true);
-  };
+  const selectedServices = useMemo(
+    () => catalogServices.filter((s) => paidServices.includes(s.id)),
+    [catalogServices, paidServices],
+  );
 
-  const confirmClose = () => {
-    setShowCloseWarning(false);
-    onClose();
-  };
+  const totals = useMemo(() => {
+    const subtotalCatalog = selectedServices.reduce((sum, s) => sum + Number(s.price), 0);
+    const subtotal = dbInvoice?.original_amount_usd ?? subtotalCatalog;
+    const discount = dbInvoice?.discount_amount_usd ?? 0;
+    const net = Math.max(0, subtotal - discount);
+    const tva = net * TVA_RATE;
+    const total = dbInvoice?.total_amount_usd ?? net + tva;
+    return { subtotal, discount, tva, net, total };
+  }, [selectedServices, dbInvoice]);
 
-  const cancelClose = () => {
-    setShowCloseWarning(false);
-  };
-
-  // Générer les données de facture de manière stable
-  const invoiceData = useMemo(() => {
-    const selectedServices = catalogServices.filter(s => paidServices.includes(s.id));
-    const originalSubtotal = selectedServices.reduce((sum, service) => sum + Number(service.price), 0);
-    
-    const discountAmount = dbInvoice?.discount_amount_usd || 0;
-    const discountCode = dbInvoice?.discount_code_used || '';
-    
-    const netAmount = Math.max(0, originalSubtotal - discountAmount);
-    const tvaAmount = netAmount * TVA_RATE;
-    const total = netAmount + tvaAmount;
-    
-    // Utiliser le numéro de facture DB si disponible, sinon générer un stable
-    let invoiceNumber = dbInvoice?.invoice_number || '';
-    if (!invoiceNumber) {
-      const parcelId = result.parcel.parcel_number.replace(/[^0-9]/g, '').slice(-4);
-      const stableHash = result.parcel.parcel_number.split('').reduce((a, b) => {
-        a = ((a << 5) - a) + b.charCodeAt(0);
-        return a & a;
-      }, 0);
-      const stableTimestamp = Math.abs(stableHash).toString().slice(-6);
-      const locationCode = (result.parcel.ville || result.parcel.commune || 'RDC').substring(0, 4).toUpperCase();
-      invoiceNumber = `INV-${result.parcel.parcel_type}-${locationCode}-${parcelId}-${stableTimestamp}`;
-    }
-    
-    return {
-      invoiceNumber,
-      subtotal: originalSubtotal,
-      discountAmount,
-      discountCode,
-      tvaAmount,
-      total,
-      selectedServices,
-      currentDate: new Date().toLocaleDateString('fr-FR'),
-      currentTime: new Date().toLocaleTimeString('fr-FR')
-    };
-  }, [result.parcel.parcel_number, result.parcel.ville, result.parcel.commune, result.parcel.parcel_type, paidServices, catalogServices, dbInvoice]);
-
-  // Informations légales de BIC
-  const BIC_COMPANY_INFO = {
-    name: "Bureau d'Informations Cadastrales",
-    abbreviation: "BIC",
-    address: "Avenue Patrice Lumumba, Goma, Nord-Kivu, RDC",
-    rccm: "RCCM/GOMA/2024/B/001234",
-    idNat: "01-234-N12345C",
-    numImpot: "A1234567890",
-    email: "contact@bic-congo.cd",
-    phone: "+243 997 123 456"
-  };
-
-  // Générer QR code pour accès aux données
+  // QR code (verification link)
   useEffect(() => {
-    const generateQR = async () => {
+    if (!isOpen || !dbInvoice) return;
+    (async () => {
       try {
-        const dataUrl = `${window.location.origin}/cadastral/${result.parcel.parcel_number}?invoice=${invoiceData.invoiceNumber}&services=${paidServices.join(',')}`;
-        const qrUrl = await QRCode.toDataURL(dataUrl, {
-          width: 120,
-          margin: 1,
-          color: { dark: '#000000', light: '#ffffff' }
-        });
-        setQrCodeUrl(qrUrl);
-      } catch (error) {
-        console.error('Erreur génération QR code:', error);
+        const url = `${window.location.origin}/cadastral/${result.parcel.parcel_number}?invoice=${dbInvoice.invoice_number}`;
+        const png = await QRCode.toDataURL(url, { width: 140, margin: 1, color: { dark: '#000000', light: '#ffffff' } });
+        setQrCodeUrl(png);
+      } catch (e) {
+        console.error('QR error', e);
       }
-    };
-    
-    if (isOpen && paidServices.length > 0) {
-      generateQR();
-    }
-  }, [isOpen, result.parcel.parcel_number, invoiceData.invoiceNumber, paidServices]);
+    })();
+  }, [isOpen, dbInvoice, result.parcel.parcel_number]);
 
-  // Early return after all hooks are called
   if (!isOpen) return null;
 
-  return (
-    <div ref={printRef} className="fixed inset-0 z-[1700] bg-black/80 backdrop-blur-sm p-1 md:p-4 flex items-start justify-center overflow-auto">
-      <Card className="w-full max-w-xl my-1 md:my-0 md:max-h-[95vh] bg-background border shadow-2xl rounded-lg flex flex-col">
-        {/* Header - Mobile optimized */}
-        <CardHeader className="pb-2 md:pb-4 p-2 md:p-6">
-          <div className="flex items-start justify-between gap-2">
-            <div className="flex items-start gap-2 flex-1 min-w-0">
-              <div className="w-8 h-8 md:w-12 md:h-12 bg-primary/10 rounded-full flex items-center justify-center shrink-0">
-                <FileText className="h-4 w-4 md:h-6 md:w-6 text-primary" />
-              </div>
-              <div className="min-w-0">
-                <CardTitle className="text-sm md:text-xl leading-tight">
-                  Justificatif de Paiement Services Cadastraux
-                </CardTitle>
-                <p className="text-xs text-muted-foreground">
-                  Bureau d'Informations Cadastrales
-                </p>
-              </div>
-            </div>
-            {!showCloseWarning && (
-              <div className="flex gap-2">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={print} 
-                  className="shrink-0 h-7 w-7 p-0 md:h-9 md:w-9 transition-all duration-300 ease-out bg-background/80 backdrop-blur-sm border-border/50 hover:bg-accent hover:border-primary/30 hover:shadow-hover hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 print:hidden"
-                >
-                  <Printer className="h-3 w-3 md:h-4 md:w-4 transition-colors" />
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={handleClose} 
-                  className="shrink-0 h-7 w-7 p-0 md:h-9 md:w-9 transition-all duration-300 ease-out bg-background/80 backdrop-blur-sm border-border/50 hover:bg-destructive/10 hover:border-destructive/30 hover:shadow-hover hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive focus-visible:ring-offset-1"
-                >
-                  <X className="h-3 w-3 md:h-4 md:w-4 transition-colors hover:text-destructive" />
-                </Button>
-              </div>
-            )}
-          </div>
-        </CardHeader>
+  const handleClose = () => setShowCloseWarning(true);
+  const confirmClose = () => { setShowCloseWarning(false); onClose(); };
+  const cancelClose = () => setShowCloseWarning(false);
 
-        <CardContent className="p-2 md:p-6 space-y-2 md:space-y-4 overflow-auto flex-1 min-h-0">
-          {showCloseWarning ? (
-            <Alert className="border-orange-200 bg-orange-50 mx-1">
-              <AlertTriangle className="h-3 w-3 md:h-4 md:w-4 text-orange-600" />
+  const issueDate = dbInvoice?.created_at;
+  const paidDate = dbInvoice?.paid_at || dbInvoice?.created_at;
+
+  return (
+    <div
+      ref={printRef}
+      className="fixed inset-0 z-[1700] bg-black/80 backdrop-blur-sm p-2 md:p-6 flex items-start justify-center overflow-auto"
+    >
+      <div className="w-full max-w-3xl bg-background border shadow-2xl rounded-lg my-2 md:my-4 flex flex-col max-h-[95vh]">
+        {/* Action bar — hidden on print */}
+        <div data-print-hide className="flex items-center justify-between gap-2 p-3 md:p-4 border-b bg-muted/30 rounded-t-lg">
+          <div className="flex items-center gap-2 min-w-0">
+            <FileText className="h-5 w-5 text-primary shrink-0" />
+            <h2 className="font-semibold text-sm md:text-base truncate">Facture — Services cadastraux</h2>
+          </div>
+          {!showCloseWarning && (
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={print} className="h-8">
+                <Printer className="h-4 w-4 md:mr-1" />
+                <span className="hidden md:inline">Imprimer</span>
+              </Button>
+              <Button
+                size="sm"
+                onClick={onDownloadPDF}
+                disabled={isDownloadingPDF || !dbInvoice}
+                className="h-8"
+              >
+                {isDownloadingPDF ? (
+                  <Loader2 className="h-4 w-4 animate-spin md:mr-1" />
+                ) : (
+                  <Download className="h-4 w-4 md:mr-1" />
+                )}
+                <span className="hidden md:inline">{isDownloadingPDF ? 'Génération…' : 'Télécharger PDF'}</span>
+              </Button>
+              <Button variant="ghost" size="sm" onClick={handleClose} className="h-8 w-8 p-0">
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
+        </div>
+
+        {/* Close warning — hidden on print */}
+        {showCloseWarning && (
+          <div data-print-hide className="p-3 md:p-4 border-b">
+            <Alert className="border-orange-200 bg-orange-50">
+              <AlertTriangle className="h-4 w-4 text-orange-600" />
               <AlertDescription className="text-orange-800">
-                <div className="space-y-1">
-                  <p className="font-medium text-xs leading-tight">
-                    Ce justificatif ne sera plus accessible après fermeture.
-                  </p>
-                  <p className="text-xs opacity-90 leading-tight">
-                    Téléchargez le justificatif avant de fermer.
-                  </p>
-                  <div className="flex flex-col gap-1 pt-1 md:flex-row md:gap-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={cancelClose} 
-                      className="text-xs h-7 transition-all duration-300 ease-out hover:bg-accent hover:shadow-card hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
-                    >
-                      Annuler
-                    </Button>
-                    <Button 
-                      variant="default" 
-                      size="sm" 
-                      onClick={onDownloadPDF}
-                      className="text-xs h-7 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary transition-all duration-300 ease-out shadow-elegant hover:shadow-hover hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-foreground focus-visible:ring-offset-1"
-                    >
-                      <Download className="h-3 w-3 mr-1" />
-                      PDF
-                    </Button>
-                    <Button 
-                      variant="destructive" 
-                      size="sm" 
-                      onClick={confirmClose} 
-                      className="text-xs h-7 transition-all duration-300 ease-out hover:shadow-card hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive-foreground focus-visible:ring-offset-1"
-                    >
-                      Fermer
-                    </Button>
-                  </div>
+                <p className="font-medium text-sm mb-1">Cette facture ne sera plus accessible après fermeture.</p>
+                <p className="text-xs mb-3">Téléchargez-la avant de fermer.</p>
+                <div className="flex flex-wrap gap-2">
+                  <Button variant="outline" size="sm" onClick={cancelClose}>Annuler</Button>
+                  <Button size="sm" onClick={onDownloadPDF} disabled={isDownloadingPDF}>
+                    {isDownloadingPDF ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Download className="h-3 w-3 mr-1" />}
+                    Télécharger PDF
+                  </Button>
+                  <Button variant="destructive" size="sm" onClick={confirmClose}>Fermer</Button>
                 </div>
               </AlertDescription>
             </Alert>
-          ) : (
-            <>
-              {/* Informations légales de l'entreprise */}
-              <div className="bg-muted/50 p-3 rounded-lg space-y-2">
-                <div className="text-center">
-                  <h2 className="font-bold text-sm">{BIC_COMPANY_INFO.name}</h2>
-                  <p className="text-xs text-muted-foreground">{BIC_COMPANY_INFO.address}</p>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-1 text-xs text-muted-foreground">
-                  <p>RCCM: {BIC_COMPANY_INFO.rccm}</p>
-                  <p>ID NAT: {BIC_COMPANY_INFO.idNat}</p>
-                  <p>N° IMPÔT: {BIC_COMPANY_INFO.numImpot}</p>
-                </div>
-                <div className="text-center text-xs">
-                  <p>{BIC_COMPANY_INFO.email} | {BIC_COMPANY_INFO.phone}</p>
-                </div>
-              </div>
+          </div>
+        )}
 
-              <Separator />
+        {/* Document body */}
+        <div className="overflow-auto flex-1 min-h-0 p-4 md:p-8 bg-white">
+          {loading && (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              <span className="ml-2 text-sm text-muted-foreground">Chargement de la facture…</span>
+            </div>
+          )}
 
-              {/* Informations de facturation */}
-              <div className="space-y-3 md:grid md:grid-cols-2 md:gap-4 md:space-y-0">
-                <div className="space-y-1">
-                  <h3 className="font-semibold text-xs uppercase tracking-wide">
-                    Informations du justificatif
-                  </h3>
-                  <div className="space-y-0.5">
-                    <p className="text-sm font-medium">N°: {invoiceData.invoiceNumber}</p>
-                    <p className="text-xs text-muted-foreground">Date: {invoiceData.currentDate}</p>
+          {!loading && loadError && (
+            <Alert variant="destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>{loadError}</AlertDescription>
+            </Alert>
+          )}
+
+          {!loading && !loadError && dbInvoice && (
+            <article className="space-y-6 text-foreground">
+              {/* Header: emitter + invoice meta */}
+              <header className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 pb-4 border-b">
+                <div>
+                  <h1 className="text-lg md:text-xl font-bold leading-tight">{BIC_COMPANY_INFO.name}</h1>
+                  <p className="text-xs text-muted-foreground mt-0.5">{BIC_COMPANY_INFO.address}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {BIC_COMPANY_INFO.email} · {BIC_COMPANY_INFO.phone}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    RCCM: {BIC_COMPANY_INFO.rccm} · ID NAT: {BIC_COMPANY_INFO.idNat} · N° IMPÔT: {BIC_COMPANY_INFO.numImpot}
+                  </p>
+                </div>
+                <div className="md:text-right space-y-1 shrink-0">
+                  <div className="inline-flex items-center gap-2">
+                    <Badge variant="default" className="status-success text-xs">
+                      <CheckCircle className="h-3 w-3 mr-1" /> Payée
+                    </Badge>
+                  </div>
+                  <h2 className="text-base md:text-lg font-semibold">FACTURE</h2>
+                  <p className="text-sm font-mono">{dbInvoice.invoice_number || '—'}</p>
+                  <p className="text-xs text-muted-foreground">Émise le {formatDate(issueDate)}</p>
+                  <p className="text-xs text-muted-foreground">Payée le {formatDate(paidDate)}</p>
+                </div>
+              </header>
+
+              {/* Client + Parcel info */}
+              <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Facturé à</h3>
+                  <div className="space-y-0.5 text-sm">
+                    <p className="font-medium">{dbInvoice.client_name || 'Client'}</p>
+                    {dbInvoice.client_organization && <p>{dbInvoice.client_organization}</p>}
+                    {dbInvoice.client_address && <p className="text-muted-foreground">{dbInvoice.client_address}</p>}
+                    {dbInvoice.client_email && <p className="text-muted-foreground">{dbInvoice.client_email}</p>}
+                    {dbInvoice.client_type && (
+                      <p className="text-xs text-muted-foreground capitalize">Type : {dbInvoice.client_type}</p>
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Référence parcelle</h3>
+                  <div className="space-y-0.5 text-sm">
+                    <p className="font-medium font-mono">{result.parcel.parcel_number}</p>
+                    <p className="text-muted-foreground">
+                      {dbInvoice.geographical_zone || `${result.parcel.commune || ''}${result.parcel.quartier ? ', ' + result.parcel.quartier : ''}`}
+                    </p>
                     <p className="text-xs text-muted-foreground">
-                      Parcelle: {result.parcel.parcel_number}
+                      Mode de paiement : <span className="text-foreground">{formatPaymentMethod(dbInvoice.payment_method)}</span>
                     </p>
                   </div>
                 </div>
+              </section>
 
-                <div className="space-y-1">
-                  <h3 className="font-semibold text-xs uppercase tracking-wide">
-                    Statut & Paiement
-                  </h3>
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <CheckCircle className="h-3 w-3 md:h-4 md:w-4 text-green-500" />
-                      <Badge variant="default" className="status-success text-xs">
-                        Payé
-                      </Badge>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      {(() => {
-                        const storedInvoice = localStorage.getItem('currentCadastralInvoice');
-                        if (storedInvoice) {
-                          try {
-                            const invoice = JSON.parse(storedInvoice);
-                            const paymentMethod = invoice.payment_method;
-                            const phoneNumber = invoice.phone_number;
-                            
-                            if (paymentMethod && phoneNumber) {
-                              const providerMap: Record<string, string> = {
-                                'airtel_money': 'Airtel Money',
-                                'orange_money': 'Orange Money',
-                                'mpesa': 'M-Pesa'
-                              };
-                              const providerName = providerMap[paymentMethod] || paymentMethod;
-                              const maskedPhone = phoneNumber.replace(/(\d{3})(\d+)(\d{4})/, '$1***$3');
-                              return `${providerName} ${maskedPhone}`;
-                            }
-                          } catch (e) {
-                            console.log('Erreur lecture données paiement:', e);
-                          }
-                        }
-                        return 'Mobile Money ****';
-                      })()}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <Separator />
-
-              {/* Détails des services */}
-              <div className="space-y-2">
-                <h3 className="font-semibold text-xs uppercase tracking-wide">
-                  Prestations acquises
+              {/* Services table */}
+              <section>
+                <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
+                  Prestations
                 </h3>
-                
-                <div className="space-y-1.5">
-                  {invoiceData.selectedServices.map((service) => (
-                    <div key={service.id} className="flex items-start justify-between p-2 border rounded-lg gap-2">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-medium leading-tight">{service.name}</p>
-                        <p className="text-xs text-muted-foreground line-clamp-1">{service.description || 'Service cadastral professionnel'}</p>
-                        
-                        {service.id === 'information' && (
-                          <div className="mt-1 pt-1 border-t border-muted/30">
-                            <p className="text-xs text-muted-foreground">
-                              • Informations générales et propriétaire
-                            </p>
-                            {(result.parcel.construction_type || result.parcel.construction_nature || result.parcel.declared_usage) && (
-                              <p className="text-xs text-muted-foreground">
-                                • Informations sur la construction
-                              </p>
-                            )}
-                            {result.building_permits?.some(permit => permit.is_current) && (
-                              <p className="text-xs text-muted-foreground">
-                                • Autorisation de bâtir actuelle
-                              </p>
-                            )}
-                            {result.building_permits?.some(permit => !permit.is_current) && (
-                              <p className="text-xs text-muted-foreground">
-                                • Historique de permis ({result.building_permits.filter(permit => !permit.is_current).length} ancien{result.building_permits.filter(permit => !permit.is_current).length > 1 ? 's' : ''})
-                              </p>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                      <div className="text-right shrink-0">
-                        <p className="text-xs font-medium">${Number(service.price).toFixed(2)}</p>
-                      </div>
+                <div className="border rounded-md overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-muted/40">
+                        <TableHead className="text-xs">Service</TableHead>
+                        <TableHead className="text-xs hidden md:table-cell">Description</TableHead>
+                        <TableHead className="text-xs text-right">Prix (USD)</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {selectedServices.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={3} className="text-center text-sm text-muted-foreground py-6">
+                            Aucun service détaillé disponible.
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        selectedServices.map((service) => (
+                          <TableRow key={service.id}>
+                            <TableCell className="text-sm font-medium align-top">{service.name}</TableCell>
+                            <TableCell className="text-xs text-muted-foreground hidden md:table-cell align-top">
+                              {service.description || 'Service cadastral professionnel'}
+                            </TableCell>
+                            <TableCell className="text-sm text-right align-top tabular-nums">
+                              ${Number(service.price).toFixed(2)}
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              </section>
+
+              {/* Totals */}
+              <section className="flex justify-end">
+                <div className="w-full md:w-72 space-y-1.5 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Sous-total</span>
+                    <span className="tabular-nums">${totals.subtotal.toFixed(2)}</span>
+                  </div>
+                  {totals.discount > 0 && (
+                    <div className="flex justify-between text-green-700">
+                      <span>Remise{dbInvoice.discount_code_used ? ` (${dbInvoice.discount_code_used})` : ''}</span>
+                      <span className="tabular-nums">-${totals.discount.toFixed(2)}</span>
                     </div>
-                  ))}
+                  )}
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">TVA ({(TVA_RATE * 100).toFixed(0)}%)</span>
+                    <span className="tabular-nums">${totals.tva.toFixed(2)}</span>
+                  </div>
+                  <Separator className="my-1" />
+                  <div className="flex justify-between font-semibold text-base">
+                    <span>Total TTC</span>
+                    <span className="tabular-nums">${totals.total.toFixed(2)} USD</span>
+                  </div>
+                  {dbInvoice.exchange_rate_used && dbInvoice.exchange_rate_used !== 1 && (
+                    <p className="text-xs text-muted-foreground text-right">
+                      Taux : 1 USD = {dbInvoice.exchange_rate_used} CDF
+                    </p>
+                  )}
                 </div>
-              </div>
+              </section>
 
-              <Separator />
-
-              {/* Total avec TVA */}
-              <div className="space-y-1 bg-muted/30 p-3 rounded-lg">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-muted-foreground">Sous-total</span>
-                  <span className="text-xs">${invoiceData.subtotal.toFixed(2)} USD</span>
-                </div>
-                {invoiceData.discountAmount > 0 && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground">Remise ({invoiceData.discountCode})</span>
-                    <span className="text-xs text-green-600">-${invoiceData.discountAmount.toFixed(2)} USD</span>
+              {/* Verification + legal */}
+              <section className="grid grid-cols-1 md:grid-cols-[auto,1fr] gap-4 pt-4 border-t">
+                {qrCodeUrl && (
+                  <div className="flex items-start gap-3">
+                    <img src={qrCodeUrl} alt="QR vérification" className="w-20 h-20 border rounded" />
+                    <div className="text-xs text-muted-foreground">
+                      <p className="font-medium text-foreground flex items-center gap-1">
+                        <QrCode className="h-3 w-3" /> Vérification
+                      </p>
+                      <p>Scannez pour vérifier l'authenticité de cette facture.</p>
+                      {dbInvoice.dgi_validation_code && (
+                        <p className="mt-1 font-mono">Code DGI : {dbInvoice.dgi_validation_code}</p>
+                      )}
+                    </div>
                   </div>
                 )}
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-muted-foreground">{`TVA (${(TVA_RATE * 100).toFixed(0)}%)`}</span>
-                  <span className="text-xs">${invoiceData.tvaAmount.toFixed(2)} USD</span>
+                <div className="text-xs text-muted-foreground space-y-1">
+                  <p className="font-medium text-foreground">Mentions légales</p>
+                  <p>
+                    Facture officielle émise par {BIC_COMPANY_INFO.name}. Les informations cadastrales fournies
+                    proviennent des sources officielles du Ministère des Affaires Foncières.
+                  </p>
+                  <p>Document généré le {formatDateTime(new Date().toISOString())}</p>
                 </div>
-                <Separator className="my-1" />
-                <div className="flex items-center justify-between text-sm font-semibold">
-                  <span>TOTAL</span>
-                  <span>${invoiceData.total.toFixed(2)} USD</span>
-                </div>
-              </div>
-
-              <Separator />
-
-              {/* QR Code d'accès aux données */}
-              {qrCodeUrl && (
-                <div className="flex flex-col sm:flex-row items-center gap-2 p-2 bg-muted/30 rounded-lg">
-                  <div className="shrink-0">
-                    <img src={qrCodeUrl} alt="QR Code d'accès" className="w-12 h-12 sm:w-16 sm:h-16" />
-                  </div>
-                  <div className="text-center sm:text-left space-y-0.5">
-                    <div className="flex items-center gap-1 justify-center sm:justify-start">
-                      <QrCode className="h-3 w-3 text-primary" />
-                      <p className="text-xs font-medium">Accès rapide</p>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Scannez pour accéder aux données
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              <Separator />
-
-              {/* Actions */}
-              <div className="flex flex-col gap-2 pt-1 md:pt-2 md:flex-row print:hidden">
-                <Button 
-                  onClick={print}
-                  variant="outline"
-                  className="w-full md:flex-1 h-8 text-xs transition-all duration-300 ease-out bg-background/80 backdrop-blur-sm border-border/50 hover:bg-accent hover:border-primary/30 shadow-card hover:shadow-hover hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
-                >
-                  <Printer className="h-3 w-3 mr-1 transition-colors" />
-                  Imprimer
-                </Button>
-                <Button 
-                  onClick={onDownloadPDF}
-                  className="w-full md:flex-1 h-8 text-xs bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary transition-all duration-300 ease-out shadow-elegant hover:shadow-hover hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-foreground focus-visible:ring-offset-1"
-                >
-                  <Download className="h-3 w-3 mr-1" />
-                  Télécharger le justificatif
-                </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={handleClose}
-                  className="w-full md:flex-1 h-8 text-xs transition-all duration-300 ease-out bg-background/80 backdrop-blur-sm border-border/50 hover:bg-destructive/10 hover:border-destructive/30 hover:text-destructive shadow-card hover:shadow-hover hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive focus-visible:ring-offset-1"
-                >
-                  Fermer
-                </Button>
-              </div>
-
-              {/* Mentions légales */}
-              <div className="pt-1 text-xs text-muted-foreground bg-muted/50 p-2 rounded-lg">
-                <p className="font-medium mb-0.5">Mentions légales</p>
-                <p className="mb-0.5">
-                  Ce document constitue un justificatif de paiement officiel. Toutes les informations proviennent des sources officielles du Ministère des Affaires Foncières.
-                </p>
-                <p className="mb-0.5">
-                  Document généré automatiquement le {invoiceData.currentDate} à {invoiceData.currentTime}
-                </p>
-                <p>
-                  RCCM: {BIC_COMPANY_INFO.rccm} | ID NAT: {BIC_COMPANY_INFO.idNat} | N° IMPÔT: {BIC_COMPANY_INFO.numImpot}
-                </p>
-              </div>
-            </>
+              </section>
+            </article>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 };
