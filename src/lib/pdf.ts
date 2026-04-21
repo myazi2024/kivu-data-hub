@@ -75,16 +75,22 @@ function hexToRgb(hex: string | undefined | null, defaultRgb: [number, number, n
 /**
  * Génère un PDF de justificatif de paiement avec format sélectionnable
  */
+export interface InvoicePdfOptions {
+  /** Si true, ouvre le PDF dans un nouvel onglet au lieu de le télécharger (pour la comparaison admin). */
+  openInNewTab?: boolean;
+}
+
 export async function generateInvoicePDF(
   invoice: CadastralInvoice,
   servicesCatalog: CadastralService[],
   format: InvoiceFormat = 'a4',
-  filename?: string
+  filename?: string,
+  options?: InvoicePdfOptions
 ) {
   if (format === 'mini') {
-    return generateMiniInvoicePDF(invoice, servicesCatalog, filename);
+    return generateMiniInvoicePDF(invoice, servicesCatalog, filename, options);
   } else {
-    return generateA4InvoicePDF(invoice, servicesCatalog, filename);
+    return generateA4InvoicePDF(invoice, servicesCatalog, filename, options);
   }
 }
 
