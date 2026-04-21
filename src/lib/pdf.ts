@@ -578,13 +578,22 @@ async function generateA4InvoicePDF(
   doc.setFontSize(6.5);
   doc.setTextColor(80, 80, 80);
   const tvaPctLabel = `${(tvaRate * 100).toFixed(tvaRate * 100 % 1 === 0 ? 0 : 2)}%`;
+  const introText = tplCfg.show_dgi_mention
+    ? (tplCfg.footer_intro_text || `Facture normalisée émise conformément à la réglementation fiscale en vigueur en République Démocratique du Congo.`)
+    : `Facture émise par ${company.legal_name}.`;
+  const tvaMentionTpl = tplCfg.footer_tva_mention || 'TVA appliquée au taux de {tva_rate}.';
+  const tvaMention = `${tvaMentionTpl.replace(/\{tva_rate\}/g, tvaPctLabel)} ${tplCfg.payment_terms || 'Tout règlement effectué vaut acceptation des conditions générales de vente.'}`.trim();
+  const emitterLine = tplCfg.footer_show_emitter_line
+    ? `Émetteur : ${company.legal_name} — NIF ${company.nif} — RCCM ${company.rccm} — ID-NAT ${company.id_nat} — ${TAX_REGIME_LABELS[company.tax_regime] || company.tax_regime}.`
+    : null;
+  const dgiCodeLine = tplCfg.footer_show_dgi_code
+    ? (invoice.dgi_validation_code ? `Code de validation DGI : ${invoice.dgi_validation_code}` : `Code de vérification : ${verificationCode || invoice.invoice_number}`)
+    : null;
   const mentions = [
-    tplCfg.show_dgi_mention
-      ? `Facture normalisée émise conformément à la réglementation fiscale en vigueur en République Démocratique du Congo.`
-      : `Facture émise par ${company.legal_name}.`,
-    `Émetteur : ${company.legal_name} — NIF ${company.nif} — RCCM ${company.rccm} — ID-NAT ${company.id_nat} — ${TAX_REGIME_LABELS[company.tax_regime] || company.tax_regime}.`,
-    `TVA appliquée au taux de ${tvaPctLabel}. ${tplCfg.payment_terms || 'Tout règlement effectué vaut acceptation des conditions générales de vente.'}`,
-    invoice.dgi_validation_code ? `Code de validation DGI : ${invoice.dgi_validation_code}` : `Code de vérification : ${verificationCode || invoice.invoice_number}`,
+    introText,
+    emitterLine,
+    tvaMention,
+    dgiCodeLine,
     tplCfg.footer_text,
   ].filter(Boolean) as string[];
   mentions.forEach(m => {

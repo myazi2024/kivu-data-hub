@@ -13,6 +13,10 @@ export interface InvoiceTemplateConfig {
   footer_text: string;
   payment_terms: string;
   invoice_number_prefix: string;
+  footer_intro_text: string;
+  footer_tva_mention: string;
+  footer_show_emitter_line: boolean;
+  footer_show_dgi_code: boolean;
 }
 
 export const DEFAULT_INVOICE_TEMPLATE_CONFIG: InvoiceTemplateConfig = {
@@ -26,6 +30,10 @@ export const DEFAULT_INVOICE_TEMPLATE_CONFIG: InvoiceTemplateConfig = {
   footer_text: 'Merci pour votre confiance. Document généré électroniquement.',
   payment_terms: 'Paiement immédiat à la commande.',
   invoice_number_prefix: 'BIC',
+  footer_intro_text: 'Facture normalisée émise conformément à la réglementation fiscale en vigueur en République Démocratique du Congo.',
+  footer_tva_mention: 'TVA appliquée au taux de {tva_rate}.',
+  footer_show_emitter_line: true,
+  footer_show_dgi_code: true,
 };
 
 const TABLE = 'invoice_template_config' as const;
@@ -58,6 +66,10 @@ export async function fetchInvoiceTemplateConfig(): Promise<InvoiceTemplateConfi
       footer_text: parseValue<string>(map.footer_text, DEFAULT_INVOICE_TEMPLATE_CONFIG.footer_text),
       payment_terms: parseValue<string>(map.payment_terms, DEFAULT_INVOICE_TEMPLATE_CONFIG.payment_terms),
       invoice_number_prefix: parseValue<string>(map.invoice_number_prefix, DEFAULT_INVOICE_TEMPLATE_CONFIG.invoice_number_prefix),
+      footer_intro_text: parseValue<string>(map.footer_intro_text, DEFAULT_INVOICE_TEMPLATE_CONFIG.footer_intro_text),
+      footer_tva_mention: parseValue<string>(map.footer_tva_mention, DEFAULT_INVOICE_TEMPLATE_CONFIG.footer_tva_mention),
+      footer_show_emitter_line: parseValue<boolean>(map.footer_show_emitter_line, DEFAULT_INVOICE_TEMPLATE_CONFIG.footer_show_emitter_line),
+      footer_show_dgi_code: parseValue<boolean>(map.footer_show_dgi_code, DEFAULT_INVOICE_TEMPLATE_CONFIG.footer_show_dgi_code),
     };
   } catch {
     return { ...DEFAULT_INVOICE_TEMPLATE_CONFIG };

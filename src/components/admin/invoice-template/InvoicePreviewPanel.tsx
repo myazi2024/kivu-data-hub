@@ -279,17 +279,21 @@ const InvoicePreviewA4 = ({ config, info, invoice, services, logoBase64, qrDataU
         <div style={{ fontSize: '6.5pt', color: '#505050', lineHeight: 1.5, paddingRight: qrDataUrl ? 80 : 0 }}>
           <p style={{ margin: 0 }}>
             {config.show_dgi_mention
-              ? 'Facture normalisée émise conformément à la réglementation fiscale en vigueur en République Démocratique du Congo.'
+              ? (config.footer_intro_text || 'Facture normalisée émise conformément à la réglementation fiscale en vigueur en République Démocratique du Congo.')
               : `Facture émise par ${info.legal_name}.`}
           </p>
+          {config.footer_show_emitter_line && (
+            <p style={{ margin: 0 }}>
+              Émetteur : {info.legal_name} — NIF {info.nif} — RCCM {info.rccm} — ID-NAT {info.id_nat} — {TAX_REGIME_LABELS[info.tax_regime] || info.tax_regime}.
+            </p>
+          )}
           <p style={{ margin: 0 }}>
-            Émetteur : {info.legal_name} — NIF {info.nif} — RCCM {info.rccm} — ID-NAT {info.id_nat} — {TAX_REGIME_LABELS[info.tax_regime] || info.tax_regime}.
+            {(config.footer_tva_mention || 'TVA appliquée au taux de {tva_rate}.').replace(/\{tva_rate\}/g, tvaPctLabel)} {config.payment_terms || 'Tout règlement effectué vaut acceptation des conditions générales de vente.'}
           </p>
-          <p style={{ margin: 0 }}>
-            TVA appliquée au taux de {tvaPctLabel}. {config.payment_terms || 'Tout règlement effectué vaut acceptation des conditions générales de vente.'}
-          </p>
-          <p style={{ margin: 0 }}>Code de validation DGI : {dgiCode}</p>
-          <p style={{ margin: 0 }}>{config.footer_text}</p>
+          {config.footer_show_dgi_code && (
+            <p style={{ margin: 0 }}>Code de validation DGI : {dgiCode}</p>
+          )}
+          {config.footer_text && <p style={{ margin: 0 }}>{config.footer_text}</p>}
         </div>
 
         {config.show_verification_qr && (
