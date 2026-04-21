@@ -121,10 +121,10 @@ const CadastralClientDashboard: React.FC = () => {
     .filter(inv => inv.status === 'paid')
     .reduce((sum, inv) => sum + parseFloat(inv.total_amount_usd.toString()), 0);
 
-  // Fix #2: Utiliser catalogServices réactifs
+  // Helper unifié : format admin + catalogue services (B8)
   const generatePDFInvoice = (invoice: CadastralInvoice) => {
-    import('@/lib/pdf').then(({ generateInvoicePDF }) => {
-      generateInvoicePDF(invoice as any, catalogServices);
+    import('@/lib/invoiceDownload').then(({ downloadInvoicePDF }) => {
+      downloadInvoicePDF(invoice as any, { services: catalogServices });
     });
   };
 

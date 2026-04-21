@@ -54,10 +54,12 @@ export const AdminPaymentMonitoring = () => {
   const loadTransactions = async () => {
     try {
       setLoading(true);
+      // B4 — limite explicite pour éviter la limite implicite Supabase à 1000
       const { data, error } = await supabase
         .from('payment_transactions')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(1000);
 
       if (error) throw error;
 

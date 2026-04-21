@@ -548,6 +548,36 @@ export type Database = {
         }
         Relationships: []
       }
+      billing_anomaly_resolutions: {
+        Row: {
+          anomaly_type: string
+          id: string
+          ref_id: string
+          resolution_note: string | null
+          resolved_at: string
+          resolved_by: string | null
+          resolved_by_name: string | null
+        }
+        Insert: {
+          anomaly_type: string
+          id?: string
+          ref_id: string
+          resolution_note?: string | null
+          resolved_at?: string
+          resolved_by?: string | null
+          resolved_by_name?: string | null
+        }
+        Update: {
+          anomaly_type?: string
+          id?: string
+          ref_id?: string
+          resolution_note?: string | null
+          resolved_at?: string
+          resolved_by?: string | null
+          resolved_by_name?: string | null
+        }
+        Relationships: []
+      }
       billing_config_audit: {
         Row: {
           action: string
@@ -6188,6 +6218,20 @@ export type Database = {
         }
         Relationships: []
       }
+      unified_payments_view: {
+        Row: {
+          amount_usd: number | null
+          created_at: string | null
+          payment_method: string | null
+          reference: string | null
+          source: string | null
+          source_id: string | null
+          status: string | null
+          user_id: string | null
+          user_label: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       _cleanup_test_data_chunk_internal: {
@@ -6203,6 +6247,10 @@ export type Database = {
       }
       auto_cancel_stale_pending: { Args: never; Returns: number }
       bulk_update_parcel_actions: { Args: { _actions: Json }; Returns: Json }
+      bulk_update_service_prices: {
+        Args: { p_operation: string; p_percentage: number; p_table: string }
+        Returns: Json
+      }
       calculate_ccc_value: {
         Args: { contribution_id: string }
         Returns: number
