@@ -1,269 +1,336 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from '@/components/ui/table';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { RefreshCw, Users, Search, Eye, DollarSign, TrendingUp, Wallet } from 'lucide-react';
+import { RefreshCw, Users, Search, DollarSign, TrendingUp, Wallet } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
-interface ResellerCommission {
+interface SummaryRow {
+  reseller_id: string;
+  reseller_name: string;
+  reseller_code: string;
+  commission_rate: number;
+  total_sales_usd: number;
+  total_commission_usd: number;
+  commission_paid_usd: number;
+  commission_pending_usd: number;
+  sales_count: number;
+  last_payout_at: string | null;
+}
+
+interface SaleRow {
   id: string;
   reseller_id: string;
   invoice_id: string;
-  discount_code_id: string | null;
   sale_amount_usd: number;
-  discount_applied_usd: number;
   commission_earned_usd: number;
+  commission_paid: boolean;
+  commission_paid_at: string | null;
   created_at: string;
   reseller_name?: string;
   invoice_number?: string;
 }
 
-interface ResellerSummary {
-  id: string;
-  business_name: string;
-  total_sales: number;
-  total_commission: number;
-  sales_count: number;
-  commission_rate: number;
-}
-
 const AdminResellerCommissions = () => {
-  const [commissions, setCommissions] = useState<ResellerCommission[]>([]);
-  const [summaries, setSummaries] = useState<ResellerSummary[]>([]);
+  const [summaries, setSummaries] = useState<SummaryRow[]>([]);
+  const [sales, setSales] = useState<SaleRow[]>([]);
+  const [orphanCount, setOrphanCount] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [detailsOpen, setDetailsOpen] = useState(false);
-  const [selectedReseller, setSelectedReseller] = useState<ResellerSummary | null>(null);
-  const [resellerCommissions, setResellerCommissions] = useState<ResellerCommission[]>([]);
-
-  useEffect(() => {
-    fetchData();
-  }, []);
+  const [search, setSearch] = useState('');
+  const [regenerating, setRegenerating] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Fetch resellers
-      const { data: resellers, error: resellersError } = await supabase
-        .from('resellers' as any)
-        .select('id, business_name, commission_rate')
-        .eq('is_active', true);
+      const [{ data: sumData, error: sumErr }, { data: salesData, error: salesErr }, { data: paidInv }] =
+        await Promise.all([
+          supabase.from('reseller_commissions_summary' as any).select('*'),
+          supabase
+            .from('reseller_sales')
+            .select(`*, resellers!reseller_sales_reseller_id_fkey(business_name), cadastral_invoices!reseller_sales_invoice_id_fkey(invoice_number)`)
+            .order('created_at', { ascending: false })
+            .limit(500),
+          supabase
+            .from('cadastral_invoices')
+            .select('id')
+            .eq('status', 'paid')
+            .not('discount_code_used', 'is', null)
+            .limit(2000),
+        ]);
+      if (sumErr) throw sumErr;
+      if (salesErr) throw salesErr;
 
-      if (resellersError) throw resellersError;
-
-      // Fetch sales
-      const { data: sales, error: salesError } = await supabase
-        .from('reseller_sales')
-        .select(`
-          *,
-          resellers!reseller_sales_reseller_id_fkey(business_name),
-          cadastral_invoices!reseller_sales_invoice_id_fkey(invoice_number)
-        `)
-        .order('created_at', { ascending: false });
-
-      if (salesError) throw salesError;
-
-      const commissionsWithDetails = (sales || []).map(s => ({
-        ...s,
-        reseller_name: (s.resellers as any)?.business_name || 'N/A',
-        invoice_number: (s.cadastral_invoices as any)?.invoice_number || 'N/A'
-      }));
-
-      setCommissions(commissionsWithDetails);
-
-      // Calculate summaries
-      const summaryMap = new Map<string, ResellerSummary>();
-      ((resellers || []) as any[]).forEach((r: any) => {
-        summaryMap.set(r.id, {
-          id: r.id,
-          business_name: r.business_name,
-          total_sales: 0,
-          total_commission: 0,
-          sales_count: 0,
-          commission_rate: r.commission_rate
-        });
-      });
-
-      (sales || []).forEach(s => {
-        const summary = summaryMap.get(s.reseller_id);
-        if (summary) {
-          summary.total_sales += s.sale_amount_usd;
-          summary.total_commission += s.commission_earned_usd;
-          summary.sales_count += 1;
-        }
-      });
-
-      setSummaries(Array.from(summaryMap.values()).sort((a, b) => b.total_commission - a.total_commission) as ResellerSummary[]);
-    } catch (error) {
-      console.error('Error fetching data:', error);
+      setSummaries(((sumData || []) as unknown as SummaryRow[]).sort(
+        (a, b) => Number(b.total_commission_usd) - Number(a.total_commission_usd)
+      ));
+      setSales(
+        (salesData || []).map((s: any) => ({
+          ...s,
+          reseller_name: s.resellers?.business_name || 'N/A',
+          invoice_number: s.cadastral_invoices?.invoice_number || 'N/A',
+        })) as SaleRow[]
+      );
+      const salesInv = new Set((salesData || []).map((s: any) => s.invoice_id));
+      setOrphanCount((paidInv || []).filter((i) => !salesInv.has(i.id)).length);
+    } catch (e: any) {
+      console.error('Reseller commissions fetch error:', e);
       toast.error('Erreur lors du chargement');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleViewDetails = (reseller: ResellerSummary) => {
-    setSelectedReseller(reseller);
-    setResellerCommissions(commissions.filter(c => c.reseller_id === reseller.id));
-    setDetailsOpen(true);
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const regenerateOrphans = async () => {
+    setRegenerating(true);
+    try {
+      const { data, error } = await (supabase as any).rpc('regenerate_orphan_reseller_sales');
+      if (error) throw error;
+      const row = Array.isArray(data) ? data[0] : data;
+      toast.success(`${row?.inserted_count ?? 0} vente(s) régénérée(s) sur ${row?.scanned_count ?? 0} scannée(s).`);
+      await fetchData();
+    } catch (e: any) {
+      toast.error(e?.message ?? 'Échec de la régénération');
+    } finally {
+      setRegenerating(false);
+    }
   };
 
-  const filteredSummaries = summaries.filter(s =>
-    s.business_name.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredSummaries = useMemo(
+    () => summaries.filter((s) => s.reseller_name?.toLowerCase().includes(search.toLowerCase())),
+    [summaries, search]
   );
 
-  const totalCommissions = summaries.reduce((sum, s) => sum + s.total_commission, 0);
-  const totalSales = summaries.reduce((sum, s) => sum + s.total_sales, 0);
-  const activeResellers = summaries.filter(s => s.sales_count > 0).length;
+  const totals = useMemo(() => {
+    return {
+      sales: summaries.reduce((s, x) => s + Number(x.total_sales_usd || 0), 0),
+      commission: summaries.reduce((s, x) => s + Number(x.total_commission_usd || 0), 0),
+      paid: summaries.reduce((s, x) => s + Number(x.commission_paid_usd || 0), 0),
+      pending: summaries.reduce((s, x) => s + Number(x.commission_pending_usd || 0), 0),
+      activeResellers: summaries.filter((s) => s.sales_count > 0).length,
+    };
+  }, [summaries]);
 
   return (
-    <div className="space-y-3 md:space-y-4">
-      {/* Differentiation banner */}
-      <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 text-xs">
-        <p className="font-medium text-primary mb-0.5">📈 Vue analytique — Performance revendeurs</p>
-        <p className="text-muted-foreground">
-          Cet écran agrège les ventes par revendeur (totaux, classement). Pour <strong>marquer une commission comme payée</strong>, utilise l'écran « Commissions à payer ».
-        </p>
-      </div>
-
-      {/* Header */}
-      <Card className="p-3 md:p-4 bg-background rounded-2xl shadow-sm border">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+    <div className="space-y-4">
+      <Card className="p-4">
+        <div className="flex items-center justify-between flex-wrap gap-2">
           <div>
-            <h2 className="text-sm md:text-base font-bold">Commissions Revendeurs</h2>
-            <p className="text-[10px] md:text-xs text-muted-foreground">Suivi détaillé des commissions</p>
+            <h2 className="text-base font-bold">Commissions revendeurs</h2>
+            <p className="text-xs text-muted-foreground">
+              Synthèse, ventes et paiements consolidés
+            </p>
           </div>
-          <Button variant="outline" size="sm" onClick={fetchData} disabled={loading} className="h-8 text-xs">
-            <RefreshCw className={`h-3 w-3 mr-1 ${loading ? 'animate-spin' : ''}`} />
-            Actualiser
-          </Button>
+          <div className="flex items-center gap-2">
+            {orphanCount > 0 && (
+              <Button variant="outline" size="sm" onClick={regenerateOrphans} disabled={regenerating}>
+                Régénérer {orphanCount} vente(s) orpheline(s)
+              </Button>
+            )}
+            <Button variant="outline" size="sm" onClick={fetchData} disabled={loading}>
+              <RefreshCw className={`h-4 w-4 mr-1 ${loading ? 'animate-spin' : ''}`} />
+              Actualiser
+            </Button>
+          </div>
         </div>
       </Card>
 
-      {/* Stats */}
-      <div className="grid grid-cols-3 gap-2">
-        <Card className="p-2.5 md:p-3 bg-background rounded-xl shadow-sm border text-center">
-          <p className="text-lg md:text-xl font-bold text-primary">${(totalCommissions / 1000).toFixed(1)}k</p>
-          <p className="text-[9px] md:text-[10px] text-muted-foreground">Commissions totales</p>
+      {/* KPI globaux */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <Card className="p-3 text-center">
+          <DollarSign className="h-4 w-4 mx-auto text-emerald-500 mb-1" />
+          <p className="text-lg font-bold">${totals.sales.toFixed(0)}</p>
+          <p className="text-[10px] text-muted-foreground">Ventes totales</p>
         </Card>
-        <Card className="p-2.5 md:p-3 bg-background rounded-xl shadow-sm border text-center">
-          <p className="text-lg md:text-xl font-bold text-green-500">${(totalSales / 1000).toFixed(1)}k</p>
-          <p className="text-[9px] md:text-[10px] text-muted-foreground">Ventes totales</p>
+        <Card className="p-3 text-center">
+          <TrendingUp className="h-4 w-4 mx-auto text-primary mb-1" />
+          <p className="text-lg font-bold">${totals.commission.toFixed(0)}</p>
+          <p className="text-[10px] text-muted-foreground">Commissions générées</p>
         </Card>
-        <Card className="p-2.5 md:p-3 bg-background rounded-xl shadow-sm border text-center">
-          <p className="text-lg md:text-xl font-bold text-blue-500">{activeResellers}</p>
-          <p className="text-[9px] md:text-[10px] text-muted-foreground">Revendeurs actifs</p>
+        <Card className="p-3 text-center">
+          <Wallet className="h-4 w-4 mx-auto text-amber-500 mb-1" />
+          <p className="text-lg font-bold">${totals.pending.toFixed(0)}</p>
+          <p className="text-[10px] text-muted-foreground">À payer</p>
+        </Card>
+        <Card className="p-3 text-center">
+          <Users className="h-4 w-4 mx-auto text-blue-500 mb-1" />
+          <p className="text-lg font-bold">{totals.activeResellers}</p>
+          <p className="text-[10px] text-muted-foreground">Revendeurs actifs</p>
         </Card>
       </div>
 
-      {/* Search */}
-      <Card className="p-2.5 bg-background rounded-xl shadow-sm border">
-        <div className="relative">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-          <Input value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Rechercher revendeur..." className="h-8 text-xs pl-8" />
-        </div>
-      </Card>
+      <Tabs defaultValue="summary" className="space-y-3">
+        <TabsList>
+          <TabsTrigger value="summary">Synthèse</TabsTrigger>
+          <TabsTrigger value="sales">Ventes ({sales.length})</TabsTrigger>
+          <TabsTrigger value="payouts">Paiements</TabsTrigger>
+        </TabsList>
 
-      {/* Resellers List */}
-      <Card className="p-3 md:p-4 bg-background rounded-2xl shadow-sm border">
-        <h3 className="text-xs font-semibold mb-3">Revendeurs ({filteredSummaries.length})</h3>
-        {loading ? (
-          <div className="flex justify-center py-8">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
-          </div>
-        ) : filteredSummaries.length === 0 ? (
-          <div className="text-center py-8">
-            <Users className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-            <p className="text-xs text-muted-foreground">Aucun revendeur</p>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {filteredSummaries.map((reseller) => (
-              <div key={reseller.id} className="p-2.5 md:p-3 rounded-xl border bg-card">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Users className="h-3.5 w-3.5 text-primary shrink-0" />
-                      <span className="text-xs font-medium truncate">{reseller.business_name}</span>
-                      <Badge variant="outline" className="text-[9px]">{reseller.commission_rate}%</Badge>
-                    </div>
-                    <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <TrendingUp className="h-2.5 w-2.5" />
-                        {reseller.sales_count} ventes
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <DollarSign className="h-2.5 w-2.5" />
-                        ${reseller.total_sales.toFixed(0)}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <div className="text-right">
-                      <p className="text-sm font-semibold text-green-500">${reseller.total_commission.toFixed(2)}</p>
-                      <p className="text-[9px] text-muted-foreground">Commission</p>
-                    </div>
-                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleViewDetails(reseller)}>
-                      <Eye className="h-3 w-3" />
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </Card>
-
-      {/* Details Dialog */}
-      <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
-        <DialogContent className="max-w-[360px] rounded-2xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="text-sm">{selectedReseller?.business_name}</DialogTitle>
-          </DialogHeader>
-          {selectedReseller && (
-            <div className="space-y-3 py-2">
-              <div className="grid grid-cols-2 gap-2">
-                <div className="p-2.5 rounded-lg bg-muted/50 text-center">
-                  <p className="text-lg font-bold text-primary">${selectedReseller.total_commission.toFixed(2)}</p>
-                  <p className="text-[9px] text-muted-foreground">Commission totale</p>
-                </div>
-                <div className="p-2.5 rounded-lg bg-muted/50 text-center">
-                  <p className="text-lg font-bold">{selectedReseller.sales_count}</p>
-                  <p className="text-[9px] text-muted-foreground">Ventes</p>
-                </div>
-              </div>
-              
-              <h4 className="text-xs font-semibold mt-3">Historique des ventes</h4>
-              <div className="space-y-2 max-h-[300px] overflow-y-auto">
-                {resellerCommissions.length === 0 ? (
-                  <p className="text-xs text-muted-foreground text-center py-4">Aucune vente</p>
-                ) : (
-                  resellerCommissions.map(commission => (
-                    <div key={commission.id} className="p-2 rounded-lg bg-muted/50">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-[10px] font-medium">{commission.invoice_number}</span>
-                        <span className="text-[10px] text-green-500 font-semibold">+${commission.commission_earned_usd.toFixed(2)}</span>
-                      </div>
-                      <div className="flex items-center justify-between text-[9px] text-muted-foreground">
-                        <span>Vente: ${commission.sale_amount_usd.toFixed(2)}</span>
-                        <span>{format(new Date(commission.created_at), 'dd/MM/yy', { locale: fr })}</span>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
+        {/* Synthèse */}
+        <TabsContent value="summary" className="space-y-3">
+          <Card className="p-2.5">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+              <Input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Rechercher revendeur…"
+                className="h-8 text-xs pl-8 max-w-xs"
+              />
             </div>
-          )}
-          <DialogFooter>
-            <Button variant="outline" size="sm" onClick={() => setDetailsOpen(false)} className="h-8 text-xs">Fermer</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </Card>
+          <Card className="p-0 overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Revendeur</TableHead>
+                  <TableHead>Code</TableHead>
+                  <TableHead>Taux</TableHead>
+                  <TableHead>Ventes</TableHead>
+                  <TableHead>Total CA</TableHead>
+                  <TableHead>Comm. payée</TableHead>
+                  <TableHead>Comm. due</TableHead>
+                  <TableHead>Dernier paiement</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredSummaries.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center text-muted-foreground py-6">
+                      Aucun revendeur
+                    </TableCell>
+                  </TableRow>
+                )}
+                {filteredSummaries.map((r) => (
+                  <TableRow key={r.reseller_id}>
+                    <TableCell className="text-xs font-medium">{r.reseller_name}</TableCell>
+                    <TableCell className="font-mono text-[10px]">{r.reseller_code}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline">{r.commission_rate}%</Badge>
+                    </TableCell>
+                    <TableCell>{r.sales_count}</TableCell>
+                    <TableCell>${Number(r.total_sales_usd).toFixed(2)}</TableCell>
+                    <TableCell className="text-emerald-500">
+                      ${Number(r.commission_paid_usd).toFixed(2)}
+                    </TableCell>
+                    <TableCell className="text-amber-500 font-semibold">
+                      ${Number(r.commission_pending_usd).toFixed(2)}
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground">
+                      {r.last_payout_at
+                        ? format(new Date(r.last_payout_at), 'dd/MM/yyyy', { locale: fr })
+                        : '—'}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </Card>
+        </TabsContent>
+
+        {/* Ventes */}
+        <TabsContent value="sales">
+          <Card className="p-0 overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Revendeur</TableHead>
+                  <TableHead>Facture</TableHead>
+                  <TableHead>Montant vente</TableHead>
+                  <TableHead>Commission</TableHead>
+                  <TableHead>Statut</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {sales.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center text-muted-foreground py-6">
+                      Aucune vente
+                    </TableCell>
+                  </TableRow>
+                )}
+                {sales.map((s) => (
+                  <TableRow key={s.id}>
+                    <TableCell className="text-xs">
+                      {format(new Date(s.created_at), 'dd/MM/yy', { locale: fr })}
+                    </TableCell>
+                    <TableCell className="text-xs">{s.reseller_name}</TableCell>
+                    <TableCell className="font-mono text-[10px]">{s.invoice_number}</TableCell>
+                    <TableCell>${Number(s.sale_amount_usd).toFixed(2)}</TableCell>
+                    <TableCell className="text-emerald-500 font-semibold">
+                      ${Number(s.commission_earned_usd).toFixed(2)}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={s.commission_paid ? 'default' : 'secondary'}>
+                        {s.commission_paid ? 'Payée' : 'En attente'}
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </Card>
+        </TabsContent>
+
+        {/* Paiements */}
+        <TabsContent value="payouts">
+          <Card className="p-4">
+            <p className="text-sm text-muted-foreground">
+              Pour générer un paiement en lot, va sur l'écran « Commissions à payer » dans le menu.
+              Cet onglet liste l'historique des versements.
+            </p>
+          </Card>
+          <Card className="p-0 overflow-hidden mt-3">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Revendeur</TableHead>
+                  <TableHead>Date paiement</TableHead>
+                  <TableHead>Vente d'origine</TableHead>
+                  <TableHead className="text-right">Commission</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {sales.filter((s) => s.commission_paid).length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-center text-muted-foreground py-6">
+                      Aucun paiement effectué
+                    </TableCell>
+                  </TableRow>
+                )}
+                {sales
+                  .filter((s) => s.commission_paid)
+                  .map((s) => (
+                    <TableRow key={s.id}>
+                      <TableCell className="text-xs">{s.reseller_name}</TableCell>
+                      <TableCell className="text-xs">
+                        {s.commission_paid_at
+                          ? format(new Date(s.commission_paid_at), 'dd/MM/yyyy', { locale: fr })
+                          : '—'}
+                      </TableCell>
+                      <TableCell className="font-mono text-[10px]">{s.invoice_number}</TableCell>
+                      <TableCell className="text-right text-emerald-500 font-semibold">
+                        ${Number(s.commission_earned_usd).toFixed(2)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+              </TableBody>
+            </Table>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
