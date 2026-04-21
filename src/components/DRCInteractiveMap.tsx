@@ -664,6 +664,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
 
           {/* Colonne droite: Analytics */}
           <div
+            ref={analyticsColRef}
             className="w-1/2 lg:w-auto shrink-0 lg:shrink lg:col-span-8 flex flex-col min-h-0 h-full"
           >
             <Card className="flex-1 flex flex-col overflow-hidden border-border/30 min-h-0">
@@ -671,7 +672,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-[11px] sm:text-xs font-medium text-foreground flex items-center gap-1">
                     <BarChart3 className="h-3.5 w-3.5 text-primary" />
-                    <span>Analytics</span>
+                    <span ref={analyticsTitleRef} tabIndex={-1} className="outline-none">Analytics</span>
                   </CardTitle>
                   {dataUpdatedAt > 0 && (
                     <Badge variant="outline" className="text-[9px] px-1.5 py-0 gap-0.5 font-normal text-muted-foreground">
