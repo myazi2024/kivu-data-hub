@@ -443,18 +443,22 @@ async function generateA4InvoicePDF(
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(6.5);
   doc.setTextColor(80, 80, 80);
+  const tvaPctLabel = `${(tvaRate * 100).toFixed(tvaRate * 100 % 1 === 0 ? 0 : 2)}%`;
   const mentions = [
-    `Facture normalisée émise conformément à la réglementation fiscale en vigueur en République Démocratique du Congo.`,
+    tplCfg.show_dgi_mention
+      ? `Facture normalisée émise conformément à la réglementation fiscale en vigueur en République Démocratique du Congo.`
+      : `Facture émise par ${company.legal_name}.`,
     `Émetteur : ${company.legal_name} — NIF ${company.nif} — RCCM ${company.rccm} — ID-NAT ${company.id_nat} — ${TAX_REGIME_LABELS[company.tax_regime] || company.tax_regime}.`,
-    `TVA appliquée au taux légal de 16%. Tout règlement effectué vaut acceptation des conditions générales de vente.`,
+    `TVA appliquée au taux de ${tvaPctLabel}. ${tplCfg.payment_terms || 'Tout règlement effectué vaut acceptation des conditions générales de vente.'}`,
     invoice.dgi_validation_code ? `Code de validation DGI : ${invoice.dgi_validation_code}` : `Code de vérification : ${verificationCode || invoice.invoice_number}`,
-  ];
+    tplCfg.footer_text,
+  ].filter(Boolean) as string[];
   mentions.forEach(m => {
     const lines = doc.splitTextToSize(m, pageWidth - 2 * margin - 22);
     lines.forEach((line: string) => { doc.text(line, margin, cursorY); cursorY += 2.8; });
   });
 
-  if (verifyUrl) {
+  if (verifyUrl && tplCfg.show_verification_qr) {
     try {
       const qrDataUrl = await QRCode.toDataURL(verifyUrl, { margin: 0, width: 80 });
       doc.addImage(qrDataUrl, 'PNG', pageWidth - margin - 18, pageHeight - 32, 16, 16);
