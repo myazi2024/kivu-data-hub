@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { flatCoords, projectFeature, centroid, computeBBox, useAnimatedBbox, useGeoJsonData, type BBox } from '@/lib/mapProjection';
+import MapZoomBackButton from '@/components/map/ui/MapZoomBackButton';
 
 interface Feature {
   type: string;
@@ -136,6 +137,10 @@ const DRCTerritoiresMap: React.FC<Props> = ({ province, territoire, onTerritoire
           );
         })}
       </svg>
+
+      {territoire && onTerritoireSelect && (
+        <MapZoomBackButton onClick={() => onTerritoireSelect(territoire)} label={`Retour — ${province || 'RDC'}`} />
+      )}
 
       {hovered && (
         <div className="absolute top-2 left-2 bg-background/90 backdrop-blur-sm border border-border/50 rounded px-2 py-1 text-[10px] shadow-sm pointer-events-none z-10">
