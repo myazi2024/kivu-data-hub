@@ -198,6 +198,7 @@ Deno.serve(async (req) => {
             .update({
               status: "completed",
               transaction_reference: session.id,
+              ...feeUpdate,
               metadata: {
                 stripe_session_id: session.id,
                 completed_at: new Date().toISOString(),
