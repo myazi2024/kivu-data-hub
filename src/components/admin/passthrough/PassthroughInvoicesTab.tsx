@@ -147,20 +147,20 @@ export const PassthroughInvoicesTab = () => {
                     <TableCell className="text-right font-semibold">${Number(inv.total_billed_usd).toFixed(2)}</TableCell>
                     <TableCell className="text-right">{inv.transaction_count}</TableCell>
                     <TableCell>{inv.consistency_check_passed
-                      ? <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                      ? <CheckCircle2 className="h-4 w-4 text-primary" />
                       : <AlertTriangle className="h-4 w-4 text-destructive" />}</TableCell>
                     <TableCell><Badge variant={STATUS_VARIANTS[inv.status]}>{inv.status}</Badge></TableCell>
                     <TableCell>
                       <div className="flex gap-1">
                         <Button variant="ghost" size="icon" onClick={() => setSelected(inv.id)}><FileSearch className="h-4 w-4" /></Button>
                         {inv.status === 'draft' && (
-                          <Button variant="ghost" size="icon" onClick={() => validate(inv.id)} title="Valider"><CheckCircle2 className="h-4 w-4 text-emerald-500" /></Button>
+                          <Button variant="ghost" size="icon" onClick={() => validate(inv.id)} title="Valider"><CheckCircle2 className="h-4 w-4 text-primary" /></Button>
                         )}
                         {inv.status === 'validated' && (
                           <Button variant="ghost" size="icon" onClick={() => updateStatus(inv.id, 'sent', { sent_at: new Date().toISOString() })} title="Marquer envoyée"><Send className="h-4 w-4" /></Button>
                         )}
                         {inv.status === 'sent' && (
-                          <Button variant="ghost" size="icon" onClick={() => updateStatus(inv.id, 'paid', { paid_at: new Date().toISOString() })} title="Marquer payée"><CheckCircle2 className="h-4 w-4 text-emerald-500" /></Button>
+                          <Button variant="ghost" size="icon" onClick={() => updateStatus(inv.id, 'paid', { paid_at: new Date().toISOString() })} title="Marquer payée"><CheckCircle2 className="h-4 w-4 text-primary" /></Button>
                         )}
                         {!['paid', 'cancelled'].includes(inv.status) && (
                           <Button variant="ghost" size="icon" onClick={() => updateStatus(inv.id, 'cancelled', { cancelled_at: new Date().toISOString() })} title="Annuler"><Ban className="h-4 w-4 text-destructive" /></Button>

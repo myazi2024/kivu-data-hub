@@ -25,13 +25,24 @@ type Rule = {
   created_at: string;
 };
 
-const emptyRule = {
-  scope_type: 'global' as const,
+type FormState = {
+  scope_type: 'reseller' | 'partner' | 'payment_method' | 'global';
+  scope_id: string;
+  scope_label: string;
+  markup_pct: number;
+  min_amount_usd: number;
+  billing_cycle: 'monthly' | 'quarterly';
+  active: boolean;
+  notes: string;
+};
+
+const emptyRule: FormState = {
+  scope_type: 'global',
   scope_id: '',
   scope_label: '',
   markup_pct: 0,
   min_amount_usd: 10,
-  billing_cycle: 'monthly' as const,
+  billing_cycle: 'monthly',
   active: true,
   notes: '',
 };
