@@ -208,8 +208,9 @@ async function generateA4InvoicePDF(
   let verifyUrl = '';
   let verificationCode = '';
   let company: CompanyLegalInfo;
+  let tplCfg = DEFAULT_INVOICE_TEMPLATE_CONFIG;
   try {
-    const [verification, companyInfo] = await Promise.all([
+    const [verification, companyInfo, cfg] = await Promise.all([
       createDocumentVerification({
         documentType: 'invoice',
         parcelNumber: invoice.parcel_number,
@@ -222,16 +223,20 @@ async function generateA4InvoicePDF(
         },
       }),
       fetchCompanyLegalInfo(),
+      fetchInvoiceTemplateConfig(),
     ]);
     if (verification) {
       verifyUrl = verification.verifyUrl;
       verificationCode = verification.verificationCode;
     }
     company = companyInfo;
+    tplCfg = cfg;
   } catch (e) {
     console.error('Failed to init invoice PDF:', e);
     company = await fetchCompanyLegalInfo();
+    tplCfg = await fetchInvoiceTemplateConfig();
   }
+  const tvaRate = tplCfg.tva_rate ?? TVA_RATE;
 
   const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
   const pageWidth = doc.internal.pageSize.getWidth();
