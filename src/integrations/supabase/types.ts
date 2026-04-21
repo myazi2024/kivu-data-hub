@@ -1199,6 +1199,21 @@ export type Database = {
           },
         ]
       }
+      cadastral_credit_note_seq_year: {
+        Row: {
+          last_value: number
+          year: number
+        }
+        Insert: {
+          last_value?: number
+          year: number
+        }
+        Update: {
+          last_value?: number
+          year?: number
+        }
+        Relationships: []
+      }
       cadastral_credit_notes: {
         Row: {
           amount_usd: number
@@ -1285,6 +1300,8 @@ export type Database = {
           selected_services: Json
           signature_algorithm: string | null
           signed_at: string | null
+          source_request_id: string | null
+          source_request_type: string | null
           status: string
           total_amount_usd: number
           updated_at: string
@@ -1319,6 +1336,8 @@ export type Database = {
           selected_services: Json
           signature_algorithm?: string | null
           signed_at?: string | null
+          source_request_id?: string | null
+          source_request_type?: string | null
           status?: string
           total_amount_usd?: number
           updated_at?: string
@@ -1353,6 +1372,8 @@ export type Database = {
           selected_services?: Json
           signature_algorithm?: string | null
           signed_at?: string | null
+          source_request_id?: string | null
+          source_request_type?: string | null
           status?: string
           total_amount_usd?: number
           updated_at?: string
@@ -3055,6 +3076,59 @@ export type Database = {
           },
         ]
       }
+      invoice_reminders: {
+        Row: {
+          channel: string
+          created_at: string
+          error_message: string | null
+          id: string
+          invoice_id: string
+          metadata: Json | null
+          recipient: string
+          reminder_number: number
+          sent_by: string
+          sent_by_user: string | null
+          status: string
+          subject: string | null
+        }
+        Insert: {
+          channel?: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          invoice_id: string
+          metadata?: Json | null
+          recipient: string
+          reminder_number?: number
+          sent_by?: string
+          sent_by_user?: string | null
+          status?: string
+          subject?: string | null
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          invoice_id?: string
+          metadata?: Json | null
+          recipient?: string
+          reminder_number?: number
+          sent_by?: string
+          sent_by_user?: string | null
+          status?: string
+          subject?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_reminders_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "cadastral_invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invoice_template_config: {
         Row: {
           config_key: string
@@ -3965,6 +4039,77 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      payment_refunds: {
+        Row: {
+          amount_usd: number
+          created_at: string
+          currency_code: string
+          failure_reason: string | null
+          id: string
+          initiated_by: string | null
+          initiated_by_name: string | null
+          invoice_id: string | null
+          notes: string | null
+          payment_id: string | null
+          payment_transaction_id: string | null
+          processed_at: string | null
+          provider: string | null
+          provider_refund_id: string | null
+          provider_response: Json | null
+          reason: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount_usd: number
+          created_at?: string
+          currency_code?: string
+          failure_reason?: string | null
+          id?: string
+          initiated_by?: string | null
+          initiated_by_name?: string | null
+          invoice_id?: string | null
+          notes?: string | null
+          payment_id?: string | null
+          payment_transaction_id?: string | null
+          processed_at?: string | null
+          provider?: string | null
+          provider_refund_id?: string | null
+          provider_response?: Json | null
+          reason: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount_usd?: number
+          created_at?: string
+          currency_code?: string
+          failure_reason?: string | null
+          id?: string
+          initiated_by?: string | null
+          initiated_by_name?: string | null
+          invoice_id?: string | null
+          notes?: string | null
+          payment_id?: string | null
+          payment_transaction_id?: string | null
+          processed_at?: string | null
+          provider?: string | null
+          provider_refund_id?: string | null
+          provider_response?: Json | null
+          reason?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_refunds_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "cadastral_invoices"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       payment_transactions: {
         Row: {
@@ -6341,12 +6486,36 @@ export type Database = {
       }
       expire_discount_codes: { Args: never; Returns: number }
       expire_outdated_ccc_codes: { Args: never; Returns: number }
+      export_fec_period: {
+        Args: { _end_date: string; _start_date: string }
+        Returns: {
+          comp_aux_lib: string
+          comp_aux_num: string
+          compte_lib: string
+          compte_num: string
+          credit: number
+          date_let: string
+          debit: number
+          ecriture_date: string
+          ecriture_let: string
+          ecriture_lib: string
+          ecriture_num: string
+          idevise: string
+          journal_code: string
+          journal_lib: string
+          montant_devise: number
+          piece_date: string
+          piece_ref: string
+          valid_date: string
+        }[]
+      }
       export_user_data: { Args: { target_user_id: string }; Returns: Json }
       extract_owner_names_from_details: {
         Args: { owners_details: Json }
         Returns: string
       }
       generate_ccc_code: { Args: never; Returns: string }
+      generate_credit_note_number: { Args: never; Returns: string }
       generate_invoice_number: { Args: never; Returns: string }
       generate_land_title_reference: { Args: never; Returns: string }
       generate_mortgage_receipt: {
