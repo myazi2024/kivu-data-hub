@@ -176,9 +176,21 @@ async function generateMiniInvoicePDF(
   selectedServices.forEach(service => {
     const price = Number(service.price);
     subtotalTTC += price;
+    doc.setFontSize(7);
+    doc.setTextColor(0, 0, 0);
     doc.text(`${service.name.substring(0, 26)}`, margin, cursorY);
     doc.text(`${price.toFixed(2)}$`, pageWidth - margin, cursorY, { align: 'right' });
     cursorY += 3;
+    const desc = (service as any).description as string | undefined;
+    if (desc && desc.trim()) {
+      doc.setFontSize(6);
+      doc.setTextColor(120, 120, 120);
+      const truncated = desc.length > 50 ? `${desc.substring(0, 50)}…` : desc;
+      doc.text(truncated, margin, cursorY);
+      cursorY += 2.5;
+      doc.setFontSize(7);
+      doc.setTextColor(0, 0, 0);
+    }
   });
 
   // Décomposition fiscale conforme DGI
@@ -390,8 +402,10 @@ async function generateA4InvoicePDF(
     const tableData = selectedServices.map(service => {
       const priceTTC = Number(service.price);
       const priceHT = priceTTC / (1 + tvaRate);
+      const desc = (service as any).description as string | undefined;
+      const designation = desc && desc.trim() ? `${service.name}\n${desc.trim()}` : service.name;
       return [
-        service.name,
+        designation,
         '1',
         formatMoney(priceHT, 'USD'),
         formatMoney(priceTTC, 'USD'),
@@ -402,16 +416,60 @@ async function generateA4InvoicePDF(
       head: [["Désignation", "Qté", "Prix unitaire HT", "Total TTC"]],
       body: tableData,
       startY: cursorY,
-      styles: { fontSize: 8.5, cellPadding: 2, lineColor: [220, 220, 220], lineWidth: 0.2, textColor: [33, 37, 41] },
+      styles: { fontSize: 8.5, cellPadding: 2, lineColor: [220, 220, 220], lineWidth: 0.2, textColor: [33, 37, 41], valign: 'top' },
       headStyles: { fillColor: secondaryRgb, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8.5 },
       columnStyles: {
-        0: { cellWidth: (pageWidth - 2 * margin) * 0.50 },
+        0: { cellWidth: (pageWidth - 2 * margin) * 0.55 },
         1: { cellWidth: (pageWidth - 2 * margin) * 0.10, halign: 'center' },
-        2: { cellWidth: (pageWidth - 2 * margin) * 0.20, halign: 'right' },
-        3: { cellWidth: (pageWidth - 2 * margin) * 0.20, halign: 'right' },
+        2: { cellWidth: (pageWidth - 2 * margin) * 0.175, halign: 'right' },
+        3: { cellWidth: (pageWidth - 2 * margin) * 0.175, halign: 'right' },
       },
       theme: 'grid',
-      margin: { left: margin, right: margin }
+      margin: { left: margin, right: margin },
+      didParseCell: (data) => {
+        if (data.section === 'body' && data.column.index === 0) {
+          const raw = String(data.cell.raw ?? '');
+          const nlIdx = raw.indexOf('\n');
+          if (nlIdx >= 0) {
+            // On garde le texte combiné, le styling différencié est appliqué dans didDrawCell
+            data.cell.styles.fontSize = 8.5;
+          }
+        }
+      },
+      didDrawCell: (data) => {
+        if (data.section === 'body' && data.column.index === 0) {
+          const raw = String(data.cell.raw ?? '');
+          const nlIdx = raw.indexOf('\n');
+          if (nlIdx < 0) return;
+          const name = raw.substring(0, nlIdx);
+          const desc = raw.substring(nlIdx + 1);
+          // Repeindre la cellule par-dessus pour styliser nom (gras) + description (gris italique)
+          const padX = 2;
+          const padY = 2;
+          const cellX = data.cell.x + padX;
+          const cellY = data.cell.y + padY;
+          const cellW = data.cell.width - padX * 2;
+          // Effacer le texte original
+          doc.setFillColor(255, 255, 255);
+          doc.rect(data.cell.x + 0.3, data.cell.y + 0.3, data.cell.width - 0.6, data.cell.height - 0.6, 'F');
+          // Nom en gras
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(8.5);
+          doc.setTextColor(33, 37, 41);
+          const nameLines = doc.splitTextToSize(name, cellW);
+          doc.text(nameLines, cellX, cellY + 3);
+          const nameH = nameLines.length * 3.2;
+          // Description en gris italique
+          doc.setFont('helvetica', 'italic');
+          doc.setFontSize(7);
+          doc.setTextColor(107, 114, 128);
+          const descLines = doc.splitTextToSize(desc, cellW);
+          doc.text(descLines, cellX, cellY + 3 + nameH);
+          // Reset
+          doc.setFont('helvetica', 'normal');
+          doc.setTextColor(33, 37, 41);
+        }
+      },
     });
 
     cursorY = (doc as any).lastAutoTable?.finalY + 6;
