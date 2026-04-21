@@ -303,8 +303,8 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
   }
 
   return (
-    <div className="w-full h-full flex flex-col overflow-hidden relative">
-        {/* Contrôle mobile: bascule Analytics */}
+    <div ref={swipeRef} className="w-full h-full flex flex-col overflow-hidden relative">
+
         <div className="lg:hidden fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50">
           <div className="flex items-center justify-center gap-1.5 bg-background/95 backdrop-blur-sm border border-border/50 rounded-full px-2.5 py-1.5 shadow-lg">
             <Button size="sm" variant={activeMobilePanel !== 'analytics' ? 'default' : 'outline'} onClick={() => setActiveMobilePanel('map')} aria-label="Carte & Données" className="rounded-full h-7 px-3 text-[10px] gap-1">
