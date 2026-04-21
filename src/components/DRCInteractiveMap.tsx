@@ -1,5 +1,7 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useAppAppearance } from '@/hooks/useAppAppearance';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { useSwipeNavigation } from '@/hooks/useSwipeNavigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -67,6 +69,30 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [forcedTab, setForcedTab] = useState<string | null>(null);
   const mapCardRef = React.useRef<HTMLDivElement>(null);
+
+  const isMobile = useIsMobile();
+  const swipeRef = useSwipeNavigation<HTMLDivElement>({
+    enabled: isMobile,
+    ignoreSelector: '[data-no-swipe], svg[role="img"], [role="dialog"], [data-radix-popper-content-wrapper]',
+    onSwipeLeft: () => setActiveMobilePanel('analytics'),
+    onSwipeRight: () => setActiveMobilePanel('map'),
+  });
+
+  // Hint one-shot: indique à l'utilisateur mobile la disponibilité du swipe
+  useEffect(() => {
+    if (!isMobile) return;
+    try {
+      if (localStorage.getItem('drc-map-swipe-hint-shown') === '1') return;
+      const t = setTimeout(() => {
+        toast('Astuce : glissez horizontalement pour basculer Carte ↔ Analytics', { duration: 3500 });
+        localStorage.setItem('drc-map-swipe-hint-shown', '1');
+      }, 800);
+      return () => clearTimeout(t);
+    } catch {
+      /* localStorage indisponible */
+    }
+  }, [isMobile]);
+
 
   const { isTestRoute } = useTestEnvironment();
   const { data: analytics, isLoading, dataUpdatedAt } = useLandDataAnalytics(isTestRoute);
@@ -301,8 +327,8 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
   }
 
   return (
-    <div className="w-full h-full flex flex-col overflow-hidden relative">
-        {/* Contrôle mobile: bascule Analytics */}
+    <div ref={swipeRef} className="w-full h-full flex flex-col overflow-hidden relative">
+
         <div className="lg:hidden fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50">
           <div className="flex items-center justify-center gap-1.5 bg-background/95 backdrop-blur-sm border border-border/50 rounded-full px-2.5 py-1.5 shadow-lg">
             <Button size="sm" variant={activeMobilePanel !== 'analytics' ? 'default' : 'outline'} onClick={() => setActiveMobilePanel('map')} aria-label="Carte & Données" className="rounded-full h-7 px-3 text-[10px] gap-1">
@@ -320,7 +346,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
         <div className="flex-1 min-h-0 flex flex-col lg:grid lg:grid-cols-12 gap-1 sm:gap-2 p-1 sm:p-2 pb-14 lg:pb-2">
           
           {/* Colonne gauche: Carte + Détails province */}
-          <div className={`${activeMobilePanel === 'analytics' ? 'hidden lg:flex' : 'flex'} lg:col-span-4 flex-col min-h-0 h-full gap-1 sm:gap-2`}>
+          <div key={isMobile ? `mobile-left-${activeMobilePanel}` : 'left'} className={`${activeMobilePanel === 'analytics' ? 'hidden lg:flex' : 'flex animate-fade-in lg:animate-none'} lg:col-span-4 flex-col min-h-0 h-full gap-1 sm:gap-2`}>
             
             {/* Carte RDC */}
             <div className={`flex flex-col min-h-0 transition-all duration-300 w-full ${selectedProvince ? 'h-1/2 lg:h-auto' : 'h-full lg:h-auto'} lg:flex-[3]`}>
@@ -351,7 +377,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                   
                    <div className="flex-1 min-h-0 overflow-hidden flex items-center justify-center p-1">
                     {selectedSectionType === 'rurale' || (selectedTerritoire && selectedProvince) ? (
-                      <div key="territoires" className="w-full h-full animate-scale-in">
+                      <div key="territoires" data-no-swipe className="w-full h-full animate-scale-in">
                         <DRCTerritoiresMap
                           province={selectedProvince?.name}
                           territoire={selectedTerritoire}
@@ -381,7 +407,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                         />
                       </div>
                     ) : selectedVille && selectedCommune ? (
-                      <div key={`quartiers-${selectedVille}`} className="w-full h-full animate-scale-in">
+                      <div key={`quartiers-${selectedVille}`} data-no-swipe className="w-full h-full animate-scale-in">
                         <DRCQuartiersMap
                           ville={selectedVille}
                           commune={selectedCommune}
@@ -396,7 +422,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                         />
                       </div>
                     ) : selectedVille ? (
-                      <div key="communes" className="w-full h-full animate-scale-in">
+                      <div key="communes" data-no-swipe className="w-full h-full animate-scale-in">
                         <DRCCommunesMap
                           ville={selectedVille}
                           commune={selectedCommune}
@@ -409,7 +435,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                         />
                       </div>
                     ) : (
-                      <div key="provinces" className="w-full h-full flex items-center justify-center animate-fade-in" style={{ transform: 'scale(0.9)', transformOrigin: 'center center' }}>
+                      <div key="provinces" data-no-swipe className="w-full h-full flex items-center justify-center animate-fade-in" style={{ transform: 'scale(0.9)', transformOrigin: 'center center' }}>
                         <DRCMapWithTooltip
                           provincesData={provincesData}
                           selectedProvince={selectedProvince?.id || null}
@@ -570,7 +596,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
           </div>
 
           {/* Colonne droite: Analytics */}
-          <div className={`${activeMobilePanel !== 'analytics' ? 'hidden lg:flex' : 'flex'} lg:col-span-8 flex-col min-h-0 h-full`}>
+          <div key={isMobile ? `mobile-right-${activeMobilePanel}` : 'right'} className={`${activeMobilePanel !== 'analytics' ? 'hidden lg:flex' : 'flex animate-fade-in lg:animate-none'} lg:col-span-8 flex-col min-h-0 h-full`}>
             <Card className="flex-1 flex flex-col overflow-hidden border-border/30 min-h-0">
               <CardHeader className="px-2 py-1 border-b border-border/20 flex-shrink-0">
                 <div className="flex items-center justify-between">
