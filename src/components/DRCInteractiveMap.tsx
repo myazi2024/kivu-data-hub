@@ -640,9 +640,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
 
           {/* Colonne droite: Analytics */}
           <div
-            key={isMobile ? `mobile-right-${activeMobilePanel}` : 'right'}
-            style={isMobile && onAnalyticsPanel && rubberBand !== 0 ? { transform: `translateX(${rubberBand}px)`, transition: isSwiping ? 'none' : 'transform 280ms ease-out' } : undefined}
-            className={`${activeMobilePanel !== 'analytics' ? 'hidden lg:flex' : 'flex animate-fade-in lg:animate-none'} lg:col-span-8 flex-col min-h-0 h-full`}
+            className="w-1/2 lg:w-auto shrink-0 lg:shrink lg:col-span-8 flex flex-col min-h-0 h-full"
           >
             <Card className="flex-1 flex flex-col overflow-hidden border-border/30 min-h-0">
               <CardHeader className="px-2 py-1 border-b border-border/20 flex-shrink-0">
