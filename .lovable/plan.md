@@ -1,71 +1,73 @@
 
 
-## Édition complète du pied de page de la facture
+## Audit zoom carte RDC + extension quartiers nationaux
 
-### Constat
-Dans l'onglet **Mise en page**, le champ « Texte du pied de page » ne pilote qu'une seule ligne du bloc « MENTIONS LÉGALES (DGI) » du PDF. Les 4 autres lignes sont en dur dans le code (`InvoicePreviewPanel.tsx` + générateur PDF) :
-1. Phrase d'introduction (« Facture normalisée émise conformément… »)
-2. Ligne émetteur (NIF / RCCM / ID-NAT / régime) — auto-générée depuis `company_legal_info`
-3. Ligne TVA + conditions de paiement
-4. Code de validation DGI — auto-généré
-5. `config.footer_text` (seul champ éditable aujourd'hui)
+### Constat (audit zoom in/out)
 
-L'utilisateur ne peut donc pas modifier la phrase d'intro ni la formulation de la mention TVA.
+| Couche | Zoom IN | Zoom OUT (toggle) | Animation | Bouton retour |
+|--------|---------|-------------------|-----------|---------------|
+| Provinces | OK (600 ms) | OK | Manuelle 600 ms easeOutCubic | Oui |
+| Communes | OK (400 ms) | **KO** | `useAnimatedBbox` 400 ms | **Non** |
+| Quartiers (Goma) | OK (400 ms) | **KO** | `useAnimatedBbox` 400 ms | **Non** |
+| Territoires | OK (400 ms) | **KO** | `useAnimatedBbox` 400 ms | **Non** |
+| Quartiers (autres villes) | **Indisponible** | — | — | — |
 
-### Solution
-Étendre le schéma de configuration pour exposer **chaque ligne textuelle du footer** comme un champ éditable indépendant, regroupés dans une nouvelle section dédiée de l'onglet **Mise en page**.
+**Anomalies confirmées**
+1. Re-cliquer une entité sélectionnée (commune/quartier/territoire) ne dézoome pas.
+2. Saut visuel entre Provinces (600 ms) et sous-couches (400 ms).
+3. Aucun bouton retour overlay sur les sous-couches — l'utilisateur doit ouvrir le panneau Filtres.
+4. Le drilldown Quartier ne fonctionne que pour Goma (`/goma-quartiers.geojson`). Toutes les autres villes restent bloquées au niveau Communes.
+5. Démontage SVG entre couches → flash sans interpolation.
 
-### Changements
+### Plan de correction
 
-**1. Schéma `invoice_template_config`** (migration SQL)
-Ajouter 3 nouvelles clés de configuration (avec valeurs par défaut = textes actuellement en dur) :
-- `footer_intro_text` — phrase d'intro (par défaut : « Facture normalisée émise conformément à la réglementation fiscale… »)
-- `footer_tva_mention` — gabarit avec placeholder `{tva_rate}` (par défaut : « TVA appliquée au taux de {tva_rate}. »)
-- `footer_show_emitter_line` — booléen pour masquer/afficher la ligne émetteur
-- `footer_show_dgi_code` — booléen pour masquer/afficher la ligne « Code de validation DGI »
+**A. Toggle dézoom intra-couche** (`DRCInteractiveMap.tsx`)
+Handlers Communes / Quartiers / Territoires : `setX(prev => prev === val ? null : val)`. Pour Territoires, conserver la promotion province quand `!selectedProvince`.
 
-Le champ existant `footer_text` reste inchangé (ligne libre en bas).
+**B. Bouton retour générique**
+Créer `src/components/map/ui/MapZoomBackButton.tsx` (icône `ArrowLeft`, `absolute top-2 right-2`, `aria-label="Retour"`). Monté dans `DRCCommunesMap`, `DRCQuartiersMap`, `DRCTerritoiresMap` quand une entité est focus → appel du même handler que le clic (toggle off).
 
-**2. Type `InvoiceTemplateConfig` + defaults** (`useInvoiceTemplateConfig.ts`)
-Ajouter les 4 clés au type et à `DEFAULT_INVOICE_TEMPLATE_CONFIG` avec leurs valeurs par défaut actuelles.
+**C. Harmonisation animation 600 ms**
+Dans `src/lib/mapProjection.ts`, ajouter paramètre `useAnimatedBbox(target, durationMs = 600)` + easing easeOutCubic aligné sur `DRCMapWithTooltip`. Mise à jour des 3 sous-cartes.
 
-**3. UI — `InvoiceLayoutForm.tsx`**
-Nouvelle section **« Pied de page (mentions légales)»** regroupant :
-- Textarea **Texte d'introduction** (`footer_intro_text`)
-- Textarea **Mention TVA** (`footer_tva_mention`) avec aide indiquant le placeholder `{tva_rate}` disponible
-- Switch **Afficher la ligne émetteur (NIF/RCCM/ID-NAT)** (`footer_show_emitter_line`)
-- Switch **Afficher le code de validation DGI** (`footer_show_dgi_code`)
-- Textarea existant **Texte libre du pied de page** (`footer_text`) — renommer le label en « Ligne complémentaire libre » pour clarifier
+**D. Atténuer le flash inter-couches**
+Wrapper `animate-scale-in` (design system existant) sur les conteneurs SVG dans `DRCInteractiveMap.tsx` lors du switch de niveau.
 
-Réordonner pour que toutes les options du footer soient visuellement regroupées.
+**E. Quartiers nationaux RDC** (extension demandée)
+Source : [HDX — Quartiers RDC](https://data.humdata.org/dataset/quartiers-rdc-quarters-drc) (shapefile officiel OCHA, ~1500+ quartiers couvrant les principales villes RDC).
 
-**4. Aperçu — `InvoicePreviewPanel.tsx`**
-Remplacer les chaînes en dur du bloc « MENTIONS LÉGALES » par les nouveaux champs config :
-- Ligne 1 → `config.footer_intro_text` (fallback ancien texte si vide)
-- Ligne 2 → conditionnée par `config.footer_show_emitter_line`
-- Ligne 3 → `config.footer_tva_mention` avec `{tva_rate}` interpolé + `config.payment_terms`
-- Ligne 4 → conditionnée par `config.footer_show_dgi_code`
-- Ligne 5 → `config.footer_text` (inchangé)
+Workflow :
+1. Télécharger le shapefile depuis HDX, le convertir en GeoJSON simplifié (~1-2 MB max via `mapshaper -simplify 10%`) avec propriétés normalisées : `name`, `commune`, `ville`, `province`.
+2. Publier le fichier sous `public/rdc-quartiers.geojson`.
+3. Étendre `DRCQuartiersMap` :
+   - Nouvelle prop `dataSource` : `'goma' | 'national'`.
+   - Filtrage par `ville` ET `commune` (pas seulement `commune` comme aujourd'hui — collisions de noms entre villes).
+   - Conserver le fichier Goma comme fallback détaillé pour Goma uniquement (résolution plus fine).
+4. `DRCInteractiveMap` : sélectionner la source selon la ville (`ville === 'Goma'` → fichier dédié, sinon fichier national).
+5. `MapScopeLegend` : retirer la désactivation du sélecteur quartier hors Goma. Ajouter message info si la ville sélectionnée n'a aucun quartier dans le dataset national (ex. petites localités).
 
-Appliquer la même logique au mini-reçu pour les champs pertinents.
+**F. Mémoire**
+Mettre à jour `mem://features/land-data-analytics/interactive-map-layers-fr` : toggles, bouton retour, durée unifiée, source HDX + chemins fichiers, propriétés normalisées attendues.
 
-**5. Générateur PDF** (`src/lib/pdf/...`)
-Répliquer exactement les mêmes substitutions dans le code générant le bloc footer du PDF A4 (et mini si applicable) afin que l'aperçu reste un miroir fidèle du document final.
+### Sécurité & performance
+- GeoJSON statique servi depuis `/public`, cache via `useGeoJsonData` existant (Map module-level).
+- Simplification Douglas-Peucker pour rester sous 2 MB (objectif < 500 KB gzip).
+- Aucune RLS impactée — données publiques OCHA.
+- Licence HDX : Creative Commons Attribution — ajouter mention dans `MapScopeLegend` ou un tooltip footer carte.
 
-### Sécurité & cohérence
-- Pas de changement RLS : les nouvelles clés héritent de la policy existante de `invoice_template_config`.
-- Audit log : déjà couvert par `bulk_update_invoice_template_config` dans `saveConfig`.
-- Sanitisation : interpolation `{tva_rate}` simple par `String.replace`, pas d'eval.
+### Fichiers impactés
+- `src/lib/mapProjection.ts` — paramètre `durationMs`
+- `src/components/DRCInteractiveMap.tsx` — toggles, sélection source quartier, animation wrapper
+- `src/components/DRCCommunesMap.tsx` — bouton retour
+- `src/components/DRCQuartiersMap.tsx` — prop `dataSource`, filtrage ville+commune, bouton retour
+- `src/components/DRCTerritoiresMap.tsx` — bouton retour
+- `src/components/map/ui/MapZoomBackButton.tsx` (nouveau)
+- `src/components/map/ui/MapScopeLegend.tsx` — réactivation universelle quartier + crédit OCHA
+- `public/rdc-quartiers.geojson` (nouveau, ~500 KB)
+- `mem://features/land-data-analytics/interactive-map-layers-fr` — mise à jour
 
 ### Hors scope
-- Pas d'éditeur WYSIWYG (textareas suffisent).
-- Pas de support multilingue du footer (FR uniquement, comme aujourd'hui).
-- Pas de modification de `CompanyLegalInfoForm` (l'identité reste séparée du footer).
-
-### Fichiers
-- Migration SQL : insertion des 4 nouvelles clés par défaut dans `invoice_template_config`
-- `src/hooks/useInvoiceTemplateConfig.ts` (type + defaults)
-- `src/components/admin/invoice-template/InvoiceLayoutForm.tsx` (nouvelle section)
-- `src/components/admin/invoice-template/InvoicePreviewPanel.tsx` (rendu dynamique)
-- Fichier(s) du générateur PDF dans `src/lib/pdf/` (mêmes substitutions)
+- Pas de moteur de morphing SVG inter-couches (mitigation CSS uniquement).
+- Pas d'édition admin du dataset quartiers (lecture seule depuis fichier statique).
+- Pas de couche sous-quartiers (avenues / blocs).
 
