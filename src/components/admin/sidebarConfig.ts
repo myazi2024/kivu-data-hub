@@ -73,7 +73,6 @@ export const menuItems: AdminMenuSection[] = [
       { icon: Smartphone, label: 'Moyens de Paiement', value: 'payment-methods', badge: null, keywords: ['mobile money', 'carte', 'virement', 'méthode'] },
       { icon: Settings, label: 'Mode de Paiement', value: 'payment-mode', badge: null, keywords: ['test', 'production', 'sandbox', 'live'] },
       { icon: Layers, label: 'Intégration Services', value: 'payment-integration', badge: null, keywords: ['api', 'webhook', 'connexion', 'service'] },
-      { icon: Layers, label: 'Vue Unifiée', value: 'unified-payments', badge: null, keywords: ['unifié', 'agrégé', 'tous paiements', 'sources'] },
       { icon: Receipt, label: 'Frais & Tarifs services', value: 'billing-config', badge: null, keywords: ['tarif', 'frais', 'prix', 'permis', 'mutation', 'expertise', 'hypothèque', 'lotissement'] },
       { icon: FileText, label: 'Modèle de facture', value: 'invoice-template', badge: null, keywords: ['template', 'modèle', 'facture', 'identité', 'logo', 'tva', 'rccm', 'dgi', 'mise en page', 'aperçu', 'pdf'] },
       { icon: ArrowLeftRight, label: 'Devises / Taux', value: 'currency-config', badge: null, keywords: ['dollar', 'franc', 'euro', 'change', 'conversion', 'monnaie'] },

@@ -20,6 +20,8 @@ const ZERO: AdminPendingCounts = {
 
 /**
  * Single RPC replacing 9 parallel pendingCount queries.
+ * Note (B11) : `payments` agrège désormais 5 sources de paiements pending
+ * (publications + cadastre + transactions + expertise + autorisation).
  * Refetches every 60s, stale after 30s.
  */
 export function useAdminPendingCounts(enabled: boolean) {
