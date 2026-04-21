@@ -14,6 +14,71 @@ export type Database = {
   }
   public: {
     Tables: {
+      accounting_journal_entries: {
+        Row: {
+          account_code: string
+          account_label: string
+          created_at: string
+          created_by: string | null
+          credit_usd: number
+          currency_code: string
+          debit_usd: number
+          description: string | null
+          entry_date: string
+          exchange_rate_used: number
+          fiscal_period_id: string | null
+          id: string
+          journal_code: string
+          piece_ref: string
+          source_id: string
+          source_table: string
+        }
+        Insert: {
+          account_code: string
+          account_label: string
+          created_at?: string
+          created_by?: string | null
+          credit_usd?: number
+          currency_code?: string
+          debit_usd?: number
+          description?: string | null
+          entry_date: string
+          exchange_rate_used?: number
+          fiscal_period_id?: string | null
+          id?: string
+          journal_code: string
+          piece_ref: string
+          source_id: string
+          source_table: string
+        }
+        Update: {
+          account_code?: string
+          account_label?: string
+          created_at?: string
+          created_by?: string | null
+          credit_usd?: number
+          currency_code?: string
+          debit_usd?: number
+          description?: string | null
+          entry_date?: string
+          exchange_rate_used?: number
+          fiscal_period_id?: string | null
+          id?: string
+          journal_code?: string
+          piece_ref?: string
+          source_id?: string
+          source_table?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "accounting_journal_entries_fiscal_period_id_fkey"
+            columns: ["fiscal_period_id"]
+            isOneToOne: false
+            referencedRelation: "fiscal_periods"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       admin_user_notes: {
         Row: {
           admin_id: string
@@ -2580,6 +2645,69 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      fiscal_periods: {
+        Row: {
+          closed_at: string | null
+          closed_by: string | null
+          closed_by_name: string | null
+          created_at: string
+          credit_note_count: number
+          id: string
+          invoice_count: number
+          month: number | null
+          notes: string | null
+          period_type: string
+          reopen_reason: string | null
+          reopened_at: string | null
+          reopened_by: string | null
+          revenue_total_usd: number
+          status: string
+          tva_collected_usd: number
+          updated_at: string
+          year: number
+        }
+        Insert: {
+          closed_at?: string | null
+          closed_by?: string | null
+          closed_by_name?: string | null
+          created_at?: string
+          credit_note_count?: number
+          id?: string
+          invoice_count?: number
+          month?: number | null
+          notes?: string | null
+          period_type?: string
+          reopen_reason?: string | null
+          reopened_at?: string | null
+          reopened_by?: string | null
+          revenue_total_usd?: number
+          status?: string
+          tva_collected_usd?: number
+          updated_at?: string
+          year: number
+        }
+        Update: {
+          closed_at?: string | null
+          closed_by?: string | null
+          closed_by_name?: string | null
+          created_at?: string
+          credit_note_count?: number
+          id?: string
+          invoice_count?: number
+          month?: number | null
+          notes?: string | null
+          period_type?: string
+          reopen_reason?: string | null
+          reopened_at?: string | null
+          reopened_by?: string | null
+          revenue_total_usd?: number
+          status?: string
+          tva_collected_usd?: number
+          updated_at?: string
+          year?: number
+        }
+        Relationships: []
       }
       fraud_attempts: {
         Row: {
@@ -6363,6 +6491,18 @@ export type Database = {
         }
         Relationships: []
       }
+      tva_collected_by_period: {
+        Row: {
+          currency_code: string | null
+          invoice_count: number | null
+          month: number | null
+          total_ht_usd: number | null
+          total_ttc_usd: number | null
+          tva_collected_usd: number | null
+          year: number | null
+        }
+        Relationships: []
+      }
       unified_payments_view: {
         Row: {
           amount_usd: number | null
@@ -6419,6 +6559,10 @@ export type Database = {
       cleanup_test_data_chunk: {
         Args: { p_limit?: number; p_step: string }
         Returns: number
+      }
+      close_fiscal_period: {
+        Args: { p_month: number; p_year: number }
+        Returns: Json
       }
       count_audit_logs: { Args: never; Returns: number }
       count_test_data_stats: { Args: never; Returns: Json }
@@ -6514,9 +6658,17 @@ export type Database = {
         Args: { owners_details: Json }
         Returns: string
       }
+      find_or_create_fiscal_period: {
+        Args: { p_date: string }
+        Returns: string
+      }
       generate_ccc_code: { Args: never; Returns: string }
       generate_credit_note_number: { Args: never; Returns: string }
       generate_invoice_number: { Args: never; Returns: string }
+      generate_journal_entries_for_invoice: {
+        Args: { p_invoice_id: string }
+        Returns: number
+      }
       generate_land_title_reference: { Args: never; Returns: string }
       generate_mortgage_receipt: {
         Args: { _mortgage_id: string; _payment_id?: string }
@@ -6677,6 +6829,10 @@ export type Database = {
         Args: { p_expires_in?: number; p_file_path: string }
         Returns: string
       }
+      get_tva_declaration: {
+        Args: { p_month: number; p_year: number }
+        Returns: Json
+      }
       get_user_activity_stats: {
         Args: { _end_date?: string; _start_date?: string; _user_id: string }
         Returns: {
@@ -6795,6 +6951,10 @@ export type Database = {
           tax_year: number
         }[]
       }
+      regenerate_journal_for_invoice: {
+        Args: { p_invoice_id: string }
+        Returns: number
+      }
       regenerate_missing_certificates: {
         Args: never
         Returns: {
@@ -6811,6 +6971,10 @@ export type Database = {
           inserted_count: number
           scanned_count: number
         }[]
+      }
+      reopen_fiscal_period: {
+        Args: { p_id: string; p_reason: string }
+        Returns: Json
       }
       request_account_deletion: {
         Args: { confirmation_email: string }

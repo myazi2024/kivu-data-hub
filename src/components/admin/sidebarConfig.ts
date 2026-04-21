@@ -5,7 +5,7 @@ import {
   Tag, Tags, Building2, Receipt, TrendingUp, Smartphone, Grid3X3, TestTube,
   Key, Scale, Award, Handshake, Presentation, PieChart, Wallet, ArrowLeftRight,
   Layers, FileSearch, Landmark, ScrollText, History, Compass, Percent, Activity,
-  SlidersHorizontal, BookOpen, Newspaper, Palette, UserCog,
+  SlidersHorizontal, BookOpen, Newspaper, Palette, UserCog, CalendarCheck,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -79,6 +79,9 @@ export const menuItems: AdminMenuSection[] = [
       { icon: FileText, label: 'Avoirs', value: 'credit-notes', badge: null, keywords: ['avoir', 'note de crédit', 'annulation', 'remboursement comptable', 'av-'] },
       { icon: ArrowLeftRight, label: 'Remboursements', value: 'refunds', badge: null, keywords: ['refund', 'rembourser', 'retour', 'annulation paiement'] },
       { icon: Bell, label: 'Relances impayées', value: 'invoice-reminders', badge: null, keywords: ['relance', 'impayé', 'rappel', 'overdue', 'recouvrement'] },
+      { icon: CalendarCheck, label: 'Périodes fiscales', value: 'fiscal-periods', badge: null, keywords: ['clôture', 'période', 'mensuelle', 'fiscale', 'fermer', 'verrouiller'] },
+      { icon: BookOpen, label: 'Journal comptable', value: 'accounting-journal', badge: null, keywords: ['écriture', 'journal', 'débit', 'crédit', 'compte', '411', '706', '4457', 'plan comptable'] },
+      { icon: Receipt, label: 'Reporting TVA', value: 'tva-reporting', badge: null, keywords: ['tva', 'déclaration', 'dgi', 'collectée', 'reverser', 'mensuelle'] },
       { icon: FileSearch, label: 'Export FEC', value: 'fec-export', badge: null, keywords: ['export', 'fec', 'comptable', 'comptabilité', 'csv', 'fiscal'] },
     ],
   },
