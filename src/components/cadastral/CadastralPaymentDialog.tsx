@@ -135,8 +135,9 @@ const CadastralPaymentDialog: React.FC<CadastralPaymentDialogProps> = ({
     onClose();
   };
 
-  const handleDownloadReceipt = () => {
-    import('@/lib/pdf').then(({ generateInvoicePDF }) => {
+  const handleDownloadReceipt = async () => {
+    try {
+      const { downloadInvoicePDF } = await import('@/lib/invoiceDownload');
       const invoiceData = {
         id: invoice.id,
         invoice_number: invoice.invoice_number,
@@ -150,10 +151,11 @@ const CadastralPaymentDialog: React.FC<CadastralPaymentDialogProps> = ({
         client_name: null,
         search_date: invoice.created_at || new Date().toISOString(),
       };
-      generateInvoicePDF(invoiceData, [], 'a4');
-    }).catch(() => {
+      // Format + catalogue résolus automatiquement (config admin + services)
+      await downloadInvoicePDF(invoiceData as any);
+    } catch {
       toast({ title: "Erreur", description: "Impossible de générer le reçu PDF", variant: "destructive" });
-    });
+    }
   };
 
   return (

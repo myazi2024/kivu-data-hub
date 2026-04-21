@@ -145,8 +145,8 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
         dgi_validation_code: dbInvoice.dgi_validation_code || null,
       };
 
-      const { generateInvoicePDF } = await import('@/lib/pdf');
-      await generateInvoicePDF(invoice, catalogServices, invoiceFormat);
+      const { downloadInvoicePDF } = await import('@/lib/invoiceDownload');
+      await downloadInvoicePDF(invoice, { format: invoiceFormat, services: catalogServices });
       toast.dismiss(loadingId);
       toast.success('Justificatif PDF téléchargé');
     } catch (e) {
