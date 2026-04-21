@@ -4138,6 +4138,8 @@ export type Database = {
           config_type: string
           created_at: string | null
           display_order: number | null
+          fee_fixed_usd: number
+          fee_percent: number
           id: string
           is_enabled: boolean
           provider_id: string
@@ -4149,6 +4151,8 @@ export type Database = {
           config_type: string
           created_at?: string | null
           display_order?: number | null
+          fee_fixed_usd?: number
+          fee_percent?: number
           id?: string
           is_enabled?: boolean
           provider_id: string
@@ -4160,6 +4164,8 @@ export type Database = {
           config_type?: string
           created_at?: string | null
           display_order?: number | null
+          fee_fixed_usd?: number
+          fee_percent?: number
           id?: string
           is_enabled?: boolean
           provider_id?: string
@@ -4249,9 +4255,13 @@ export type Database = {
           id: string
           invoice_id: string | null
           metadata: Json | null
+          net_amount_usd: number | null
           payment_method: string
           phone_number: string | null
           provider: string
+          provider_fee_currency: string | null
+          provider_fee_raw: Json | null
+          provider_fee_usd: number
           status: string
           transaction_reference: string | null
           updated_at: string | null
@@ -4266,9 +4276,13 @@ export type Database = {
           id?: string
           invoice_id?: string | null
           metadata?: Json | null
+          net_amount_usd?: number | null
           payment_method: string
           phone_number?: string | null
           provider: string
+          provider_fee_currency?: string | null
+          provider_fee_raw?: Json | null
+          provider_fee_usd?: number
           status?: string
           transaction_reference?: string | null
           updated_at?: string | null
@@ -4283,9 +4297,13 @@ export type Database = {
           id?: string
           invoice_id?: string | null
           metadata?: Json | null
+          net_amount_usd?: number | null
           payment_method?: string
           phone_number?: string | null
           provider?: string
+          provider_fee_currency?: string | null
+          provider_fee_raw?: Json | null
+          provider_fee_usd?: number
           status?: string
           transaction_reference?: string | null
           updated_at?: string | null
@@ -6491,6 +6509,18 @@ export type Database = {
         }
         Relationships: []
       }
+      revenue_net_by_period: {
+        Row: {
+          effective_fee_percent: number | null
+          gross_revenue_usd: number | null
+          net_revenue_usd: number | null
+          period_month: string | null
+          provider: string | null
+          total_fees_usd: number | null
+          transaction_count: number | null
+        }
+        Relationships: []
+      }
       tva_collected_by_period: {
         Row: {
           currency_code: string | null
@@ -6531,6 +6561,10 @@ export type Database = {
         }[]
       }
       auto_cancel_stale_pending: { Args: never; Returns: number }
+      backfill_provider_fees: {
+        Args: { p_from?: string; p_to?: string }
+        Returns: Json
+      }
       bulk_update_parcel_actions: { Args: { _actions: Json }; Returns: Json }
       bulk_update_service_prices: {
         Args: { p_operation: string; p_percentage: number; p_table: string }
