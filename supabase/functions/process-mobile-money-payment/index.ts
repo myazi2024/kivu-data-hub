@@ -268,6 +268,9 @@ Deno.serve(async (req) => {
           .from('payment_transactions')
           .update({
             status: 'completed',
+            provider_fee_usd: computedFeeUsd,
+            provider_fee_currency: 'USD',
+            provider_fee_raw: feeBreakdown,
             metadata: {
               ...transaction.metadata,
               provider_simulated: true,
