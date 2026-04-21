@@ -16,6 +16,8 @@ export interface PaymentProvider {
     provider?: string;
   };
   display_order: number;
+  fee_percent?: number;
+  fee_fixed_usd?: number;
 }
 
 /** Mask a sensitive key: show prefix + last 4 chars */
@@ -101,6 +103,8 @@ export const usePaymentMethods = () => {
           is_enabled: provider.is_enabled,
           api_credentials: provider.api_credentials,
           display_order: provider.display_order,
+          fee_percent: provider.fee_percent ?? 0,
+          fee_fixed_usd: provider.fee_fixed_usd ?? 0,
         },
         { onConflict: 'config_type,provider_id' }
       );

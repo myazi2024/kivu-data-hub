@@ -51,6 +51,8 @@ interface LocalMobileMoney {
   merchantCode: string;
   apiKey: string;
   secretKey: string;
+  fee_percent: number;
+  fee_fixed_usd: number;
 }
 
 interface LocalBankCard {
@@ -59,6 +61,8 @@ interface LocalBankCard {
   publicKey: string;
   secretKey: string;
   webhookSecret: string;
+  fee_percent: number;
+  fee_fixed_usd: number;
 }
 
 interface AuditEntry {
@@ -114,6 +118,8 @@ const maskMobileMoneyFromProvider = (p: PaymentProvider): LocalMobileMoney => ({
   merchantCode: maskApiKey(p.api_credentials.merchantCode),
   apiKey: maskApiKey(p.api_credentials.apiKey),
   secretKey: maskApiKey(p.api_credentials.secretKey),
+  fee_percent: Number(p.fee_percent ?? 0),
+  fee_fixed_usd: Number(p.fee_fixed_usd ?? 0),
 });
 
 const maskBankCardFromProvider = (p: PaymentProvider): LocalBankCard => ({
@@ -122,12 +128,14 @@ const maskBankCardFromProvider = (p: PaymentProvider): LocalBankCard => ({
   publicKey: maskApiKey(p.api_credentials.publicKey),
   secretKey: maskApiKey(p.api_credentials.secretKey),
   webhookSecret: maskApiKey(p.api_credentials.webhookSecret),
+  fee_percent: Number(p.fee_percent ?? 0),
+  fee_fixed_usd: Number(p.fee_fixed_usd ?? 0),
 });
 
 const DEFAULT_MOBILE_MONEY: LocalMobileMoney[] = [
-  { provider_id: 'airtel_money', provider_name: 'Airtel Money', is_enabled: true, apiKey: '', merchantCode: '', secretKey: '' },
-  { provider_id: 'orange_money', provider_name: 'Orange Money', is_enabled: true, apiKey: '', merchantCode: '', secretKey: '' },
-  { provider_id: 'mpesa', provider_name: 'M-Pesa', is_enabled: true, apiKey: '', merchantCode: '', secretKey: '' },
+  { provider_id: 'airtel_money', provider_name: 'Airtel Money', is_enabled: true, apiKey: '', merchantCode: '', secretKey: '', fee_percent: 1.5, fee_fixed_usd: 0 },
+  { provider_id: 'orange_money', provider_name: 'Orange Money', is_enabled: true, apiKey: '', merchantCode: '', secretKey: '', fee_percent: 1.5, fee_fixed_usd: 0 },
+  { provider_id: 'mpesa', provider_name: 'M-Pesa', is_enabled: true, apiKey: '', merchantCode: '', secretKey: '', fee_percent: 1.5, fee_fixed_usd: 0 },
 ];
 
 const DEFAULT_BANK_CARD: LocalBankCard = {
@@ -136,6 +144,8 @@ const DEFAULT_BANK_CARD: LocalBankCard = {
   publicKey: '',
   secretKey: '',
   webhookSecret: '',
+  fee_percent: 2.9,
+  fee_fixed_usd: 0.30,
 };
 
 // ─── Component ───────────────────────────────────────────────────────────────
@@ -264,6 +274,8 @@ const AdminPaymentMethods: React.FC = () => {
           secretKey: p.secretKey,
         },
         display_order: i,
+        fee_percent: Number(p.fee_percent) || 0,
+        fee_fixed_usd: Number(p.fee_fixed_usd) || 0,
       }));
 
       const bcProviders: PaymentProvider[] = [
@@ -280,6 +292,8 @@ const AdminPaymentMethods: React.FC = () => {
             webhookSecret: bankCard.webhookSecret,
           },
           display_order: 0,
+          fee_percent: Number(bankCard.fee_percent) || 0,
+          fee_fixed_usd: Number(bankCard.fee_fixed_usd) || 0,
         },
       ];
 
@@ -495,6 +509,38 @@ const AdminPaymentMethods: React.FC = () => {
                     )}
                   </div>
 
+                  {/* Fee config */}
+                  <div className="grid grid-cols-2 gap-3 pt-2 border-t">
+                    <div className="space-y-1.5">
+                      <Label htmlFor={`${provider.provider_id}-fee-pct`} className="text-xs md:text-sm">
+                        Frais (%)
+                      </Label>
+                      <Input
+                        id={`${provider.provider_id}-fee-pct`}
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={provider.fee_percent}
+                        onChange={(e) => updateMM(provider.provider_id, 'fee_percent', parseFloat(e.target.value) || 0)}
+                        className="text-sm"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor={`${provider.provider_id}-fee-fix`} className="text-xs md:text-sm">
+                        Frais fixe (USD)
+                      </Label>
+                      <Input
+                        id={`${provider.provider_id}-fee-fix`}
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={provider.fee_fixed_usd}
+                        onChange={(e) => updateMM(provider.provider_id, 'fee_fixed_usd', parseFloat(e.target.value) || 0)}
+                        className="text-sm"
+                      />
+                    </div>
+                  </div>
+
                   {/* Test connection button */}
                   <div className="flex items-center gap-2">
                     <Button
@@ -616,6 +662,38 @@ const AdminPaymentMethods: React.FC = () => {
                       (val) => updateBC('webhookSecret', val),
                       'Entrez le secret webhook Stripe'
                     )}
+                </div>
+
+                {/* Fee config */}
+                <div className="grid grid-cols-2 gap-3 pt-2 border-t">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="bc-fee-pct" className="text-xs md:text-sm">
+                      Frais (%)
+                    </Label>
+                    <Input
+                      id="bc-fee-pct"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={bankCard.fee_percent}
+                      onChange={(e) => updateBC('fee_percent', parseFloat(e.target.value) || 0)}
+                      className="text-sm"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="bc-fee-fix" className="text-xs md:text-sm">
+                      Frais fixe (USD)
+                    </Label>
+                    <Input
+                      id="bc-fee-fix"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={bankCard.fee_fixed_usd}
+                      onChange={(e) => updateBC('fee_fixed_usd', parseFloat(e.target.value) || 0)}
+                      className="text-sm"
+                    />
+                  </div>
                 </div>
 
                 {/* Test connection */}

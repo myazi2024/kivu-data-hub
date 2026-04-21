@@ -18,7 +18,8 @@ type: feature
 
 ### UI
 - `AdminFinancialDashboard` : KPI "Marge nette" ($net + frais providers + %), grille étendue à 5 colonnes, requête sur `payment_transactions` (gross/fees/net) sur la période
-- À compléter (suivants) : `AdminPaymentMethods` édition `fee_percent`/`fee_fixed_usd` inline avec audit, `AdminPaymentServiceIntegration` lecture `revenue_net_by_period` au lieu de l'estimation 50/50
+- `AdminPaymentMethods` : édition inline `fee_percent`/`fee_fixed_usd` par méthode (Mobile Money + Carte bancaire), persistée via `usePaymentMethods.upsertProvider` + audit `PAYMENT_METHODS_UPDATED`
+- `AdminPaymentServiceIntegration` : section "Marge réelle" lit `revenue_net_by_period` (brut/frais/net + répartition par provider) au lieu de l'estimation 50/50 ; bouton "Backfill frais historiques" déclenche RPC `backfill_provider_fees(null,null)` avec confirmation
 
 ### Hors périmètre
 - Reconciliation auto avec relevés Stripe/MoMo

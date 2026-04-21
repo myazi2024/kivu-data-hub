@@ -1,22 +1,36 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  AlertTriangle, 
-  CheckCircle2, 
-  TrendingUp, 
-  DollarSign, 
+import { Button } from '@/components/ui/button';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import {
+  AlertTriangle,
+  CheckCircle2,
+  TrendingUp,
+  DollarSign,
   CreditCard,
   Smartphone,
   Shield,
   AlertCircle,
   Info,
-  Loader2
+  Loader2,
+  RefreshCw,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { usePaymentConfig } from '@/hooks/usePaymentConfig';
 import { useCadastralServices } from '@/hooks/useCadastralServices';
@@ -38,6 +52,14 @@ interface ServiceProviderCompatibility {
   };
 }
 
+interface RealRevenueAggregate {
+  gross: number;
+  fees: number;
+  net: number;
+  txCount: number;
+  byProvider: Record<string, { gross: number; fees: number; net: number; tx: number }>;
+}
+
 const AdminPaymentServiceIntegration: React.FC = () => {
   const { paymentMode, availableMethods, isPaymentRequired, loading: configLoading } = usePaymentConfig();
   const { services, loading: servicesLoading } = useCadastralServices();
@@ -47,11 +69,14 @@ const AdminPaymentServiceIntegration: React.FC = () => {
     issues: [] as string[],
     warnings: [] as string[]
   });
+  const [realRevenue, setRealRevenue] = useState<RealRevenueAggregate | null>(null);
+  const [loadingRevenue, setLoadingRevenue] = useState(true);
+  const [backfilling, setBackfilling] = useState(false);
 
-  // Frais de transaction standards
+  // Frais de transaction standards (fallback display)
   const transactionFees: TransactionFees = {
     stripe: { percentage: 2.9, fixed: 0.30 },
-    mobile_money: { percentage: 3.5 }
+    mobile_money: { percentage: 1.5 }
   };
 
   // Limites de paiement par provider
@@ -60,6 +85,66 @@ const AdminPaymentServiceIntegration: React.FC = () => {
     airtel_money: { min: 1, max: 500 },
     orange_money: { min: 1, max: 500 },
     mpesa: { min: 1, max: 1000 }
+  };
+
+  // Load real net revenue from view
+  const loadRealRevenue = useCallback(async () => {
+    setLoadingRevenue(true);
+    try {
+      const { data, error } = await (supabase as any)
+        .from('revenue_net_by_period')
+        .select('*');
+      if (error) throw error;
+
+      const agg: RealRevenueAggregate = { gross: 0, fees: 0, net: 0, txCount: 0, byProvider: {} };
+      (data || []).forEach((row: any) => {
+        const gross = Number(row.gross_revenue_usd) || 0;
+        const fees = Number(row.total_fees_usd) || 0;
+        const net = Number(row.net_revenue_usd) || 0;
+        const tx = Number(row.transaction_count) || 0;
+        const provider = row.provider || 'unknown';
+        agg.gross += gross;
+        agg.fees += fees;
+        agg.net += net;
+        agg.txCount += tx;
+        if (!agg.byProvider[provider]) agg.byProvider[provider] = { gross: 0, fees: 0, net: 0, tx: 0 };
+        agg.byProvider[provider].gross += gross;
+        agg.byProvider[provider].fees += fees;
+        agg.byProvider[provider].net += net;
+        agg.byProvider[provider].tx += tx;
+      });
+      setRealRevenue(agg);
+    } catch (err) {
+      console.error('Failed to load real revenue', err);
+      setRealRevenue({ gross: 0, fees: 0, net: 0, txCount: 0, byProvider: {} });
+    } finally {
+      setLoadingRevenue(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadRealRevenue();
+  }, [loadRealRevenue]);
+
+  const handleBackfill = async () => {
+    setBackfilling(true);
+    try {
+      const { data, error } = await (supabase as any).rpc('backfill_provider_fees', {
+        p_from: null,
+        p_to: null,
+      });
+      if (error) throw error;
+      const result = (data as any) || {};
+      toast.success('Backfill terminé', {
+        description: `${result.updated_count ?? 0} transactions mises à jour, ~$${Number(result.total_fees_estimated_usd ?? 0).toFixed(2)} de frais estimés.`,
+      });
+      await loadRealRevenue();
+    } catch (err: any) {
+      console.error('Backfill failed', err);
+      toast.error('Échec du backfill', { description: err.message || 'Réservé aux administrateurs.' });
+    } finally {
+      setBackfilling(false);
+    }
   };
 
   useEffect(() => {
@@ -174,12 +259,16 @@ const AdminPaymentServiceIntegration: React.FC = () => {
     return services.reduce((sum, service) => sum + service.price, 0);
   };
 
-  const getEstimatedNetRevenue = () => {
-    // Estimation basée sur distribution 50% Stripe, 50% Mobile Money
-    const totalRevenue = getTotalEstimatedRevenue();
-    const stripeFees = totalRevenue * 0.5 * (transactionFees.stripe.percentage / 100);
-    const mobileMoneyFees = totalRevenue * 0.5 * (transactionFees.mobile_money.percentage / 100);
-    return totalRevenue - stripeFees - mobileMoneyFees;
+  const effectiveFeePct = realRevenue && realRevenue.gross > 0
+    ? (realRevenue.fees / realRevenue.gross) * 100
+    : 0;
+
+  const providerLabel = (key: string) => {
+    if (key === 'stripe') return 'Stripe';
+    if (key === 'mpesa') return 'M-Pesa';
+    if (key === 'orange_money') return 'Orange Money';
+    if (key === 'airtel_money') return 'Airtel Money';
+    return key;
   };
 
   if (configLoading || servicesLoading) {
@@ -272,54 +361,126 @@ const AdminPaymentServiceIntegration: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Statistiques financières */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Revenus Catalogue Brut</p>
-                <p className="text-2xl font-bold">${getTotalEstimatedRevenue().toFixed(2)}</p>
-              </div>
-              <DollarSign className="h-8 w-8 text-blue-500" />
+      {/* Statistiques financières — données réelles */}
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div>
+              <CardTitle className="text-base flex items-center gap-2">
+                <DollarSign className="h-5 w-5" />
+                Marge réelle (transactions complétées)
+              </CardTitle>
+              <CardDescription>
+                Données issues de <code className="text-xs">revenue_net_by_period</code> — frais providers tracés transaction par transaction
+              </CardDescription>
             </div>
-          </CardContent>
-        </Card>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" size="sm" disabled={backfilling || loadingRevenue}>
+                  {backfilling ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                  )}
+                  Backfill frais historiques
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Lancer le backfill des frais providers ?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Cette action applique une estimation des frais (selon <code>fee_percent</code> + <code>fee_fixed_usd</code> de chaque méthode) à toutes les transactions complétées qui n'ont pas de frais enregistrés. Les transactions ayant déjà un fee réel ne seront pas touchées.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Annuler</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleBackfill}>Confirmer</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {loadingRevenue ? (
+            <div className="flex items-center justify-center py-6">
+              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            </div>
+          ) : !realRevenue || realRevenue.txCount === 0 ? (
+            <Alert>
+              <Info className="h-4 w-4" />
+              <AlertDescription>
+                Aucune transaction complétée pour l'instant. Les KPIs s'afficheront dès le premier paiement réussi.
+              </AlertDescription>
+            </Alert>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="p-4 rounded-lg border bg-muted/30">
+                  <p className="text-xs font-medium text-muted-foreground">Brut encaissé</p>
+                  <p className="text-2xl font-bold mt-1">${realRevenue.gross.toFixed(2)}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{realRevenue.txCount} transaction(s)</p>
+                </div>
+                <div className="p-4 rounded-lg border bg-muted/30">
+                  <p className="text-xs font-medium text-muted-foreground">Frais providers réels</p>
+                  <p className="text-2xl font-bold text-orange-600 dark:text-orange-400 mt-1">
+                    −${realRevenue.fees.toFixed(2)}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">{effectiveFeePct.toFixed(2)}% effectif</p>
+                </div>
+                <div className="p-4 rounded-lg border bg-muted/30">
+                  <p className="text-xs font-medium text-muted-foreground">Marge nette</p>
+                  <p className="text-2xl font-bold text-green-600 dark:text-green-400 mt-1">
+                    ${realRevenue.net.toFixed(2)}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">après frais</p>
+                </div>
+                <div className="p-4 rounded-lg border bg-muted/30">
+                  <p className="text-xs font-medium text-muted-foreground">Catalogue brut (référence)</p>
+                  <p className="text-2xl font-bold mt-1">${getTotalEstimatedRevenue().toFixed(2)}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{services.length} service(s)</p>
+                </div>
+              </div>
 
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Revenus Nets Estimés</p>
-                <p className="text-2xl font-bold text-green-600 dark:text-green-400">
-                  ${getEstimatedNetRevenue().toFixed(2)}
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Après frais transaction
-                </p>
-              </div>
-              <TrendingUp className="h-8 w-8 text-green-500" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Frais Estimés</p>
-                <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">
-                  ${(getTotalEstimatedRevenue() - getEstimatedNetRevenue()).toFixed(2)}
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  ~{(((getTotalEstimatedRevenue() - getEstimatedNetRevenue()) / getTotalEstimatedRevenue()) * 100).toFixed(1)}% du total
-                </p>
-              </div>
-              <AlertCircle className="h-8 w-8 text-orange-500" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+              {Object.keys(realRevenue.byProvider).length > 0 && (
+                <div className="mt-4">
+                  <p className="text-sm font-medium mb-2">Répartition par provider</p>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Provider</TableHead>
+                        <TableHead className="text-right">Transactions</TableHead>
+                        <TableHead className="text-right">Brut</TableHead>
+                        <TableHead className="text-right">Frais</TableHead>
+                        <TableHead className="text-right">Net</TableHead>
+                        <TableHead className="text-right">% effectif</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {Object.entries(realRevenue.byProvider).map(([prov, v]) => {
+                        const pct = v.gross > 0 ? (v.fees / v.gross) * 100 : 0;
+                        return (
+                          <TableRow key={prov}>
+                            <TableCell className="font-medium">{providerLabel(prov)}</TableCell>
+                            <TableCell className="text-right">{v.tx}</TableCell>
+                            <TableCell className="text-right">${v.gross.toFixed(2)}</TableCell>
+                            <TableCell className="text-right text-orange-600 dark:text-orange-400">
+                              −${v.fees.toFixed(2)}
+                            </TableCell>
+                            <TableCell className="text-right text-green-600 dark:text-green-400 font-semibold">
+                              ${v.net.toFixed(2)}
+                            </TableCell>
+                            <TableCell className="text-right">{pct.toFixed(2)}%</TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Tableau de compatibilité */}
       <Tabs defaultValue="compatibility" className="w-full">
