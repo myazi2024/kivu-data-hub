@@ -351,7 +351,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                   
                    <div className="flex-1 min-h-0 overflow-hidden flex items-center justify-center p-1">
                     {selectedSectionType === 'rurale' || (selectedTerritoire && selectedProvince) ? (
-                      <div key="territoires" className="w-full h-full animate-fade-in">
+                      <div key="territoires" className="w-full h-full animate-fade-in animate-scale-in">
                         <DRCTerritoiresMap
                           province={selectedProvince?.name}
                           territoire={selectedTerritoire}
@@ -360,6 +360,11 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                           getEntityColor={getTerritoireColor}
                           profileLabel={activeProfile?.legendTitle}
                           onTerritoireSelect={(name) => {
+                            // Toggle off if re-clicking the focused territoire
+                            if (selectedTerritoire && selectedTerritoire.toLowerCase() === name.toLowerCase()) {
+                              setSelectedTerritoire(null);
+                              return;
+                            }
                             if (!selectedProvince) {
                               const provinceName = getProvinceForTerritoire(name);
                               if (provinceName) {
@@ -376,22 +381,22 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                         />
                       </div>
                     ) : selectedVille && selectedCommune && selectedVille.toLowerCase() === 'goma' ? (
-                      <div key="quartiers" className="w-full h-full animate-fade-in">
+                      <div key="quartiers" className="w-full h-full animate-fade-in animate-scale-in">
                         <DRCQuartiersMap
                           ville={selectedVille}
                           commune={selectedCommune}
                           quartier={selectedQuartier}
-                          onQuartierSelect={setSelectedQuartier}
+                          onQuartierSelect={(q) => setSelectedQuartier(selectedQuartier === q ? null : q)}
                           getEntityColor={getQuartierColor}
                           profileLabel={activeProfile?.legendTitle}
                         />
                       </div>
                     ) : selectedVille ? (
-                      <div key="communes" className="w-full h-full animate-fade-in">
+                      <div key="communes" className="w-full h-full animate-fade-in animate-scale-in">
                         <DRCCommunesMap
                           ville={selectedVille}
                           commune={selectedCommune}
-                          onCommuneSelect={setSelectedCommune}
+                          onCommuneSelect={(c) => setSelectedCommune(selectedCommune === c ? null : c)}
                           getEntityColor={getCommuneColor}
                           profileLabel={activeProfile?.legendTitle}
                         />
