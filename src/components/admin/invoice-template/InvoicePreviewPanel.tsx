@@ -6,36 +6,31 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, FileDown, RefreshCw, Info, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
+import QRCode from 'qrcode';
 import { useInvoiceTemplateConfig, type InvoiceTemplateConfig } from '@/hooks/useInvoiceTemplateConfig';
 import { useCompanyLegalInfo, type CompanyLegalInfo, TAX_REGIME_LABELS } from '@/hooks/useCompanyLegalInfo';
-import { generateInvoicePDF, type CadastralInvoice } from '@/lib/pdf';
+import {
+  generateInvoicePDF,
+  type CadastralInvoice,
+  INVOICE_STATUS_COLORS,
+  INVOICE_STATUS_LABELS,
+  resolveInvoiceStatus,
+  type InvoiceStatusKey,
+} from '@/lib/pdf';
 import { downloadInvoicePDF } from '@/lib/invoiceDownload';
 import type { CadastralService } from '@/hooks/useCadastralServices';
 import { supabase } from '@/integrations/supabase/client';
+import { fetchAppLogo } from '@/utils/pdfLogoHelper';
 
 type ClientType = 'individual' | 'company';
-type StatusVariant = 'paid' | 'pending' | 'failed';
 type DiscountPct = 0 | 10 | 25;
 
 interface SimVariants {
   clientType: ClientType;
-  status: StatusVariant;
+  status: InvoiceStatusKey;
   discountPct: DiscountPct;
-  paymentMethod: string;
   showBank: boolean;
 }
-
-const STATUS_LABELS: Record<StatusVariant, string> = {
-  paid: 'PAYÉE',
-  pending: 'EN ATTENTE',
-  failed: 'ÉCHEC',
-};
-
-const STATUS_COLORS: Record<StatusVariant, string> = {
-  paid: '#27ae60',
-  pending: '#e74c3c',
-  failed: '#c0392b',
-};
 
 const SAMPLE_TOTAL = 50;
 const SAMPLE_EXCHANGE_RATE = 2800;
@@ -63,7 +58,7 @@ const buildSampleInvoice = (prefix: string, v: SimVariants): CadastralInvoice =>
     client_address: 'Avenue de la Paix 12, Kinshasa',
     client_tax_regime: isCompany ? 'reel' : null,
     geographical_zone: 'Gombe',
-    payment_method: v.paymentMethod,
+    payment_method: 'mobile_money',
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
     paid_at: v.status === 'paid' ? new Date().toISOString() : null,
@@ -83,37 +78,58 @@ const buildSampleServices = (): CadastralService[] => ([
 const fmt = (n: number) => n.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const fmtBilingual = (usd: number, rate: number) => rate > 1 ? `${fmt(usd)} USD  /  ${fmt(usd * rate)} CDF` : `${fmt(usd)} USD`;
 
+const getSelectedServiceIds = (inv: CadastralInvoice): string[] =>
+  Array.isArray(inv.selected_services)
+    ? inv.selected_services as string[]
+    : (typeof inv.selected_services === 'string' ? JSON.parse(inv.selected_services || '[]') : []);
+
+interface PreviewProps {
+  config: InvoiceTemplateConfig;
+  info: CompanyLegalInfo;
+  invoice: CadastralInvoice;
+  services: CadastralService[];
+  logoBase64: string | null;
+  qrDataUrl: string | null;
+  showBank: boolean;
+}
+
 /**
- * APERÇU A4 — miroir visuel exact du PDF généré par `generateA4InvoicePDF` (src/lib/pdf.ts).
- * Source de vérité : le PDF. Toute évolution doit être faite côté PDF puis reflétée ici.
+ * APERÇU A4 — miroir visuel exact du PDF généré par `generateA4InvoicePDF`.
+ * Toutes les données viennent de l'objet `invoice` réel (ou sample) et des `services` chargés.
  */
-const InvoicePreviewA4 = ({ config, info, variants }: { config: InvoiceTemplateConfig; info: CompanyLegalInfo; variants: SimVariants }) => {
-  const subtotal = SAMPLE_TOTAL;
-  const discount = (subtotal * variants.discountPct) / 100;
-  const total = subtotal - discount;
-  const baseHT = total / (1 + config.tva_rate);
-  const tva = total - baseHT;
-  const dateStr = new Date().toLocaleDateString('fr-FR');
-  const isCompany = variants.clientType === 'company';
+const InvoicePreviewA4 = ({ config, info, invoice, services, logoBase64, qrDataUrl, showBank: showBankProp }: PreviewProps) => {
+  const subtotalTTC = services.reduce((s, x) => s + Number(x.price), 0);
+  const discount = Number(invoice.discount_amount_usd || 0);
+  const totalTTC = subtotalTTC - discount;
+  const baseHT = totalTTC / (1 + config.tva_rate);
+  const tva = totalTTC - baseHT;
+  const exchangeRate = Number(invoice.exchange_rate_used || 1);
+  const dateStr = new Date(invoice.search_date).toLocaleDateString('fr-FR');
+  const paidStr = invoice.paid_at ? new Date(invoice.paid_at).toLocaleDateString('fr-FR') : null;
+  const isCompany = invoice.client_type === 'company';
   const hasBank = !!(info.bank_name || info.bank_account || info.bank_swift);
-  const showBank = variants.showBank && hasBank;
-  const services = [
-    { name: 'Fiche cadastrale complète', priceTTC: 30 },
-    { name: 'Historique de propriété', priceTTC: 20 },
-  ];
+  const showBank = showBankProp && hasBank;
   const tvaPctLabel = `${(config.tva_rate * 100).toFixed(config.tva_rate * 100 % 1 === 0 ? 0 : 2)}%`;
+  const statusKey = resolveInvoiceStatus(invoice.status);
+  const statusColor = INVOICE_STATUS_COLORS[statusKey].hex;
+  const statusLabel = INVOICE_STATUS_LABELS[statusKey];
+  const clientName = invoice.client_name || invoice.client_organization || invoice.client_email || '—';
+  const dgiCode = invoice.dgi_validation_code || SAMPLE_VERIFICATION_CODE;
 
   return (
     <div
-      className="bg-white text-black mx-auto shadow-2xl border border-border relative"
-      style={{ width: '210mm', minHeight: '297mm', padding: '18mm', fontFamily: 'Helvetica, Arial, sans-serif', fontSize: '8.5pt', color: '#212529' }}
+      className="bg-white text-black mx-auto shadow-2xl border border-border"
+      style={{
+        width: '210mm', minHeight: '297mm', padding: '18mm',
+        fontFamily: 'Helvetica, Arial, sans-serif', fontSize: '8.5pt', color: '#212529',
+        display: 'flex', flexDirection: 'column', position: 'relative',
+      }}
     >
-      {/* ===== EN-TÊTE BICOLONNE (miroir PDF) ===== */}
+      {/* ===== EN-TÊTE BICOLONNE ===== */}
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16 }}>
-        {/* Émetteur (gauche) */}
         <div style={{ display: 'flex', gap: 8, flex: 1 }}>
-          {info.logo_url && (
-            <img src={info.logo_url} alt="" style={{ width: 53, height: 53, objectFit: 'contain' }} />
+          {logoBase64 && (
+            <img src={logoBase64} alt="" style={{ width: '14mm', height: '14mm', objectFit: 'contain' }} />
           )}
           <div style={{ fontSize: '7.5pt', lineHeight: 1.4, color: '#505050' }}>
             <p style={{ margin: 0, fontSize: '13pt', fontWeight: 'bold', color: '#212529' }}>{info.legal_name}</p>
@@ -124,7 +140,6 @@ const InvoicePreviewA4 = ({ config, info, variants }: { config: InvoiceTemplateC
             {(info.phone || info.email) && <p style={{ margin: 0 }}>{info.phone}{info.phone && info.email ? '  •  ' : ''}{info.email}</p>}
           </div>
         </div>
-        {/* Titre + N° (droite) */}
         <div style={{ textAlign: 'right', minWidth: 200 }}>
           <p style={{ margin: 0, fontSize: '14pt', fontWeight: 'bold', color: config.header_color }}>
             {config.show_dgi_mention ? 'FACTURE NORMALISÉE' : 'FACTURE'}
@@ -132,45 +147,44 @@ const InvoicePreviewA4 = ({ config, info, variants }: { config: InvoiceTemplateC
           {config.show_dgi_mention && (
             <p style={{ margin: '2px 0 0', fontSize: '8pt', color: '#505050' }}>Direction Générale des Impôts (DGI) — RDC</p>
           )}
-          <p style={{ margin: '6px 0 0', fontSize: '10pt', fontWeight: 'bold', color: '#212529' }}>N° {config.invoice_number_prefix}-PREVIEW-0001</p>
+          <p style={{ margin: '6px 0 0', fontSize: '10pt', fontWeight: 'bold', color: '#212529' }}>N° {invoice.invoice_number}</p>
           <p style={{ margin: '2px 0 0', fontSize: '8pt' }}>Date facturation: {dateStr}</p>
-          {variants.status === 'paid' && <p style={{ margin: '2px 0 0', fontSize: '8pt' }}>Date paiement: {dateStr}</p>}
+          {paidStr && <p style={{ margin: '2px 0 0', fontSize: '8pt' }}>Date paiement: {paidStr}</p>}
         </div>
       </div>
 
-      {/* Ligne séparatrice header_color */}
       <div style={{ marginTop: 6, height: 1, background: config.header_color }} />
 
       {/* ===== BLOC CLIENT + RÉFÉRENCE ===== */}
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, marginTop: 8 }}>
         <div style={{ flex: 1 }}>
           <p style={{ margin: 0, fontSize: '9pt', fontWeight: 'bold', color: config.header_color }}>FACTURÉ À</p>
-          <p style={{ margin: '4px 0 0', fontSize: '8.5pt', fontWeight: 600 }}>{isCompany ? 'SARL Mukendi & Frères' : 'Jean Mukendi'}</p>
-          <div style={{ fontSize: '7.5pt', color: '#505050', lineHeight: 1.5 }}>
-            <p style={{ margin: 0 }}>Avenue de la Paix 12, Kinshasa</p>
-            <p style={{ margin: 0 }}>Email: client@example.cd</p>
+          <p style={{ margin: '4px 0 0', fontSize: '8.5pt', fontWeight: 600 }}>{clientName}</p>
+          <div style={{ fontSize: '7.5pt', color: '#505050', lineHeight: 1.5, wordBreak: 'break-word' }}>
+            {invoice.client_address && <p style={{ margin: 0 }}>{invoice.client_address}</p>}
+            {invoice.client_email && <p style={{ margin: 0 }}>Email: {invoice.client_email}</p>}
             {isCompany ? (
               <>
-                <p style={{ margin: 0 }}>NIF: A1234567B</p>
-                <p style={{ margin: 0 }}>RCCM: CD/KIN/RCCM/24-B-12345</p>
-                <p style={{ margin: 0 }}>Régime: {TAX_REGIME_LABELS['reel']}</p>
+                {invoice.client_nif && <p style={{ margin: 0 }}>NIF: {invoice.client_nif}</p>}
+                {invoice.client_rccm && <p style={{ margin: 0 }}>RCCM: {invoice.client_rccm}</p>}
+                {invoice.client_tax_regime && <p style={{ margin: 0 }}>Régime: {TAX_REGIME_LABELS[invoice.client_tax_regime] || invoice.client_tax_regime}</p>}
               </>
             ) : (
-              <p style={{ margin: 0 }}>ID National: 01-A123-B456789</p>
+              invoice.client_id_nat && <p style={{ margin: 0 }}>ID National: {invoice.client_id_nat}</p>
             )}
           </div>
         </div>
         <div style={{ textAlign: 'right', minWidth: 160 }}>
           <p style={{ margin: 0, fontSize: '9pt', fontWeight: 'bold', color: config.header_color }}>RÉFÉRENCE</p>
-          <p style={{ margin: '4px 0 0', fontSize: '8pt' }}>Parcelle: KIN/GOM/2025/0001</p>
-          <p style={{ margin: 0, fontSize: '8pt' }}>Zone: Gombe</p>
-          <p style={{ margin: '4px 0 0', fontSize: '8pt', fontWeight: 'bold', color: STATUS_COLORS[variants.status] }}>
-            Statut: {STATUS_LABELS[variants.status]}
+          <p style={{ margin: '4px 0 0', fontSize: '8pt' }}>Parcelle: {invoice.parcel_number}</p>
+          {invoice.geographical_zone && <p style={{ margin: 0, fontSize: '8pt' }}>Zone: {invoice.geographical_zone}</p>}
+          <p style={{ margin: '4px 0 0', fontSize: '8pt', fontWeight: 'bold', color: statusColor }}>
+            Statut: {statusLabel}
           </p>
         </div>
       </div>
 
-      {/* ===== TABLEAU PRESTATIONS (colonnes alignées PDF) ===== */}
+      {/* ===== TABLEAU PRESTATIONS ===== */}
       <table style={{ width: '100%', marginTop: 12, borderCollapse: 'collapse', fontSize: '8.5pt' }}>
         <thead>
           <tr style={{ backgroundColor: config.secondary_color, color: '#fff' }}>
@@ -182,49 +196,50 @@ const InvoicePreviewA4 = ({ config, info, variants }: { config: InvoiceTemplateC
         </thead>
         <tbody>
           {services.map((s, i) => {
-            const ht = s.priceTTC / (1 + config.tva_rate);
+            const priceTTC = Number(s.price);
+            const ht = priceTTC / (1 + config.tva_rate);
             return (
               <tr key={i} style={{ borderBottom: '1px solid #dcdcdc' }}>
                 <td style={{ padding: '4px 6px' }}>{s.name}</td>
                 <td style={{ padding: '4px 6px', textAlign: 'center' }}>1</td>
                 <td style={{ padding: '4px 6px', textAlign: 'right' }}>{fmt(ht)} USD</td>
-                <td style={{ padding: '4px 6px', textAlign: 'right' }}>{fmt(s.priceTTC)} USD</td>
+                <td style={{ padding: '4px 6px', textAlign: 'right' }}>{fmt(priceTTC)} USD</td>
               </tr>
             );
           })}
         </tbody>
       </table>
 
-      {/* ===== TOTAUX (alignés droite, miroir PDF) ===== */}
+      {/* ===== TOTAUX ===== */}
       <div style={{ marginTop: 8, marginLeft: 'auto', width: '55%', fontSize: '9pt' }}>
         {discount > 0 && (
           <>
             <div style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0' }}>
-              <span>Sous-total (TTC)</span><span>{fmtBilingual(subtotal, SAMPLE_EXCHANGE_RATE)}</span>
+              <span>Sous-total (TTC)</span><span>{fmtBilingual(subtotalTTC, exchangeRate)}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0' }}>
-              <span>Remise commerciale</span><span>-{fmtBilingual(discount, SAMPLE_EXCHANGE_RATE)}</span>
+              <span>Remise commerciale</span><span>-{fmtBilingual(discount, exchangeRate)}</span>
             </div>
           </>
         )}
         <div style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0' }}>
-          <span>Base HT</span><span>{fmtBilingual(baseHT, SAMPLE_EXCHANGE_RATE)}</span>
+          <span>Base HT</span><span>{fmtBilingual(baseHT, exchangeRate)}</span>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0' }}>
-          <span>{config.tva_label}</span><span>{fmtBilingual(tva, SAMPLE_EXCHANGE_RATE)}</span>
+          <span>{config.tva_label}</span><span>{fmtBilingual(tva, exchangeRate)}</span>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 8px', marginTop: 2, background: config.header_color, color: '#fff', fontWeight: 'bold', fontSize: '10pt' }}>
-          <span>TOTAL TTC</span><span>{fmtBilingual(total, SAMPLE_EXCHANGE_RATE)}</span>
+          <span>TOTAL TTC</span><span>{fmtBilingual(totalTTC, exchangeRate)}</span>
         </div>
       </div>
 
-      {SAMPLE_EXCHANGE_RATE > 1 && (
+      {exchangeRate > 1 && (
         <p style={{ margin: '6px 0 0', fontSize: '7pt', fontStyle: 'italic', color: '#212529' }}>
-          Taux de change appliqué : 1 USD = {SAMPLE_EXCHANGE_RATE} CDF (figé à l'émission)
+          Taux de change appliqué : 1 USD = {exchangeRate} CDF (figé à l'émission)
         </p>
       )}
 
-      {/* ===== CONDITIONS + COORDONNÉES BANCAIRES (miroir PDF) ===== */}
+      {/* ===== CONDITIONS + BANQUE ===== */}
       {(config.payment_terms || showBank) && (
         <>
           <div style={{ marginTop: 10, height: 1, background: '#dcdcdc' }} />
@@ -249,11 +264,11 @@ const InvoicePreviewA4 = ({ config, info, variants }: { config: InvoiceTemplateC
         </>
       )}
 
-      {/* ===== MENTIONS LÉGALES DGI (5 lignes texte réel) ===== */}
-      <div style={{ position: 'absolute', bottom: '18mm', left: '18mm', right: '18mm' }}>
+      {/* ===== MENTIONS LÉGALES (en flux normal, comme PDF) ===== */}
+      <div style={{ marginTop: 'auto', paddingTop: 12, position: 'relative' }}>
         <div style={{ height: 1, background: '#c8c8c8' }} />
         <p style={{ margin: '4px 0 2px', fontSize: '7.5pt', fontWeight: 'bold', color: config.header_color }}>MENTIONS LÉGALES (DGI)</p>
-        <div style={{ fontSize: '6.5pt', color: '#505050', lineHeight: 1.5, paddingRight: 80 }}>
+        <div style={{ fontSize: '6.5pt', color: '#505050', lineHeight: 1.5, paddingRight: qrDataUrl ? 80 : 0 }}>
           <p style={{ margin: 0 }}>
             {config.show_dgi_mention
               ? 'Facture normalisée émise conformément à la réglementation fiscale en vigueur en République Démocratique du Congo.'
@@ -265,14 +280,17 @@ const InvoicePreviewA4 = ({ config, info, variants }: { config: InvoiceTemplateC
           <p style={{ margin: 0 }}>
             TVA appliquée au taux de {tvaPctLabel}. {config.payment_terms || 'Tout règlement effectué vaut acceptation des conditions générales de vente.'}
           </p>
-          <p style={{ margin: 0 }}>Code de validation DGI : {SAMPLE_DGI_CODE}</p>
+          <p style={{ margin: 0 }}>Code de validation DGI : {dgiCode}</p>
           <p style={{ margin: 0 }}>{config.footer_text}</p>
         </div>
 
-        {/* QR vérification bas-droite (16mm équiv ≈ 60px) */}
         {config.show_verification_qr && (
           <div style={{ position: 'absolute', right: 0, bottom: 0, textAlign: 'center' }}>
-            <div style={{ width: 60, height: 60, background: 'repeating-conic-gradient(#000 0% 25%, #fff 0% 50%) 50% / 10px 10px', border: '1px solid #000' }} />
+            {qrDataUrl ? (
+              <img src={qrDataUrl} alt="QR vérification" style={{ width: 60, height: 60 }} />
+            ) : (
+              <div style={{ width: 60, height: 60, background: 'repeating-conic-gradient(#000 0% 25%, #fff 0% 50%) 50% / 10px 10px', border: '1px solid #000' }} />
+            )}
             <p style={{ margin: '2px 0 0', fontSize: '6pt', fontStyle: 'italic', color: '#505050' }}>Vérifier l'authenticité</p>
           </div>
         )}
@@ -284,53 +302,49 @@ const InvoicePreviewA4 = ({ config, info, variants }: { config: InvoiceTemplateC
 /**
  * APERÇU MINI — miroir visuel exact du PDF `generateMiniInvoicePDF`.
  */
-const InvoicePreviewMini = ({ config, info, variants }: { config: InvoiceTemplateConfig; info: CompanyLegalInfo; variants: SimVariants }) => {
-  const subtotal = SAMPLE_TOTAL;
-  const discount = (subtotal * variants.discountPct) / 100;
-  const total = subtotal - discount;
-  const baseHT = total / (1 + config.tva_rate);
-  const tva = total - baseHT;
-  const dateStr = new Date().toLocaleDateString('fr-FR');
-  const isCompany = variants.clientType === 'company';
-  const services = [
-    { name: 'Fiche cadastrale complète', price: 30 },
-    { name: 'Historique de propriété', price: 20 },
-  ];
+const InvoicePreviewMini = ({ config, info, invoice, services, logoBase64 }: Omit<PreviewProps, 'qrDataUrl' | 'showBank'>) => {
+  const subtotalTTC = services.reduce((s, x) => s + Number(x.price), 0);
+  const discount = Number(invoice.discount_amount_usd || 0);
+  const totalTTC = subtotalTTC - discount;
+  const baseHT = totalTTC / (1 + config.tva_rate);
+  const tva = totalTTC - baseHT;
+  const exchangeRate = Number(invoice.exchange_rate_used || 1);
+  const dateStr = new Date(invoice.search_date).toLocaleDateString('fr-FR');
+  const isCompany = invoice.client_type === 'company';
+  const statusKey = resolveInvoiceStatus(invoice.status);
+  const statusFr = statusKey === 'paid' ? 'Payée' : statusKey === 'pending' ? 'En attente' : 'Échec';
+  const clientName = invoice.client_name || invoice.client_organization || invoice.client_email || '—';
 
   return (
     <div
       className="bg-white text-black mx-auto shadow-2xl border border-border"
       style={{ width: 280, padding: 12, fontFamily: 'Helvetica, Arial, sans-serif', fontSize: '8.5px', color: '#000', lineHeight: 1.5 }}
     >
-      {/* En-tête centré (logo + nom + mention + identifiants) — pas de séparateur tirets, fidèle au PDF */}
       <div style={{ textAlign: 'center' }}>
-        {info.logo_url && <img src={info.logo_url} alt="" style={{ width: 22, height: 22, objectFit: 'contain', margin: '0 auto 2px' }} />}
+        {logoBase64 && <img src={logoBase64} alt="" style={{ width: 22, height: 22, objectFit: 'contain', margin: '0 auto 2px' }} />}
         <p style={{ margin: 0, fontWeight: 'bold', fontSize: '11px' }}>{info.legal_name}</p>
         {config.show_dgi_mention && <p style={{ margin: 0, fontWeight: 'bold', fontSize: '8px' }}>FACTURE NORMALISÉE</p>}
         <p style={{ margin: 0, fontSize: '6px' }}>NIF: {info.nif} • RCCM: {info.rccm}</p>
       </div>
 
-      {/* Infos facture (alignées gauche, sans séparateur visuel — comme PDF) */}
       <div style={{ marginTop: 6, fontSize: '7px' }}>
-        <p style={{ margin: 0 }}>N°: {config.invoice_number_prefix}-PREVIEW-0001</p>
+        <p style={{ margin: 0 }}>N°: {invoice.invoice_number}</p>
         <p style={{ margin: 0 }}>Date: {dateStr}</p>
-        <p style={{ margin: 0 }}>Parcelle: KIN/GOM/2025/0001</p>
-        <p style={{ margin: 0 }}>Client: {isCompany ? 'SARL Mukendi & Frères' : 'Jean Mukendi'}</p>
-        {isCompany && <p style={{ margin: 0 }}>NIF Client: A1234567B</p>}
-        <p style={{ margin: 0 }}>Statut: {variants.status === 'paid' ? 'Payée' : variants.status === 'pending' ? 'En attente' : 'Échec'}</p>
+        <p style={{ margin: 0 }}>Parcelle: {invoice.parcel_number}</p>
+        <p style={{ margin: 0 }}>Client: {clientName.substring(0, 30)}</p>
+        {isCompany && invoice.client_nif && <p style={{ margin: 0 }}>NIF Client: {invoice.client_nif}</p>}
+        <p style={{ margin: 0 }}>Statut: {statusFr}</p>
       </div>
 
-      {/* Prestations (TTC) */}
       <div style={{ marginTop: 6, fontSize: '7px' }}>
         <p style={{ margin: 0, fontWeight: 'bold' }}>Prestations (TTC)</p>
         {services.map((s, i) => (
           <div key={i} style={{ display: 'flex', justifyContent: 'space-between' }}>
-            <span>{s.name.substring(0, 26)}</span><span>{s.price.toFixed(2)}$</span>
+            <span>{s.name.substring(0, 26)}</span><span>{Number(s.price).toFixed(2)}$</span>
           </div>
         ))}
       </div>
 
-      {/* Décomposition fiscale avec ligne séparatrice (miroir PDF) */}
       <div style={{ marginTop: 4, paddingTop: 4, borderTop: '1px solid #b4b4b4', fontSize: '7px' }}>
         {discount > 0 && (
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -340,18 +354,16 @@ const InvoicePreviewMini = ({ config, info, variants }: { config: InvoiceTemplat
         <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Base HT:</span><span>{baseHT.toFixed(2)}$</span></div>
         <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>{config.tva_label}:</span><span>{tva.toFixed(2)}$</span></div>
         <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '9px', marginTop: 2 }}>
-          <span>TOTAL TTC:</span><span>{total.toFixed(2)}$</span>
+          <span>TOTAL TTC:</span><span>{totalTTC.toFixed(2)}$</span>
         </div>
       </div>
 
-      {/* Équivalent CDF centré */}
-      {SAMPLE_EXCHANGE_RATE > 1 && (
+      {exchangeRate > 1 && (
         <p style={{ margin: '4px 0 0', textAlign: 'center', fontSize: '7px' }}>
-          ({fmt(total * SAMPLE_EXCHANGE_RATE)} CDF au taux {SAMPLE_EXCHANGE_RATE})
+          ({fmt(totalTTC * exchangeRate)} CDF au taux {exchangeRate})
         </p>
       )}
 
-      {/* Téléphone + régime fiscal centrés */}
       <div style={{ marginTop: 6, textAlign: 'center', fontSize: '6px' }}>
         {info.phone && <p style={{ margin: 0 }}>{info.phone}</p>}
         <p style={{ margin: 0 }}>Régime: {TAX_REGIME_LABELS[info.tax_regime] || info.tax_regime}</p>
@@ -380,7 +392,6 @@ export const InvoicePreviewPanel = () => {
     clientType: 'individual',
     status: 'paid',
     discountPct: 0,
-    paymentMethod: 'mobile_money',
     showBank: true,
   });
 
@@ -388,15 +399,25 @@ export const InvoicePreviewPanel = () => {
   const [recentInvoices, setRecentInvoices] = useState<RecentInvoiceOption[]>([]);
   const [realInvoice, setRealInvoice] = useState<CadastralInvoice | null>(null);
   const [loadingInvoice, setLoadingInvoice] = useState(false);
+  const [servicesCatalog, setServicesCatalog] = useState<CadastralService[]>([]);
+  const [logoBase64, setLogoBase64] = useState<string | null>(null);
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
 
+  // Charger logo (même source que PDF) + catalogue services + factures récentes
   useEffect(() => {
     (async () => {
-      const { data } = await supabase
-        .from('cadastral_invoices')
-        .select('id, invoice_number, client_name, parcel_number, total_amount_usd')
-        .order('created_at', { ascending: false })
-        .limit(20);
-      if (data) setRecentInvoices(data as RecentInvoiceOption[]);
+      const [logo, svc, recent] = await Promise.all([
+        fetchAppLogo(),
+        supabase.from('cadastral_services_config').select('*').eq('is_active', true),
+        supabase
+          .from('cadastral_invoices')
+          .select('id, invoice_number, client_name, parcel_number, total_amount_usd')
+          .order('created_at', { ascending: false })
+          .limit(20),
+      ]);
+      setLogoBase64(logo);
+      if (svc.data) setServicesCatalog(svc.data as unknown as CadastralService[]);
+      if (recent.data) setRecentInvoices(recent.data as RecentInvoiceOption[]);
     })();
   }, []);
 
@@ -422,8 +443,33 @@ export const InvoicePreviewPanel = () => {
     return () => window.removeEventListener('resize', compute);
   }, [format, info]);
 
+  const previewInvoice: CadastralInvoice = useMemo(() => {
+    if (realInvoice) return realInvoice;
+    return buildSampleInvoice(config.invoice_number_prefix, variants);
+  }, [realInvoice, config.invoice_number_prefix, variants]);
+
+  const previewServices: CadastralService[] = useMemo(() => {
+    if (realInvoice) {
+      const ids = getSelectedServiceIds(realInvoice);
+      return servicesCatalog.filter(s => ids.includes(s.id));
+    }
+    return buildSampleServices();
+  }, [realInvoice, servicesCatalog]);
+
+  // QR réel quand facture réelle (encode l'URL de vérification probable)
+  useEffect(() => {
+    if (!config.show_verification_qr) { setQrDataUrl(null); return; }
+    if (!realInvoice) { setQrDataUrl(null); return; }
+    const url = `${window.location.origin}/verify/${realInvoice.invoice_number}`;
+    QRCode.toDataURL(url, { margin: 0, width: 240 })
+      .then(setQrDataUrl)
+      .catch(() => setQrDataUrl(null));
+  }, [realInvoice, config.show_verification_qr]);
+
   const handleRefresh = async () => {
     await Promise.all([refetch(), refetchInfo()]);
+    const logo = await fetchAppLogo();
+    setLogoBase64(logo);
     toast.success('Aperçu rafraîchi');
   };
 
@@ -449,21 +495,6 @@ export const InvoicePreviewPanel = () => {
     }
   };
 
-  const effectiveVariants: SimVariants = useMemo(() => {
-    if (!realInvoice) return variants;
-    const subtotal = Number(realInvoice.original_amount_usd || realInvoice.total_amount_usd);
-    const disc = Number(realInvoice.discount_amount_usd || 0);
-    const pct = subtotal > 0 ? Math.round((disc / subtotal) * 100) : 0;
-    const discountPct: DiscountPct = pct >= 25 ? 25 : pct >= 10 ? 10 : 0;
-    return {
-      clientType: (realInvoice.client_type === 'company' ? 'company' : 'individual') as ClientType,
-      status: (realInvoice.status === 'paid' ? 'paid' : realInvoice.status === 'pending' ? 'pending' : 'failed') as StatusVariant,
-      discountPct,
-      paymentMethod: realInvoice.payment_method || 'mobile_money',
-      showBank: variants.showBank,
-    };
-  }, [realInvoice, variants]);
-
   if (loading) return <div className="flex items-center justify-center py-12"><Loader2 className="h-6 w-6 animate-spin" /></div>;
 
   return (
@@ -471,8 +502,9 @@ export const InvoicePreviewPanel = () => {
       <CardHeader>
         <CardTitle>Aperçu de la facture</CardTitle>
         <CardDescription>
-          Aperçu HTML <strong>miroir fidèle</strong> du PDF généré (mêmes sections, mêmes colonnes, même bandeau total).
-          Le bouton « Comparer ↔ PDF » ouvre le PDF réel dans un onglet à côté pour validation visuelle.
+          Aperçu HTML <strong>miroir fidèle</strong> du PDF généré (mêmes sections, mêmes données, même bandeau total).
+          Quand une facture réelle est sélectionnée, l'aperçu reflète ses vraies valeurs (N°, client, date, taux, prestations, code DGI, QR).
+          Le bouton « Comparer ↔ PDF » ouvre le PDF réel dans un onglet pour validation visuelle.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -506,7 +538,7 @@ export const InvoicePreviewPanel = () => {
                 </SelectContent>
               </Select>
               {loadingInvoice && <p className="text-xs text-muted-foreground">Chargement de la facture...</p>}
-              {realInvoice && <p className="text-xs text-amber-600">Facture réelle chargée — les variantes sont dérivées de ses champs.</p>}
+              {realInvoice && <p className="text-xs text-amber-600">Facture réelle chargée — aperçu reflète ses vraies données.</p>}
             </div>
 
             <div className="flex items-end gap-2 justify-end">
@@ -516,7 +548,7 @@ export const InvoicePreviewPanel = () => {
           </div>
 
           <fieldset disabled={!!realInvoice} className={realInvoice ? 'opacity-50 pointer-events-none' : ''}>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <div className="space-y-1">
                 <Label className="text-xs">Type client</Label>
                 <Select value={variants.clientType} onValueChange={(v) => setVariants({ ...variants, clientType: v as ClientType })}>
@@ -529,7 +561,7 @@ export const InvoicePreviewPanel = () => {
               </div>
               <div className="space-y-1">
                 <Label className="text-xs">Statut</Label>
-                <Select value={variants.status} onValueChange={(v) => setVariants({ ...variants, status: v as StatusVariant })}>
+                <Select value={variants.status} onValueChange={(v) => setVariants({ ...variants, status: v as InvoiceStatusKey })}>
                   <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="paid">Payée</SelectItem>
@@ -549,17 +581,6 @@ export const InvoicePreviewPanel = () => {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-1">
-                <Label className="text-xs">Mode paiement</Label>
-                <Select value={variants.paymentMethod} onValueChange={(v) => setVariants({ ...variants, paymentMethod: v })}>
-                  <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="mobile_money">Mobile Money</SelectItem>
-                    <SelectItem value="card">Carte bancaire</SelectItem>
-                    <SelectItem value="bank_transfer">Virement bancaire</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
             </div>
           </fieldset>
         </div>
@@ -567,11 +588,25 @@ export const InvoicePreviewPanel = () => {
         <div ref={wrapperRef} className="bg-muted/40 rounded-lg p-4 overflow-auto" style={{ minHeight: 400 }}>
           {format === 'a4' ? (
             <div style={{ transform: `scale(${scale})`, transformOrigin: 'top left', width: '210mm', height: `${297 * scale}mm` }}>
-              <InvoicePreviewA4 config={config} info={info} variants={effectiveVariants} />
+              <InvoicePreviewA4
+                config={config}
+                info={info}
+                invoice={previewInvoice}
+                services={previewServices}
+                logoBase64={logoBase64}
+                qrDataUrl={qrDataUrl}
+                showBank={variants.showBank}
+              />
             </div>
           ) : (
             <div className="py-4">
-              <InvoicePreviewMini config={config} info={info} variants={effectiveVariants} />
+              <InvoicePreviewMini
+                config={config}
+                info={info}
+                invoice={previewInvoice}
+                services={previewServices}
+                logoBase64={logoBase64}
+              />
             </div>
           )}
         </div>
