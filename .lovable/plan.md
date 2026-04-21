@@ -1,73 +1,63 @@
 
 
-## Audit zoom carte RDC + extension quartiers nationaux
+## Balayage gauche/droite — Carte RDC ↔ Analytics (mobile)
 
-### Constat (audit zoom in/out)
+### Constat
+Sur mobile, `DRCInteractiveMap.tsx` utilise un état `activeMobilePanel: 'map' | 'analytics'` piloté uniquement par 2 boutons fixes en bas d'écran. Aucun geste de balayage horizontal n'est disponible — l'utilisateur doit obligatoirement viser ces boutons pour basculer.
 
-| Couche | Zoom IN | Zoom OUT (toggle) | Animation | Bouton retour |
-|--------|---------|-------------------|-----------|---------------|
-| Provinces | OK (600 ms) | OK | Manuelle 600 ms easeOutCubic | Oui |
-| Communes | OK (400 ms) | **KO** | `useAnimatedBbox` 400 ms | **Non** |
-| Quartiers (Goma) | OK (400 ms) | **KO** | `useAnimatedBbox` 400 ms | **Non** |
-| Territoires | OK (400 ms) | **KO** | `useAnimatedBbox` 400 ms | **Non** |
-| Quartiers (autres villes) | **Indisponible** | — | — | — |
+### Solution
+Ajouter un détecteur de swipe horizontal (touch + pointer events) qui bascule `activeMobilePanel` entre `'map'` et `'analytics'`, sans modifier la disposition (chaque panneau reste plein écran avec `hidden`/`flex`). Pas de carrousel, pas de translation animée du conteneur — animation visuelle assurée par un fade léger sur le panneau entrant.
 
-**Anomalies confirmées**
-1. Re-cliquer une entité sélectionnée (commune/quartier/territoire) ne dézoome pas.
-2. Saut visuel entre Provinces (600 ms) et sous-couches (400 ms).
-3. Aucun bouton retour overlay sur les sous-couches — l'utilisateur doit ouvrir le panneau Filtres.
-4. Le drilldown Quartier ne fonctionne que pour Goma (`/goma-quartiers.geojson`). Toutes les autres villes restent bloquées au niveau Communes.
-5. Démontage SVG entre couches → flash sans interpolation.
+### Comportement
+- **Swipe gauche** (doigt va de droite vers gauche) sur le panneau **Carte** → bascule vers **Analytics**.
+- **Swipe droite** (doigt va de gauche vers droite) sur le panneau **Analytics** → bascule vers **Carte**.
+- Seuils : déplacement horizontal ≥ 60 px ET ratio |dx| > 1.5 × |dy| (pour ne pas confler avec le scroll vertical des KPI/charts).
+- Désactivation automatique :
+  - Sur viewport ≥ `lg` (les deux panneaux sont visibles côte à côte).
+  - Quand l'utilisateur interagit avec la carte SVG (zoom/pan tactile sur `DRCMapWithTooltip`, `DRCCommunesMap`, etc.) — le swipe est ignoré si la cible du `touchstart` est dans un élément `[data-map-svg]` ou possède l'attribut `role="img"` SVG.
+  - Quand un menu/Popover/ScrollArea horizontal est ouvert (détection via `closest('[data-radix-popper-content-wrapper]')`).
+- Retour haptique léger (`navigator.vibrate?.(15)`) à la bascule, si supporté.
+- Respect de `prefers-reduced-motion` : pas d'animation de transition supplémentaire.
 
-### Plan de correction
+### Implémentation
 
-**A. Toggle dézoom intra-couche** (`DRCInteractiveMap.tsx`)
-Handlers Communes / Quartiers / Territoires : `setX(prev => prev === val ? null : val)`. Pour Territoires, conserver la promotion province quand `!selectedProvince`.
+**1. Nouveau hook `useSwipeNavigation`** — `src/hooks/useSwipeNavigation.ts`
+- Signature : `useSwipeNavigation({ onSwipeLeft, onSwipeRight, threshold = 60, enabled = true, ignoreSelector?: string })` → retourne un `ref` à attacher au conteneur.
+- Écoute `touchstart`/`touchmove`/`touchend` (passive). Calcule `dx`, `dy` au `touchend` ; déclenche le callback approprié si seuil + ratio respectés et si la cible n'est pas dans `ignoreSelector`.
+- Retourne aussi un état `isSwiping` non utilisé ici (réservé pour un éventuel feedback visuel futur).
 
-**B. Bouton retour générique**
-Créer `src/components/map/ui/MapZoomBackButton.tsx` (icône `ArrowLeft`, `absolute top-2 right-2`, `aria-label="Retour"`). Monté dans `DRCCommunesMap`, `DRCQuartiersMap`, `DRCTerritoiresMap` quand une entité est focus → appel du même handler que le clic (toggle off).
+**2. Intégration dans `DRCInteractiveMap.tsx`**
+- Importer le hook + `useIsMobile`.
+- Branchement :
+  ```ts
+  const swipeRef = useSwipeNavigation({
+    enabled: isMobile,
+    ignoreSelector: '[data-no-swipe], svg[role="img"], [role="dialog"], [data-radix-popper-content-wrapper]',
+    onSwipeLeft: () => setActiveMobilePanel('analytics'),
+    onSwipeRight: () => setActiveMobilePanel('map'),
+  });
+  ```
+- Attacher `ref={swipeRef}` au conteneur racine (`<div className="w-full h-full flex flex-col overflow-hidden relative">`, ligne 304).
+- Marquer le wrapper SVG carte avec `data-no-swipe` (lignes 354, 384, 399, 412) pour préserver le pan/zoom carte tactile.
+- Ajouter `animate-fade-in` (déjà dans le design system) sur les deux conteneurs colonne mobile (`Colonne gauche` ligne 323 et `Colonne droite` ligne 573) via une `key={activeMobilePanel}` côté wrapper mobile pour rejouer l'anim à chaque bascule.
 
-**C. Harmonisation animation 600 ms**
-Dans `src/lib/mapProjection.ts`, ajouter paramètre `useAnimatedBbox(target, durationMs = 600)` + easing easeOutCubic aligné sur `DRCMapWithTooltip`. Mise à jour des 3 sous-cartes.
+**3. Hint visuel discret (one-shot)**
+- Au premier affichage mobile (`localStorage` flag `swipe-hint-shown`), afficher pendant ~2 s un toast léger : « Glissez horizontalement pour basculer Carte ↔ Analytics ». Utilise le système de toast déjà présent (sonner). Pas de tutoriel intrusif.
 
-**D. Atténuer le flash inter-couches**
-Wrapper `animate-scale-in` (design system existant) sur les conteneurs SVG dans `DRCInteractiveMap.tsx` lors du switch de niveau.
-
-**E. Quartiers nationaux RDC** (extension demandée)
-Source : [HDX — Quartiers RDC](https://data.humdata.org/dataset/quartiers-rdc-quarters-drc) (shapefile officiel OCHA, ~1500+ quartiers couvrant les principales villes RDC).
-
-Workflow :
-1. Télécharger le shapefile depuis HDX, le convertir en GeoJSON simplifié (~1-2 MB max via `mapshaper -simplify 10%`) avec propriétés normalisées : `name`, `commune`, `ville`, `province`.
-2. Publier le fichier sous `public/rdc-quartiers.geojson`.
-3. Étendre `DRCQuartiersMap` :
-   - Nouvelle prop `dataSource` : `'goma' | 'national'`.
-   - Filtrage par `ville` ET `commune` (pas seulement `commune` comme aujourd'hui — collisions de noms entre villes).
-   - Conserver le fichier Goma comme fallback détaillé pour Goma uniquement (résolution plus fine).
-4. `DRCInteractiveMap` : sélectionner la source selon la ville (`ville === 'Goma'` → fichier dédié, sinon fichier national).
-5. `MapScopeLegend` : retirer la désactivation du sélecteur quartier hors Goma. Ajouter message info si la ville sélectionnée n'a aucun quartier dans le dataset national (ex. petites localités).
-
-**F. Mémoire**
-Mettre à jour `mem://features/land-data-analytics/interactive-map-layers-fr` : toggles, bouton retour, durée unifiée, source HDX + chemins fichiers, propriétés normalisées attendues.
-
-### Sécurité & performance
-- GeoJSON statique servi depuis `/public`, cache via `useGeoJsonData` existant (Map module-level).
-- Simplification Douglas-Peucker pour rester sous 2 MB (objectif < 500 KB gzip).
-- Aucune RLS impactée — données publiques OCHA.
-- Licence HDX : Creative Commons Attribution — ajouter mention dans `MapScopeLegend` ou un tooltip footer carte.
-
-### Fichiers impactés
-- `src/lib/mapProjection.ts` — paramètre `durationMs`
-- `src/components/DRCInteractiveMap.tsx` — toggles, sélection source quartier, animation wrapper
-- `src/components/DRCCommunesMap.tsx` — bouton retour
-- `src/components/DRCQuartiersMap.tsx` — prop `dataSource`, filtrage ville+commune, bouton retour
-- `src/components/DRCTerritoiresMap.tsx` — bouton retour
-- `src/components/map/ui/MapZoomBackButton.tsx` (nouveau)
-- `src/components/map/ui/MapScopeLegend.tsx` — réactivation universelle quartier + crédit OCHA
-- `public/rdc-quartiers.geojson` (nouveau, ~500 KB)
-- `mem://features/land-data-analytics/interactive-map-layers-fr` — mise à jour
+### Sécurité, perfo & a11y
+- Listeners `passive: true` sauf `touchend` — pas de blocage du scroll.
+- Aucun event global `window` : tout est scoped au conteneur via `ref`.
+- Le hook nettoie les listeners au démontage.
+- Les boutons existants restent disponibles → pas de régression a11y clavier (le swipe est un complément, pas un remplacement).
+- `aria-live="polite"` sur le bouton actif pour annoncer le changement de panneau aux lecteurs d'écran.
 
 ### Hors scope
-- Pas de moteur de morphing SVG inter-couches (mitigation CSS uniquement).
-- Pas d'édition admin du dataset quartiers (lecture seule depuis fichier statique).
-- Pas de couche sous-quartiers (avenues / blocs).
+- Pas de carrousel translaté (Embla/Swiper) — surcoût injustifié pour 2 vues plein écran.
+- Pas de geste vertical (ne change pas le panneau « détails »).
+- Pas de modification de `CadastralMap` (autre route — peut être généralisé plus tard si demandé).
+
+### Fichiers impactés
+- `src/hooks/useSwipeNavigation.ts` (nouveau, ~60 lignes)
+- `src/components/DRCInteractiveMap.tsx` — branchement hook, attribut `data-no-swipe`, `key` mobile, hint toast
+- `mem://features/land-data-analytics/interactive-map-layers-fr` — note ajout swipe mobile
 
