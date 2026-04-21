@@ -446,6 +446,7 @@ async function generateA4InvoicePDF(
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(7.5);
   doc.setTextColor(headerRgb[0], headerRgb[1], headerRgb[2]);
+  doc.text("MENTIONS LÉGALES (DGI)", margin, cursorY);
   cursorY += 3.5;
 
   doc.setFont('helvetica', 'normal');
