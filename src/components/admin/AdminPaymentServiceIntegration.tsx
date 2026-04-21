@@ -482,6 +482,8 @@ const AdminPaymentServiceIntegration: React.FC = () => {
         </CardContent>
       </Card>
 
+      {/* Tableau de compatibilité */}
+      <Tabs defaultValue="compatibility" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="compatibility">Compatibilité</TabsTrigger>
           <TabsTrigger value="fees">Analyse des Frais</TabsTrigger>
