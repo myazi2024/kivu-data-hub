@@ -101,7 +101,8 @@ export async function generateInvoicePDF(
 async function generateMiniInvoicePDF(
   invoice: CadastralInvoice,
   servicesCatalog: CadastralService[],
-  filename?: string
+  filename?: string,
+  options?: InvoicePdfOptions
 ) {
   const doc = new jsPDF({ unit: 'mm', format: [80, 160], orientation: 'portrait' });
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -217,7 +218,8 @@ async function generateMiniInvoicePDF(
 async function generateA4InvoicePDF(
   invoice: CadastralInvoice,
   servicesCatalog: CadastralService[],
-  filename?: string
+  filename?: string,
+  options?: InvoicePdfOptions
 ) {
   let verifyUrl = '';
   let verificationCode = '';
