@@ -193,22 +193,24 @@ const AdminInvoiceReminders = () => {
   };
 
   const handleExport = () => {
-    const rows = filtered.map((r) => ({
-      'N° facture': r.invoice_number,
-      Client: r.client_name || '',
-      Organisation: r.client_organization || '',
-      Email: r.client_email,
-      'Montant USD': Number(r.total_amount_usd).toFixed(2),
-      'Créée le': format(new Date(r.created_at), 'dd/MM/yyyy', { locale: fr }),
-      Échéance: r.due_date ? format(new Date(r.due_date), 'dd/MM/yyyy', { locale: fr }) : '',
-      'Jours retard': r.days_overdue,
-      Bucket: BUCKET_LABELS[r.aging_bucket].label,
-      Relances: r.reminder_count,
-      'Dernière relance': r.last_reminder_sent_at
-        ? format(new Date(r.last_reminder_sent_at), 'dd/MM/yyyy HH:mm', { locale: fr })
-        : '',
-    }));
-    exportToCSV(rows, `balance-agee-${format(new Date(), 'yyyy-MM-dd')}.csv`);
+    const headers = [
+      'N° facture', 'Client', 'Organisation', 'Email', 'Montant USD',
+      'Créée le', 'Échéance', 'Jours retard', 'Bucket', 'Relances', 'Dernière relance',
+    ];
+    const data = filtered.map((r) => [
+      r.invoice_number,
+      r.client_name || '',
+      r.client_organization || '',
+      r.client_email,
+      Number(r.total_amount_usd).toFixed(2),
+      format(new Date(r.created_at), 'dd/MM/yyyy', { locale: fr }),
+      r.due_date ? format(new Date(r.due_date), 'dd/MM/yyyy', { locale: fr }) : '',
+      r.days_overdue,
+      BUCKET_LABELS[r.aging_bucket].label,
+      r.reminder_count,
+      r.last_reminder_sent_at ? format(new Date(r.last_reminder_sent_at), 'dd/MM/yyyy HH:mm', { locale: fr }) : '',
+    ]);
+    exportToCSV({ filename: `balance-agee-${format(new Date(), 'yyyy-MM-dd')}.csv`, headers, data });
   };
 
   const totalOutstanding = aging.reduce((s, r) => s + Number(r.total_amount_usd || 0), 0);
