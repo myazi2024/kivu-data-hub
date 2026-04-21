@@ -71,8 +71,8 @@ const buildSampleInvoice = (prefix: string, v: SimVariants): CadastralInvoice =>
 };
 
 const buildSampleServices = (): CadastralService[] => ([
-  { id: 'svc-preview-1', service_id: 'svc-preview-1', name: 'Fiche cadastrale complète', description: '', price: 30, category: 'cadastre', icon_name: 'file', is_active: true } as any,
-  { id: 'svc-preview-2', service_id: 'svc-preview-2', name: 'Historique de propriété', description: '', price: 20, category: 'cadastre', icon_name: 'history', is_active: true } as any,
+  { id: 'svc-preview-1', service_id: 'svc-preview-1', name: 'Fiche cadastrale complète', description: 'Document officiel reprenant l\'ensemble des informations cadastrales d\'une parcelle.', price: 30, category: 'cadastre', icon_name: 'file', is_active: true } as any,
+  { id: 'svc-preview-2', service_id: 'svc-preview-2', name: 'Historique de propriété', description: 'Chaîne complète de propriété depuis la création de la parcelle, toutes les transactions, mutations, héritages et transferts. Crucial pour vérifier la légalité des transactions passées.', price: 20, category: 'cadastre', icon_name: 'history', is_active: true } as any,
 ]);
 
 const fmt = (n: number) => n.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -188,10 +188,10 @@ const InvoicePreviewA4 = ({ config, info, invoice, services, logoBase64, qrDataU
       <table style={{ width: '100%', marginTop: 12, borderCollapse: 'collapse', fontSize: '8.5pt' }}>
         <thead>
           <tr style={{ backgroundColor: config.secondary_color, color: '#fff' }}>
-            <th style={{ textAlign: 'left', padding: '4px 6px', width: '50%' }}>Désignation</th>
+            <th style={{ textAlign: 'left', padding: '4px 6px', width: '55%' }}>Désignation</th>
             <th style={{ textAlign: 'center', padding: '4px 6px', width: '10%' }}>Qté</th>
-            <th style={{ textAlign: 'right', padding: '4px 6px', width: '20%' }}>Prix unitaire HT</th>
-            <th style={{ textAlign: 'right', padding: '4px 6px', width: '20%' }}>Total TTC</th>
+            <th style={{ textAlign: 'right', padding: '4px 6px', width: '17.5%' }}>Prix unitaire HT</th>
+            <th style={{ textAlign: 'right', padding: '4px 6px', width: '17.5%' }}>Total TTC</th>
           </tr>
         </thead>
         <tbody>
@@ -200,10 +200,17 @@ const InvoicePreviewA4 = ({ config, info, invoice, services, logoBase64, qrDataU
             const ht = priceTTC / (1 + config.tva_rate);
             return (
               <tr key={i} style={{ borderBottom: '1px solid #dcdcdc' }}>
-                <td style={{ padding: '4px 6px' }}>{s.name}</td>
-                <td style={{ padding: '4px 6px', textAlign: 'center' }}>1</td>
-                <td style={{ padding: '4px 6px', textAlign: 'right' }}>{fmt(ht)} USD</td>
-                <td style={{ padding: '4px 6px', textAlign: 'right' }}>{fmt(priceTTC)} USD</td>
+                <td style={{ padding: '4px 6px' }}>
+                  <div style={{ fontWeight: 500 }}>{s.name}</div>
+                  {s.description && (
+                    <div style={{ fontSize: '7.5pt', color: '#6b7280', fontStyle: 'italic', marginTop: 2, lineHeight: 1.3 }}>
+                      {s.description}
+                    </div>
+                  )}
+                </td>
+                <td style={{ padding: '4px 6px', textAlign: 'center', verticalAlign: 'top' }}>1</td>
+                <td style={{ padding: '4px 6px', textAlign: 'right', verticalAlign: 'top' }}>{fmt(ht)} USD</td>
+                <td style={{ padding: '4px 6px', textAlign: 'right', verticalAlign: 'top' }}>{fmt(priceTTC)} USD</td>
               </tr>
             );
           })}
@@ -339,8 +346,15 @@ const InvoicePreviewMini = ({ config, info, invoice, services, logoBase64 }: Omi
       <div style={{ marginTop: 6, fontSize: '7px' }}>
         <p style={{ margin: 0, fontWeight: 'bold' }}>Prestations (TTC)</p>
         {services.map((s, i) => (
-          <div key={i} style={{ display: 'flex', justifyContent: 'space-between' }}>
-            <span>{s.name.substring(0, 26)}</span><span>{Number(s.price).toFixed(2)}$</span>
+          <div key={i} style={{ marginBottom: 2 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span>{s.name.substring(0, 26)}</span><span>{Number(s.price).toFixed(2)}$</span>
+            </div>
+            {s.description && (
+              <div style={{ fontSize: '6px', color: '#6b7280', fontStyle: 'italic', lineHeight: 1.2 }}>
+                {s.description.length > 50 ? `${s.description.substring(0, 50)}…` : s.description}
+              </div>
+            )}
           </div>
         ))}
       </div>
