@@ -1,9 +1,10 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { projectFeature, centroid, computeBBox, useAnimatedBbox, useGeoJsonData, type BBox } from '@/lib/mapProjection';
+import { MapZoomBackButton } from '@/components/map/ui/MapZoomBackButton';
 
 interface Feature {
   type: string;
-  properties: { name: string; commune: string };
+  properties: { name: string; commune: string; ville?: string };
   geometry: { type: string; coordinates: any[] };
 }
 
@@ -16,6 +17,8 @@ interface Props {
   getEntityColor?: (quartierName: string) => string | undefined;
   /** Optional title shown in top-left chip when drilldown coloring is active */
   profileLabel?: string;
+  /** Source du dataset : 'goma' (détail OSM) ou 'national' (HDX 12 villes RDC) */
+  dataSource?: 'goma' | 'national';
 }
 
 const COLORS = [
@@ -31,8 +34,9 @@ const HIGHLIGHT = 'hsl(var(--primary) / 0.7)';
 const STROKE = 'hsl(var(--foreground) / 0.3)';
 const HIGHLIGHT_STROKE = 'hsl(var(--primary))';
 
-const DRCQuartiersMap: React.FC<Props> = ({ ville, commune, quartier, onQuartierSelect, getEntityColor, profileLabel }) => {
-  const features = useGeoJsonData<Feature>('/goma-quartiers.geojson');
+const DRCQuartiersMap: React.FC<Props> = ({ ville, commune, quartier, onQuartierSelect, getEntityColor, profileLabel, dataSource = 'goma' }) => {
+  const url = dataSource === 'goma' ? '/goma-quartiers.geojson' : '/drc-quartiers.geojson';
+  const features = useGeoJsonData<Feature>(url);
   const [hovered, setHovered] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [dims, setDims] = useState({ w: 400, h: 300 });
@@ -48,10 +52,19 @@ const DRCQuartiersMap: React.FC<Props> = ({ ville, commune, quartier, onQuartier
   }, []);
 
   const filtered = useMemo(() => {
-    if (!commune) return features;
-    const norm = commune.toLowerCase();
-    return features.filter(f => f.properties.commune?.toLowerCase() === norm);
-  }, [features, commune]);
+    const normCommune = commune?.toLowerCase();
+    const normVille = ville?.toLowerCase();
+    return features.filter(f => {
+      const c = f.properties.commune?.toLowerCase();
+      // National dataset has city collisions on commune names — filter both
+      if (dataSource === 'national') {
+        const v = f.properties.ville?.toLowerCase();
+        if (normVille && v !== normVille) return false;
+      }
+      if (normCommune && c !== normCommune) return false;
+      return true;
+    });
+  }, [features, commune, ville, dataSource]);
 
   const targetBbox = useMemo<BBox>(() =>
     computeBBox(filtered, quartier, (f: Feature) => f.properties.name),
@@ -61,8 +74,10 @@ const DRCQuartiersMap: React.FC<Props> = ({ ville, commune, quartier, onQuartier
 
   if (filtered.length === 0 && features.length > 0) {
     return (
-      <div className="flex items-center justify-center h-full text-muted-foreground text-[10px]">
-        Aucun quartier trouvé pour la commune « {commune} »
+      <div className="flex items-center justify-center h-full text-muted-foreground text-[10px] px-3 text-center">
+        {dataSource === 'national'
+          ? `Découpage des quartiers indisponible pour ${commune ? `« ${commune} » — ` : ''}${ville}. Source : OSM/HDX (12 villes RDC).`
+          : `Aucun quartier trouvé pour la commune « ${commune} »`}
       </div>
     );
   }
@@ -93,7 +108,7 @@ const DRCQuartiersMap: React.FC<Props> = ({ ville, commune, quartier, onQuartier
 
           return (
             <path
-              key={name}
+              key={`${name}-${i}`}
               d={path}
               fill={fill}
               stroke={stroke}
@@ -106,13 +121,13 @@ const DRCQuartiersMap: React.FC<Props> = ({ ville, commune, quartier, onQuartier
           );
         })}
 
-        {filtered.map((f) => {
+        {filtered.length <= 30 && filtered.map((f, i) => {
           const [cx, cy] = centroid(f.geometry, animBbox, dims.w, dims.h, padding);
           const name = f.properties.name;
           const isSelected = quartier && name.toLowerCase() === quartier.toLowerCase();
           return (
             <text
-              key={`label-${name}`}
+              key={`label-${name}-${i}`}
               x={cx}
               y={cy}
               textAnchor="middle"
@@ -125,6 +140,10 @@ const DRCQuartiersMap: React.FC<Props> = ({ ville, commune, quartier, onQuartier
           );
         })}
       </svg>
+
+      {quartier && onQuartierSelect && (
+        <MapZoomBackButton onBack={() => onQuartierSelect(quartier)} label={`Retour — ${commune || ville}`} />
+      )}
 
       {hovered && (
         <div className="absolute top-2 left-2 bg-background/90 backdrop-blur-sm border border-border/50 rounded px-2 py-1 text-[10px] shadow-sm pointer-events-none z-10">
