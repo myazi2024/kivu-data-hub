@@ -7,8 +7,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Loader2, FileDown, RefreshCw, Info, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
 import QRCode from 'qrcode';
-import { useInvoiceTemplateConfig, type InvoiceTemplateConfig } from '@/hooks/useInvoiceTemplateConfig';
-import { useCompanyLegalInfo, type CompanyLegalInfo, TAX_REGIME_LABELS } from '@/hooks/useCompanyLegalInfo';
+import { type InvoiceTemplateConfig } from '@/hooks/useInvoiceTemplateConfig';
+import { type CompanyLegalInfo, TAX_REGIME_LABELS } from '@/hooks/useCompanyLegalInfo';
+import { useInvoiceTemplate } from '@/contexts/InvoiceTemplateContext';
 import {
   generateInvoicePDF,
   type CadastralInvoice,
@@ -395,8 +396,7 @@ interface RecentInvoiceOption {
 }
 
 export const InvoicePreviewPanel = () => {
-  const { config, loading, refetch } = useInvoiceTemplateConfig();
-  const { info, refetch: refetchInfo } = useCompanyLegalInfo();
+  const { config, info, loading, reload } = useInvoiceTemplate();
   const [generating, setGenerating] = useState(false);
   const [format, setFormat] = useState<'a4' | 'mini'>(config.default_format || 'a4');
   const [scale, setScale] = useState(1);
@@ -417,11 +417,10 @@ export const InvoicePreviewPanel = () => {
   const [logoBase64, setLogoBase64] = useState<string | null>(null);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
 
-  // Charger logo (même source que PDF) + catalogue services + factures récentes
+  // Charger catalogue services + factures récentes (logo géré séparément, réactif à info.logo_url)
   useEffect(() => {
     (async () => {
-      const [logo, svc, recent] = await Promise.all([
-        fetchAppLogo(),
+      const [svc, recent] = await Promise.all([
         supabase.from('cadastral_services_config').select('*').eq('is_active', true),
         supabase
           .from('cadastral_invoices')
@@ -429,11 +428,35 @@ export const InvoicePreviewPanel = () => {
           .order('created_at', { ascending: false })
           .limit(20),
       ]);
-      setLogoBase64(logo);
       if (svc.data) setServicesCatalog(svc.data as unknown as CadastralService[]);
       if (recent.data) setRecentInvoices(recent.data as RecentInvoiceOption[]);
     })();
   }, []);
+
+  // Logo réactif : suit info.logo_url du draft, fallback sur fetchAppLogo
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (info.logo_url) {
+        try {
+          const res = await fetch(info.logo_url);
+          const blob = await res.blob();
+          const reader = new FileReader();
+          reader.onloadend = () => { if (!cancelled) setLogoBase64(reader.result as string); };
+          reader.readAsDataURL(blob);
+        } catch {
+          if (!cancelled) {
+            const fallback = await fetchAppLogo();
+            if (!cancelled) setLogoBase64(fallback);
+          }
+        }
+      } else {
+        const fallback = await fetchAppLogo();
+        if (!cancelled) setLogoBase64(fallback);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [info.logo_url]);
 
   useEffect(() => {
     if (dataSource === 'sample') { setRealInvoice(null); return; }
@@ -481,10 +504,8 @@ export const InvoicePreviewPanel = () => {
   }, [realInvoice, config.show_verification_qr]);
 
   const handleRefresh = async () => {
-    await Promise.all([refetch(), refetchInfo()]);
-    const logo = await fetchAppLogo();
-    setLogoBase64(logo);
-    toast.success('Aperçu rafraîchi');
+    await reload();
+    toast.success('Aperçu rafraîchi depuis la base');
   };
 
   const handleGenerate = async (fmtKey: 'a4' | 'mini', openInNewTab = false) => {
