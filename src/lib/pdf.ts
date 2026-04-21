@@ -377,7 +377,7 @@ async function generateA4InvoicePDF(
       body: tableData,
       startY: cursorY,
       styles: { fontSize: 8.5, cellPadding: 2, lineColor: [220, 220, 220], lineWidth: 0.2, textColor: [33, 37, 41] },
-      headStyles: { fillColor: [0, 51, 102], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8.5 },
+      headStyles: { fillColor: secondaryRgb, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8.5 },
       columnStyles: {
         0: { cellWidth: (pageWidth - 2 * margin) * 0.50 },
         1: { cellWidth: (pageWidth - 2 * margin) * 0.10, halign: 'center' },
@@ -418,7 +418,7 @@ async function generateA4InvoicePDF(
   writeRow('Base HT', formatBilingual(totalHT, exchangeRate));
   writeRow(tplCfg.tva_label, formatBilingual(tvaAmount, exchangeRate));
 
-  doc.setFillColor(0, 51, 102);
+  doc.setFillColor(headerRgb[0], headerRgb[1], headerRgb[2]);
   doc.rect(totalsX - 3, cursorY - 4, valueX - totalsX + 6, 8, 'F');
   doc.setTextColor(255, 255, 255);
   doc.setFont('helvetica', 'bold');
@@ -445,8 +445,7 @@ async function generateA4InvoicePDF(
 
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(7.5);
-  doc.setTextColor(0, 51, 102);
-  doc.text("MENTIONS LÉGALES (DGI)", margin, cursorY);
+  doc.setTextColor(headerRgb[0], headerRgb[1], headerRgb[2]);
   cursorY += 3.5;
 
   doc.setFont('helvetica', 'normal');
