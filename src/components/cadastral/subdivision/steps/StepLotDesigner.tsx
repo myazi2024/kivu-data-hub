@@ -22,6 +22,7 @@ import {
 import { ValidationResult, mergeLotsThroughDeletedRoad, polygonArea, splitRoadsAtIntersections } from '../utils/geometry';
 import { convertZoneType, ZoneType } from '../utils/convertZoneType';
 import LotCanvas, { CanvasMode, EdgeInfo } from '../LotCanvas';
+import { buildMetricFrame, polygonAreaSqmAccurate, polygonPerimeterM, formatMeters, formatSqm } from '../utils/metrics';
 
 interface StepLotDesignerProps {
   parentParcel: ParentParcelInfo | null;
