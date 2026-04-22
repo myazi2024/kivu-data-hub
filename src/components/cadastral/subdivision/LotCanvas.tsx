@@ -122,8 +122,14 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
   // Viewport (zoom/pan)
   const viewport = useCanvasViewport(CANVAS_W, CANVAS_H, svgRef);
 
-  // Drag system
-  const drag = useCanvasDrag(lots, onUpdateLot, snapEnabled, showGrid);
+  // Anisotropic metric frame: single source of truth for distances/areas.
+  const metricFrame = useMemo<MetricFrame>(
+    () => buildMetricFrame(parentGpsCoordinates, parentAreaSqm),
+    [parentGpsCoordinates, parentAreaSqm],
+  );
+
+  // Drag system (recomputes area + perimeter via metric frame on every move)
+  const drag = useCanvasDrag(lots, onUpdateLot, snapEnabled, showGrid, metricFrame);
 
   // Detect shared edges between lots
   const sharedEdges = useMemo(() => {
@@ -270,9 +276,9 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
     };
   }, [viewport.viewport]);
 
+  // Legacy isotropic scale used by a few road-width-in-pixels conversions.
+  // For real distances/areas, always use the metric frame instead.
   const sideLength = Math.sqrt(parentAreaSqm);
-
-  // ---- Distance calculation helpers ----
   const getParallelEdges = useCallback((lineStart: Point2D, lineEnd: Point2D) => {
     const edges: { p1Screen: Point2D; p2Screen: Point2D; distM: number; midScreen: Point2D; lineMidScreen: Point2D }[] = [];
     const dx = lineEnd.x - lineStart.x;
