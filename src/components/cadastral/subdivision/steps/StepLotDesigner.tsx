@@ -859,40 +859,22 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
         {/* Zone 2 — Actions rapides */}
         <div className="flex items-center gap-1.5">
           <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mr-1">Actions</span>
-          {lots.length === 0 && onCreateInitialLot ? (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  size="sm"
-                  onClick={onCreateInitialLot}
-                  className="gap-1.5 text-xs"
-                >
-                  <Plus className="h-3.5 w-3.5" />
-                  Lot = parcelle entière
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom" className="max-w-[260px] text-xs">
-                Crée un premier lot couvrant toute votre parcelle. C'est le point de départ recommandé : ensuite, vous pouvez le diviser.
-              </TooltipContent>
-            </Tooltip>
-          ) : (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleAddEmptyLot}
-                  className="gap-1.5 text-xs"
-                >
-                  <Plus className="h-3.5 w-3.5" />
-                  Ajouter un lot
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom" className="max-w-[240px] text-xs">
-                Ajoute un petit lot rectangulaire vide au centre de la parcelle. Vous pourrez ensuite le déplacer et le redimensionner.
-              </TooltipContent>
-            </Tooltip>
-          )}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleAddEmptyLot}
+                className="gap-1.5 text-xs"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Ajouter un lot
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="max-w-[240px] text-xs">
+              Ajoute un petit lot rectangulaire vide au centre de la parcelle. Vous pourrez ensuite le déplacer et le redimensionner.
+            </TooltipContent>
+          </Tooltip>
 
           <Tooltip>
             <TooltipTrigger asChild>
@@ -936,7 +918,7 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
           <AlertDescription className="text-xs flex items-center gap-2">
             <Info className="h-4 w-4 text-primary flex-shrink-0" />
             <span>
-              Commencez par créer le <strong>lot parcelle entière</strong>, puis utilisez l'outil <strong>Diviser un lot</strong> pour le découper en plusieurs lots.
+              Votre parcelle est chargée comme lot unique. Utilisez l'outil <strong>Diviser un lot</strong> pour la découper en plusieurs lots.
             </span>
           </AlertDescription>
         </Alert>
@@ -1227,7 +1209,7 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
                 ))}
                 {lots.length === 0 && (
                   <p className="text-center text-muted-foreground text-[10px] py-3">
-                    Cliquez sur "Lot parcelle entière" puis tracez des lignes pour diviser
+                    Tracez une ligne entre deux bords pour diviser le lot.
                   </p>
                 )}
               </div>
