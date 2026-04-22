@@ -39,7 +39,8 @@ const StepSummary: React.FC<StepSummaryProps> = ({
 }) => {
   const totalArea = lots.reduce((s, l) => s + l.areaSqm, 0);
   const parentArea = parentParcel?.areaSqm || 0;
-  const feeAmount = submissionFee ?? 20;
+  const feeReady = submissionFee != null;
+  const feeAmount = feeReady ? submissionFee.toFixed(2) : '…';
 
   if (submitted) {
     return (
