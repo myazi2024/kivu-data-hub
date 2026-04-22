@@ -1,4 +1,14 @@
 import type { ProvinceData } from '@/types/province';
+import type { LandAnalyticsData } from '@/hooks/useLandDataAnalytics';
+
+/** Minimal geo-scoped shape used for predicate filtering across analytics arrays */
+export type GeoScopedRecord = {
+  province?: string | null;
+  ville?: string | null;
+  commune?: string | null;
+  quartier?: string | null;
+  territoire?: string | null;
+};
 
 /** Province IDs and names for the 26 provinces of DRC */
 export const PROVINCE_META: { id: string; name: string }[] = [
@@ -80,7 +90,7 @@ export function buildScopePredicate(
   commune?: string,
   quartier?: string,
   territoire?: string,
-): (record: any) => boolean {
+): (record: GeoScopedRecord) => boolean {
   if (quartier) return (r) => norm(r.quartier) === norm(quartier) && norm(r.commune) === norm(commune) && norm(r.ville) === norm(ville) && norm(r.province) === norm(province);
   if (commune) return (r) => norm(r.commune) === norm(commune) && norm(r.ville) === norm(ville) && norm(r.province) === norm(province);
   if (ville) return (r) => norm(r.ville) === norm(ville) && norm(r.province) === norm(province);
@@ -88,4 +98,34 @@ export function buildScopePredicate(
   if (territoire) return (r) => norm(r.territoire) === norm(territoire);
   if (province) return (r) => norm(r.province) === norm(province);
   return () => false;
+}
+
+/** Slice every geo-aware array of a `LandAnalyticsData` snapshot using a predicate.
+ *  Optionally rewrites `province` on each kept record (used to bucket entities under
+ *  a synthetic key like `__entity__` for choropleth color computation). */
+export function sliceAnalyticsByPredicate(
+  analytics: LandAnalyticsData,
+  predicate: (r: GeoScopedRecord) => boolean,
+  overrideProvince?: string,
+): LandAnalyticsData {
+  const slice = <T extends GeoScopedRecord>(arr: T[] | undefined): T[] =>
+    (arr || [])
+      .filter((r) => predicate(r))
+      .map((r) => (overrideProvince ? { ...r, province: overrideProvince } : r));
+  return {
+    ...analytics,
+    parcels: slice(analytics.parcels),
+    contributions: slice(analytics.contributions),
+    titleRequests: slice(analytics.titleRequests),
+    disputes: slice(analytics.disputes),
+    mortgages: slice(analytics.mortgages),
+    mutationRequests: slice(analytics.mutationRequests),
+    expertiseRequests: slice(analytics.expertiseRequests),
+    subdivisionRequests: slice(analytics.subdivisionRequests),
+    ownershipHistory: slice(analytics.ownershipHistory),
+    certificates: slice(analytics.certificates),
+    invoices: slice(analytics.invoices),
+    buildingPermits: slice(analytics.buildingPermits),
+    taxHistory: slice(analytics.taxHistory),
+  };
 }
