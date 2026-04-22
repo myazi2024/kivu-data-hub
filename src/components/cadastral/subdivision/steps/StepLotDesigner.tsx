@@ -233,6 +233,46 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
     setLots(lots.map(l => l.id === id ? { ...l, annotations } : l));
   }, [lots, setLots]);
 
+  // Convert the selected lot to a road or common space (or stay a lot).
+  const handleConvertSelectedZone = useCallback((toType: ZoneType) => {
+    if (!selectedLotId) return;
+    const lot = lots.find(l => l.id === selectedLotId);
+    if (!lot) return;
+    if (toType === 'lot') return;
+
+    const parentPoly = parentVertices && parentVertices.length >= 3
+      ? parentVertices
+      : [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 1, y: 1 }, { x: 0, y: 1 }];
+    const parentNormArea = polygonArea(parentPoly);
+    const parentAreaSqm = parentParcel?.areaSqm || 1000;
+    const sideLengthM = Math.sqrt(parentAreaSqm);
+
+    const maxLotNum = lots.reduce((m, l) => Math.max(m, parseInt(l.lotNumber) || 0), 0);
+    const nextNumber = toType === 'road'
+      ? roads.length + 1
+      : toType === 'commonSpace'
+        ? commonSpaces.length + 1
+        : maxLotNum + 1;
+
+    const result = convertZoneType(
+      { lot },
+      toType,
+      { parentAreaSqm, parentNormArea, sideLengthM, nextNumber, defaultRoadWidthM: roadPresetWidth },
+    );
+
+    // Remove from lots
+    setLots(lots.filter(l => l.id !== selectedLotId));
+    setSelectedLotId(null);
+
+    if (result.road) {
+      setRoads([...roads, result.road]);
+      setEditingRoadId(result.road.id);
+    } else if (result.commonSpace) {
+      setCommonSpaces([...commonSpaces, result.commonSpace]);
+    }
+  }, [selectedLotId, lots, setLots, roads, setRoads, commonSpaces, setCommonSpaces, parentParcel, parentVertices, roadPresetWidth]);
+
+
   const handleSplitLot = useCallback((lotId: string) => {
     const lot = lots.find(l => l.id === lotId);
     if (!lot || lot.vertices.length < 3) return;
