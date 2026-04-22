@@ -25,7 +25,9 @@ export type AnalyticsEvent =
   | 'cadastral_cart_open'
   | 'cadastral_cart_pay_parcel'
   | 'cadastral_cart_complete_bundle'
-  | 'cadastral_cart_promo_applied';
+  | 'cadastral_cart_promo_applied'
+  | 'admin_tab_view'
+  | 'admin_tab_denied';
 
 export async function trackEvent(event: AnalyticsEvent, payload?: Record<string, any>) {
   try {

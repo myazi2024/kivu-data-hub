@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useRequestsHealth } from '@/hooks/useRequestsHealth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,7 +14,7 @@ import { MonthlyExportPanel } from './requests/MonthlyExportPanel';
 const TAB_BY_SERVICE: Record<string, string> = {
   land_title_requests: 'land-title-requests',
   mutation_requests: 'mutations',
-  subdivision_requests: 'subdivision-requests',
+  subdivision_requests: 'subdivision-hub',
   real_estate_expertise_requests: 'expertise-requests',
   cadastral_building_permits: 'permits',
   cadastral_land_disputes: 'land-disputes',
@@ -23,6 +24,16 @@ const TAB_BY_SERVICE: Record<string, string> = {
 const AdminRequestsHub = () => {
   const { rows, missing, loading, error, refresh, escalateStale } = useRequestsHealth();
   const [escalating, setEscalating] = useState(false);
+  const [params, setParams] = useSearchParams();
+  const SUBS = ['overview', 'missing', 'sla', 'export'];
+  const sub = params.get('sub');
+  const active = SUBS.includes(sub ?? '') ? (sub as string) : 'overview';
+  const handleSubChange = (next: string) => {
+    const np = new URLSearchParams(params);
+    np.set('tab', 'requests-hub');
+    if (next === 'overview') np.delete('sub'); else np.set('sub', next);
+    setParams(np, { replace: true });
+  };
 
   const totalStale = rows.reduce((s, r) => s + r.stale_30d, 0);
   const totalEscalated = rows.reduce((s, r) => s + r.escalated_count, 0);
@@ -78,7 +89,7 @@ const AdminRequestsHub = () => {
         </CardContent></Card>
       </div>
 
-      <Tabs defaultValue="overview">
+      <Tabs value={active} onValueChange={handleSubChange}>
         <TabsList>
           <TabsTrigger value="overview">Vue d'ensemble</TabsTrigger>
           <TabsTrigger value="missing">Certificats manquants ({missing.length})</TabsTrigger>

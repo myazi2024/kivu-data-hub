@@ -8,7 +8,7 @@ const TYPE_TO_TAB: Record<string, { tab: string; label: string }> = {
   expertise: { tab: 'expertise-requests', label: 'Expertise' },
   permit: { tab: 'permits', label: 'Autorisation' },
   land_title: { tab: 'land-title-requests', label: 'Titre foncier' },
-  subdivision: { tab: 'subdivision-requests', label: 'Lotissement' },
+  subdivision: { tab: 'subdivision-hub', label: 'Lotissement' },
   catalog: { tab: 'invoices', label: 'Catalogue' },
 };
 

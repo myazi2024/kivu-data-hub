@@ -7,6 +7,10 @@ import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { AdminSidebar, getTabLabel, getTabCategory } from '@/components/admin/AdminSidebar';
 import { AdminDashboardHeader } from '@/components/admin/AdminDashboardHeader';
 import { useAdminPendingCounts } from '@/hooks/useAdminPendingCounts';
+import { useAdminTabAccess } from '@/hooks/useAdminTabAccess';
+import { trackEvent } from '@/lib/analytics';
+import { toast } from 'sonner';
+import { useQueryClient } from '@tanstack/react-query';
 import { ChevronRight } from 'lucide-react';
 
 // Lazy-loaded admin components — object mapping
@@ -117,13 +121,36 @@ const LazyFallback = () => (
   </div>
 );
 
+/** Mapping hub → libellés des sous-onglets pour breadcrumb 4 niveaux. */
+const HUB_SUBTAB_LABELS: Record<string, Record<string, string>> = {
+  'subdivision-hub': {
+    requests: 'Demandes',
+    fees: 'Frais',
+    zoning: 'Zonage',
+    lots: 'Lots & voies',
+    analytics: 'Analytics',
+  },
+  'requests-hub': {
+    overview: "Vue d'ensemble",
+    missing: 'Certificats manquants',
+    sla: 'SLA',
+    export: 'Export',
+  },
+  'history-hub': {
+    timeline: 'Timeline parcelle',
+    overlaps: 'Alertes croisées',
+  },
+};
+
 const Admin = () => {
   const { user, loading } = useAuth();
   const [searchParams] = useSearchParams();
-  const activeTab = searchParams.get('tab') || 'dashboard';
+  const requestedTab = searchParams.get('tab') || 'dashboard';
+  const subTab = searchParams.get('sub') || undefined;
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [hasAdminRole, setHasAdminRole] = useState<boolean | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     const verifyAdminRole = async () => {
@@ -140,13 +167,35 @@ const Admin = () => {
   }, [user]);
 
   const isAdmin = hasAdminRole === true;
+  const { canAccessTab, loading: permsLoading } = useAdminTabAccess();
+
+  // Resolved tab : si l'onglet demandé n'est pas autorisé, fallback dashboard
+  const accessGranted = !permsLoading && canAccessTab(requestedTab);
+  const activeTab = accessGranted || permsLoading ? requestedTab : 'dashboard';
+
+  // Toast + télémétrie sur refus d'accès
+  useEffect(() => {
+    if (!permsLoading && isAdmin && !accessGranted && requestedTab !== 'dashboard') {
+      toast.error("Accès refusé : permissions insuffisantes pour cet onglet");
+      trackEvent('admin_tab_denied', { tab: requestedTab });
+    }
+  }, [permsLoading, isAdmin, accessGranted, requestedTab]);
+
+  // Télémétrie : page_view onglet admin
+  useEffect(() => {
+    if (isAdmin && accessGranted) {
+      trackEvent('admin_tab_view', { tab: activeTab, sub: subTab });
+    }
+  }, [isAdmin, accessGranted, activeTab, subTab]);
 
   const { counts, refetch: refetchCounts } = useAdminPendingCounts(isAdmin);
 
   const refreshCounts = useCallback(() => {
     setRefreshKey(k => k + 1);
     refetchCounts();
-  }, [refetchCounts]);
+    // Invalidation centralisée des queryKeys admin (compteurs + listes connexes)
+    queryClient.invalidateQueries({ queryKey: ['admin-pending-counts'] });
+  }, [refetchCounts, queryClient]);
 
   if (loading || hasAdminRole === null) {
     return (
@@ -164,11 +213,12 @@ const Admin = () => {
     const Component = tabComponents[activeTab] || tabComponents['dashboard'];
     const props = getComponentProps(activeTab, refreshCounts);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return <Component {...(props as any)} />;
+    return <Component key={refreshKey} {...(props as any)} />;
   };
 
   const category = getTabCategory(activeTab);
   const label = getTabLabel(activeTab);
+  const subLabel = subTab && HUB_SUBTAB_LABELS[activeTab]?.[subTab];
 
   return (
     <div className="flex h-dvh overflow-hidden bg-background">
@@ -177,7 +227,7 @@ const Admin = () => {
           <h2 className="text-sm lg:text-base font-bold">Admin</h2>
           <p className="text-[10px] text-muted-foreground">Gestion complète</p>
         </div>
-        <AdminSidebar counts={counts} />
+        <AdminSidebar counts={counts} canAccessTab={canAccessTab} />
       </aside>
 
       <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
@@ -186,7 +236,7 @@ const Admin = () => {
             <h2 className="text-sm font-bold">Admin</h2>
             <p className="text-[10px] text-muted-foreground">Gestion complète</p>
           </div>
-          <AdminSidebar counts={counts} onNavigate={() => setMobileMenuOpen(false)} />
+          <AdminSidebar counts={counts} canAccessTab={canAccessTab} onNavigate={() => setMobileMenuOpen(false)} />
         </SheetContent>
       </Sheet>
 
@@ -194,14 +244,20 @@ const Admin = () => {
         <AdminDashboardHeader onMenuClick={() => setMobileMenuOpen(true)} />
         <main className="flex-1 overflow-y-auto p-2 md:p-3 lg:p-4">
           <div className="max-w-[360px] mx-auto md:max-w-none">
-            {/* Breadcrumb */}
+            {/* Breadcrumb (4 niveaux si sub-tab détecté) */}
             {activeTab !== 'dashboard' && (
-              <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-3">
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-3 flex-wrap">
                 <span>Admin</span>
                 <ChevronRight className="h-3 w-3" />
                 <span>{category}</span>
                 <ChevronRight className="h-3 w-3" />
-                <span className="text-foreground font-medium">{label}</span>
+                <span className={subLabel ? '' : 'text-foreground font-medium'}>{label}</span>
+                {subLabel && (
+                  <>
+                    <ChevronRight className="h-3 w-3" />
+                    <span className="text-foreground font-medium">{subLabel}</span>
+                  </>
+                )}
               </div>
             )}
             <ErrorBoundary>
