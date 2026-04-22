@@ -68,7 +68,8 @@ const StepDocuments: React.FC<StepDocumentsProps> = ({ documents, onChange, user
     try {
       const ext = file.name.split('.').pop() || 'bin';
       const fileName = `${crypto.randomUUID()}.${ext}`;
-      const path = `subdivision-documents/${userId}/${key}/${fileName}`;
+      // RLS storage policy requires the user id to be the FIRST folder segment.
+      const path = `${userId}/subdivision-documents/${key}/${fileName}`;
       setProgress(50);
 
       const { error: uploadError } = await supabase.storage
