@@ -293,15 +293,22 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
               </div>
               
               {currentStepIndex < STEP_CONFIG.length - 1 ? (
-                <Button
-                  size="sm"
-                  onClick={form.goNext}
-                  disabled={!form.isStepValid(form.currentStep)}
-                  className="gap-1"
-                >
-                  Suivant
-                  <ChevronRight className="h-3.5 w-3.5" />
-                </Button>
+                <div className="flex flex-col items-end gap-1">
+                  <Button
+                    size="sm"
+                    onClick={form.goNext}
+                    disabled={!form.isStepValid(form.currentStep)}
+                    className="gap-1"
+                  >
+                    Suivant
+                    <ChevronRight className="h-3.5 w-3.5" />
+                  </Button>
+                  {missingFields.length > 0 && (
+                    <span className="text-[10px] text-muted-foreground">
+                      Renseignez : {missingFields.join(', ')}
+                    </span>
+                  )}
+                </div>
               ) : (
                 <Button
                   size="sm"
