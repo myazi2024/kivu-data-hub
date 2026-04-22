@@ -141,12 +141,20 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
   
   // Purpose
   const [purpose, setPurpose] = useState('');
-  
+
+  // Documents (uploaded URLs)
+  const [documents, setDocuments] = useState<SubdivisionDocuments>({
+    requester_id_document_url: null,
+    proof_of_ownership_url: null,
+    subdivision_sketch_url: null,
+  });
+
   // Submission
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [referenceNumber, setReferenceNumber] = useState('');
-  
+  const [createdRequestId, setCreatedRequestId] = useState<string | null>(null);
+
   // Validation
   const [validation, setValidation] = useState<ValidationResult>({ isValid: true, errors: [], warnings: [] });
   
