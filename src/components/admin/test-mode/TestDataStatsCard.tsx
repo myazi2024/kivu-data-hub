@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -15,6 +15,7 @@ import {
 import { Loader2, Info, Trash2, RefreshCw, RotateCcw, Play } from 'lucide-react';
 import type { TestDataStats } from './types';
 import TestDataExportButton from './TestDataExportButton';
+import { loadTestEntities, TEST_ENTITIES, type TestEntity } from '@/constants/testEntities';
 
 interface TestDataStatsCardProps {
   stats: TestDataStats;
@@ -30,28 +31,21 @@ interface TestDataStatsCardProps {
   onGenerate?: () => void;
 }
 
-const STAT_ITEMS: { key: keyof TestDataStats; label: string }[] = [
-  { key: 'parcels', label: 'Parcelles' },
-  { key: 'contributions', label: 'Contributions' },
-  { key: 'invoices', label: 'Factures' },
-  { key: 'payments', label: 'Paiements' },
-  { key: 'cccCodes', label: 'Codes CCC' },
-  { key: 'serviceAccess', label: 'Accès services' },
-  { key: 'titleRequests', label: 'Demandes titres' },
-  { key: 'expertiseRequests', label: 'Expertises' },
-  { key: 'expertisePayments', label: 'Paiem. expertises' },
-  { key: 'disputes', label: 'Litiges' },
-  { key: 'boundaryConflicts', label: 'Conflits limites' },
-  { key: 'ownershipHistory', label: 'Hist. propriété' },
-  { key: 'taxHistory', label: 'Hist. taxes' },
-  { key: 'boundaryHistory', label: 'Hist. bornages' },
-  { key: 'mortgages', label: 'Hypothèques' },
-  { key: 'buildingPermits', label: 'Autorisations' },
-  { key: 'fraudAttempts', label: 'Fraudes' },
-  { key: 'certificates', label: 'Certificats' },
-  { key: 'mutationRequests', label: 'Mutations' },
-  { key: 'subdivisionRequests', label: 'Lotissements' },
-];
+/** Extra label for the 'payments' key (not in the registry — derived from invoices). */
+const EXTRA_LABELS: Record<string, string> = { payments: 'Paiements' };
+
+/** Build displayed list from the registry, ensuring `payments` (not in registry) stays visible. */
+function buildStatItems(entities: TestEntity[], stats: TestDataStats): { key: keyof TestDataStats; label: string }[] {
+  const items = entities.map((e) => ({ key: e.labelKey as keyof TestDataStats, label: e.label }));
+  if ('payments' in stats && !entities.some((e) => e.labelKey === 'payments')) {
+    const idx = items.findIndex((i) => i.key === 'invoices');
+    items.splice(idx >= 0 ? idx + 1 : items.length, 0, {
+      key: 'payments' as keyof TestDataStats,
+      label: EXTRA_LABELS.payments,
+    });
+  }
+  return items;
+}
 
 const TestDataStatsCard: React.FC<TestDataStatsCardProps> = ({
   stats,
