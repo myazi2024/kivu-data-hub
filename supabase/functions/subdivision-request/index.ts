@@ -12,12 +12,16 @@ const corsHeaders = {
 interface SubdivisionRequestBody {
   parcel_number: string;
   parcel_id?: string | null;
+  /** 'urban' | 'rural' — explicit, computed client-side. Falls back to inference. */
+  section_type?: 'urban' | 'rural';
   parent_parcel: {
     areaSqm: number;
     location: string;
     ownerName: string;
     titleReference: string;
     gpsCoordinates: { lat: number; lng: number }[];
+    quartier?: string | null;
+    village?: string | null;
   };
   requester: {
     firstName: string;
@@ -34,6 +38,7 @@ interface SubdivisionRequestBody {
   planElements: any;
   purpose: string;
   documents: {
+    /** Storage path inside the private `cadastral-documents` bucket. */
     requester_id_document_url?: string | null;
     proof_of_ownership_url?: string | null;
     subdivision_sketch_url?: string | null;
@@ -70,9 +75,9 @@ Deno.serve(async (req) => {
     if (!body.purpose) throw new Error("purpose is required");
 
     // === SERVER-SIDE FEE COMPUTATION (source of truth) ===
-    const sectionType = body.parent_parcel && body.lots.length > 0
-      ? (body.parent_parcel.location && body.parent_parcel.location.toLowerCase().includes("village") ? "rural" : "urban")
-      : "urban";
+    // Prefer explicit section_type from client; fall back to quartier vs village inference.
+    const sectionType: 'urban' | 'rural' = body.section_type
+      ?? (body.parent_parcel?.quartier ? 'urban' : (body.parent_parcel?.village ? 'rural' : 'urban'));
 
     // Fetch matching rate
     const { data: rates } = await supabase
