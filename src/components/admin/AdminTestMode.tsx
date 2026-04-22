@@ -143,10 +143,29 @@ const AdminTestMode: React.FC = () => {
     };
     try {
       setSaving(true);
-      toast.info('Suppression des données test en cours…');
-      const { error: rpcError } = await supabase.rpc('cleanup_all_test_data');
-      if (rpcError) throw rpcError;
-      toast.success('Données test supprimées');
+      toast.info('Suppression des données test en cours…', {
+        description: 'Purge par lots — peut prendre quelques instants',
+      });
+      const { data: cleanupData, error: cleanupError } = await supabase.functions.invoke(
+        'cleanup-test-data-batch',
+      );
+      if (cleanupError) throw new Error(cleanupError.message);
+      const result = (cleanupData ?? {}) as {
+        ok?: boolean;
+        failed_step?: string;
+        error?: string;
+        total_deleted?: number;
+        partial_total?: number;
+      };
+      if (result.ok === false) {
+        const partial = result.partial_total ?? 0;
+        throw new Error(
+          `Étape "${result.failed_step}" : ${result.error ?? 'erreur inconnue'} (${partial} déjà supprimés)`,
+        );
+      }
+      toast.success('Données test supprimées', {
+        description: `${result.total_deleted ?? 0} enregistrements supprimés`,
+      });
 
       const oldConfig = { ...savedConfig };
       await upsertSearchConfig('test_mode', toRecord(validatedConfig), "Configuration du mode test global pour l'admin");
