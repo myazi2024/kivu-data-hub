@@ -58,6 +58,7 @@ export function AdminSubdivisionRequests() {
     );
   };
 
+  const fetchRequests = async () => {
     setLoading(true);
     try {
       const { data, error } = await supabase
