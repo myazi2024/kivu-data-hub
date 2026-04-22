@@ -312,7 +312,7 @@ const AdminCCCContributions: React.FC = () => {
         let latitude = null;
         let longitude = null;
         if (updatedContribution.gps_coordinates && Array.isArray(updatedContribution.gps_coordinates) && updatedContribution.gps_coordinates.length > 0) {
-          const firstCoord = updatedContribution.gps_coordinates[0] as any;
+          const firstCoord = updatedContribution.gps_coordinates[0] as GpsCoordinate;
           latitude = firstCoord.lat || firstCoord.latitude || null;
           longitude = firstCoord.lng || firstCoord.longitude || null;
         }
