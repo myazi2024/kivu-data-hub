@@ -1,4 +1,5 @@
 import { lazy, Suspense } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Card } from '@/components/ui/card';
 import { Grid3X3, DollarSign, Ruler, Layers, BarChart3, Loader2 } from 'lucide-react';
@@ -19,7 +20,21 @@ const Fallback = () => (
   </div>
 );
 
+const VALID_SUBS = ['requests', 'fees', 'zoning', 'lots', 'analytics'] as const;
+
 export default function AdminSubdivisionHub() {
+  const [params, setParams] = useSearchParams();
+  const sub = params.get('sub');
+  const active = (VALID_SUBS as readonly string[]).includes(sub ?? '') ? (sub as string) : 'requests';
+
+  const handleChange = (next: string) => {
+    const newParams = new URLSearchParams(params);
+    newParams.set('tab', 'subdivision-hub');
+    if (next === 'requests') newParams.delete('sub');
+    else newParams.set('sub', next);
+    setParams(newParams, { replace: true });
+  };
+
   return (
     <div className="space-y-4">
       <div>
@@ -32,7 +47,7 @@ export default function AdminSubdivisionHub() {
         </p>
       </div>
 
-      <Tabs defaultValue="requests" className="w-full">
+      <Tabs value={active} onValueChange={handleChange} className="w-full">
         <Card className="p-2">
           <TabsList className="grid grid-cols-2 sm:grid-cols-5 w-full">
             <TabsTrigger value="requests" className="gap-1.5">
