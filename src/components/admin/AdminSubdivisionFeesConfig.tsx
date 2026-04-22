@@ -236,7 +236,78 @@ const AdminSubdivisionFeesConfig: React.FC = () => {
         </CardContent>
       </Card>
 
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+      {/* Fee calculator preview */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Calculator className="h-4 w-4" />
+            Aperçu de calcul
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-2 mb-3">
+            <div>
+              <Label className="text-xs">Tarif</Label>
+              <Select value={calc.rateId} onValueChange={v => setCalc(c => ({ ...c, rateId: v }))}>
+                <SelectTrigger><SelectValue placeholder="Choisir..." /></SelectTrigger>
+                <SelectContent>
+                  {rates.filter(r => r.is_active).map(r => (
+                    <SelectItem key={r.id} value={r.id}>{r.section_type === 'urban' ? '🏙️' : '🌾'} {r.location_name === '*' ? 'Défaut' : r.location_name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-xs">Nb lots</Label>
+              <Input type="number" min="1" value={calc.lotCount} onChange={e => setCalc(c => ({ ...c, lotCount: e.target.value }))} />
+            </div>
+            <div>
+              <Label className="text-xs">Surface moy./lot (m²)</Label>
+              <Input type="number" min="1" value={calc.avgLotSqm} onChange={e => setCalc(c => ({ ...c, avgLotSqm: e.target.value }))} />
+            </div>
+            <div>
+              <Label className="text-xs">Voirie (m linéaire)</Label>
+              <Input type="number" min="0" value={calc.roadLengthM} onChange={e => setCalc(c => ({ ...c, roadLengthM: e.target.value }))} />
+            </div>
+            <div>
+              <Label className="text-xs">Esp. communs (m²)</Label>
+              <Input type="number" min="0" value={calc.commonSpaceSqm} onChange={e => setCalc(c => ({ ...c, commonSpaceSqm: e.target.value }))} />
+            </div>
+          </div>
+          {(() => {
+            const r = rates.find(x => x.id === calc.rateId);
+            if (!r) return <p className="text-xs text-muted-foreground">Sélectionnez un tarif pour voir l'aperçu.</p>;
+            const lots = parseInt(calc.lotCount) || 0;
+            const avg = parseFloat(calc.avgLotSqm) || 0;
+            const roadM = parseFloat(calc.roadLengthM) || 0;
+            const commonM2 = parseFloat(calc.commonSpaceSqm) || 0;
+            // Per-lot fee with optional tier
+            let feePerLot: number;
+            if (r.tier_threshold_sqm && r.tier_rate_per_sqm_usd && avg > r.tier_threshold_sqm) {
+              feePerLot = r.tier_threshold_sqm * r.rate_per_sqm_usd + (avg - r.tier_threshold_sqm) * r.tier_rate_per_sqm_usd;
+            } else {
+              feePerLot = avg * r.rate_per_sqm_usd;
+            }
+            if (r.min_fee_per_lot_usd != null) feePerLot = Math.max(feePerLot, r.min_fee_per_lot_usd);
+            if (r.max_fee_per_lot_usd != null) feePerLot = Math.min(feePerLot, r.max_fee_per_lot_usd);
+            const lotsTotal = feePerLot * lots;
+            const roadTotal = roadM * (r.road_fee_per_linear_m_usd || 0);
+            const commonTotal = commonM2 * (r.common_space_fee_per_sqm_usd || 0);
+            const total = lotsTotal + roadTotal + commonTotal;
+            return (
+              <div className="rounded-md border bg-muted/30 p-3 space-y-1 text-sm">
+                <div className="flex justify-between"><span>Frais par lot</span><span className="font-mono">${feePerLot.toFixed(2)}</span></div>
+                <div className="flex justify-between"><span>{lots} lots</span><span className="font-mono">${lotsTotal.toFixed(2)}</span></div>
+                {roadTotal > 0 && <div className="flex justify-between text-muted-foreground"><span>Voirie ({roadM} ml)</span><span className="font-mono">${roadTotal.toFixed(2)}</span></div>}
+                {commonTotal > 0 && <div className="flex justify-between text-muted-foreground"><span>Espaces communs ({commonM2} m²)</span><span className="font-mono">${commonTotal.toFixed(2)}</span></div>}
+                <div className="flex justify-between border-t pt-1 font-semibold"><span>Total estimé</span><span className="font-mono text-primary">${total.toFixed(2)}</span></div>
+                <p className="text-[11px] text-muted-foreground italic mt-1">Calcul indicatif. Le calcul officiel reste exécuté côté serveur (edge function <code>subdivision-request</code>).</p>
+              </div>
+            );
+          })()}
+        </CardContent>
+      </Card>
+
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{editing ? 'Modifier le tarif' : 'Ajouter un tarif'}</DialogTitle>
@@ -270,6 +341,25 @@ const AdminSubdivisionFeesConfig: React.FC = () => {
                 <Input type="number" step="0.01" value={form.max_fee_per_lot_usd} onChange={e => setForm(f => ({ ...f, max_fee_per_lot_usd: e.target.value }))} placeholder="Optionnel" />
               </div>
             </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <Label>Seuil dégressif (m²)</Label>
+                <Input type="number" step="1" value={form.tier_threshold_sqm} onChange={e => setForm(f => ({ ...f, tier_threshold_sqm: e.target.value }))} placeholder="Ex: 500" />
+              </div>
+              <div>
+                <Label>Tarif au-delà du seuil ($/m²)</Label>
+                <Input type="number" step="0.01" value={form.tier_rate_per_sqm_usd} onChange={e => setForm(f => ({ ...f, tier_rate_per_sqm_usd: e.target.value }))} placeholder="Ex: 0.30" />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <Label>Voirie ($ / m linéaire)</Label>
+                <Input type="number" step="0.01" value={form.road_fee_per_linear_m_usd} onChange={e => setForm(f => ({ ...f, road_fee_per_linear_m_usd: e.target.value }))} placeholder="Optionnel" />
+              </div>
+              <div>
+                <Label>Espaces communs ($/m²)</Label>
+                <Input type="number" step="0.01" value={form.common_space_fee_per_sqm_usd} onChange={e => setForm(f => ({ ...f, common_space_fee_per_sqm_usd: e.target.value }))} placeholder="Optionnel" />
+              </div>
             <div className="flex items-center gap-2">
               <Switch checked={form.is_active} onCheckedChange={v => setForm(f => ({ ...f, is_active: v }))} />
               <Label>Actif</Label>
