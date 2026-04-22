@@ -960,6 +960,11 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
                 onUndo={onUndo}
                 onRedo={onRedo}
               />
+              {/* Hint contextuel selon l'outil actif */}
+              <p className="text-[11px] text-muted-foreground text-center px-2 py-1.5 border-t bg-muted/20">
+                <Info className="h-3 w-3 inline mr-1 -mt-0.5 opacity-60" />
+                {modeHint}
+              </p>
               {lots.length > 1 && selectedLotIds.length === 0 && (
                 <p className="text-[10px] text-muted-foreground text-center py-1">
                   💡 Ctrl+clic (⌘+clic sur Mac) pour sélectionner plusieurs lots et les fusionner
@@ -1302,6 +1307,7 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
         </div>
       </div>
     </div>
+    </TooltipProvider>
   );
 };
 
