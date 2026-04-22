@@ -1,108 +1,87 @@
 
 
-## Plan — Élimination des 35 `no-explicit-any` (lignes 327-562 de `DRCInteractiveMap.tsx`)
+## Audit — Mode Test (synthèse)
 
-Les warnings sont concentrés dans **deux blocs jumeaux** qui « slicent » l'objet `analytics: LandAnalyticsData` selon un prédicat géographique :
-- Lignes ~325-343 : `buildEntityColorFn` (slicer pour color metric)
-- Lignes ~544-563 : Légende contextuelle (sliceArr pour `MapScopeLegend`)
+État global : **fonctionnel et bien architecturé**, mais 7 incohérences/dettes identifiées entre le code, la DB et la documentation. Aucun bug bloquant ; surtout du nettoyage à faire pour aligner le frontend sur l'architecture batchée déployée côté serveur.
 
-### 1. Cause racine
+---
 
-L'objet `analytics` est déjà **fortement typé** (`LandAnalyticsData` dans `useLandDataAnalytics.tsx`), donc la quasi-totalité des `as any` sont **inutiles** :
-- `analytics.parcels as any` → cast superflu, déjà `ParcelRecord[]`
-- `(analytics as any).subdivisionRequests` → propriété qui existe déjà sur le type
-- `(r: any) =>` dans le `.map` → peut être inféré via génériques
-- `pred as any` / `predicate as any` → contournement parce que `buildScopePredicate` retourne `(record: any) => boolean`
+### ✅ Ce qui fonctionne bien
 
-### 2. Stratégie de correction
-
-#### A. Extraire un helper générique typé (factorise les 2 blocs jumeaux)
-
-Créer dans `src/components/map/meta/mapMeta.ts` :
-
-```ts
-export type GeoScopedRecord = { 
-  province?: string | null; ville?: string | null; commune?: string | null;
-  quartier?: string | null; territoire?: string | null;
-};
-
-export function sliceAnalyticsByPredicate(
-  analytics: LandAnalyticsData,
-  predicate: (r: GeoScopedRecord) => boolean,
-  overrideProvince?: string,
-): LandAnalyticsData {
-  const slice = <T extends GeoScopedRecord>(arr: T[] | undefined): T[] =>
-    (arr || []).filter(predicate).map((r) => 
-      overrideProvince ? { ...r, province: overrideProvince } : r
-    );
-  return {
-    ...analytics,
-    parcels: slice(analytics.parcels),
-    contributions: slice(analytics.contributions),
-    titleRequests: slice(analytics.titleRequests),
-    disputes: slice(analytics.disputes),
-    mortgages: slice(analytics.mortgages),
-    mutationRequests: slice(analytics.mutationRequests),
-    expertiseRequests: slice(analytics.expertiseRequests),
-    subdivisionRequests: slice(analytics.subdivisionRequests),
-    ownershipHistory: slice(analytics.ownershipHistory),
-    certificates: slice(analytics.certificates),
-    invoices: slice(analytics.invoices),
-    buildingPermits: slice(analytics.buildingPermits),
-    taxHistory: slice(analytics.taxHistory),
-  };
-}
-```
-
-#### B. Resserrer la signature de `buildScopePredicate`
-
-Dans `mapMeta.ts`, remplacer `(record: any) => boolean` par `(r: GeoScopedRecord) => boolean`. Tous les champs accédés (`r.province`, `r.ville`, etc.) sont déjà couverts par `GeoScopedRecord`.
-
-#### C. Réécriture des deux sites d'appel
-
-**Bloc 1 (`buildEntityColorFn`, ~325-343)** : 18 lignes → 4 lignes
-```ts
-return (entityName: string): string | undefined => {
-  const pred = matchPredicate(entityName);
-  const sliced = sliceAnalyticsByPredicate(analytics, pred, '__entity__');
-  const v = activeProfile.metric({ analytics: sliced, provinceName: '__entity__' });
-  // ...
-};
-```
-Note : `matchPredicate` retourne aujourd'hui `(r: any) => boolean` — typer en `(r: GeoScopedRecord) => boolean`.
-
-**Bloc 2 (Légende contextuelle, ~544-563)** : ~18 lignes → 2 lignes
-```ts
-const predicate = buildScopePredicate(selectedProvince.name, selectedVille, selectedCommune, selectedQuartier, selectedTerritoire);
-const scopedAnalytics = sliceAnalyticsByPredicate(analytics, predicate, selectedProvince.name);
-```
-
-#### D. Résiduels hors slicers (3 cas)
-
-- **L. 65** : `useState<any>(null)` pour `mapInstance` → typer `Map | null` (importer le type Leaflet) ou `unknown`.
-- **L. 131, 135** : `(el as any).__teaserTimers` → définir `interface TeaserElement extends HTMLDivElement { __teaserTimers?: number[] }` et caster proprement, OU déplacer les timers dans un `useRef<number[]>([])`.
-- **L. 279** : `html2canvas(...) as any` (option `borderRadius`) → retirer le cast et omettre l'option non-typée (ou utiliser `// eslint-disable-next-line` ciblé si l'option est nécessaire).
-
-### 3. Bénéfices
-
-| Avant | Après |
+| Composant | État |
 |---|---|
-| 35 warnings ESLint | 0 warning |
-| ~36 lignes dupliquées | 1 helper réutilisable |
-| Aucune sécurité de type sur les champs analytics slicés | Inférence complète via génériques |
-| `r.foo` accessible sur n'importe quoi | Accès limité aux champs `GeoScopedRecord` |
+| `useTestMode` (config realtime via postgres_changes) | OK |
+| `applyTestFilter` + `useTestEnvironment` (routes `/test/*`) | OK |
+| Trigger `prevent_test_data_in_prod` sur 12 tables | Actif et testé |
+| Cron `cleanup-test-data-daily-rpc` (03:00 UTC, RPC SQL directe) | Actif |
+| Edge `cleanup-test-data-batch` (admin guard + boucle 23 étapes × 500) | Déployée et utilisée |
+| Generators modularisés (15 fichiers `generators/*.ts`) | OK |
+| Registry `test_entities_registry` (22 entrées) + `loadTestEntities` cache 5 min | OK |
+| RPC `count_test_data_stats` + gestion P0001 → toast | OK |
+| `TestModeBanner` financier (seuil min 20 + 50%) | OK |
+| Garde anti-duplication dans `generateTestData` | OK |
 
-### 4. Fichiers impactés
+---
 
-| Fichier | Action |
-|---|---|
-| `src/components/map/meta/mapMeta.ts` | Ajouter `GeoScopedRecord` + helper `sliceAnalyticsByPredicate` ; resserrer `buildScopePredicate` |
-| `src/components/DRCInteractiveMap.tsx` | Remplacer 2 blocs slicer par appels au helper ; corriger 3 résiduels (mapInstance, teaserTimers, html2canvas) |
+### 🟠 Incohérences à corriger (P1)
 
-### 5. Critères de validation
+#### 1. Régression critique — `handleDisableWithCleanup` appelle la RPC DEPRECATED
+`src/components/admin/AdminTestMode.tsx:147` invoque `supabase.rpc('cleanup_all_test_data')` lors du flux « Désactiver et supprimer ». Cette RPC est marquée DEPRECATED et **plante en `statement_timeout` au-delà de ~14k lignes** (raison même de la création de l'edge batchée). Sur un environnement plein, ce bouton échoue silencieusement et laisse les données en place pendant que le mode test est désactivé.
+→ **Fix** : remplacer par `supabase.functions.invoke('cleanup-test-data-batch')` comme dans `useTestDataActions.cleanupTestData` (gérer le même format `{ ok, failed_step, partial_total, ... }`).
 
-1. `npx eslint src/components/DRCInteractiveMap.tsx` → 0 warning `no-explicit-any`.
-2. `npx tsc --noEmit` → 0 erreur (typage strict respecté).
-3. Comportements UI identiques : couleurs choroplèthe par commune/quartier/territoire, légende contextuelle, swipe pager, screenshot html2canvas, teaser au mount.
-4. Aucun changement runtime : pure refactor de typage.
+#### 2. Documentation utilisateur obsolète
+`TestModeGuide.tsx:11` affiche encore : *« Nettoyage manuel via la RPC `cleanup_all_test_data()` »*. Faux depuis la migration batchée.
+→ **Fix** : remplacer par *« edge function `cleanup-test-data-batch` (purge par lots de 500, 23 étapes FK-safe) »*.
+
+#### 3. Registry — 8 entrées enfants désactivées (`is_active = false`)
+La mémoire annonce **22 entités actives** mais la DB n'en a que **14 actives** : `ownershipHistory`, `taxHistory`, `boundaryHistory`, `mortgagePayments`, `expertisePayments`, `fraudAttempts`, `permitPayments`, `permitAdminActions` sont toutes `is_active=false`.
+
+**Conséquence pratique** :
+- `count_test_data_stats()` (registry-driven) retourne 0 pour ces 8 entités → la carte stats UI affiche 0 même si des lignes existent.
+- `TestDataExportButton` (CSV pré-purge) **n'exporte pas** ces 8 entités enfants → perte d'audit trail.
+- L'edge batch les purge quand même (liste hardcodée `STEPS`), donc pas de fuite de données.
+
+→ **Fix** : décider — soit `UPDATE test_entities_registry SET is_active = true WHERE label_key IN (…8 enfants)`, soit assumer le choix et mettre à jour la mémoire (`22 entités actives` → `14 racines + 8 enfants désactivés volontairement`).
+
+---
+
+### 🟡 Polish (P2)
+
+#### 4. `TestDataStatsCard` STAT_ITEMS dupliqué
+20 entrées hardcodées (`STAT_ITEMS`) doublonnent ce que `loadTestEntities()` fournit déjà. Dérive garantie au prochain ajout d'entité.
+→ **Fix** : générer `STAT_ITEMS` à partir de `loadTestEntities()` (même mapping `labelKey` → `label`).
+
+#### 5. `TestEnvironmentBanner` — visibilité réduite
+Bandeau bottom-right `text-[10px] opacity-60` quasi invisible. La doc dit *« indicateur visuel pour distinguer test/production »* — l'intention est diluée. À voir si volontaire (mode discret) ou à renforcer.
+
+#### 6. Edge `cleanup-test-data` (legacy) toujours déployée
+Marquée dépréciée dans la doc mais toujours présente dans `supabase/functions/cleanup-test-data/`. Risque qu'un script externe l'appelle encore. À supprimer ou à laisser un README clair.
+
+#### 7. Cast `as any` sur `test_entities_registry`
+`src/constants/testEntities.ts:84` et `TestDataExportButton.tsx:24` castent `(supabase as any)` car la table est absente de `types.ts`. Soit normal (table admin pure), soit régénérer les types.
+
+---
+
+### 🟢 Sécurité — RAS
+
+- Routes `/test/*` admin-only ✅
+- Edge batch : double check JWT + `user_roles` ✅
+- RPC `cleanup_test_data_chunk` : `SECURITY DEFINER` + `has_role` guard ✅
+- Trigger anti-prod sur les 12 tables critiques ✅
+- Registry — RLS non vérifiée dans cet audit (à faire si besoin)
+
+---
+
+### Plan d'action proposé (par priorité)
+
+| # | Action | Fichier(s) | Impact |
+|---|---|---|---|
+| P0 | Remplacer RPC deprecated par edge batch dans `handleDisableWithCleanup` | `AdminTestMode.tsx` | **Haut** (bug fonctionnel) |
+| P1 | Corriger texte du guide (RPC → edge batch) | `TestModeGuide.tsx` | Moyen |
+| P1 | Décision registry : activer 8 enfants OU mettre à jour la mémoire | DB ou `test-mode-hardening-fr.md` | Moyen (cohérence audit) |
+| P2 | Générer `STAT_ITEMS` dynamiquement depuis registry | `TestDataStatsCard.tsx` | Faible |
+| P2 | Supprimer ou sceller edge legacy `cleanup-test-data` | `supabase/functions/cleanup-test-data/` | Faible |
+| P2 | Renforcer visibilité `TestEnvironmentBanner` (optionnel) | `TestEnvironmentBanner.tsx` | Faible |
+
+Aucun changement DB obligatoire si la décision pour le point #3 est de garder les 8 enfants désactivés.
 
