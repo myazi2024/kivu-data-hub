@@ -211,7 +211,7 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
       const ndy = dy * step;
       if (selectedLotId) {
         const lot = lots.find(l => l.id === selectedLotId);
-        if (lot) {
+        if (lot && !lot.isParentBoundary) {
           onUpdateLot(selectedLotId, lot.vertices.map(v => ({ x: v.x + ndx, y: v.y + ndy })));
         }
       } else if (selectedRoadId && onUpdateRoad) {
@@ -235,7 +235,7 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
       };
       if (selectedLotId) {
         const lot = lots.find(l => l.id === selectedLotId);
-        if (lot) onUpdateLot(selectedLotId, rotateVertices(lot.vertices));
+        if (lot && !lot.isParentBoundary) onUpdateLot(selectedLotId, rotateVertices(lot.vertices));
       } else if (selectedRoadId && onUpdateRoad) {
         const road = roads.find(r => r.id === selectedRoadId);
         if (road) onUpdateRoad(selectedRoadId, { path: rotateVertices(road.path) });
