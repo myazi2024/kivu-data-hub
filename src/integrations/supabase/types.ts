@@ -5877,6 +5877,7 @@ export type Database = {
       }
       subdivision_rate_config: {
         Row: {
+          common_space_fee_per_sqm_usd: number | null
           created_at: string | null
           id: string
           is_active: boolean | null
@@ -5884,10 +5885,14 @@ export type Database = {
           max_fee_per_lot_usd: number | null
           min_fee_per_lot_usd: number | null
           rate_per_sqm_usd: number
+          road_fee_per_linear_m_usd: number | null
           section_type: string
+          tier_rate_per_sqm_usd: number | null
+          tier_threshold_sqm: number | null
           updated_at: string | null
         }
         Insert: {
+          common_space_fee_per_sqm_usd?: number | null
           created_at?: string | null
           id?: string
           is_active?: boolean | null
@@ -5895,10 +5900,14 @@ export type Database = {
           max_fee_per_lot_usd?: number | null
           min_fee_per_lot_usd?: number | null
           rate_per_sqm_usd?: number
+          road_fee_per_linear_m_usd?: number | null
           section_type: string
+          tier_rate_per_sqm_usd?: number | null
+          tier_threshold_sqm?: number | null
           updated_at?: string | null
         }
         Update: {
+          common_space_fee_per_sqm_usd?: number | null
           created_at?: string | null
           id?: string
           is_active?: boolean | null
@@ -5906,7 +5915,10 @@ export type Database = {
           max_fee_per_lot_usd?: number | null
           min_fee_per_lot_usd?: number | null
           rate_per_sqm_usd?: number
+          road_fee_per_linear_m_usd?: number | null
           section_type?: string
+          tier_rate_per_sqm_usd?: number | null
+          tier_threshold_sqm?: number | null
           updated_at?: string | null
         }
         Relationships: []
