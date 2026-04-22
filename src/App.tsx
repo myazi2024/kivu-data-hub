@@ -31,26 +31,26 @@ import NotFound from "./pages/NotFound";
 import ResetPassword from "./pages/ResetPassword";
 
 // Lazy loaded pages
-const Publications = React.lazy(() => import("./pages/Publications"));
-const Map = React.lazy(() => import("./pages/Map"));
-const CadastralMap = React.lazy(() => import("./pages/CadastralMap"));
-const Admin = React.lazy(() => import("./pages/Admin"));
+const Publications = lazyWithRetry(() => import("./pages/Publications"));
+const Map = lazyWithRetry(() => import("./pages/Map"));
+const CadastralMap = lazyWithRetry(() => import("./pages/CadastralMap"));
+const Admin = lazyWithRetry(() => import("./pages/Admin"));
 
 
-const UserDashboard = React.lazy(() => import("./pages/UserDashboard"));
-const ResellerDashboard = React.lazy(() => import("./pages/ResellerDashboard"));
-const About = React.lazy(() => import("./pages/About"));
-const Services = React.lazy(() => import("./pages/Services"));
+const UserDashboard = lazyWithRetry(() => import("./pages/UserDashboard"));
+const ResellerDashboard = lazyWithRetry(() => import("./pages/ResellerDashboard"));
+const About = lazyWithRetry(() => import("./pages/About"));
+const Services = lazyWithRetry(() => import("./pages/Services"));
 
-const Partnership = React.lazy(() => import("./pages/Partnership"));
-const Legal = React.lazy(() => import("./pages/Legal"));
-const Articles = React.lazy(() => import("./pages/Articles"));
-const ArticleDetail = React.lazy(() => import("./pages/ArticleDetail"));
-const AboutCCC = React.lazy(() => import("./pages/AboutCCC"));
-const AboutDiscountCodes = React.lazy(() => import("./pages/AboutDiscountCodes"));
-const VerifyDocument = React.lazy(() => import("./pages/VerifyDocument"));
-const PitchPartenaires = React.lazy(() => import("./pages/PitchPartenaires"));
-const HrMe = React.lazy(() => import("./pages/HrMe"));
+const Partnership = lazyWithRetry(() => import("./pages/Partnership"));
+const Legal = lazyWithRetry(() => import("./pages/Legal"));
+const Articles = lazyWithRetry(() => import("./pages/Articles"));
+const ArticleDetail = lazyWithRetry(() => import("./pages/ArticleDetail"));
+const AboutCCC = lazyWithRetry(() => import("./pages/AboutCCC"));
+const AboutDiscountCodes = lazyWithRetry(() => import("./pages/AboutDiscountCodes"));
+const VerifyDocument = lazyWithRetry(() => import("./pages/VerifyDocument"));
+const PitchPartenaires = lazyWithRetry(() => import("./pages/PitchPartenaires"));
+const HrMe = lazyWithRetry(() => import("./pages/HrMe"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
