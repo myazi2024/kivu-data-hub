@@ -1,134 +1,108 @@
 
 
-## Refonte complète — Swipe slide mobile (Carte RDC ⇄ Analytics)
+## Plan — Élimination des 35 `no-explicit-any` (lignes 327-562 de `DRCInteractiveMap.tsx`)
 
-Reconstruction from scratch, inspirée des UX modernes (iOS Pages, Instagram Stories, App Store). Le principe : un **carousel pager** où le doigt déplace les pages **en temps réel**, avec snap intelligent, vélocité physique et feedback continu.
+Les warnings sont concentrés dans **deux blocs jumeaux** qui « slicent » l'objet `analytics: LandAnalyticsData` selon un prédicat géographique :
+- Lignes ~325-343 : `buildEntityColorFn` (slicer pour color metric)
+- Lignes ~544-563 : Légende contextuelle (sliceArr pour `MapScopeLegend`)
 
----
+### 1. Cause racine
 
-### 1. Principes directeurs
+L'objet `analytics` est déjà **fortement typé** (`LandAnalyticsData` dans `useLandDataAnalytics.tsx`), donc la quasi-totalité des `as any` sont **inutiles** :
+- `analytics.parcels as any` → cast superflu, déjà `ParcelRecord[]`
+- `(analytics as any).subdivisionRequests` → propriété qui existe déjà sur le type
+- `(r: any) =>` dans le `.map` → peut être inféré via génériques
+- `pred as any` / `predicate as any` → contournement parce que `buildScopePredicate` retourne `(record: any) => boolean`
 
-- **Le doigt EST la page** : pas de threshold artificiel pour commencer le mouvement. Dès que l'utilisateur pose le doigt et bouge horizontalement, les deux panneaux suivent à 1:1.
-- **Décision au relâchement** : snap vers la page la plus proche, pondéré par la vélocité (flick court = bascule, drag lent = retour si <50%).
-- **Continuité visuelle absolue** : aucun cut, aucun fade. Une seule transformation `translateX` pilotée par un seul state.
-- **Découvrabilité native** : un teaser d'amorce au mount (les deux pages "rebondissent" de 12px à droite puis reviennent) — comme Instagram quand tu ouvres un nouveau profil.
-- **Zéro conflit** : la carte SVG reste tappable, le scroll vertical Analytics reste natif, pinch-zoom intact.
+### 2. Stratégie de correction
 
----
+#### A. Extraire un helper générique typé (factorise les 2 blocs jumeaux)
 
-### 2. Nouvelle architecture
-
-#### A. Nouveau hook `useSwipePager` (remplace `useSwipeNavigation`)
-
-Pattern fondamentalement différent — on ne détecte plus un "swipe", on suit un **drag continu** :
+Créer dans `src/components/map/meta/mapMeta.ts` :
 
 ```ts
-useSwipePager({
-  pageCount: 2,
-  index: activeMobilePanel === 'analytics' ? 1 : 0,
-  onIndexChange: (i) => setActiveMobilePanel(i === 1 ? 'analytics' : 'map'),
-  enabled: isMobile,
-  ignoreSelector: '...',
-})
-→ returns { ref, dragOffset, isDragging, pageWidth }
+export type GeoScopedRecord = { 
+  province?: string | null; ville?: string | null; commune?: string | null;
+  quartier?: string | null; territoire?: string | null;
+};
+
+export function sliceAnalyticsByPredicate(
+  analytics: LandAnalyticsData,
+  predicate: (r: GeoScopedRecord) => boolean,
+  overrideProvince?: string,
+): LandAnalyticsData {
+  const slice = <T extends GeoScopedRecord>(arr: T[] | undefined): T[] =>
+    (arr || []).filter(predicate).map((r) => 
+      overrideProvince ? { ...r, province: overrideProvince } : r
+    );
+  return {
+    ...analytics,
+    parcels: slice(analytics.parcels),
+    contributions: slice(analytics.contributions),
+    titleRequests: slice(analytics.titleRequests),
+    disputes: slice(analytics.disputes),
+    mortgages: slice(analytics.mortgages),
+    mutationRequests: slice(analytics.mutationRequests),
+    expertiseRequests: slice(analytics.expertiseRequests),
+    subdivisionRequests: slice(analytics.subdivisionRequests),
+    ownershipHistory: slice(analytics.ownershipHistory),
+    certificates: slice(analytics.certificates),
+    invoices: slice(analytics.invoices),
+    buildingPermits: slice(analytics.buildingPermits),
+    taxHistory: slice(analytics.taxHistory),
+  };
+}
 ```
 
-Logique interne :
-- **`pointerdown`** : capture position, mémorise `startX`, marque `isDragging=true` après 8px de mouvement horizontal (lock). Si vertical d'abord → relâche.
-- **`pointermove`** (rAF throttled) : `dragOffset = currentX - startX`, clampé avec **rubber-band aux extrémités** (résistance exponentielle si on tire au-delà de la dernière page).
-- **`pointerup`** : décision physique :
-  - distance parcourue ≥ 25% largeur écran → snap à la page suivante
-  - vélocité ≥ 0.4 px/ms (flick) → snap dans la direction du flick, peu importe la distance
-  - sinon → snap retour
-- **Anti-clic fantôme** : si `isDragging` a été vrai, capture le prochain `click` (déjà OK).
-- **Pointer Capture** (`setPointerCapture`) : garantit la continuité même si le doigt sort du conteneur.
+#### B. Resserrer la signature de `buildScopePredicate`
 
-#### B. Layout simplifié (une seule transformation)
+Dans `mapMeta.ts`, remplacer `(record: any) => boolean` par `(r: GeoScopedRecord) => boolean`. Tous les champs accédés (`r.province`, `r.ville`, etc.) sont déjà couverts par `GeoScopedRecord`.
 
-```tsx
-<div ref={pagerRef} className="relative h-full overflow-hidden touch-pan-y">
-  <div
-    className="flex h-full"
-    style={{
-      width: '200%',
-      transform: `translate3d(calc(${-index * 50}% + ${dragOffset}px), 0, 0)`,
-      transition: isDragging ? 'none' : 'transform 320ms cubic-bezier(.22,.61,.36,1)',
-      willChange: 'transform',
-    }}
-  >
-    <section className="w-1/2 shrink-0">…carte + détails…</section>
-    <section className="w-1/2 shrink-0">…analytics…</section>
-  </div>
-</div>
+#### C. Réécriture des deux sites d'appel
+
+**Bloc 1 (`buildEntityColorFn`, ~325-343)** : 18 lignes → 4 lignes
+```ts
+return (entityName: string): string | undefined => {
+  const pred = matchPredicate(entityName);
+  const sliced = sliceAnalyticsByPredicate(analytics, pred, '__entity__');
+  const v = activeProfile.metric({ analytics: sliced, provinceName: '__entity__' });
+  // ...
+};
+```
+Note : `matchPredicate` retourne aujourd'hui `(r: any) => boolean` — typer en `(r: GeoScopedRecord) => boolean`.
+
+**Bloc 2 (Légende contextuelle, ~544-563)** : ~18 lignes → 2 lignes
+```ts
+const predicate = buildScopePredicate(selectedProvince.name, selectedVille, selectedCommune, selectedQuartier, selectedTerritoire);
+const scopedAnalytics = sliceAnalyticsByPredicate(analytics, predicate, selectedProvince.name);
 ```
 
-- `touch-pan-y` sur le conteneur : autorise le scroll vertical natif, intercepte uniquement le pan horizontal. Élimine 90 % des conflits scroll/swipe sans code.
-- `translate3d` : composite GPU, 60 fps garantis.
-- Une seule source de vérité de position : `index + dragOffset`.
+#### D. Résiduels hors slicers (3 cas)
 
-#### C. Page indicator moderne (style iOS)
+- **L. 65** : `useState<any>(null)` pour `mapInstance` → typer `Map | null` (importer le type Leaflet) ou `unknown`.
+- **L. 131, 135** : `(el as any).__teaserTimers` → définir `interface TeaserElement extends HTMLDivElement { __teaserTimers?: number[] }` et caster proprement, OU déplacer les timers dans un `useRef<number[]>([])`.
+- **L. 279** : `html2canvas(...) as any` (option `borderRadius`) → retirer le cast et omettre l'option non-typée (ou utiliser `// eslint-disable-next-line` ciblé si l'option est nécessaire).
 
-Sous les boutons mobiles :
-- 2 dots fluides qui s'**étirent en barre** au fur et à mesure du drag (pas binaire).
-- La largeur de la barre active = `interpolate(dragProgress, 0..1, 16px..6px)` pour la dot qui rétrécit, et inverse pour celle qui grandit.
-- Animation pure CSS pilotée par la même variable `dragOffset`.
+### 3. Bénéfices
 
-#### D. Teaser de découvrabilité (au mount, une seule fois)
+| Avant | Après |
+|---|---|
+| 35 warnings ESLint | 0 warning |
+| ~36 lignes dupliquées | 1 helper réutilisable |
+| Aucune sécurité de type sur les champs analytics slicés | Inférence complète via génériques |
+| `r.foo` accessible sur n'importe quoi | Accès limité aux champs `GeoScopedRecord` |
 
-Au lieu d'un toast textuel, **un mouvement physique** plus mémorable :
-- 600ms après le mount, si jamais vu : on anime `dragOffset` de `0 → -32px → +16px → 0` sur 900ms (easeOutBack).
-- L'utilisateur voit littéralement la page Analytics "pointer le bout de son nez" puis revenir.
-- Persistance `localStorage('drc-pager-teaser-seen')`.
-- Skip si `prefers-reduced-motion`.
-
----
-
-### 3. Boutons & accessibilité (conservés, simplifiés)
-
-- Boutons Carte/Analytics restent (a11y + desktop fallback) → ils déclenchent juste `setIndex(0|1)`, le hook anime tout seul.
-- `role="tablist"` sur les dots, `aria-selected` synchronisé.
-- Focus management : après animation (320ms), focus sur le titre du panneau actif.
-- Reset scroll Analytics à chaque arrivée sur la page 1.
-
----
-
-### 4. Performance
-
-- Une seule div bouge, transform GPU, pas de re-render React pendant le drag (state interne du hook via `useRef` + `requestAnimationFrame` qui pousse une CSS variable directement sur le DOM).
-- Optionnel : exposer `dragOffset` via **CSS variable** (`el.style.setProperty('--drag-x', ...)`) plutôt que via state React → zéro re-render pendant le geste.
-- Les cartes lourdes (`DRCMapWithTooltip`, etc.) restent montées (nécessaire pour la continuité visuelle pendant le slide).
-
----
-
-### 5. Suppression de l'existant
-
-- Hook `useSwipeNavigation.ts` → **remplacé** par `useSwipePager.ts` (ancien supprimé, aucun autre consommateur dans le projet).
-- État `hintShown` + toast `sonner` d'astuce → **supprimés** (remplacés par teaser physique).
-- Edge glow indicator → **supprimé** (redondant avec le slide continu visible).
-- Rubber-band actuel cappé à 40px → **remplacé** par rubber-band physique aux extrémités uniquement (pas au centre).
-- `direction: 'left' | 'right'` → **supprimé** (le pager gère naturellement les deux sens).
-
----
-
-### 6. Fichiers impactés
+### 4. Fichiers impactés
 
 | Fichier | Action |
 |---|---|
-| `src/hooks/useSwipePager.ts` | **CRÉÉ** — nouveau hook pager |
-| `src/hooks/useSwipeNavigation.ts` | **SUPPRIMÉ** |
-| `src/components/DRCInteractiveMap.tsx` | Refactor : layout pager, suppression hint toast/edge glow, dots fluides, teaser mount |
-| `mem://features/land-data-analytics/interactive-map-layers-fr` | Mise à jour : nouvelle architecture pager |
+| `src/components/map/meta/mapMeta.ts` | Ajouter `GeoScopedRecord` + helper `sliceAnalyticsByPredicate` ; resserrer `buildScopePredicate` |
+| `src/components/DRCInteractiveMap.tsx` | Remplacer 2 blocs slicer par appels au helper ; corriger 3 résiduels (mapInstance, teaserTimers, html2canvas) |
 
----
+### 5. Critères de validation
 
-### 7. Critères d'acceptation
-
-1. **Drag 1:1** : poser le doigt et bouger latéralement déplace les deux panneaux instantanément, sans lag ni délai.
-2. **Snap intelligent** : drag à 30% de largeur + relâche → bascule. Drag à 15% + relâche → retour. Flick rapide même à 5% → bascule.
-3. **Aucun conflit** : scroll vertical Analytics fluide, tap province sélectionne, pinch-zoom carte intact.
-4. **Teaser mount** : au 1er chargement mobile, la page Analytics "peek" 800ms après affichage, jamais re-déclenché.
-5. **Dots fluides** : les indicateurs s'étirent progressivement pendant le drag, pas en escalier.
-6. **60 fps** : pas de jank perceptible même sur device milieu de gamme (transform GPU).
-7. **Boutons fonctionnels** : tap sur Carte/Analytics anime la transition (320ms), pas de cut.
-8. **Reduced motion** : transition raccourcie à 0ms, pas de teaser.
+1. `npx eslint src/components/DRCInteractiveMap.tsx` → 0 warning `no-explicit-any`.
+2. `npx tsc --noEmit` → 0 erreur (typage strict respecté).
+3. Comportements UI identiques : couleurs choroplèthe par commune/quartier/territoire, légende contextuelle, swipe pager, screenshot html2canvas, teaser au mount.
+4. Aucun changement runtime : pure refactor de typage.
 
