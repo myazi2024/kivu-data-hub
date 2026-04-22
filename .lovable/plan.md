@@ -1,126 +1,75 @@
 
 
-## Plan — Refonte du designer de lots pour un utilisateur grand public
+## Plan — Nettoyage cliparts + barre d'outils grand public (Lot 2a)
 
-### Constat
+Premier sous-lot du Lot 2 : on purge tout ce qui concerne les cliparts et on remplace la toolbar actuelle par une version grand public à 3 outils. La logique de validation BD (Lot 1 — règles de zonage admin) et le mode avancé (Lot 2b) viendront après.
 
-Le designer actuel (`StepLotDesigner` 1246 LOC + `LotCanvas` 1711 LOC) expose **7 modes** (Sélection, Tracer ligne, Tracer voie, Cliparts, Sélection edge, +rotation drag, +snap) avec des concepts d'éditeur SIG : edges, hull, fusion convexe, intersections, rotation par poignée, palette clipart. Hors de portée d'un propriétaire qui veut juste « diviser ma parcelle en 4 lots avec une voie devant ».
+### 1. Suppression définitive des cliparts
 
-### Objectif UX
+| Élément | Action |
+|---|---|
+| `subdivision/ClipartPalette.tsx` | Supprimer le fichier |
+| `CLIPART_TYPES`, `LotAnnotation` (cliparts), type `'clipart'` dans `CanvasMode` | Retirer de `subdivision/types.ts` |
+| `mode === 'clipart'`, `selectedClipart`, gestion clic clipart, rendu SVG des shapes clipart | Retirer de `LotCanvas.tsx` |
+| Bouton « Cliparts », import `ClipartPalette`, état `showClipartPalette` | Retirer de `StepLotDesigner.tsx` |
+| Stickers persistés (`annotations` côté lot) | Migration douce : si présents en draft local on les ignore au rendu, on ne casse pas le type. |
+| Icônes `Circle/Square/RectangleHorizontal/Triangle/Hexagon` importées uniquement pour cliparts | Nettoyer imports orphelins |
 
-Réduire à **3 actions intelligibles** + assistants automatiques :
+### 2. Nouvelle barre d'outils grand public
 
-1. **Diviser** (en cliquant deux points sur le bord de la parcelle → trait de coupe)
-2. **Ajouter une voie** (en cliquant deux points → bande automatique avec largeur)
-3. **Ajuster un lot** (numéro, usage, surface en saisissant la valeur)
-
-Tout le reste devient **assisté** : auto-numérotation, auto-couleur par usage, alertes visuelles si trop petit, voie pré-dimensionnée selon mesures de la parcelle mère.
-
----
-
-### Refonte du canvas (`LotCanvas` allégé)
-
-| Mode actuel | Décision | Remplacement |
-|---|---|---|
-| `select` (déplacer/redimensionner) | **Garder** simplifié : drag polygone uniquement (pas vertex/edge en mode user) | Cliquer = sélectionner, glisser = déplacer le lot entier |
-| `drawLine` (cut) | **Renommer « Diviser un lot »** + tutoriel inline 2 étapes (clic A → clic B) | Aperçu live de la ligne de coupe |
-| `drawRoad` | **Renommer « Tracer une voie »** | Largeur pré-remplie = recommandation officielle (6 m urbain, 8 m rural) |
-| `selectEdge` (convertir bord en route) | **Supprimer** (doublon de drawRoad, concept trop technique) | — |
-| `clipart` | **Supprimer** (palette de stickers, hors-sujet pour création de lots) | Déplacer en "Plan" si vraiment utile (étape suivante) |
-| Rotation par poignée | **Supprimer** côté user | Garder uniquement raccourci R clavier (admin) |
-| Édition vertex/edge individuel | **Désactiver par défaut** | Disponible via toggle « Mode avancé » repliable |
-| Snap toggle | **Toujours activé**, masquer le bouton | — |
-
-**Nouvelles fonctions clés** :
-
-- **Bouton « Diviser en N lots égaux »** : prompt « Combien de lots ? » → découpe automatique parallèle au côté qui borde la route (détecté via `parentSides[].bordersRoad`)
-- **Bouton « Lot parcelle entière »** déjà présent → mettre en avant comme premier CTA
-- **Indicateur visuel surface minimum** : lots < seuil affichent badge rouge « Trop petit » + tooltip explicatif (« Surface minimum : 200 m² en zone urbaine »)
-- **Aperçu mesures réelles** : afficher en permanence longueur de chaque côté en mètres (déjà calculé, juste l'exposer)
-- **Côté qui borde la route** : highlight visuel orange (lecture depuis `parentSides[].bordersRoad`) pour que l'utilisateur sache immédiatement où placer ses lots
-
----
-
-### Refonte de la barre d'outils
-
-**Avant** : 6 boutons + 4 bordures + badges (visuellement chargé).
-
-**Après** — 3 zones :
+Remplacement de la toolbar actuelle par 3 zones claires, dans `StepLotDesigner.tsx` :
 
 ```text
-[ Outils ]            [ Actions rapides ]              [ État ]
-🎯 Sélection          ➕ Lot parcelle entière           4 lots
-✂️  Diviser           🔢 Diviser en N lots égaux        78% couvert
-🛣️  Voie              ↶ Annuler  ↷ Rétablir            ⚠ 1 lot trop petit
+┌─ Outils ──────────────┬─ Actions rapides ────────────────┬─ État ──────────┐
+│ 🎯 Sélection           │ ➕ Lot = parcelle entière         │ 4 lots          │
+│ ✂️  Diviser un lot     │ ↶ Annuler   ↷ Rétablir           │ 78% couvert     │
+│ 🛣️  Tracer une voie    │                                   │                 │
+└────────────────────────┴───────────────────────────────────┴─────────────────┘
 ```
 
-Boutons larges avec icône + libellé court, tooltips longs explicatifs.
+- Boutons larges, icône + libellé court, **tooltip long explicatif**
+- Outil actif mis en évidence (ring primary)
+- Snap : toujours activé, **plus de bouton** (suppression du toggle visible)
+- Suppression du raccourci clavier `Delete` (remplacé par bouton corbeille dans le panneau de détail du lot — déjà existant)
+- Mode `selectEdge` : retiré de la toolbar publique (sera réintroduit en Lot 2b « Mode avancé »)
 
----
+### 3. Tooltip permanent contextualisé sous le canvas
 
-### Règles cadastrales intégrées
+Une ligne discrète sous le SVG, change selon `mode` :
+- **Sélection** : « Cliquez sur un lot pour le sélectionner. Glissez pour le déplacer. »
+- **Diviser** : « Cliquez sur le premier bord du lot, puis sur le second bord, pour le couper en deux. »
+- **Voie** : « Cliquez deux points pour tracer une voie. »
 
-Ajouter `src/components/cadastral/subdivision/rules.ts` :
+### 4. Renommage UX
 
-```ts
-export const MIN_LOT_AREA_SQM = { urban: 200, rural: 500 };
-export const MIN_LOT_FRONTAGE_M = { urban: 8, rural: 15 }; // façade sur voie
-export const RECOMMENDED_ROAD_WIDTH_M = { urban: 6, rural: 8 };
-export const MIN_ROAD_WIDTH_M = 4;
-```
+| Avant (technique) | Après (grand public) |
+|---|---|
+| « Tracer ligne » | « Diviser un lot » |
+| « Tracer voie » | « Tracer une voie » |
+| « Sélection edge » | (retiré — mode avancé plus tard) |
+| « Cliparts » | (supprimé) |
 
-→ Passer `sectionType` (déjà connu) au designer, dériver les seuils, afficher en bandeau d'aide :
-> « Zone urbaine — surface minimum d'un lot : 200 m², façade sur voie : 8 m, voie minimum : 4 m »
-
-→ Bloquer la validation de l'étape si : un lot < min, ou un lot n'a pas de façade sur voie (front parcelle ou route tracée).
-
----
-
-### Onboarding & guidage
-
-- **Premier accès vide** : grand bouton central « Démarrer le découpage » → crée le lot parcelle entière + ouvre un mini-tutoriel 3 étapes (overlay non bloquant)
-- **Tooltip permanent du mode actif** : sous le canvas, phrase contextualisée
-  - Sélection : *« Cliquez sur un lot pour le sélectionner. Glissez pour le déplacer. »*
-  - Diviser : *« Cliquez sur le premier bord du lot, puis sur le second bord, pour le couper en deux. »*
-  - Voie : *« Cliquez deux points pour tracer une voie. Sa largeur sera de 6 m. »*
-- **Annulation toujours visible** (Annuler/Rétablir conservés en haut)
-- **Suppression** : bouton corbeille sur le panneau de détail uniquement (plus de raccourci `Delete` qui surprenait les utilisateurs en train de saisir)
-
----
-
-### Mode avancé (opt-in)
-
-Un toggle « Mode avancé » en bas du canvas révèle :
-- Édition vertex par vertex
-- Conversion d'arête en route
-- Cliparts
-- Rotation par poignée
-- Mode multi-sélection + fusion
-
-→ Permet de conserver toute la puissance actuelle pour les arpenteurs/admin sans encombrer le grand public.
-
----
-
-### Architecture & fichiers
+### 5. Fichiers impactés
 
 | Fichier | Action |
 |---|---|
-| `subdivision/rules.ts` | **Nouveau** : seuils min/max + helpers |
-| `subdivision/LotCanvas.tsx` (1711 LOC) | Splitter par concern : `LotCanvasCore.tsx` (rendu SVG) + `useLotCanvasInteraction.ts` (drag/cut/road) + `LotCanvasOverlays.tsx` (mesures, badges, north) |
-| `subdivision/steps/StepLotDesigner.tsx` (1246 LOC) | Splitter : `LotDesignerToolbar.tsx`, `LotDesignerSidebar.tsx` (détails + liste), `LotDesignerHelp.tsx` (bandeau règles), `useDivideEqually.ts` |
-| `subdivision/components/EmptyDesignerCTA.tsx` | **Nouveau** : grand CTA initial avec démarrage tutoriel |
-| `subdivision/components/AdvancedModeToggle.tsx` | **Nouveau** : opt-in mode avancé |
-| `subdivision/utils/divideEqually.ts` | **Nouveau** : algo découpe parallèle N lots égaux (perpendiculaire au front route) |
-| `subdivision/hooks/useSubdivisionForm.ts` | Exposer `sectionType` au designer + validation min surface |
+| `src/components/cadastral/subdivision/ClipartPalette.tsx` | **Supprimé** |
+| `src/components/cadastral/subdivision/types.ts` | Retirer cliparts du type |
+| `src/components/cadastral/subdivision/LotCanvas.tsx` | Purge mode clipart + rendu |
+| `src/components/cadastral/subdivision/steps/StepLotDesigner.tsx` | Nouvelle toolbar 3 zones + tooltip contextuel |
 
-Toutes les fonctions techniques actuelles (cut, hull, edge, rotation) sont **conservées** mais cachées derrière le mode avancé — pas de régression fonctionnelle.
+### Hors scope (lots suivants)
 
----
+- **Lot 1** : table `subdivision_zoning_rules` (ou extension `subdivision_rate_config`) + UI admin règles + hook `useZoningRules` + bandeau d'aide
+- **Lot 2b** : toggle « Mode avancé » réintroduisant vertex/edge/fusion/rotation
+- **Lot 2c** : badges de validation post-tracé (« Trop petit ») et highlight orange du côté qui borde la route
+- Décision en attente : `subdivision_rate_config` étendue OU table dédiée
 
-### Décisions à confirmer
+### Vérification
 
-1. **Seuils min lot (RDC)** — proposition : 200 m² urbain / 500 m² rural ; façade min 8 m urbain / 15 m rural ; voie min 4 m. Tu valides ces valeurs ou tu en as d'autres officielles ?
-2. **Mode avancé** — l'exposer au grand public (toggle visible) ou réserver aux comptes pro/admin (rôle `cadastral_officer`) ?
-3. **« Diviser en N lots égaux »** — découpe perpendiculaire au front route uniquement (recommandé, urbanisme classique) ou laisser choisir l'axe (parallèle/perpendiculaire/personnalisé) ?
-4. **Cliparts** — les supprimer définitivement (jamais utilisés en demande user) ou les déplacer dans l'étape « Plan » comme finition graphique optionnelle ?
+1. Plus aucune référence à `clipart` / `ClipartPalette` dans le code (`grep` clean)
+2. Toolbar lotissement n'affiche que 3 outils + 3 actions rapides + état
+3. Tooltip sous canvas change avec le mode
+4. Diviser et Tracer voie fonctionnent comme avant (logique inchangée)
+5. Aucune régression sur les lots déjà créés en brouillon
 
