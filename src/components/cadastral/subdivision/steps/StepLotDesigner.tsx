@@ -209,6 +209,8 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
   }, [selectedLotId, lots, setLots]);
 
   const deleteLot = useCallback((id: string) => {
+    const target = lots.find(l => l.id === id);
+    if (target?.isParentBoundary) return; // Locked: must be split/cut, not deleted
     setLots(lots.filter(l => l.id !== id));
     if (selectedLotId === id) setSelectedLotId(null);
   }, [lots, setLots, selectedLotId]);
@@ -216,6 +218,7 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
   const duplicateLot = useCallback((id: string) => {
     const lot = lots.find(l => l.id === id);
     if (!lot) return;
+    if (lot.isParentBoundary) return; // Cannot duplicate the locked parent parcel
     const maxLotNum = lots.reduce((m, l) => Math.max(m, parseInt(l.lotNumber) || 0), 0);
     const offset = 0.03;
     const newLot: SubdivisionLot = {
@@ -224,6 +227,7 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
       lotNumber: String(maxLotNum + 1),
       vertices: lot.vertices.map(v => ({ x: Math.min(1, v.x + offset), y: Math.min(1, v.y + offset) })),
       annotations: [],
+      isParentBoundary: false,
     };
     setLots([...lots, newLot]);
     setSelectedLotId(newLot.id);
@@ -343,6 +347,7 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
       lotNumber: String(maxLotNum + 1),
       vertices: poly1,
       areaSqm: area1,
+      isParentBoundary: false,
     };
     const newLot2: SubdivisionLot = {
       ...lot,
@@ -350,6 +355,7 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
       lotNumber: String(maxLotNum + 2),
       vertices: poly2,
       areaSqm: area2,
+      isParentBoundary: false,
     };
 
     setLots(lots.map(l => l.id === lotId ? newLot1 : l).concat(newLot2));
@@ -383,6 +389,7 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
       lotNumber: String(maxLotNum + 1),
       vertices: hull,
       areaSqm: totalArea,
+      isParentBoundary: false,
     };
 
     setLots([...lots.filter(l => !ids.includes(l.id)), mergedLot]);
@@ -439,11 +446,11 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
 
     const newLot1: SubdivisionLot = {
       ...lot, id: `lot-${Date.now()}-a`, lotNumber: String(maxLotNum + 1),
-      vertices: poly1, areaSqm: Math.max(1, area1),
+      vertices: poly1, areaSqm: Math.max(1, area1), isParentBoundary: false,
     };
     const newLot2: SubdivisionLot = {
       ...lot, id: `lot-${Date.now()}-b`, lotNumber: String(maxLotNum + 2),
-      vertices: poly2, areaSqm: Math.max(1, area2),
+      vertices: poly2, areaSqm: Math.max(1, area2), isParentBoundary: false,
     };
 
     setLots(lots.map(l => l.id === lotId ? newLot1 : l).concat(newLot2));
@@ -625,11 +632,11 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
 
     const newLot1: SubdivisionLot = {
       ...targetLot, id: `lot-${Date.now()}-a`, lotNumber: String(maxLotNum + 1),
-      vertices: shrunk1, areaSqm: computeArea(shrunk1),
+      vertices: shrunk1, areaSqm: computeArea(shrunk1), isParentBoundary: false,
     };
     const newLot2: SubdivisionLot = {
       ...targetLot, id: `lot-${Date.now()}-b`, lotNumber: String(maxLotNum + 2),
-      vertices: shrunk2, areaSqm: computeArea(shrunk2),
+      vertices: shrunk2, areaSqm: computeArea(shrunk2), isParentBoundary: false,
     };
 
     // Store affectedLotIds on the new road for future width adjustments
@@ -912,13 +919,14 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
         </div>
       </div>
 
-      {/* Guide when no lots */}
-      {lots.length === 0 && (
+      {/* Guide when only the locked parent parcel is present */}
+      {lots.length === 1 && lots[0].isParentBoundary && (
         <Alert className="border-primary/20 bg-primary/5">
           <AlertDescription className="text-xs flex items-center gap-2">
             <Info className="h-4 w-4 text-primary flex-shrink-0" />
             <span>
-              Votre parcelle est chargée comme lot unique. Utilisez l'outil <strong>Diviser un lot</strong> pour la découper en plusieurs lots.
+              La <strong>parcelle mère</strong> est verrouillée — sa forme officielle ne peut pas être modifiée.
+              Utilisez l'outil <strong>Diviser un lot</strong> ou <strong>Couper</strong> pour la découper en lots éditables.
             </span>
           </AlertDescription>
         </Alert>
@@ -983,16 +991,38 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
           {selectedLot ? (
             <Card className="border-primary/20">
               <CardContent className="pt-3 space-y-2">
-                <div className="flex items-center justify-between">
-                  <h4 className="font-semibold text-sm">Lot {selectedLot.lotNumber}</h4>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-6 text-destructive"
-                    onClick={() => deleteLot(selectedLot.id)}
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <h4 className="font-semibold text-sm truncate">Lot {selectedLot.lotNumber}</h4>
+                    {selectedLot.isParentBoundary && (
+                      <Badge variant="secondary" className="text-[9px] gap-1 px-1.5 py-0 h-4 shrink-0">
+                        <Shield className="h-2.5 w-2.5" />
+                        Parcelle mère — verrouillée
+                      </Badge>
+                    )}
+                  </div>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 text-destructive"
+                            onClick={() => deleteLot(selectedLot.id)}
+                            disabled={!!selectedLot.isParentBoundary}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent side="left" className="text-xs">
+                        {selectedLot.isParentBoundary
+                          ? 'La parcelle mère ne peut pas être supprimée. Utilisez Diviser ou Couper.'
+                          : 'Supprimer ce lot'}
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </div>
 
                 {/* Type de zone — convertir lot ↔ voie ↔ espace commun */}

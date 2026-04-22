@@ -44,19 +44,21 @@ export function useCanvasDrag(
   }, [snapEnabled, showGrid, lots]);
 
   const startVertexDrag = useCallback((lotId: string, vertexIdx: number) => {
+    const lot = lots.find(l => l.id === lotId);
+    if (!lot || lot.isParentBoundary) return;
     setDragState({ type: 'vertex', lotId, vertexIdx });
-  }, []);
+  }, [lots]);
 
   const startEdgeDrag = useCallback((lotId: string, edgeIdx: number, normPos: Point2D) => {
     const lot = lots.find(l => l.id === lotId);
-    if (!lot) return;
+    if (!lot || lot.isParentBoundary) return;
     setDragState({ type: 'edge', lotId, edgeIdx, startNorm: normPos, startVertices: [...lot.vertices] });
     lastNorm.current = normPos;
   }, [lots]);
 
   const startPolygonDrag = useCallback((lotId: string, normPos: Point2D) => {
     const lot = lots.find(l => l.id === lotId);
-    if (!lot) return;
+    if (!lot || lot.isParentBoundary) return;
     setDragState({ type: 'polygon', lotId, startNorm: normPos, startVertices: [...lot.vertices] });
     lastNorm.current = normPos;
   }, [lots]);

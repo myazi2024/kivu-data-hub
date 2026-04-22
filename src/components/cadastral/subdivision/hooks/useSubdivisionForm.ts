@@ -318,6 +318,7 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
       isBuilt: false,
       hasFence: false,
       color: '#22c55e',
+      isParentBoundary: true,
     };
     pushHistory([fullLot]);
     setLots([fullLot]);
@@ -349,18 +350,28 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
     }
   }, []);
   
-  // Update lot
+  // Update lot — geometry of the parent-boundary lot is locked
   const updateLot = useCallback((lotId: string, updates: Partial<SubdivisionLot>) => {
     setLots(prev => {
-      const updated = prev.map(l => l.id === lotId ? { ...l, ...updates } : l);
+      const updated = prev.map(l => {
+        if (l.id !== lotId) return l;
+        if (l.isParentBoundary) {
+          // Strip geometry-changing fields; allow metadata edits only
+          const { vertices: _v, areaSqm: _a, perimeterM: _p, ...safe } = updates;
+          return { ...l, ...safe };
+        }
+        return { ...l, ...updates };
+      });
       pushHistory(updated);
       return updated;
     });
   }, [pushHistory]);
   
-  // Delete lot
+  // Delete lot — parent-boundary lot can only disappear via division
   const deleteLot = useCallback((lotId: string) => {
     setLots(prev => {
+      const target = prev.find(l => l.id === lotId);
+      if (target?.isParentBoundary) return prev;
       const updated = prev.filter(l => l.id !== lotId);
       pushHistory(updated);
       return updated;

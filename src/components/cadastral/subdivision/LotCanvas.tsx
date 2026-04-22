@@ -211,7 +211,7 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
       const ndy = dy * step;
       if (selectedLotId) {
         const lot = lots.find(l => l.id === selectedLotId);
-        if (lot) {
+        if (lot && !lot.isParentBoundary) {
           onUpdateLot(selectedLotId, lot.vertices.map(v => ({ x: v.x + ndx, y: v.y + ndy })));
         }
       } else if (selectedRoadId && onUpdateRoad) {
@@ -235,7 +235,7 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
       };
       if (selectedLotId) {
         const lot = lots.find(l => l.id === selectedLotId);
-        if (lot) onUpdateLot(selectedLotId, rotateVertices(lot.vertices));
+        if (lot && !lot.isParentBoundary) onUpdateLot(selectedLotId, rotateVertices(lot.vertices));
       } else if (selectedRoadId && onUpdateRoad) {
         const road = roads.find(r => r.id === selectedRoadId);
         if (road) onUpdateRoad(selectedRoadId, { path: rotateVertices(road.path) });
@@ -385,26 +385,32 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
 
   const handleVertexMouseDown = useCallback((lotId: string, vertexIdx: number, e: React.MouseEvent) => {
     if (readOnly || mode !== 'select') return;
+    const lot = lots.find(l => l.id === lotId);
+    if (lot?.isParentBoundary) return;
     e.stopPropagation();
     drag.startVertexDrag(lotId, vertexIdx);
-  }, [readOnly, mode, drag]);
+  }, [readOnly, mode, drag, lots]);
 
   const handleEdgeMouseDown = useCallback((lotId: string, edgeIdx: number, e: React.MouseEvent) => {
     if (readOnly || mode !== 'select') return;
+    const lot = lots.find(l => l.id === lotId);
+    if (lot?.isParentBoundary) return;
     e.stopPropagation();
     const pos = getSvgPos(e);
     const normalized = fromScreen(pos.x, pos.y);
     drag.startEdgeDrag(lotId, edgeIdx, normalized);
-  }, [readOnly, mode, drag, getSvgPos, fromScreen]);
+  }, [readOnly, mode, drag, getSvgPos, fromScreen, lots]);
 
   const handlePolygonMouseDown = useCallback((lotId: string, e: React.MouseEvent) => {
     if (readOnly || mode !== 'select') return;
     if (lotId !== selectedLotId) return;
+    const lot = lots.find(l => l.id === lotId);
+    if (lot?.isParentBoundary) return;
     e.stopPropagation();
     const pos = getSvgPos(e);
     const normalized = fromScreen(pos.x, pos.y);
     drag.startPolygonDrag(lotId, normalized);
-  }, [readOnly, mode, selectedLotId, drag, getSvgPos, fromScreen]);
+  }, [readOnly, mode, selectedLotId, drag, getSvgPos, fromScreen, lots]);
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     const svg = svgRef.current;
@@ -1084,7 +1090,7 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
                 stroke={isTooSmall ? 'hsl(var(--destructive))' : isMultiSelected ? 'hsl(var(--primary))' : isSelected ? 'hsl(var(--primary))' : color}
                 strokeWidth={isTooSmall ? 2.5 : isMultiSelected ? 2.5 : isSelected ? 2.5 : 1.5}
                 strokeDasharray={isTooSmall ? '4 2' : isMultiSelected ? '4 2' : 'none'}
-                className={readOnly ? '' : mode === 'select' ? (isSelected ? 'cursor-move' : 'cursor-pointer') : 'cursor-crosshair'}
+                className={readOnly ? '' : mode === 'select' ? (isSelected ? (lot.isParentBoundary ? 'cursor-not-allowed' : 'cursor-move') : 'cursor-pointer') : 'cursor-crosshair'}
                 onClick={e => handleLotClick(lot.id, e)}
                 onDoubleClick={e => handleLotDoubleClick(lot.id, e)}
                 onContextMenu={e => handleLotContextMenu(lot.id, e)}
@@ -1270,18 +1276,28 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
                 );
               })}
 
-              {/* Draggable vertices */}
+              {/* Vertices: locked grey squares for parent-boundary lots, draggable circles otherwise */}
               {!readOnly && mode === 'select' && isSelected && screenVertices.map((sv, i) => (
-                <circle
-                  key={i} cx={sv.x} cy={sv.y} r={5}
-                  fill="white" stroke="hsl(var(--primary))" strokeWidth={2}
-                  className="cursor-grab active:cursor-grabbing"
-                  onMouseDown={e => handleVertexMouseDown(lot.id, i, e)}
-                />
+                lot.isParentBoundary ? (
+                  <rect
+                    key={i} x={sv.x - 3.5} y={sv.y - 3.5} width={7} height={7}
+                    fill="hsl(var(--muted))" stroke="hsl(var(--muted-foreground))" strokeWidth={1.5}
+                    style={{ cursor: 'not-allowed' }}
+                  >
+                    <title>Forme verrouillée — Diviser le lot pour éditer</title>
+                  </rect>
+                ) : (
+                  <circle
+                    key={i} cx={sv.x} cy={sv.y} r={5}
+                    fill="white" stroke="hsl(var(--primary))" strokeWidth={2}
+                    className="cursor-grab active:cursor-grabbing"
+                    onMouseDown={e => handleVertexMouseDown(lot.id, i, e)}
+                  />
+                )
               ))}
 
-              {/* Rotation ring */}
-              {!readOnly && mode === 'select' && isSelected && (() => {
+              {/* Rotation ring (skipped for locked parent-boundary lot) */}
+              {!readOnly && mode === 'select' && isSelected && !lot.isParentBoundary && (() => {
                 const minX = Math.min(...screenVertices.map(v => v.x));
                 const maxX = Math.max(...screenVertices.map(v => v.x));
                 const minY = Math.min(...screenVertices.map(v => v.y));
