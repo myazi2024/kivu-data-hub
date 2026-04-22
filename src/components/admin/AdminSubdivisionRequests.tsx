@@ -45,6 +45,14 @@ interface SubdivisionRequest {
   requester_phone: string;
   requester_email?: string;
   requester_type?: string;
+  requester_legal_status?: string | null;
+  requester_gender?: string | null;
+  requester_entity_type?: string | null;
+  requester_entity_subtype?: string | null;
+  requester_rccm_number?: string | null;
+  requester_right_type?: string | null;
+  requester_state_exploited_by?: string | null;
+  requester_nationality?: string | null;
   number_of_lots: number;
   lots_data: any[];
   subdivision_plan_data?: any;
@@ -551,7 +559,38 @@ export function AdminSubdivisionRequests() {
                     <CardTitle className="text-sm flex items-center gap-2"><User className="h-4 w-4" /> Demandeur</CardTitle>
                   </CardHeader>
                   <CardContent className="grid grid-cols-2 gap-3 text-sm">
-                    <div><span className="text-muted-foreground">Nom:</span> <span className="ml-1">{selectedRequest.requester_last_name} {selectedRequest.requester_first_name} {selectedRequest.requester_middle_name || ''}</span></div>
+                    {selectedRequest.requester_legal_status && (
+                      <div className="col-span-2"><span className="text-muted-foreground">Statut juridique:</span> <span className="ml-1 font-medium">{selectedRequest.requester_legal_status}</span></div>
+                    )}
+                    {selectedRequest.requester_legal_status === 'Personne morale' ? (
+                      <>
+                        <div className="col-span-2"><span className="text-muted-foreground">Dénomination:</span> <span className="ml-1">{selectedRequest.requester_last_name}</span></div>
+                        {selectedRequest.requester_entity_type && (
+                          <div><span className="text-muted-foreground">Type d'entité:</span> <span className="ml-1">{selectedRequest.requester_entity_type}{selectedRequest.requester_entity_subtype ? ` — ${selectedRequest.requester_entity_subtype}` : ''}</span></div>
+                        )}
+                        {selectedRequest.requester_rccm_number && (
+                          <div><span className="text-muted-foreground">RCCM / Arrêté:</span> <span className="ml-1">{selectedRequest.requester_rccm_number}</span></div>
+                        )}
+                      </>
+                    ) : selectedRequest.requester_legal_status === 'État' ? (
+                      <>
+                        {selectedRequest.requester_right_type && (
+                          <div><span className="text-muted-foreground">Type de droit:</span> <span className="ml-1">{selectedRequest.requester_right_type}</span></div>
+                        )}
+                        {selectedRequest.requester_state_exploited_by && (
+                          <div className="col-span-2"><span className="text-muted-foreground">Exploitée par:</span> <span className="ml-1">{selectedRequest.requester_state_exploited_by}</span></div>
+                        )}
+                      </>
+                    ) : (
+                      <div className="col-span-2">
+                        <span className="text-muted-foreground">Nom:</span>{' '}
+                        <span className="ml-1">{selectedRequest.requester_last_name} {selectedRequest.requester_middle_name || ''} {selectedRequest.requester_first_name}</span>
+                        {selectedRequest.requester_gender && <span className="text-muted-foreground ml-2">({selectedRequest.requester_gender})</span>}
+                      </div>
+                    )}
+                    {selectedRequest.requester_nationality && (
+                      <div><span className="text-muted-foreground">Nationalité:</span> <span className="ml-1">{selectedRequest.requester_nationality}</span></div>
+                    )}
                     <div className="flex items-center gap-1"><Phone className="h-3.5 w-3.5 text-muted-foreground" /><span>{selectedRequest.requester_phone}</span></div>
                     {selectedRequest.requester_email && (
                       <div className="flex items-center gap-1"><Mail className="h-3.5 w-3.5 text-muted-foreground" /><span>{selectedRequest.requester_email}</span></div>
