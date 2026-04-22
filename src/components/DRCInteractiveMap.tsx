@@ -371,20 +371,33 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
     );
   }
 
+  // Fluid iOS-style page indicators driven by dragProgress
+  const progressTowardNext = isMobile && isDragging
+    ? Math.max(0, Math.min(1, onAnalyticsPanel ? dragProgress : -dragProgress))
+    : 0;
+  const activeBarW = 16 - progressTowardNext * 10;
+  const inactiveBarW = 6 + progressTowardNext * 10;
+
   return (
-    <div ref={swipeRef} className="w-full h-full flex flex-col overflow-hidden relative">
+    <div ref={pagerRef} className="w-full h-full flex flex-col overflow-hidden relative" style={{ touchAction: isMobile ? 'pan-y' : undefined }}>
 
         <div className="lg:hidden fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50">
           <div className="flex flex-col items-center gap-1.5">
-            {/* Pagination dots — la dot inactive pulse tant que le hint n'a pas été vu */}
+            {/* Pagination bars — fluid stretch driven by dragProgress */}
             <div className="flex items-center gap-1.5" role="tablist" aria-label="Vue active">
               <span
-                aria-hidden="true"
-                className={`h-1.5 rounded-full transition-all duration-200 ${onAnalyticsPanel ? `bg-muted w-1.5 ${!hintShown ? 'animate-pulse' : ''}` : 'bg-primary w-4'}`}
+                role="tab"
+                aria-selected={!onAnalyticsPanel}
+                aria-label="Carte"
+                className="h-1.5 rounded-full transition-[width,background-color] duration-150"
+                style={{ width: `${onAnalyticsPanel ? inactiveBarW : activeBarW}px`, backgroundColor: onAnalyticsPanel ? 'hsl(var(--muted-foreground) / 0.4)' : 'hsl(var(--primary))' }}
               />
               <span
-                aria-hidden="true"
-                className={`h-1.5 rounded-full transition-all duration-200 ${onAnalyticsPanel ? 'bg-primary w-4' : `bg-muted w-1.5 ${!hintShown ? 'animate-pulse' : ''}`}`}
+                role="tab"
+                aria-selected={onAnalyticsPanel}
+                aria-label="Analytics"
+                className="h-1.5 rounded-full transition-[width,background-color] duration-150"
+                style={{ width: `${onAnalyticsPanel ? activeBarW : inactiveBarW}px`, backgroundColor: !onAnalyticsPanel ? 'hsl(var(--muted-foreground) / 0.4)' : 'hsl(var(--primary))' }}
               />
             </div>
             <div className="flex items-center justify-center gap-1.5 bg-background/95 backdrop-blur-sm border border-border/50 rounded-full px-2.5 py-1.5 shadow-lg">
@@ -400,21 +413,15 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
           </div>
         </div>
 
-        {/* Edge glow direction indicator (mobile only, pendant swipe valide) */}
-        {isMobile && isSwiping && Math.abs(swipeDelta) > 8 && !prefersReducedMotion && (
-          <div
-            aria-hidden="true"
-            className={`lg:hidden pointer-events-none absolute top-0 bottom-0 w-4 z-40 ${swipeDelta < 0 ? 'right-0 bg-gradient-to-l from-primary/20 to-transparent' : 'left-0 bg-gradient-to-r from-primary/20 to-transparent'}`}
-          />
-        )}
-
-        {/* Desktop: grille 2 colonnes | Mobile: track horizontal 200% qui slide */}
+        {/* Desktop: grille 2 colonnes | Mobile: track horizontal 200% piloté par CSS var pour 60fps */}
         <div className="flex-1 min-h-0 overflow-hidden p-1 sm:p-2 pb-14 lg:pb-2">
           <div
+            ref={trackRef}
             style={isMobile ? {
               width: '200%',
-              transform: `translateX(calc(${onAnalyticsPanel ? '-50%' : '0%'} + ${rubberBand}px))`,
-              transition: isSwiping ? 'none' : 'transform 280ms cubic-bezier(.2,.8,.2,1)',
+              transform: `translate3d(calc(${onAnalyticsPanel ? '-50%' : '0%'} + var(--pager-drag-x, 0px) + var(--pager-teaser, 0px)), 0, 0)`,
+              transition: isDragging ? 'none' : 'transform 320ms cubic-bezier(.22,.61,.36,1)',
+              willChange: 'transform',
             } : undefined}
             className="h-full flex flex-row lg:w-auto lg:grid lg:grid-cols-12 gap-1 sm:gap-2"
           >
