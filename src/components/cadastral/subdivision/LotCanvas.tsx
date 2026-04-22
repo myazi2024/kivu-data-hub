@@ -1,11 +1,10 @@
 import React, { useRef, useState, useCallback, useEffect, useMemo } from 'react';
-import { SubdivisionLot, SubdivisionRoad, LOT_COLORS, USAGE_LABELS, Point2D, LotAnnotation, CLIPART_TYPES } from './types';
+import { SubdivisionLot, SubdivisionRoad, LOT_COLORS, USAGE_LABELS, Point2D, LotAnnotation } from './types';
 import { getAllRoadIntersectionPoints } from './utils/geometry';
 import { useCanvasViewport } from './hooks/useCanvasViewport';
 import { useCanvasDrag } from './hooks/useCanvasDrag';
 import { useCanvasKeyboard } from './hooks/useCanvasKeyboard';
-import ClipartPalette from './ClipartPalette';
-import { ZoomIn, ZoomOut, Maximize2, Magnet, Sticker } from 'lucide-react';
+import { ZoomIn, ZoomOut, Maximize2, Magnet } from 'lucide-react';
 
 interface ParcelSide {
   length?: number | string;
@@ -13,7 +12,7 @@ interface ParcelSide {
   [key: string]: any;
 }
 
-export type CanvasMode = 'select' | 'drawLine' | 'drawRoad' | 'clipart' | 'selectEdge';
+export type CanvasMode = 'select' | 'drawLine' | 'drawRoad' | 'selectEdge';
 
 export interface EdgeInfo {
   lotId1: string;
@@ -86,7 +85,6 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [snapEnabled, setSnapEnabled] = useState(true);
-  const [showClipartPalette, setShowClipartPalette] = useState(false);
   const [rotationDrag, setRotationDrag] = useState<{
     startAngle: number;
     centerX: number; centerY: number; // normalized coords
@@ -96,7 +94,6 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
     targetId: string;
   } | null>(null);
   const [rotationAngleDisplay, setRotationAngleDisplay] = useState<number | null>(null);
-  const [clipartType, setClipartType] = useState<LotAnnotation['type'] | null>(null);
 
   // Unified drawLine mode state
   const [lineDrawPoints, setLineDrawPoints] = useState<Point2D[]>([]);
@@ -163,10 +160,6 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
     setRoadEndpointDrag(null);
     setHoveredEdge(null);
     setEdgeContextMenu(null);
-    if (mode !== 'clipart') {
-      setShowClipartPalette(false);
-      setClipartType(null);
-    }
   }, [mode]);
 
   // Keyboard shortcuts
