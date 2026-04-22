@@ -36,6 +36,7 @@ const AdminSubdivisionFeesConfig: React.FC = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<RateConfig | null>(null);
   const [saving, setSaving] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   // Fee calculator
   const [calc, setCalc] = useState({ rateId: '', lotCount: '5', avgLotSqm: '200', roadLengthM: '0', commonSpaceSqm: '0' });
@@ -133,15 +134,18 @@ const AdminSubdivisionFeesConfig: React.FC = () => {
     setSaving(false);
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Supprimer ce tarif ?')) return;
-    const { error } = await supabase.from('subdivision_rate_config' as any).delete().eq('id', id);
+  const handleDelete = (id: string) => setDeleteId(id);
+
+  const confirmDelete = async () => {
+    if (!deleteId) return;
+    const { error } = await supabase.from('subdivision_rate_config' as any).delete().eq('id', deleteId);
     if (error) {
       toast.error('Erreur lors de la suppression');
     } else {
       toast.success('Tarif supprimé');
       fetchRates();
     }
+    setDeleteId(null);
   };
 
   const toggleActive = async (r: RateConfig) => {

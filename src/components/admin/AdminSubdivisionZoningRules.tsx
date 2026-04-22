@@ -53,6 +53,7 @@ const AdminSubdivisionZoningRules: React.FC = () => {
   const [editing, setEditing] = useState<ZoningRule | null>(null);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState(emptyForm);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const fetchRules = async () => {
     setLoading(true);
@@ -138,11 +139,14 @@ const AdminSubdivisionZoningRules: React.FC = () => {
     setSaving(false);
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Supprimer cette règle ?')) return;
-    const { error } = await (supabase as any).from('subdivision_zoning_rules').delete().eq('id', id);
+  const handleDelete = (id: string) => setDeleteId(id);
+
+  const confirmDelete = async () => {
+    if (!deleteId) return;
+    const { error } = await (supabase as any).from('subdivision_zoning_rules').delete().eq('id', deleteId);
     if (error) toast.error('Erreur lors de la suppression');
     else { toast.success('Règle supprimée'); fetchRules(); }
+    setDeleteId(null);
   };
 
   const toggleActive = async (r: ZoningRule) => {
