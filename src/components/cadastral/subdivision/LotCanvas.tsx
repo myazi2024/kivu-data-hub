@@ -1276,18 +1276,28 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
                 );
               })}
 
-              {/* Draggable vertices */}
+              {/* Vertices: locked grey squares for parent-boundary lots, draggable circles otherwise */}
               {!readOnly && mode === 'select' && isSelected && screenVertices.map((sv, i) => (
-                <circle
-                  key={i} cx={sv.x} cy={sv.y} r={5}
-                  fill="white" stroke="hsl(var(--primary))" strokeWidth={2}
-                  className="cursor-grab active:cursor-grabbing"
-                  onMouseDown={e => handleVertexMouseDown(lot.id, i, e)}
-                />
+                lot.isParentBoundary ? (
+                  <rect
+                    key={i} x={sv.x - 3.5} y={sv.y - 3.5} width={7} height={7}
+                    fill="hsl(var(--muted))" stroke="hsl(var(--muted-foreground))" strokeWidth={1.5}
+                    style={{ cursor: 'not-allowed' }}
+                  >
+                    <title>Forme verrouillée — Diviser le lot pour éditer</title>
+                  </rect>
+                ) : (
+                  <circle
+                    key={i} cx={sv.x} cy={sv.y} r={5}
+                    fill="white" stroke="hsl(var(--primary))" strokeWidth={2}
+                    className="cursor-grab active:cursor-grabbing"
+                    onMouseDown={e => handleVertexMouseDown(lot.id, i, e)}
+                  />
+                )
               ))}
 
-              {/* Rotation ring */}
-              {!readOnly && mode === 'select' && isSelected && (() => {
+              {/* Rotation ring (skipped for locked parent-boundary lot) */}
+              {!readOnly && mode === 'select' && isSelected && !lot.isParentBoundary && (() => {
                 const minX = Math.min(...screenVertices.map(v => v.x));
                 const maxX = Math.max(...screenVertices.map(v => v.x));
                 const minY = Math.min(...screenVertices.map(v => v.y));
