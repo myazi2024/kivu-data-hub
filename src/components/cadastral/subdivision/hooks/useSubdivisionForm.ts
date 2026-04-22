@@ -4,17 +4,13 @@ import { User } from '@supabase/supabase-js';
 import {
   SubdivisionLot, SubdivisionRoad, SubdivisionCommonSpace, SubdivisionServitude,
   PlanElements, DEFAULT_PLAN_ELEMENTS, ParentParcelInfo, RequesterInfo,
-  SubdivisionStep, SubdivisionPlanData, Point2D, FeeBreakdown
+  SubdivisionStep, SubdivisionPlanData, Point2D, FeeBreakdown, SubdivisionDocuments
 } from '../types';
 import { validateSubdivision, ValidationResult, gpsToNormalized, polygonArea, polygonPerimeter, snapNearbyLotVertices } from '../utils/geometry';
 
 const DRAFT_KEY_PREFIX = 'subdivision-draft-';
 
-export interface SubdivisionDocuments {
-  requester_id_document_url: string | null;
-  proof_of_ownership_url: string | null;
-  subdivision_sketch_url: string | null;
-}
+export type { SubdivisionDocuments };
 
 export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authUser?: User | null, parcelId?: string) {
   // Steps
