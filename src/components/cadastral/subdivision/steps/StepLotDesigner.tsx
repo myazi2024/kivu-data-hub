@@ -1117,12 +1117,91 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
                 </div>
               </CardContent>
             </Card>
+          ) : editingRoad ? (
+            <Card className="border-primary/20">
+              <CardContent className="pt-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-semibold text-sm flex items-center gap-1.5">
+                    <Route className="h-4 w-4" />
+                    {editingRoad.name}
+                  </h4>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 text-destructive"
+                    onClick={() => handleDeleteRoad(editingRoad.id)}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+
+                {/* Type de zone (rester voie ou reconvertir) */}
+                <div className="rounded-md border bg-muted/30 p-2 space-y-1.5">
+                  <Label className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    Type de zone
+                  </Label>
+                  <p className="text-[11px] text-muted-foreground">
+                    Cette zone est une <span className="font-semibold text-foreground">voie</span>.
+                    Réglez ci-dessous sa largeur et son revêtement — la voie se met à jour
+                    immédiatement sur le plan.
+                  </p>
+                </div>
+
+                <div>
+                  <Label className="text-xs">Nom</Label>
+                  <Input
+                    value={editingRoad.name}
+                    onChange={e => updateRoad(editingRoad.id, { name: e.target.value })}
+                    className="h-7 text-xs"
+                    disabled={(editingRoad as any).isExisting}
+                  />
+                </div>
+
+                <div>
+                  <Label className="text-xs">Largeur ({editingRoad.widthM} m)</Label>
+                  <div className="flex items-center gap-2">
+                    <Slider
+                      min={2}
+                      max={30}
+                      step={0.5}
+                      value={[editingRoad.widthM]}
+                      onValueChange={([v]) => updateRoad(editingRoad.id, { widthM: v })}
+                      className="flex-1"
+                    />
+                    <Input
+                      type="number"
+                      min={2}
+                      max={30}
+                      step={0.5}
+                      value={editingRoad.widthM}
+                      onChange={e => updateRoad(editingRoad.id, { widthM: parseFloat(e.target.value) || 6 })}
+                      className="h-7 text-xs w-16"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <Label className="text-xs">Type de surface</Label>
+                  <Select
+                    value={editingRoad.surfaceType}
+                    onValueChange={(v: any) => updateRoad(editingRoad.id, { surfaceType: v })}
+                  >
+                    <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(ROAD_SURFACE_LABELS).map(([key, label]) => (
+                        <SelectItem key={key} value={key}>{label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </CardContent>
+            </Card>
           ) : (
             <Card>
               <CardContent className="pt-3">
                 <div className="text-center text-xs text-muted-foreground py-4">
                   <Info className="h-5 w-5 mx-auto mb-2 opacity-40" />
-                  Cliquez sur un lot pour voir ses détails et le modifier
+                  Cliquez sur un lot ou une voie pour voir ses détails et le modifier
                 </div>
               </CardContent>
             </Card>
