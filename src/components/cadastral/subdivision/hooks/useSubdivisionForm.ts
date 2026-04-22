@@ -498,7 +498,7 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
     // Documents
     documents, setDocuments,
     // Submission
-    submitting, submitted, referenceNumber, createdRequestId, submit,
+    submitting, submitted, referenceNumber, createdRequestId, submit, markSubmittedFallback,
     // Pricing
     submissionFee, loadingFee, feeBreakdown,
     // Draft
