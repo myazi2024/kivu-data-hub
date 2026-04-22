@@ -15,6 +15,7 @@ import ExpertiseProcessDialog, { type ExpertiseProcessAction } from './expertise
 import ExpertiseRequestsTable from './expertise/ExpertiseRequestsTable';
 import ExpertiseDetailsDialog from './expertise/ExpertiseDetailsDialog';
 import { getExtendedData } from './expertise/expertiseHelpers';
+import { trackEvent } from '@/lib/analytics';
 
 export const AdminExpertiseRequests: React.FC = () => {
   const { user } = useAuth();
@@ -227,6 +228,13 @@ export const AdminExpertiseRequests: React.FC = () => {
       toast.success(processAction === 'complete'
         ? 'Certificat généré et envoyé automatiquement'
         : 'Demande rejetée');
+
+      trackEvent('admin_action', {
+        module: 'expertise',
+        action: processAction,
+        request_id: selectedRequest.id,
+        parcel_number: selectedRequest.parcel_number,
+      });
 
       setShowProcessDialog(false);
       fetchRequests();
