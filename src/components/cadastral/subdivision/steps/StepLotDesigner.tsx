@@ -22,6 +22,7 @@ import {
 import { ValidationResult, mergeLotsThroughDeletedRoad, polygonArea, splitRoadsAtIntersections } from '../utils/geometry';
 import { convertZoneType, ZoneType } from '../utils/convertZoneType';
 import LotCanvas, { CanvasMode, EdgeInfo } from '../LotCanvas';
+import { buildMetricFrame, polygonAreaSqmAccurate, polygonPerimeterM, formatMeters, formatSqm } from '../utils/metrics';
 
 interface StepLotDesignerProps {
   parentParcel: ParentParcelInfo | null;
@@ -124,6 +125,23 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
 
   const editingRoad = roads.find(r => r.id === editingRoadId) || null;
 
+  // Single source of truth for distances/areas in this designer.
+  // Falls back to isotropic √A scale if the parent has no GPS coordinates.
+  const metricFrame = React.useMemo(
+    () => buildMetricFrame(parentParcel?.gpsCoordinates, parentParcel?.areaSqm || 0),
+    [parentParcel?.gpsCoordinates, parentParcel?.areaSqm],
+  );
+
+  // Helpers — accurate area + perimeter via the metric frame.
+  const computeArea = useCallback(
+    (poly: Point2D[]) => Math.max(1, Math.round(polygonAreaSqmAccurate(poly, metricFrame))),
+    [metricFrame],
+  );
+  const computePerim = useCallback(
+    (poly: Point2D[]) => Math.round(polygonPerimeterM(poly, metricFrame)),
+    [metricFrame],
+  );
+
   const handleAddRoad = useCallback(() => {
     const parentPoly = parentVertices && parentVertices.length >= 3 ? parentVertices : null;
     const bounds = parentPoly
@@ -179,19 +197,19 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
     const w = (bounds.maxX - bounds.minX) * 0.2;
     const h = (bounds.maxY - bounds.minY) * 0.2;
     const maxLotNum = lots.reduce((m, l) => Math.max(m, parseInt(l.lotNumber) || 0), 0);
-    const sideLength = Math.sqrt(parentParcel?.areaSqm || 1000);
 
+    const verts: Point2D[] = [
+      { x: cx - w / 2, y: cy - h / 2 },
+      { x: cx + w / 2, y: cy - h / 2 },
+      { x: cx + w / 2, y: cy + h / 2 },
+      { x: cx - w / 2, y: cy + h / 2 },
+    ];
     const newLot: SubdivisionLot = {
       id: `lot-${Date.now()}-new`,
       lotNumber: String(maxLotNum + 1),
-      vertices: [
-        { x: cx - w / 2, y: cy - h / 2 },
-        { x: cx + w / 2, y: cy - h / 2 },
-        { x: cx + w / 2, y: cy + h / 2 },
-        { x: cx - w / 2, y: cy + h / 2 },
-      ],
-      areaSqm: Math.round(w * h * (parentParcel?.areaSqm || 1000)),
-      perimeterM: Math.round(2 * (w + h) * sideLength),
+      vertices: verts,
+      areaSqm: computeArea(verts),
+      perimeterM: computePerim(verts),
       intendedUse: 'residential',
       isBuilt: false,
       hasFence: false,
@@ -199,7 +217,7 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
     };
     setLots([...lots, newLot]);
     setSelectedLotId(newLot.id);
-  }, [lots, setLots, parentVertices, parentParcel]);
+  }, [lots, setLots, parentVertices, parentParcel, computeArea, computePerim]);
 
   const selectedLot = lots.find(l => l.id === selectedLotId);
 
@@ -333,12 +351,6 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
       return Math.abs(a) / 2;
     };
 
-    const totalNormArea = calcArea(verts);
-    const norm1 = calcArea(poly1);
-    const norm2 = calcArea(poly2);
-    const area1 = totalNormArea > 0 ? Math.round(lot.areaSqm * norm1 / totalNormArea) : Math.round(lot.areaSqm / 2);
-    const area2 = lot.areaSqm - area1;
-
     const maxLotNum = lots.reduce((m, l) => Math.max(m, parseInt(l.lotNumber) || 0), 0);
 
     const newLot1: SubdivisionLot = {
@@ -346,7 +358,8 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
       id: `lot-${Date.now()}-a`,
       lotNumber: String(maxLotNum + 1),
       vertices: poly1,
-      areaSqm: area1,
+      areaSqm: computeArea(poly1),
+      perimeterM: computePerim(poly1),
       isParentBoundary: false,
     };
     const newLot2: SubdivisionLot = {
@@ -354,13 +367,14 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
       id: `lot-${Date.now()}-b`,
       lotNumber: String(maxLotNum + 2),
       vertices: poly2,
-      areaSqm: area2,
+      areaSqm: computeArea(poly2),
+      perimeterM: computePerim(poly2),
       isParentBoundary: false,
     };
 
     setLots(lots.map(l => l.id === lotId ? newLot1 : l).concat(newLot2));
     setSelectedLotId(newLot1.id);
-  }, [lots, setLots]);
+  }, [lots, setLots, computeArea, computePerim]);
 
   const handleToggleLotSelection = useCallback((lotId: string) => {
     setSelectedLotIds(prev =>
@@ -379,7 +393,6 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
     // Simple convex hull (gift wrapping)
     const hull = convexHull(allPoints);
 
-    const totalArea = lotsToMerge.reduce((s, l) => s + l.areaSqm, 0);
     const keepLot = lotsToMerge[0];
     const maxLotNum = lots.reduce((m, l) => Math.max(m, parseInt(l.lotNumber) || 0), 0);
 
@@ -388,14 +401,15 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
       id: `lot-${Date.now()}-merged`,
       lotNumber: String(maxLotNum + 1),
       vertices: hull,
-      areaSqm: totalArea,
+      areaSqm: computeArea(hull),
+      perimeterM: computePerim(hull),
       isParentBoundary: false,
     };
 
     setLots([...lots.filter(l => !ids.includes(l.id)), mergedLot]);
     setSelectedLotIds([]);
     setSelectedLotId(mergedLot.id);
-  }, [lots, setLots]);
+  }, [lots, setLots, computeArea, computePerim]);
 
   // Handle manual cut through a lot
   const handleCutLot = useCallback((lotId: string, cutStart: Point2D, cutEnd: Point2D) => {
@@ -436,27 +450,27 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
 
     if (poly1.length < 3 || poly2.length < 3) return;
 
-    const totalNormArea = polygonArea(verts);
-    const norm1 = polygonArea(poly1);
-    const norm2 = polygonArea(poly2);
-    const area1 = totalNormArea > 0 ? Math.round(lot.areaSqm * norm1 / totalNormArea) : Math.round(lot.areaSqm / 2);
-    const area2 = lot.areaSqm - area1;
-
     const maxLotNum = lots.reduce((m, l) => Math.max(m, parseInt(l.lotNumber) || 0), 0);
 
     const newLot1: SubdivisionLot = {
       ...lot, id: `lot-${Date.now()}-a`, lotNumber: String(maxLotNum + 1),
-      vertices: poly1, areaSqm: Math.max(1, area1), isParentBoundary: false,
+      vertices: poly1,
+      areaSqm: computeArea(poly1),
+      perimeterM: computePerim(poly1),
+      isParentBoundary: false,
     };
     const newLot2: SubdivisionLot = {
       ...lot, id: `lot-${Date.now()}-b`, lotNumber: String(maxLotNum + 2),
-      vertices: poly2, areaSqm: Math.max(1, area2), isParentBoundary: false,
+      vertices: poly2,
+      areaSqm: computeArea(poly2),
+      perimeterM: computePerim(poly2),
+      isParentBoundary: false,
     };
 
     setLots(lots.map(l => l.id === lotId ? newLot1 : l).concat(newLot2));
     setSelectedLotId(newLot1.id);
     setCanvasMode('select');
-  }, [lots, setLots]);
+  }, [lots, setLots, computeArea, computePerim]);
 
   // Handle finished road drawing — also split the traversed lot
   const handleFinishRoadDraw = useCallback((path: Point2D[]) => {
@@ -539,20 +553,7 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
           return v;
         });
 
-        const parentPoly = parentVertices && parentVertices.length >= 3
-          ? parentVertices
-          : [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 1, y: 1 }, { x: 0, y: 1 }];
-        const parentNormArea = polygonArea(parentPoly);
-        const totalParentArea = parentParcel?.areaSqm || 1000;
-        const areaSqm = Math.max(1, Math.round((polygonArea(newVertices) / parentNormArea) * totalParentArea));
-        const perimeterM = Math.round(newVertices.reduce((sum, v, i) => {
-          const next = newVertices[(i + 1) % newVertices.length];
-          const dx2 = (next.x - v.x) * sideLength;
-          const dy2 = (next.y - v.y) * sideLength;
-          return sum + Math.sqrt(dx2 * dx2 + dy2 * dy2);
-        }, 0));
-
-        return { ...lot, vertices: newVertices, areaSqm, perimeterM };
+        return { ...lot, vertices: newVertices, areaSqm: computeArea(newVertices), perimeterM: computePerim(newVertices) };
       });
 
       if (anyBordering) {
@@ -620,23 +621,21 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
     const shrunk1 = shrinkPoly(poly1);
     const shrunk2 = shrinkPoly(poly2);
 
-    const parentPoly = parentVertices && parentVertices.length >= 3
-      ? parentVertices
-      : [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 1, y: 1 }, { x: 0, y: 1 }];
-    const parentNormArea = polygonArea(parentPoly);
-    const totalParentArea = parentParcel?.areaSqm || 1000;
-
-    const computeArea = (poly: Point2D[]) => Math.max(1, Math.round((polygonArea(poly) / parentNormArea) * totalParentArea));
-
     const maxLotNum = lots.reduce((m, l) => Math.max(m, parseInt(l.lotNumber) || 0), 0);
 
     const newLot1: SubdivisionLot = {
       ...targetLot, id: `lot-${Date.now()}-a`, lotNumber: String(maxLotNum + 1),
-      vertices: shrunk1, areaSqm: computeArea(shrunk1), isParentBoundary: false,
+      vertices: shrunk1,
+      areaSqm: computeArea(shrunk1),
+      perimeterM: computePerim(shrunk1),
+      isParentBoundary: false,
     };
     const newLot2: SubdivisionLot = {
       ...targetLot, id: `lot-${Date.now()}-b`, lotNumber: String(maxLotNum + 2),
-      vertices: shrunk2, areaSqm: computeArea(shrunk2), isParentBoundary: false,
+      vertices: shrunk2,
+      areaSqm: computeArea(shrunk2),
+      perimeterM: computePerim(shrunk2),
+      isParentBoundary: false,
     };
 
     // Store affectedLotIds on the new road for future width adjustments
@@ -648,7 +647,7 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
     setLots(lots.map(l => l.id === targetLot!.id ? newLot1 : l).concat(newLot2));
     setSelectedLotId(newLot1.id);
     setCanvasMode('select');
-  }, [lots, setLots, roads, setRoads, roadPresetWidth, roadPresetSurface, parentParcel, parentVertices]);
+  }, [lots, setLots, roads, setRoads, roadPresetWidth, roadPresetSurface, parentParcel, parentVertices, computeArea, computePerim]);
 
   // Convert an edge between lots to a road
   const handleConvertEdgeToRoad = useCallback((edge: EdgeInfo) => {
@@ -706,27 +705,19 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
         return v;
       });
 
-      const normArea = polygonArea(newVertices);
-      const parentPoly = parentVertices && parentVertices.length >= 3
-        ? parentVertices
-        : [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 1, y: 1 }, { x: 0, y: 1 }];
-      const parentNormArea = polygonArea(parentPoly);
-      const areaSqm = Math.round((normArea / parentNormArea) * (parentParcel?.areaSqm || 1000));
-      const perimeterM = Math.round(newVertices.reduce((sum, v, i) => {
-        const next = newVertices[(i + 1) % newVertices.length];
-        const dx = (next.x - v.x) * sideLength;
-        const dy = (next.y - v.y) * sideLength;
-        return sum + Math.sqrt(dx * dx + dy * dy);
-      }, 0));
-
-      return { ...lot, vertices: newVertices, areaSqm, perimeterM };
+      return {
+        ...lot,
+        vertices: newVertices,
+        areaSqm: computeArea(newVertices),
+        perimeterM: computePerim(newVertices),
+      };
     });
 
     setLots(updatedLots);
     setRoads([...roads, newRoad]);
     setEditingRoadId(newRoad.id);
     setCanvasMode('select');
-  }, [lots, setLots, roads, setRoads, parentParcel, parentVertices, roadPresetWidth, roadPresetSurface]);
+  }, [lots, setLots, roads, setRoads, parentParcel, parentVertices, roadPresetWidth, roadPresetSurface, computeArea, computePerim]);
 
   const handleUpdateRoad = useCallback((roadId: string, updates: Partial<SubdivisionRoad>) => {
     const road = roads.find(r => r.id === roadId);
@@ -781,20 +772,12 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
 
           if (!modified) return lot;
 
-          const parentPoly = parentVertices && parentVertices.length >= 3
-            ? parentVertices
-            : [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 1, y: 1 }, { x: 0, y: 1 }];
-          const parentNormArea = polygonArea(parentPoly);
-          const normArea = polygonArea(newVertices);
-          const areaSqm = Math.round((normArea / parentNormArea) * (parentParcel?.areaSqm || 1000));
-          const perimeterM = Math.round(newVertices.reduce((sum, v, i) => {
-            const next = newVertices[(i + 1) % newVertices.length];
-            const dx2 = (next.x - v.x) * sideLength;
-            const dy2 = (next.y - v.y) * sideLength;
-            return sum + Math.sqrt(dx2 * dx2 + dy2 * dy2);
-          }, 0));
-
-          return { ...lot, vertices: newVertices, areaSqm, perimeterM };
+          return {
+            ...lot,
+            vertices: newVertices,
+            areaSqm: computeArea(newVertices),
+            perimeterM: computePerim(newVertices),
+          };
         });
 
         setLots(updatedLots);
@@ -802,7 +785,7 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
     }
 
     setRoads(roads.map(r => r.id === roadId ? { ...r, ...updates } : r));
-  }, [roads, setRoads, lots, setLots, parentParcel, parentVertices]);
+  }, [roads, setRoads, lots, setLots, parentParcel, parentVertices, computeArea, computePerim]);
 
   const totalArea = lots.reduce((s, l) => s + l.areaSqm, 0);
   const parentArea = parentParcel?.areaSqm || 0;
@@ -941,9 +924,11 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
               <LotCanvas
                 lots={lots}
                 roads={roads}
+                commonSpaces={commonSpaces}
                 parentAreaSqm={parentArea}
                 parentVertices={parentVertices}
                 parentSides={parentSides}
+                parentGpsCoordinates={parentParcel?.gpsCoordinates}
                 selectedLotId={selectedLotId}
                 selectedLotIds={selectedLotIds}
                 onSelectLot={id => { setSelectedLotId(id); setSelectedLotIds([]); }}
@@ -966,8 +951,17 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
                 onModeChange={setCanvasMode}
                 showGrid={canvasShowGrid}
                 onToggleGrid={() => setCanvasShowGrid(prev => !prev)}
-                onUpdateLot={(id, vertices) => {
-                  setLots(lots.map(l => l.id === id ? { ...l, vertices } : l));
+                onUpdateLot={(id, vertices, areaSqm, perimeterM) => {
+                  setLots(lots.map(l => {
+                    if (l.id !== id) return l;
+                    if (l.isParentBoundary) return l; // locked geometry
+                    return {
+                      ...l,
+                      vertices,
+                      areaSqm: areaSqm ?? l.areaSqm,
+                      perimeterM: perimeterM ?? l.perimeterM,
+                    };
+                  }));
                 }}
                 onUndo={onUndo}
                 onRedo={onRedo}
@@ -1081,11 +1075,11 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
                 <div className="grid grid-cols-2 gap-2 text-xs">
                   <div>
                     <span className="text-muted-foreground">Surface</span>
-                    <p className="font-bold text-sm">{selectedLot.areaSqm.toLocaleString()} m²</p>
+                    <p className="font-bold text-sm">{formatSqm(selectedLot.areaSqm)}</p>
                   </div>
                   <div>
                     <span className="text-muted-foreground">Périmètre</span>
-                    <p className="font-bold text-sm">{selectedLot.perimeterM.toLocaleString()} m</p>
+                    <p className="font-bold text-sm">{formatMeters(selectedLot.perimeterM)}</p>
                   </div>
                 </div>
                 <Separator />
@@ -1234,7 +1228,7 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
                   >
                     <span className="h-3 w-3 rounded-sm flex-shrink-0" style={{ backgroundColor: lot.color || LOT_COLORS[lot.intendedUse] }} />
                     <span className="font-medium flex-1">Lot {lot.lotNumber}</span>
-                    <span className="text-muted-foreground">{lot.areaSqm.toLocaleString()} m²</span>
+                    <span className="text-muted-foreground">{formatSqm(lot.areaSqm)}</span>
                   </button>
                 ))}
                 {lots.length === 0 && (
