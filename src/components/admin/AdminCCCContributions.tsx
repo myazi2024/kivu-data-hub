@@ -389,16 +389,17 @@ const AdminCCCContributions: React.FC = () => {
         const historyErrors: string[] = [];
 
         if (updatedContribution.ownership_history && Array.isArray(updatedContribution.ownership_history)) {
-          for (const history of updatedContribution.ownership_history) {
-            if (typeof history === 'object' && history !== null) {
+          for (const raw of updatedContribution.ownership_history) {
+            if (typeof raw === 'object' && raw !== null) {
+              const history = raw as OwnershipHistoryEntry;
               const { error: ohError } = await supabase.from('cadastral_ownership_history').insert({
                 parcel_id: targetParcelId,
-                owner_name: (history as any).owner_name,
-                legal_status: (history as any).legal_status,
-                ownership_start_date: (history as any).ownership_start_date,
-                ownership_end_date: (history as any).ownership_end_date,
-                mutation_type: (history as any).mutation_type,
-                ownership_document_url: (history as any).ownership_document_url
+                owner_name: history.owner_name,
+                legal_status: history.legal_status,
+                ownership_start_date: history.ownership_start_date,
+                ownership_end_date: history.ownership_end_date,
+                mutation_type: history.mutation_type,
+                ownership_document_url: history.ownership_document_url,
               });
               if (ohError) {
                 console.error('Erreur historique propriété:', ohError);
@@ -409,15 +410,16 @@ const AdminCCCContributions: React.FC = () => {
         }
 
         if (updatedContribution.boundary_history && Array.isArray(updatedContribution.boundary_history)) {
-          for (const history of updatedContribution.boundary_history) {
-            if (typeof history === 'object' && history !== null) {
+          for (const raw of updatedContribution.boundary_history) {
+            if (typeof raw === 'object' && raw !== null) {
+              const history = raw as BoundaryHistoryEntry;
               const { error: bhError } = await supabase.from('cadastral_boundary_history').insert({
                 parcel_id: targetParcelId,
-                pv_reference_number: (history as any).pv_reference_number,
-                boundary_purpose: (history as any).boundary_purpose,
-                surveyor_name: (history as any).surveyor_name,
-                survey_date: (history as any).survey_date,
-                boundary_document_url: (history as any).boundary_document_url
+                pv_reference_number: history.pv_reference_number,
+                boundary_purpose: history.boundary_purpose,
+                surveyor_name: history.surveyor_name,
+                survey_date: history.survey_date,
+                boundary_document_url: history.boundary_document_url,
               });
               if (bhError) {
                 console.error('Erreur historique bornage:', bhError);
@@ -449,18 +451,19 @@ const AdminCCCContributions: React.FC = () => {
         }
 
         if (updatedContribution.building_permits && Array.isArray(updatedContribution.building_permits)) {
-          for (const permit of updatedContribution.building_permits) {
-            if (typeof permit === 'object' && permit !== null) {
+          for (const raw of updatedContribution.building_permits) {
+            if (typeof raw === 'object' && raw !== null) {
+              const permit = raw as BuildingPermitEntry;
               const { error: bpError } = await supabase.from('cadastral_building_permits').insert({
                 parcel_id: targetParcelId,
-                permit_number: (permit as any).permit_number,
-                issuing_service: (permit as any).issuing_service,
-                issue_date: (permit as any).issue_date,
-                validity_period_months: (permit as any).validity_period_months,
-                administrative_status: (permit as any).administrative_status,
-                is_current: (permit as any).is_current,
-                issuing_service_contact: (permit as any).issuing_service_contact,
-                permit_document_url: (permit as any).permit_document_url
+                permit_number: permit.permit_number,
+                issuing_service: permit.issuing_service,
+                issue_date: permit.issue_date,
+                validity_period_months: permit.validity_period_months,
+                administrative_status: permit.administrative_status,
+                is_current: permit.is_current,
+                issuing_service_contact: permit.issuing_service_contact,
+                permit_document_url: permit.permit_document_url,
               });
               if (bpError) {
                 console.error('Erreur autorisation de bâtir:', bpError);
@@ -477,9 +480,9 @@ const AdminCCCContributions: React.FC = () => {
 
       // Traiter les hypothèques (pour les nouvelles contributions ET les mises à jour)
       if (updatedContribution.mortgage_history && Array.isArray(updatedContribution.mortgage_history)) {
-        for (const history of updatedContribution.mortgage_history) {
-          if (typeof history === 'object' && history !== null) {
-            const h = history as any;
+        for (const raw of updatedContribution.mortgage_history) {
+          if (typeof raw === 'object' && raw !== null) {
+            const h = raw as MortgageHistoryEntry;
             // Gérer les deux formats de champs (camelCase du formulaire CCC et snake_case)
             const { error: mortgageError } = await supabase.from('cadastral_mortgages').insert({
               parcel_id: targetParcelId,
@@ -488,7 +491,7 @@ const AdminCCCContributions: React.FC = () => {
               creditor_name: h.creditor_name || h.creditorName || 'Non spécifié',
               creditor_type: h.creditor_type || h.creditorType || 'Banque',
               contract_date: h.contract_date || h.contractDate || new Date().toISOString().split('T')[0],
-              mortgage_status: (h.mortgage_status || h.mortgageStatus || 'active').toLowerCase()
+              mortgage_status: (h.mortgage_status || h.mortgageStatus || 'active').toLowerCase(),
               // reference_number est généré automatiquement par le trigger SQL
             });
             
