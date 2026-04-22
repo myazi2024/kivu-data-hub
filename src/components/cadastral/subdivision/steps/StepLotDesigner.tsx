@@ -20,6 +20,7 @@ import {
   COMMON_SPACE_LABELS, COMMON_SPACE_COLORS, Point2D, LotAnnotation
 } from '../types';
 import { ValidationResult, mergeLotsThroughDeletedRoad, polygonArea, splitRoadsAtIntersections } from '../utils/geometry';
+import { convertZoneType, ZoneType } from '../utils/convertZoneType';
 import LotCanvas, { CanvasMode, EdgeInfo } from '../LotCanvas';
 
 interface StepLotDesignerProps {
@@ -231,6 +232,46 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
   const updateLotAnnotations = useCallback((id: string, annotations: LotAnnotation[]) => {
     setLots(lots.map(l => l.id === id ? { ...l, annotations } : l));
   }, [lots, setLots]);
+
+  // Convert the selected lot to a road or common space (or stay a lot).
+  const handleConvertSelectedZone = useCallback((toType: ZoneType) => {
+    if (!selectedLotId) return;
+    const lot = lots.find(l => l.id === selectedLotId);
+    if (!lot) return;
+    if (toType === 'lot') return;
+
+    const parentPoly = parentVertices && parentVertices.length >= 3
+      ? parentVertices
+      : [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 1, y: 1 }, { x: 0, y: 1 }];
+    const parentNormArea = polygonArea(parentPoly);
+    const parentAreaSqm = parentParcel?.areaSqm || 1000;
+    const sideLengthM = Math.sqrt(parentAreaSqm);
+
+    const maxLotNum = lots.reduce((m, l) => Math.max(m, parseInt(l.lotNumber) || 0), 0);
+    const nextNumber = toType === 'road'
+      ? roads.length + 1
+      : toType === 'commonSpace'
+        ? commonSpaces.length + 1
+        : maxLotNum + 1;
+
+    const result = convertZoneType(
+      { lot },
+      toType,
+      { parentAreaSqm, parentNormArea, sideLengthM, nextNumber, defaultRoadWidthM: roadPresetWidth },
+    );
+
+    // Remove from lots
+    setLots(lots.filter(l => l.id !== selectedLotId));
+    setSelectedLotId(null);
+
+    if (result.road) {
+      setRoads([...roads, result.road]);
+      setEditingRoadId(result.road.id);
+    } else if (result.commonSpace) {
+      setCommonSpaces([...commonSpaces, result.commonSpace]);
+    }
+  }, [selectedLotId, lots, setLots, roads, setRoads, commonSpaces, setCommonSpaces, parentParcel, parentVertices, roadPresetWidth]);
+
 
   const handleSplitLot = useCallback((lotId: string) => {
     const lot = lots.find(l => l.id === lotId);
@@ -971,6 +1012,60 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
                     <Trash2 className="h-3.5 w-3.5" />
                   </Button>
                 </div>
+
+                {/* Type de zone — convertir lot ↔ voie ↔ espace commun */}
+                <div className="rounded-md border bg-muted/30 p-2 space-y-1.5">
+                  <Label className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    Type de zone
+                  </Label>
+                  <div className="grid grid-cols-3 gap-1">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="default"
+                      className="h-7 text-[11px] gap-1"
+                      onClick={() => { /* déjà un lot */ }}
+                    >
+                      <span className="h-2 w-2 rounded-full bg-primary-foreground" />
+                      Lot
+                    </Button>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          className="h-7 text-[11px] gap-1"
+                          onClick={() => handleConvertSelectedZone('road')}
+                        >
+                          <Route className="h-3 w-3" />
+                          Voie
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom" className="max-w-[220px] text-xs">
+                        Convertir cette zone en voie. Vous pourrez ensuite régler sa largeur et son revêtement.
+                      </TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          className="h-7 text-[11px] gap-1"
+                          onClick={() => handleConvertSelectedZone('commonSpace')}
+                        >
+                          <TreePine className="h-3 w-3" />
+                          Espace
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom" className="max-w-[220px] text-xs">
+                        Convertir cette zone en espace commun (espace vert, parking, drainage…).
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-2 gap-2 text-xs">
                   <div>
                     <span className="text-muted-foreground">Surface</span>
