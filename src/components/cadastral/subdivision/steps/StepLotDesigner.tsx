@@ -450,27 +450,27 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
 
     if (poly1.length < 3 || poly2.length < 3) return;
 
-    const totalNormArea = polygonArea(verts);
-    const norm1 = polygonArea(poly1);
-    const norm2 = polygonArea(poly2);
-    const area1 = totalNormArea > 0 ? Math.round(lot.areaSqm * norm1 / totalNormArea) : Math.round(lot.areaSqm / 2);
-    const area2 = lot.areaSqm - area1;
-
     const maxLotNum = lots.reduce((m, l) => Math.max(m, parseInt(l.lotNumber) || 0), 0);
 
     const newLot1: SubdivisionLot = {
       ...lot, id: `lot-${Date.now()}-a`, lotNumber: String(maxLotNum + 1),
-      vertices: poly1, areaSqm: Math.max(1, area1), isParentBoundary: false,
+      vertices: poly1,
+      areaSqm: computeArea(poly1),
+      perimeterM: computePerim(poly1),
+      isParentBoundary: false,
     };
     const newLot2: SubdivisionLot = {
       ...lot, id: `lot-${Date.now()}-b`, lotNumber: String(maxLotNum + 2),
-      vertices: poly2, areaSqm: Math.max(1, area2), isParentBoundary: false,
+      vertices: poly2,
+      areaSqm: computeArea(poly2),
+      perimeterM: computePerim(poly2),
+      isParentBoundary: false,
     };
 
     setLots(lots.map(l => l.id === lotId ? newLot1 : l).concat(newLot2));
     setSelectedLotId(newLot1.id);
     setCanvasMode('select');
-  }, [lots, setLots]);
+  }, [lots, setLots, computeArea, computePerim]);
 
   // Handle finished road drawing — also split the traversed lot
   const handleFinishRoadDraw = useCallback((path: Point2D[]) => {
