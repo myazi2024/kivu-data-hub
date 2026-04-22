@@ -15,6 +15,8 @@ import { RequestsToolbar } from './subdivision/requests/RequestsToolbar';
 import { RequestsList } from './subdivision/requests/RequestsList';
 import { RequestDetailsDialog } from './subdivision/requests/RequestDetailsDialog';
 import { RequestActionDialog } from './subdivision/requests/RequestActionDialog';
+import { BulkActionsBar } from './subdivision/requests/BulkActionsBar';
+import { BulkReasonDialog } from './subdivision/requests/BulkReasonDialog';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -39,6 +41,22 @@ export function AdminSubdivisionRequests() {
   const [processing, setProcessing] = useState(false);
   const [page, setPage] = useState(1);
   const [validations, setValidations] = useState<Record<string, ValidationResult>>({});
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [bulkAction, setBulkAction] = useState<'approve' | 'reject' | 'return' | null>(null);
+  const [bulkProcessing, setBulkProcessing] = useState(false);
+
+  const toggleSelect = (id: string) =>
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+
+  const toggleSelectAllVisible = () => {
+    const visibleIds = paginatedRequests.map(r => r.id);
+    const allSelected = visibleIds.every(id => selectedIds.includes(id));
+    setSelectedIds(prev =>
+      allSelected
+        ? prev.filter(id => !visibleIds.includes(id))
+        : Array.from(new Set([...prev, ...visibleIds])),
+    );
+  };
 
   const fetchRequests = async () => {
     setLoading(true);
@@ -223,6 +241,71 @@ export function AdminSubdivisionRequests() {
     }
   };
 
+  const handleReassignOne = async (req: SubdivisionRequest, assigneeId: string) => {
+    const { error } = await supabase
+      .from('subdivision_requests')
+      .update({ assigned_to: assigneeId, assigned_at: new Date().toISOString() } as any)
+      .eq('id', req.id);
+    if (error) {
+      toast({ title: 'Erreur', description: error.message, variant: 'destructive' });
+    } else {
+      toast({ title: 'Demande réassignée', description: req.reference_number });
+      fetchRequests();
+    }
+  };
+
+  const handleBulkReassign = async (assigneeId: string) => {
+    if (selectedIds.length === 0) return;
+    setBulkProcessing(true);
+    const { error } = await supabase
+      .from('subdivision_requests')
+      .update({ assigned_to: assigneeId, assigned_at: new Date().toISOString() } as any)
+      .in('id', selectedIds);
+    setBulkProcessing(false);
+    if (error) {
+      toast({ title: 'Erreur', description: error.message, variant: 'destructive' });
+    } else {
+      toast({ title: `${selectedIds.length} demande(s) réassignée(s)` });
+      setSelectedIds([]);
+      fetchRequests();
+    }
+  };
+
+  const handleBulkConfirm = async (payload: { reason?: string; processingFee?: number; notes?: string }) => {
+    if (!bulkAction || selectedIds.length === 0 || !user) return;
+    setBulkProcessing(true);
+    const idsSnapshot = [...selectedIds];
+    let success = 0;
+    let failed = 0;
+    for (const id of idsSnapshot) {
+      try {
+        const { error } = await supabase.functions.invoke('approve-subdivision', {
+          body: {
+            request_id: id,
+            action: bulkAction,
+            processing_fee_usd: bulkAction === 'approve' ? payload.processingFee : undefined,
+            rejection_reason: bulkAction !== 'approve' ? payload.reason : undefined,
+            processing_notes: payload.notes,
+          },
+        });
+        if (error) throw error;
+        success += 1;
+      } catch (e) {
+        console.warn('bulk action failed for', id, e);
+        failed += 1;
+      }
+    }
+    setBulkProcessing(false);
+    setBulkAction(null);
+    setSelectedIds([]);
+    fetchRequests();
+    toast({
+      title: 'Action groupée terminée',
+      description: `${success} succès, ${failed} échec(s).`,
+      variant: failed > 0 ? 'destructive' : 'default',
+    });
+  };
+
   return (
     <div className="space-y-6">
       <RequestsToolbar
@@ -237,6 +320,14 @@ export function AdminSubdivisionRequests() {
         onExport={handleExportCsv}
       />
 
+      <BulkActionsBar
+        selectedCount={selectedIds.length}
+        processing={bulkProcessing}
+        onClear={() => setSelectedIds([])}
+        onBulk={(action) => setBulkAction(action)}
+        onReassign={handleBulkReassign}
+      />
+
       <RequestsList
         loading={loading}
         rows={paginatedRequests}
@@ -247,6 +338,10 @@ export function AdminSubdivisionRequests() {
         onOpenDetails={(req) => { setSelectedRequest(req); setShowDetailsDialog(true); }}
         onStartReview={handleStartReview}
         onAction={handleAction}
+        selectedIds={selectedIds}
+        onToggleSelect={toggleSelect}
+        onToggleSelectAll={toggleSelectAllVisible}
+        onReassignOne={handleReassignOne}
       />
 
       <RequestDetailsDialog
@@ -267,6 +362,15 @@ export function AdminSubdivisionRequests() {
         returnReason={returnReason} setReturnReason={setReturnReason}
         processingNotes={processingNotes} setProcessingNotes={setProcessingNotes}
         onSubmit={submitAction}
+      />
+
+      <BulkReasonDialog
+        open={!!bulkAction}
+        onOpenChange={(o) => !o && setBulkAction(null)}
+        action={bulkAction}
+        count={selectedIds.length}
+        processing={bulkProcessing}
+        onConfirm={handleBulkConfirm}
       />
     </div>
   );
