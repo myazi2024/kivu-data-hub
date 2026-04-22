@@ -6,7 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
-import { Grid3X3, MapPin, Pencil, Eye, FileText, ChevronLeft, ChevronRight, Check, Loader2, Info, Trash2 } from 'lucide-react';
+import { Grid3X3, MapPin, Pencil, Eye, FileText, ChevronLeft, ChevronRight, Check, Loader2, Info, Trash2, Upload } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 import FormIntroDialog, { FORM_INTRO_CONFIGS } from './FormIntroDialog';
 import WhatsAppFloatingButton from './WhatsAppFloatingButton';
 import { useSubdivisionForm } from './subdivision/hooks/useSubdivisionForm';
@@ -14,6 +15,7 @@ import { SubdivisionStep } from './subdivision/types';
 import StepParentParcel from './subdivision/steps/StepParentParcel';
 import StepLotDesigner from './subdivision/steps/StepLotDesigner';
 import StepPlanView from './subdivision/steps/StepPlanView';
+import StepDocuments from './subdivision/steps/StepDocuments';
 import StepSummary from './subdivision/steps/StepSummary';
 
 interface SubdivisionRequestDialogProps {
@@ -28,7 +30,8 @@ const STEP_CONFIG: { key: SubdivisionStep; label: string; icon: React.ReactNode;
   { key: 'parcel', label: 'Parcelle & Demandeur', icon: <MapPin className="h-3.5 w-3.5" />, shortLabel: 'Parcelle' },
   { key: 'designer', label: 'Conception des lots', icon: <Pencil className="h-3.5 w-3.5" />, shortLabel: 'Lots' },
   { key: 'plan', label: 'Plan personnalisé', icon: <Eye className="h-3.5 w-3.5" />, shortLabel: 'Plan' },
-  { key: 'summary', label: 'Récapitulatif', icon: <FileText className="h-3.5 w-3.5" />, shortLabel: 'Envoi' },
+  { key: 'documents', label: 'Pièces justificatives', icon: <Upload className="h-3.5 w-3.5" />, shortLabel: 'Docs' },
+  { key: 'summary', label: 'Récapitulatif & paiement', icon: <FileText className="h-3.5 w-3.5" />, shortLabel: 'Envoi' },
 ];
 
 const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
@@ -39,7 +42,7 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
   const [showIntro, setShowIntro] = useState(true);
   const [showCloseConfirm, setShowCloseConfirm] = useState(false);
   
-  const form = useSubdivisionForm(parcelNumber, parcelData, user);
+  const form = useSubdivisionForm(parcelNumber, parcelData, user, parcelId);
   
   const handleClose = () => {
     if (form.lots.length > 0 && !form.submitted) {
@@ -57,9 +60,32 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
       return;
     }
     try {
-      const ref = await form.submit(user.id);
-      if (ref) {
-        toast({ title: 'Demande soumise !', description: `Référence: ${ref}` });
+      const result = await form.submit(user.id);
+      if (!result) return;
+
+      toast({
+        title: 'Demande créée',
+        description: `Référence ${result.reference_number} — redirection vers le paiement…`,
+      });
+
+      // Trigger Stripe checkout via shared create-payment edge
+      const { data: payment, error: payError } = await supabase.functions.invoke('create-payment', {
+        body: {
+          invoice_id: result.id,
+          payment_type: 'subdivision_request',
+          amount_usd: result.total_amount_usd,
+        },
+      });
+
+      if (payError) throw payError;
+      if (payment?.url) {
+        window.location.href = payment.url as string;
+      } else {
+        toast({
+          title: 'Paiement indisponible',
+          description: 'Vous pourrez régler depuis votre tableau de bord.',
+          variant: 'destructive',
+        });
       }
     } catch (err: any) {
       toast({ title: 'Erreur', description: err.message, variant: 'destructive' });
