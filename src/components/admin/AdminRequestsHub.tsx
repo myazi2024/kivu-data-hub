@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useRequestsHealth } from '@/hooks/useRequestsHealth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -78,7 +79,7 @@ const AdminRequestsHub = () => {
         </CardContent></Card>
       </div>
 
-      <Tabs defaultValue="overview">
+      <Tabs value={active} onValueChange={handleSubChange}>
         <TabsList>
           <TabsTrigger value="overview">Vue d'ensemble</TabsTrigger>
           <TabsTrigger value="missing">Certificats manquants ({missing.length})</TabsTrigger>
