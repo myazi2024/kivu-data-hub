@@ -73,6 +73,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
   const analyticsTitleRef = React.useRef<HTMLSpanElement>(null);
   const mapTitleRef = React.useRef<HTMLHeadingElement>(null);
   const trackRef = React.useRef<HTMLDivElement>(null);
+  const teaserTimersRef = React.useRef<number[]>([]);
 
   const isMobile = useIsMobile();
   const prefersReducedMotion = typeof window !== 'undefined'
@@ -128,12 +129,12 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
         try { localStorage.setItem('drc-pager-teaser-seen', '1'); } catch { /* noop */ }
       }, 980);
       // Cleanup nested timers via ref-bound array
-      (el as any).__teaserTimers = [t1, t2, t3];
+      teaserTimersRef.current = [t1, t2, t3];
     }, 600);
     return () => {
       window.clearTimeout(startId);
-      const timers: number[] | undefined = (el as any).__teaserTimers;
-      if (timers) timers.forEach((t) => window.clearTimeout(t));
+      teaserTimersRef.current.forEach((t) => window.clearTimeout(t));
+      teaserTimersRef.current = [];
       el.style.setProperty('--pager-teaser', '0px');
     };
   }, [isMobile, prefersReducedMotion]);
@@ -276,7 +277,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
   const getMapBlob = useCallback(async (): Promise<Blob> => {
     if (!mapCardRef.current) throw new Error('No map ref');
     const html2canvas = (await import('html2canvas')).default;
-    const canvas = await html2canvas(mapCardRef.current, { backgroundColor: null, scale: 2, borderRadius: 12 } as any);
+    const canvas = await html2canvas(mapCardRef.current, { backgroundColor: null, scale: 2 });
     return await new Promise<Blob>((resolve, reject) => {
       canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error('toBlob failed')), 'image/png');
     });
@@ -313,9 +314,9 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
     (level: 'commune' | 'quartier' | 'territoire') => {
       if (!activeProfile || !analytics) return undefined;
 
-      const matchPredicate = (name: string) => {
+      const matchPredicate = (name: string): ((r: GeoScopedRecord) => boolean) => {
         const n = norm(name);
-        return (r: any) => {
+        return (r) => {
           if (level === 'commune') return norm(r.commune) === n && (!selectedVille || norm(r.ville) === norm(selectedVille));
           if (level === 'quartier') return norm(r.quartier) === n && (!selectedCommune || norm(r.commune) === norm(selectedCommune));
           return norm(r.territoire) === n && (!selectedProvince || norm(r.province) === norm(selectedProvince.name));
@@ -323,25 +324,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
       };
 
       return (entityName: string): string | undefined => {
-        const pred = matchPredicate(entityName);
-        const slicer = <T,>(arr: T[]): T[] => (arr || []).filter(pred as any).map((r: any) => ({ ...r, province: '__entity__' })) as T[];
-        const sliced = {
-          ...analytics,
-          parcels: slicer(analytics.parcels as any),
-          contributions: slicer(analytics.contributions as any),
-          titleRequests: slicer(analytics.titleRequests as any),
-          disputes: slicer(analytics.disputes as any),
-          mortgages: slicer((analytics.mortgages || []) as any),
-          mutationRequests: slicer(analytics.mutationRequests as any),
-          expertiseRequests: slicer(analytics.expertiseRequests as any),
-          subdivisionRequests: slicer((analytics as any).subdivisionRequests || []),
-          ownershipHistory: slicer((analytics as any).ownershipHistory || []),
-          certificates: slicer((analytics as any).certificates || []),
-          invoices: slicer((analytics as any).invoices || []),
-          buildingPermits: slicer((analytics as any).buildingPermits || []),
-          taxHistory: slicer((analytics as any).taxHistory || []),
-        } as typeof analytics;
-
+        const sliced = sliceAnalyticsByPredicate(analytics, matchPredicate(entityName), '__entity__');
         const v = activeProfile.metric({ analytics: sliced, provinceName: '__entity__' });
         if (v <= 0) return NO_DATA_COLOR;
         const tiers = adaptiveTiers || activeProfile.tiers;
@@ -544,23 +527,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                     let profileLines: { label: string; value: string; color?: string }[] | undefined;
                     if (activeProfile && analytics) {
                       const predicate = buildScopePredicate(selectedProvince.name, selectedVille, selectedCommune, selectedQuartier, selectedTerritoire);
-                      const sliceArr = <T,>(arr: T[]): T[] => (arr || []).filter(predicate as any).map((r: any) => ({ ...r, province: selectedProvince.name })) as T[];
-                      const scopedAnalytics = {
-                        ...analytics,
-                        parcels: sliceArr(analytics.parcels as any),
-                        contributions: sliceArr(analytics.contributions as any),
-                        titleRequests: sliceArr(analytics.titleRequests as any),
-                        disputes: sliceArr(analytics.disputes as any),
-                        mortgages: sliceArr((analytics.mortgages || []) as any),
-                        mutationRequests: sliceArr(analytics.mutationRequests as any),
-                        expertiseRequests: sliceArr(analytics.expertiseRequests as any),
-                        subdivisionRequests: sliceArr((analytics as any).subdivisionRequests || []),
-                        ownershipHistory: sliceArr((analytics as any).ownershipHistory || []),
-                        certificates: sliceArr((analytics as any).certificates || []),
-                        invoices: sliceArr((analytics as any).invoices || []),
-                        buildingPermits: sliceArr((analytics as any).buildingPermits || []),
-                        taxHistory: sliceArr((analytics as any).taxHistory || []),
-                      } as typeof analytics;
+                      const scopedAnalytics = sliceAnalyticsByPredicate(analytics, predicate, selectedProvince.name);
                       const ctx = { analytics: scopedAnalytics, provinceName: selectedProvince.name };
                       profileLines = activeProfile.legendStats?.(ctx) ?? activeProfile.tooltipLines(ctx).slice(0, 4);
                     }
