@@ -8,31 +8,38 @@ import {
 } from '../types';
 import { validateSubdivision, ValidationResult, gpsToNormalized, polygonArea, polygonPerimeter, snapNearbyLotVertices } from '../utils/geometry';
 
-const DRAFT_KEY_PREFIX = 'subdivision-draft-';
+const DRAFT_KEY_PREFIX = 'subdivision-draft-v2-';
 
 export type { SubdivisionDocuments };
 
 export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authUser?: User | null, parcelId?: string) {
   // Steps
   const [currentStep, setCurrentStep] = useState<SubdivisionStep>('parcel');
-  
+
   // Parent parcel
   const [parentParcel, setParentParcel] = useState<ParentParcelInfo | null>(null);
   const [loadingParcel, setLoadingParcel] = useState(false);
-  
+
   // Dynamic pricing
   const [submissionFee, setSubmissionFee] = useState<number | null>(null);
   const [feeBreakdown, setFeeBreakdown] = useState<FeeBreakdown | null>(null);
   const [loadingFee, setLoadingFee] = useState(true);
-  
-  // Requester
+
+  // Requester (identité enrichie alignée sur le bloc « Propriétaire actuel » du CCC)
   const [requester, setRequester] = useState<RequesterInfo>({
-    firstName: '', lastName: '', phone: '', type: 'owner', isOwner: true,
+    legalStatus: 'Personne physique',
+    gender: '',
+    firstName: '', lastName: '', middleName: '',
+    entityType: '', entitySubType: '', entitySubTypeOther: '', rccmNumber: '',
+    rightType: '', stateExploitedBy: '',
+    nationality: '',
+    phone: '', email: '',
+    type: 'owner', isOwner: true,
   });
-  
+
   // Draft restored flag
   const [draftRestored, setDraftRestored] = useState(false);
-  
+
   // Auto-fill requester from authenticated user
   useEffect(() => {
     if (authUser) {
@@ -41,9 +48,10 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
       const nameParts = fullName.split(' ');
       const firstName = nameParts[0] || '';
       const lastName = nameParts.slice(1).join(' ') || '';
-      
+
       setRequester(prev => ({
         ...prev,
+        legalStatus: prev.legalStatus || 'Personne physique',
         firstName: firstName || prev.firstName,
         lastName: lastName || prev.lastName,
         phone: authUser.phone || meta.phone || prev.phone,
