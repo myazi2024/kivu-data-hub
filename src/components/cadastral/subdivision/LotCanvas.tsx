@@ -1,10 +1,11 @@
 import React, { useRef, useState, useCallback, useEffect, useMemo } from 'react';
-import { SubdivisionLot, SubdivisionRoad, LOT_COLORS, USAGE_LABELS, Point2D, LotAnnotation } from './types';
-import { getAllRoadIntersectionPoints } from './utils/geometry';
+import { SubdivisionLot, SubdivisionRoad, SubdivisionCommonSpace, COMMON_SPACE_COLORS, COMMON_SPACE_LABELS, LOT_COLORS, USAGE_LABELS, Point2D, LotAnnotation } from './types';
+import { getAllRoadIntersectionPoints, polygonCentroid } from './utils/geometry';
 import { useCanvasViewport } from './hooks/useCanvasViewport';
 import { useCanvasDrag } from './hooks/useCanvasDrag';
 import { useCanvasKeyboard } from './hooks/useCanvasKeyboard';
 import { ZoomIn, ZoomOut, Maximize2, Magnet } from 'lucide-react';
+import { MetricFrame, buildMetricFrame, edgeLengthM, polygonAreaSqmAccurate, polygonPerimeterM, formatMeters, formatSqm } from './utils/metrics';
 
 interface ParcelSide {
   length?: number | string;
@@ -27,14 +28,16 @@ export interface EdgeInfo {
 interface LotCanvasProps {
   lots: SubdivisionLot[];
   roads: SubdivisionRoad[];
+  commonSpaces?: SubdivisionCommonSpace[];
   parentAreaSqm: number;
   parentVertices?: Point2D[];
   parentSides?: ParcelSide[];
+  parentGpsCoordinates?: { lat: number; lng: number }[];
   selectedLotId: string | null;
   selectedLotIds?: string[];
   onSelectLot: (id: string | null) => void;
   onToggleLotSelection?: (id: string) => void;
-  onUpdateLot: (id: string, vertices: Point2D[]) => void;
+  onUpdateLot: (id: string, vertices: Point2D[], areaSqm?: number, perimeterM?: number) => void;
   onUpdateLotAnnotations?: (id: string, annotations: LotAnnotation[]) => void;
   onDeleteLot?: (id: string) => void;
   onDuplicateLot?: (id: string) => void;
@@ -55,6 +58,7 @@ interface LotCanvasProps {
   showLotNumbers?: boolean;
   showAreas?: boolean;
   showRoads?: boolean;
+  showCommonSpaces?: boolean;
   showNorth?: boolean;
   showLegend?: boolean;
   showScale?: boolean;
@@ -72,12 +76,13 @@ const CANVAS_H = 400;
 const PADDING = 30;
 
 const LotCanvas: React.FC<LotCanvasProps> = ({
-  lots, roads, parentAreaSqm, parentVertices, parentSides, selectedLotId, selectedLotIds = [], onSelectLot, onToggleLotSelection, onUpdateLot,
+  lots, roads, commonSpaces = [], parentAreaSqm, parentVertices, parentSides, parentGpsCoordinates,
+  selectedLotId, selectedLotIds = [], onSelectLot, onToggleLotSelection, onUpdateLot,
   onUpdateLotAnnotations, onDeleteLot, onDuplicateLot,
   selectedRoadId, onSelectRoad, onDeleteRoad, onUpdateRoad, onSplitLot, onMergeLots,
   onCutLot, onFinishRoadDraw, onConvertEdgeToRoad, mode = 'select', onModeChange,
   showGrid = true, onToggleGrid, showDimensions = true, showLotNumbers = true,
-  showAreas = true, showRoads = true, showNorth = true,
+  showAreas = true, showRoads = true, showCommonSpaces = true, showNorth = true,
   showLegend = false, showScale = true, showOwnerNames = false,
   readOnly = false, onUndo, onRedo, minLotAreaSqm = 50,
   roadPresetWidth = 6, roadPresetSurface = 'planned',
