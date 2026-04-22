@@ -41,8 +41,23 @@ export function AdminSubdivisionRequests() {
   const [processing, setProcessing] = useState(false);
   const [page, setPage] = useState(1);
   const [validations, setValidations] = useState<Record<string, ValidationResult>>({});
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [bulkAction, setBulkAction] = useState<'approve' | 'reject' | 'return' | null>(null);
+  const [bulkProcessing, setBulkProcessing] = useState(false);
 
-  const fetchRequests = async () => {
+  const toggleSelect = (id: string) =>
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+
+  const toggleSelectAllVisible = () => {
+    const visibleIds = paginatedRequests.map(r => r.id);
+    const allSelected = visibleIds.every(id => selectedIds.includes(id));
+    setSelectedIds(prev =>
+      allSelected
+        ? prev.filter(id => !visibleIds.includes(id))
+        : Array.from(new Set([...prev, ...visibleIds])),
+    );
+  };
+
     setLoading(true);
     try {
       const { data, error } = await supabase
