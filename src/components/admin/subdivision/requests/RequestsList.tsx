@@ -36,10 +36,24 @@ interface Props {
 export function RequestsList({
   loading, rows, validations, page, totalPages, setPage,
   onOpenDetails, onStartReview, onAction,
+  selectedIds, onToggleSelect, onToggleSelectAll, onReassignOne,
 }: Props) {
+  const { admins } = useAssignableAdmins();
+  const allChecked = rows.length > 0 && rows.every(r => selectedIds.includes(r.id));
+  const someChecked = !allChecked && rows.some(r => selectedIds.includes(r.id));
   return (
     <Card>
       <CardContent className="pt-6">
+        {rows.length > 0 && !loading && (
+          <div className="flex items-center gap-2 mb-3 px-1">
+            <Checkbox
+              checked={allChecked ? true : someChecked ? 'indeterminate' : false}
+              onCheckedChange={onToggleSelectAll}
+              aria-label="Tout sélectionner"
+            />
+            <span className="text-xs text-muted-foreground">Sélectionner toute la page</span>
+          </div>
+        )}
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -55,6 +69,7 @@ export function RequestsList({
               const sla = computeSla(request.created_at, request.estimated_processing_days || 14);
               const validation = validations[request.id];
               const isOpen = OPEN_STATUSES.includes(request.status);
+              const isSelected = selectedIds.includes(request.id);
               const slaTone = sla.level === 'overdue'
                 ? 'border-destructive/50 bg-destructive/5'
                 : sla.level === 'warning'
