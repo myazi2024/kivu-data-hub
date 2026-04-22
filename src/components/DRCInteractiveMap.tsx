@@ -64,66 +64,79 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
   const [hoveredProvince, setHoveredProvince] = useState<string | null>(null);
   const [mapInstance, setMapInstance] = useState<any>(null);
   const [activeMobilePanel, setActiveMobilePanel] = useState<'map' | 'analytics'>('map');
-  const [hintShown, setHintShown] = useState<boolean>(() => {
-    if (typeof window === 'undefined') return true;
-    try { return localStorage.getItem('drc-map-swipe-hint-shown') === '1'; } catch { return true; }
-  });
   const [isMapZoomed, setIsMapZoomed] = useState(false);
-  
+
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [forcedTab, setForcedTab] = useState<string | null>(null);
   const mapCardRef = React.useRef<HTMLDivElement>(null);
   const analyticsColRef = React.useRef<HTMLDivElement>(null);
   const analyticsTitleRef = React.useRef<HTMLSpanElement>(null);
   const mapTitleRef = React.useRef<HTMLHeadingElement>(null);
+  const trackRef = React.useRef<HTMLDivElement>(null);
 
   const isMobile = useIsMobile();
   const prefersReducedMotion = typeof window !== 'undefined'
     && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
   const onAnalyticsPanel = activeMobilePanel === 'analytics';
-  // Hint one-shot affiché peu après le montage sur mobile (découvrabilité)
-  useEffect(() => {
-    if (!isMobile || hintShown) return;
-    const id = window.setTimeout(() => {
-      toast('Astuce : glissez horizontalement pour passer entre la Carte et Analytics', {
-        duration: 4000,
-        icon: '👉',
-      });
-      try { localStorage.setItem('drc-map-swipe-hint-shown', '1'); } catch { /* noop */ }
-      setHintShown(true);
-    }, 800);
-    return () => window.clearTimeout(id);
-  }, [isMobile, hintShown]);
+  const pagerIndex = onAnalyticsPanel ? 1 : 0;
 
-  const { ref: swipeRef, isSwiping, swipeDelta } = useSwipeNavigation<HTMLDivElement>({
+  const { ref: pagerRef, isDragging, pageWidth, dragProgress } = useSwipePager<HTMLDivElement>({
+    pageCount: 2,
+    index: pagerIndex,
+    onIndexChange: (i) => setActiveMobilePanel(i === 1 ? 'analytics' : 'map'),
     enabled: isMobile,
     ignoreSelector: '[data-swipe-ignore], [role="dialog"], [data-radix-popper-content-wrapper], button, a, input, textarea, select',
-    direction: onAnalyticsPanel ? 'right' : 'left',
-    onSwipeLeft: () => setActiveMobilePanel('analytics'),
-    onSwipeRight: () => setActiveMobilePanel('map'),
   });
 
   // Reset scroll + focus management quand le panneau mobile change (UX + a11y)
   useEffect(() => {
     if (!isMobile) return;
-    // Laisse la transition slide se jouer avant de bouger le focus
     const id = window.setTimeout(() => {
       if (onAnalyticsPanel) {
-        // Reset scroll Analytics + focus sur le titre
         const scrollEl = analyticsColRef.current?.querySelector('[data-radix-scroll-area-viewport]') as HTMLElement | null;
         if (scrollEl) scrollEl.scrollTop = 0;
         analyticsTitleRef.current?.focus({ preventScroll: true });
       } else {
         mapTitleRef.current?.focus({ preventScroll: true });
       }
-    }, 300);
+    }, 320);
     return () => window.clearTimeout(id);
   }, [activeMobilePanel, isMobile, onAnalyticsPanel]);
 
-  // Rubber-band: dx limité à ±40px, atténué à 18% (retour tactile plus net)
-  const rubberBand = !prefersReducedMotion && isSwiping
-    ? Math.max(-40, Math.min(40, swipeDelta * 0.18))
-    : 0;
+  // Teaser physique au mount : la page Analytics « pointe le bout de son nez ».
+  // Une seule fois par device, skip si reduced-motion.
+  useEffect(() => {
+    if (!isMobile || prefersReducedMotion) return;
+    let seen = false;
+    try { seen = localStorage.getItem('drc-pager-teaser-seen') === '1'; } catch { /* noop */ }
+    if (seen) return;
+    const el = trackRef.current;
+    if (!el) return;
+    const startId = window.setTimeout(() => {
+      // Animation keyframes : 0 → -40 → +18 → 0 sur ~900ms (easeOutBack via CSS)
+      const prevTransition = el.style.transition;
+      el.style.transition = 'transform 320ms cubic-bezier(.34,1.56,.64,1)';
+      el.style.setProperty('--pager-teaser', '-40px');
+      const t1 = window.setTimeout(() => {
+        el.style.setProperty('--pager-teaser', '18px');
+      }, 340);
+      const t2 = window.setTimeout(() => {
+        el.style.setProperty('--pager-teaser', '0px');
+      }, 640);
+      const t3 = window.setTimeout(() => {
+        el.style.transition = prevTransition;
+        try { localStorage.setItem('drc-pager-teaser-seen', '1'); } catch { /* noop */ }
+      }, 980);
+      // Cleanup nested timers via ref-bound array
+      (el as any).__teaserTimers = [t1, t2, t3];
+    }, 600);
+    return () => {
+      window.clearTimeout(startId);
+      const timers: number[] | undefined = (el as any).__teaserTimers;
+      if (timers) timers.forEach((t) => window.clearTimeout(t));
+      el.style.setProperty('--pager-teaser', '0px');
+    };
+  }, [isMobile, prefersReducedMotion]);
 
 
   const { isTestRoute } = useTestEnvironment();
