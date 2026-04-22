@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useAppAppearance } from '@/hooks/useAppAppearance';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { useSwipeNavigation } from '@/hooks/useSwipeNavigation';
+import { useSwipePager } from '@/hooks/useSwipePager';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -64,66 +64,79 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
   const [hoveredProvince, setHoveredProvince] = useState<string | null>(null);
   const [mapInstance, setMapInstance] = useState<any>(null);
   const [activeMobilePanel, setActiveMobilePanel] = useState<'map' | 'analytics'>('map');
-  const [hintShown, setHintShown] = useState<boolean>(() => {
-    if (typeof window === 'undefined') return true;
-    try { return localStorage.getItem('drc-map-swipe-hint-shown') === '1'; } catch { return true; }
-  });
   const [isMapZoomed, setIsMapZoomed] = useState(false);
-  
+
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [forcedTab, setForcedTab] = useState<string | null>(null);
   const mapCardRef = React.useRef<HTMLDivElement>(null);
   const analyticsColRef = React.useRef<HTMLDivElement>(null);
   const analyticsTitleRef = React.useRef<HTMLSpanElement>(null);
   const mapTitleRef = React.useRef<HTMLHeadingElement>(null);
+  const trackRef = React.useRef<HTMLDivElement>(null);
 
   const isMobile = useIsMobile();
   const prefersReducedMotion = typeof window !== 'undefined'
     && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
   const onAnalyticsPanel = activeMobilePanel === 'analytics';
-  // Hint one-shot affiché peu après le montage sur mobile (découvrabilité)
-  useEffect(() => {
-    if (!isMobile || hintShown) return;
-    const id = window.setTimeout(() => {
-      toast('Astuce : glissez horizontalement pour passer entre la Carte et Analytics', {
-        duration: 4000,
-        icon: '👉',
-      });
-      try { localStorage.setItem('drc-map-swipe-hint-shown', '1'); } catch { /* noop */ }
-      setHintShown(true);
-    }, 800);
-    return () => window.clearTimeout(id);
-  }, [isMobile, hintShown]);
+  const pagerIndex = onAnalyticsPanel ? 1 : 0;
 
-  const { ref: swipeRef, isSwiping, swipeDelta } = useSwipeNavigation<HTMLDivElement>({
+  const { ref: pagerRef, isDragging, pageWidth, dragProgress } = useSwipePager<HTMLDivElement>({
+    pageCount: 2,
+    index: pagerIndex,
+    onIndexChange: (i) => setActiveMobilePanel(i === 1 ? 'analytics' : 'map'),
     enabled: isMobile,
     ignoreSelector: '[data-swipe-ignore], [role="dialog"], [data-radix-popper-content-wrapper], button, a, input, textarea, select',
-    direction: onAnalyticsPanel ? 'right' : 'left',
-    onSwipeLeft: () => setActiveMobilePanel('analytics'),
-    onSwipeRight: () => setActiveMobilePanel('map'),
   });
 
   // Reset scroll + focus management quand le panneau mobile change (UX + a11y)
   useEffect(() => {
     if (!isMobile) return;
-    // Laisse la transition slide se jouer avant de bouger le focus
     const id = window.setTimeout(() => {
       if (onAnalyticsPanel) {
-        // Reset scroll Analytics + focus sur le titre
         const scrollEl = analyticsColRef.current?.querySelector('[data-radix-scroll-area-viewport]') as HTMLElement | null;
         if (scrollEl) scrollEl.scrollTop = 0;
         analyticsTitleRef.current?.focus({ preventScroll: true });
       } else {
         mapTitleRef.current?.focus({ preventScroll: true });
       }
-    }, 300);
+    }, 320);
     return () => window.clearTimeout(id);
   }, [activeMobilePanel, isMobile, onAnalyticsPanel]);
 
-  // Rubber-band: dx limité à ±40px, atténué à 18% (retour tactile plus net)
-  const rubberBand = !prefersReducedMotion && isSwiping
-    ? Math.max(-40, Math.min(40, swipeDelta * 0.18))
-    : 0;
+  // Teaser physique au mount : la page Analytics « pointe le bout de son nez ».
+  // Une seule fois par device, skip si reduced-motion.
+  useEffect(() => {
+    if (!isMobile || prefersReducedMotion) return;
+    let seen = false;
+    try { seen = localStorage.getItem('drc-pager-teaser-seen') === '1'; } catch { /* noop */ }
+    if (seen) return;
+    const el = trackRef.current;
+    if (!el) return;
+    const startId = window.setTimeout(() => {
+      // Animation keyframes : 0 → -40 → +18 → 0 sur ~900ms (easeOutBack via CSS)
+      const prevTransition = el.style.transition;
+      el.style.transition = 'transform 320ms cubic-bezier(.34,1.56,.64,1)';
+      el.style.setProperty('--pager-teaser', '-40px');
+      const t1 = window.setTimeout(() => {
+        el.style.setProperty('--pager-teaser', '18px');
+      }, 340);
+      const t2 = window.setTimeout(() => {
+        el.style.setProperty('--pager-teaser', '0px');
+      }, 640);
+      const t3 = window.setTimeout(() => {
+        el.style.transition = prevTransition;
+        try { localStorage.setItem('drc-pager-teaser-seen', '1'); } catch { /* noop */ }
+      }, 980);
+      // Cleanup nested timers via ref-bound array
+      (el as any).__teaserTimers = [t1, t2, t3];
+    }, 600);
+    return () => {
+      window.clearTimeout(startId);
+      const timers: number[] | undefined = (el as any).__teaserTimers;
+      if (timers) timers.forEach((t) => window.clearTimeout(t));
+      el.style.setProperty('--pager-teaser', '0px');
+    };
+  }, [isMobile, prefersReducedMotion]);
 
 
   const { isTestRoute } = useTestEnvironment();
@@ -358,20 +371,33 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
     );
   }
 
+  // Fluid iOS-style page indicators driven by dragProgress
+  const progressTowardNext = isMobile && isDragging
+    ? Math.max(0, Math.min(1, onAnalyticsPanel ? dragProgress : -dragProgress))
+    : 0;
+  const activeBarW = 16 - progressTowardNext * 10;
+  const inactiveBarW = 6 + progressTowardNext * 10;
+
   return (
-    <div ref={swipeRef} className="w-full h-full flex flex-col overflow-hidden relative">
+    <div ref={pagerRef} className="w-full h-full flex flex-col overflow-hidden relative" style={{ touchAction: isMobile ? 'pan-y' : undefined }}>
 
         <div className="lg:hidden fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50">
           <div className="flex flex-col items-center gap-1.5">
-            {/* Pagination dots — la dot inactive pulse tant que le hint n'a pas été vu */}
+            {/* Pagination bars — fluid stretch driven by dragProgress */}
             <div className="flex items-center gap-1.5" role="tablist" aria-label="Vue active">
               <span
-                aria-hidden="true"
-                className={`h-1.5 rounded-full transition-all duration-200 ${onAnalyticsPanel ? `bg-muted w-1.5 ${!hintShown ? 'animate-pulse' : ''}` : 'bg-primary w-4'}`}
+                role="tab"
+                aria-selected={!onAnalyticsPanel}
+                aria-label="Carte"
+                className="h-1.5 rounded-full transition-[width,background-color] duration-150"
+                style={{ width: `${onAnalyticsPanel ? inactiveBarW : activeBarW}px`, backgroundColor: onAnalyticsPanel ? 'hsl(var(--muted-foreground) / 0.4)' : 'hsl(var(--primary))' }}
               />
               <span
-                aria-hidden="true"
-                className={`h-1.5 rounded-full transition-all duration-200 ${onAnalyticsPanel ? 'bg-primary w-4' : `bg-muted w-1.5 ${!hintShown ? 'animate-pulse' : ''}`}`}
+                role="tab"
+                aria-selected={onAnalyticsPanel}
+                aria-label="Analytics"
+                className="h-1.5 rounded-full transition-[width,background-color] duration-150"
+                style={{ width: `${onAnalyticsPanel ? activeBarW : inactiveBarW}px`, backgroundColor: !onAnalyticsPanel ? 'hsl(var(--muted-foreground) / 0.4)' : 'hsl(var(--primary))' }}
               />
             </div>
             <div className="flex items-center justify-center gap-1.5 bg-background/95 backdrop-blur-sm border border-border/50 rounded-full px-2.5 py-1.5 shadow-lg">
@@ -387,21 +413,15 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
           </div>
         </div>
 
-        {/* Edge glow direction indicator (mobile only, pendant swipe valide) */}
-        {isMobile && isSwiping && Math.abs(swipeDelta) > 8 && !prefersReducedMotion && (
-          <div
-            aria-hidden="true"
-            className={`lg:hidden pointer-events-none absolute top-0 bottom-0 w-4 z-40 ${swipeDelta < 0 ? 'right-0 bg-gradient-to-l from-primary/20 to-transparent' : 'left-0 bg-gradient-to-r from-primary/20 to-transparent'}`}
-          />
-        )}
-
-        {/* Desktop: grille 2 colonnes | Mobile: track horizontal 200% qui slide */}
+        {/* Desktop: grille 2 colonnes | Mobile: track horizontal 200% piloté par CSS var pour 60fps */}
         <div className="flex-1 min-h-0 overflow-hidden p-1 sm:p-2 pb-14 lg:pb-2">
           <div
+            ref={trackRef}
             style={isMobile ? {
               width: '200%',
-              transform: `translateX(calc(${onAnalyticsPanel ? '-50%' : '0%'} + ${rubberBand}px))`,
-              transition: isSwiping ? 'none' : 'transform 280ms cubic-bezier(.2,.8,.2,1)',
+              transform: `translate3d(calc(${onAnalyticsPanel ? '-50%' : '0%'} + var(--pager-drag-x, 0px) + var(--pager-teaser, 0px)), 0, 0)`,
+              transition: isDragging ? 'none' : 'transform 320ms cubic-bezier(.22,.61,.36,1)',
+              willChange: 'transform',
             } : undefined}
             className="h-full flex flex-row lg:w-auto lg:grid lg:grid-cols-12 gap-1 sm:gap-2"
           >
