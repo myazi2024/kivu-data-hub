@@ -841,7 +841,7 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
                 points={polylineStr}
                 fill="none" stroke="transparent" strokeWidth={Math.max(20, roadWidthPx + 10)}
                 strokeLinecap="round" strokeLinejoin="round"
-                className={readOnly ? '' : mode === 'select' ? (isSelected ? (lot.isParentBoundary ? 'cursor-not-allowed' : 'cursor-move') : 'cursor-pointer') : 'cursor-crosshair'}
+                className={readOnly || mode !== 'select' ? '' : 'cursor-pointer'}
                 onClick={e => !readOnly && handleRoadClick(road.id, e)}
               />
               {/* Road fill polygon */}
