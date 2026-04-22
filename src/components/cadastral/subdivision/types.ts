@@ -150,9 +150,23 @@ export interface SubdivisionDocuments {
 }
 
 export interface RequesterInfo {
+  // Identité (alignée sur CurrentOwner du formulaire CCC)
+  legalStatus?: 'Personne physique' | 'Personne morale' | 'État' | '';
+  gender?: string;
   firstName: string;
   lastName: string;
-  middleName?: string;
+  middleName?: string; // post-nom
+  // Personne morale
+  entityType?: string;
+  entitySubType?: string;
+  entitySubTypeOther?: string;
+  rccmNumber?: string;
+  // État
+  rightType?: 'Concession' | 'Affectation' | '';
+  stateExploitedBy?: string;
+  // Commun
+  nationality?: 'Congolais (RD)' | 'Étranger' | '';
+  // Spécifique demande lotissement
   phone: string;
   email?: string;
   type: 'owner' | 'mandatary' | 'notary' | 'other';
