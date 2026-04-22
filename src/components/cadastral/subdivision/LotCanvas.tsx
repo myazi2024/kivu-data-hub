@@ -115,7 +115,7 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
   const [edgeContextMenu, setEdgeContextMenu] = useState<{ edge: EdgeInfo; screenPos: Point2D } | null>(null);
 
   // Viewport (zoom/pan)
-  const viewport = useCanvasViewport(CANVAS_W, CANVAS_H);
+  const viewport = useCanvasViewport(CANVAS_W, CANVAS_H, svgRef);
 
   // Drag system
   const drag = useCanvasDrag(lots, onUpdateLot, snapEnabled, showGrid);
@@ -348,13 +348,30 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     if (readOnly) return;
-    
-    // Space + drag = pan
+
+    // Space + drag OU bouton du milieu = pan forcé (tous modes)
     if (viewport.isSpaceDown() || e.button === 1) {
       e.preventDefault();
       viewport.startPan(e.clientX, e.clientY);
       return;
     }
+
+    // Mode select: clic-gauche-glisser sur le fond vide (svg ou groupe racine) = pan
+    if (mode === 'select' && e.button === 0) {
+      const target = e.target as Element;
+      const tag = target.tagName?.toLowerCase();
+      // Le fond = l'SVG lui-même, un <g> sans data-interactive, ou la grille / outline parent
+      const isBackground =
+        tag === 'svg' ||
+        target === e.currentTarget ||
+        (tag === 'g' && !target.closest('[data-interactive="true"]')) ||
+        target.hasAttribute('data-canvas-bg');
+      if (isBackground) {
+        viewport.startPan(e.clientX, e.clientY);
+        return;
+      }
+    }
+
     // drawLine/drawRoad: simple drag mode
     if ((mode === 'drawLine' || mode === 'drawRoad') && e.button === 0 && !lineDrawMultiMode && lineDrawPoints.length === 0) {
       const pos = getSvgPos(e);
@@ -627,10 +644,13 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
     return `${Math.round(dist)}m`;
   };
 
-  const svgCursor = viewport.isSpaceDown()
+  const svgCursor = viewport.isPanning()
+    ? 'grabbing'
+    : viewport.isSpaceDown()
     ? 'grab'
     : (mode === 'drawLine' || mode === 'drawRoad') ? 'crosshair'
     : mode === 'selectEdge' ? 'pointer'
+    : mode === 'select' ? 'grab'
     : 'default';
 
   const tooSmallLotIds = useMemo(() => {
@@ -657,20 +677,25 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
 
   return (
     <div ref={containerRef} className="relative" tabIndex={-1}>
-      {/* Zoom controls */}
-      <div className="absolute top-2 right-2 z-10 flex flex-col gap-1">
-        <button onClick={viewport.zoomIn} className="h-7 w-7 rounded-md bg-background/90 border shadow-sm flex items-center justify-center hover:bg-muted transition-colors" title="Zoom +">
+      {/* Zoom controls — placés à gauche pour ne pas chevaucher la barre d'outils flottante (à droite) */}
+      <div className="absolute top-2 left-2 z-20 flex flex-col gap-1 pointer-events-auto">
+        <button type="button" onClick={viewport.zoomIn} className="h-7 w-7 rounded-md bg-background/90 border shadow-sm flex items-center justify-center hover:bg-muted transition-colors" title="Zoom +">
           <ZoomIn className="h-3.5 w-3.5" />
         </button>
-        <button onClick={viewport.zoomOut} className="h-7 w-7 rounded-md bg-background/90 border shadow-sm flex items-center justify-center hover:bg-muted transition-colors" title="Zoom -">
+        <button type="button" onClick={viewport.zoomOut} className="h-7 w-7 rounded-md bg-background/90 border shadow-sm flex items-center justify-center hover:bg-muted transition-colors" title="Zoom -">
           <ZoomOut className="h-3.5 w-3.5" />
         </button>
-        <button onClick={viewport.resetView} className="h-7 w-7 rounded-md bg-background/90 border shadow-sm flex items-center justify-center hover:bg-muted transition-colors" title="Reset vue">
+        <button type="button" onClick={viewport.resetView} className="h-7 w-7 rounded-md bg-background/90 border shadow-sm flex items-center justify-center hover:bg-muted transition-colors" title="Reset vue">
           <Maximize2 className="h-3.5 w-3.5" />
         </button>
-        <button onClick={() => setSnapEnabled(!snapEnabled)} className={`h-7 w-7 rounded-md border shadow-sm flex items-center justify-center transition-colors ${snapEnabled ? 'bg-primary/15 border-primary/40 text-primary' : 'bg-background/90 hover:bg-muted'}`} title={snapEnabled ? 'Snap activé' : 'Snap désactivé'}>
+        <button type="button" onClick={() => setSnapEnabled(!snapEnabled)} className={`h-7 w-7 rounded-md border shadow-sm flex items-center justify-center transition-colors ${snapEnabled ? 'bg-primary/15 border-primary/40 text-primary' : 'bg-background/90 hover:bg-muted'}`} title={snapEnabled ? 'Snap activé' : 'Snap désactivé'}>
           <Magnet className="h-3.5 w-3.5" />
         </button>
+      </div>
+
+      {/* Légende contrôles */}
+      <div className="absolute bottom-2 left-2 z-10 px-2 py-1 rounded-md bg-background/80 border text-[10px] text-muted-foreground pointer-events-none select-none leading-tight">
+        Glisser : déplacer · Molette : zoom · Espace : pan forcé
       </div>
 
 
@@ -685,7 +710,6 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
         onMouseLeave={handleMouseUp}
         onClick={handleCanvasClick}
         onDoubleClick={handleCanvasDoubleClick}
-        onWheel={viewport.handleWheel}
         onContextMenu={e => e.preventDefault()}
       >
         {/* Grid */}
