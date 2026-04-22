@@ -764,11 +764,9 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
   const modeHint =
     canvasMode === 'drawLine'
       ? 'Cliquez sur le premier bord du lot, puis sur le second bord, pour le couper en deux.'
-      : canvasMode === 'drawRoad'
-      ? `Cliquez deux points pour tracer une voie (largeur ${roadPresetWidth} m).`
       : canvasMode === 'selectEdge'
       ? 'Cliquez sur une limite entre deux lots pour la convertir en voie.'
-      : 'Cliquez sur un lot pour le sélectionner. Glissez pour le déplacer.';
+      : 'Cliquez sur un lot pour le sélectionner. Glissez pour le déplacer. Désignez ensuite chaque zone comme lot ou voie dans le panneau de droite.';
 
   return (
     <TooltipProvider delayDuration={250}>
@@ -813,23 +811,6 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
             </TooltipContent>
           </Tooltip>
 
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant={canvasMode === 'drawRoad' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setCanvasMode(canvasMode === 'drawRoad' ? 'select' : 'drawRoad')}
-                className="gap-1.5 text-xs"
-                disabled={lots.length === 0}
-              >
-                <Route className="h-3.5 w-3.5" />
-                Tracer une voie
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom" className="max-w-[260px] text-xs">
-              Tracez une voie en cliquant deux points sur le plan. La largeur par défaut est de {roadPresetWidth} m (modifiable une fois la voie créée).
-            </TooltipContent>
-          </Tooltip>
         </div>
 
         <Separator orientation="vertical" className="h-8" />
