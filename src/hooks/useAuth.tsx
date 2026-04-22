@@ -67,13 +67,15 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       };
 
       // Fetch profile (with silent retry on PGRST002)
-      const { data: profileData, error: profileError } = await withSchemaRetry(() =>
+      const profileResult: any = await withSchemaRetry(() =>
         supabase
           .from('profiles')
           .select('*')
           .eq('user_id', userId)
           .maybeSingle() as any
       );
+      const profileData: any = profileResult.data;
+      const profileError: any = profileResult.error;
 
       if (profileError && profileError.code !== 'PGRST116') {
         console.error('Error fetching profile:', profileError);
@@ -82,12 +84,14 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       }
 
       // Fetch all roles from user_roles (with silent retry on PGRST002)
-      const { data: rolesData, error: rolesError } = await withSchemaRetry(() =>
+      const rolesResult: any = await withSchemaRetry(() =>
         supabase
           .from('user_roles')
           .select('role')
           .eq('user_id', userId) as any
       );
+      const rolesData: Array<{ role: string }> | null = rolesResult.data;
+      const rolesError: any = rolesResult.error;
 
       if (rolesError) {
         console.error('Error fetching roles:', rolesError);
