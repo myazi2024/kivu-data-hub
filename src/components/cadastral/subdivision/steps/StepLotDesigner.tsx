@@ -393,7 +393,6 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
     // Simple convex hull (gift wrapping)
     const hull = convexHull(allPoints);
 
-    const totalArea = lotsToMerge.reduce((s, l) => s + l.areaSqm, 0);
     const keepLot = lotsToMerge[0];
     const maxLotNum = lots.reduce((m, l) => Math.max(m, parseInt(l.lotNumber) || 0), 0);
 
@@ -402,14 +401,15 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
       id: `lot-${Date.now()}-merged`,
       lotNumber: String(maxLotNum + 1),
       vertices: hull,
-      areaSqm: totalArea,
+      areaSqm: computeArea(hull),
+      perimeterM: computePerim(hull),
       isParentBoundary: false,
     };
 
     setLots([...lots.filter(l => !ids.includes(l.id)), mergedLot]);
     setSelectedLotIds([]);
     setSelectedLotId(mergedLot.id);
-  }, [lots, setLots]);
+  }, [lots, setLots, computeArea, computePerim]);
 
   // Handle manual cut through a lot
   const handleCutLot = useCallback((lotId: string, cutStart: Point2D, cutEnd: Point2D) => {
