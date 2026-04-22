@@ -361,7 +361,7 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
     if (above.length > 0) result.push(above[0]);
     if (below.length > 0) result.push(below[0]);
     return result;
-  }, [lots, parentVertices, toScreen, fromScreen, sideLength]);
+  }, [lots, parentVertices, toScreen, fromScreen, metricFrame]);
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     if (readOnly) return;
