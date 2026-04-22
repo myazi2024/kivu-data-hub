@@ -1,53 +1,63 @@
 
 
-## Audit — Bloc « Identité du demandeur » (lotissement)
+## Plan — Auto-charger la parcelle mère comme lot par défaut (onglet Lots)
 
-### Conclusion globale
+### Objectif
 
-L'intégration est **structurellement saine**. Aucune régression bloquante détectée :
-- ✅ Types `RequesterInfo` cohérents partout (form, summary, admin, edge function)
-- ✅ Validation `isStepValid('parcel')` couvre tous les cas (physique / morale / État)
-- ✅ Edge function `subdivision-request` reçoit et persiste tous les nouveaux champs
-- ✅ Migration BD ajoute les colonnes nullable → rétrocompatible avec les anciennes demandes
-- ✅ Affichage admin (`AdminSubdivisionRequests`) et récap (`StepSummary`) gèrent les 3 statuts juridiques
-- ✅ `DRAFT_KEY_PREFIX = 'subdivision-draft-v2-'` invalide proprement les anciens drafts
-- ✅ Réutilisation de `useCCCFormPicklists` (mêmes picklists que CCC, fallbacks DB → hardcoded OK)
-- ✅ Aucun autre composant ne consomme `RequesterInfo` hors du module subdivision (pas d'effet de bord)
+Supprimer l'action manuelle « **+ Lot = parcelle entière** » et créer automatiquement un lot couvrant toute la parcelle mère dès l'arrivée de l'utilisateur dans l'onglet **Lots**, lorsque aucun lot n'existe encore.
 
-### 2 bugs mineurs à corriger
+### Constat
 
-#### Bug #1 — Hint « champs manquants » obsolète (impact UX)
+- L'utilisateur a déjà sélectionné/validé sa parcelle mère à l'étape précédente (onglet **Parcelle**).
+- À l'arrivée dans l'onglet **Lots**, il fait face à un canvas vide + une alerte « Commencez par créer le lot parcelle entière… » + un bouton dédié.
+- Cette étape est purement mécanique : il n'existe aucun cas réaliste où l'utilisateur ne voudrait *pas* partir de la parcelle entière comme base. C'est une friction sans valeur ajoutée.
+- La fonction `createInitialLot` dans `useSubdivisionForm.ts` est déjà robuste (vérifie `parentParcel`, `parentVertices`, n'écrase pas un lot existant).
 
-Fichier : `src/components/cadastral/SubdivisionRequestDialog.tsx` (lignes 117-124)
+### Livrables
 
-Le tooltip qui aide l'utilisateur lorsque le bouton « Suivant » est désactivé liste encore uniquement `prénom / nom / téléphone / motif`. Si l'utilisateur sélectionne « Personne morale » sans renseigner RCCM ou Type d'entité, le bouton est bloqué (validation OK) mais l'utilisateur ne sait pas pourquoi.
+#### 1. Auto-création à l'entrée de l'onglet (`useSubdivisionForm.ts`)
 
-**Fix** : enrichir `missingFields` avec `legalStatus`, `nationality`, `gender` (si physique), `entityType` + `rccmNumber` (si morale), `rightType` + `stateExploitedBy` (si État).
+Ajouter un `useEffect` qui appelle `createInitialLot()` automatiquement dès que :
+- `parentParcel` est défini
+- `parentVertices.length >= 3`
+- `lots.length === 0`
+- aucun draft existant n'a déjà restauré des lots (sinon on respecte la reprise de brouillon)
 
-#### Bug #2 — `firstName` écrasé par RCCM (effet secondaire indésirable)
+Ce hook s'exécute une seule fois (gardé par `lots.length === 0`), donc invisible pour l'utilisateur qui revient sur l'onglet après avoir découpé.
 
-Fichier : `RequesterIdentityBlock.tsx` ligne 291
+#### 2. Nettoyage UI — `StepLotDesigner.tsx`
 
-```tsx
-onChange={(e) => update({ rccmNumber: e.target.value, firstName: e.target.value })}
-```
+- Retirer le bouton conditionnel **« + Lot = parcelle entière »** (lignes 862-877) ainsi que la prop `onCreateInitialLot` (devenue inutile en UI).
+- Garder uniquement le bouton **« Ajouter un lot »** comme action permanente dans la zone Actions.
+- Mettre à jour l'alerte pédagogique (lignes 933-943) : remplacer « Commencez par créer le lot parcelle entière… » par « Votre parcelle est chargée comme lot unique. Utilisez **Diviser un lot** pour la découper. »
+- Mettre à jour le placeholder du panneau latéral (ligne 1230) : remplacer « Cliquez sur "Lot parcelle entière" puis tracez… » par « Tracez une ligne entre deux bords pour diviser le lot. »
 
-Le RCCM est dupliqué dans `firstName` à chaque saisie. Côté CCC, c'est intentionnel (compat affichage), mais ici l'edge function persiste `requester_first_name = RCCM` → données incohérentes en BD pour les personnes morales (le récap admin affiche déjà correctement « Dénomination », donc cette duplication n'apporte rien et pollue la colonne).
+#### 3. Nettoyage de l'API parent (`SubdivisionRequestDialog.tsx`)
 
-**Fix** : retirer `firstName: e.target.value` ; pour les personnes morales, `firstName` reste vide et `lastName` porte la dénomination (déjà géré dans `StepSummary` et admin).
+- Retirer la prop `onCreateInitialLot={form.handleAutoSubdivide}` (ligne 240) — devenue interne.
 
-Idem pour le bloc État ligne 345 : `firstName: 'État'` peut être laissé (sentinelle utile à l'affichage), mais à documenter.
+#### 4. Conserver `createInitialLot` dans le hook
 
-### Vérifications
+- La fonction reste exportée comme `handleAutoSubdivide` au cas où d'autres flux (ex. reset, bouton « Repartir de zéro » futur) en auraient besoin, mais elle n'est plus exposée côté UI.
 
-1. Ouvrir le dialog lotissement, choisir « Personne morale » sans remplir RCCM → vérifier que le tooltip mentionne « RCCM ».
-2. Saisir un RCCM → vérifier en BD (`requester_first_name`) qu'il reste vide (et non = RCCM).
-3. Soumettre une demande complète pour les 3 statuts → vérifier l'affichage admin.
+### Détails techniques
 
-### Fichiers à modifier
+- **Reprise de brouillon** : le brouillon (`subdivision-draft-v2-…`) restaure d'abord les lots existants ; le `useEffect` d'auto-création ne se déclenche que si `lots.length === 0` *après* hydratation, donc pas de double création.
+- **Historique undo/redo** : la création initiale passe par `pushHistory`, donc l'utilisateur peut « Annuler » s'il veut revenir à un canvas vide (cohérent avec le comportement actuel du bouton).
+- **Pas d'effet sur l'admin / edge function** : la modification est purement front, aucune migration BD.
 
-- `src/components/cadastral/SubdivisionRequestDialog.tsx` (enrichir `missingFields`)
-- `src/components/cadastral/subdivision/RequesterIdentityBlock.tsx` (retirer la duplication `firstName ← rccmNumber`)
+### Vérification
 
-Aucune migration BD nécessaire.
+1. Compléter l'onglet Parcelle, passer à l'onglet Lots → un lot vert couvrant toute la parcelle est déjà présent.
+2. L'alerte indique « Utilisez Diviser un lot pour la découper ».
+3. Le bouton « Lot = parcelle entière » a disparu ; seul « Ajouter un lot » reste.
+4. Découper le lot → toujours fonctionnel.
+5. Recharger la page (brouillon) → les lots persistés sont restaurés sans duplication.
+6. Annuler après l'auto-création → canvas vide, possibilité de redo.
+
+### Fichiers modifiés
+
+- `src/components/cadastral/subdivision/hooks/useSubdivisionForm.ts` (ajout `useEffect`)
+- `src/components/cadastral/subdivision/steps/StepLotDesigner.tsx` (suppression bouton + textes)
+- `src/components/cadastral/SubdivisionRequestDialog.tsx` (suppression prop)
 
