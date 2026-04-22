@@ -66,6 +66,8 @@ const tabComponents: Record<string, React.LazyExoticComponent<any>> = {
   'land-title-requests': lazy(() => import('@/components/admin/AdminLandTitleRequests')),
   'mutations': lazy(() => import('@/components/admin/AdminMutationRequests')),
   'mutation-fees-config': lazy(() => import('@/components/admin/AdminMutationFeesConfig')),
+  'subdivision-hub': lazy(() => import('@/components/admin/AdminSubdivisionHub')),
+  // Legacy direct routes kept for backward compatibility (deep links)
   'subdivision-requests': lazy(() => import('@/components/admin/AdminSubdivisionRequests')),
   'subdivision-fees-config': lazy(() => import('@/components/admin/AdminSubdivisionFeesConfig')),
   'subdivision-zoning-rules': lazy(() => import('@/components/admin/AdminSubdivisionZoningRules')),

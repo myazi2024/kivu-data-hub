@@ -8,6 +8,7 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { Plus, Pencil, Trash2, DollarSign, Loader2, Calculator } from 'lucide-react';
@@ -35,6 +36,7 @@ const AdminSubdivisionFeesConfig: React.FC = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<RateConfig | null>(null);
   const [saving, setSaving] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   // Fee calculator
   const [calc, setCalc] = useState({ rateId: '', lotCount: '5', avgLotSqm: '200', roadLengthM: '0', commonSpaceSqm: '0' });
@@ -132,15 +134,18 @@ const AdminSubdivisionFeesConfig: React.FC = () => {
     setSaving(false);
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Supprimer ce tarif ?')) return;
-    const { error } = await supabase.from('subdivision_rate_config' as any).delete().eq('id', id);
+  const handleDelete = (id: string) => setDeleteId(id);
+
+  const confirmDelete = async () => {
+    if (!deleteId) return;
+    const { error } = await supabase.from('subdivision_rate_config' as any).delete().eq('id', deleteId);
     if (error) {
       toast.error('Erreur lors de la suppression');
     } else {
       toast.success('Tarif supprimé');
       fetchRates();
     }
+    setDeleteId(null);
   };
 
   const toggleActive = async (r: RateConfig) => {
@@ -376,6 +381,23 @@ const AdminSubdivisionFeesConfig: React.FC = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!deleteId} onOpenChange={(o) => !o && setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Supprimer ce tarif ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Cette action est définitive et ne peut pas être annulée.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

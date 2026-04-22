@@ -8,6 +8,7 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
@@ -52,6 +53,7 @@ const AdminSubdivisionZoningRules: React.FC = () => {
   const [editing, setEditing] = useState<ZoningRule | null>(null);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState(emptyForm);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const fetchRules = async () => {
     setLoading(true);
@@ -137,11 +139,14 @@ const AdminSubdivisionZoningRules: React.FC = () => {
     setSaving(false);
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Supprimer cette règle ?')) return;
-    const { error } = await (supabase as any).from('subdivision_zoning_rules').delete().eq('id', id);
+  const handleDelete = (id: string) => setDeleteId(id);
+
+  const confirmDelete = async () => {
+    if (!deleteId) return;
+    const { error } = await (supabase as any).from('subdivision_zoning_rules').delete().eq('id', deleteId);
     if (error) toast.error('Erreur lors de la suppression');
     else { toast.success('Règle supprimée'); fetchRules(); }
+    setDeleteId(null);
   };
 
   const toggleActive = async (r: ZoningRule) => {
@@ -309,6 +314,23 @@ const AdminSubdivisionZoningRules: React.FC = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!deleteId} onOpenChange={(o) => !o && setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Supprimer cette règle ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Cette action est définitive et ne peut pas être annulée.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
