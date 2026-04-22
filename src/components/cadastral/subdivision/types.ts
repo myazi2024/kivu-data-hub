@@ -155,7 +155,7 @@ export interface RequesterInfo {
   isOwner: boolean;
 }
 
-export type SubdivisionStep = 'parcel' | 'designer' | 'plan' | 'summary';
+export type SubdivisionStep = 'parcel' | 'designer' | 'plan' | 'documents' | 'summary';
 
 // Parcel side info
 export interface ParcelSideInfo {

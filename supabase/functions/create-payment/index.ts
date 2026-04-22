@@ -10,7 +10,7 @@ const corsHeaders = {
 interface PaymentRequest {
   items?: string[];
   invoice_id?: string;
-  payment_type: 'publications' | 'cadastral_service' | 'expertise_fee' | 'certificate_access' | 'mutation_request' | 'permit_request' | 'mortgage_cancellation' | 'land_title_request';
+  payment_type: 'publications' | 'cadastral_service' | 'expertise_fee' | 'certificate_access' | 'mutation_request' | 'permit_request' | 'mortgage_cancellation' | 'land_title_request' | 'subdivision_request';
   amount_usd?: number;
 }
 
@@ -218,6 +218,36 @@ Deno.serve(async (req) => {
       orderMetadata.permit_request_id = invoice_id;
       orderMetadata.invoice_id = invoice_id;
     }
+    // Handle Subdivision Request payment
+    else if (payment_type === 'subdivision_request' && invoice_id && amount_usd) {
+      const { data: subRequest, error: subError } = await supabase
+        .from("subdivision_requests")
+        .select("id, reference_number, parcel_number, total_amount_usd, user_id")
+        .eq("id", invoice_id)
+        .eq("user_id", user.id)
+        .single();
+
+      if (subError || !subRequest) {
+        throw new Error("Invalid subdivision request");
+      }
+
+      lineItems = [{
+        price_data: {
+          currency: "usd",
+          product_data: {
+            name: `Demande de lotissement ${subRequest.reference_number}`,
+            description: `Frais de soumission — parcelle ${subRequest.parcel_number}`,
+          },
+          unit_amount: Math.round(Number(subRequest.total_amount_usd) * 100),
+        },
+        quantity: 1,
+      }];
+
+      totalAmount = Math.round(Number(subRequest.total_amount_usd) * 100);
+      orderMetadata.subdivision_request_id = invoice_id;
+      orderMetadata.invoice_id = invoice_id;
+      orderMetadata.parcel_number = subRequest.parcel_number;
+    }
     // Handle Mortgage Cancellation payment
     else if (payment_type === 'mortgage_cancellation' && invoice_id && amount_usd) {
       lineItems = [{
@@ -291,7 +321,7 @@ Deno.serve(async (req) => {
     let successUrl: string;
     let cancelUrl: string;
 
-    if (payment_type === 'expertise_fee' || payment_type === 'certificate_access' || payment_type === 'mutation_request' || payment_type === 'permit_request' || payment_type === 'mortgage_cancellation' || payment_type === 'land_title_request') {
+    if (payment_type === 'expertise_fee' || payment_type === 'certificate_access' || payment_type === 'mutation_request' || payment_type === 'permit_request' || payment_type === 'mortgage_cancellation' || payment_type === 'land_title_request' || payment_type === 'subdivision_request') {
       successUrl = `${origin}/cadastral-map?payment=success&type=${payment_type}&session_id={CHECKOUT_SESSION_ID}`;
       cancelUrl = `${origin}/cadastral-map?payment=cancelled`;
     } else if (payment_type === 'cadastral_service') {
@@ -363,7 +393,7 @@ Deno.serve(async (req) => {
           mutation_request_id: invoice_id,
         },
       });
-    } else if ((payment_type === 'land_title_request' || payment_type === 'permit_request' || payment_type === 'mortgage_cancellation') && invoice_id) {
+    } else if ((payment_type === 'land_title_request' || payment_type === 'permit_request' || payment_type === 'mortgage_cancellation' || payment_type === 'subdivision_request') && invoice_id) {
       await supabase.from("payment_transactions").insert({
         user_id: user.id,
         invoice_id,
