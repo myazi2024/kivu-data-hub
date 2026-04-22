@@ -11,8 +11,9 @@ import { Separator } from '@/components/ui/separator';
 import {
   Plus, Trash2, Undo2, Redo2, AlertTriangle,
   Info, Route,
-  MousePointer, Pencil, Sticker, Shield, TreePine, Ruler
+  MousePointer, Scissors, Shield, TreePine
 } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { 
   SubdivisionLot, SubdivisionRoad, SubdivisionCommonSpace, SubdivisionServitude,
   ParentParcelInfo, LOT_COLORS, USAGE_LABELS, ROAD_SURFACE_LABELS, 
@@ -759,91 +760,152 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
   const parentArea = parentParcel?.areaSqm || 0;
   const coveragePercent = parentArea > 0 ? Math.round(totalArea / parentArea * 100) : 0;
 
+  // Contextual hint shown under the canvas, depends on active tool
+  const modeHint =
+    canvasMode === 'drawLine'
+      ? 'Cliquez sur le premier bord du lot, puis sur le second bord, pour le couper en deux.'
+      : canvasMode === 'drawRoad'
+      ? `Cliquez deux points pour tracer une voie (largeur ${roadPresetWidth} m).`
+      : canvasMode === 'selectEdge'
+      ? 'Cliquez sur une limite entre deux lots pour la convertir en voie.'
+      : 'Cliquez sur un lot pour le sélectionner. Glissez pour le déplacer.';
+
   return (
+    <TooltipProvider delayDuration={250}>
     <div className="space-y-3">
-      {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-2">
-        {/* Mode buttons */}
-        <Button
-          variant={canvasMode === 'select' ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => setCanvasMode('select')}
-          className="gap-1 text-xs"
-          title="Sélectionner et déplacer"
-        >
-          <MousePointer className="h-3.5 w-3.5" />
-          Sélection
-        </Button>
-        <Button
-          variant={canvasMode === 'drawLine' ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => setCanvasMode(canvasMode === 'drawLine' ? 'select' : 'drawLine')}
-          className="gap-1 text-xs"
-          disabled={lots.length === 0}
-          title="Tracer une ligne pour diviser un lot"
-        >
-          <Pencil className="h-3.5 w-3.5" />
-          Tracer ligne
-        </Button>
-        <Button
-          variant={canvasMode === 'drawRoad' ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => setCanvasMode(canvasMode === 'drawRoad' ? 'select' : 'drawRoad')}
-          className="gap-1 text-xs"
-          disabled={lots.length === 0}
-          title="Tracer une voie directement"
-        >
-          <Route className="h-3.5 w-3.5" />
-          Tracer voie
-        </Button>
-        <Button
-          variant={canvasMode === 'clipart' ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => setCanvasMode(canvasMode === 'clipart' ? 'select' : 'clipart')}
-          className="gap-1 text-xs"
-          title="Placer des cliparts sur les lots"
-        >
-          <Sticker className="h-3.5 w-3.5" />
-          Cliparts
-        </Button>
+      {/* Toolbar grand public — 3 zones : Outils · Actions rapides · État */}
+      <div className="flex flex-wrap items-center gap-3 rounded-lg border bg-card p-2">
+        {/* Zone 1 — Outils */}
+        <div className="flex items-center gap-1.5">
+          <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mr-1">Outils</span>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant={canvasMode === 'select' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setCanvasMode('select')}
+                className="gap-1.5 text-xs"
+              >
+                <MousePointer className="h-3.5 w-3.5" />
+                Sélection
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="max-w-[220px] text-xs">
+              Cliquez sur un lot pour le sélectionner. Glissez-le pour le déplacer ou modifiez ses détails dans le panneau de droite.
+            </TooltipContent>
+          </Tooltip>
 
-        <Separator orientation="vertical" className="h-6" />
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant={canvasMode === 'drawLine' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setCanvasMode(canvasMode === 'drawLine' ? 'select' : 'drawLine')}
+                className="gap-1.5 text-xs"
+                disabled={lots.length === 0}
+              >
+                <Scissors className="h-3.5 w-3.5" />
+                Diviser un lot
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="max-w-[260px] text-xs">
+              Coupez un lot en deux : cliquez sur un premier bord, puis sur le bord opposé. Le lot sera automatiquement séparé en deux nouveaux lots.
+            </TooltipContent>
+          </Tooltip>
 
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleAddEmptyLot}
-          className="gap-1 text-xs"
-          title="Ajouter un lot vide rectangulaire"
-        >
-          <Plus className="h-3.5 w-3.5" />
-          Lot
-        </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant={canvasMode === 'drawRoad' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setCanvasMode(canvasMode === 'drawRoad' ? 'select' : 'drawRoad')}
+                className="gap-1.5 text-xs"
+                disabled={lots.length === 0}
+              >
+                <Route className="h-3.5 w-3.5" />
+                Tracer une voie
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="max-w-[260px] text-xs">
+              Tracez une voie en cliquant deux points sur le plan. La largeur par défaut est de {roadPresetWidth} m (modifiable une fois la voie créée).
+            </TooltipContent>
+          </Tooltip>
+        </div>
 
-        {lots.length === 0 && onCreateInitialLot && (
-          <Button
-            size="sm"
-            onClick={onCreateInitialLot}
-            className="gap-1 text-xs"
-            title="Créer le lot initial couvrant toute la parcelle"
-          >
-            <Plus className="h-3.5 w-3.5" />
-            Lot parcelle entière
-          </Button>
-        )}
+        <Separator orientation="vertical" className="h-8" />
 
-        <Separator orientation="vertical" className="h-6" />
+        {/* Zone 2 — Actions rapides */}
+        <div className="flex items-center gap-1.5">
+          <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mr-1">Actions</span>
+          {lots.length === 0 && onCreateInitialLot ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size="sm"
+                  onClick={onCreateInitialLot}
+                  className="gap-1.5 text-xs"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  Lot = parcelle entière
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="max-w-[260px] text-xs">
+                Crée un premier lot couvrant toute votre parcelle. C'est le point de départ recommandé : ensuite, vous pouvez le diviser.
+              </TooltipContent>
+            </Tooltip>
+          ) : (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleAddEmptyLot}
+                  className="gap-1.5 text-xs"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  Ajouter un lot
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="max-w-[240px] text-xs">
+                Ajoute un petit lot rectangulaire vide au centre de la parcelle. Vous pourrez ensuite le déplacer et le redimensionner.
+              </TooltipContent>
+            </Tooltip>
+          )}
 
-        <Button variant="outline" size="sm" onClick={onUndo} disabled={!canUndo} className="gap-1 text-xs">
-          <Undo2 className="h-3.5 w-3.5" /> Annuler
-        </Button>
-        <Button variant="outline" size="sm" onClick={onRedo} disabled={!canRedo} className="gap-1 text-xs">
-          <Redo2 className="h-3.5 w-3.5" /> Rétablir
-        </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span>
+                <Button variant="outline" size="sm" onClick={onUndo} disabled={!canUndo} className="gap-1.5 text-xs">
+                  <Undo2 className="h-3.5 w-3.5" /> Annuler
+                </Button>
+              </span>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="text-xs">Annule la dernière modification</TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span>
+                <Button variant="outline" size="sm" onClick={onRedo} disabled={!canRedo} className="gap-1.5 text-xs">
+                  <Redo2 className="h-3.5 w-3.5" /> Rétablir
+                </Button>
+              </span>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="text-xs">Rétablit la modification annulée</TooltipContent>
+          </Tooltip>
+        </div>
+
         <div className="flex-1" />
-        <Badge variant="outline" className="text-[10px]">
-          {lots.length} lot{lots.length !== 1 ? 's' : ''} • {coveragePercent}% couvert
-        </Badge>
+
+        {/* Zone 3 — État */}
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className="text-[10px]">
+            {lots.length} lot{lots.length !== 1 ? 's' : ''}
+          </Badge>
+          <Badge variant="outline" className="text-[10px]">
+            {coveragePercent}% couvert
+          </Badge>
+        </div>
       </div>
 
       {/* Guide when no lots */}
@@ -852,7 +914,7 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
           <AlertDescription className="text-xs flex items-center gap-2">
             <Info className="h-4 w-4 text-primary flex-shrink-0" />
             <span>
-              Commencez par créer le <strong>lot parcelle entière</strong>, puis utilisez l'outil <strong>Tracer ligne</strong> pour le diviser en plusieurs lots.
+              Commencez par créer le <strong>lot parcelle entière</strong>, puis utilisez l'outil <strong>Diviser un lot</strong> pour le découper en plusieurs lots.
             </span>
           </AlertDescription>
         </Alert>
@@ -898,6 +960,11 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
                 onUndo={onUndo}
                 onRedo={onRedo}
               />
+              {/* Hint contextuel selon l'outil actif */}
+              <p className="text-[11px] text-muted-foreground text-center px-2 py-1.5 border-t bg-muted/20">
+                <Info className="h-3 w-3 inline mr-1 -mt-0.5 opacity-60" />
+                {modeHint}
+              </p>
               {lots.length > 1 && selectedLotIds.length === 0 && (
                 <p className="text-[10px] text-muted-foreground text-center py-1">
                   💡 Ctrl+clic (⌘+clic sur Mac) pour sélectionner plusieurs lots et les fusionner
@@ -1240,6 +1307,7 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
         </div>
       </div>
     </div>
+    </TooltipProvider>
   );
 };
 

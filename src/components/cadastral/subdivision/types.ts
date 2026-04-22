@@ -7,13 +7,8 @@ export interface LotAnnotation {
   scale?: number;
 }
 
-export const CLIPART_TYPES: { type: LotAnnotation['type']; label: string; icon: string }[] = [
-  { type: 'circle', label: 'Cercle', icon: 'Circle' },
-  { type: 'square', label: 'Carré', icon: 'Square' },
-  { type: 'rectangle', label: 'Rectangle', icon: 'RectangleHorizontal' },
-  { type: 'trapeze', label: 'Trapèze', icon: 'Triangle' },
-  { type: 'polygon', label: 'Polygone', icon: 'Hexagon' },
-];
+// CLIPART_TYPES removed — clipart feature deprecated.
+// LotAnnotation type kept for backward compatibility with existing local drafts.
 
 export interface SubdivisionLot {
   id: string;
