@@ -175,8 +175,103 @@ export function AdminSubdivisionRequests() {
     setShowActionDialog(true);
   };
 
-  // Save individual lots to subdivision_lots table on approval
-  const saveApprovedLots = async (request: SubdivisionRequest) => {
+  // Open a stored cadastral-documents path with a short-lived signed URL
+  const openDocument = async (path: string | null | undefined) => {
+    if (!path) {
+      toast({ title: 'Document indisponible', variant: 'destructive' });
+      return;
+    }
+    // Backward compat: legacy rows may still hold a full public URL — open as-is
+    if (/^https?:\/\//i.test(path)) {
+      window.open(path, '_blank', 'noopener,noreferrer');
+      return;
+    }
+    const { data, error } = await supabase.storage
+      .from('cadastral-documents')
+      .createSignedUrl(path, 60 * 60);
+    if (error || !data?.signedUrl) {
+      toast({ title: 'Aperçu indisponible', description: error?.message, variant: 'destructive' });
+      return;
+    }
+    window.open(data.signedUrl, '_blank', 'noopener,noreferrer');
+  };
+
+  const submitAction = async () => {
+    if (!selectedRequest || !actionType || !user) return;
+    setProcessing(true);
+    try {
+      // Validate inputs locally for fast feedback
+      if (actionType === 'approve') {
+        const fee = parseFloat(processingFee);
+        if (isNaN(fee) || fee < 0) {
+          toast({ title: 'Erreur', description: 'Montant invalide.', variant: 'destructive' });
+          setProcessing(false);
+          return;
+        }
+      }
+      if (actionType === 'reject' && !rejectionReason.trim()) {
+        toast({ title: 'Erreur', description: 'Motif de rejet requis.', variant: 'destructive' });
+        setProcessing(false);
+        return;
+      }
+      if (actionType === 'return' && !returnReason.trim()) {
+        toast({ title: 'Erreur', description: 'Motif du renvoi requis.', variant: 'destructive' });
+        setProcessing(false);
+        return;
+      }
+
+      // Atomic edge: status + lots + parcel flag + notification, with rollback on lot failure
+      const { data, error } = await supabase.functions.invoke('approve-subdivision', {
+        body: {
+          request_id: selectedRequest.id,
+          action: actionType,
+          processing_fee_usd: actionType === 'approve' ? parseFloat(processingFee) : undefined,
+          rejection_reason: actionType === 'reject' ? rejectionReason : (actionType === 'return' ? returnReason : undefined),
+          processing_notes: processingNotes || undefined,
+        },
+      });
+      if (error) throw error;
+
+      // On approve+immediate (status === 'approved'), generate certificate
+      if (actionType === 'approve' && data?.status === 'approved') {
+        const fullName = `${selectedRequest.requester_first_name} ${selectedRequest.requester_last_name}`;
+        const totalAmount = (selectedRequest.submission_fee_usd || 0) + parseFloat(processingFee);
+        try {
+          await generateAndUploadCertificate(
+            'lotissement',
+            {
+              referenceNumber: selectedRequest.reference_number,
+              recipientName: fullName,
+              parcelNumber: selectedRequest.parcel_number,
+              issueDate: new Date().toISOString(),
+              approvedBy: 'Bureau d\'Information Cadastrale',
+              additionalData: { requestId: selectedRequest.id },
+            },
+            [
+              { label: 'Nombre de lots:', value: String(selectedRequest.lots_data?.length || 0) },
+              { label: 'Surface totale:', value: `${selectedRequest.parent_parcel_area_sqm} m²` },
+              { label: 'Frais:', value: `$${totalAmount.toFixed(2)}` },
+            ],
+            user.id
+          );
+        } catch (certErr) {
+          console.warn('Certificate generation failed (non-blocking):', certErr);
+        }
+      }
+
+      const actionLabels = { approve: 'approuvée', reject: 'rejetée', return: 'renvoyée' };
+      toast({
+        title: `Demande ${actionLabels[actionType]}`,
+        description: `${selectedRequest.reference_number} traitée.`,
+      });
+      setShowActionDialog(false);
+      fetchRequests();
+    } catch (err: any) {
+      toast({ title: 'Erreur', description: err.message, variant: 'destructive' });
+    } finally {
+      setProcessing(false);
+    }
+  };
     const lotsData = request.lots_data || [];
     const parentGps = request.parent_parcel_gps_coordinates;
     
