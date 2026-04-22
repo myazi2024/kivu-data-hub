@@ -68,6 +68,7 @@ const tabComponents: Record<string, React.LazyExoticComponent<any>> = {
   'mutation-fees-config': lazy(() => import('@/components/admin/AdminMutationFeesConfig')),
   'subdivision-requests': lazy(() => import('@/components/admin/AdminSubdivisionRequests')),
   'subdivision-fees-config': lazy(() => import('@/components/admin/AdminSubdivisionFeesConfig')),
+  'subdivision-zoning-rules': lazy(() => import('@/components/admin/AdminSubdivisionZoningRules')),
   'expertise-requests': lazy(() => import('@/components/admin/AdminExpertiseRequests')),
   'expertise-fees-config': lazy(() => import('@/components/admin/AdminExpertiseFeesConfig')),
   'certificates': lazy(() => import('@/components/admin/AdminCertificates')),

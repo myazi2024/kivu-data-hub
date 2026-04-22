@@ -6070,6 +6070,57 @@ export type Database = {
           },
         ]
       }
+      subdivision_zoning_rules: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          location_name: string
+          max_lot_area_sqm: number | null
+          max_lots_per_request: number | null
+          min_common_space_pct: number
+          min_front_road_m: number
+          min_lot_area_sqm: number
+          min_road_width_m: number
+          notes: string | null
+          recommended_road_width_m: number
+          section_type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          location_name?: string
+          max_lot_area_sqm?: number | null
+          max_lots_per_request?: number | null
+          min_common_space_pct?: number
+          min_front_road_m?: number
+          min_lot_area_sqm?: number
+          min_road_width_m?: number
+          notes?: string | null
+          recommended_road_width_m?: number
+          section_type: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          location_name?: string
+          max_lot_area_sqm?: number | null
+          max_lots_per_request?: number | null
+          min_common_space_pct?: number
+          min_front_road_m?: number
+          min_lot_area_sqm?: number
+          min_road_width_m?: number
+          notes?: string | null
+          recommended_road_width_m?: number
+          section_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       suggestive_picklist_values: {
         Row: {
           created_at: string
@@ -7477,6 +7528,10 @@ export type Database = {
         Returns: Json
       }
       validate_reseller_code: { Args: { code_input: string }; Returns: boolean }
+      validate_subdivision_against_rules: {
+        Args: { _request_id: string }
+        Returns: Json
+      }
       verify_document_by_code: { Args: { p_code: string }; Returns: Json }
       verify_expertise_certificate: {
         Args: { p_reference: string }
