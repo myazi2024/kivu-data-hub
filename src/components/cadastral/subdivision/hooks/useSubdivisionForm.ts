@@ -7,6 +7,7 @@ import {
   SubdivisionStep, SubdivisionPlanData, Point2D, FeeBreakdown, SubdivisionDocuments
 } from '../types';
 import { validateSubdivision, ValidationResult, gpsToNormalized, polygonArea, polygonPerimeter, snapNearbyLotVertices } from '../utils/geometry';
+import { buildMetricFrame, polygonPerimeterM, polygonAreaSqmAccurate, MetricFrame } from '../utils/metrics';
 
 const DRAFT_KEY_PREFIX = 'subdivision-draft-v2-';
 
@@ -275,6 +276,11 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
     return parentParcel.gpsCoordinates.map(gps => gpsToNormalized(gps, parentParcel.gpsCoordinates));
   }, [parentParcel]);
 
+  // Anisotropic metric frame: source of truth for all length/area calculations.
+  const metricFrame = useMemo<MetricFrame>(() => {
+    return buildMetricFrame(parentParcel?.gpsCoordinates, parentParcel?.areaSqm || 0);
+  }, [parentParcel]);
+
   // History management
   const pushHistory = useCallback((newLots: SubdivisionLot[]) => {
     const newHistory = historyRef.current.slice(0, historyIndexRef.current + 1);
@@ -306,14 +312,13 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
   const createInitialLot = useCallback(() => {
     if (!parentParcel || !parentVertices || parentVertices.length < 3) return;
     if (lots.length > 0) return;
-    
-    const sideLength = Math.sqrt(parentParcel.areaSqm);
+
     const fullLot: SubdivisionLot = {
       id: `lot-1`,
       lotNumber: '1',
       vertices: [...parentVertices],
-      areaSqm: parentParcel.areaSqm,
-      perimeterM: Math.round(polygonPerimeter(parentVertices, sideLength)),
+      areaSqm: Math.round(parentParcel.areaSqm),
+      perimeterM: Math.round(polygonPerimeterM(parentVertices, metricFrame)),
       intendedUse: 'residential',
       isBuilt: false,
       hasFence: false,
@@ -322,7 +327,7 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
     };
     pushHistory([fullLot]);
     setLots([fullLot]);
-  }, [parentParcel, parentVertices, lots.length, pushHistory]);
+  }, [parentParcel, parentVertices, lots.length, pushHistory, metricFrame]);
 
   // Auto-create initial lot (= entire parent parcel) when entering the designer step
   // with an empty canvas. Skipped if a draft restored existing lots.
@@ -536,6 +541,8 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
     parentParcel, loadingParcel, setParentParcel,
     // Parent vertices (normalized shape)
     parentVertices,
+    // Anisotropic metric frame for accurate measurements
+    metricFrame,
     // Requester
     requester, setRequester,
     // Plan data

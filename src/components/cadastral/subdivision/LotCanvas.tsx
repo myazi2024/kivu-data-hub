@@ -1,10 +1,11 @@
 import React, { useRef, useState, useCallback, useEffect, useMemo } from 'react';
-import { SubdivisionLot, SubdivisionRoad, LOT_COLORS, USAGE_LABELS, Point2D, LotAnnotation } from './types';
-import { getAllRoadIntersectionPoints } from './utils/geometry';
+import { SubdivisionLot, SubdivisionRoad, SubdivisionCommonSpace, COMMON_SPACE_COLORS, COMMON_SPACE_LABELS, LOT_COLORS, USAGE_LABELS, Point2D, LotAnnotation } from './types';
+import { getAllRoadIntersectionPoints, polygonCentroid } from './utils/geometry';
 import { useCanvasViewport } from './hooks/useCanvasViewport';
 import { useCanvasDrag } from './hooks/useCanvasDrag';
 import { useCanvasKeyboard } from './hooks/useCanvasKeyboard';
 import { ZoomIn, ZoomOut, Maximize2, Magnet } from 'lucide-react';
+import { MetricFrame, buildMetricFrame, edgeLengthM, polygonAreaSqmAccurate, polygonPerimeterM, formatMeters, formatSqm } from './utils/metrics';
 
 interface ParcelSide {
   length?: number | string;
@@ -27,14 +28,16 @@ export interface EdgeInfo {
 interface LotCanvasProps {
   lots: SubdivisionLot[];
   roads: SubdivisionRoad[];
+  commonSpaces?: SubdivisionCommonSpace[];
   parentAreaSqm: number;
   parentVertices?: Point2D[];
   parentSides?: ParcelSide[];
+  parentGpsCoordinates?: { lat: number; lng: number }[];
   selectedLotId: string | null;
   selectedLotIds?: string[];
   onSelectLot: (id: string | null) => void;
   onToggleLotSelection?: (id: string) => void;
-  onUpdateLot: (id: string, vertices: Point2D[]) => void;
+  onUpdateLot: (id: string, vertices: Point2D[], areaSqm?: number, perimeterM?: number) => void;
   onUpdateLotAnnotations?: (id: string, annotations: LotAnnotation[]) => void;
   onDeleteLot?: (id: string) => void;
   onDuplicateLot?: (id: string) => void;
@@ -55,6 +58,7 @@ interface LotCanvasProps {
   showLotNumbers?: boolean;
   showAreas?: boolean;
   showRoads?: boolean;
+  showCommonSpaces?: boolean;
   showNorth?: boolean;
   showLegend?: boolean;
   showScale?: boolean;
@@ -72,12 +76,13 @@ const CANVAS_H = 400;
 const PADDING = 30;
 
 const LotCanvas: React.FC<LotCanvasProps> = ({
-  lots, roads, parentAreaSqm, parentVertices, parentSides, selectedLotId, selectedLotIds = [], onSelectLot, onToggleLotSelection, onUpdateLot,
+  lots, roads, commonSpaces = [], parentAreaSqm, parentVertices, parentSides, parentGpsCoordinates,
+  selectedLotId, selectedLotIds = [], onSelectLot, onToggleLotSelection, onUpdateLot,
   onUpdateLotAnnotations, onDeleteLot, onDuplicateLot,
   selectedRoadId, onSelectRoad, onDeleteRoad, onUpdateRoad, onSplitLot, onMergeLots,
   onCutLot, onFinishRoadDraw, onConvertEdgeToRoad, mode = 'select', onModeChange,
   showGrid = true, onToggleGrid, showDimensions = true, showLotNumbers = true,
-  showAreas = true, showRoads = true, showNorth = true,
+  showAreas = true, showRoads = true, showCommonSpaces = true, showNorth = true,
   showLegend = false, showScale = true, showOwnerNames = false,
   readOnly = false, onUndo, onRedo, minLotAreaSqm = 50,
   roadPresetWidth = 6, roadPresetSurface = 'planned',
@@ -117,8 +122,14 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
   // Viewport (zoom/pan)
   const viewport = useCanvasViewport(CANVAS_W, CANVAS_H, svgRef);
 
-  // Drag system
-  const drag = useCanvasDrag(lots, onUpdateLot, snapEnabled, showGrid);
+  // Anisotropic metric frame: single source of truth for distances/areas.
+  const metricFrame = useMemo<MetricFrame>(
+    () => buildMetricFrame(parentGpsCoordinates, parentAreaSqm),
+    [parentGpsCoordinates, parentAreaSqm],
+  );
+
+  // Drag system (recomputes area + perimeter via metric frame on every move)
+  const drag = useCanvasDrag(lots, onUpdateLot, snapEnabled, showGrid, metricFrame);
 
   // Detect shared edges between lots
   const sharedEdges = useMemo(() => {
@@ -265,6 +276,8 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
     };
   }, [viewport.viewport]);
 
+  // Legacy isotropic scale used by a few road-width-in-pixels conversions.
+  // For real distances/areas, always use the metric frame instead.
   const sideLength = Math.sqrt(parentAreaSqm);
 
   // ---- Distance calculation helpers ----
@@ -310,12 +323,16 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
       if (angleDiff > Math.PI / 2) angleDiff = Math.PI - angleDiff;
 
       if (angleDiff < ANGLE_TOLERANCE) {
-        // Perpendicular distance from edge midpoint to the line
+        // Perpendicular distance from edge midpoint to the line — convert to meters via frame
         const edgeMid = { x: (edge.p1.x + edge.p2.x) / 2, y: (edge.p1.y + edge.p2.y) / 2 };
         const distNorm = Math.abs((edgeMid.x - lineStart.x) * normalX + (edgeMid.y - lineStart.y) * normalY);
         if (distNorm < 0.005) return; // Too close (same edge)
-        const distM = distNorm * sideLength;
-        if (distM > sideLength) return; // Too far
+        // Project the perpendicular vector into meters using the metric frame
+        const distM = Math.sqrt(
+          Math.pow(distNorm * normalX * metricFrame.sxM, 2) +
+          Math.pow(distNorm * normalY * metricFrame.syM, 2),
+        );
+        if (distM > Math.max(metricFrame.sxM, metricFrame.syM)) return; // Too far
 
         const edgeMidScreen = toScreen(edgeMid);
         edges.push({
@@ -344,7 +361,7 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
     if (above.length > 0) result.push(above[0]);
     if (below.length > 0) result.push(below[0]);
     return result;
-  }, [lots, parentVertices, toScreen, fromScreen, sideLength]);
+  }, [lots, parentVertices, toScreen, fromScreen, metricFrame]);
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     if (readOnly) return;
@@ -644,10 +661,7 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
   }, [selectedRoadId, onSelectRoad, onSelectLot, mode]);
 
   const getDimensionLabel = (p1: Point2D, p2: Point2D): string => {
-    const dx = Math.abs(p2.x - p1.x) * sideLength;
-    const dy = Math.abs(p2.y - p1.y) * sideLength;
-    const dist = Math.sqrt(dx * dx + dy * dy);
-    return `${Math.round(dist)}m`;
+    return formatMeters(edgeLengthM(p1, p2, metricFrame));
   };
 
   const svgCursor = viewport.isPanning()
@@ -765,11 +779,9 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
               let label = '';
               if (parentSides && parentSides[i] && parentSides[i].length) {
                 const len = parseFloat(String(parentSides[i].length));
-                label = `${len.toFixed(1)}m`;
+                label = formatMeters(len);
               } else {
-                const dx = Math.abs(next.x - v.x) * sideLength;
-                const dy = Math.abs(next.y - v.y) * sideLength;
-                label = `${Math.round(Math.sqrt(dx * dx + dy * dy))}m`;
+                label = formatMeters(edgeLengthM(v, next, metricFrame));
               }
 
               const orientationLabel = parentSides?.[i]?.orientation || '';
@@ -893,28 +905,35 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
                 // Perpendicular angle for width label
                 const perpAngleDeg = axisAngleDeg + 90;
 
+                // Compute road length & area in meters via metric frame
+                const roadLenM = road.path.reduce((sum, p, i) => {
+                  if (i === 0) return 0;
+                  return sum + edgeLengthM(road.path[i - 1], p, metricFrame);
+                }, 0);
+                const roadAreaM2 = roadLenM * road.widthM;
+
                 return (
                   <g className="pointer-events-none select-none">
-                    {/* Road name along the axis */}
+                    {/* Road name + length along the axis */}
                     <text
-                      x={mx} y={my - 5}
+                      x={mx} y={my - 6}
                       textAnchor="middle" dominantBaseline="middle"
                       fontSize={6.5}
                       fontWeight={isRoadSelected || isExisting ? 'bold' : 'normal'}
                       fill={isRoadSelected ? 'hsl(var(--primary))' : isExisting ? '#92400e' : '#6b7280'}
-                      transform={`rotate(${axisAngleDeg}, ${mx}, ${my - 5})`}
+                      transform={`rotate(${axisAngleDeg}, ${mx}, ${my - 6})`}
                     >
-                      {road.name}
+                      {road.name} · {formatMeters(roadLenM)}
                     </text>
-                    {/* Width measurement perpendicular */}
+                    {/* Width + footprint area perpendicular */}
                     <text
-                      x={mx} y={my + 5}
+                      x={mx} y={my + 6}
                       textAnchor="middle" dominantBaseline="middle"
                       fontSize={7} fontWeight="bold"
                       fill={isRoadSelected ? 'hsl(var(--primary))' : isExisting ? '#92400e' : '#4b5563'}
-                      transform={`rotate(${perpAngleDeg}, ${mx}, ${my + 5})`}
+                      transform={`rotate(${perpAngleDeg}, ${mx}, ${my + 6})`}
                     >
-                      {road.widthM}m
+                      {road.widthM} m · {formatSqm(roadAreaM2)}
                     </text>
                   </g>
                 );
@@ -1125,7 +1144,8 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
               {showAreas && (
                 <text x={cx} y={cy + (showLotNumbers ? 10 : 0)} textAnchor="middle" dominantBaseline="middle"
                   fontSize={9} fill="#666" className="select-none pointer-events-none">
-                  {lot.areaSqm.toLocaleString()} m²
+                  <title>Calculée depuis la projection GPS de la parcelle mère</title>
+                  {formatSqm(lot.areaSqm)} · P {formatMeters(lot.perimeterM)}
                 </text>
               )}
 

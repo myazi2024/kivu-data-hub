@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef } from 'react';
 import { SubdivisionLot, Point2D } from '../types';
+import { MetricFrame, polygonAreaSqmAccurate, polygonPerimeterM } from '../utils/metrics';
 
 type DragType = 'vertex' | 'edge' | 'polygon' | null;
 
@@ -16,12 +17,22 @@ const SNAP_TOLERANCE = 0.015; // normalized
 
 export function useCanvasDrag(
   lots: SubdivisionLot[],
-  onUpdateLot: (id: string, vertices: Point2D[]) => void,
+  onUpdateLot: (id: string, vertices: Point2D[], areaSqm?: number, perimeterM?: number) => void,
   snapEnabled: boolean,
   showGrid: boolean,
+  metricFrame?: MetricFrame,
 ) {
   const [dragState, setDragState] = useState<DragState | null>(null);
   const lastNorm = useRef<Point2D | null>(null);
+
+  // Compute area + perimeter via the metric frame (single source of truth).
+  const computeMetrics = useCallback((vertices: Point2D[]): { areaSqm?: number; perimeterM?: number } => {
+    if (!metricFrame) return {};
+    return {
+      areaSqm: Math.max(1, Math.round(polygonAreaSqmAccurate(vertices, metricFrame))),
+      perimeterM: Math.round(polygonPerimeterM(vertices, metricFrame)),
+    };
+  }, [metricFrame]);
 
   const snapToGrid = useCallback((p: Point2D): Point2D => {
     if (!snapEnabled) return p;
@@ -72,7 +83,8 @@ export function useCanvasDrag(
       const snapped = snapToGrid(normalized);
       const newVerts = [...lot.vertices];
       newVerts[dragState.vertexIdx] = { x: Math.max(0, Math.min(1, snapped.x)), y: Math.max(0, Math.min(1, snapped.y)) };
-      onUpdateLot(dragState.lotId, newVerts);
+      const m = computeMetrics(newVerts);
+      onUpdateLot(dragState.lotId, newVerts, m.areaSqm, m.perimeterM);
     }
 
     if (dragState.type === 'edge' && dragState.edgeIdx !== undefined && dragState.startVertices && lastNorm.current) {
@@ -83,7 +95,8 @@ export function useCanvasDrag(
       const newVerts = [...lot.vertices];
       newVerts[idx1] = { x: Math.max(0, Math.min(1, newVerts[idx1].x + dx)), y: Math.max(0, Math.min(1, newVerts[idx1].y + dy)) };
       newVerts[idx2] = { x: Math.max(0, Math.min(1, newVerts[idx2].x + dx)), y: Math.max(0, Math.min(1, newVerts[idx2].y + dy)) };
-      onUpdateLot(dragState.lotId, newVerts);
+      const m = computeMetrics(newVerts);
+      onUpdateLot(dragState.lotId, newVerts, m.areaSqm, m.perimeterM);
       lastNorm.current = normalized;
     }
 
@@ -94,10 +107,12 @@ export function useCanvasDrag(
         x: Math.max(0, Math.min(1, v.x + dx)),
         y: Math.max(0, Math.min(1, v.y + dy)),
       }));
-      onUpdateLot(dragState.lotId, newVerts);
+      // Translation preserves area/perimeter — still pass through for consistency
+      const m = computeMetrics(newVerts);
+      onUpdateLot(dragState.lotId, newVerts, m.areaSqm, m.perimeterM);
       lastNorm.current = normalized;
     }
-  }, [dragState, lots, onUpdateLot, snapToGrid]);
+  }, [dragState, lots, onUpdateLot, snapToGrid, computeMetrics]);
 
   const endDrag = useCallback(() => {
     setDragState(null);
