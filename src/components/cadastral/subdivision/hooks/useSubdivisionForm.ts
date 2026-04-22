@@ -8,31 +8,38 @@ import {
 } from '../types';
 import { validateSubdivision, ValidationResult, gpsToNormalized, polygonArea, polygonPerimeter, snapNearbyLotVertices } from '../utils/geometry';
 
-const DRAFT_KEY_PREFIX = 'subdivision-draft-';
+const DRAFT_KEY_PREFIX = 'subdivision-draft-v2-';
 
 export type { SubdivisionDocuments };
 
 export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authUser?: User | null, parcelId?: string) {
   // Steps
   const [currentStep, setCurrentStep] = useState<SubdivisionStep>('parcel');
-  
+
   // Parent parcel
   const [parentParcel, setParentParcel] = useState<ParentParcelInfo | null>(null);
   const [loadingParcel, setLoadingParcel] = useState(false);
-  
+
   // Dynamic pricing
   const [submissionFee, setSubmissionFee] = useState<number | null>(null);
   const [feeBreakdown, setFeeBreakdown] = useState<FeeBreakdown | null>(null);
   const [loadingFee, setLoadingFee] = useState(true);
-  
-  // Requester
+
+  // Requester (identité enrichie alignée sur le bloc « Propriétaire actuel » du CCC)
   const [requester, setRequester] = useState<RequesterInfo>({
-    firstName: '', lastName: '', phone: '', type: 'owner', isOwner: true,
+    legalStatus: 'Personne physique',
+    gender: '',
+    firstName: '', lastName: '', middleName: '',
+    entityType: '', entitySubType: '', entitySubTypeOther: '', rccmNumber: '',
+    rightType: '', stateExploitedBy: '',
+    nationality: '',
+    phone: '', email: '',
+    type: 'owner', isOwner: true,
   });
-  
+
   // Draft restored flag
   const [draftRestored, setDraftRestored] = useState(false);
-  
+
   // Auto-fill requester from authenticated user
   useEffect(() => {
     if (authUser) {
@@ -41,9 +48,10 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
       const nameParts = fullName.split(' ');
       const firstName = nameParts[0] || '';
       const lastName = nameParts.slice(1).join(' ') || '';
-      
+
       setRequester(prev => ({
         ...prev,
+        legalStatus: prev.legalStatus || 'Personne physique',
         firstName: firstName || prev.firstName,
         lastName: lastName || prev.lastName,
         phone: authUser.phone || meta.phone || prev.phone,
@@ -373,8 +381,24 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
   // Step validation
   const isStepValid = useCallback((step: SubdivisionStep): boolean => {
     switch (step) {
-      case 'parcel':
-        return !!(parentParcel && requester.type && purpose && requester.firstName && requester.lastName && requester.phone);
+      case 'parcel': {
+        if (!parentParcel || !requester.type || !purpose || !requester.phone) return false;
+        const status = requester.legalStatus;
+        if (!status) return false;
+        if (status !== 'État' && !requester.nationality) return false;
+        if (status === 'Personne physique') {
+          if (!requester.gender) return false;
+          if (!requester.firstName || !requester.lastName) return false;
+        } else if (status === 'Personne morale') {
+          if (!requester.entityType) return false;
+          if (!requester.rccmNumber) return false;
+          if (!requester.lastName) return false; // raison sociale / dénomination
+        } else if (status === 'État') {
+          if (!requester.rightType) return false;
+          if (!requester.stateExploitedBy) return false;
+        }
+        return true;
+      }
       case 'designer':
         return lots.length >= 2 && validation.isValid;
       case 'plan':
@@ -429,9 +453,18 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
             village: parcelData?.village || null,
           },
           requester: {
+            legalStatus: requester.legalStatus || null,
+            gender: requester.gender || null,
             firstName: requester.firstName,
             lastName: requester.lastName,
             middleName: requester.middleName || null,
+            entityType: requester.entityType || null,
+            entitySubType: requester.entitySubType || null,
+            entitySubTypeOther: requester.entitySubTypeOther || null,
+            rccmNumber: requester.rccmNumber || null,
+            rightType: requester.rightType || null,
+            stateExploitedBy: requester.stateExploitedBy || null,
+            nationality: requester.nationality || null,
             phone: requester.phone,
             email: requester.email || null,
             type: requester.type,

@@ -121,7 +121,28 @@ const StepSummary: React.FC<StepSummaryProps> = ({
             <User className="h-3 w-3" /> Demandeur
           </div>
           <div className="grid grid-cols-2 gap-2 text-xs">
-            <div><span className="text-muted-foreground">Nom:</span> <span className="font-medium">{requester.lastName} {requester.firstName}</span></div>
+            {requester.legalStatus && (
+              <div className="col-span-2"><span className="text-muted-foreground">Statut juridique:</span> <span className="font-medium">{requester.legalStatus}</span></div>
+            )}
+            {requester.legalStatus === 'Personne morale' ? (
+              <>
+                <div className="col-span-2"><span className="text-muted-foreground">Dénomination / Raison sociale:</span> <span className="font-medium">{requester.lastName}</span></div>
+                {requester.entityType && <div><span className="text-muted-foreground">Type d'entité:</span> <span className="font-medium">{requester.entityType}{requester.entitySubType ? ` — ${requester.entitySubType}` : ''}</span></div>}
+                {requester.rccmNumber && <div><span className="text-muted-foreground">RCCM / Arrêté:</span> <span className="font-medium">{requester.rccmNumber}</span></div>}
+              </>
+            ) : requester.legalStatus === 'État' ? (
+              <>
+                {requester.rightType && <div><span className="text-muted-foreground">Type de droit:</span> <span className="font-medium">{requester.rightType}</span></div>}
+                {requester.stateExploitedBy && <div className="col-span-2"><span className="text-muted-foreground">Exploitée par:</span> <span className="font-medium">{requester.stateExploitedBy}</span></div>}
+              </>
+            ) : (
+              <div className="col-span-2">
+                <span className="text-muted-foreground">Nom:</span>{' '}
+                <span className="font-medium">{requester.lastName} {requester.middleName || ''} {requester.firstName}</span>
+                {requester.gender && <span className="text-muted-foreground ml-2">({requester.gender})</span>}
+              </div>
+            )}
+            {requester.nationality && <div><span className="text-muted-foreground">Nationalité:</span> <span className="font-medium">{requester.nationality}</span></div>}
             <div><span className="text-muted-foreground">Téléphone:</span> <span className="font-medium">{requester.phone}</span></div>
             <div><span className="text-muted-foreground">Qualité:</span> <span className="font-medium">{REQUESTER_TYPE_LABELS[requester.type] || requester.type}</span></div>
             {requester.email && <div><span className="text-muted-foreground">Email:</span> <span className="font-medium">{requester.email}</span></div>}
