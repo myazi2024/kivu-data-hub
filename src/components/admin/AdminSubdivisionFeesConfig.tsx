@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { Plus, Pencil, Trash2, DollarSign, Loader2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, DollarSign, Loader2, Calculator } from 'lucide-react';
 
 interface RateConfig {
   id: string;
@@ -19,6 +19,10 @@ interface RateConfig {
   rate_per_sqm_usd: number;
   min_fee_per_lot_usd: number | null;
   max_fee_per_lot_usd: number | null;
+  tier_threshold_sqm: number | null;
+  tier_rate_per_sqm_usd: number | null;
+  road_fee_per_linear_m_usd: number | null;
+  common_space_fee_per_sqm_usd: number | null;
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -32,12 +36,19 @@ const AdminSubdivisionFeesConfig: React.FC = () => {
   const [editing, setEditing] = useState<RateConfig | null>(null);
   const [saving, setSaving] = useState(false);
 
+  // Fee calculator
+  const [calc, setCalc] = useState({ rateId: '', lotCount: '5', avgLotSqm: '200', roadLengthM: '0', commonSpaceSqm: '0' });
+
   const [form, setForm] = useState({
     section_type: 'urban',
     location_name: '',
     rate_per_sqm_usd: '0.5',
     min_fee_per_lot_usd: '5',
     max_fee_per_lot_usd: '',
+    tier_threshold_sqm: '',
+    tier_rate_per_sqm_usd: '',
+    road_fee_per_linear_m_usd: '',
+    common_space_fee_per_sqm_usd: '',
     is_active: true,
   });
 
