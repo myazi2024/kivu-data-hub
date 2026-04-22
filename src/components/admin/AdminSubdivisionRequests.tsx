@@ -596,6 +596,21 @@ export function AdminSubdivisionRequests() {
                   </CardContent>
                 </Card>
 
+                {/* Aperçu visuel du plan */}
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm flex items-center gap-2"><MapPin className="h-4 w-4" /> Aperçu du plan</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <SubdivisionMiniMap
+                      parentVertices={selectedRequest.subdivision_plan_data?.parentVertices}
+                      lots={selectedRequest.lots_data || []}
+                      roads={getPlanRoads(selectedRequest)}
+                      commonSpaces={getPlanCommonSpaces(selectedRequest)}
+                    />
+                  </CardContent>
+                </Card>
+
                 {/* Lots */}
                 <Card>
                   <CardHeader className="pb-2">
