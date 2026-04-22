@@ -110,6 +110,23 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
   const feeLabel = form.loadingFee || form.submissionFee == null
     ? '…'
     : `${form.submissionFee.toFixed(2)}$`;
+
+  // Compute missing fields hint for current step
+  const missingFields: string[] = (() => {
+    if (form.isStepValid(form.currentStep)) return [];
+    if (form.currentStep === 'parcel') {
+      const m: string[] = [];
+      if (!form.requester.firstName?.trim()) m.push('prénom');
+      if (!form.requester.lastName?.trim()) m.push('nom');
+      if (!form.requester.phone?.trim()) m.push('téléphone');
+      if (!form.purpose) m.push('motif');
+      if (!form.parentParcel) m.push('parcelle introuvable');
+      return m;
+    }
+    if (form.currentStep === 'designer') return ['au moins 1 lot valide'];
+    if (form.currentStep === 'documents') return ['pièces obligatoires'];
+    return [];
+  })();
   
   return (
     <>
