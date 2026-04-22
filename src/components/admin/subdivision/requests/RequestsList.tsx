@@ -1,9 +1,13 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
 import {
   Grid3X3, Eye, Check, X, User, MapPin, Clock, Loader2, ChevronLeft, ChevronRight,
-  RotateCcw, Eye as EyeIcon, Flame, ShieldCheck, ShieldAlert,
+  RotateCcw, Eye as EyeIcon, Flame, ShieldCheck, ShieldAlert, UserCog,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -11,6 +15,7 @@ import { StatusBadge } from '@/components/shared/StatusBadge';
 import { computeSla } from '@/utils/adminQueueUtils';
 import type { ValidationResult } from '@/hooks/useZoningRules';
 import { SUBDIVISION_STATUS_MAP, OPEN_STATUSES, type SubdivisionRequest, type ActionType } from './types';
+import { useAssignableAdmins } from './useAssignableAdmins';
 
 interface Props {
   loading: boolean;
@@ -22,6 +27,10 @@ interface Props {
   onOpenDetails: (req: SubdivisionRequest) => void;
   onStartReview: (req: SubdivisionRequest) => void;
   onAction: (req: SubdivisionRequest, action: ActionType) => void;
+  selectedIds: string[];
+  onToggleSelect: (id: string) => void;
+  onToggleSelectAll: () => void;
+  onReassignOne: (req: SubdivisionRequest, assigneeId: string) => void;
 }
 
 export function RequestsList({
