@@ -25,6 +25,8 @@ export { menuItems, getTabLabel, getTabCategory };
 interface AdminSidebarProps {
   counts: AdminPendingCounts;
   onNavigate?: () => void;
+  /** Optional permission gate. Items returning false are hidden. */
+  canAccessTab?: (tab: string) => boolean;
 }
 
 const badgeFromCounts = (badge: AdminBadgeKey, c: AdminPendingCounts): number => {
