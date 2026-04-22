@@ -222,6 +222,13 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
                 onPlanElementsChange={form.setPlanElements}
               />
             )}
+            {form.currentStep === 'documents' && (
+              <StepDocuments
+                documents={form.documents}
+                onChange={form.setDocuments}
+                userId={user?.id}
+              />
+            )}
             {form.currentStep === 'summary' && (
               <StepSummary
                 parentParcel={form.parentParcel}
@@ -279,11 +286,11 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
                 <Button
                   size="sm"
                   onClick={handleSubmit}
-                  disabled={form.submitting || !form.isStepValid('designer') || form.loadingFee}
+                  disabled={form.submitting || !form.isStepValid('designer') || !form.isStepValid('documents') || form.loadingFee}
                   className="gap-1"
                 >
                   {form.submitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
-                  Soumettre ({feeLabel})
+                  Payer & soumettre ({feeLabel})
                 </Button>
               )}
             </div>
