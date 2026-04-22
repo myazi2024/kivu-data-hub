@@ -347,6 +347,7 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
       lotNumber: String(maxLotNum + 1),
       vertices: poly1,
       areaSqm: area1,
+      isParentBoundary: false,
     };
     const newLot2: SubdivisionLot = {
       ...lot,
@@ -354,6 +355,7 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
       lotNumber: String(maxLotNum + 2),
       vertices: poly2,
       areaSqm: area2,
+      isParentBoundary: false,
     };
 
     setLots(lots.map(l => l.id === lotId ? newLot1 : l).concat(newLot2));
@@ -387,6 +389,7 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
       lotNumber: String(maxLotNum + 1),
       vertices: hull,
       areaSqm: totalArea,
+      isParentBoundary: false,
     };
 
     setLots([...lots.filter(l => !ids.includes(l.id)), mergedLot]);
@@ -443,11 +446,11 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
 
     const newLot1: SubdivisionLot = {
       ...lot, id: `lot-${Date.now()}-a`, lotNumber: String(maxLotNum + 1),
-      vertices: poly1, areaSqm: Math.max(1, area1),
+      vertices: poly1, areaSqm: Math.max(1, area1), isParentBoundary: false,
     };
     const newLot2: SubdivisionLot = {
       ...lot, id: `lot-${Date.now()}-b`, lotNumber: String(maxLotNum + 2),
-      vertices: poly2, areaSqm: Math.max(1, area2),
+      vertices: poly2, areaSqm: Math.max(1, area2), isParentBoundary: false,
     };
 
     setLots(lots.map(l => l.id === lotId ? newLot1 : l).concat(newLot2));
@@ -629,11 +632,11 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
 
     const newLot1: SubdivisionLot = {
       ...targetLot, id: `lot-${Date.now()}-a`, lotNumber: String(maxLotNum + 1),
-      vertices: shrunk1, areaSqm: computeArea(shrunk1),
+      vertices: shrunk1, areaSqm: computeArea(shrunk1), isParentBoundary: false,
     };
     const newLot2: SubdivisionLot = {
       ...targetLot, id: `lot-${Date.now()}-b`, lotNumber: String(maxLotNum + 2),
-      vertices: shrunk2, areaSqm: computeArea(shrunk2),
+      vertices: shrunk2, areaSqm: computeArea(shrunk2), isParentBoundary: false,
     };
 
     // Store affectedLotIds on the new road for future width adjustments
