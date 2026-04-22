@@ -376,6 +376,9 @@ export function AdminSubdivisionRequests() {
               <Clock className="h-3 w-3" /> {pendingCount} en attente
             </Badge>
           )}
+          <Button variant="outline" size="sm" onClick={handleExportCsv} className="gap-1">
+            <Download className="h-4 w-4" /> CSV
+          </Button>
           <Button variant="outline" size="sm" onClick={fetchRequests} className="gap-1">
             <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} /> Actualiser
           </Button>
@@ -385,18 +388,27 @@ export function AdminSubdivisionRequests() {
       {/* Filters */}
       <Card>
         <CardContent className="pt-6">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1 relative">
+          <div className="flex flex-col lg:flex-row gap-3">
+            <div className="flex-1 relative min-w-[180px]">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input placeholder="Rechercher..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="pl-9" />
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[180px]"><SelectValue placeholder="Statut" /></SelectTrigger>
+              <SelectTrigger className="w-full lg:w-[160px]"><SelectValue placeholder="Statut" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="_all">Tous</SelectItem>
                 {Object.entries(STATUS_LABELS).map(([v, label]) => (
                   <SelectItem key={v} value={v}>{label}</SelectItem>
                 ))}
+              </SelectContent>
+            </Select>
+            <Input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="lg:w-[160px]" placeholder="Du" />
+            <Input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="lg:w-[160px]" placeholder="Au" />
+            <Select value={sortBy} onValueChange={(v) => setSortBy(v as 'recent' | 'oldest')}>
+              <SelectTrigger className="w-full lg:w-[160px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="recent">Plus récentes</SelectItem>
+                <SelectItem value="oldest">Plus anciennes</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -415,13 +427,46 @@ export function AdminSubdivisionRequests() {
             </div>
           ) : (
             <div className="space-y-3">
-              {paginatedRequests.map(request => (
-                <div key={request.id} className="p-4 border rounded-xl hover:bg-muted/50 transition-colors">
+              {paginatedRequests.map(request => {
+                const sla = computeSla(request.created_at, request.estimated_processing_days || 14);
+                const validation = validations[request.id];
+                const isOpen = ['pending', 'in_review', 'returned'].includes(request.status);
+                const slaTone = sla.level === 'overdue'
+                  ? 'border-destructive/50 bg-destructive/5'
+                  : sla.level === 'warning'
+                    ? 'border-amber-300/60 bg-amber-50/40 dark:bg-amber-950/10'
+                    : '';
+                return (
+                <div key={request.id} className={`p-4 border rounded-xl hover:bg-muted/50 transition-colors ${slaTone} ${request.escalated ? 'ring-1 ring-destructive/40' : ''}`}>
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div className="flex-1 space-y-2">
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <Badge variant="outline" className="font-mono">{request.reference_number}</Badge>
                         <StatusBadge status={SUBDIVISION_STATUS_MAP[request.status] || 'pending'} compact />
+                        {isOpen && (
+                          <Badge
+                            variant={sla.level === 'overdue' ? 'destructive' : sla.level === 'warning' ? 'default' : 'outline'}
+                            className="gap-1 text-[10px]"
+                          >
+                            <Clock className="h-3 w-3" /> {sla.label}
+                          </Badge>
+                        )}
+                        {request.escalated && (
+                          <Badge variant="destructive" className="gap-1 text-[10px]">
+                            <Flame className="h-3 w-3" /> Escaladée
+                          </Badge>
+                        )}
+                        {validation && (
+                          validation.valid ? (
+                            <Badge variant="outline" className="gap-1 text-[10px] border-green-500/50 text-green-700 dark:text-green-400">
+                              <ShieldCheck className="h-3 w-3" /> Conforme
+                            </Badge>
+                          ) : (
+                            <Badge variant="destructive" className="gap-1 text-[10px]" title={validation.violations.map(v => v.message).join(' | ')}>
+                              <ShieldAlert className="h-3 w-3" /> Non conforme ({validation.violations.length})
+                            </Badge>
+                          )
+                        )}
                       </div>
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
                         <div className="flex items-center gap-1 text-muted-foreground"><MapPin className="h-3.5 w-3.5" /><span className="font-mono">{request.parcel_number}</span></div>
@@ -434,7 +479,12 @@ export function AdminSubdivisionRequests() {
                       <Button variant="outline" size="sm" onClick={() => { setSelectedRequest(request); setShowDetailsDialog(true); }} className="gap-1">
                         <Eye className="h-4 w-4" /> Détails
                       </Button>
-                      {(request.status === 'pending' || request.status === 'returned') && (
+                      {request.status === 'pending' && (
+                        <Button variant="outline" size="sm" onClick={() => handleStartReview(request)} className="gap-1">
+                          <EyeIcon className="h-4 w-4" /> Mettre en examen
+                        </Button>
+                      )}
+                      {(request.status === 'pending' || request.status === 'in_review' || request.status === 'returned') && (
                         <>
                           <Button size="sm" onClick={() => handleAction(request, 'approve')} className="gap-1"><Check className="h-4 w-4" /> Approuver</Button>
                           <Button variant="outline" size="sm" onClick={() => handleAction(request, 'return')} className="gap-1 text-amber-600 border-amber-300 hover:bg-amber-50"><RotateCcw className="h-4 w-4" /> Renvoyer</Button>
@@ -444,7 +494,8 @@ export function AdminSubdivisionRequests() {
                     </div>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           )}
           {totalPages > 1 && (
