@@ -1,11 +1,12 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { MapPin, Loader2, CheckCircle, Info } from 'lucide-react';
+import { MapPin, Loader2, CheckCircle, Info, User } from 'lucide-react';
 import { ParentParcelInfo, RequesterInfo } from '../types';
 import { SUBDIVISION_PURPOSE_LABELS } from '../constants';
 
