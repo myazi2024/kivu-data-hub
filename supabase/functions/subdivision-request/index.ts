@@ -209,6 +209,7 @@ Deno.serve(async (req) => {
       reference_number: data.reference_number,
       total_amount_usd: data.total_amount_usd,
       submission_fee_usd: data.submission_fee_usd,
+      fee_breakdown: feeBreakdown,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
