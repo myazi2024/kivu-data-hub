@@ -924,9 +924,11 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
               <LotCanvas
                 lots={lots}
                 roads={roads}
+                commonSpaces={commonSpaces}
                 parentAreaSqm={parentArea}
                 parentVertices={parentVertices}
                 parentSides={parentSides}
+                parentGpsCoordinates={parentParcel?.gpsCoordinates}
                 selectedLotId={selectedLotId}
                 selectedLotIds={selectedLotIds}
                 onSelectLot={id => { setSelectedLotId(id); setSelectedLotIds([]); }}
@@ -949,8 +951,17 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
                 onModeChange={setCanvasMode}
                 showGrid={canvasShowGrid}
                 onToggleGrid={() => setCanvasShowGrid(prev => !prev)}
-                onUpdateLot={(id, vertices) => {
-                  setLots(lots.map(l => l.id === id ? { ...l, vertices } : l));
+                onUpdateLot={(id, vertices, areaSqm, perimeterM) => {
+                  setLots(lots.map(l => {
+                    if (l.id !== id) return l;
+                    if (l.isParentBoundary) return l; // locked geometry
+                    return {
+                      ...l,
+                      vertices,
+                      areaSqm: areaSqm ?? l.areaSqm,
+                      perimeterM: perimeterM ?? l.perimeterM,
+                    };
+                  }));
                 }}
                 onUndo={onUndo}
                 onRedo={onRedo}
