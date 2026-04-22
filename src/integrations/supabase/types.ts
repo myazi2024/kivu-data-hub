@@ -5754,6 +5754,53 @@ export type Database = {
         }
         Relationships: []
       }
+      subdivision_admin_actions: {
+        Row: {
+          action: string
+          admin_id: string | null
+          admin_name: string | null
+          created_at: string
+          id: string
+          metadata: Json | null
+          new_status: string | null
+          previous_status: string | null
+          reason: string | null
+          request_id: string
+        }
+        Insert: {
+          action: string
+          admin_id?: string | null
+          admin_name?: string | null
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          new_status?: string | null
+          previous_status?: string | null
+          reason?: string | null
+          request_id: string
+        }
+        Update: {
+          action?: string
+          admin_id?: string | null
+          admin_name?: string | null
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          new_status?: string | null
+          previous_status?: string | null
+          reason?: string | null
+          request_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subdivision_admin_actions_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "subdivision_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subdivision_lots: {
         Row: {
           area_sqm: number
@@ -5868,6 +5915,8 @@ export type Database = {
         Row: {
           additional_documents: Json | null
           approved_at: string | null
+          assigned_at: string | null
+          assigned_to: string | null
           created_at: string
           escalated: boolean
           escalated_at: string | null
@@ -5877,6 +5926,7 @@ export type Database = {
           final_payment_id: string | null
           final_payment_status: string | null
           id: string
+          in_review_at: string | null
           intended_use_per_lot: Json | null
           lots_data: Json
           number_of_lots: number
@@ -5916,6 +5966,8 @@ export type Database = {
         Insert: {
           additional_documents?: Json | null
           approved_at?: string | null
+          assigned_at?: string | null
+          assigned_to?: string | null
           created_at?: string
           escalated?: boolean
           escalated_at?: string | null
@@ -5925,6 +5977,7 @@ export type Database = {
           final_payment_id?: string | null
           final_payment_status?: string | null
           id?: string
+          in_review_at?: string | null
           intended_use_per_lot?: Json | null
           lots_data?: Json
           number_of_lots: number
@@ -5964,6 +6017,8 @@ export type Database = {
         Update: {
           additional_documents?: Json | null
           approved_at?: string | null
+          assigned_at?: string | null
+          assigned_to?: string | null
           created_at?: string
           escalated?: boolean
           escalated_at?: string | null
@@ -5973,6 +6028,7 @@ export type Database = {
           final_payment_id?: string | null
           final_payment_status?: string | null
           id?: string
+          in_review_at?: string | null
           intended_use_per_lot?: Json | null
           lots_data?: Json
           number_of_lots?: number
