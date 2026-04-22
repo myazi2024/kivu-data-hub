@@ -1090,7 +1090,7 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
                 stroke={isTooSmall ? 'hsl(var(--destructive))' : isMultiSelected ? 'hsl(var(--primary))' : isSelected ? 'hsl(var(--primary))' : color}
                 strokeWidth={isTooSmall ? 2.5 : isMultiSelected ? 2.5 : isSelected ? 2.5 : 1.5}
                 strokeDasharray={isTooSmall ? '4 2' : isMultiSelected ? '4 2' : 'none'}
-                className={readOnly ? '' : mode === 'select' ? (isSelected ? 'cursor-move' : 'cursor-pointer') : 'cursor-crosshair'}
+                className={readOnly ? '' : mode === 'select' ? (isSelected ? (lot.isParentBoundary ? 'cursor-not-allowed' : 'cursor-move') : 'cursor-pointer') : 'cursor-crosshair'}
                 onClick={e => handleLotClick(lot.id, e)}
                 onDoubleClick={e => handleLotDoubleClick(lot.id, e)}
                 onContextMenu={e => handleLotContextMenu(lot.id, e)}
