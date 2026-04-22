@@ -111,6 +111,7 @@ export const menuItems: AdminMenuSection[] = [
       { icon: DollarSign, label: 'Config Frais Mutation', value: 'mutation-fees-config', badge: null, keywords: ['tarif', 'prix', 'coût'] },
       { icon: Grid3X3, label: 'Demandes Lotissement', value: 'subdivision-requests', badge: 'subdivisions', keywords: ['division', 'morcellement', 'parcellisation'] },
       { icon: DollarSign, label: 'Config Frais Lotissement', value: 'subdivision-fees-config', badge: null, keywords: ['tarif', 'prix', 'coût'] },
+      { icon: Ruler, label: 'Règles de zonage Lotissement', value: 'subdivision-zoning-rules', badge: null, keywords: ['zonage', 'urbanisme', 'règle', 'norme', 'surface min', 'largeur voie'] },
       { icon: FileCheck, label: 'Expertises foncières', value: 'expertise-requests', badge: 'expertise', keywords: ['expert', 'évaluation', 'estimation', 'immobilier'] },
       { icon: DollarSign, label: 'Config Frais Expert.', value: 'expertise-fees-config', badge: null, keywords: ['tarif', 'prix', 'coût'] },
       { icon: Award, label: 'Gestion Certificats', value: 'certificates', badge: null, keywords: ['attestation', 'document', 'preuve'] },
