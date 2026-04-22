@@ -10,7 +10,13 @@ import { validateSubdivision, ValidationResult, gpsToNormalized, polygonArea, po
 
 const DRAFT_KEY_PREFIX = 'subdivision-draft-';
 
-export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authUser?: User | null) {
+export interface SubdivisionDocuments {
+  requester_id_document_url: string | null;
+  proof_of_ownership_url: string | null;
+  subdivision_sketch_url: string | null;
+}
+
+export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authUser?: User | null, parcelId?: string) {
   // Steps
   const [currentStep, setCurrentStep] = useState<SubdivisionStep>('parcel');
   
@@ -74,8 +80,11 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
       const rate = specificRate || fallbackRate;
 
       if (!rate) {
-        setSubmissionFee(20);
+        // Safe fallback: 10$ per lot (aligned with edge function)
+        const fallback = Math.max(10, currentLots.length * 10);
+        setSubmissionFee(fallback);
         setFeeBreakdown(null);
+        setLoadingFee(false);
         return;
       }
 
@@ -101,7 +110,8 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
       });
       setSubmissionFee(total);
     } catch {
-      setSubmissionFee(20);
+      const fallback = Math.max(10, currentLots.length * 10);
+      setSubmissionFee(fallback);
       setFeeBreakdown(null);
     } finally {
       setLoadingFee(false);
