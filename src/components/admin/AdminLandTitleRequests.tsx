@@ -1,38 +1,31 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
-import { 
-  ResponsiveTable, 
-  ResponsiveTableHeader, 
-  ResponsiveTableBody, 
-  ResponsiveTableRow, 
-  ResponsiveTableCell, 
-  ResponsiveTableHead 
+import {
+  ResponsiveTable,
+  ResponsiveTableHeader,
+  ResponsiveTableBody,
+  ResponsiveTableRow,
+  ResponsiveTableCell,
+  ResponsiveTableHead,
 } from '@/components/ui/responsive-table';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { 
-  FileText, Search, Eye, CheckCircle, XCircle, Clock, 
-  Loader2, RefreshCw, DollarSign, MapPin, User, Calendar,
-  Download, FileCheck, AlertTriangle
-} from 'lucide-react';
+import { FileText, Search, Eye, CheckCircle, Loader2, RefreshCw, MapPin, Download } from 'lucide-react';
 import { PaginationControls } from '@/components/shared/PaginationControls';
 import { usePagination } from '@/hooks/usePagination';
 import { StatusBadge, StatusType } from '@/components/shared/StatusBadge';
 import { generateAndUploadCertificate } from '@/utils/certificateService';
 import { exportToCSV } from '@/utils/csvExport';
 import { LandTitleRequestRow, getRequestFullName, getRequestLocation, ADMIN_LIST_COLUMNS } from '@/types/landTitleRequest';
+import LandTitleDetailsDialog from './land-title/LandTitleDetailsDialog';
+import LandTitleProcessDialog, { ProcessAction } from './land-title/LandTitleProcessDialog';
 
 const AdminLandTitleRequests: React.FC = () => {
   const { user } = useAuth();
