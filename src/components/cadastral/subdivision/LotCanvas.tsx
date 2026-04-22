@@ -385,26 +385,32 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
 
   const handleVertexMouseDown = useCallback((lotId: string, vertexIdx: number, e: React.MouseEvent) => {
     if (readOnly || mode !== 'select') return;
+    const lot = lots.find(l => l.id === lotId);
+    if (lot?.isParentBoundary) return;
     e.stopPropagation();
     drag.startVertexDrag(lotId, vertexIdx);
-  }, [readOnly, mode, drag]);
+  }, [readOnly, mode, drag, lots]);
 
   const handleEdgeMouseDown = useCallback((lotId: string, edgeIdx: number, e: React.MouseEvent) => {
     if (readOnly || mode !== 'select') return;
+    const lot = lots.find(l => l.id === lotId);
+    if (lot?.isParentBoundary) return;
     e.stopPropagation();
     const pos = getSvgPos(e);
     const normalized = fromScreen(pos.x, pos.y);
     drag.startEdgeDrag(lotId, edgeIdx, normalized);
-  }, [readOnly, mode, drag, getSvgPos, fromScreen]);
+  }, [readOnly, mode, drag, getSvgPos, fromScreen, lots]);
 
   const handlePolygonMouseDown = useCallback((lotId: string, e: React.MouseEvent) => {
     if (readOnly || mode !== 'select') return;
     if (lotId !== selectedLotId) return;
+    const lot = lots.find(l => l.id === lotId);
+    if (lot?.isParentBoundary) return;
     e.stopPropagation();
     const pos = getSvgPos(e);
     const normalized = fromScreen(pos.x, pos.y);
     drag.startPolygonDrag(lotId, normalized);
-  }, [readOnly, mode, selectedLotId, drag, getSvgPos, fromScreen]);
+  }, [readOnly, mode, selectedLotId, drag, getSvgPos, fromScreen, lots]);
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     const svg = svgRef.current;
