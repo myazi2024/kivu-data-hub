@@ -197,19 +197,19 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
     const w = (bounds.maxX - bounds.minX) * 0.2;
     const h = (bounds.maxY - bounds.minY) * 0.2;
     const maxLotNum = lots.reduce((m, l) => Math.max(m, parseInt(l.lotNumber) || 0), 0);
-    const sideLength = Math.sqrt(parentParcel?.areaSqm || 1000);
 
+    const verts: Point2D[] = [
+      { x: cx - w / 2, y: cy - h / 2 },
+      { x: cx + w / 2, y: cy - h / 2 },
+      { x: cx + w / 2, y: cy + h / 2 },
+      { x: cx - w / 2, y: cy + h / 2 },
+    ];
     const newLot: SubdivisionLot = {
       id: `lot-${Date.now()}-new`,
       lotNumber: String(maxLotNum + 1),
-      vertices: [
-        { x: cx - w / 2, y: cy - h / 2 },
-        { x: cx + w / 2, y: cy - h / 2 },
-        { x: cx + w / 2, y: cy + h / 2 },
-        { x: cx - w / 2, y: cy + h / 2 },
-      ],
-      areaSqm: Math.round(w * h * (parentParcel?.areaSqm || 1000)),
-      perimeterM: Math.round(2 * (w + h) * sideLength),
+      vertices: verts,
+      areaSqm: computeArea(verts),
+      perimeterM: computePerim(verts),
       intendedUse: 'residential',
       isBuilt: false,
       hasFence: false,
@@ -217,7 +217,7 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
     };
     setLots([...lots, newLot]);
     setSelectedLotId(newLot.id);
-  }, [lots, setLots, parentVertices, parentParcel]);
+  }, [lots, setLots, parentVertices, parentParcel, computeArea, computePerim]);
 
   const selectedLot = lots.find(l => l.id === selectedLotId);
 
