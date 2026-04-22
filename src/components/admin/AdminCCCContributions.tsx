@@ -37,7 +37,7 @@ const AdminCCCContributions: React.FC = () => {
   const [returnReason, setReturnReason] = useState('');
   const [activeTab, setActiveTab] = useState('pending');
   const [showTestDialog, setShowTestDialog] = useState(false);
-  const [testResults, setTestResults] = useState<any[]>([]);
+  const [testResults, setTestResults] = useState<TestResult[]>([]);
   const [showAppealDialog, setShowAppealDialog] = useState(false);
   const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
   const [isValidating, setIsValidating] = useState(false);
