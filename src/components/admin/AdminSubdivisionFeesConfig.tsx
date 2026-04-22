@@ -73,7 +73,7 @@ const AdminSubdivisionFeesConfig: React.FC = () => {
 
   const openAdd = () => {
     setEditing(null);
-    setForm({ section_type: 'urban', location_name: '', rate_per_sqm_usd: '0.5', min_fee_per_lot_usd: '5', max_fee_per_lot_usd: '', is_active: true });
+    setForm({ section_type: 'urban', location_name: '', rate_per_sqm_usd: '0.5', min_fee_per_lot_usd: '5', max_fee_per_lot_usd: '', tier_threshold_sqm: '', tier_rate_per_sqm_usd: '', road_fee_per_linear_m_usd: '', common_space_fee_per_sqm_usd: '', is_active: true });
     setDialogOpen(true);
   };
 
@@ -85,6 +85,10 @@ const AdminSubdivisionFeesConfig: React.FC = () => {
       rate_per_sqm_usd: String(r.rate_per_sqm_usd),
       min_fee_per_lot_usd: r.min_fee_per_lot_usd != null ? String(r.min_fee_per_lot_usd) : '',
       max_fee_per_lot_usd: r.max_fee_per_lot_usd != null ? String(r.max_fee_per_lot_usd) : '',
+      tier_threshold_sqm: r.tier_threshold_sqm != null ? String(r.tier_threshold_sqm) : '',
+      tier_rate_per_sqm_usd: r.tier_rate_per_sqm_usd != null ? String(r.tier_rate_per_sqm_usd) : '',
+      road_fee_per_linear_m_usd: r.road_fee_per_linear_m_usd != null ? String(r.road_fee_per_linear_m_usd) : '',
+      common_space_fee_per_sqm_usd: r.common_space_fee_per_sqm_usd != null ? String(r.common_space_fee_per_sqm_usd) : '',
       is_active: r.is_active,
     });
     setDialogOpen(true);
@@ -102,6 +106,10 @@ const AdminSubdivisionFeesConfig: React.FC = () => {
       rate_per_sqm_usd: parseFloat(form.rate_per_sqm_usd) || 0,
       min_fee_per_lot_usd: form.min_fee_per_lot_usd ? parseFloat(form.min_fee_per_lot_usd) : null,
       max_fee_per_lot_usd: form.max_fee_per_lot_usd ? parseFloat(form.max_fee_per_lot_usd) : null,
+      tier_threshold_sqm: form.tier_threshold_sqm ? parseFloat(form.tier_threshold_sqm) : null,
+      tier_rate_per_sqm_usd: form.tier_rate_per_sqm_usd ? parseFloat(form.tier_rate_per_sqm_usd) : null,
+      road_fee_per_linear_m_usd: form.road_fee_per_linear_m_usd ? parseFloat(form.road_fee_per_linear_m_usd) : null,
+      common_space_fee_per_sqm_usd: form.common_space_fee_per_sqm_usd ? parseFloat(form.common_space_fee_per_sqm_usd) : null,
       is_active: form.is_active,
       updated_at: new Date().toISOString(),
     };
