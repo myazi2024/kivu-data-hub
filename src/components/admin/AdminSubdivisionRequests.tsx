@@ -438,7 +438,31 @@ export function AdminSubdivisionRequests() {
                   </CardContent>
                 </Card>
 
-                {/* Motif & Frais */}
+                {/* Pièces justificatives — signed URLs on demand (private bucket) */}
+                {(selectedRequest.requester_id_document_url || selectedRequest.proof_of_ownership_url || selectedRequest.subdivision_sketch_url) && (
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm flex items-center gap-2"><Paperclip className="h-4 w-4" /> Pièces justificatives</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-2 text-sm">
+                      {selectedRequest.requester_id_document_url && (
+                        <Button variant="outline" size="sm" className="w-full justify-start gap-2" onClick={() => openDocument(selectedRequest.requester_id_document_url)}>
+                          <FileText className="h-3.5 w-3.5" /> Pièce d'identité du demandeur
+                        </Button>
+                      )}
+                      {selectedRequest.proof_of_ownership_url && (
+                        <Button variant="outline" size="sm" className="w-full justify-start gap-2" onClick={() => openDocument(selectedRequest.proof_of_ownership_url)}>
+                          <FileText className="h-3.5 w-3.5" /> Preuve de propriété
+                        </Button>
+                      )}
+                      {selectedRequest.subdivision_sketch_url && (
+                        <Button variant="outline" size="sm" className="w-full justify-start gap-2" onClick={() => openDocument(selectedRequest.subdivision_sketch_url)}>
+                          <FileText className="h-3.5 w-3.5" /> Croquis annexe
+                        </Button>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
                 <Card>
                   <CardContent className="pt-4 grid grid-cols-2 gap-3 text-sm">
                     {selectedRequest.purpose_of_subdivision && (
