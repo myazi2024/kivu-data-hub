@@ -905,28 +905,35 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
                 // Perpendicular angle for width label
                 const perpAngleDeg = axisAngleDeg + 90;
 
+                // Compute road length & area in meters via metric frame
+                const roadLenM = road.path.reduce((sum, p, i) => {
+                  if (i === 0) return 0;
+                  return sum + edgeLengthM(road.path[i - 1], p, metricFrame);
+                }, 0);
+                const roadAreaM2 = roadLenM * road.widthM;
+
                 return (
                   <g className="pointer-events-none select-none">
-                    {/* Road name along the axis */}
+                    {/* Road name + length along the axis */}
                     <text
-                      x={mx} y={my - 5}
+                      x={mx} y={my - 6}
                       textAnchor="middle" dominantBaseline="middle"
                       fontSize={6.5}
                       fontWeight={isRoadSelected || isExisting ? 'bold' : 'normal'}
                       fill={isRoadSelected ? 'hsl(var(--primary))' : isExisting ? '#92400e' : '#6b7280'}
-                      transform={`rotate(${axisAngleDeg}, ${mx}, ${my - 5})`}
+                      transform={`rotate(${axisAngleDeg}, ${mx}, ${my - 6})`}
                     >
-                      {road.name}
+                      {road.name} · {formatMeters(roadLenM)}
                     </text>
-                    {/* Width measurement perpendicular */}
+                    {/* Width + footprint area perpendicular */}
                     <text
-                      x={mx} y={my + 5}
+                      x={mx} y={my + 6}
                       textAnchor="middle" dominantBaseline="middle"
                       fontSize={7} fontWeight="bold"
                       fill={isRoadSelected ? 'hsl(var(--primary))' : isExisting ? '#92400e' : '#4b5563'}
-                      transform={`rotate(${perpAngleDeg}, ${mx}, ${my + 5})`}
+                      transform={`rotate(${perpAngleDeg}, ${mx}, ${my + 6})`}
                     >
-                      {road.widthM}m
+                      {road.widthM} m · {formatSqm(roadAreaM2)}
                     </text>
                   </g>
                 );
