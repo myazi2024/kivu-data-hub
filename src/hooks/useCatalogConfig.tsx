@@ -68,16 +68,29 @@ export const useCatalogConfig = () => {
   const [loading, setLoading] = useState(true);
 
   const loadConfig = async () => {
+    const delays = [500, 1000, 2000];
+    let attempt = 0;
     try {
-      const { data, error } = await supabase
-        .from('catalog_config')
-        .select('config_key, config_value')
-        .eq('is_active', true);
+      let data: any = null;
+      let error: any = null;
+      // Silent retry loop on transient PostgREST schema cache errors (PGRST002)
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        const result = await supabase
+          .from('catalog_config')
+          .select('config_key, config_value')
+          .eq('is_active', true);
+        data = result.data;
+        error = result.error;
+        if (!error || error.code !== 'PGRST002' || attempt >= delays.length) break;
+        await new Promise((r) => setTimeout(r, delays[attempt]));
+        attempt++;
+      }
 
       if (error) throw error;
 
       const loadedConfig = { ...DEFAULT_CONFIG };
-      data?.forEach(item => {
+      data?.forEach((item: any) => {
         if (item.config_key in loadedConfig) {
           (loadedConfig as any)[item.config_key] = item.config_value;
         }
