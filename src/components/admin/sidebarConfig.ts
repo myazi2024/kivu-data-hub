@@ -5,7 +5,7 @@ import {
   Tag, Tags, Building2, Receipt, TrendingUp, Smartphone, Grid3X3, TestTube,
   Key, Scale, Award, Handshake, Presentation, PieChart, Wallet, ArrowLeftRight,
   Layers, FileSearch, Landmark, ScrollText, History, Compass, Percent, Activity,
-  SlidersHorizontal, BookOpen, Newspaper, Palette, UserCog, CalendarCheck,
+  SlidersHorizontal, BookOpen, Newspaper, Palette, UserCog, CalendarCheck, Ruler,
   type LucideIcon,
 } from 'lucide-react';
 
