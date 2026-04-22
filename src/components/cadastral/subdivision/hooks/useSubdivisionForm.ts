@@ -411,16 +411,22 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
 
     setSubmitting(true);
     try {
+      // Compute section_type client-side (urban if a quartier exists, else rural)
+      const sectionType = parcelData?.quartier ? 'urban' : (parcelData?.village ? 'rural' : 'urban');
+
       const { data, error } = await supabase.functions.invoke('subdivision-request', {
         body: {
           parcel_number: parcelNumber,
           parcel_id: parcelId || null,
+          section_type: sectionType,
           parent_parcel: {
             areaSqm: parentParcel.areaSqm,
             location: parentParcel.location,
             ownerName: parentParcel.ownerName,
             titleReference: parentParcel.titleReference,
             gpsCoordinates: parentParcel.gpsCoordinates,
+            quartier: parcelData?.quartier || null,
+            village: parcelData?.village || null,
           },
           requester: {
             firstName: requester.firstName,
@@ -450,7 +456,9 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
 
       setCreatedRequestId(data.id);
       setReferenceNumber(data.reference_number);
-      setSubmitted(true);
+      // NOTE: do not set `submitted` here. The caller decides:
+      //   - Stripe redirect succeeds → user navigates away
+      //   - Stripe redirect fails → caller calls markSubmittedFallback() to show success/fallback screen
       return {
         id: data.id as string,
         reference_number: data.reference_number as string,
@@ -462,7 +470,9 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
     } finally {
       setSubmitting(false);
     }
-  }, [parentParcel, requester, lots, roads, commonSpaces, servitudes, planElements, purpose, parcelNumber, parcelId, documents, clearDraft]);
+  }, [parentParcel, parcelData, requester, lots, roads, commonSpaces, servitudes, planElements, purpose, parcelNumber, parcelId, documents, clearDraft]);
+
+  const markSubmittedFallback = useCallback(() => setSubmitted(true), []);
 
 
   return {
