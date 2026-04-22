@@ -41,7 +41,7 @@ const AdminLandTitleRequests: React.FC = () => {
   const [showProcessDialog, setShowProcessDialog] = useState(false);
   
   // Process form
-  const [processAction, setProcessAction] = useState<'approve' | 'reject' | 'in_review'>('approve');
+  const [processAction, setProcessAction] = useState<ProcessAction>('approve');
   const [processingNotes, setProcessingNotes] = useState('');
   const [rejectionReason, setRejectionReason] = useState('');
   const [processing, setProcessing] = useState(false);
