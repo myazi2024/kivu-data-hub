@@ -1012,9 +1012,62 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
                     <Trash2 className="h-3.5 w-3.5" />
                   </Button>
                 </div>
+
+                {/* Type de zone — convertir lot ↔ voie ↔ espace commun */}
+                <div className="rounded-md border bg-muted/30 p-2 space-y-1.5">
+                  <Label className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    Type de zone
+                  </Label>
+                  <div className="grid grid-cols-3 gap-1">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="default"
+                      className="h-7 text-[11px] gap-1"
+                      onClick={() => { /* déjà un lot */ }}
+                    >
+                      <span className="h-2 w-2 rounded-full bg-primary-foreground" />
+                      Lot
+                    </Button>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          className="h-7 text-[11px] gap-1"
+                          onClick={() => handleConvertSelectedZone('road')}
+                        >
+                          <Route className="h-3 w-3" />
+                          Voie
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom" className="max-w-[220px] text-xs">
+                        Convertir cette zone en voie. Vous pourrez ensuite régler sa largeur et son revêtement.
+                      </TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          className="h-7 text-[11px] gap-1"
+                          onClick={() => handleConvertSelectedZone('commonSpace')}
+                        >
+                          <TreePine className="h-3 w-3" />
+                          Espace
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom" className="max-w-[220px] text-xs">
+                        Convertir cette zone en espace commun (espace vert, parking, drainage…).
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-2 gap-2 text-xs">
-                  <div>
-                    <span className="text-muted-foreground">Surface</span>
+
                     <p className="font-bold text-sm">{selectedLot.areaSqm.toLocaleString()} m²</p>
                   </div>
                   <div>
