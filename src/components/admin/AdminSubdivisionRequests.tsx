@@ -19,10 +19,12 @@ import {
   Grid3X3, Search, Eye, Check, X, FileText, User, MapPin,
   Clock, AlertTriangle, Loader2, RefreshCw, DollarSign,
   ChevronLeft, ChevronRight, Square, RotateCcw, Mail, Phone,
-  TreePine, Route, Shield, Paperclip
+  TreePine, Route, Shield, Paperclip, Download, Eye as EyeIcon, Flame, ShieldCheck, ShieldAlert
 } from 'lucide-react';
 import { generateAndUploadCertificate } from '@/utils/certificateService';
 import { StatusBadge, StatusType } from '@/components/shared/StatusBadge';
+import { computeSla, downloadCsv } from '@/utils/adminQueueUtils';
+import { validateSubdivisionAgainstRules, type ValidationResult } from '@/hooks/useZoningRules';
 
 interface SubdivisionRequest {
   id: string;
@@ -60,6 +62,12 @@ interface SubdivisionRequest {
   requester_id_document_url?: string | null;
   proof_of_ownership_url?: string | null;
   subdivision_sketch_url?: string | null;
+  assigned_to?: string | null;
+  assigned_at?: string | null;
+  in_review_at?: string | null;
+  estimated_processing_days?: number;
+  escalated?: boolean;
+  escalated_at?: string | null;
 }
 
 const SUBDIVISION_STATUS_MAP: Record<string, StatusType> = {
@@ -126,6 +134,9 @@ export function AdminSubdivisionRequests() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('_all');
+  const [dateFrom, setDateFrom] = useState<string>('');
+  const [dateTo, setDateTo] = useState<string>('');
+  const [sortBy, setSortBy] = useState<'recent' | 'oldest'>('recent');
   const [selectedRequest, setSelectedRequest] = useState<SubdivisionRequest | null>(null);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [showActionDialog, setShowActionDialog] = useState(false);
@@ -136,6 +147,7 @@ export function AdminSubdivisionRequests() {
   const [processingNotes, setProcessingNotes] = useState('');
   const [processing, setProcessing] = useState(false);
   const [page, setPage] = useState(1);
+  const [validations, setValidations] = useState<Record<string, ValidationResult>>({});
   const itemsPerPage = 10;
 
   const fetchRequests = async () => {
@@ -156,17 +168,77 @@ export function AdminSubdivisionRequests() {
 
   useEffect(() => { fetchRequests(); }, []);
 
-  const filteredRequests = requests.filter(req => {
-    const matchesSearch = req.reference_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      req.parcel_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      req.requester_last_name.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === '_all' || req.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
+  const filteredRequests = requests
+    .filter(req => {
+      const q = searchQuery.toLowerCase();
+      const matchesSearch = req.reference_number.toLowerCase().includes(q) ||
+        req.parcel_number.toLowerCase().includes(q) ||
+        req.requester_last_name.toLowerCase().includes(q);
+      const matchesStatus = statusFilter === '_all' || req.status === statusFilter;
+      const created = new Date(req.created_at).getTime();
+      const matchesFrom = !dateFrom || created >= new Date(dateFrom).getTime();
+      const matchesTo = !dateTo || created <= new Date(dateTo).getTime() + 86400000;
+      return matchesSearch && matchesStatus && matchesFrom && matchesTo;
+    })
+    .sort((a, b) => {
+      const da = new Date(a.created_at).getTime();
+      const db = new Date(b.created_at).getTime();
+      return sortBy === 'recent' ? db - da : da - db;
+    });
 
   const paginatedRequests = filteredRequests.slice((page - 1) * itemsPerPage, page * itemsPerPage);
   const totalPages = Math.ceil(filteredRequests.length / itemsPerPage);
   const pendingCount = requests.filter(r => r.status === 'pending').length;
+
+  // Lazy compliance check for visible rows
+  useEffect(() => {
+    paginatedRequests.forEach(req => {
+      if (validations[req.id]) return;
+      if (!['pending', 'in_review', 'returned'].includes(req.status)) return;
+      validateSubdivisionAgainstRules(req.id).then(res => {
+        setValidations(prev => ({ ...prev, [req.id]: res }));
+      });
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, filteredRequests.length]);
+
+  const handleStartReview = async (req: SubdivisionRequest) => {
+    if (!user) return;
+    const { error } = await supabase
+      .from('subdivision_requests')
+      .update({
+        status: 'in_review',
+        assigned_to: user.id,
+        assigned_at: new Date().toISOString(),
+        in_review_at: new Date().toISOString(),
+      } as any)
+      .eq('id', req.id);
+    if (error) {
+      toast({ title: 'Erreur', description: error.message, variant: 'destructive' });
+    } else {
+      toast({ title: 'Demande mise en examen' });
+      fetchRequests();
+    }
+  };
+
+  const handleExportCsv = () => {
+    const rows = filteredRequests.map(r => ({
+      reference: r.reference_number,
+      statut: STATUS_LABELS[r.status] || r.status,
+      parcelle: r.parcel_number,
+      demandeur: `${r.requester_last_name} ${r.requester_first_name}`,
+      telephone: r.requester_phone,
+      email: r.requester_email || '',
+      lots: r.number_of_lots,
+      surface_m2: r.parent_parcel_area_sqm,
+      total_usd: r.total_amount_usd,
+      affectee_a: r.assigned_to || '',
+      escalade: r.escalated ? 'oui' : 'non',
+      cree_le: format(new Date(r.created_at), 'yyyy-MM-dd HH:mm'),
+    }));
+    downloadCsv(`demandes-lotissement-${format(new Date(), 'yyyyMMdd-HHmm')}.csv`, rows);
+    toast({ title: `${rows.length} demandes exportées` });
+  };
 
   const handleAction = (request: SubdivisionRequest, action: 'approve' | 'reject' | 'return') => {
     setSelectedRequest(request);
