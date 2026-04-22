@@ -381,8 +381,24 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
   // Step validation
   const isStepValid = useCallback((step: SubdivisionStep): boolean => {
     switch (step) {
-      case 'parcel':
-        return !!(parentParcel && requester.type && purpose && requester.firstName && requester.lastName && requester.phone);
+      case 'parcel': {
+        if (!parentParcel || !requester.type || !purpose || !requester.phone) return false;
+        const status = requester.legalStatus;
+        if (!status) return false;
+        if (status !== 'État' && !requester.nationality) return false;
+        if (status === 'Personne physique') {
+          if (!requester.gender) return false;
+          if (!requester.firstName || !requester.lastName) return false;
+        } else if (status === 'Personne morale') {
+          if (!requester.entityType) return false;
+          if (!requester.rccmNumber) return false;
+          if (!requester.lastName) return false; // raison sociale / dénomination
+        } else if (status === 'État') {
+          if (!requester.rightType) return false;
+          if (!requester.stateExploitedBy) return false;
+        }
+        return true;
+      }
       case 'designer':
         return lots.length >= 2 && validation.isValid;
       case 'plan':
@@ -437,9 +453,18 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
             village: parcelData?.village || null,
           },
           requester: {
+            legalStatus: requester.legalStatus || null,
+            gender: requester.gender || null,
             firstName: requester.firstName,
             lastName: requester.lastName,
             middleName: requester.middleName || null,
+            entityType: requester.entityType || null,
+            entitySubType: requester.entitySubType || null,
+            entitySubTypeOther: requester.entitySubTypeOther || null,
+            rccmNumber: requester.rccmNumber || null,
+            rightType: requester.rightType || null,
+            stateExploitedBy: requester.stateExploitedBy || null,
+            nationality: requester.nationality || null,
             phone: requester.phone,
             email: requester.email || null,
             type: requester.type,

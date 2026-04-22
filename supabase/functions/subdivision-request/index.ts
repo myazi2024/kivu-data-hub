@@ -30,6 +30,16 @@ interface SubdivisionRequestBody {
     phone: string;
     email?: string | null;
     type: string;
+    // Identité enrichie (alignée sur le bloc « Propriétaire actuel » du formulaire CCC)
+    legalStatus?: string | null;
+    gender?: string | null;
+    entityType?: string | null;
+    entitySubType?: string | null;
+    entitySubTypeOther?: string | null;
+    rccmNumber?: string | null;
+    rightType?: string | null;
+    stateExploitedBy?: string | null;
+    nationality?: string | null;
   };
   lots: any[];
   roads: any[];
@@ -130,6 +140,15 @@ Deno.serve(async (req) => {
       requester_phone: body.requester.phone,
       requester_email: body.requester.email || null,
       requester_type: body.requester.type,
+      // Identité enrichie
+      requester_legal_status: body.requester.legalStatus || null,
+      requester_gender: body.requester.gender || null,
+      requester_entity_type: body.requester.entityType || null,
+      requester_entity_subtype: body.requester.entitySubType || null,
+      requester_rccm_number: body.requester.rccmNumber || null,
+      requester_right_type: body.requester.rightType || null,
+      requester_state_exploited_by: body.requester.stateExploitedBy || null,
+      requester_nationality: body.requester.nationality || null,
       number_of_lots: body.lots.length,
       lots_data: body.lots,
       subdivision_plan_data: {
