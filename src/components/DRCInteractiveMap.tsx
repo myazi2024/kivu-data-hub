@@ -23,7 +23,7 @@ import { useTestEnvironment } from '@/hooks/useTestEnvironment';
 import { useTabChartsConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
 import { getTerritoiresForProvince, getProvinceForTerritoire } from '@/lib/geographicData';
 import { MAP_TAB_PROFILES, computeAdaptiveTiers, NO_DATA_COLOR, type MapTabProfile, type MapTier } from '@/config/mapTabProfiles';
-import { norm, buildScopePredicate } from './map/meta/mapMeta';
+import { norm, buildScopePredicate, sliceAnalyticsByPredicate, type GeoScopedRecord } from './map/meta/mapMeta';
 import { useMapDrilldown } from './map/hooks/useMapDrilldown';
 import { useMapIndicators } from './map/hooks/useMapIndicators';
 import { MapLegend } from './map/ui/MapLegend';
@@ -62,7 +62,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
   } = drilldown;
 
   const [hoveredProvince, setHoveredProvince] = useState<string | null>(null);
-  const [mapInstance, setMapInstance] = useState<any>(null);
+  const [mapInstance, setMapInstance] = useState<unknown>(null);
   const [activeMobilePanel, setActiveMobilePanel] = useState<'map' | 'analytics'>('map');
   const [isMapZoomed, setIsMapZoomed] = useState(false);
 
