@@ -195,8 +195,6 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
       onSelectLot(null);
       onModeChange?.('select');
       setContextMenuLotId(null);
-      setShowClipartPalette(false);
-      setClipartType(null);
     },
     onBackspace: () => {
       if ((mode === 'drawLine' || mode === 'drawRoad') && lineDrawMultiMode && lineDrawPoints.length > 1) {
@@ -560,20 +558,6 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
       return;
     }
 
-    if (mode === 'clipart' && clipartType) {
-      const targetLot = lots.find(lot => pointInPolygon(normalized, lot.vertices));
-      if (targetLot && onUpdateLotAnnotations) {
-        const newAnnotation: LotAnnotation = {
-          id: `ann-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-          type: clipartType,
-          position: { x: normalized.x, y: normalized.y },
-        };
-        const existing = targetLot.annotations || [];
-        onUpdateLotAnnotations(targetLot.id, [...existing, newAnnotation]);
-      }
-      return;
-    }
-
     if (mode === 'select') {
       onSelectLot(null);
       onSelectRoad?.(null);
@@ -583,7 +567,7 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
     if (mode === 'selectEdge') {
       setEdgeContextMenu(null);
     }
-  }, [readOnly, mode, getSvgPos, fromScreen, lots, onSelectLot, onSelectRoad, clipartType, onUpdateLotAnnotations, drag, isLineDragging, lineDrawMultiMode]);
+  }, [readOnly, mode, getSvgPos, fromScreen, lots, onSelectLot, onSelectRoad, drag, isLineDragging, lineDrawMultiMode]);
 
   const handleCanvasDoubleClick = useCallback((e: React.MouseEvent) => {
     if ((mode === 'drawLine' || mode === 'drawRoad') && lineDrawPoints.length >= 2) {
@@ -601,7 +585,6 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
   }, [mode, lineDrawPoints, finishLineDraw, viewport]);
 
   const handleLotClick = useCallback((lotId: string, e: React.MouseEvent) => {
-    if (mode === 'clipart') return;
     if (mode !== 'select') return;
     e.stopPropagation();
     if ((e.ctrlKey || e.metaKey) && onToggleLotSelection) {
@@ -647,7 +630,6 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
   const svgCursor = viewport.isSpaceDown()
     ? 'grab'
     : (mode === 'drawLine' || mode === 'drawRoad') ? 'crosshair'
-    : mode === 'clipart' ? 'cell'
     : mode === 'selectEdge' ? 'pointer'
     : 'default';
 
@@ -691,21 +673,6 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
         </button>
       </div>
 
-      {/* Clipart palette */}
-      {showClipartPalette && (
-        <ClipartPalette
-          selectedType={clipartType}
-          onSelect={(type) => {
-            setClipartType(type);
-            onModeChange?.('clipart');
-          }}
-          onClose={() => {
-            setShowClipartPalette(false);
-            setClipartType(null);
-            onModeChange?.('select');
-          }}
-        />
-      )}
 
       <svg
         ref={svgRef}
@@ -1635,14 +1602,6 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
             <rect x={CANVAS_W / 2 - 165} y={CANVAS_H - 24} width={330} height={20} rx={4} fill="hsl(var(--primary))" fillOpacity={0.1} />
             <text x={CANVAS_W / 2} y={CANVAS_H - 14} textAnchor="middle" dominantBaseline="middle" fontSize={9} fill="hsl(var(--primary))" fontWeight="600">
               🛣 Cliquez sur une limite entre lots pour créer une voie • Échap: annuler
-            </text>
-          </g>
-        )}
-        {mode === 'clipart' && clipartType && (
-          <g className="pointer-events-none">
-            <rect x={CANVAS_W / 2 - 130} y={CANVAS_H - 24} width={260} height={20} rx={4} fill="hsl(var(--primary))" fillOpacity={0.1} />
-            <text x={CANVAS_W / 2} y={CANVAS_H - 14} textAnchor="middle" dominantBaseline="middle" fontSize={9} fill="hsl(var(--primary))" fontWeight="600">
-              🎨 Cliquez sur un lot pour placer le clipart
             </text>
           </g>
         )}
