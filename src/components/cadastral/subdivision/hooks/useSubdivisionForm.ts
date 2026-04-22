@@ -121,11 +121,17 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
   // Plan data
   const [lots, setLots] = useState<SubdivisionLot[]>([]);
 
-  // Recompute fee when lots change
+  // Debounced fee recompute (400ms) — avoids hammering Supabase on every drag
+  const feeDebounceRef = useRef<number | null>(null);
   useEffect(() => {
-    if (lots.length > 0) {
+    if (lots.length === 0) return;
+    if (feeDebounceRef.current) window.clearTimeout(feeDebounceRef.current);
+    feeDebounceRef.current = window.setTimeout(() => {
       computeFee(lots);
-    }
+    }, 400);
+    return () => {
+      if (feeDebounceRef.current) window.clearTimeout(feeDebounceRef.current);
+    };
   }, [lots, computeFee]);
 
   const [roads, setRoads] = useState<SubdivisionRoad[]>([]);
