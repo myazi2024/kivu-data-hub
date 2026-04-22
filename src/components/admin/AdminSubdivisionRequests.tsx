@@ -25,6 +25,7 @@ import { generateAndUploadCertificate } from '@/utils/certificateService';
 import { StatusBadge, StatusType } from '@/components/shared/StatusBadge';
 import { computeSla, downloadCsv } from '@/utils/adminQueueUtils';
 import { validateSubdivisionAgainstRules, type ValidationResult } from '@/hooks/useZoningRules';
+import SubdivisionMiniMap from '@/components/cadastral/subdivision/SubdivisionMiniMap';
 
 interface SubdivisionRequest {
   id: string;
