@@ -322,7 +322,17 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
     pushHistory([fullLot]);
     setLots([fullLot]);
   }, [parentParcel, parentVertices, lots.length, pushHistory]);
-  
+
+  // Auto-create initial lot (= entire parent parcel) when entering the designer step
+  // with an empty canvas. Skipped if a draft restored existing lots.
+  useEffect(() => {
+    if (currentStep !== 'designer') return;
+    if (!parentParcel || !parentVertices || parentVertices.length < 3) return;
+    if (lots.length > 0) return;
+    if (draftRestored) return;
+    createInitialLot();
+  }, [currentStep, parentParcel, parentVertices, lots.length, draftRestored, createInitialLot]);
+
   const undo = useCallback(() => {
     if (historyIndexRef.current > 0) {
       historyIndexRef.current -= 1;
