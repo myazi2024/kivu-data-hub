@@ -1335,10 +1335,6 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
                       <text x={cx - 28} y={cy - 31} textAnchor="middle" dominantBaseline="middle" fontSize={14} className="pointer-events-none select-none">📋</text>
                     </g>
                   )}
-                  <g className="cursor-pointer" onClick={e => { e.stopPropagation(); setShowClipartPalette(true); setContextMenuLotId(null); onModeChange?.('clipart'); }}>
-                    <rect x={cx - 12} y={cy - 42} width={24} height={22} rx={4} fill="transparent" />
-                    <text x={cx} y={cy - 31} textAnchor="middle" dominantBaseline="middle" fontSize={14} className="pointer-events-none select-none">🎨</text>
-                  </g>
                   {onConvertEdgeToRoad && (
                     <g className="cursor-pointer" onClick={e => {
                       e.stopPropagation();
