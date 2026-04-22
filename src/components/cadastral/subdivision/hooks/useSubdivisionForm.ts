@@ -378,111 +378,96 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
   const isStepValid = useCallback((step: SubdivisionStep): boolean => {
     switch (step) {
       case 'parcel':
-        return !!(parentParcel && requester.type && purpose);
+        return !!(parentParcel && requester.type && purpose && requester.firstName && requester.lastName && requester.phone);
       case 'designer':
         return lots.length >= 2 && validation.isValid;
       case 'plan':
         return true;
+      case 'documents':
+        return !!(documents.requester_id_document_url && documents.proof_of_ownership_url);
       case 'summary':
-        return true;
+        return !!(documents.requester_id_document_url && documents.proof_of_ownership_url);
       default:
         return false;
     }
-  }, [parentParcel, requester, lots, validation, purpose]);
-  
+  }, [parentParcel, requester, lots, validation, purpose, documents]);
+
   // Navigation
-  const steps: SubdivisionStep[] = ['parcel', 'designer', 'plan', 'summary'];
-  
+  const steps: SubdivisionStep[] = ['parcel', 'designer', 'plan', 'documents', 'summary'];
+
   const goNext = useCallback(() => {
     const idx = steps.indexOf(currentStep);
     if (idx < steps.length - 1) setCurrentStep(steps[idx + 1]);
   }, [currentStep]);
-  
+
   const goPrev = useCallback(() => {
     const idx = steps.indexOf(currentStep);
     if (idx > 0) setCurrentStep(steps[idx - 1]);
   }, [currentStep]);
-  
-  // Submit — creates record with pending payment, returns ID for billing
-  const submit = useCallback(async (userId: string) => {
+
+  // Submit — calls secure edge function (server is source of truth for fee + reference)
+  // Returns { id, reference_number, total_amount_usd } so the caller can trigger payment
+  const submit = useCallback(async (_userId: string) => {
     if (!parentParcel) return null;
-    
+    if (!documents.requester_id_document_url || !documents.proof_of_ownership_url) {
+      throw new Error('Pièces obligatoires manquantes (CNI + preuve de propriété).');
+    }
+
     setSubmitting(true);
     try {
-      const feeAmount = submissionFee ?? 20;
-      
-      const planData: SubdivisionPlanData = {
-        lots,
-        roads,
-        commonSpaces,
-        servitudes,
-        planElements,
-      };
-      
-      const { data, error } = await supabase
-        .from('subdivision_requests' as any)
-        .insert({
-          user_id: userId,
+      const { data, error } = await supabase.functions.invoke('subdivision-request', {
+        body: {
           parcel_number: parcelNumber,
-          parent_parcel_area_sqm: parentParcel.areaSqm,
-          parent_parcel_location: parentParcel.location,
-          parent_parcel_owner_name: parentParcel.ownerName,
-          parent_parcel_title_reference: parentParcel.titleReference,
-          parent_parcel_gps_coordinates: parentParcel.gpsCoordinates,
-          requester_first_name: requester.firstName,
-          requester_last_name: requester.lastName,
-          requester_middle_name: requester.middleName || null,
-          requester_phone: requester.phone,
-          requester_email: requester.email || null,
-          requester_type: requester.type,
-          number_of_lots: lots.length,
-          lots_data: lots,
-          subdivision_plan_data: planData,
-          purpose_of_subdivision: purpose,
-          submission_fee_usd: feeAmount,
-          total_amount_usd: feeAmount,
-          status: 'pending',
-          submission_payment_status: 'pending',
-        } as any)
-        .select()
-        .single();
-      
-      if (error) throw error;
-      
-      // Build reference from returned ID
-      const record = data as any;
-      const shortId = record.id.substring(0, 8).toUpperCase();
-      const refNum = `LOT-${new Date().getFullYear()}-${shortId}`;
-      
-      // Update reference number
-      await supabase
-        .from('subdivision_requests' as any)
-        .update({ reference_number: refNum } as any)
-        .eq('id', record.id);
-      
-      // Create notification
-      await supabase.from('notifications').insert({
-        user_id: userId,
-        type: 'success',
-        title: 'Demande de lotissement soumise',
-        message: `Votre demande ${refNum} a été soumise. Frais de dossier: ${feeAmount}$.`,
-        action_url: '/user-dashboard?tab=subdivisions',
+          parcel_id: parcelId || null,
+          parent_parcel: {
+            areaSqm: parentParcel.areaSqm,
+            location: parentParcel.location,
+            ownerName: parentParcel.ownerName,
+            titleReference: parentParcel.titleReference,
+            gpsCoordinates: parentParcel.gpsCoordinates,
+          },
+          requester: {
+            firstName: requester.firstName,
+            lastName: requester.lastName,
+            middleName: requester.middleName || null,
+            phone: requester.phone,
+            email: requester.email || null,
+            type: requester.type,
+          },
+          lots,
+          roads,
+          commonSpaces,
+          servitudes,
+          planElements,
+          purpose,
+          documents,
+        },
       });
-      
+
+      if (error) throw error;
+      if (!data?.id || !data?.reference_number) {
+        throw new Error('Réponse invalide du serveur');
+      }
+
       // Clear draft on successful submission
       clearDraft();
-      
-      setReferenceNumber(refNum);
+
+      setCreatedRequestId(data.id);
+      setReferenceNumber(data.reference_number);
       setSubmitted(true);
-      return refNum;
-    } catch (err) {
+      return {
+        id: data.id as string,
+        reference_number: data.reference_number as string,
+        total_amount_usd: Number(data.total_amount_usd),
+      };
+    } catch (err: any) {
       console.error('Error submitting:', err);
-      throw err;
+      throw new Error(err?.message || 'Échec de la soumission');
     } finally {
       setSubmitting(false);
     }
-  }, [parentParcel, requester, lots, roads, commonSpaces, servitudes, planElements, purpose, parcelNumber, submissionFee, clearDraft]);
-  
+  }, [parentParcel, requester, lots, roads, commonSpaces, servitudes, planElements, purpose, parcelNumber, parcelId, documents, clearDraft]);
+
 
   return {
     // Steps
@@ -504,8 +489,10 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
     validation, runValidation,
     // Purpose
     purpose, setPurpose,
+    // Documents
+    documents, setDocuments,
     // Submission
-    submitting, submitted, referenceNumber, submit,
+    submitting, submitted, referenceNumber, createdRequestId, submit,
     // Pricing
     submissionFee, loadingFee, feeBreakdown,
     // Draft
