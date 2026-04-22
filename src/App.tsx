@@ -18,6 +18,7 @@ import TestEnvironmentBanner from '@/components/TestEnvironmentBanner';
 import TestEmptyStateBanner from '@/components/TestEmptyStateBanner';
 import React, { Suspense } from "react";
 import { Loader2 } from "lucide-react";
+import { lazyWithRetry } from "@/lib/lazyWithRetry";
 import { useAppAppearance } from "@/hooks/useAppAppearance";
 import { Navigate } from "react-router-dom";
 import useScrollToTop from "@/hooks/useScrollToTop";
