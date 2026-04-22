@@ -209,6 +209,8 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
   }, [selectedLotId, lots, setLots]);
 
   const deleteLot = useCallback((id: string) => {
+    const target = lots.find(l => l.id === id);
+    if (target?.isParentBoundary) return; // Locked: must be split/cut, not deleted
     setLots(lots.filter(l => l.id !== id));
     if (selectedLotId === id) setSelectedLotId(null);
   }, [lots, setLots, selectedLotId]);
@@ -216,6 +218,7 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
   const duplicateLot = useCallback((id: string) => {
     const lot = lots.find(l => l.id === id);
     if (!lot) return;
+    if (lot.isParentBoundary) return; // Cannot duplicate the locked parent parcel
     const maxLotNum = lots.reduce((m, l) => Math.max(m, parseInt(l.lotNumber) || 0), 0);
     const offset = 0.03;
     const newLot: SubdivisionLot = {
@@ -224,6 +227,7 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
       lotNumber: String(maxLotNum + 1),
       vertices: lot.vertices.map(v => ({ x: Math.min(1, v.x + offset), y: Math.min(1, v.y + offset) })),
       annotations: [],
+      isParentBoundary: false,
     };
     setLots([...lots, newLot]);
     setSelectedLotId(newLot.id);
