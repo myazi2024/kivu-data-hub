@@ -279,6 +279,8 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
   // Legacy isotropic scale used by a few road-width-in-pixels conversions.
   // For real distances/areas, always use the metric frame instead.
   const sideLength = Math.sqrt(parentAreaSqm);
+
+  // ---- Distance calculation helpers ----
   const getParallelEdges = useCallback((lineStart: Point2D, lineEnd: Point2D) => {
     const edges: { p1Screen: Point2D; p2Screen: Point2D; distM: number; midScreen: Point2D; lineMidScreen: Point2D }[] = [];
     const dx = lineEnd.x - lineStart.x;
