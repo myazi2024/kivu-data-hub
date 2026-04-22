@@ -6,7 +6,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   Grid3X3, MapPin, User, Phone, Mail, Paperclip, FileText, Square,
-  Route, TreePine, Shield, AlertTriangle,
+  Route, TreePine, Shield, AlertTriangle, Download,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -17,6 +17,7 @@ import {
   type SubdivisionRequest,
 } from './types';
 import { getPlanCommonSpaces, getPlanRoads, getPlanServitudes } from './helpers';
+import { exportSubdivisionDossier } from './exportDossier';
 
 interface Props {
   open: boolean;
@@ -30,8 +31,22 @@ export function RequestDetailsDialog({ open, onOpenChange, request, onOpenDocume
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2"><Grid3X3 className="h-5 w-5 text-primary" /> Détails</DialogTitle>
-          <DialogDescription>{request?.reference_number}</DialogDescription>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <DialogTitle className="flex items-center gap-2"><Grid3X3 className="h-5 w-5 text-primary" /> Détails</DialogTitle>
+              <DialogDescription>{request?.reference_number}</DialogDescription>
+            </div>
+            {request && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => exportSubdivisionDossier(request)}
+                className="gap-2 shrink-0"
+              >
+                <Download className="h-4 w-4" /> Dossier PDF
+              </Button>
+            )}
+          </div>
         </DialogHeader>
         {request && (
           <ScrollArea className="max-h-[calc(90vh-150px)]">
