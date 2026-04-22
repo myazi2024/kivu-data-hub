@@ -70,15 +70,17 @@ export const exportSubdivisionDossier = (req: SubdivisionRequest): void => {
   addLine('Type', req.requester_type || '—');
   addLine('Téléphone', req.requester_phone);
   addLine('Email', req.requester_email || '—');
-  if (req.requester_id_number) addLine('Pièce d\'identité', req.requester_id_number);
+  if (req.requester_rccm_number) addLine('RCCM', req.requester_rccm_number);
+  if (req.requester_nationality) addLine('Nationalité', req.requester_nationality);
 
   // Parcelle mère
   section('Parcelle mère');
   addLine('Numéro parcelle', req.parcel_number);
   addLine('Surface', `${req.parent_parcel_area_sqm} m²`);
-  if (req.parent_parcel_address) addLine('Adresse', req.parent_parcel_address);
-  if (req.section_type) addLine('Type section', req.section_type);
-  if (req.location_name) addLine('Localisation', req.location_name);
+  if (req.parent_parcel_location) addLine('Localisation', req.parent_parcel_location);
+  if (req.parent_parcel_owner_name) addLine('Propriétaire', req.parent_parcel_owner_name);
+  if (req.parent_parcel_title_reference) addLine('Réf. titre', req.parent_parcel_title_reference);
+  if (req.parent_parcel_title_type) addLine('Type titre', req.parent_parcel_title_type);
 
   // Lots
   section('Découpage');
@@ -106,7 +108,6 @@ export const exportSubdivisionDossier = (req: SubdivisionRequest): void => {
   addLine('Frais de traitement', req.processing_fee_usd != null ? `$${Number(req.processing_fee_usd).toFixed(2)}` : '—');
   addLine('Total', req.total_amount_usd != null ? `$${Number(req.total_amount_usd).toFixed(2)}` : '—', true);
   addLine('Statut paiement', req.submission_payment_status || '—');
-  if (req.payment_reference) addLine('Référence paiement', req.payment_reference);
 
   // Motifs / notes
   if (req.rejection_reason || req.processing_notes) {
