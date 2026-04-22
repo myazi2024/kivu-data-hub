@@ -1,114 +1,97 @@
 
 
-## Audit — Service « Demander un lotissement »
+## Audit — Service « Demander un lotissement » (post-fixes P0)
 
-État global : **fonctionnel mais avec dette technique critique** sur la sécurité paiement, l'intégrité référentielle et la modularisation. Le formulaire 4 étapes (parcelle → designer → plan → récap) fonctionne et le brouillon localStorage + undo/redo sont bien implémentés. **3 bugs bloquants identifiés.**
-
----
-
-### 🔴 P0 — Bugs bloquants
-
-#### 1. Violation du pattern de soumission sécurisée (Core rule)
-`useSubdivisionForm.submit()` fait un `supabase.from('subdivision_requests').insert(...)` **directement depuis le client**. La règle Core (memory `payment/pattern-soumission-securisee-fr`) impose que tous les services payants passent par une edge function avec `SERVICE_ROLE_KEY`. Mutation, Expertise, Titre Foncier le font déjà — Lotissement est le seul service hors-pattern.
-
-**Conséquences** :
-- Le client peut forger `submission_fee_usd`, `total_amount_usd`, `status='approved'`.
-- RLS `Users can create their own subdivision requests` autorise l'insert mais ne protège pas les montants.
-
-#### 2. Workflow de paiement absent
-`submit()` insère avec `submission_payment_status: 'pending'` puis affiche « Demande soumise avec succès » sans **aucune redirection vers Stripe/MoMo**. Comparé à `useLandTitleRequest` ou `useMutationRequest` qui invoquent une edge `*-payment` puis redirigent.
-
-**Preuve DB** : sur 26 demandes existantes, **5 sont `approved` avec `submission_payment_status='pending'`** et 5 `rejected pending`. La passerelle de paiement n'est jamais déclenchée.
-
-#### 3. `parcel_id` jamais inséré → orphelins + rollback test cassé
-Le dialogue reçoit la prop `parcelId` (ligne 21 de `SubdivisionRequestDialog.tsx`), la passe au hook **mais le hook ne l'insère pas dans la table**. Or :
-- La colonne `parcel_id uuid NULLABLE` existe dans `subdivision_requests`.
-- Le rollback du Mode Test (`generators/rollback.ts:32`) fait `DELETE WHERE parcel_id IN (...)` → **les demandes test ne seront jamais purgées par cette passe** (seulement par le fallback `reference_number ILIKE 'TEST-SUB-%'`).
-- Cross-link parcelle ↔ lotissement impossible côté admin.
-
-#### 4. Risque schéma — `reference_number NOT NULL`
-La table impose `reference_number NOT NULL` mais l'insert ne fournit pas la colonne (générée après via UPDATE). Si la DB n'a pas de DEFAULT (à vérifier — pas vu dans le schéma extrait), l'insert plante en prod. À ce jour ça passe peut-être grâce à un trigger ou un DEFAULT non listé — à confirmer pendant le fix.
+État global : **les P0 critiques précédents sont résolus** (edge function sécurisée, paiement Stripe branché, `parcel_id` inséré, debounce, documents obligatoires). Mais **5 nouveaux bugs** ont été introduits par les fixes, dont **1 bloquant** sur l'accès aux documents.
 
 ---
 
-### 🟠 P1 — Cohérence & sécurité
+### 🔴 P0 — Bug bloquant (régression)
 
-#### 5. Pièces jointes obligatoires absentes du formulaire
-Colonnes présentes en DB mais aucun champ UI :
-- `requester_id_document_url` (CNI demandeur)
-- `proof_of_ownership_url` (titre / preuve propriété)
-- `subdivision_sketch_url` (croquis annexe)
-- `additional_documents` jsonb
+#### 1. Documents inaccessibles aux admins — `getPublicUrl` sur bucket privé
+`StepDocuments.tsx:83` appelle `supabase.storage.from('cadastral-documents').getPublicUrl(path)` et stocke l'URL résultante en DB. Or le bucket `cadastral-documents` est **privé** (`public=false` confirmé en DB). Conséquence : les liens stockés dans `requester_id_document_url` / `proof_of_ownership_url` retournent **403** à l'ouverture. Les admins ne pourront pas consulter les pièces pour examiner la demande → workflow d'approbation cassé.
 
-Le formulaire devrait imposer au minimum CNI + preuve de propriété (cohérent avec Mutation/Titre Foncier).
-
-#### 6. Tarif fallback incohérent
-- Code fallback : `setSubmissionFee(20)` quand aucun rate trouvé.
-- DB rates par défaut : `urban=0.5$/m² min 10`, `rural=0.3$/m² min 5`.
-- Le 20$ ne correspond à rien de configuré → utiliser plutôt `min_fee_per_lot_usd × number_of_lots` ou lever une erreur.
-
-#### 7. Fee recompute non-debounced
-`useEffect([lots]) → computeFee()` déclenche un appel Supabase à **chaque drag de sommet** dans le canvas (potentiellement plusieurs fois par seconde). À debouncer (300-500ms) ou à mémoïser sur `lots.length` + somme des aires arrondies.
+**Correction** : stocker le `path` (pas l'URL) en DB et générer des signed URLs à la lecture côté admin (pattern déjà utilisé pour les autres services cadastraux). Migration légère : adapter `StepDocuments` pour stocker `path` et la vue admin pour appeler `createSignedUrl(path, 3600)` à la demande.
 
 ---
 
-### 🟡 P2 — Dette technique & qualité
+### 🟠 P1 — Cohérences & incohérences UX
 
-#### 8. Violation Core rule « Dialogs > 1000 lines »
-- `StepLotDesigner.tsx` : **1246 LOC** (avec convexHull, lineSegmentIntersection, etc.)
-- `LotCanvas.tsx` : **1711 LOC**
+#### 2. Détection rural/urbain cassée dans l'edge function
+`subdivision-request/index.ts:67` fait `parent_parcel.location.toLowerCase().includes("village")`. Or côté client la `location` est construite par `[commune, quartier, avenue].filter(Boolean).join(', ')` — le mot « village » n'y figure jamais. Tous les calculs basculent en `urban` même pour les parcelles rurales → tarif erroné.
 
-→ Extraire utils géométriques vers `subdivision/utils/`, modes canvas vers sous-composants.
+**Correction** : passer `section_type` explicite depuis le client (déjà calculé dans `computeFee`) ou détecter via présence de `quartier` vs `village` (champ séparé qu'il faut transmettre dans `parent_parcel`).
 
-#### 9. Typage relâché — `as any` pervasif
-- `parcelData?: any` dans plusieurs interfaces
-- `supabase.from('subdivision_requests' as any)` car table absente de `types.ts`
-- `(c: any) => ({ lat: c.lat, lng: c.lng })` sur les GPS coordinates
-- `subdivision_rate_config as any`
+#### 3. Affichage tarif `?? 20` partout — incohérent avec l'edge
+- `SubdivisionRequestDialog:109` : `feeLabel = ... ${form.submissionFee ?? 20}$`
+- `StepSummary:42` : `feeAmount = submissionFee ?? 20`
+- Edge fallback : `Math.max(10, lots.length * 10)`
 
-→ Régénérer les types Supabase ou typer manuellement `SubdivisionRequestRow`.
+L'utilisateur peut voir « 20$ » et être facturé 30$ (3 lots × 10). 
 
-#### 10. Workflow d'approbation admin non-atomique
-`AdminSubdivisionRequests.handleStatusUpdate()` fait un simple UPDATE du statut. À l'approbation, **aucune création automatique** des `subdivision_lots` / `subdivision_roads` à partir de `lots_data` jsonb (seul le générateur de mode test fait cette explosion). Conséquence : `LotCanvas` admin n'a rien à afficher pour les vraies demandes approuvées.
+**Correction** : ne pas afficher de fallback ; si `loadingFee=true`, afficher un spinner et désactiver le bouton (déjà fait pour le bouton, à compléter pour les labels).
 
-#### 11. Notifications hors helper standard
-Insert direct dans `notifications` au lieu d'utiliser `notificationHelper.createNotification()` (rule mémoire `architecture/notification-system-standardization`).
+#### 4. Écran « Demande soumise avec succès » = code mort
+`StepSummary` lignes 44-82 affichent un écran de succès quand `submitted=true`. Mais le flow réel fait `window.location.href = payment.url` immédiatement après `setSubmitted(true)` → l'utilisateur voit Stripe, jamais l'écran de succès. À l'inverse si Stripe échoue, on affiche un toast d'erreur sans état de succès.
+
+**Correction** : soit supprimer le bloc `submitted`, soit le réserver au cas « paiement indisponible » (afficher la référence + lien tableau de bord).
+
+#### 5. Type `SubdivisionDocuments` dupliqué
+Défini à la fois dans `useSubdivisionForm.ts:13-17` et `StepDocuments.tsx:11-15`. Risque de divergence si un champ change.
+
+**Correction** : déplacer le type vers `subdivision/types.ts` et l'importer aux deux endroits.
 
 ---
 
-### ✅ Ce qui fonctionne bien
+### 🟡 P2 — Dette persistante
 
-| Élément | État |
+#### 6. Approbation admin non-atomique (déjà identifié)
+`AdminSubdivisionRequests.saveApprovedLots` (lignes 178-214) insère les lots un à un côté client après l'UPDATE du statut. Si un insert échoue à mi-parcours : statut `approved` mais lots partiellement créés. **Aucun rollback possible.** + viole `atomic-cross-table-updates-fr`.
+
+**Correction recommandée** : nouvelle edge function `approve-subdivision` (SERVICE_ROLE, transactionnelle) qui fait UPDATE statut + INSERT lots + UPDATE `cadastral_parcels.is_subdivided` en une seule transaction.
+
+#### 7. Modularisation toujours hors-norme
+- `StepLotDesigner.tsx` : 1246 LOC
+- `LotCanvas.tsx` : 1711 LOC
+
+→ Extraire helpers géométriques vers `subdivision/utils/geometry.ts`, splitter `LotCanvas` par mode (vertex/edge/lot/road).
+
+#### 8. Notifications hors helper standard (déjà identifié)
+Edge `subdivision-request` insère directement dans `notifications` au lieu d'utiliser `notificationHelper`.
+
+---
+
+### ✅ Vérifications cross-fonctionnelles — RAS
+
+| Vérification | État |
 |---|---|
-| Brouillon localStorage auto-save + restore | ✅ |
-| Undo/redo via historyRef pattern | ✅ Conforme `canvas-history-ref-pattern-fr` |
-| Validation géométrique (snap, polygon area, validateSubdivision) | ✅ |
-| FormIntroDialog + WhatsAppFloatingButton | ✅ Cohérent autres services |
-| RLS subdivision_requests (admin/owner/pending guard) | ✅ |
-| Fee dynamique par localisation + section_type | ✅ Bonne logique |
-| Calcul fee côté client cohérent avec rate config (min/max/round) | ✅ |
-| Generator test mode + rollback fallback `TEST-SUB-%` | ✅ |
+| Edge `subdivision-request` calcule fee côté serveur | ✅ |
+| `parcel_id` correctement transmis hook → edge → insert | ✅ |
+| `reference_number` généré dans l'edge (plus de risque NOT NULL) | ✅ |
+| Documents obligatoires bloquent `isStepValid('documents')` | ✅ |
+| Debounce 400ms sur `computeFee` | ✅ |
+| `create-payment` reconnaît `subdivision_request` (lignes 13, 222-249) | ✅ |
+| Success/cancel URLs configurées (`/cadastral-map?payment=…`) | ✅ |
+| Brouillon localStorage + undo/redo + validation géométrique | ✅ |
 
 ---
 
 ### Plan d'action proposé (par priorité)
 
-| # | Action | Fichier(s) principal(aux) | Impact |
+| # | Action | Fichier(s) | Impact |
 |---|---|---|---|
-| P0 | Créer edge function `subdivision-payment` (insert avec SERVICE_ROLE + génère `reference_number` + retourne `checkout_url`) | nouvelle `supabase/functions/subdivision-payment/index.ts` + `useSubdivisionForm.submit` | **Critique** sécurité |
-| P0 | Inclure `parcel_id` dans l'insert (passer prop → hook → payload) | `useSubdivisionForm.ts`, `SubdivisionRequestDialog.tsx` | Haut (rollback test + cross-link) |
-| P0 | Brancher redirection Stripe/MoMo après création (réutiliser `pattern-soumission-securisee-fr`) | `useSubdivisionForm.submit`, `StepSummary` | Critique (revenue leak) |
-| P1 | Ajouter étape « Pièces jointes » (CNI demandeur + preuve propriété + croquis optionnel) | nouveau `StepDocuments.tsx` + extension du STEP_CONFIG | Moyen |
-| P1 | Remplacer fallback 20$ par calcul `min_fee × number_of_lots` | `useSubdivisionForm.computeFee` | Moyen |
-| P1 | Debounce 400ms sur `computeFee` | `useSubdivisionForm` | Moyen |
-| P2 | Extraire helpers géométriques de `StepLotDesigner` vers `utils/geometry.ts` (convexHull, lineSegmentIntersection) | `StepLotDesigner.tsx`, `utils/geometry.ts` | Maintenance |
-| P2 | Edge `approve-subdivision` qui éclate `lots_data` jsonb en lignes `subdivision_lots`/`subdivision_roads` à l'approbation admin | nouvelle edge + `AdminSubdivisionRequests` | Moyen |
-| P2 | Régénérer types Supabase pour supprimer les casts `as any` sur `subdivision_requests` et `subdivision_rate_config` | `src/integrations/supabase/types.ts` | Faible |
-| P2 | Migrer notifications vers `createNotification()` helper | `useSubdivisionForm.submit` | Faible |
+| **P0** | Stocker `path` au lieu d'`URL publique` + signed URLs côté admin | `StepDocuments.tsx`, `useSubdivisionForm.ts`, `AdminSubdivisionRequests.tsx` | **Bloquant** examen admin |
+| P1 | Passer `section_type` explicite à l'edge (calcul rural/urban côté client) | `useSubdivisionForm.ts`, `subdivision-request/index.ts` | Tarification correcte |
+| P1 | Supprimer fallbacks `?? 20` ; bloquer affichage tant que `loadingFee` | `SubdivisionRequestDialog.tsx`, `StepSummary.tsx` | Cohérence facturation |
+| P1 | Supprimer ou refondre l'écran « submitted » dans `StepSummary` | `StepSummary.tsx`, `useSubdivisionForm.ts` | Code mort / fallback paiement |
+| P1 | Déduplication type `SubdivisionDocuments` → `subdivision/types.ts` | `types.ts`, `useSubdivisionForm.ts`, `StepDocuments.tsx` | Maintenance |
+| P2 | Edge `approve-subdivision` atomique (UPDATE + INSERT lots + flag parcelle) | nouvelle edge + `AdminSubdivisionRequests.tsx` | Intégrité données |
+| P2 | Migrer notifications vers `notificationHelper.createNotification` | `subdivision-request/index.ts` | Standardisation |
+| P2 | Extraire utils géométriques + splitter `LotCanvas` par mode | `LotCanvas.tsx`, `StepLotDesigner.tsx`, `utils/geometry.ts` | Maintenance |
 
-### Décisions à confirmer avant implémentation
+### Décisions à confirmer
 
-1. **Paiement** : faut-il un workflow en 2 temps (frais de soumission ~10-50$ → examen → frais finaux après validation), ou paiement unique total ?
-2. **Pièces jointes** : obligatoires (bloque la soumission) ou optionnelles (bloque l'examen côté admin) ?
-3. **Eclatement `lots_data` → `subdivision_lots`** : à l'approbation admin (recommandé) ou immédiatement à la soumission (plus lourd, perte de flexibilité) ?
+1. **Pour les pièces jointes** : signed URLs courte durée (1h) à la demande côté admin, OU bucket public dédié ? Recommandation : signed URLs (cohérent `storage-and-audit-hardening-fr`).
+2. **Pour `approve-subdivision`** : on inclut l'edge function dans cette passe de fix, ou on la traite séparément vu qu'elle touche aussi `AdminSubdivisionRequests` ? Recommandation : à inclure (gain d'atomicité immédiat).
+3. **Pour l'écran « submitted »** : suppression pure, ou conservation comme fallback si Stripe indisponible ? Recommandation : conservation comme fallback.
 
