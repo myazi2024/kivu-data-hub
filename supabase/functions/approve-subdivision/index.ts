@@ -73,9 +73,11 @@ Deno.serve(async (req) => {
         .eq("id", body.request_id);
       if (updErr) throw updErr;
 
-      // If immediately approved, materialise lots + flag parcel (atomic best-effort)
+      // If immediately approved, materialise lots + roads + flag parcel (atomic best-effort)
       if (updates.status === "approved") {
         const lotsData: any[] = Array.isArray(request.lots_data) ? request.lots_data : [];
+        const planData: any = request.subdivision_plan_data || {};
+        const roadsData: any[] = Array.isArray(planData.roads) ? planData.roads : [];
         const parentGps: any[] = Array.isArray(request.parent_parcel_gps_coordinates)
           ? request.parent_parcel_gps_coordinates
           : [];
@@ -89,12 +91,15 @@ Deno.serve(async (req) => {
             }
           : null;
 
+        const projectVertex = (v: any) =>
+          bb ? {
+            lat: bb.minLat + v.y * (bb.maxLat - bb.minLat),
+            lng: bb.minLng + v.x * (bb.maxLng - bb.minLng),
+          } : null;
+
         const rows = lotsData.map((lot: any) => {
           const gpsCoordinates = (bb && Array.isArray(lot.vertices))
-            ? lot.vertices.map((v: any) => ({
-                lat: bb.minLat + v.y * (bb.maxLat - bb.minLat),
-                lng: bb.minLng + v.x * (bb.maxLng - bb.minLng),
-              }))
+            ? lot.vertices.map(projectVertex)
             : null;
           return {
             subdivision_request_id: request.id,
@@ -125,6 +130,22 @@ Deno.serve(async (req) => {
           }
         }
 
+        // Materialise roads (best-effort: do not roll back if this fails — non-critical for billing)
+        if (roadsData.length > 0) {
+          const roadRows = roadsData.map((r: any) => ({
+            subdivision_request_id: request.id,
+            road_name: r.name || null,
+            width_m: Number(r.widthM) || null,
+            surface_type: r.surfaceType || null,
+            is_existing: !!r.isExisting,
+            plan_coordinates: r.path || null,
+            gps_coordinates: (bb && Array.isArray(r.path)) ? r.path.map(projectVertex) : null,
+          }));
+          await supabase.from("subdivision_roads").insert(roadRows)
+            .then(() => null)
+            .catch((e: any) => console.error("subdivision_roads insert failed:", e?.message));
+        }
+
         // Best-effort: flag the parent parcel
         await supabase
           .from("cadastral_parcels")
@@ -133,6 +154,7 @@ Deno.serve(async (req) => {
           .then(() => null)
           .catch(() => null);
       }
+
 
       notif = {
         type: "success",
@@ -172,6 +194,21 @@ Deno.serve(async (req) => {
         action_url: "/user-dashboard?tab=subdivisions",
       }).then(() => null).catch(() => null);
     }
+
+    // Generic admin audit (best-effort, non-blocking)
+    await supabase.from("request_admin_audit").insert({
+      request_table: "subdivision_requests",
+      request_id: body.request_id,
+      action: body.action,
+      old_status: request.status,
+      new_status: updates.status ?? null,
+      admin_id: user.id,
+      rejection_reason: body.rejection_reason || null,
+      payload: {
+        processing_fee_usd: body.processing_fee_usd ?? null,
+        processing_notes: body.processing_notes ?? null,
+      },
+    }).then(() => null).catch((e: any) => console.error("audit insert failed:", e?.message));
 
     return new Response(JSON.stringify({ ok: true, status: updates.status }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

@@ -2,6 +2,11 @@
 // Creates a subdivision_requests row securely with SERVICE_ROLE.
 // Server is the source of truth for: reference_number, submission_fee_usd, total_amount_usd, status.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import {
+  buildMetricFrame,
+  aggregateAuxiliaryMetrics,
+  computeSubdivisionFee,
+} from "../_shared/subdivisionFees.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -100,17 +105,31 @@ Deno.serve(async (req) => {
     const fallbackRate = ratesData.find((r) => r.location_name === "*");
     const rate = fallbackRate || ratesData[0];
 
+    // Aggregate roads + common spaces in meters using anisotropic GPS frame
+    // (mirrors the client `metricFrame` so areas/lengths match user-facing values).
+    const frame = buildMetricFrame(body.parent_parcel?.gpsCoordinates, Number(body.parent_parcel?.areaSqm) || 0);
+    const aux = aggregateAuxiliaryMetrics(body.roads || [], body.commonSpaces || [], frame);
+
     let totalFee = 0;
+    let feeBreakdown: any = null;
     if (rate) {
-      const ratePerSqm = Number(rate.rate_per_sqm_usd);
-      const minPerLot = rate.min_fee_per_lot_usd != null ? Number(rate.min_fee_per_lot_usd) : 0;
-      const maxPerLot = rate.max_fee_per_lot_usd != null ? Number(rate.max_fee_per_lot_usd) : Infinity;
-      for (const lot of body.lots) {
-        const area = Number(lot.areaSqm) || 0;
-        const raw = area * ratePerSqm;
-        totalFee += Math.max(minPerLot, Math.min(raw, maxPerLot));
-      }
-      totalFee = Math.round(totalFee * 100) / 100;
+      const breakdown = computeSubdivisionFee(
+        {
+          lotsAreasSqm: (body.lots || []).map((l: any) => Number(l?.areaSqm) || 0),
+          roadLengthM: aux.roadLengthM,
+          commonSpaceSqm: aux.commonSpaceSqm,
+        },
+        rate as any,
+      );
+      totalFee = breakdown.total;
+      feeBreakdown = {
+        lots_total: Math.round(breakdown.lotsTotal * 100) / 100,
+        road_total: Math.round(breakdown.roadTotal * 100) / 100,
+        common_total: Math.round(breakdown.commonTotal * 100) / 100,
+        road_length_m: Math.round(aux.roadLengthM * 100) / 100,
+        common_space_sqm: Math.round(aux.commonSpaceSqm * 100) / 100,
+        rate_id: rate.id,
+      };
     } else {
       // Safe fallback: 10$ per lot minimum
       totalFee = body.lots.length * 10;
@@ -190,6 +209,7 @@ Deno.serve(async (req) => {
       reference_number: data.reference_number,
       total_amount_usd: data.total_amount_usd,
       submission_fee_usd: data.submission_fee_usd,
+      fee_breakdown: feeBreakdown,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
