@@ -185,8 +185,11 @@ const AdminSubdivisionFeesConfig: React.FC = () => {
                     <TableHead>Section</TableHead>
                     <TableHead>Emplacement</TableHead>
                     <TableHead className="text-right">Tarif/m² (USD)</TableHead>
+                    <TableHead className="text-right">Palier dégressif</TableHead>
                     <TableHead className="text-right">Min/lot</TableHead>
                     <TableHead className="text-right">Max/lot</TableHead>
+                    <TableHead className="text-right">Voirie ($/ml)</TableHead>
+                    <TableHead className="text-right">Esp. communs ($/m²)</TableHead>
                     <TableHead>Actif</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
@@ -203,8 +206,15 @@ const AdminSubdivisionFeesConfig: React.FC = () => {
                         {r.location_name === '*' ? <span className="italic text-muted-foreground">Par défaut</span> : r.location_name}
                       </TableCell>
                       <TableCell className="text-right font-mono">{r.rate_per_sqm_usd}</TableCell>
+                      <TableCell className="text-right font-mono text-xs">
+                        {r.tier_threshold_sqm && r.tier_rate_per_sqm_usd
+                          ? <>&gt; {r.tier_threshold_sqm} m² → {r.tier_rate_per_sqm_usd}$</>
+                          : '—'}
+                      </TableCell>
                       <TableCell className="text-right font-mono">{r.min_fee_per_lot_usd ?? '—'}</TableCell>
                       <TableCell className="text-right font-mono">{r.max_fee_per_lot_usd ?? '—'}</TableCell>
+                      <TableCell className="text-right font-mono">{r.road_fee_per_linear_m_usd ?? '—'}</TableCell>
+                      <TableCell className="text-right font-mono">{r.common_space_fee_per_sqm_usd ?? '—'}</TableCell>
                       <TableCell>
                         <Switch checked={r.is_active} onCheckedChange={() => toggleActive(r)} />
                       </TableCell>
@@ -217,7 +227,7 @@ const AdminSubdivisionFeesConfig: React.FC = () => {
                     </TableRow>
                   ))}
                   {filtered.length === 0 && (
-                    <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-6">Aucun tarif configuré</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={11} className="text-center text-muted-foreground py-6">Aucun tarif configuré</TableCell></TableRow>
                   )}
                 </TableBody>
               </Table>
