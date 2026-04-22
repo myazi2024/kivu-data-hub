@@ -20,6 +20,10 @@ import { calculateCCCCompleteness } from './ccc/cccCompleteness';
 import { CCCDetailsDialog } from './ccc/CCCDetailsDialog';
 import { CCCTestDialog } from './ccc/CCCTestDialog';
 import type { Contribution, ContributionStats, ValidationResult, TestResult } from './ccc/types';
+import type {
+  OwnershipHistoryEntry, BoundaryHistoryEntry, BuildingPermitEntry,
+  MortgageHistoryEntry, GpsCoordinate,
+} from './ccc/cccHelpers';
 
 const AdminCCCContributions: React.FC = () => {
   const [contributions, setContributions] = useState<Contribution[]>([]);
