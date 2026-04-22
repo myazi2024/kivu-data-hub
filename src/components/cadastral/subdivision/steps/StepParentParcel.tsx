@@ -83,21 +83,76 @@ const StepParentParcel: React.FC<StepParentParcelProps> = ({
       
       <Separator />
       
-      {/* Qualité du demandeur */}
+      {/* Identité du demandeur */}
       <Card>
-        <CardContent className="pt-4">
-          <Label className="text-xs">Qualité du demandeur <span className="text-destructive">*</span></Label>
-          <Select value={requester.type} onValueChange={(v: any) => onRequesterChange({ ...requester, type: v })}>
-            <SelectTrigger className="mt-1 h-9 text-sm">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="owner">Propriétaire</SelectItem>
-              <SelectItem value="mandatary">Mandataire</SelectItem>
-              <SelectItem value="notary">Notaire</SelectItem>
-              <SelectItem value="other">Autre</SelectItem>
-            </SelectContent>
-          </Select>
+        <CardContent className="pt-4 space-y-3">
+          <div className="flex items-center gap-2 mb-1">
+            <User className="h-4 w-4 text-primary" />
+            <h3 className="font-semibold text-sm">Identité du demandeur</h3>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label className="text-xs">Prénom <span className="text-destructive">*</span></Label>
+              <Input
+                className="mt-1 h-9 text-sm"
+                value={requester.firstName}
+                onChange={(e) => onRequesterChange({ ...requester, firstName: e.target.value })}
+                placeholder="Jean"
+              />
+            </div>
+            <div>
+              <Label className="text-xs">Nom <span className="text-destructive">*</span></Label>
+              <Input
+                className="mt-1 h-9 text-sm"
+                value={requester.lastName}
+                onChange={(e) => onRequesterChange({ ...requester, lastName: e.target.value })}
+                placeholder="Mukendi"
+              />
+            </div>
+            <div>
+              <Label className="text-xs">Deuxième prénom</Label>
+              <Input
+                className="mt-1 h-9 text-sm"
+                value={requester.middleName || ''}
+                onChange={(e) => onRequesterChange({ ...requester, middleName: e.target.value })}
+                placeholder="(optionnel)"
+              />
+            </div>
+            <div>
+              <Label className="text-xs">Téléphone <span className="text-destructive">*</span></Label>
+              <Input
+                type="tel"
+                className="mt-1 h-9 text-sm"
+                value={requester.phone}
+                onChange={(e) => onRequesterChange({ ...requester, phone: e.target.value })}
+                placeholder="+243 8XX XXX XXX"
+              />
+            </div>
+            <div className="col-span-2">
+              <Label className="text-xs">Email</Label>
+              <Input
+                type="email"
+                className="mt-1 h-9 text-sm"
+                value={requester.email || ''}
+                onChange={(e) => onRequesterChange({ ...requester, email: e.target.value })}
+                placeholder="(optionnel)"
+              />
+            </div>
+          </div>
+          <div>
+            <Label className="text-xs">Qualité du demandeur <span className="text-destructive">*</span></Label>
+            <Select value={requester.type} onValueChange={(v: any) => onRequesterChange({ ...requester, type: v, isOwner: v === 'owner' })}>
+              <SelectTrigger className="mt-1 h-9 text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="owner">Propriétaire</SelectItem>
+                <SelectItem value="mandatary">Mandataire</SelectItem>
+                <SelectItem value="notary">Notaire</SelectItem>
+                <SelectItem value="other">Autre</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </CardContent>
       </Card>
       
