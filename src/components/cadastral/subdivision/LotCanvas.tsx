@@ -1422,6 +1422,42 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
           return selectedRoadId ? <>{lotsBlock}{roadsBlock}</> : <>{roadsBlock}{lotsBlock}</>;
         })()}
 
+        {/* Common spaces — side dimensions + label + accurate surface */}
+        {showCommonSpaces && commonSpaces.map(space => {
+          if (!space.vertices || space.vertices.length < 3) return null;
+          const sv = space.vertices.map(v => toScreen(v));
+          const pointsStr = sv.map(p => `${p.x},${p.y}`).join(' ');
+          const cx = sv.reduce((s, p) => s + p.x, 0) / sv.length;
+          const cy = sv.reduce((s, p) => s + p.y, 0) / sv.length;
+          const fill = space.color || COMMON_SPACE_COLORS[space.type] || '#a855f7';
+          const accurateAreaM2 = polygonAreaSqmAccurate(space.vertices, metricFrame);
+          const label = COMMON_SPACE_LABELS[space.type] || 'Espace';
+          return (
+            <g key={space.id} className="pointer-events-none select-none">
+              <polygon points={pointsStr} fill={fill} fillOpacity={0.18}
+                stroke={fill} strokeWidth={1.5} strokeDasharray="3 2" />
+              {showDimensions && space.vertices.map((v, i) => {
+                const next = space.vertices[(i + 1) % space.vertices.length];
+                const a = toScreen(v); const b = toScreen(next);
+                const mx = (a.x + b.x) / 2; const my = (a.y + b.y) / 2;
+                const dx = b.y - a.y; const dy = a.x - b.x;
+                const len = Math.sqrt(dx * dx + dy * dy) || 1;
+                const ox = (dx / len) * 9; const oy = (dy / len) * 9;
+                return (
+                  <text key={`cs-dim-${space.id}-${i}`} x={mx + ox} y={my + oy}
+                    textAnchor="middle" dominantBaseline="middle" fontSize={7} fill={fill}>
+                    {formatMeters(edgeLengthM(v, next, metricFrame))}
+                  </text>
+                );
+              })}
+              <text x={cx} y={cy - 5} textAnchor="middle" dominantBaseline="middle"
+                fontSize={9} fontWeight="bold" fill={fill}>{space.name || label}</text>
+              <text x={cx} y={cy + 7} textAnchor="middle" dominantBaseline="middle"
+                fontSize={8} fill={fill}>{formatSqm(accurateAreaM2 || space.areaSqm)}</text>
+            </g>
+          );
+        })}
+
         {/* Invisible hit-areas for roads — always on top for clickability */}
         {showRoads && mode === 'select' && !readOnly && roads.map(road => {
           if (road.path.length < 2) return null;
