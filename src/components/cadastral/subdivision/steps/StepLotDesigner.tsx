@@ -1067,7 +1067,8 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
                 </div>
 
                 <div className="grid grid-cols-2 gap-2 text-xs">
-
+                  <div>
+                    <span className="text-muted-foreground">Surface</span>
                     <p className="font-bold text-sm">{selectedLot.areaSqm.toLocaleString()} m²</p>
                   </div>
                   <div>
