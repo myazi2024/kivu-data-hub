@@ -1,62 +1,74 @@
 
 
-## Diagnostic des erreurs console actuelles
+## Audit de l'espace admin
 
-### Verdict : aucune régression liée au module Lotissement
+### Vue d'ensemble — État global : **bon, sain, mais perfectible**
 
-Les deux erreurs visibles sont **indépendantes** des modifications faites sur la gestion admin du Lotissement.
+L'espace admin compte ~110 onglets répartis en 9 catégories, ~33 000 lignes au total. La sidebar est centralisée (`sidebarConfig.ts`), les compteurs viennent d'un RPC unique (`get_admin_pending_counts`), les routes sont lazy-loadées avec retry (`lazyWithRetry`), et un `ErrorBoundary` enveloppe le contenu. Les hubs transversaux sont en place (Demandes, Historiques, Lotissement, Config, Contenu, Système).
 
----
+### Constats par sévérité
 
-### Erreur 1 — `PGRST002 : Could not query the database for the schema cache. Retrying.`
+#### P0 — À corriger en priorité
 
-**Origine :** PostgREST (couche API Supabase), pas le code applicatif.
+1. **Aucun garde-fou de permissions granulaires sur les onglets**
+   - `Admin.tsx` vérifie seulement `admin`/`super_admin` au montage, puis affiche **n'importe quel onglet** demandé via `?tab=`.
+   - Conséquence : un `admin` standard peut accéder à `audit-logs`, `system-settings`, `roles`, `permissions`, `test-mode`, `fec-export`, etc., alors que `usePermissions` existe déjà côté DB.
+   - Aucun composant (sauf `AdminPermissions`) ne consomme `usePermissions` pour gérer la visibilité.
 
-**Cause :** Le cache de schéma de PostgREST est temporairement indisponible. Cela se produit quand :
-- Une migration vient d'être appliquée (plusieurs migrations datent de ce jour, dont `20260422141501`) → PostgREST recharge son cache.
-- Le projet Supabase redémarre / fait un cold-start.
-- Surcharge ponctuelle de l'instance.
+2. **Onglets orphelins dans la sidebar (mais routables en URL)**
+   - 6 routes lazy-loadées dans `Admin.tsx` ne sont **plus listées** dans `sidebarConfig.ts` :
+     `subdivision-requests`, `subdivision-fees-config`, `subdivision-zoning-rules`, `subdivision-lots`, `subdivision-analytics`, `unified-payments`.
+   - Voulu pour les 5 sous-onglets Lotissement (consolidés dans le hub) ; mais `unified-payments` semble vraiment orphelin → soit supprimer la route, soit la rajouter au menu.
 
-**Impact :** `useAuth.fetchProfile` et `useCatalogConfig.loadConfig` échouent pendant quelques secondes, puis se rétablissent automatiquement (le message « Retrying » est normal).
+#### P1 — Dette technique notable
 
-**Action proposée :** Ajouter un **retry exponentiel silencieux** spécifique au code `PGRST002` dans :
-- `src/hooks/useAuth.tsx` → `fetchProfile`
-- `src/hooks/useCatalogConfig.tsx` → `loadConfig`
+3. **Fichiers monolithiques restants (>700 lignes)**
+   - `AdminCCCContributions.tsx` : **1704 lignes** (déjà partiellement modulaire via `ccc/` mais l'orchestrateur reste énorme).
+   - `AdminExpertiseRequests.tsx` (868), `AdminPaymentMethods.tsx` (846), `AdminContributionConfig.tsx` (820), `AdminLandTitleRequests.tsx` (804), `AdminAppearance.tsx` (735), `AdminAnalyticsChartsConfig.tsx` (707).
+   - Pattern à appliquer (déjà établi sur Subdivision) : `Toolbar` + `Stats` + `List/Table` + `DetailsDialog` + `ActionDialog` + `helpers.ts` + `types.ts`.
 
-Logique : 3 tentatives avec backoff (500ms, 1s, 2s) avant d'afficher l'erreur en console. Cela élimine les faux-positifs visibles par l'utilisateur sans masquer les vraies erreurs.
+4. **140 occurrences de `as any`** dans `src/components/admin/*.tsx`
+   - Décalage entre types Supabase générés et schéma effectif (notamment colonnes nullables, JSON dynamiques).
+   - Risque de régression silencieuse lors d'une regénération de types.
 
----
+#### P2 — Cohérence UX & maintenabilité
 
-### Erreur 2 — `Failed to fetch dynamically imported module: /src/pages/CadastralMap.tsx`
+5. **Hubs de tailles très inégales**
+   - `AdminHistoryHub.tsx` : seulement **31 lignes** (squelette ?).
+   - `AdminSubdivisionHub.tsx` : 74 lignes.
+   - À comparer avec `AdminContentHub` (201) ou `AdminSystemHub` (182). Vérifier que le hub Historiques offre bien la valeur promise par la mémoire (timeline, alertes croisées).
 
-**Vérifications faites :**
-- Le fichier `src/pages/CadastralMap.tsx` **existe bien**.
-- Ses imports sont valides (hooks, composants cadastraux, Leaflet).
-- Le dev-server Vite tourne sans erreur de compilation (`tail` du log : aucune erreur).
-- Le lazy-import dans `App.tsx` (`React.lazy(() => import("./pages/CadastralMap"))`) est syntaxiquement correct.
+6. **Liens legacy non migrés**
+   - `InvoiceSourceLink.tsx` pointe encore vers `subdivision-requests` (legacy) au lieu de `subdivision-hub`.
+   - `AdminRequestsHub.tsx` route aussi vers `subdivision-requests`. À harmoniser sur `subdivision-hub?tab=requests` (ou équivalent).
 
-**Cause probable :** Erreur réseau transitoire entre le navigateur et le HMR Vite — typiquement déclenchée par :
-- Le redémarrage Vite vu dans les logs (`[vite] server connection lost. Polling for restart...`).
-- Un chunk dont le hash a changé après hot-reload alors que l'utilisateur avait déjà la vieille référence en mémoire.
+7. **Pas de breadcrumb pour les hubs à onglets internes**
+   - Sur `subdivision-hub`, `requests-hub`, `config-hub` : le breadcrumb s'arrête à « Lotissement » sans afficher l'onglet actif (file/barème/zonage…).
 
-**Action proposée :** Implémenter un **retry automatique des lazy imports** via un wrapper `lazyWithRetry` :
-- Capture les `ChunkLoadError` / `Failed to fetch dynamically imported module`.
-- Refait l'import 1 fois après 800ms.
-- Si toujours en échec, déclenche un `window.location.reload()` (le user récupère ainsi le nouveau bundle).
+#### P3 — Observabilité
 
-Application à toutes les routes lazy de `App.tsx` (Map, CadastralMap, Admin, UserDashboard, etc.).
+8. **Absence de télémétrie sur la navigation admin**
+   - Aucun event analytics tracé sur les transitions d'onglets ni sur les actions admin critiques (approbation, rejet, purge test). Utile pour audit interne et détection d'usage anormal.
 
----
+9. **Pas de cache/invalidation centralisée** côté React-Query pour les compteurs sidebar (refetch manuel via `refreshCounts`).
 
-### Fichiers modifiés
+### Plan d'action proposé (séquentiel, opt-in)
 
-| Fichier | Changement |
-|---|---|
-| `src/lib/lazyWithRetry.ts` *(nouveau)* | Wrapper `React.lazy` avec retry + reload fallback |
-| `src/App.tsx` | Remplacer les `React.lazy(...)` par `lazyWithRetry(...)` |
-| `src/hooks/useAuth.tsx` | Retry silencieux sur `PGRST002` dans `fetchProfile` |
-| `src/hooks/useCatalogConfig.tsx` | Retry silencieux sur `PGRST002` dans `loadConfig` |
+| Lot | Effort | Contenu |
+|---|---|---|
+| **L0** | S | Fix orphelin `unified-payments` ; redirections legacy `subdivision-requests` → `subdivision-hub` (InvoiceSourceLink, RequestsHub) |
+| **L1** | M | Garde-fou `usePermissions` dans `Admin.tsx` : si l'onglet demandé n'est pas autorisé pour le rôle, fallback dashboard + toast. Filtrage `menuItems` côté sidebar. |
+| **L2** | M | Modulariser `AdminCCCContributions.tsx` (1704→~300) selon le pattern Subdivision |
+| **L3** | M | Modulariser `AdminExpertiseRequests`, `AdminLandTitleRequests`, `AdminPaymentMethods`, `AdminContributionConfig` |
+| **L4** | S | Compléter `AdminHistoryHub` (timeline + alertes croisées promises par la mémoire) |
+| **L5** | S | Breadcrumb à 4 niveaux pour les hubs (Admin > Catégorie > Hub > Onglet) |
+| **L6** | M | Réduire `as any` : regénérer types Supabase, créer types narrow `subdivision/types.ts`-like par module |
+| **L7** | S | Tracking analytics admin (page_view, action) + invalidation queryKey unifiée |
 
-### Hors périmètre confirmé
-Aucun fichier touché par l'audit Lotissement (`AdminSubdivision*`, `subdivision/requests/*`, `_shared/subdivisionFees.ts`, `sidebarConfig.ts`) n'est impliqué. La structure globale de l'app est saine.
+### Hors-périmètre confirmé
+- Erreurs `PGRST002` et `ChunkLoadError` : déjà mitigées par `withSchemaRetry` + `lazyWithRetry`.
+- Module Lotissement : déjà audité P0→P3.
+- Sécurité 2FA admin : tracée séparément dans `mem://security/2fa-admin-debt-fr`.
+
+**Question :** Lance-t-on **L0 + L1** (impact sécurité immédiat) en premier, ou tout enchaîner L0→L7 ?
 
