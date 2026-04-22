@@ -58,15 +58,21 @@ const matchesQuery = (
   return items.length ? { ...section, items } : null;
 };
 
-export function AdminSidebar({ counts, onNavigate }: AdminSidebarProps) {
+export function AdminSidebar({ counts, onNavigate, canAccessTab }: AdminSidebarProps) {
   const location = useLocation();
   const currentTab = new URLSearchParams(location.search).get('tab') || 'dashboard';
   const [search, setSearch] = useState('');
 
-  const filteredSections = useMemo(
-    () => menuItems.map(s => matchesQuery(s, search)).filter(Boolean) as AdminMenuSection[],
-    [search]
-  );
+  const filteredSections = useMemo(() => {
+    // 1. Filtre par permissions (si fourni)
+    const permFiltered = canAccessTab
+      ? menuItems
+          .map(s => ({ ...s, items: s.items.filter(i => canAccessTab(i.value)) }))
+          .filter(s => s.items.length > 0)
+      : menuItems;
+    // 2. Filtre par recherche
+    return permFiltered.map(s => matchesQuery(s, search)).filter(Boolean) as AdminMenuSection[];
+  }, [search, canAccessTab]);
 
   const activeCategoryIndex = menuItems.findIndex(section =>
     section.items.some(item => item.value === currentTab)
