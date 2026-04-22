@@ -661,10 +661,7 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
   }, [selectedRoadId, onSelectRoad, onSelectLot, mode]);
 
   const getDimensionLabel = (p1: Point2D, p2: Point2D): string => {
-    const dx = Math.abs(p2.x - p1.x) * sideLength;
-    const dy = Math.abs(p2.y - p1.y) * sideLength;
-    const dist = Math.sqrt(dx * dx + dy * dy);
-    return `${Math.round(dist)}m`;
+    return formatMeters(edgeLengthM(p1, p2, metricFrame));
   };
 
   const svgCursor = viewport.isPanning()
