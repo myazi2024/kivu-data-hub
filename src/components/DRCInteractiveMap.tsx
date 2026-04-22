@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useAppAppearance } from '@/hooks/useAppAppearance';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { useSwipeNavigation } from '@/hooks/useSwipeNavigation';
+import { useSwipePager } from '@/hooks/useSwipePager';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
