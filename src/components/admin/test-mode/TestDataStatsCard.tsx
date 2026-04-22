@@ -60,6 +60,16 @@ const TestDataStatsCard: React.FC<TestDataStatsCardProps> = ({
   onRegenerate,
   onGenerate,
 }) => {
+  const [entities, setEntities] = useState<TestEntity[]>(TEST_ENTITIES);
+  useEffect(() => {
+    let cancelled = false;
+    loadTestEntities()
+      .then((list) => { if (!cancelled) setEntities(list); })
+      .catch(() => { /* keep static fallback */ });
+    return () => { cancelled = true; };
+  }, []);
+  const statItems = buildStatItems(entities, stats);
+
   return (
     <Card>
       <CardHeader>
@@ -73,8 +83,8 @@ const TestDataStatsCard: React.FC<TestDataStatsCardProps> = ({
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-3">
-          {STAT_ITEMS.map(({ key, label }) => (
-            <StatItem key={key} label={label} value={stats[key]} loading={statsLoading} />
+          {statItems.map(({ key, label }) => (
+            <StatItem key={key} label={label} value={stats[key] ?? 0} loading={statsLoading} />
           ))}
         </div>
 
