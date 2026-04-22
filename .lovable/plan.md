@@ -1,87 +1,84 @@
 
 
-## Audit — Mode Test (synthèse)
+## Audit cross-modules admin — Synthèse
 
-État global : **fonctionnel et bien architecturé**, mais 7 incohérences/dettes identifiées entre le code, la DB et la documentation. Aucun bug bloquant ; surtout du nettoyage à faire pour aligner le frontend sur l'architecture batchée déployée côté serveur.
+État global : **stable**. TypeScript compile sans erreur, les RPCs centrales (`get_admin_dashboard_full`, `get_admin_pending_counts`, `has_role`) sont présentes et utilisées correctement, les hubs (Config, Système, Historique, Demandes) communiquent bien.
+
+**Un seul bug bloquant détecté**, hérité de la dernière migration du Mode Test.
 
 ---
 
-### ✅ Ce qui fonctionne bien
+### 🔴 Bug critique — Module Test Mode (cassé depuis la dernière migration)
 
-| Composant | État |
+**Symptôme** (visible dans la console et le replay session) :
+```
+relation "public.real_estate_expertise_payments" does not exist
+toast → "Impossible de charger les statistiques de test"
+```
+
+**Cause racine** : la migration `20260422084418` a activé `is_active=true` sur 8 entités enfants du `test_entities_registry`. Trois d'entre elles pointent vers des **noms de tables qui n'existent pas** :
+
+| `label_key` (registry) | `table_name` (registry) | Vraie table en DB |
+|---|---|---|
+| `expertisePayments` | `real_estate_expertise_payments` ❌ | `expertise_payments` |
+| `permitPayments` | `building_permit_payments` ❌ | `permit_payments` |
+| `permitAdminActions` | `building_permit_admin_actions` ❌ | `permit_admin_actions` |
+
+**Impact en chaîne** :
+1. `count_test_data_stats()` plante au premier `EXECUTE format(...)` → toute la carte stats du Mode Test affiche "Erreur"
+2. `TestDataExportButton` (CSV pré-purge) lèvera la même erreur 42P01 sur ces 3 entités
+3. Le bouton « Désactiver et nettoyer » fonctionne quand même (l'edge `cleanup-test-data-batch` a sa propre liste hardcodée correcte)
+4. Note : `count_test_data_stats` calcule déjà `expertisePayments` via un bloc dédié (ligne 36 de la fonction) → l'entrée registry est en plus redondante
+
+---
+
+### ✅ Vérifications cross-modules — RAS
+
+| Intégration | État |
 |---|---|
-| `useTestMode` (config realtime via postgres_changes) | OK |
-| `applyTestFilter` + `useTestEnvironment` (routes `/test/*`) | OK |
-| Trigger `prevent_test_data_in_prod` sur 12 tables | Actif et testé |
-| Cron `cleanup-test-data-daily-rpc` (03:00 UTC, RPC SQL directe) | Actif |
-| Edge `cleanup-test-data-batch` (admin guard + boucle 23 étapes × 500) | Déployée et utilisée |
-| Generators modularisés (15 fichiers `generators/*.ts`) | OK |
-| Registry `test_entities_registry` (22 entrées) + `loadTestEntities` cache 5 min | OK |
-| RPC `count_test_data_stats` + gestion P0001 → toast | OK |
-| `TestModeBanner` financier (seuil min 20 + 50%) | OK |
-| Garde anti-duplication dans `generateTestData` | OK |
+| Sidebar admin → `get_admin_pending_counts()` (badges 9 modules) | ✅ RPC présente, hook OK |
+| Dashboard admin → `get_admin_dashboard_full()` | ✅ RPC + signature TS alignées |
+| Analytics → consomme la même RPC dashboard (anti-doublon) | ✅ Documenté et appliqué |
+| Hubs (Config / Système / Historique / Demandes / Contenu) → enfants | ✅ Imports cohérents |
+| HR module (8 onglets) → 6 hooks Supabase + conversion candidat→employé | ✅ Aucun bug détecté |
+| Edge `cleanup-test-data-batch` → liste tables hardcodée | ✅ Tables réelles utilisées |
+| Trigger `prevent_test_data_in_prod` (12 tables) | ✅ Actif |
+| Cron `cleanup-test-data-daily-rpc` | ✅ Actif |
+| TypeScript `tsc --noEmit` (projet entier) | ✅ 0 erreur |
 
 ---
 
-### 🟠 Incohérences à corriger (P1)
+### Plan de correction (1 migration SQL)
 
-#### 1. Régression critique — `handleDisableWithCleanup` appelle la RPC DEPRECATED
-`src/components/admin/AdminTestMode.tsx:147` invoque `supabase.rpc('cleanup_all_test_data')` lors du flux « Désactiver et supprimer ». Cette RPC est marquée DEPRECATED et **plante en `statement_timeout` au-delà de ~14k lignes** (raison même de la création de l'edge batchée). Sur un environnement plein, ce bouton échoue silencieusement et laisse les données en place pendant que le mode test est désactivé.
-→ **Fix** : remplacer par `supabase.functions.invoke('cleanup-test-data-batch')` comme dans `useTestDataActions.cleanupTestData` (gérer le même format `{ ok, failed_step, partial_total, ... }`).
+Aligner les 3 entrées du registry sur les vrais noms de tables :
 
-#### 2. Documentation utilisateur obsolète
-`TestModeGuide.tsx:11` affiche encore : *« Nettoyage manuel via la RPC `cleanup_all_test_data()` »*. Faux depuis la migration batchée.
-→ **Fix** : remplacer par *« edge function `cleanup-test-data-batch` (purge par lots de 500, 23 étapes FK-safe) »*.
+```sql
+UPDATE public.test_entities_registry
+SET table_name = 'expertise_payments'
+WHERE label_key = 'expertisePayments' AND table_name = 'real_estate_expertise_payments';
 
-#### 3. Registry — 8 entrées enfants désactivées (`is_active = false`)
-La mémoire annonce **22 entités actives** mais la DB n'en a que **14 actives** : `ownershipHistory`, `taxHistory`, `boundaryHistory`, `mortgagePayments`, `expertisePayments`, `fraudAttempts`, `permitPayments`, `permitAdminActions` sont toutes `is_active=false`.
+UPDATE public.test_entities_registry
+SET table_name = 'permit_payments'
+WHERE label_key = 'permitPayments' AND table_name = 'building_permit_payments';
 
-**Conséquence pratique** :
-- `count_test_data_stats()` (registry-driven) retourne 0 pour ces 8 entités → la carte stats UI affiche 0 même si des lignes existent.
-- `TestDataExportButton` (CSV pré-purge) **n'exporte pas** ces 8 entités enfants → perte d'audit trail.
-- L'edge batch les purge quand même (liste hardcodée `STEPS`), donc pas de fuite de données.
+UPDATE public.test_entities_registry
+SET table_name = 'permit_admin_actions'
+WHERE label_key = 'permitAdminActions' AND table_name = 'building_permit_admin_actions';
+```
 
-→ **Fix** : décider — soit `UPDATE test_entities_registry SET is_active = true WHERE label_key IN (…8 enfants)`, soit assumer le choix et mettre à jour la mémoire (`22 entités actives` → `14 racines + 8 enfants désactivés volontairement`).
+**Vérification de la `marker_column` / `marker_pattern` à confirmer pendant l'implémentation** : les 3 tables corrigées doivent avoir une colonne marqueur cohérente avec le pattern stocké (probablement une référence/id qui matche `TEST-%`). Si le marker est invalide, on ajustera dans la même migration.
 
----
+### Critères de validation
 
-### 🟡 Polish (P2)
+1. Console navigateur sur `/admin?tab=test-mode` : plus aucune erreur 42P01
+2. Toast « Impossible de charger les statistiques de test » disparaît
+3. Carte stats affiche les compteurs des 22 entités (y compris `expertisePayments`, `permitPayments`, `permitAdminActions`)
+4. Bouton « Exporter CSV » génère un fichier sans section ERROR sur ces 3 entités
+5. `tsc --noEmit` toujours à 0 erreur
 
-#### 4. `TestDataStatsCard` STAT_ITEMS dupliqué
-20 entrées hardcodées (`STAT_ITEMS`) doublonnent ce que `loadTestEntities()` fournit déjà. Dérive garantie au prochain ajout d'entité.
-→ **Fix** : générer `STAT_ITEMS` à partir de `loadTestEntities()` (même mapping `labelKey` → `label`).
+### Fichier impacté
 
-#### 5. `TestEnvironmentBanner` — visibilité réduite
-Bandeau bottom-right `text-[10px] opacity-60` quasi invisible. La doc dit *« indicateur visuel pour distinguer test/production »* — l'intention est diluée. À voir si volontaire (mode discret) ou à renforcer.
-
-#### 6. Edge `cleanup-test-data` (legacy) toujours déployée
-Marquée dépréciée dans la doc mais toujours présente dans `supabase/functions/cleanup-test-data/`. Risque qu'un script externe l'appelle encore. À supprimer ou à laisser un README clair.
-
-#### 7. Cast `as any` sur `test_entities_registry`
-`src/constants/testEntities.ts:84` et `TestDataExportButton.tsx:24` castent `(supabase as any)` car la table est absente de `types.ts`. Soit normal (table admin pure), soit régénérer les types.
-
----
-
-### 🟢 Sécurité — RAS
-
-- Routes `/test/*` admin-only ✅
-- Edge batch : double check JWT + `user_roles` ✅
-- RPC `cleanup_test_data_chunk` : `SECURITY DEFINER` + `has_role` guard ✅
-- Trigger anti-prod sur les 12 tables critiques ✅
-- Registry — RLS non vérifiée dans cet audit (à faire si besoin)
-
----
-
-### Plan d'action proposé (par priorité)
-
-| # | Action | Fichier(s) | Impact |
-|---|---|---|---|
-| P0 | Remplacer RPC deprecated par edge batch dans `handleDisableWithCleanup` | `AdminTestMode.tsx` | **Haut** (bug fonctionnel) |
-| P1 | Corriger texte du guide (RPC → edge batch) | `TestModeGuide.tsx` | Moyen |
-| P1 | Décision registry : activer 8 enfants OU mettre à jour la mémoire | DB ou `test-mode-hardening-fr.md` | Moyen (cohérence audit) |
-| P2 | Générer `STAT_ITEMS` dynamiquement depuis registry | `TestDataStatsCard.tsx` | Faible |
-| P2 | Supprimer ou sceller edge legacy `cleanup-test-data` | `supabase/functions/cleanup-test-data/` | Faible |
-| P2 | Renforcer visibilité `TestEnvironmentBanner` (optionnel) | `TestEnvironmentBanner.tsx` | Faible |
-
-Aucun changement DB obligatoire si la décision pour le point #3 est de garder les 8 enfants désactivés.
+| Fichier | Action |
+|---|---|
+| Nouvelle migration SQL | UPDATE des 3 lignes du registry + vérif markers |
 
