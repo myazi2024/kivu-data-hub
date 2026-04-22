@@ -32,6 +32,10 @@ export interface SubdivisionLot {
   annotations?: LotAnnotation[];
   // GPS coordinates (computed from parent parcel)
   gpsCoordinates?: GpsPoint[];
+  // Marks the auto-created lot covering the entire parent parcel.
+  // While true, the lot's geometry (vertices, area, perimeter) is locked
+  // and can only be modified through a division (split/cut) operation.
+  isParentBoundary?: boolean;
 }
 
 export interface Point2D {
