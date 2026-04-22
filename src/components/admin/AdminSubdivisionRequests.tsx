@@ -25,6 +25,7 @@ import { generateAndUploadCertificate } from '@/utils/certificateService';
 import { StatusBadge, StatusType } from '@/components/shared/StatusBadge';
 import { computeSla, downloadCsv } from '@/utils/adminQueueUtils';
 import { validateSubdivisionAgainstRules, type ValidationResult } from '@/hooks/useZoningRules';
+import SubdivisionMiniMap from '@/components/cadastral/subdivision/SubdivisionMiniMap';
 
 interface SubdivisionRequest {
   id: string;
@@ -593,6 +594,21 @@ export function AdminSubdivisionRequests() {
                     )}
                     <div><span className="text-muted-foreground">Frais soumission:</span> <span className="ml-1">${selectedRequest.submission_fee_usd}</span></div>
                     <div><span className="text-muted-foreground">Total:</span> <span className="ml-1 font-bold">${selectedRequest.total_amount_usd}</span></div>
+                  </CardContent>
+                </Card>
+
+                {/* Aperçu visuel du plan */}
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm flex items-center gap-2"><MapPin className="h-4 w-4" /> Aperçu du plan</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <SubdivisionMiniMap
+                      parentVertices={selectedRequest.subdivision_plan_data?.parentVertices}
+                      lots={selectedRequest.lots_data || []}
+                      roads={getPlanRoads(selectedRequest)}
+                      commonSpaces={getPlanCommonSpaces(selectedRequest)}
+                    />
                   </CardContent>
                 </Card>
 
