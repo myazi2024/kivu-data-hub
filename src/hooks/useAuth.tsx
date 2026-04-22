@@ -50,12 +50,30 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
 
     try {
-      // Fetch profile
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_id', userId)
-        .maybeSingle();
+      // Retry helper for transient PostgREST schema cache errors (PGRST002)
+      const withSchemaRetry = async <T,>(fn: () => Promise<{ data: T; error: any }>) => {
+        const delays = [500, 1000, 2000];
+        let lastResult: { data: T; error: any } | null = null;
+        for (let i = 0; i <= delays.length; i++) {
+          lastResult = await fn();
+          if (!lastResult.error || lastResult.error.code !== 'PGRST002') {
+            return lastResult;
+          }
+          if (i < delays.length) {
+            await new Promise((r) => setTimeout(r, delays[i]));
+          }
+        }
+        return lastResult!;
+      };
+
+      // Fetch profile (with silent retry on PGRST002)
+      const { data: profileData, error: profileError } = await withSchemaRetry(() =>
+        supabase
+          .from('profiles')
+          .select('*')
+          .eq('user_id', userId)
+          .maybeSingle() as any
+      );
 
       if (profileError && profileError.code !== 'PGRST116') {
         console.error('Error fetching profile:', profileError);
@@ -63,11 +81,13 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         return;
       }
 
-      // Fetch all roles from user_roles
-      const { data: rolesData, error: rolesError } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', userId);
+      // Fetch all roles from user_roles (with silent retry on PGRST002)
+      const { data: rolesData, error: rolesError } = await withSchemaRetry(() =>
+        supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', userId) as any
+      );
 
       if (rolesError) {
         console.error('Error fetching roles:', rolesError);
