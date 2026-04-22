@@ -1,99 +1,20 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
-import { 
-  FileSearch, Search, Filter, Eye, Check, X, User, MapPin, 
-  Building, Calendar, DollarSign, Loader2, Clock, AlertTriangle,
-  FileText, Download, UserCheck, RefreshCw, Award
-} from 'lucide-react';
+import { FileSearch, Loader2, Download, RefreshCw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
-import { ResponsiveTable, ResponsiveTableHeader, ResponsiveTableBody, ResponsiveTableRow, ResponsiveTableCell, ResponsiveTableHead } from '@/components/ui/responsive-table';
-import { StatusBadge } from '@/components/shared/StatusBadge';
 import { exportToCSV } from '@/utils/csvExport';
 import { generateExpertiseCertificatePDF } from '@/utils/generateExpertiseCertificatePDF';
-import { 
-  QUALITY_LABELS, CONDITION_LABELS, CONSTRUCTION_TYPE_LABELS, 
-  WALL_LABELS, ROOF_LABELS, ROAD_LABELS, SOUND_LABELS, STATUS_LABELS,
-  WINDOW_LABELS, FLOOR_LABELS, FACADE_ORIENTATION_LABELS,
-  BUILDING_POSITION_LABELS, ACCESSIBILITY_LABELS
-} from '@/constants/expertiseLabels';
+import { STATUS_LABELS } from '@/constants/expertiseLabels';
 import type { ExpertiseRequest } from '@/types/expertise';
 import ExpertiseStatsCards from './expertise/ExpertiseStatsCards';
 import ExpertiseFilters from './expertise/ExpertiseFilters';
 import ExpertiseProcessDialog, { type ExpertiseProcessAction } from './expertise/ExpertiseProcessDialog';
 import ExpertiseRequestsTable from './expertise/ExpertiseRequestsTable';
-
-// Helper to get extended data — reads from DB columns first, falls back to legacy JSON in additional_notes
-const getExtendedData = (req: ExpertiseRequest): { userNotes: string; extendedData: Record<string, any> } => {
-  // Try legacy JSON parse for backward compatibility
-  let legacyNotes = '';
-  let legacyExtended: Record<string, any> = {};
-  if (req.additional_notes) {
-    try {
-      const parsed = JSON.parse(req.additional_notes);
-      legacyNotes = parsed.user_notes || '';
-      legacyExtended = parsed.extended_data || {};
-    } catch {
-      legacyNotes = req.additional_notes;
-    }
-  }
-
-  // Build extendedData from columns (preferred) with legacy fallback
-  const extendedData: Record<string, any> = {
-    construction_type: legacyExtended.construction_type,
-    wall_material: req.wall_material || legacyExtended.wall_material,
-    roof_material: req.roof_material || legacyExtended.roof_material,
-    window_type: req.window_type || legacyExtended.window_type,
-    floor_material: req.floor_material || legacyExtended.floor_material,
-    has_plaster: req.has_plaster ?? legacyExtended.has_plaster,
-    has_painting: req.has_painting ?? legacyExtended.has_painting,
-    has_ceiling: req.has_ceiling ?? legacyExtended.has_ceiling,
-    has_double_glazing: req.has_double_glazing ?? legacyExtended.has_double_glazing,
-    building_position: req.building_position || legacyExtended.building_position,
-    facade_orientation: req.facade_orientation || legacyExtended.facade_orientation,
-    is_corner_plot: req.is_corner_plot ?? legacyExtended.is_corner_plot,
-    // sound_environment and nearby_noise_sources moved to cadastral_parcels (CCC form)
-    has_pool: req.has_pool ?? legacyExtended.has_pool,
-    has_air_conditioning: req.has_air_conditioning ?? legacyExtended.has_air_conditioning,
-    has_solar_panels: req.has_solar_panels ?? legacyExtended.has_solar_panels,
-    has_generator: req.has_generator ?? legacyExtended.has_generator,
-    has_water_tank: req.has_water_tank ?? legacyExtended.has_water_tank,
-    has_borehole: req.has_borehole ?? legacyExtended.has_borehole,
-    has_electric_fence: req.has_electric_fence ?? legacyExtended.has_electric_fence,
-    has_garage: req.has_garage ?? legacyExtended.has_garage,
-    has_cellar: req.has_cellar ?? legacyExtended.has_cellar,
-    has_automatic_gate: req.has_automatic_gate ?? legacyExtended.has_automatic_gate,
-    internet_provider: req.internet_provider || legacyExtended.internet_provider,
-    number_of_rooms: req.number_of_rooms ?? legacyExtended.number_of_rooms,
-    number_of_bedrooms: req.number_of_bedrooms ?? legacyExtended.number_of_bedrooms,
-    number_of_bathrooms: req.number_of_bathrooms ?? legacyExtended.number_of_bathrooms,
-    apartment_number: req.apartment_number || legacyExtended.apartment_number,
-    floor_number: req.floor_number || legacyExtended.floor_number,
-    total_building_floors: req.total_building_floors ?? legacyExtended.total_building_floors,
-    accessibility: req.accessibility || legacyExtended.accessibility,
-    monthly_charges: req.monthly_charges ?? legacyExtended.monthly_charges,
-    has_common_areas: req.has_common_areas ?? legacyExtended.has_common_areas,
-    has_direct_street_access: legacyExtended.has_direct_street_access,
-    nearby_amenities: req.nearby_amenities || legacyExtended.nearby_amenities,
-  };
-
-  return { userNotes: legacyNotes, extendedData };
-};
-
-// Status config uses centralized labels
+import ExpertiseDetailsDialog from './expertise/ExpertiseDetailsDialog';
+import { getExtendedData } from './expertise/expertiseHelpers';
 
 export const AdminExpertiseRequests: React.FC = () => {
   const { user } = useAuth();
@@ -105,14 +26,11 @@ export const AdminExpertiseRequests: React.FC = () => {
   const [totalCount, setTotalCount] = useState(0);
   const itemsPerPage = 10;
 
-  // Dialog states
   const [selectedRequest, setSelectedRequest] = useState<ExpertiseRequest | null>(null);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [showProcessDialog, setShowProcessDialog] = useState(false);
   const [processing, setProcessing] = useState(false);
 
-  // Process form state
-  // Process form state (certificateUrl removed - auto-generated)
   const [processAction, setProcessAction] = useState<'complete' | 'reject'>('complete');
   const [marketValue, setMarketValue] = useState('');
   const [processingNotes, setProcessingNotes] = useState('');
@@ -143,7 +61,6 @@ export const AdminExpertiseRequests: React.FC = () => {
       query = query.range(from, to);
 
       const { data, error, count } = await query;
-
       if (error) throw error;
 
       setRequests((data || []) as ExpertiseRequest[]);
@@ -156,9 +73,7 @@ export const AdminExpertiseRequests: React.FC = () => {
     }
   }, [currentPage, statusFilter, searchQuery]);
 
-  useEffect(() => {
-    fetchRequests();
-  }, [fetchRequests]);
+  useEffect(() => { fetchRequests(); }, [fetchRequests]);
 
   const handleViewDetails = (request: ExpertiseRequest) => {
     setSelectedRequest(request);
@@ -169,7 +84,6 @@ export const AdminExpertiseRequests: React.FC = () => {
     setSelectedRequest(request);
     setProcessAction('complete');
     setMarketValue(request.market_value_usd?.toString() || '');
-    
     setProcessingNotes(request.processing_notes || '');
     setRejectionReason('');
     setExpertName('');
@@ -206,12 +120,10 @@ export const AdminExpertiseRequests: React.FC = () => {
       toast.error('Veuillez renseigner la valeur vénale');
       return;
     }
-
     if (processAction === 'complete' && selectedRequest.payment_status !== 'paid') {
       toast.error('Le certificat ne peut être généré que pour une demande payée');
       return;
     }
-
     if (processAction === 'reject' && !rejectionReason) {
       toast.error('Veuillez indiquer la raison du rejet');
       return;
@@ -219,20 +131,18 @@ export const AdminExpertiseRequests: React.FC = () => {
 
     setProcessing(true);
     try {
-      const updateData: any = {
+      const updateData: Record<string, any> = {
         processing_notes: processingNotes,
         updated_at: new Date().toISOString(),
       };
 
       if (processAction === 'complete') {
-        // Auto-generate the certificate PDF
         toast.info('Génération automatique du certificat en cours...');
 
         const issueDate = new Date().toISOString();
         const expiryDate = new Date();
         expiryDate.setMonth(expiryDate.getMonth() + 6);
 
-        // Parse extended data from additional_notes
         const { extendedData: extData } = getExtendedData(selectedRequest);
 
         const pdfBlob = await generateExpertiseCertificatePDF({
@@ -264,7 +174,7 @@ export const AdminExpertiseRequests: React.FC = () => {
           erosionRiskZone: selectedRequest.erosion_risk_zone || false,
           marketValueUsd: parseFloat(marketValue),
           expertiseDateStr: issueDate,
-          issueDate: issueDate,
+          issueDate,
           expiryDate: expiryDate.toISOString(),
           approvedBy: expertName || 'Bureau d\'Information Cadastrale',
           expertName: expertName || undefined,
@@ -273,29 +183,21 @@ export const AdminExpertiseRequests: React.FC = () => {
           extendedData: extData,
         });
 
-        // Upload to Supabase Storage
         const fileName = `certificat_${selectedRequest.reference_number.replace(/[^a-zA-Z0-9-]/g, '_')}_${Date.now()}.pdf`;
         const filePath = `certificates/${fileName}`;
 
         const { error: uploadError } = await supabase.storage
           .from('expertise-certificates')
-          .upload(filePath, pdfBlob, {
-            contentType: 'application/pdf',
-            upsert: true,
-          });
-
+          .upload(filePath, pdfBlob, { contentType: 'application/pdf', upsert: true });
         if (uploadError) throw uploadError;
 
-        // Get public URL
         const { data: urlData } = supabase.storage
           .from('expertise-certificates')
           .getPublicUrl(filePath);
 
-        const certificateUrl = urlData.publicUrl;
-
         updateData.status = 'completed';
         updateData.market_value_usd = parseFloat(marketValue);
-        updateData.certificate_url = certificateUrl;
+        updateData.certificate_url = urlData.publicUrl;
         updateData.certificate_issue_date = issueDate;
         updateData.certificate_expiry_date = expiryDate.toISOString();
         updateData.expertise_date = issueDate;
@@ -308,15 +210,13 @@ export const AdminExpertiseRequests: React.FC = () => {
         .from('real_estate_expertise_requests')
         .update(updateData)
         .eq('id', selectedRequest.id);
-
       if (error) throw error;
 
-      // Create notification for user
       await supabase.from('notifications').insert({
         user_id: selectedRequest.user_id,
         type: processAction === 'complete' ? 'success' : 'error',
-        title: processAction === 'complete' 
-          ? 'Certificat d\'expertise immobilière généré' 
+        title: processAction === 'complete'
+          ? 'Certificat d\'expertise immobilière généré'
           : 'Demande d\'expertise rejetée',
         message: processAction === 'complete'
           ? `Votre certificat d'expertise pour la parcelle ${selectedRequest.parcel_number} a été généré automatiquement. Valeur vénale: $${marketValue}. Le certificat est disponible dans votre espace.`
@@ -324,10 +224,10 @@ export const AdminExpertiseRequests: React.FC = () => {
         action_url: '/dashboard?tab=expertise',
       });
 
-      toast.success(processAction === 'complete' 
-        ? 'Certificat généré et envoyé automatiquement' 
+      toast.success(processAction === 'complete'
+        ? 'Certificat généré et envoyé automatiquement'
         : 'Demande rejetée');
-      
+
       setShowProcessDialog(false);
       fetchRequests();
     } catch (error: any) {
@@ -342,23 +242,20 @@ export const AdminExpertiseRequests: React.FC = () => {
     try {
       const statuses = ['pending', 'assigned', 'in_progress', 'completed'];
       const results: Record<string, number> = {};
-      
+
       await Promise.all(statuses.map(async (status) => {
         const statusList = status === 'in_progress' ? ['in_progress', 'assigned'] : [status];
         let query = supabase
           .from('real_estate_expertise_requests')
           .select('*', { count: 'exact', head: true });
-        
-        if (statusList.length > 1) {
-          query = query.in('status', statusList);
-        } else {
-          query = query.eq('status', status);
-        }
-        
+
+        if (statusList.length > 1) query = query.in('status', statusList);
+        else query = query.eq('status', status);
+
         const { count } = await query;
         results[status] = count || 0;
       }));
-      
+
       return {
         total: totalCount,
         pending: results['pending'] || 0,
@@ -371,14 +268,13 @@ export const AdminExpertiseRequests: React.FC = () => {
   }, [totalCount]);
 
   const [stats, setStats] = useState({ total: 0, pending: 0, inProgress: 0, completed: 0 });
-  
+
   useEffect(() => {
     getStats().then(setStats);
   }, [getStats, requests]);
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold flex items-center gap-2">
@@ -419,10 +315,8 @@ export const AdminExpertiseRequests: React.FC = () => {
         </div>
       </div>
 
-      {/* Stats */}
       <ExpertiseStatsCards stats={stats} />
 
-      {/* Filters */}
       <ExpertiseFilters
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
@@ -430,7 +324,6 @@ export const AdminExpertiseRequests: React.FC = () => {
         onStatusChange={setStatusFilter}
       />
 
-      {/* Table */}
       <ExpertiseRequestsTable
         loading={loading}
         requests={requests}
@@ -438,7 +331,6 @@ export const AdminExpertiseRequests: React.FC = () => {
         onProcess={handleOpenProcess}
       />
 
-      {/* Pagination */}
       {totalCount > itemsPerPage && (
         <div className="flex items-center justify-center gap-2 py-4">
           <Button
@@ -463,382 +355,12 @@ export const AdminExpertiseRequests: React.FC = () => {
         </div>
       )}
 
-      {/* Details Dialog */}
-      <Dialog open={showDetailsDialog} onOpenChange={setShowDetailsDialog}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <FileSearch className="h-5 w-5 text-primary" />
-              Détails de la demande
-            </DialogTitle>
-            <DialogDescription>
-              Référence: {selectedRequest?.reference_number}
-            </DialogDescription>
-          </DialogHeader>
-          
-          {selectedRequest && (
-            <ScrollArea className="max-h-[60vh]">
-              <div className="space-y-4 pr-4">
-                {/* Infos générales */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label className="text-xs text-muted-foreground">Parcelle</Label>
-                    <p className="font-mono font-bold">{selectedRequest.parcel_number}</p>
-                  </div>
-                  <div>
-                    <Label className="text-xs text-muted-foreground">Statut</Label>
-                    <StatusBadge status={selectedRequest.status as any} />
-                  </div>
-                  <div>
-                    <Label className="text-xs text-muted-foreground">Paiement</Label>
-                    <Badge variant={selectedRequest.payment_status === 'paid' ? 'default' : selectedRequest.payment_status === 'failed' ? 'destructive' : 'secondary'}>
-                      {selectedRequest.payment_status === 'paid' ? 'Payé' : selectedRequest.payment_status === 'failed' ? 'Échoué' : 'En attente'}
-                    </Badge>
-                  </div>
-                </div>
+      <ExpertiseDetailsDialog
+        open={showDetailsDialog}
+        onOpenChange={setShowDetailsDialog}
+        request={selectedRequest}
+      />
 
-                <Separator />
-
-                {/* Demandeur */}
-                <div>
-                  <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
-                    <User className="h-4 w-4" />
-                    Demandeur
-                  </h4>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <Label className="text-xs text-muted-foreground">Nom</Label>
-                      <p>{selectedRequest.requester_name}</p>
-                    </div>
-                    <div>
-                      <Label className="text-xs text-muted-foreground">Email</Label>
-                      <p>{selectedRequest.requester_email || '-'}</p>
-                    </div>
-                  </div>
-                </div>
-
-                <Separator />
-
-                {/* Infos bien */}
-                {(() => {
-                  const { userNotes, extendedData } = getExtendedData(selectedRequest);
-                  return (
-                    <>
-                      <div>
-                        <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
-                          <Building className="h-4 w-4" />
-                          Informations du bien
-                        </h4>
-                        <div className="grid grid-cols-2 gap-4 text-sm">
-                          {extendedData.construction_type && (
-                            <div>
-                              <Label className="text-xs text-muted-foreground">Type de construction</Label>
-                              <p>{CONSTRUCTION_TYPE_LABELS[extendedData.construction_type] || extendedData.construction_type}</p>
-                            </div>
-                          )}
-                          <div>
-                            <Label className="text-xs text-muted-foreground">Année de construction</Label>
-                            <p>{selectedRequest.construction_year || '-'}</p>
-                          </div>
-                          <div>
-                            <Label className="text-xs text-muted-foreground">Surface bâtie</Label>
-                            <p>{selectedRequest.total_built_area_sqm ? `${selectedRequest.total_built_area_sqm} m²` : '-'}</p>
-                          </div>
-                          <div>
-                            <Label className="text-xs text-muted-foreground">État</Label>
-                            <p>{CONDITION_LABELS[selectedRequest.property_condition || ''] || selectedRequest.property_condition || '-'}</p>
-                          </div>
-                          <div>
-                            <Label className="text-xs text-muted-foreground">Qualité</Label>
-                            <p>{QUALITY_LABELS[selectedRequest.construction_quality || ''] || selectedRequest.construction_quality || '-'}</p>
-                          </div>
-                          {extendedData.number_of_rooms && (
-                            <div>
-                              <Label className="text-xs text-muted-foreground">Nombre de pièces</Label>
-                              <p>{extendedData.number_of_rooms}</p>
-                            </div>
-                          )}
-                          {extendedData.number_of_bedrooms && (
-                            <div>
-                              <Label className="text-xs text-muted-foreground">Chambres</Label>
-                              <p>{extendedData.number_of_bedrooms}</p>
-                            </div>
-                          )}
-                          {extendedData.number_of_bathrooms && (
-                            <div>
-                              <Label className="text-xs text-muted-foreground">Salles de bain</Label>
-                              <p>{extendedData.number_of_bathrooms}</p>
-                            </div>
-                          )}
-                        </div>
-                        {selectedRequest.property_description && (
-                          <div className="mt-2">
-                            <Label className="text-xs text-muted-foreground">Description</Label>
-                            <p className="text-sm">{selectedRequest.property_description}</p>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Matériaux & Position (extended data) */}
-                      {(extendedData.wall_material || extendedData.roof_material || extendedData.building_position || extendedData.window_type || extendedData.floor_material) && (
-                        <>
-                          <Separator />
-                          <div>
-                            <h4 className="text-sm font-semibold mb-2">Matériaux & Emplacement</h4>
-                            <div className="grid grid-cols-2 gap-4 text-sm">
-                              {extendedData.wall_material && (
-                                <div>
-                                  <Label className="text-xs text-muted-foreground">Murs</Label>
-                                  <p>{WALL_LABELS[extendedData.wall_material] || extendedData.wall_material}</p>
-                                </div>
-                              )}
-                              {extendedData.roof_material && (
-                                <div>
-                                  <Label className="text-xs text-muted-foreground">Toiture</Label>
-                                  <p>{ROOF_LABELS[extendedData.roof_material] || extendedData.roof_material}</p>
-                                </div>
-                              )}
-                              {extendedData.window_type && (
-                                <div>
-                                  <Label className="text-xs text-muted-foreground">Fenêtres</Label>
-                                  <p>{WINDOW_LABELS[extendedData.window_type] || extendedData.window_type}</p>
-                                </div>
-                              )}
-                              {extendedData.floor_material && (
-                                <div>
-                                  <Label className="text-xs text-muted-foreground">Sol</Label>
-                                  <p>{FLOOR_LABELS[extendedData.floor_material] || extendedData.floor_material}</p>
-                                </div>
-                              )}
-                              {extendedData.sound_environment && (
-                                <div>
-                                  <Label className="text-xs text-muted-foreground">Environnement sonore</Label>
-                                  <p>{SOUND_LABELS[extendedData.sound_environment] || extendedData.sound_environment}</p>
-                                </div>
-                              )}
-                              {selectedRequest.road_access_type && (
-                                <div>
-                                  <Label className="text-xs text-muted-foreground">Accès routier</Label>
-                                  <p>{ROAD_LABELS[selectedRequest.road_access_type] || selectedRequest.road_access_type}</p>
-                                </div>
-                              )}
-                              {extendedData.building_position && (
-                                <div>
-                                  <Label className="text-xs text-muted-foreground">Position du bâtiment</Label>
-                                  <p>{BUILDING_POSITION_LABELS[extendedData.building_position] || extendedData.building_position}</p>
-                                </div>
-                              )}
-                              {extendedData.facade_orientation && (
-                                <div>
-                                  <Label className="text-xs text-muted-foreground">Orientation façade</Label>
-                                  <p>{FACADE_ORIENTATION_LABELS[extendedData.facade_orientation] || extendedData.facade_orientation}</p>
-                                </div>
-                              )}
-                              {extendedData.accessibility && (
-                                <div>
-                                  <Label className="text-xs text-muted-foreground">Accessibilité</Label>
-                                  <p>{ACCESSIBILITY_LABELS[extendedData.accessibility] || extendedData.accessibility}</p>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </>
-                      )}
-
-                      {/* Finitions */}
-                      {(extendedData.has_plaster !== undefined || extendedData.has_painting !== undefined || extendedData.has_ceiling !== undefined || extendedData.has_double_glazing) && (
-                        <>
-                          <Separator />
-                          <div>
-                            <h4 className="text-sm font-semibold mb-2">Finitions</h4>
-                            <div className="flex flex-wrap gap-2">
-                              {extendedData.has_plaster && <Badge variant="secondary">Crépi</Badge>}
-                              {extendedData.has_painting && <Badge variant="secondary">Peinture</Badge>}
-                              {extendedData.has_ceiling && <Badge variant="secondary">Faux plafond</Badge>}
-                              {extendedData.has_double_glazing && <Badge variant="secondary">Double vitrage</Badge>}
-                              {extendedData.is_corner_plot && <Badge variant="secondary">Parcelle en coin</Badge>}
-                              {extendedData.has_direct_street_access && <Badge variant="secondary">Accès direct route</Badge>}
-                            </div>
-                          </div>
-                        </>
-                      )}
-
-                      {/* Équipements supplémentaires (extended) */}
-                      {(extendedData.has_pool || extendedData.has_air_conditioning || extendedData.has_solar_panels || extendedData.has_water_tank || extendedData.has_generator || extendedData.has_borehole || extendedData.has_electric_fence || extendedData.has_garage || extendedData.has_cellar || extendedData.has_automatic_gate) && (
-                        <>
-                          <Separator />
-                          <div>
-                            <h4 className="text-sm font-semibold mb-2">Équipements supplémentaires</h4>
-                            <div className="flex flex-wrap gap-2">
-                              {extendedData.has_pool && <Badge variant="outline">Piscine</Badge>}
-                              {extendedData.has_air_conditioning && <Badge variant="outline">Climatisation</Badge>}
-                              {extendedData.has_solar_panels && <Badge variant="outline">Panneaux solaires</Badge>}
-                              {extendedData.has_water_tank && <Badge variant="outline">Citerne d'eau</Badge>}
-                              {extendedData.has_generator && <Badge variant="outline">Groupe électrogène</Badge>}
-                              {extendedData.has_borehole && <Badge variant="outline">Forage</Badge>}
-                              {extendedData.has_electric_fence && <Badge variant="outline">Clôture électrique</Badge>}
-                              {extendedData.has_garage && <Badge variant="outline">Garage</Badge>}
-                              {extendedData.has_cellar && <Badge variant="outline">Cave</Badge>}
-                              {extendedData.has_automatic_gate && <Badge variant="outline">Portail automatique</Badge>}
-                            </div>
-                          </div>
-                        </>
-                      )}
-
-                      {/* Appartement details */}
-                      {(extendedData.floor_number || extendedData.apartment_number || extendedData.monthly_charges) && (
-                        <>
-                          <Separator />
-                          <div>
-                            <h4 className="text-sm font-semibold mb-2">Détails appartement</h4>
-                            <div className="grid grid-cols-2 gap-4 text-sm">
-                              {extendedData.floor_number && (
-                                <div>
-                                  <Label className="text-xs text-muted-foreground">Étage</Label>
-                                  <p>{extendedData.floor_number} / {extendedData.total_building_floors || '?'}</p>
-                                </div>
-                              )}
-                              {extendedData.apartment_number && (
-                                <div>
-                                  <Label className="text-xs text-muted-foreground">N° Appartement</Label>
-                                  <p>{extendedData.apartment_number}</p>
-                                </div>
-                              )}
-                              {extendedData.monthly_charges && (
-                                <div>
-                                  <Label className="text-xs text-muted-foreground">Charges mensuelles</Label>
-                                  <p>${extendedData.monthly_charges}</p>
-                                </div>
-                              )}
-                              {extendedData.has_common_areas && (
-                                <div>
-                                  <Label className="text-xs text-muted-foreground">Parties communes</Label>
-                                  <p>Oui</p>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </>
-                      )}
-
-                      {/* Nearby amenities */}
-                      {extendedData.nearby_amenities && (
-                        <>
-                          <Separator />
-                          <div>
-                            <Label className="text-xs text-muted-foreground">Commodités à proximité</Label>
-                            <p className="text-sm mt-1">{extendedData.nearby_amenities}</p>
-                          </div>
-                        </>
-                      )}
-
-                      {extendedData.nearby_noise_sources && (
-                        <div>
-                          <Label className="text-xs text-muted-foreground">Sources de bruit</Label>
-                          <p className="text-sm mt-1">{extendedData.nearby_noise_sources}</p>
-                        </div>
-                      )}
-
-                      {/* Notes utilisateur */}
-                      {userNotes && (
-                        <>
-                          <Separator />
-                          <div>
-                            <Label className="text-xs text-muted-foreground">Notes de l'utilisateur</Label>
-                            <p className="text-sm mt-1 bg-muted/50 p-2 rounded-lg">{userNotes}</p>
-                          </div>
-                        </>
-                      )}
-                    </>
-                  );
-                })()}
-                 {/* Documents joints */}
-                 {selectedRequest.supporting_documents && selectedRequest.supporting_documents.length > 0 && (
-                   <>
-                     <Separator />
-                     <div>
-                       <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
-                         <FileText className="h-4 w-4" />
-                         Documents & Photos ({selectedRequest.supporting_documents.length})
-                       </h4>
-                       <div className="grid grid-cols-3 gap-2">
-                         {selectedRequest.supporting_documents.map((url, idx) => {
-                           const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(url);
-                           return (
-                             <a
-                               key={idx}
-                               href={url}
-                               target="_blank"
-                               rel="noopener noreferrer"
-                               className="block border rounded-lg overflow-hidden hover:ring-2 ring-primary transition-all"
-                             >
-                               {isImage ? (
-                                 <img src={url} alt={`Document ${idx + 1}`} className="w-full h-20 object-cover" />
-                               ) : (
-                                 <div className="flex items-center justify-center h-20 bg-muted">
-                                   <FileText className="h-6 w-6 text-muted-foreground" />
-                                 </div>
-                               )}
-                             </a>
-                           );
-                         })}
-                       </div>
-                     </div>
-                   </>
-                 )}
-
-                 {/* Résultat si complété */}
-                {selectedRequest.status === 'completed' && (
-                  <>
-                    <Separator />
-                    <div className="bg-green-50 dark:bg-green-950/30 p-4 rounded-lg">
-                      <h4 className="text-sm font-semibold mb-2 flex items-center gap-2 text-green-700 dark:text-green-400">
-                        <DollarSign className="h-4 w-4" />
-                        Résultat de l'expertise
-                      </h4>
-                      <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div>
-                          <Label className="text-xs text-muted-foreground">Valeur vénale</Label>
-                          <p className="text-lg font-bold text-green-600">
-                            ${selectedRequest.market_value_usd?.toLocaleString()}
-                          </p>
-                        </div>
-                        <div>
-                          <Label className="text-xs text-muted-foreground">Date d'émission</Label>
-                          <p>{selectedRequest.certificate_issue_date ? format(new Date(selectedRequest.certificate_issue_date), 'dd/MM/yyyy') : '-'}</p>
-                        </div>
-                      </div>
-                      {selectedRequest.certificate_url && (
-                        <Button variant="outline" size="sm" className="mt-2" asChild>
-                          <a href={selectedRequest.certificate_url} target="_blank" rel="noopener noreferrer">
-                            <Download className="h-4 w-4 mr-2" />
-                            Télécharger le certificat
-                          </a>
-                        </Button>
-                      )}
-                    </div>
-                  </>
-                )}
-
-                {/* Rejet si rejeté */}
-                {selectedRequest.status === 'rejected' && selectedRequest.rejection_reason && (
-                  <>
-                    <Separator />
-                    <Alert className="bg-red-50 border-red-200">
-                      <AlertTriangle className="h-4 w-4 text-red-600" />
-                      <AlertDescription className="text-red-700">
-                        <strong>Motif du rejet:</strong> {selectedRequest.rejection_reason}
-                      </AlertDescription>
-                    </Alert>
-                  </>
-                )}
-              </div>
-            </ScrollArea>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Process Dialog */}
       <ExpertiseProcessDialog
         open={showProcessDialog}
         onOpenChange={setShowProcessDialog}
