@@ -7,6 +7,9 @@ export const getPlanCommonSpaces = (req: SubdivisionRequest) =>
 export const getPlanServitudes = (req: SubdivisionRequest) =>
   req.subdivision_plan_data?.servitudes || [];
 
+export const getRoadsCount = (req: SubdivisionRequest): number => getPlanRoads(req).length;
+export const getCommonSpacesCount = (req: SubdivisionRequest): number => getPlanCommonSpaces(req).length;
+
 /** Open a stored cadastral-documents path with a short-lived signed URL. */
 export async function openDocument(
   path: string | null | undefined,

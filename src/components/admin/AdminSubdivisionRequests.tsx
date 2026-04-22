@@ -17,6 +17,9 @@ import { RequestDetailsDialog } from './subdivision/requests/RequestDetailsDialo
 import { RequestActionDialog } from './subdivision/requests/RequestActionDialog';
 import { BulkActionsBar } from './subdivision/requests/BulkActionsBar';
 import { BulkReasonDialog } from './subdivision/requests/BulkReasonDialog';
+import {
+  getCachedValidation, setCachedValidation, invalidateValidation,
+} from './subdivision/requests/validationCache';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -58,15 +61,39 @@ export function AdminSubdivisionRequests() {
     );
   };
 
+  const [totalCount, setTotalCount] = useState(0);
+  const [pendingCount, setPendingCount] = useState(0);
+
   const fetchRequests = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      const from = (page - 1) * ITEMS_PER_PAGE;
+      const to = from + ITEMS_PER_PAGE - 1;
+
+      let q = supabase
         .from('subdivision_requests')
-        .select('*')
-        .order('created_at', { ascending: false });
+        .select('*', { count: 'exact' })
+        .order('created_at', { ascending: sortBy === 'oldest' });
+
+      if (statusFilter !== '_all') q = q.eq('status', statusFilter);
+      if (dateFrom) q = q.gte('created_at', new Date(dateFrom).toISOString());
+      if (dateTo) q = q.lte('created_at', new Date(new Date(dateTo).getTime() + 86400000).toISOString());
+      if (searchQuery.trim()) {
+        const s = searchQuery.trim();
+        q = q.or(`reference_number.ilike.%${s}%,parcel_number.ilike.%${s}%,requester_last_name.ilike.%${s}%`);
+      }
+
+      const { data, error, count } = await q.range(from, to);
       if (error) throw error;
       setRequests((data || []) as SubdivisionRequest[]);
+      setTotalCount(count || 0);
+
+      // Compteur pending global (indépendant des filtres)
+      const { count: pCount } = await supabase
+        .from('subdivision_requests')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', 'pending');
+      setPendingCount(pCount || 0);
     } catch {
       toast({ title: 'Erreur', description: 'Impossible de charger les demandes.', variant: 'destructive' });
     } finally {
@@ -74,41 +101,36 @@ export function AdminSubdivisionRequests() {
     }
   };
 
-  useEffect(() => { fetchRequests(); }, []);
+  // Refetch on pagination/filter/sort changes (debounced for search)
+  useEffect(() => {
+    const t = setTimeout(() => { fetchRequests(); }, searchQuery ? 300 : 0);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, statusFilter, dateFrom, dateTo, sortBy, searchQuery]);
 
-  const filteredRequests = requests
-    .filter(req => {
-      const q = searchQuery.toLowerCase();
-      const matchesSearch = req.reference_number.toLowerCase().includes(q) ||
-        req.parcel_number.toLowerCase().includes(q) ||
-        req.requester_last_name.toLowerCase().includes(q);
-      const matchesStatus = statusFilter === '_all' || req.status === statusFilter;
-      const created = new Date(req.created_at).getTime();
-      const matchesFrom = !dateFrom || created >= new Date(dateFrom).getTime();
-      const matchesTo = !dateTo || created <= new Date(dateTo).getTime() + 86400000;
-      return matchesSearch && matchesStatus && matchesFrom && matchesTo;
-    })
-    .sort((a, b) => {
-      const da = new Date(a.created_at).getTime();
-      const db = new Date(b.created_at).getTime();
-      return sortBy === 'recent' ? db - da : da - db;
-    });
+  // Reset page when filters change
+  useEffect(() => { setPage(1); }, [statusFilter, dateFrom, dateTo, sortBy, searchQuery]);
 
-  const paginatedRequests = filteredRequests.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
-  const totalPages = Math.ceil(filteredRequests.length / ITEMS_PER_PAGE);
-  const pendingCount = requests.filter(r => r.status === 'pending').length;
+  const paginatedRequests = requests; // already paginated server-side
+  const totalPages = Math.max(1, Math.ceil(totalCount / ITEMS_PER_PAGE));
 
-  // Lazy compliance check for visible rows
+  // Lazy compliance check w/ TTL cache (5 min)
   useEffect(() => {
     paginatedRequests.forEach(req => {
       if (validations[req.id]) return;
       if (!OPEN_STATUSES.includes(req.status)) return;
+      const cached = getCachedValidation(req.id);
+      if (cached) {
+        setValidations(prev => ({ ...prev, [req.id]: cached }));
+        return;
+      }
       validateSubdivisionAgainstRules(req.id).then(res => {
+        setCachedValidation(req.id, res);
         setValidations(prev => ({ ...prev, [req.id]: res }));
       });
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, filteredRequests.length]);
+  }, [requests]);
 
   const handleStartReview = async (req: SubdivisionRequest) => {
     if (!user) return;
@@ -129,8 +151,26 @@ export function AdminSubdivisionRequests() {
     }
   };
 
-  const handleExportCsv = () => {
-    const rows = filteredRequests.map(r => ({
+  const handleExportCsv = async () => {
+    // Re-fetch all matching rows (server-side filters), bypassing pagination.
+    let q = supabase
+      .from('subdivision_requests')
+      .select('*')
+      .order('created_at', { ascending: sortBy === 'oldest' })
+      .limit(5000);
+    if (statusFilter !== '_all') q = q.eq('status', statusFilter);
+    if (dateFrom) q = q.gte('created_at', new Date(dateFrom).toISOString());
+    if (dateTo) q = q.lte('created_at', new Date(new Date(dateTo).getTime() + 86400000).toISOString());
+    if (searchQuery.trim()) {
+      const s = searchQuery.trim();
+      q = q.or(`reference_number.ilike.%${s}%,parcel_number.ilike.%${s}%,requester_last_name.ilike.%${s}%`);
+    }
+    const { data, error } = await q;
+    if (error) {
+      toast({ title: 'Erreur export', description: error.message, variant: 'destructive' });
+      return;
+    }
+    const rows = (data || []).map((r: any) => ({
       reference: r.reference_number,
       statut: STATUS_LABELS[r.status] || r.status,
       parcelle: r.parcel_number,
@@ -233,6 +273,8 @@ export function AdminSubdivisionRequests() {
         description: `${selectedRequest.reference_number} traitée.`,
       });
       setShowActionDialog(false);
+      invalidateValidation(selectedRequest.id);
+      setValidations(prev => { const n = { ...prev }; delete n[selectedRequest.id]; return n; });
       fetchRequests();
     } catch (err: any) {
       toast({ title: 'Erreur', description: err.message, variant: 'destructive' });
@@ -297,6 +339,14 @@ export function AdminSubdivisionRequests() {
     }
     setBulkProcessing(false);
     setBulkAction(null);
+    idsSnapshot.forEach(id => {
+      invalidateValidation(id);
+    });
+    setValidations(prev => {
+      const n = { ...prev };
+      idsSnapshot.forEach(id => { delete n[id]; });
+      return n;
+    });
     setSelectedIds([]);
     fetchRequests();
     toast({
