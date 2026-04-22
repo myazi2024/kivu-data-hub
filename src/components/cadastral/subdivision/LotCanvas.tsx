@@ -779,11 +779,9 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
               let label = '';
               if (parentSides && parentSides[i] && parentSides[i].length) {
                 const len = parseFloat(String(parentSides[i].length));
-                label = `${len.toFixed(1)}m`;
+                label = formatMeters(len);
               } else {
-                const dx = Math.abs(next.x - v.x) * sideLength;
-                const dy = Math.abs(next.y - v.y) * sideLength;
-                label = `${Math.round(Math.sqrt(dx * dx + dy * dy))}m`;
+                label = formatMeters(edgeLengthM(v, next, metricFrame));
               }
 
               const orientationLabel = parentSides?.[i]?.orientation || '';
