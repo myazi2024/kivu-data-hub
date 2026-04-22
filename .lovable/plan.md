@@ -1,130 +1,124 @@
 
 
-## Audit — Contrôle, configuration et gestion des lotissements (espace admin)
+## Plan — Aligner le bloc « Identité du demandeur » sur le bloc « Propriétaire actuel » (CCC)
 
-### État des lieux
+### Objectif
 
-**3 entrées admin** dédiées au lotissement :
-- `subdivision-requests` → `AdminSubdivisionRequests` (628 LOC) — gestion des demandes
-- `subdivision-fees-config` → `AdminSubdivisionFeesConfig` (262 LOC) — tarifs $/m²
-- Inclus dans `AdminConfigHub`, `AdminRequestsHub`, `BillingOverviewTab`, mode test
+Dans le formulaire de demande de lotissement, **onglet Parcelle**, remplacer le bloc minimaliste « Identité du demandeur » (5 champs) par un bloc identitaire **structurellement identique** à `CurrentOwnersSection` du formulaire CCC (`GeneralTab.tsx`), pour collecter les mêmes informations légales et garantir la cohérence entre les deux flux.
 
-**Tables BD** : `subdivision_requests` (47 col., RLS OK), `subdivision_lots`, `subdivision_roads`, `subdivision_rate_config` (2 lignes seed urban/rural `*`).
+### Constat de l'existant
 
-**Edge functions** : `subdivision-request` (création + calcul fee server-side), `approve-subdivision` (approve/reject/return atomique avec rollback lots).
-
-### Constats — points forts
-
-| ✅ Élément | Détail |
+| Bloc CCC « Propriétaire actuel » | Bloc Lotissement « Identité du demandeur » |
 |---|---|
-| Calcul frais server-side | `subdivision-request` est source de vérité (rate × surface, min/max par lot) |
-| Approbation atomique | `approve-subdivision` insère lots + flag `is_subdivided` + rollback si insertion lots échoue |
-| Statuts EN normalisés | `pending/in_review/approved/rejected/returned/awaiting_payment/completed` |
-| Workflow renvoi | Action « Renvoyer pour correction » avec motif obligatoire |
-| Certificat auto | `generateAndUploadCertificate('lotissement', …)` après approve |
-| RLS complet | 4 tables couvertes, séparation user/admin/public-approved |
-| Documents privés | Bucket `cadastral-documents` + signed URL 1h |
-| Pass-through hub | Inclus dans `AdminRequestsHub`, `AdminHistoryHub`, `AdminConfigHub` |
+| Statut juridique (Personne physique / morale / État) | ❌ absent |
+| Genre (si physique) | ❌ absent |
+| Nom / Post-nom / Prénom | ⚠️ Prénom / Nom / Deuxième prénom (ordre + label différents) |
+| Champs Personne morale (RCCM, type entité, sous-type) | ❌ absent |
+| Champs État (concession / affectation, exploité par) | ❌ absent |
+| Date « Propriétaire depuis » | ❌ absent |
+| Nationalité (Congolais / Étranger) | ❌ absent |
+| Pièce d'identité / RCCM / Acte (upload) | ⚠️ uploadé séparément à l'étape Docs |
+| Mode unique / multiple (copropriétaires) | ❌ N/A — un seul demandeur |
+| Téléphone / Email / Qualité (owner / mandatary…) | ✅ présents (spécifique demande) |
 
-### Constats — manques et lacunes
+### Approche
 
-#### A. Configuration des règles de zonage (gap critique)
+Réutiliser le composant `CurrentOwnersSection` n'est pas réaliste (couplé à `CadastralContributionData`, `formData.isTitleInCurrentOwnerName`, `titleIssueDate`, `previousTitleType`, `ownerDocFile`, etc., tous propres au CCC). Je vais donc **extraire et adapter** la même structure visuelle et les mêmes champs dans un nouveau composant dédié au demandeur de lotissement, avec :
 
-> **C'est exactement ce que l'utilisateur a demandé en Lot 1 du chantier en cours.**
+- **Même ergonomie** (Card, labels, popovers, picklists Supabase via `getPicklistOptions`)
+- **Mêmes règles** (Personne physique → genre obligatoire, Personne morale → entityType + RCCM, État → rightType + stateExploitedBy)
+- **Champs spécifiques demande conservés** : Téléphone (obligatoire), Email, Qualité du demandeur (Propriétaire / Mandataire / Notaire / Autre)
 
-`subdivision_rate_config` ne contient **que des tarifs** — aucune règle de contrôle des mesures. Conséquences :
-- Pas de **surface min/max par lot** par zone
-- Pas de **largeur min/recommandée des voies** par zone
-- Pas de **% min d'espaces communs**
-- Pas de **front route minimum**
-- Pas de **nombre max de lots** par parcelle mère
-- L'algorithme post-tracé (validation des lots et voies utilisateurs) **n'a aucune source de vérité** pour valider
+### Livrables
 
-**À créer** : table `subdivision_zoning_rules` (ou extension de `subdivision_rate_config`) + UI admin dédiée.
+#### 1. Nouveau type `RequesterInfo` enrichi (`subdivision/types.ts`)
 
-#### B. Demandes — workflow incomplet
+```ts
+export interface RequesterInfo {
+  // Identité (aligné CurrentOwner)
+  legalStatus: 'Personne physique' | 'Personne morale' | 'État' | '';
+  gender?: string;
+  lastName: string;
+  middleName?: string;        // post-nom
+  firstName: string;
+  // Personne morale
+  entityType?: string;
+  entitySubType?: string;
+  entitySubTypeOther?: string;
+  rccmNumber?: string;
+  // État
+  rightType?: 'Concession' | 'Affectation' | '';
+  stateExploitedBy?: string;
+  // Commun
+  nationality?: 'Congolais (RD)' | 'Étranger' | '';
+  // Spécifique demande lotissement
+  phone: string;
+  email?: string;
+  type: 'owner' | 'mandatary' | 'notary' | 'other';
+  isOwner: boolean;
+}
+```
 
-- **Pas de bouton « Mettre en examen »** (`in_review`) — passage direct pending→approved/rejected/returned
-- **Pas d'assignation** (`assigned_to`) — toute la file est partagée
-- **Pas de SLA visible** — le champ `estimated_processing_days` existe en BD mais n'est ni affiché ni configuré
-- **Pas de filtre dates** ni de tri par âge / urgence
-- **Pas d'export CSV** des demandes
-- **Pas de bulk action** (approbation/rejet groupés)
-- **Pas d'audit log** spécifique des décisions admin (qui a approuvé quoi, motif, ancien/nouveau statut) — `audit_logs` générique non utilisé ici
-- **Pas de highlight escalade** alors que `escalated`/`escalated_at` existent en BD
-- **Pas de visualisation du plan** (lots + voies + espaces) sous forme de mini-canvas dans le détail — uniquement listes textuelles
+Migration douce du draft local : valeurs par défaut vides pour les nouveaux champs.
 
-#### C. Validation post-tracé inexistante
+#### 2. Nouveau composant `RequesterIdentityBlock.tsx`
 
-Aujourd'hui une demande passe en `pending` même si :
-- 1 lot fait 2 m² (pas de min)
-- Aucune voie tracée alors que la zone l'exige
-- Surface lots > surface parcelle mère
-- Voies < 3 m de large
+Localisation : `src/components/cadastral/subdivision/RequesterIdentityBlock.tsx`
 
-**À créer** : RPC `validate_subdivision_against_rules(request_id)` exécutée :
-1. Côté front (pré-soumission, bandeau d'aide)
-2. Côté admin (badge « ⚠️ Non conforme : Lot 3 < min, Voie A < largeur min »)
+- Rendu calqué sur `CurrentOwnersSection` (même Card, mêmes Selects, mêmes RadioGroups)
+- Consomme `getPicklistOptions('picklist_legal_status')`, `'picklist_gender'`, etc. via le hook existant `usePicklistOptions`
+- Sous-composants internes `RequesterPersonneMoraleFields`, `RequesterEtatFields` (versions allégées des helpers du CCC, sans champ « Propriétaire depuis » ni `previousTitleType` qui relèvent du titre foncier)
+- Bloc « Qualité du demandeur » + Téléphone + Email préservé (champs propres à la demande)
+- Validation requise : `legalStatus`, `nationality`, `phone`, `type`, et selon statut : `gender` (physique) / `entityType` + `rccmNumber` (morale) / `rightType` + `stateExploitedBy` (État)
 
-#### D. Tarification — limitations
+#### 3. Refonte `StepParentParcel.tsx`
 
-- Pas de **tarif par taille de lot** (palier dégressif)
-- Pas de **frais d'aménagement voirie** (au mètre linéaire)
-- Pas de **frais espaces communs**
-- Pas d'**aperçu de calcul** dans l'admin (« si je demande 5 lots de 200m² à Goma → X $ »)
-- Pas d'**audit** des changements de tarifs (`system_config_audit` ne couvre pas cette table — à vérifier)
+Remplacer la `Card` actuelle (lignes 86-157) par `<RequesterIdentityBlock requester={requester} onChange={onRequesterChange} />`.
 
-#### E. Lots & voies générés — sans gestion admin
+#### 4. Mise à jour `useSubdivisionForm.ts`
 
-Tables `subdivision_lots` et `subdivision_roads` sont **alimentées** par `approve-subdivision` mais **aucun écran admin** ne permet :
-- De lister tous les lots créés (vue cadastrale globale)
-- De corriger une erreur de saisie post-approbation
-- De voir l'historique de modification d'un lot
+- État initial enrichi (tous les nouveaux champs vides)
+- `isStepValid('parcel')` : ajouter règles de validation par statut juridique
+- Auto-fill `authUser` : préremplir `legalStatus = 'Personne physique'` par défaut
+- Submit (`payload.requester`) : transmettre tous les nouveaux champs
 
-#### F. Suivi & analytics absents
+#### 5. Mise à jour edge function `subdivision-request/index.ts`
 
-- Aucun KPI dédié (volume mensuel, surface totale lotie, délai moyen, taux d'approbation/rejet/renvoi)
-- Pas de carte de chaleur des zones avec le plus de demandes
-- Pas d'export pour la DGI / cadastre national
+- Étendre l'interface `requester` avec les nouveaux champs
+- Persister dans `subdivision_requests` les colonnes additionnelles
 
-### Plan d'action proposé (en 4 lots)
+#### 6. Migration BD
 
-#### Lot 1 — Règles de zonage (priorité 1, demandé par l'utilisateur)
+Ajouter colonnes à `subdivision_requests` :
+- `requester_legal_status text`
+- `requester_gender text`
+- `requester_entity_type text`
+- `requester_entity_subtype text`
+- `requester_rccm_number text`
+- `requester_right_type text`
+- `requester_state_exploited_by text`
+- `requester_nationality text`
 
-| Livrable | Détail |
-|---|---|
-| Table `subdivision_zoning_rules` | `section_type`, `location_name`, `min_lot_area_sqm`, `max_lot_area_sqm`, `min_road_width_m`, `recommended_road_width_m`, `min_common_space_pct`, `min_front_road_m`, `max_lots_per_request`, `notes`, `is_active` |
-| Composant `AdminSubdivisionZoningRules.tsx` | CRUD identique au pattern `AdminSubdivisionFeesConfig` + filtres urban/rural + fallback `*` |
-| Onglet sidebar | « Règles de zonage » sous « Demandes & Procédures » |
-| Hook front `useZoningRules(zone)` | Consommé par `LotCanvas` pour bandeau d'aide live |
-| RPC `validate_subdivision_against_rules(request_id)` | Retourne `{ valid: bool, violations: [...] }` |
-| Audit | Inclure cette table dans `system_config_audit` |
+Toutes nullable (rétrocompatibilité avec les demandes existantes).
 
-#### Lot 2 — Hardening de la file admin
+#### 7. Affichage admin & récap
 
-- Bouton « Mettre en examen » + colonne assignation (`assigned_to uuid`)
-- Affichage SLA (`estimated_processing_days` − âge), badge orange dès 80%, rouge si dépassé
-- Highlight `escalated = true` + cron escalade (J+SLA sans décision)
-- Filtres date_from/date_to, tri par âge
-- Export CSV (filtres appliqués)
-- Audit log dédié `subdivision_admin_actions` (action, before, after, motif, admin_id, ts)
-- Badge « ⚠️ Non conforme » sur la ligne si la RPC de validation échoue
+- `StepSummary.tsx` : enrichir le bloc « Demandeur » (statut juridique, RCCM si morale, nationalité)
+- `AdminSubdivisionRequests.tsx` : afficher les nouveaux champs dans le détail demande
 
-#### Lot 3 — Visualisation & gestion des lots
+### Détails techniques
 
-- Mini-canvas SVG read-only dans le détail (réutilise `LotCanvas` en mode `viewerOnly`)
-- Nouvel onglet « Lots & voies créés » (table globale `subdivision_lots` + filtres)
-- Édition admin d'un lot post-approbation (avec audit + notification user)
+- Picklists : réutilisation directe du hook `usePicklistOptions` déjà utilisé dans `CadastralContributionDialog`
+- Le bloc « Pièce d'identité » côté CCC reste à l'étape **Docs** du lotissement (déjà géré par `requester_id_document_url`) — pas de duplication d'upload
+- Aucun lien avec `titleIssueDate` / `previousTitleType` (ces concepts appartiennent au titre foncier de la parcelle mère, déjà chargée automatiquement)
+- Brouillon local : versionner le `localStorage` (clé `subdivision-draft-v2`) pour invalider proprement les anciens drafts incompatibles
 
-#### Lot 4 — Analytics & enrichissement tarifaire
+### Vérification
 
-- Dashboard `AdminSubdivisionAnalytics` : volumes, surface lotie, délai moyen, taux décisions, top zones
-- Tarifs par paliers (rate_per_sqm dégressif au-delà de N m²)
-- Frais voirie au m linéaire + frais espaces communs
-- Aperçu de calcul dans `AdminSubdivisionFeesConfig`
-- Couverture `system_config_audit` sur `subdivision_rate_config` et `subdivision_zoning_rules`
-
-### Recommandation immédiate
-
-Commencer par le **Lot 1** : c'est le bloquant produit (l'utilisateur l'a déjà demandé pour le designer grand public), et il débloque ensuite la validation post-tracé du Lot 2. Les Lots 3 et 4 sont des améliorations qualité / observabilité.
+1. Ouvrir le formulaire lotissement → onglet Parcelle
+2. Le bloc affiche : Statut juridique, Genre, Nom/Post-nom/Prénom, Date, Nationalité — visuellement identique au CCC
+3. Basculer sur « Personne morale » → champs Type d'entité + RCCM apparaissent
+4. Basculer sur « État » → champs Concession/Affectation + Exploité par apparaissent
+5. Téléphone / Email / Qualité du demandeur restent en bas
+6. Soumission → toutes les valeurs sont persistées dans `subdivision_requests` et visibles dans l'admin
 
