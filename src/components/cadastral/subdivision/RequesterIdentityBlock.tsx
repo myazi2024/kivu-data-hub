@@ -288,7 +288,7 @@ const RequesterPersonneMoraleFields: React.FC<{
           <Input
             placeholder={requester.entityType === 'Association' ? "Ex: 0XX/CAB/MIN/..." : "Ex: CD/KIN/RCCM/XX-X-XXXXX"}
             value={requester.rccmNumber || ''}
-            onChange={(e) => update({ rccmNumber: e.target.value, firstName: e.target.value })}
+            onChange={(e) => update({ rccmNumber: e.target.value })}
             className="h-10 text-sm rounded-xl"
           />
         </div>
