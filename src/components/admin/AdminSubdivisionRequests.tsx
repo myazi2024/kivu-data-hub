@@ -273,6 +273,8 @@ export function AdminSubdivisionRequests() {
         description: `${selectedRequest.reference_number} traitée.`,
       });
       setShowActionDialog(false);
+      invalidateValidation(selectedRequest.id);
+      setValidations(prev => { const n = { ...prev }; delete n[selectedRequest.id]; return n; });
       fetchRequests();
     } catch (err: any) {
       toast({ title: 'Erreur', description: err.message, variant: 'destructive' });
@@ -337,6 +339,14 @@ export function AdminSubdivisionRequests() {
     }
     setBulkProcessing(false);
     setBulkAction(null);
+    idsSnapshot.forEach(id => {
+      invalidateValidation(id);
+    });
+    setValidations(prev => {
+      const n = { ...prev };
+      idsSnapshot.forEach(id => { delete n[id]; });
+      return n;
+    });
     setSelectedIds([]);
     fetchRequests();
     toast({
