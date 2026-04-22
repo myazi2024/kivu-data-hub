@@ -7,12 +7,9 @@ import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Upload, CheckCircle2, FileText, Loader2, Trash2, Info, Image as ImageIcon } from 'lucide-react';
+import type { SubdivisionDocuments } from '../types';
 
-export interface SubdivisionDocuments {
-  requester_id_document_url: string | null;
-  proof_of_ownership_url: string | null;
-  subdivision_sketch_url: string | null;
-}
+export type { SubdivisionDocuments };
 
 interface StepDocumentsProps {
   documents: SubdivisionDocuments;
@@ -80,8 +77,8 @@ const StepDocuments: React.FC<StepDocumentsProps> = ({ documents, onChange, user
       if (uploadError) throw uploadError;
       setProgress(80);
 
-      const { data } = supabase.storage.from('cadastral-documents').getPublicUrl(path);
-      onChange({ ...documents, [key]: data.publicUrl });
+      // Bucket is private — store the path; admins generate signed URLs on demand.
+      onChange({ ...documents, [key]: path });
       setProgress(100);
       toast({ title: 'Fichier ajouté', description: file.name });
     } catch (err: any) {
@@ -133,15 +130,23 @@ const StepDocuments: React.FC<StepDocumentsProps> = ({ documents, onChange, user
 
               {url ? (
                 <div className="flex items-center justify-between gap-2 p-2 bg-background rounded border">
-                  <a
-                    href={url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs text-primary hover:underline truncate flex items-center gap-1.5 flex-1 min-w-0"
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const { data, error } = await supabase.storage
+                        .from('cadastral-documents')
+                        .createSignedUrl(url, 60 * 5);
+                      if (error || !data?.signedUrl) {
+                        toast({ title: 'Aperçu indisponible', description: error?.message, variant: 'destructive' });
+                        return;
+                      }
+                      window.open(data.signedUrl, '_blank', 'noopener,noreferrer');
+                    }}
+                    className="text-xs text-primary hover:underline truncate flex items-center gap-1.5 flex-1 min-w-0 text-left"
                   >
                     <ImageIcon className="h-3.5 w-3.5 shrink-0" />
                     <span className="truncate">Fichier ajouté — Voir</span>
-                  </a>
+                  </button>
                   <Button
                     variant="ghost"
                     size="sm"

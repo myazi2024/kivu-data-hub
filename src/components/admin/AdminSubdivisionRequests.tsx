@@ -19,7 +19,7 @@ import {
   Grid3X3, Search, Eye, Check, X, FileText, User, MapPin,
   Clock, AlertTriangle, Loader2, RefreshCw, DollarSign,
   ChevronLeft, ChevronRight, Square, RotateCcw, Mail, Phone,
-  TreePine, Route, Shield
+  TreePine, Route, Shield, Paperclip
 } from 'lucide-react';
 import { generateAndUploadCertificate } from '@/utils/certificateService';
 import { StatusBadge, StatusType } from '@/components/shared/StatusBadge';
@@ -57,6 +57,9 @@ interface SubdivisionRequest {
   reviewed_at?: string;
   created_at: string;
   updated_at: string;
+  requester_id_document_url?: string | null;
+  proof_of_ownership_url?: string | null;
+  subdivision_sketch_url?: string | null;
 }
 
 const SUBDIVISION_STATUS_MAP: Record<string, StatusType> = {
@@ -175,66 +178,32 @@ export function AdminSubdivisionRequests() {
     setShowActionDialog(true);
   };
 
-  // Save individual lots to subdivision_lots table on approval
-  const saveApprovedLots = async (request: SubdivisionRequest) => {
-    const lotsData = request.lots_data || [];
-    const parentGps = request.parent_parcel_gps_coordinates;
-    
-    for (const lot of lotsData) {
-      let gpsCoordinates = null;
-      if (parentGps && Array.isArray(parentGps) && parentGps.length >= 3 && lot.vertices) {
-        const bb = {
-          minLat: Math.min(...parentGps.map((c: any) => c.lat)),
-          maxLat: Math.max(...parentGps.map((c: any) => c.lat)),
-          minLng: Math.min(...parentGps.map((c: any) => c.lng)),
-          maxLng: Math.max(...parentGps.map((c: any) => c.lng)),
-        };
-        gpsCoordinates = lot.vertices.map((v: any) => ({
-          lat: bb.minLat + v.y * (bb.maxLat - bb.minLat),
-          lng: bb.minLng + v.x * (bb.maxLng - bb.minLng),
-        }));
-      }
-      
-      await supabase.from('subdivision_lots').insert({
-        subdivision_request_id: request.id,
-        parcel_number: request.parcel_number,
-        lot_number: lot.lotNumber || lot.id,
-        lot_label: `Lot ${lot.lotNumber}`,
-        area_sqm: lot.areaSqm || 0,
-        perimeter_m: lot.perimeterM || 0,
-        intended_use: lot.intendedUse || 'residential',
-        owner_name: lot.ownerName || null,
-        is_built: lot.isBuilt || false,
-        has_fence: lot.hasFence || false,
-        gps_coordinates: gpsCoordinates,
-        plan_coordinates: lot.vertices || null,
-        color: lot.color || '#22c55e',
-      } as any);
+  // Open a stored cadastral-documents path with a short-lived signed URL
+  const openDocument = async (path: string | null | undefined) => {
+    if (!path) {
+      toast({ title: 'Document indisponible', variant: 'destructive' });
+      return;
     }
-  };
-
-  // Mark parent parcel as subdivided
-  const markParcelAsSubdivided = async (parcelNumber: string) => {
-    try {
-      await supabase
-        .from('cadastral_parcels')
-        .update({ is_subdivided: true } as any)
-        .eq('parcel_number', parcelNumber);
-    } catch (err) {
-      console.error('Erreur marquage parcelle subdivisée:', err);
+    // Backward compat: legacy rows may still hold a full public URL — open as-is
+    if (/^https?:\/\//i.test(path)) {
+      window.open(path, '_blank', 'noopener,noreferrer');
+      return;
     }
+    const { data, error } = await supabase.storage
+      .from('cadastral-documents')
+      .createSignedUrl(path, 60 * 60);
+    if (error || !data?.signedUrl) {
+      toast({ title: 'Aperçu indisponible', description: error?.message, variant: 'destructive' });
+      return;
+    }
+    window.open(data.signedUrl, '_blank', 'noopener,noreferrer');
   };
 
   const submitAction = async () => {
     if (!selectedRequest || !actionType || !user) return;
     setProcessing(true);
     try {
-      const updates: any = {
-        reviewed_by: user.id,
-        reviewed_at: new Date().toISOString(),
-        processing_notes: processingNotes || null,
-      };
-
+      // Validate inputs locally for fast feedback
       if (actionType === 'approve') {
         const fee = parseFloat(processingFee);
         if (isNaN(fee) || fee < 0) {
@@ -242,85 +211,56 @@ export function AdminSubdivisionRequests() {
           setProcessing(false);
           return;
         }
-        updates.status = fee > 0 ? 'awaiting_payment' : 'approved';
-        updates.processing_fee_usd = fee;
-        updates.total_amount_usd = (selectedRequest.submission_fee_usd || 20) + fee;
-        if (fee === 0) updates.approved_at = new Date().toISOString();
-      } else if (actionType === 'reject') {
-        if (!rejectionReason.trim()) {
-          toast({ title: 'Erreur', description: 'Motif de rejet requis.', variant: 'destructive' });
-          setProcessing(false);
-          return;
-        }
-        updates.status = 'rejected';
-        updates.rejection_reason = rejectionReason;
-      } else if (actionType === 'return') {
-        if (!returnReason.trim()) {
-          toast({ title: 'Erreur', description: 'Motif du renvoi requis.', variant: 'destructive' });
-          setProcessing(false);
-          return;
-        }
-        updates.status = 'returned';
-        updates.rejection_reason = returnReason;
+      }
+      if (actionType === 'reject' && !rejectionReason.trim()) {
+        toast({ title: 'Erreur', description: 'Motif de rejet requis.', variant: 'destructive' });
+        setProcessing(false);
+        return;
+      }
+      if (actionType === 'return' && !returnReason.trim()) {
+        toast({ title: 'Erreur', description: 'Motif du renvoi requis.', variant: 'destructive' });
+        setProcessing(false);
+        return;
       }
 
-      const { error } = await supabase
-        .from('subdivision_requests')
-        .update(updates)
-        .eq('id', selectedRequest.id);
+      // Atomic edge: status + lots + parcel flag + notification, with rollback on lot failure
+      const { data, error } = await supabase.functions.invoke('approve-subdivision', {
+        body: {
+          request_id: selectedRequest.id,
+          action: actionType,
+          processing_fee_usd: actionType === 'approve' ? parseFloat(processingFee) : undefined,
+          rejection_reason: actionType === 'reject' ? rejectionReason : (actionType === 'return' ? returnReason : undefined),
+          processing_notes: processingNotes || undefined,
+        },
+      });
       if (error) throw error;
 
-      // On approval, save lots, mark parcel, and generate certificate
-      if (actionType === 'approve' && updates.status === 'approved') {
-        await saveApprovedLots(selectedRequest);
-        await markParcelAsSubdivided(selectedRequest.parcel_number);
-        
+      // On approve+immediate (status === 'approved'), generate certificate
+      if (actionType === 'approve' && data?.status === 'approved') {
         const fullName = `${selectedRequest.requester_first_name} ${selectedRequest.requester_last_name}`;
-        await generateAndUploadCertificate(
-          'lotissement',
-          {
-            referenceNumber: selectedRequest.reference_number,
-            recipientName: fullName,
-            parcelNumber: selectedRequest.parcel_number,
-            issueDate: new Date().toISOString(),
-            approvedBy: 'Bureau d\'Information Cadastrale',
-            additionalData: { requestId: selectedRequest.id },
-          },
-          [
-            { label: 'Nombre de lots:', value: String(selectedRequest.lots_data?.length || 0) },
-            { label: 'Surface totale:', value: `${selectedRequest.parent_parcel_area_sqm} m²` },
-            { label: 'Frais:', value: `$${updates.total_amount_usd}` },
-          ],
-          user.id
-        );
+        const totalAmount = (selectedRequest.submission_fee_usd || 0) + parseFloat(processingFee);
+        try {
+          await generateAndUploadCertificate(
+            'lotissement',
+            {
+              referenceNumber: selectedRequest.reference_number,
+              recipientName: fullName,
+              parcelNumber: selectedRequest.parcel_number,
+              issueDate: new Date().toISOString(),
+              approvedBy: 'Bureau d\'Information Cadastrale',
+              additionalData: { requestId: selectedRequest.id },
+            },
+            [
+              { label: 'Nombre de lots:', value: String(selectedRequest.lots_data?.length || 0) },
+              { label: 'Surface totale:', value: `${selectedRequest.parent_parcel_area_sqm} m²` },
+              { label: 'Frais:', value: `$${totalAmount.toFixed(2)}` },
+            ],
+            user.id
+          );
+        } catch (certErr) {
+          console.warn('Certificate generation failed (non-blocking):', certErr);
+        }
       }
-
-      // Notification
-      const notifMap: Record<string, { type: string; title: string; message: string }> = {
-        approve: {
-          type: 'success',
-          title: 'Lotissement approuvé',
-          message: `Votre demande ${selectedRequest.reference_number} a été approuvée. Le plan est maintenant visible sur la carte cadastrale.`,
-        },
-        reject: {
-          type: 'error',
-          title: 'Lotissement rejeté',
-          message: `Votre demande ${selectedRequest.reference_number} a été rejetée. Motif: ${rejectionReason}`,
-        },
-        return: {
-          type: 'warning',
-          title: 'Lotissement renvoyé pour correction',
-          message: `Votre demande ${selectedRequest.reference_number} nécessite des corrections. Motif: ${returnReason}`,
-        },
-      };
-      const notif = notifMap[actionType];
-      await supabase.from('notifications').insert({
-        user_id: selectedRequest.user_id,
-        type: notif.type,
-        title: notif.title,
-        message: notif.message,
-        action_url: '/user-dashboard?tab=subdivisions',
-      });
 
       const actionLabels = { approve: 'approuvée', reject: 'rejetée', return: 'renvoyée' };
       toast({
@@ -335,6 +275,7 @@ export function AdminSubdivisionRequests() {
       setProcessing(false);
     }
   };
+
 
   // Extract plan data helpers
   const getPlanRoads = (req: SubdivisionRequest) => {
@@ -497,7 +438,31 @@ export function AdminSubdivisionRequests() {
                   </CardContent>
                 </Card>
 
-                {/* Motif & Frais */}
+                {/* Pièces justificatives — signed URLs on demand (private bucket) */}
+                {(selectedRequest.requester_id_document_url || selectedRequest.proof_of_ownership_url || selectedRequest.subdivision_sketch_url) && (
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm flex items-center gap-2"><Paperclip className="h-4 w-4" /> Pièces justificatives</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-2 text-sm">
+                      {selectedRequest.requester_id_document_url && (
+                        <Button variant="outline" size="sm" className="w-full justify-start gap-2" onClick={() => openDocument(selectedRequest.requester_id_document_url)}>
+                          <FileText className="h-3.5 w-3.5" /> Pièce d'identité du demandeur
+                        </Button>
+                      )}
+                      {selectedRequest.proof_of_ownership_url && (
+                        <Button variant="outline" size="sm" className="w-full justify-start gap-2" onClick={() => openDocument(selectedRequest.proof_of_ownership_url)}>
+                          <FileText className="h-3.5 w-3.5" /> Preuve de propriété
+                        </Button>
+                      )}
+                      {selectedRequest.subdivision_sketch_url && (
+                        <Button variant="outline" size="sm" className="w-full justify-start gap-2" onClick={() => openDocument(selectedRequest.subdivision_sketch_url)}>
+                          <FileText className="h-3.5 w-3.5" /> Croquis annexe
+                        </Button>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
                 <Card>
                   <CardContent className="pt-4 grid grid-cols-2 gap-3 text-sm">
                     {selectedRequest.purpose_of_subdivision && (

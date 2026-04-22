@@ -145,6 +145,15 @@ export interface FeeBreakdown {
   total: number;
 }
 
+export interface SubdivisionDocuments {
+  /** Storage path inside the `cadastral-documents` private bucket. */
+  requester_id_document_url: string | null;
+  /** Storage path inside the `cadastral-documents` private bucket. */
+  proof_of_ownership_url: string | null;
+  /** Storage path inside the `cadastral-documents` private bucket (optional). */
+  subdivision_sketch_url: string | null;
+}
+
 export interface RequesterInfo {
   firstName: string;
   lastName: string;

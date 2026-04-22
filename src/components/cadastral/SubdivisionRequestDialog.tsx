@@ -77,16 +77,17 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
         },
       });
 
-      if (payError) throw payError;
-      if (payment?.url) {
-        window.location.href = payment.url as string;
-      } else {
+      if (payError || !payment?.url) {
+        // Stripe unavailable → show fallback success screen with reference + dashboard link
+        form.markSubmittedFallback();
         toast({
           title: 'Paiement indisponible',
           description: 'Vous pourrez régler depuis votre tableau de bord.',
           variant: 'destructive',
         });
+        return;
       }
+      window.location.href = payment.url as string;
     } catch (err: any) {
       toast({ title: 'Erreur', description: err.message, variant: 'destructive' });
     }
@@ -106,7 +107,9 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
   }
   
   const currentStepIndex = form.steps.indexOf(form.currentStep);
-  const feeLabel = form.loadingFee ? '...' : `${form.submissionFee ?? 20}$`;
+  const feeLabel = form.loadingFee || form.submissionFee == null
+    ? '…'
+    : `${form.submissionFee.toFixed(2)}$`;
   
   return (
     <>
