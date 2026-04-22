@@ -151,8 +151,26 @@ export function AdminSubdivisionRequests() {
     }
   };
 
-  const handleExportCsv = () => {
-    const rows = filteredRequests.map(r => ({
+  const handleExportCsv = async () => {
+    // Re-fetch all matching rows (server-side filters), bypassing pagination.
+    let q = supabase
+      .from('subdivision_requests')
+      .select('*')
+      .order('created_at', { ascending: sortBy === 'oldest' })
+      .limit(5000);
+    if (statusFilter !== '_all') q = q.eq('status', statusFilter);
+    if (dateFrom) q = q.gte('created_at', new Date(dateFrom).toISOString());
+    if (dateTo) q = q.lte('created_at', new Date(new Date(dateTo).getTime() + 86400000).toISOString());
+    if (searchQuery.trim()) {
+      const s = searchQuery.trim();
+      q = q.or(`reference_number.ilike.%${s}%,parcel_number.ilike.%${s}%,requester_last_name.ilike.%${s}%`);
+    }
+    const { data, error } = await q;
+    if (error) {
+      toast({ title: 'Erreur export', description: error.message, variant: 'destructive' });
+      return;
+    }
+    const rows = (data || []).map((r: any) => ({
       reference: r.reference_number,
       statut: STATUS_LABELS[r.status] || r.status,
       parcelle: r.parcel_number,
