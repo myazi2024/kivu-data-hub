@@ -1,98 +1,115 @@
 
 
-## Plan — Mesures précises et exhaustives sur chaque tracé (lots, voies, espaces communs)
+## Audit — Configuration & gestion du service de demande de Lotissement (espace admin)
 
-### Diagnostic
+### Périmètre couvert
 
-#### Bug #1 — Mesures de la parcelle mère imprécises pour les formes irrégulières
-Dans `LotCanvas.tsx` (lignes 766-773), quand un côté n'a pas de `length` saisi dans `parentSides`, le label se calcule via `√areaSqm × distance_normalisée`. Cette formule **n'est exacte que pour un carré parfait**. Dès que la parcelle est rectangulaire, en L, en trapèze… les longueurs affichées divergent fortement de la réalité GPS.
+5 écrans admin (sidebar « Procédures fonciers ») :
+1. **Demandes Lotissement** (`AdminSubdivisionRequests`) — file de traitement
+2. **Config Frais Lotissement** (`AdminSubdivisionFeesConfig`) — barème `subdivision_rate_config`
+3. **Règles de zonage** (`AdminSubdivisionZoningRules`) — `subdivision_zoning_rules`
+4. **Lots & voies créés** (`AdminSubdivisionLots`) — `subdivision_lots`
+5. **Analytics Lotissement** (`AdminSubdivisionAnalytics`)
 
-**Cause racine** : `gpsToNormalized` (geometry.ts L83) projette via la bounding box GPS (lat/lng) et ignore que 1° de longitude ≠ 1° de latitude en mètres → la grille normalisée est anisotrope. Reconvertir avec une échelle unique `√A` introduit une déformation.
+Plus 2 edge functions : `subdivision-request` (création) et `approve-subdivision` (approbation atomique).
 
-#### Bug #2 — Mesures des lots/voies/espaces : même biais
-- `getDimensionLabel` (LotCanvas L646-651) : utilise `sideLength = √parentAreaSqm` → biais identique pour tout polygone-fils.
-- Surfaces des lots-enfants après split/cut : calculées en proportion **de la surface normalisée** (StepLotDesigner L336-340, L439-443), avec `Math.round` puis `area2 = totalArea − area1` → drift sur petits lots, pas de cohérence avec le périmètre.
-- **Périmètres pas recalculés** sur split/cut/merge (L344-359, L447-454, L386-393) : `perimeterM` est hérité du lot parent → la sidebar affiche le périmètre de la parcelle entière sur chaque lot-enfant.
+---
 
-#### Bug #3 — Voies et espaces communs : aucune cote affichée
-Sur le canvas, les voies n'affichent que nom + largeur, jamais la longueur. Les espaces communs n'affichent ni longueur de côtés, ni surface inscrite. L'utilisateur ne peut pas lire les dimensions par élément.
+### ✅ Points forts confirmés
 
-### Approche — Source de vérité géométrique unique
+- **Soumission sécurisée** : edge `subdivision-request` calcule les frais côté serveur (anti-falsification), génère `reference_number` (`LOT-YYYY-XXXXXXXX`), valide CNI/preuve de propriété obligatoires, applique le pattern `pattern-soumission-securisee-fr`.
+- **Approbation atomique** : edge `approve-subdivision` insère lots + flag `is_subdivided` + notification, avec **rollback du statut** si l'insertion des lots échoue.
+- **Statuts EN normalisés** (`pending/in_review/approved/rejected/returned/awaiting_payment/completed`) — conformes à `status-normalization-pattern-fr`.
+- **SLA, escalade, motif de rejet/renvoi obligatoire**, validation conformité zonage en temps réel via RPC `validate_subdivision_against_rules`, badge Conforme/Non conforme par ligne.
+- **Audit log** sur édition admin de lots (`AdminSubdivisionLots` → `audit_logs`).
+- **Documents privés** servis via signed URLs (bucket `cadastral-documents`).
+- **Aperçu visuel** du plan dans le dialog de détails (`SubdivisionMiniMap`).
+- **Frais multi-paramètres** : tarif/m², palier dégressif, min/max par lot, voirie ($/ml), espaces communs ($/m²), avec calculateur d'aperçu.
 
-Introduire un module `metrics.ts` qui transforme tout point normalisé en mètres via une **projection métrique anisotrope** dérivée de la parcelle mère :
+---
 
-```
-sxM = (largeur_GPS_en_metres_à_la_latitude_moyenne)
-syM = (hauteur_GPS_en_metres)
-distanceMeters(a, b) = hypot((b.x − a.x) × sxM, (b.y − a.y) × syM)
-polygonAreaMeters(poly) = polygonArea_normalisée(poly) × (sxM × syM)
-```
+### ⚠️ Écarts & dette technique identifiés
 
-Cela élimine l'hypothèse « parcelle carrée » et garantit que :
-- Σ(surfaces lots + voies + espaces) = surface parcelle mère (à l'arrondi près).
-- Les longueurs des côtés s'additionnent à un périmètre cohérent.
-- Les valeurs affichées correspondent aux distances GPS réelles.
+#### A. Cohérence calcul de frais client ↔ serveur
+1. **Voirie & espaces communs ignorés côté serveur** (`subdivision-request/index.ts` L103-117) : seuls `area × ratePerSqm` sont sommés. Or `subdivision_rate_config` expose `road_fee_per_linear_m_usd` et `common_space_fee_per_sqm_usd`, et le calculateur admin les inclut. Les utilisateurs payent moins que ce que le barème prévoit → **manque à gagner**.
+2. **Palier dégressif (`tier_threshold_sqm`/`tier_rate_per_sqm_usd`) non appliqué côté serveur** (présent uniquement dans le calculateur admin et l'UI client). Incohérence directe entre l'aperçu et la facturation réelle.
+3. **Pas de `processing_fee_usd` configurable** : saisi à la main par l'admin à l'approbation, sans grille tarifaire.
 
-### Livrables
+#### B. Workflow & outillage admin
+4. **Pas d'action « Réassigner »** : `assigned_to` est posé une seule fois par `handleStartReview`. Aucun moyen de transférer un dossier.
+5. **Pas d'actions groupées** (bulk approve/reject/réassigner) — divergence avec AdminCCC/Mutation/Expertise (cf. `admin-component-modularization-fr`).
+6. **Composant monolithique 806 lignes** (`AdminSubdivisionRequests.tsx`) — viole `complex-dialog-modularization-strategy-fr` (>1000 LOC dialogs ; ici on s'en approche). Devrait être splitté en `Stats/Filters/RequestList/RequestDetailsDialog/ActionDialog`.
+7. **Pas de hub unifié** : les 5 écrans sont 5 entrées plates dans la sidebar. Pas de tabs « Demandes / Config / Lots / Analytics » comme pour CCC.
+8. **`AdminBillingConfig` a un onglet « Lotissement »** (ligne 251) mais pointe vers une vue distincte de `AdminSubdivisionFeesConfig` → vérifier non-duplication.
 
-#### 1. Module `utils/metrics.ts` (nouveau)
-- `buildMetricFrame(parentGps, parentAreaSqm)` → `{ sxM, syM, areaScale }` (calcule les deux échelles via Haversine sur les bornes GPS ; bascule sur `√A`/`√A` si pas de GPS).
-- `edgeLengthM(a, b, frame)` — longueur d'arête en mètres.
-- `polygonPerimeterM(poly, frame)` — somme.
-- `polygonAreaSqmAccurate(poly, frame)` — surface absolue en m², pas de proportion.
-- `formatMeters(m)` — `"12,4 m"` sous 100 m, `"124 m"` au-delà ; cohérent partout.
+#### C. Données & traçabilité
+9. **`subdivision_roads` jamais insérée par `approve-subdivision`** : seule `subdivision_lots` est matérialisée. Les voies restent uniquement dans `subdivision_plan_data` JSON → impossibles à interroger/analyser, n'apparaissent pas dans `AdminSubdivisionLots` (qui ne montre que les lots malgré son titre « Lots & voies créés »).
+10. **Édition admin d'un lot non répliquée vers `cadastral_parcels`** : si un lot devient une parcelle officielle, le changement de propriétaire/usage dans `AdminSubdivisionLots` ne propage rien (cf. `atomic-cross-table-updates-fr`).
+11. **`subdivision_plan_data` non versionné** : un renvoi pour correction écrase la donnée précédente sans snapshot. Pas d'historique de plan.
+12. **`approve-subdivision` n'écrit pas dans `request_admin_audit`** : l'audit générique des décisions admin (cf. `requests-procedures-admin-audit-fr`) est implémenté ailleurs mais pas ici.
 
-#### 2. Hook `useSubdivisionForm.ts`
-- Exposer `metricFrame` calculé en `useMemo` (depuis `parentParcel.gpsCoordinates` et `areaSqm`).
-- `createInitialLot` : utiliser `polygonPerimeterM` du nouveau module.
+#### D. Qualité de la file de traitement
+13. **`fetchRequests` charge sans pagination** (`select('*')` complet) — risque de scalabilité au-delà de quelques milliers de demandes.
+14. **Validation conformité lazy** déclenchée par `useEffect` mais relancée à chaque pagination → recalculs RPC redondants. Pas de cache / pas de TTL.
+15. **`SubdivisionMiniMap` ne reçoit pas les `metricFrame`** : les surfaces affichées dans le dialog admin ne bénéficient pas de la projection GPS précise mise en place côté éditeur (cf. travaux récents).
+16. **Pas d'export PDF/dossier complet** par demande (CSV uniquement) — divergence avec `AdminHistoryHub`.
 
-#### 3. Recalcul systématique sur mutations — `StepLotDesigner.tsx`
-- `handleSplitLot`, `handleCutLot`, `handleMergeLots` : recalculer `areaSqm` **et** `perimeterM` des lots-enfants avec `polygonAreaSqmAccurate` + `polygonPerimeterM` (plus de proportion ni d'héritage).
-- Idem dans `useCanvasDrag` après chaque drag de sommet/arête : `updateLot` reçoit `vertices + areaSqm + perimeterM` recalculés (la garde `isParentBoundary` reste).
+#### E. UX & accessibilité
+17. **`window.confirm` pour suppression** dans `AdminSubdivisionFeesConfig` et `AdminSubdivisionZoningRules` → remplacer par `AlertDialog` (cohérence design).
+18. **Mix toast** : `sonner` (config/zoning/lots) vs `useToast` (requests) — harmoniser.
+19. **Alertes de conformité** : tooltip texte uniquement, pas de drawer détaillé listant les violations.
 
-#### 4. Affichage des cotes — `LotCanvas.tsx`
+#### F. Sécurité & RLS (à vérifier)
+20. **`subdivision_zoning_rules` & `subdivision_rate_config`** : confirmer policies admin-only (les écrans utilisent `(supabase as any)` ce qui peut masquer des erreurs RLS).
+21. **`subdivision_lots`** : édition publique vs admin. RLS doit limiter UPDATE aux admins (le code y suppose).
 
-**Parcelle mère** (L755-802) :
-- Si `parentSides[i].length` saisi → afficher cette valeur (autorité : déclaration utilisateur).
-- Sinon → `edgeLengthM(v, next, frame)` (plus de `sideLength` heuristique).
+---
 
-**Lots** (L1259-1277) :
-- `getDimensionLabel` réécrit pour utiliser `frame`.
-- Ajouter un libellé central par lot : `Lot N° X · 250 m² · P 64 m` (toggle `showAreas`/`showLotNumbers` existants).
+### 🎯 Plan correctif recommandé (priorisé)
 
-**Voies** :
-- Afficher la **longueur** de chaque tronçon le long de l'axe (en plus du nom et de la largeur déjà présents).
-- Afficher la **surface emprise** au centre (`longueur × largeur`).
+#### P0 — Cohérence financière (impact direct revenus)
+- **Étendre `subdivision-request` edge** : intégrer `road_fee_per_linear_m_usd × Σ longueur voies` et `common_space_fee_per_sqm_usd × Σ surface espaces communs` + palier dégressif. Le calcul doit reproduire à l'identique la formule du calculateur admin (extraire dans un module partagé `_shared/subdivisionFees.ts`).
+- **Ajouter `processing_fee_grid`** : tarif standard configurable (pourcentage ou fixe) appliqué par défaut à l'approbation.
 
-**Espaces communs** :
-- Afficher la longueur sur chaque côté (comme les lots), la surface au centroïde, le type/nom au-dessus.
+#### P1 — Workflow admin
+- **Bulk actions** : sélection multi + approuver/rejeter/renvoyer/réassigner en lot (réutiliser pattern AdminCCC).
+- **Action « Réassigner »** dans la liste (Select admin disponible).
+- **Modulariser** `AdminSubdivisionRequests` en `requests/` (Stats, Filters, List, DetailsDialog, ActionDialog) ≤ 300 LOC chacun.
+- **Hub à onglets** : `AdminSubdivisionHub` regroupant Demandes / Frais / Zonage / Lots / Analytics, avec une seule entrée sidebar « Lotissement ».
 
-#### 5. Légende & cohérence
-- `formatMeters` partagé : panneau latéral, canvas, récap, exports PDF — une seule source.
-- Panneau latéral : la fiche d'un lot/voie/espace affiche surface + périmètre + longueur (voie) calculés depuis le **frame**, plus jamais d'héritage.
-- Dans la barre d'outils canvas, un bouton « Cotes » contrôle `showDimensions` pour les **trois** types d'éléments (aujourd'hui uniquement les lots).
+#### P2 — Complétude données
+- **Matérialiser `subdivision_roads`** dans `approve-subdivision` (mêmes principes que les lots : geometry GPS dérivée, rollback si échec).
+- **Inclure les voies** dans `AdminSubdivisionLots` (renommer en « Lots, voies & espaces ») avec un sélecteur de type.
+- **Versionner `subdivision_plan_data`** dans `subdivision_plan_versions` à chaque renvoi/réédition.
+- **Audit générique** : `approve-subdivision` insère dans `request_admin_audit` (action, old_status, new_status, motif).
 
-#### 6. Garantie d'intégrité visuelle
-- Tooltip sur la surface de chaque lot : « Calculée depuis la projection GPS de la parcelle mère ».
-- Si l'écart `Σ surfaces − surface parcelle` > 1% : badge d'avertissement orange dans la barre d'outils (utilise déjà `validateSubdivision`, qu'on alimente via le frame).
+#### P3 — Performance & UX
+- **Pagination serveur** dans `fetchRequests` (range + count exact).
+- **Cache validation conformité** (TTL 5 min, invalidé sur update du dossier).
+- **Export dossier PDF** complet par demande.
+- **Harmoniser toasts** (`useToast` partout) et remplacer `window.confirm` par `AlertDialog`.
+- **Drawer de violations** au clic sur le badge « Non conforme ».
 
-### Vérification
+#### P4 — Sécurité
+- **Audit RLS** de `subdivision_rate_config`, `subdivision_zoning_rules`, `subdivision_lots`, `subdivision_roads` ; supprimer les `as any` masquants après confirmation.
 
-1. Parcelle mère rectangulaire 80×40 (3200 m²) : les côtés affichent 80 m et 40 m (et non 56,5 m comme aujourd'hui).
-2. Diviser → deux lots 40×40 : chaque lot affiche 40 m × 40 m, surface 1600 m², périmètre 160 m (auparavant le périmètre restait 240 m).
-3. Tracer une voie de 6 m de large entre les deux lots → la voie affiche sa longueur (40 m) et sa surface (240 m²).
-4. Ajouter un espace commun → côtés cotés, surface affichée au centre.
-5. Σ(surfaces lots + voies + espaces) = 3200 m² ± 1 m² → pas de badge d'écart.
-6. Recharger un brouillon : les valeurs persistées sont remplacées par celles recalculées via le frame (cohérence garantie même si un ancien draft a des `perimeterM` incorrects).
+---
 
-### Fichiers modifiés
+### Estimation d'effort
 
-- `src/components/cadastral/subdivision/utils/metrics.ts` *(nouveau)*
-- `src/components/cadastral/subdivision/hooks/useSubdivisionForm.ts` (expose `metricFrame`, `createInitialLot`)
-- `src/components/cadastral/subdivision/hooks/useCanvasDrag.ts` (recalcul aire/périmètre après drag)
-- `src/components/cadastral/subdivision/LotCanvas.tsx` (cotes parent/lots/voies/espaces, `getDimensionLabel` via frame, libellé central voies/espaces)
-- `src/components/cadastral/subdivision/steps/StepLotDesigner.tsx` (split/cut/merge → aire + périmètre exacts ; sidebar via `formatMeters`)
-- `src/components/cadastral/subdivision/utils/geometry.ts` (déprécier `polygonPerimeter(...√A)` au profit du frame ; conserver les autres helpers)
+| Lot | Effort | Risque |
+|---|---|---|
+| P0 frais voirie/espaces/palier | Moyen | Faible (test edge function) |
+| P1 modularisation + bulk + hub | Élevé | Moyen (refactor large) |
+| P2 voies matérialisées + audit | Moyen | Faible |
+| P3 perf/UX | Faible-Moyen | Faible |
+| P4 RLS | Faible | Moyen (à tester en non-régression) |
 
-Aucune migration BD ni edge function impactée.
+### Fichiers concernés (référence)
+- `src/components/admin/AdminSubdivisionRequests.tsx`, `AdminSubdivisionFeesConfig.tsx`, `AdminSubdivisionZoningRules.tsx`, `AdminSubdivisionLots.tsx`, `AdminSubdivisionAnalytics.tsx`
+- `src/components/admin/sidebarConfig.ts`
+- `supabase/functions/subdivision-request/index.ts`, `supabase/functions/approve-subdivision/index.ts`
+- `src/hooks/useZoningRules.ts`
+- Nouveaux : `_shared/subdivisionFees.ts` (formule unifiée), `AdminSubdivisionHub.tsx`, dossier `subdivision/` modularisé.
 
+Dis-moi quels lots tu souhaites lancer en priorité et je prépare un plan d'implémentation détaillé pour chacun.
