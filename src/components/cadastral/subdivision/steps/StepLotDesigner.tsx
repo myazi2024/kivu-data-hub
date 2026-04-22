@@ -10,7 +10,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import {
   Plus, Trash2, Undo2, Redo2, AlertTriangle,
-  Info, Route,
+  Info,
   MousePointer, Scissors, Shield, TreePine
 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
