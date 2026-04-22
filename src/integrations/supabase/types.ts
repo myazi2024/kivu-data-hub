@@ -5956,11 +5956,19 @@ export type Database = {
           rejection_reason: string | null
           remaining_fee_usd: number | null
           requester_email: string | null
+          requester_entity_subtype: string | null
+          requester_entity_type: string | null
           requester_first_name: string
+          requester_gender: string | null
           requester_id_document_url: string | null
           requester_last_name: string
+          requester_legal_status: string | null
           requester_middle_name: string | null
+          requester_nationality: string | null
           requester_phone: string
+          requester_rccm_number: string | null
+          requester_right_type: string | null
+          requester_state_exploited_by: string | null
           requester_type: string | null
           reviewed_at: string | null
           reviewed_by: string | null
@@ -6007,11 +6015,19 @@ export type Database = {
           rejection_reason?: string | null
           remaining_fee_usd?: number | null
           requester_email?: string | null
+          requester_entity_subtype?: string | null
+          requester_entity_type?: string | null
           requester_first_name: string
+          requester_gender?: string | null
           requester_id_document_url?: string | null
           requester_last_name: string
+          requester_legal_status?: string | null
           requester_middle_name?: string | null
+          requester_nationality?: string | null
           requester_phone: string
+          requester_rccm_number?: string | null
+          requester_right_type?: string | null
+          requester_state_exploited_by?: string | null
           requester_type?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
@@ -6058,11 +6074,19 @@ export type Database = {
           rejection_reason?: string | null
           remaining_fee_usd?: number | null
           requester_email?: string | null
+          requester_entity_subtype?: string | null
+          requester_entity_type?: string | null
           requester_first_name?: string
+          requester_gender?: string | null
           requester_id_document_url?: string | null
           requester_last_name?: string
+          requester_legal_status?: string | null
           requester_middle_name?: string | null
+          requester_nationality?: string | null
           requester_phone?: string
+          requester_rccm_number?: string | null
+          requester_right_type?: string | null
+          requester_state_exploited_by?: string | null
           requester_type?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
