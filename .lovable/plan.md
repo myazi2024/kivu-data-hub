@@ -1,96 +1,134 @@
 
 
-## Audit — Swipe mobile entre Carte RDC et Analytics
+## Refonte complète — Swipe slide mobile (Carte RDC ⇄ Analytics)
 
-### 1. Architecture actuelle
+Reconstruction from scratch, inspirée des UX modernes (iOS Pages, Instagram Stories, App Store). Le principe : un **carousel pager** où le doigt déplace les pages **en temps réel**, avec snap intelligent, vélocité physique et feedback continu.
 
-**Fichiers clés**
-- `src/hooks/useSwipeNavigation.ts` — hook v2 (touchstart/move/end avec rAF, vélocité, garde directionnelle, anti-clic fantôme)
-- `src/components/DRCInteractiveMap.tsx` — branchement du hook sur le conteneur racine, état `activeMobilePanel: 'map' | 'details' | 'analytics'`, hint one-shot via localStorage
+---
 
-**Configuration en place**
-- `enabled: isMobile`
-- `direction: onAnalyticsPanel ? 'right' : 'left'` (garde directionnelle bidirectionnelle)
-- `ignoreSelector` ciblé : `[data-swipe-ignore]`, dialogs Radix, `button`, `a`, `input`, `textarea`, `select`
-- Feedback visuel : rubber-band ±24px (15% du delta), pagination dots, edge glow, vibration 15ms
-- Hint contextuel : toast `sonner` à la 1ère bascule, persistance `localStorage('drc-map-swipe-hint-shown')`
-- Respect `prefers-reduced-motion` pour rubber-band et glow
+### 1. Principes directeurs
 
-### 2. Points forts
+- **Le doigt EST la page** : pas de threshold artificiel pour commencer le mouvement. Dès que l'utilisateur pose le doigt et bouge horizontalement, les deux panneaux suivent à 1:1.
+- **Décision au relâchement** : snap vers la page la plus proche, pondéré par la vélocité (flick court = bascule, drag lent = retour si <50%).
+- **Continuité visuelle absolue** : aucun cut, aucun fade. Une seule transformation `translateX` pilotée par un seul state.
+- **Découvrabilité native** : un teaser d'amorce au mount (les deux pages "rebondissent" de 12px à droite puis reviennent) — comme Instagram quand tu ouvres un nouveau profil.
+- **Zéro conflit** : la carte SVG reste tappable, le scroll vertical Analytics reste natif, pinch-zoom intact.
 
-| Aspect | Statut |
+---
+
+### 2. Nouvelle architecture
+
+#### A. Nouveau hook `useSwipePager` (remplace `useSwipeNavigation`)
+
+Pattern fondamentalement différent — on ne détecte plus un "swipe", on suit un **drag continu** :
+
+```ts
+useSwipePager({
+  pageCount: 2,
+  index: activeMobilePanel === 'analytics' ? 1 : 0,
+  onIndexChange: (i) => setActiveMobilePanel(i === 1 ? 'analytics' : 'map'),
+  enabled: isMobile,
+  ignoreSelector: '...',
+})
+→ returns { ref, dragOffset, isDragging, pageWidth }
+```
+
+Logique interne :
+- **`pointerdown`** : capture position, mémorise `startX`, marque `isDragging=true` après 8px de mouvement horizontal (lock). Si vertical d'abord → relâche.
+- **`pointermove`** (rAF throttled) : `dragOffset = currentX - startX`, clampé avec **rubber-band aux extrémités** (résistance exponentielle si on tire au-delà de la dernière page).
+- **`pointerup`** : décision physique :
+  - distance parcourue ≥ 25% largeur écran → snap à la page suivante
+  - vélocité ≥ 0.4 px/ms (flick) → snap dans la direction du flick, peu importe la distance
+  - sinon → snap retour
+- **Anti-clic fantôme** : si `isDragging` a été vrai, capture le prochain `click` (déjà OK).
+- **Pointer Capture** (`setPointerCapture`) : garantit la continuité même si le doigt sort du conteneur.
+
+#### B. Layout simplifié (une seule transformation)
+
+```tsx
+<div ref={pagerRef} className="relative h-full overflow-hidden touch-pan-y">
+  <div
+    className="flex h-full"
+    style={{
+      width: '200%',
+      transform: `translate3d(calc(${-index * 50}% + ${dragOffset}px), 0, 0)`,
+      transition: isDragging ? 'none' : 'transform 320ms cubic-bezier(.22,.61,.36,1)',
+      willChange: 'transform',
+    }}
+  >
+    <section className="w-1/2 shrink-0">…carte + détails…</section>
+    <section className="w-1/2 shrink-0">…analytics…</section>
+  </div>
+</div>
+```
+
+- `touch-pan-y` sur le conteneur : autorise le scroll vertical natif, intercepte uniquement le pan horizontal. Élimine 90 % des conflits scroll/swipe sans code.
+- `translate3d` : composite GPU, 60 fps garantis.
+- Une seule source de vérité de position : `index + dragOffset`.
+
+#### C. Page indicator moderne (style iOS)
+
+Sous les boutons mobiles :
+- 2 dots fluides qui s'**étirent en barre** au fur et à mesure du drag (pas binaire).
+- La largeur de la barre active = `interpolate(dragProgress, 0..1, 16px..6px)` pour la dot qui rétrécit, et inverse pour celle qui grandit.
+- Animation pure CSS pilotée par la même variable `dragOffset`.
+
+#### D. Teaser de découvrabilité (au mount, une seule fois)
+
+Au lieu d'un toast textuel, **un mouvement physique** plus mémorable :
+- 600ms après le mount, si jamais vu : on anime `dragOffset` de `0 → -32px → +16px → 0` sur 900ms (easeOutBack).
+- L'utilisateur voit littéralement la page Analytics "pointer le bout de son nez" puis revenir.
+- Persistance `localStorage('drc-pager-teaser-seen')`.
+- Skip si `prefers-reduced-motion`.
+
+---
+
+### 3. Boutons & accessibilité (conservés, simplifiés)
+
+- Boutons Carte/Analytics restent (a11y + desktop fallback) → ils déclenchent juste `setIndex(0|1)`, le hook anime tout seul.
+- `role="tablist"` sur les dots, `aria-selected` synchronisé.
+- Focus management : après animation (320ms), focus sur le titre du panneau actif.
+- Reset scroll Analytics à chaque arrivée sur la page 1.
+
+---
+
+### 4. Performance
+
+- Une seule div bouge, transform GPU, pas de re-render React pendant le drag (state interne du hook via `useRef` + `requestAnimationFrame` qui pousse une CSS variable directement sur le DOM).
+- Optionnel : exposer `dragOffset` via **CSS variable** (`el.style.setProperty('--drag-x', ...)`) plutôt que via state React → zéro re-render pendant le geste.
+- Les cartes lourdes (`DRCMapWithTooltip`, etc.) restent montées (nécessaire pour la continuité visuelle pendant le slide).
+
+---
+
+### 5. Suppression de l'existant
+
+- Hook `useSwipeNavigation.ts` → **remplacé** par `useSwipePager.ts` (ancien supprimé, aucun autre consommateur dans le projet).
+- État `hintShown` + toast `sonner` d'astuce → **supprimés** (remplacés par teaser physique).
+- Edge glow indicator → **supprimé** (redondant avec le slide continu visible).
+- Rubber-band actuel cappé à 40px → **remplacé** par rubber-band physique aux extrémités uniquement (pas au centre).
+- `direction: 'left' | 'right'` → **supprimé** (le pager gère naturellement les deux sens).
+
+---
+
+### 6. Fichiers impactés
+
+| Fichier | Action |
 |---|---|
-| Détection tap vs swipe (threshold 45px / flick 30px @ 0.5px·ms⁻¹) | OK |
-| Annulation précoce sur geste vertical (`dy>10` + `dy>dx`) | OK |
-| Anti-clic fantôme post-swipe (capture click 400ms) | OK |
-| Garde directionnelle empêchant double-bascule | OK |
-| Throttling rAF pendant `touchmove` | OK |
-| Callback ref pattern (pas de re-bind) | OK |
-| Rétro-compatibilité boutons + accessibilité (`role=tablist`, `aria-label`) | OK |
-| Documentation mémoire à jour | OK |
+| `src/hooks/useSwipePager.ts` | **CRÉÉ** — nouveau hook pager |
+| `src/hooks/useSwipeNavigation.ts` | **SUPPRIMÉ** |
+| `src/components/DRCInteractiveMap.tsx` | Refactor : layout pager, suppression hint toast/edge glow, dots fluides, teaser mount |
+| `mem://features/land-data-analytics/interactive-map-layers-fr` | Mise à jour : nouvelle architecture pager |
 
-### 3. Faiblesses identifiées
+---
 
-**A. Cohérence d'état panneau**
-- L'état est `'map' \| 'details' \| 'analytics'` mais seules deux valeurs sont réellement utilisées sur mobile. La valeur `'details'` est morte → ambiguïté.
-- La condition rubber-band `!onAnalyticsPanel` traite `'details'` comme `'map'`, mais le bouton ne la sélectionne jamais.
+### 7. Critères d'acceptation
 
-**B. Perte de contexte au swipe**
-- Aucun retour à `rdc-map` ni reset du scroll Analytics quand on bascule. Un utilisateur qui a scrollé Analytics revient au même endroit, ce qui peut sembler cassé.
-- Pas de focus management : après bascule, le focus clavier reste sur l'élément précédent (problème a11y).
-
-**C. Hint one-shot trop discret**
-- Le toast s'affiche **après** le 1er swipe réussi, donc l'utilisateur qui n'a jamais swipé ne le voit jamais. Aucune découvrabilité initiale.
-- Aucune animation d'amorce sur les pagination dots ni sur les boutons pour suggérer le geste.
-
-**D. Conflits potentiels avec interactions carte**
-- Le tap sur une province SVG `<path>` n'est pas dans `ignoreSelector` (correct, car il faut pouvoir distinguer tap court vs swipe). Mais le seuil 45px peut être ressenti court sur écran 360px de large (12,5% de la largeur). Risque de bascule accidentelle quand l'utilisateur veut juste explorer une province.
-- Le pinch-zoom natif (2 doigts) reset correctement (`e.touches.length !== 1`), mais aucun test de `e.scale` pour pincements lents.
-
-**E. Edge cases hook**
-- `setTimeout` retire le listener `click` de manière non-référencée à `removeEventListener` avec `{ capture: true } as any` — fonctionnel mais fragile (le listener est `{ once: true }`, donc le timeout est de toute façon redondant).
-- Pas de `pointercancel` ni gestion des stylets/souris (uniquement `touch*`). Sur tablette avec stylet → swipe ignoré.
-- `navigator.vibrate?.(15)` peut échouer silencieusement sur iOS Safari (pas supporté) — pas un bug mais inutile.
-
-**F. Performance**
-- 4 cartes lourdes (`DRCMapWithTooltip`, `DRCCommunesMap`, `DRCQuartiersMap`, `DRCTerritoiresMap`) restent montées même quand `activeMobilePanel === 'analytics'` (uniquement `hidden`). Coût mémoire pour rien sur mobile.
-- `ProvinceDataVisualization` également monté en permanence côté droit.
-
-**G. UX visuelle**
-- Le `rubber-band` capé à 24px est très subtil sur écran 360px (6,7%). À peine perceptible vs concurrence (Instagram, App Store ≈ 25–30%).
-- Pas de transition slide horizontale entre les deux panneaux : on a un `hidden` brutal au moment de la bascule (les `animate-fade-in` s'enchaînent mais ne donnent pas l'impression d'un swipe continu).
-
-### 4. Recommandations priorisées
-
-**P0 — Découvrabilité (impact UX max)**
-- Afficher le hint **une seule fois au montage** (pas après le 1er swipe), avec un délai 800ms. Garder le `localStorage` flag.
-- Ajouter une animation pulse subtile sur la dot du panneau opposé pendant 1.5s au montage si jamais swipé.
-
-**P1 — Continuité visuelle**
-- Remplacer `hidden / animate-fade-in` par une vraie translation horizontale : conteneur 200% largeur, `translateX(0 \| -50%)` avec `transition: transform 250ms cubic-bezier(.2,.8,.2,1)`. Élimine le snap visuel.
-- Augmenter le rubber-band cap à 40px (≈11%) pour un retour tactile plus net.
-
-**P2 — Robustesse & performance**
-- Supprimer la valeur morte `'details'` du type `activeMobilePanel`.
-- Conditionner le montage des cartes lourdes : `{!isMobile || activeMobilePanel !== 'analytics' ? <maps/> : null}` (re-render au switch acceptable car cache GeoJSON + React Query).
-- Ajouter un reset scroll Analytics + focus management au switch (`scrollTop = 0` sur `ScrollArea`, focus sur titre Analytics).
-- Étendre le hook à `pointer events` (pointerdown/move/up) pour couvrir stylet + souris, fallback `touch` si non supporté.
-- Nettoyer le `setTimeout` redondant dans `useSwipeNavigation.ts` (le `{ once: true }` suffit).
-
-**P3 — Confort tactile**
-- Augmenter `threshold` à 60px sur écran < 400px de large pour réduire les bascules accidentelles depuis un tap sur province.
-- Ajouter un seuil temporel min (ex: ne pas déclencher si geste < 80ms) pour filtrer les flicks parasites.
-
-### 5. Verdict global
-
-**État** : Fonctionnel, robuste sur les fondations (anti-clic fantôme, garde directionnelle, rAF throttling, a11y boutons). 
-
-**Manque** : Découvrabilité du geste et continuité visuelle de la transition. La fonctionnalité fonctionne mais ne se *sent* pas premium parce que (1) l'utilisateur ne sait pas qu'elle existe avant d'avoir swipé, et (2) la bascule est un cut, pas un slide.
-
-**Recommandation** : Traiter d'abord P0 (hint au montage + pulse dot) et P1 (slide horizontal continu). P2/P3 peuvent suivre selon retours utilisateurs.
-
-### Fichiers concernés (si correctifs validés)
-- `src/components/DRCInteractiveMap.tsx` — hint au mount, slide layout, suppression `'details'`, conditional mount, scroll reset
-- `src/hooks/useSwipeNavigation.ts` — pointer events, threshold adaptatif, nettoyage timeout
-- `mem://features/land-data-analytics/interactive-map-layers-fr` — mise à jour notes
+1. **Drag 1:1** : poser le doigt et bouger latéralement déplace les deux panneaux instantanément, sans lag ni délai.
+2. **Snap intelligent** : drag à 30% de largeur + relâche → bascule. Drag à 15% + relâche → retour. Flick rapide même à 5% → bascule.
+3. **Aucun conflit** : scroll vertical Analytics fluide, tap province sélectionne, pinch-zoom carte intact.
+4. **Teaser mount** : au 1er chargement mobile, la page Analytics "peek" 800ms après affichage, jamais re-déclenché.
+5. **Dots fluides** : les indicateurs s'étirent progressivement pendant le drag, pas en escalier.
+6. **60 fps** : pas de jank perceptible même sur device milieu de gamme (transform GPU).
+7. **Boutons fonctionnels** : tap sur Carte/Analytics anime la transition (320ms), pas de cut.
+8. **Reduced motion** : transition raccourcie à 0ms, pas de teaser.
 
