@@ -195,6 +195,21 @@ Deno.serve(async (req) => {
       }).then(() => null).catch(() => null);
     }
 
+    // Generic admin audit (best-effort, non-blocking)
+    await supabase.from("request_admin_audit").insert({
+      request_table: "subdivision_requests",
+      request_id: body.request_id,
+      action: body.action,
+      old_status: request.status,
+      new_status: updates.status ?? null,
+      admin_id: user.id,
+      rejection_reason: body.rejection_reason || null,
+      payload: {
+        processing_fee_usd: body.processing_fee_usd ?? null,
+        processing_notes: body.processing_notes ?? null,
+      },
+    }).then(() => null).catch((e: any) => console.error("audit insert failed:", e?.message));
+
     return new Response(JSON.stringify({ ok: true, status: updates.status }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
