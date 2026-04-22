@@ -19,10 +19,12 @@ import {
   Grid3X3, Search, Eye, Check, X, FileText, User, MapPin,
   Clock, AlertTriangle, Loader2, RefreshCw, DollarSign,
   ChevronLeft, ChevronRight, Square, RotateCcw, Mail, Phone,
-  TreePine, Route, Shield, Paperclip
+  TreePine, Route, Shield, Paperclip, Download, Eye as EyeIcon, Flame, ShieldCheck, ShieldAlert
 } from 'lucide-react';
 import { generateAndUploadCertificate } from '@/utils/certificateService';
 import { StatusBadge, StatusType } from '@/components/shared/StatusBadge';
+import { computeSla, downloadCsv } from '@/utils/adminQueueUtils';
+import { validateSubdivisionAgainstRules, type ValidationResult } from '@/hooks/useZoningRules';
 
 interface SubdivisionRequest {
   id: string;
@@ -60,6 +62,12 @@ interface SubdivisionRequest {
   requester_id_document_url?: string | null;
   proof_of_ownership_url?: string | null;
   subdivision_sketch_url?: string | null;
+  assigned_to?: string | null;
+  assigned_at?: string | null;
+  in_review_at?: string | null;
+  estimated_processing_days?: number;
+  escalated?: boolean;
+  escalated_at?: string | null;
 }
 
 const SUBDIVISION_STATUS_MAP: Record<string, StatusType> = {
@@ -126,6 +134,9 @@ export function AdminSubdivisionRequests() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('_all');
+  const [dateFrom, setDateFrom] = useState<string>('');
+  const [dateTo, setDateTo] = useState<string>('');
+  const [sortBy, setSortBy] = useState<'recent' | 'oldest'>('recent');
   const [selectedRequest, setSelectedRequest] = useState<SubdivisionRequest | null>(null);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [showActionDialog, setShowActionDialog] = useState(false);
@@ -136,6 +147,7 @@ export function AdminSubdivisionRequests() {
   const [processingNotes, setProcessingNotes] = useState('');
   const [processing, setProcessing] = useState(false);
   const [page, setPage] = useState(1);
+  const [validations, setValidations] = useState<Record<string, ValidationResult>>({});
   const itemsPerPage = 10;
 
   const fetchRequests = async () => {
@@ -156,17 +168,77 @@ export function AdminSubdivisionRequests() {
 
   useEffect(() => { fetchRequests(); }, []);
 
-  const filteredRequests = requests.filter(req => {
-    const matchesSearch = req.reference_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      req.parcel_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      req.requester_last_name.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === '_all' || req.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
+  const filteredRequests = requests
+    .filter(req => {
+      const q = searchQuery.toLowerCase();
+      const matchesSearch = req.reference_number.toLowerCase().includes(q) ||
+        req.parcel_number.toLowerCase().includes(q) ||
+        req.requester_last_name.toLowerCase().includes(q);
+      const matchesStatus = statusFilter === '_all' || req.status === statusFilter;
+      const created = new Date(req.created_at).getTime();
+      const matchesFrom = !dateFrom || created >= new Date(dateFrom).getTime();
+      const matchesTo = !dateTo || created <= new Date(dateTo).getTime() + 86400000;
+      return matchesSearch && matchesStatus && matchesFrom && matchesTo;
+    })
+    .sort((a, b) => {
+      const da = new Date(a.created_at).getTime();
+      const db = new Date(b.created_at).getTime();
+      return sortBy === 'recent' ? db - da : da - db;
+    });
 
   const paginatedRequests = filteredRequests.slice((page - 1) * itemsPerPage, page * itemsPerPage);
   const totalPages = Math.ceil(filteredRequests.length / itemsPerPage);
   const pendingCount = requests.filter(r => r.status === 'pending').length;
+
+  // Lazy compliance check for visible rows
+  useEffect(() => {
+    paginatedRequests.forEach(req => {
+      if (validations[req.id]) return;
+      if (!['pending', 'in_review', 'returned'].includes(req.status)) return;
+      validateSubdivisionAgainstRules(req.id).then(res => {
+        setValidations(prev => ({ ...prev, [req.id]: res }));
+      });
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, filteredRequests.length]);
+
+  const handleStartReview = async (req: SubdivisionRequest) => {
+    if (!user) return;
+    const { error } = await supabase
+      .from('subdivision_requests')
+      .update({
+        status: 'in_review',
+        assigned_to: user.id,
+        assigned_at: new Date().toISOString(),
+        in_review_at: new Date().toISOString(),
+      } as any)
+      .eq('id', req.id);
+    if (error) {
+      toast({ title: 'Erreur', description: error.message, variant: 'destructive' });
+    } else {
+      toast({ title: 'Demande mise en examen' });
+      fetchRequests();
+    }
+  };
+
+  const handleExportCsv = () => {
+    const rows = filteredRequests.map(r => ({
+      reference: r.reference_number,
+      statut: STATUS_LABELS[r.status] || r.status,
+      parcelle: r.parcel_number,
+      demandeur: `${r.requester_last_name} ${r.requester_first_name}`,
+      telephone: r.requester_phone,
+      email: r.requester_email || '',
+      lots: r.number_of_lots,
+      surface_m2: r.parent_parcel_area_sqm,
+      total_usd: r.total_amount_usd,
+      affectee_a: r.assigned_to || '',
+      escalade: r.escalated ? 'oui' : 'non',
+      cree_le: format(new Date(r.created_at), 'yyyy-MM-dd HH:mm'),
+    }));
+    downloadCsv(`demandes-lotissement-${format(new Date(), 'yyyyMMdd-HHmm')}.csv`, rows);
+    toast({ title: `${rows.length} demandes exportées` });
+  };
 
   const handleAction = (request: SubdivisionRequest, action: 'approve' | 'reject' | 'return') => {
     setSelectedRequest(request);
@@ -304,6 +376,9 @@ export function AdminSubdivisionRequests() {
               <Clock className="h-3 w-3" /> {pendingCount} en attente
             </Badge>
           )}
+          <Button variant="outline" size="sm" onClick={handleExportCsv} className="gap-1">
+            <Download className="h-4 w-4" /> CSV
+          </Button>
           <Button variant="outline" size="sm" onClick={fetchRequests} className="gap-1">
             <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} /> Actualiser
           </Button>
@@ -313,18 +388,27 @@ export function AdminSubdivisionRequests() {
       {/* Filters */}
       <Card>
         <CardContent className="pt-6">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1 relative">
+          <div className="flex flex-col lg:flex-row gap-3">
+            <div className="flex-1 relative min-w-[180px]">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input placeholder="Rechercher..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="pl-9" />
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[180px]"><SelectValue placeholder="Statut" /></SelectTrigger>
+              <SelectTrigger className="w-full lg:w-[160px]"><SelectValue placeholder="Statut" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="_all">Tous</SelectItem>
                 {Object.entries(STATUS_LABELS).map(([v, label]) => (
                   <SelectItem key={v} value={v}>{label}</SelectItem>
                 ))}
+              </SelectContent>
+            </Select>
+            <Input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="lg:w-[160px]" placeholder="Du" />
+            <Input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="lg:w-[160px]" placeholder="Au" />
+            <Select value={sortBy} onValueChange={(v) => setSortBy(v as 'recent' | 'oldest')}>
+              <SelectTrigger className="w-full lg:w-[160px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="recent">Plus récentes</SelectItem>
+                <SelectItem value="oldest">Plus anciennes</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -343,13 +427,46 @@ export function AdminSubdivisionRequests() {
             </div>
           ) : (
             <div className="space-y-3">
-              {paginatedRequests.map(request => (
-                <div key={request.id} className="p-4 border rounded-xl hover:bg-muted/50 transition-colors">
+              {paginatedRequests.map(request => {
+                const sla = computeSla(request.created_at, request.estimated_processing_days || 14);
+                const validation = validations[request.id];
+                const isOpen = ['pending', 'in_review', 'returned'].includes(request.status);
+                const slaTone = sla.level === 'overdue'
+                  ? 'border-destructive/50 bg-destructive/5'
+                  : sla.level === 'warning'
+                    ? 'border-amber-300/60 bg-amber-50/40 dark:bg-amber-950/10'
+                    : '';
+                return (
+                <div key={request.id} className={`p-4 border rounded-xl hover:bg-muted/50 transition-colors ${slaTone} ${request.escalated ? 'ring-1 ring-destructive/40' : ''}`}>
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div className="flex-1 space-y-2">
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <Badge variant="outline" className="font-mono">{request.reference_number}</Badge>
                         <StatusBadge status={SUBDIVISION_STATUS_MAP[request.status] || 'pending'} compact />
+                        {isOpen && (
+                          <Badge
+                            variant={sla.level === 'overdue' ? 'destructive' : sla.level === 'warning' ? 'default' : 'outline'}
+                            className="gap-1 text-[10px]"
+                          >
+                            <Clock className="h-3 w-3" /> {sla.label}
+                          </Badge>
+                        )}
+                        {request.escalated && (
+                          <Badge variant="destructive" className="gap-1 text-[10px]">
+                            <Flame className="h-3 w-3" /> Escaladée
+                          </Badge>
+                        )}
+                        {validation && (
+                          validation.valid ? (
+                            <Badge variant="outline" className="gap-1 text-[10px] border-green-500/50 text-green-700 dark:text-green-400">
+                              <ShieldCheck className="h-3 w-3" /> Conforme
+                            </Badge>
+                          ) : (
+                            <Badge variant="destructive" className="gap-1 text-[10px]" title={validation.violations.map(v => v.message).join(' | ')}>
+                              <ShieldAlert className="h-3 w-3" /> Non conforme ({validation.violations.length})
+                            </Badge>
+                          )
+                        )}
                       </div>
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
                         <div className="flex items-center gap-1 text-muted-foreground"><MapPin className="h-3.5 w-3.5" /><span className="font-mono">{request.parcel_number}</span></div>
@@ -362,7 +479,12 @@ export function AdminSubdivisionRequests() {
                       <Button variant="outline" size="sm" onClick={() => { setSelectedRequest(request); setShowDetailsDialog(true); }} className="gap-1">
                         <Eye className="h-4 w-4" /> Détails
                       </Button>
-                      {(request.status === 'pending' || request.status === 'returned') && (
+                      {request.status === 'pending' && (
+                        <Button variant="outline" size="sm" onClick={() => handleStartReview(request)} className="gap-1">
+                          <EyeIcon className="h-4 w-4" /> Mettre en examen
+                        </Button>
+                      )}
+                      {(request.status === 'pending' || request.status === 'in_review' || request.status === 'returned') && (
                         <>
                           <Button size="sm" onClick={() => handleAction(request, 'approve')} className="gap-1"><Check className="h-4 w-4" /> Approuver</Button>
                           <Button variant="outline" size="sm" onClick={() => handleAction(request, 'return')} className="gap-1 text-amber-600 border-amber-300 hover:bg-amber-50"><RotateCcw className="h-4 w-4" /> Renvoyer</Button>
@@ -372,7 +494,8 @@ export function AdminSubdivisionRequests() {
                     </div>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           )}
           {totalPages > 1 && (
