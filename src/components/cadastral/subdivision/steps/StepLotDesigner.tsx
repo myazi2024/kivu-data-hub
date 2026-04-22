@@ -125,6 +125,23 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
 
   const editingRoad = roads.find(r => r.id === editingRoadId) || null;
 
+  // Single source of truth for distances/areas in this designer.
+  // Falls back to isotropic √A scale if the parent has no GPS coordinates.
+  const metricFrame = React.useMemo(
+    () => buildMetricFrame(parentParcel?.gpsCoordinates, parentParcel?.areaSqm || 0),
+    [parentParcel?.gpsCoordinates, parentParcel?.areaSqm],
+  );
+
+  // Helpers — accurate area + perimeter via the metric frame.
+  const computeArea = useCallback(
+    (poly: Point2D[]) => Math.max(1, Math.round(polygonAreaSqmAccurate(poly, metricFrame))),
+    [metricFrame],
+  );
+  const computePerim = useCallback(
+    (poly: Point2D[]) => Math.round(polygonPerimeterM(poly, metricFrame)),
+    [metricFrame],
+  );
+
   const handleAddRoad = useCallback(() => {
     const parentPoly = parentVertices && parentVertices.length >= 3 ? parentVertices : null;
     const bounds = parentPoly
