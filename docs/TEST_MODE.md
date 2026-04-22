@@ -48,11 +48,11 @@ Le mode test est un système transversal contrôlé depuis l'admin (`AdminTestMo
 
 ### 6. Nettoyage
 
-#### Manuel — RPC `cleanup_all_test_data()`
-- Purge **immédiate** de toutes les données préfixées `TEST-` (respecte l'ordre FK).
-- Vérifie le rôle `admin`/`super_admin` (RAISE EXCEPTION sinon).
-- Loggue dans `audit_logs` (`MANUAL_TEST_DATA_CLEANUP`) avec total + détail par table.
-- Appelée depuis l'admin via le bouton « Nettoyer tout ».
+#### Manuel — Edge Function `cleanup-test-data-batch`
+- Purge **par lots de 500** sur **23 étapes FK-safe** — évite les `statement_timeout` sur gros volumes.
+- Double check : JWT + rôle `admin`/`super_admin` côté edge.
+- Réponse `{ ok, total_deleted, per_step }` ou en cas d'échec partiel `{ ok: false, failed_step, partial_total, partial_summary }`.
+- Appelée depuis l'admin via le bouton « Nettoyer tout » **et** via le flux « Désactiver et supprimer ».
 
 #### Automatique — RPC `cleanup_all_test_data_auto()` + cron `cleanup-test-data-daily-rpc`
 - Cron pg_cron exécuté chaque jour à **03:00 UTC** : `SELECT public.cleanup_all_test_data_auto();`.
@@ -61,9 +61,9 @@ Le mode test est un système transversal contrôlé depuis l'admin (`AdminTestMo
 - N'agit que si `test_mode.enabled = true` ET `test_mode.auto_cleanup = true`.
 - Loggue dans `audit_logs` (`AUTO_TEST_DATA_CLEANUP`).
 
-#### Edge Function `cleanup-test-data` — dépréciée
-- Conservée pour compat mais **non utilisée par le cron** (qui appelle directement la RPC).
-- Toujours utilisable manuellement par un admin authentifié si besoin.
+#### RPC `cleanup_all_test_data()` — dépréciée
+- Conservée pour compat (cron auto + scripts), mais **plus appelée depuis l'UI** (timeout au-delà de ~14k lignes).
+- L'admin utilise désormais exclusivement `cleanup-test-data-batch`.
 
 ### 6.bis Trigger anti-insert prod (`prevent_test_data_in_prod`)
 - BEFORE INSERT sur 10 tables (parcels, contributions, invoices, codes, disputes,
