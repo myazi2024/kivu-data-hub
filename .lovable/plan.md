@@ -1,84 +1,67 @@
 
 
-## Audit cross-modules admin — Synthèse
+## Plan — Réparer le Mode Test (erreur `column "reference_number" does not exist`)
 
-État global : **stable**. TypeScript compile sans erreur, les RPCs centrales (`get_admin_dashboard_full`, `get_admin_pending_counts`, `has_role`) sont présentes et utilisées correctement, les hubs (Config, Système, Historique, Demandes) communiquent bien.
+### Diagnostic
 
-**Un seul bug bloquant détecté**, hérité de la dernière migration du Mode Test.
+L'erreur réelle dans la console n'est **pas** celle de la migration précédente (`real_estate_expertise_payments` est déjà corrigée). Le bug actuel est :
 
----
-
-### 🔴 Bug critique — Module Test Mode (cassé depuis la dernière migration)
-
-**Symptôme** (visible dans la console et le replay session) :
 ```
-relation "public.real_estate_expertise_payments" does not exist
-toast → "Impossible de charger les statistiques de test"
+42703 — column "reference_number" does not exist
 ```
 
-**Cause racine** : la migration `20260422084418` a activé `is_active=true` sur 8 entités enfants du `test_entities_registry`. Trois d'entre elles pointent vers des **noms de tables qui n'existent pas** :
+**Cause** : la dernière migration a réactivé `fraudAttempts` dans `test_entities_registry` avec `marker_column = 'reference_number'`. Or la table `public.fraud_attempts` ne possède **aucune colonne `reference_number`** (colonnes réelles : `id, user_id, contribution_id, fraud_type, description, severity, created_at`).
 
-| `label_key` (registry) | `table_name` (registry) | Vraie table en DB |
-|---|---|---|
-| `expertisePayments` | `real_estate_expertise_payments` ❌ | `expertise_payments` |
-| `permitPayments` | `building_permit_payments` ❌ | `permit_payments` |
-| `permitAdminActions` | `building_permit_admin_actions` ❌ | `permit_admin_actions` |
+Le RPC `count_test_data_stats()` boucle sur les entités actives du registry et exécute :
+```sql
+EXECUTE format('SELECT count(*) FROM public.%I WHERE %I LIKE $1', table_name, marker_column)
+```
+→ explose au premier appel sur `fraud_attempts`, et toute la carte stats s'effondre. Cela bloque aussi indirectement la génération de données test (le hook `useTestDataStats` plante avant/après génération).
 
-**Impact en chaîne** :
-1. `count_test_data_stats()` plante au premier `EXECUTE format(...)` → toute la carte stats du Mode Test affiche "Erreur"
-2. `TestDataExportButton` (CSV pré-purge) lèvera la même erreur 42P01 sur ces 3 entités
-3. Le bouton « Désactiver et nettoyer » fonctionne quand même (l'edge `cleanup-test-data-batch` a sa propre liste hardcodée correcte)
-4. Note : `count_test_data_stats` calcule déjà `expertisePayments` via un bloc dédié (ligne 36 de la fonction) → l'entrée registry est en plus redondante
+### Architecture sous-jacente
 
----
+`fraud_attempts` n'est pas marquable par un pattern `TEST-%` — elle est rattachée aux contributions via `contribution_id`. Le RPC le sait déjà : il a un bloc spécial FK juste pour ça (`WHERE contribution_id IN (SELECT id FROM cadastral_contributions WHERE parcel_number LIKE 'TEST-%')`). Cette entité n'a donc **rien à faire** dans la boucle générique du registry.
 
-### ✅ Vérifications cross-modules — RAS
+Même logique pour 5 autres entités enfants déjà gérées par blocs FK hardcodés dans le RPC (`ownershipHistory`, `taxHistory`, `boundaryHistory`, `expertisePayments`, et override pour `mortgages`/`buildingPermits`). Les laisser actives dans le registry produit du double-comptage silencieux (override par jsonb concat) et des requêtes inutiles.
 
-| Intégration | État |
-|---|---|
-| Sidebar admin → `get_admin_pending_counts()` (badges 9 modules) | ✅ RPC présente, hook OK |
-| Dashboard admin → `get_admin_dashboard_full()` | ✅ RPC + signature TS alignées |
-| Analytics → consomme la même RPC dashboard (anti-doublon) | ✅ Documenté et appliqué |
-| Hubs (Config / Système / Historique / Demandes / Contenu) → enfants | ✅ Imports cohérents |
-| HR module (8 onglets) → 6 hooks Supabase + conversion candidat→employé | ✅ Aucun bug détecté |
-| Edge `cleanup-test-data-batch` → liste tables hardcodée | ✅ Tables réelles utilisées |
-| Trigger `prevent_test_data_in_prod` (12 tables) | ✅ Actif |
-| Cron `cleanup-test-data-daily-rpc` | ✅ Actif |
-| TypeScript `tsc --noEmit` (projet entier) | ✅ 0 erreur |
+### Correction
 
----
-
-### Plan de correction (1 migration SQL)
-
-Aligner les 3 entrées du registry sur les vrais noms de tables :
+**Migration SQL — désactiver les 6 entités FK-linked du registry** (le RPC continue de les compter correctement via ses blocs spéciaux) :
 
 ```sql
 UPDATE public.test_entities_registry
-SET table_name = 'expertise_payments'
-WHERE label_key = 'expertisePayments' AND table_name = 'real_estate_expertise_payments';
-
-UPDATE public.test_entities_registry
-SET table_name = 'permit_payments'
-WHERE label_key = 'permitPayments' AND table_name = 'building_permit_payments';
-
-UPDATE public.test_entities_registry
-SET table_name = 'permit_admin_actions'
-WHERE label_key = 'permitAdminActions' AND table_name = 'building_permit_admin_actions';
+SET is_active = false
+WHERE label_key IN (
+  'fraudAttempts',       -- corrige l'erreur 42703 (colonne inexistante)
+  'ownershipHistory',    -- déjà compté via FK parcel_ids
+  'taxHistory',          -- déjà compté via FK parcel_ids
+  'boundaryHistory',     -- déjà compté via FK parcel_ids
+  'expertisePayments',   -- déjà compté via FK expertise_request_id
+  'mortgagePayments'     -- pas de bloc FK dédié, mais marker_column 'payment_receipt_url' fragile (URL ne commence pas par TEST-)
+);
 ```
 
-**Vérification de la `marker_column` / `marker_pattern` à confirmer pendant l'implémentation** : les 3 tables corrigées doivent avoir une colonne marqueur cohérente avec le pattern stocké (probablement une référence/id qui matche `TEST-%`). Si le marker est invalide, on ajustera dans la même migration.
+Restent actives dans la boucle générique du registry : 16 entités avec marker text réel et contrôlé.
 
-### Critères de validation
+**Mise à jour mémoire** (`mem://admin/test-mode-hardening-fr`) : préciser que le registry contient **22 entités au total**, dont **16 actives (boucle générique)** + **6 désactivées volontairement (gérées par blocs FK hardcodés du RPC)**. Justifier la séparation pour éviter une nouvelle régression.
 
-1. Console navigateur sur `/admin?tab=test-mode` : plus aucune erreur 42P01
-2. Toast « Impossible de charger les statistiques de test » disparaît
-3. Carte stats affiche les compteurs des 22 entités (y compris `expertisePayments`, `permitPayments`, `permitAdminActions`)
-4. Bouton « Exporter CSV » génère un fichier sans section ERROR sur ces 3 entités
-5. `tsc --noEmit` toujours à 0 erreur
+### Vérification post-fix
 
-### Fichier impacté
+1. `/admin?tab=test-mode` : plus d'erreur 42703, toast disparaît, carte stats s'affiche complètement.
+2. Bouton « Générer données test » → doit fonctionner (le blocage venait du `refresh()` post-génération).
+3. Les compteurs `fraudAttempts`, `ownershipHistory`, `taxHistory`, `boundaryHistory`, `expertisePayments`, `mortgagePayments` restent affichés (alimentés par les blocs FK du RPC).
+4. CSV export : ces 6 entités ne seront plus dans le CSV pré-purge (acceptable — l'edge `cleanup-test-data-batch` les purge quand même via FK).
+
+### Fichiers impactés
 
 | Fichier | Action |
 |---|---|
-| Nouvelle migration SQL | UPDATE des 3 lignes du registry + vérif markers |
+| Nouvelle migration SQL | `UPDATE test_entities_registry SET is_active=false` sur 6 label_keys |
+| `mem://admin/test-mode-hardening-fr` | Documenter la règle "FK-linked entities ≠ registry generic loop" |
+
+### Pourquoi pas d'autre approche
+
+- **Ajouter `reference_number` à `fraud_attempts`** : non, table sécuritaire pas conçue pour markers texte.
+- **Modifier le RPC pour skip-on-error** : masquerait de futures dérives ; mieux vaut un registry strictement valide.
+- **Supprimer ces lignes du registry** : `is_active=false` est plus prudent (audit trail conservé, rollback facile).
 
