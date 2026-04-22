@@ -323,12 +323,16 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
       if (angleDiff > Math.PI / 2) angleDiff = Math.PI - angleDiff;
 
       if (angleDiff < ANGLE_TOLERANCE) {
-        // Perpendicular distance from edge midpoint to the line
+        // Perpendicular distance from edge midpoint to the line — convert to meters via frame
         const edgeMid = { x: (edge.p1.x + edge.p2.x) / 2, y: (edge.p1.y + edge.p2.y) / 2 };
         const distNorm = Math.abs((edgeMid.x - lineStart.x) * normalX + (edgeMid.y - lineStart.y) * normalY);
         if (distNorm < 0.005) return; // Too close (same edge)
-        const distM = distNorm * sideLength;
-        if (distM > sideLength) return; // Too far
+        // Project the perpendicular vector into meters using the metric frame
+        const distM = Math.sqrt(
+          Math.pow(distNorm * normalX * metricFrame.sxM, 2) +
+          Math.pow(distNorm * normalY * metricFrame.syM, 2),
+        );
+        if (distM > Math.max(metricFrame.sxM, metricFrame.syM)) return; // Too far
 
         const edgeMidScreen = toScreen(edgeMid);
         edges.push({
