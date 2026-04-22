@@ -15,6 +15,8 @@ import { RequestsToolbar } from './subdivision/requests/RequestsToolbar';
 import { RequestsList } from './subdivision/requests/RequestsList';
 import { RequestDetailsDialog } from './subdivision/requests/RequestDetailsDialog';
 import { RequestActionDialog } from './subdivision/requests/RequestActionDialog';
+import { BulkActionsBar } from './subdivision/requests/BulkActionsBar';
+import { BulkReasonDialog } from './subdivision/requests/BulkReasonDialog';
 
 const ITEMS_PER_PAGE = 10;
 
