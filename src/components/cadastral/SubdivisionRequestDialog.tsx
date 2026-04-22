@@ -116,9 +116,25 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
     if (form.isStepValid(form.currentStep)) return [];
     if (form.currentStep === 'parcel') {
       const m: string[] = [];
-      if (!form.requester.firstName?.trim()) m.push('prénom');
-      if (!form.requester.lastName?.trim()) m.push('nom');
-      if (!form.requester.phone?.trim()) m.push('téléphone');
+      const r = form.requester;
+      if (!r.legalStatus) m.push('statut juridique');
+      if (r.legalStatus === 'Personne physique') {
+        if (!r.gender) m.push('genre');
+        if (!r.lastName?.trim()) m.push('nom');
+        if (!r.firstName?.trim()) m.push('prénom');
+      }
+      if (r.legalStatus === 'Personne morale') {
+        if (!r.entityType) m.push("type d'entité");
+        if (!r.lastName?.trim()) m.push('dénomination');
+        if (!r.rccmNumber?.trim()) m.push('RCCM');
+      }
+      if (r.legalStatus === 'État') {
+        if (!r.rightType) m.push('type de droit');
+        if (!r.stateExploitedBy?.trim()) m.push('exploité par');
+      }
+      if (!r.nationality) m.push('nationalité');
+      if (!r.phone?.trim()) m.push('téléphone');
+      if (!r.type) m.push('qualité du demandeur');
       if (!form.purpose) m.push('motif');
       if (!form.parentParcel) m.push('parcelle introuvable');
       return m;
