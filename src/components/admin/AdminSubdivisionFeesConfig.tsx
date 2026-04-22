@@ -308,6 +308,7 @@ const AdminSubdivisionFeesConfig: React.FC = () => {
         </CardContent>
       </Card>
 
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{editing ? 'Modifier le tarif' : 'Ajouter un tarif'}</DialogTitle>
@@ -360,6 +361,7 @@ const AdminSubdivisionFeesConfig: React.FC = () => {
                 <Label>Espaces communs ($/m²)</Label>
                 <Input type="number" step="0.01" value={form.common_space_fee_per_sqm_usd} onChange={e => setForm(f => ({ ...f, common_space_fee_per_sqm_usd: e.target.value }))} placeholder="Optionnel" />
               </div>
+            </div>
             <div className="flex items-center gap-2">
               <Switch checked={form.is_active} onCheckedChange={v => setForm(f => ({ ...f, is_active: v }))} />
               <Label>Actif</Label>
