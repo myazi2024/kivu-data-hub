@@ -241,7 +241,71 @@ export function AdminSubdivisionRequests() {
     }
   };
 
-  return (
+  const handleReassignOne = async (req: SubdivisionRequest, assigneeId: string) => {
+    const { error } = await supabase
+      .from('subdivision_requests')
+      .update({ assigned_to: assigneeId, assigned_at: new Date().toISOString() } as any)
+      .eq('id', req.id);
+    if (error) {
+      toast({ title: 'Erreur', description: error.message, variant: 'destructive' });
+    } else {
+      toast({ title: 'Demande réassignée', description: req.reference_number });
+      fetchRequests();
+    }
+  };
+
+  const handleBulkReassign = async (assigneeId: string) => {
+    if (selectedIds.length === 0) return;
+    setBulkProcessing(true);
+    const { error } = await supabase
+      .from('subdivision_requests')
+      .update({ assigned_to: assigneeId, assigned_at: new Date().toISOString() } as any)
+      .in('id', selectedIds);
+    setBulkProcessing(false);
+    if (error) {
+      toast({ title: 'Erreur', description: error.message, variant: 'destructive' });
+    } else {
+      toast({ title: `${selectedIds.length} demande(s) réassignée(s)` });
+      setSelectedIds([]);
+      fetchRequests();
+    }
+  };
+
+  const handleBulkConfirm = async (payload: { reason?: string; processingFee?: number; notes?: string }) => {
+    if (!bulkAction || selectedIds.length === 0 || !user) return;
+    setBulkProcessing(true);
+    const idsSnapshot = [...selectedIds];
+    let success = 0;
+    let failed = 0;
+    for (const id of idsSnapshot) {
+      try {
+        const { error } = await supabase.functions.invoke('approve-subdivision', {
+          body: {
+            request_id: id,
+            action: bulkAction,
+            processing_fee_usd: bulkAction === 'approve' ? payload.processingFee : undefined,
+            rejection_reason: bulkAction !== 'approve' ? payload.reason : undefined,
+            processing_notes: payload.notes,
+          },
+        });
+        if (error) throw error;
+        success += 1;
+      } catch (e) {
+        console.warn('bulk action failed for', id, e);
+        failed += 1;
+      }
+    }
+    setBulkProcessing(false);
+    setBulkAction(null);
+    setSelectedIds([]);
+    fetchRequests();
+    toast({
+      title: 'Action groupée terminée',
+      description: `${success} succès, ${failed} échec(s).`,
+      variant: failed > 0 ? 'destructive' : 'default',
+    });
+  };
+
     <div className="space-y-6">
       <RequestsToolbar
         pendingCount={pendingCount}
