@@ -105,9 +105,9 @@ const AdminSubdivisionAnalytics: React.FC = () => {
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <KpiCard icon={<Layers className="h-4 w-4" />} label="Total demandes" value={fmt(stats.total)} />
-            <KpiCard icon={<CheckCircle2 className="h-4 w-4 text-green-600" />} label="Approuvées" value={`${fmt(stats.approved)} (${pct(stats.approved, stats.total)})`} />
+            <KpiCard icon={<CheckCircle2 className="h-4 w-4 text-primary" />} label="Approuvées" value={`${fmt(stats.approved)} (${pct(stats.approved, stats.total)})`} />
             <KpiCard icon={<XCircle className="h-4 w-4 text-destructive" />} label="Rejetées" value={`${fmt(stats.rejected)} (${pct(stats.rejected, stats.total)})`} />
-            <KpiCard icon={<RotateCcw className="h-4 w-4 text-amber-600" />} label="Renvoyées" value={`${fmt(stats.returned)} (${pct(stats.returned, stats.total)})`} />
+            <KpiCard icon={<RotateCcw className="h-4 w-4 text-muted-foreground" />} label="Renvoyées" value={`${fmt(stats.returned)} (${pct(stats.returned, stats.total)})`} />
             <KpiCard icon={<Clock className="h-4 w-4" />} label="En attente" value={fmt(stats.pending)} />
             <KpiCard icon={<Clock className="h-4 w-4" />} label="Délai moyen" value={`${stats.avgDelayDays.toFixed(1)} j`} />
             <KpiCard icon={<MapPin className="h-4 w-4" />} label="Surface lotie" value={`${fmt(stats.totalSurface)} m²`} />
