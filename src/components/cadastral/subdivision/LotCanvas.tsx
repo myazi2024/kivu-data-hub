@@ -1137,7 +1137,8 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
               {showAreas && (
                 <text x={cx} y={cy + (showLotNumbers ? 10 : 0)} textAnchor="middle" dominantBaseline="middle"
                   fontSize={9} fill="#666" className="select-none pointer-events-none">
-                  {lot.areaSqm.toLocaleString()} m²
+                  <title>Calculée depuis la projection GPS de la parcelle mère</title>
+                  {formatSqm(lot.areaSqm)} · P {formatMeters(lot.perimeterM)}
                 </text>
               )}
 
