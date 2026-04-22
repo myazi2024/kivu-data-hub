@@ -1,124 +1,53 @@
 
 
-## Plan — Aligner le bloc « Identité du demandeur » sur le bloc « Propriétaire actuel » (CCC)
+## Audit — Bloc « Identité du demandeur » (lotissement)
 
-### Objectif
+### Conclusion globale
 
-Dans le formulaire de demande de lotissement, **onglet Parcelle**, remplacer le bloc minimaliste « Identité du demandeur » (5 champs) par un bloc identitaire **structurellement identique** à `CurrentOwnersSection` du formulaire CCC (`GeneralTab.tsx`), pour collecter les mêmes informations légales et garantir la cohérence entre les deux flux.
+L'intégration est **structurellement saine**. Aucune régression bloquante détectée :
+- ✅ Types `RequesterInfo` cohérents partout (form, summary, admin, edge function)
+- ✅ Validation `isStepValid('parcel')` couvre tous les cas (physique / morale / État)
+- ✅ Edge function `subdivision-request` reçoit et persiste tous les nouveaux champs
+- ✅ Migration BD ajoute les colonnes nullable → rétrocompatible avec les anciennes demandes
+- ✅ Affichage admin (`AdminSubdivisionRequests`) et récap (`StepSummary`) gèrent les 3 statuts juridiques
+- ✅ `DRAFT_KEY_PREFIX = 'subdivision-draft-v2-'` invalide proprement les anciens drafts
+- ✅ Réutilisation de `useCCCFormPicklists` (mêmes picklists que CCC, fallbacks DB → hardcoded OK)
+- ✅ Aucun autre composant ne consomme `RequesterInfo` hors du module subdivision (pas d'effet de bord)
 
-### Constat de l'existant
+### 2 bugs mineurs à corriger
 
-| Bloc CCC « Propriétaire actuel » | Bloc Lotissement « Identité du demandeur » |
-|---|---|
-| Statut juridique (Personne physique / morale / État) | ❌ absent |
-| Genre (si physique) | ❌ absent |
-| Nom / Post-nom / Prénom | ⚠️ Prénom / Nom / Deuxième prénom (ordre + label différents) |
-| Champs Personne morale (RCCM, type entité, sous-type) | ❌ absent |
-| Champs État (concession / affectation, exploité par) | ❌ absent |
-| Date « Propriétaire depuis » | ❌ absent |
-| Nationalité (Congolais / Étranger) | ❌ absent |
-| Pièce d'identité / RCCM / Acte (upload) | ⚠️ uploadé séparément à l'étape Docs |
-| Mode unique / multiple (copropriétaires) | ❌ N/A — un seul demandeur |
-| Téléphone / Email / Qualité (owner / mandatary…) | ✅ présents (spécifique demande) |
+#### Bug #1 — Hint « champs manquants » obsolète (impact UX)
 
-### Approche
+Fichier : `src/components/cadastral/SubdivisionRequestDialog.tsx` (lignes 117-124)
 
-Réutiliser le composant `CurrentOwnersSection` n'est pas réaliste (couplé à `CadastralContributionData`, `formData.isTitleInCurrentOwnerName`, `titleIssueDate`, `previousTitleType`, `ownerDocFile`, etc., tous propres au CCC). Je vais donc **extraire et adapter** la même structure visuelle et les mêmes champs dans un nouveau composant dédié au demandeur de lotissement, avec :
+Le tooltip qui aide l'utilisateur lorsque le bouton « Suivant » est désactivé liste encore uniquement `prénom / nom / téléphone / motif`. Si l'utilisateur sélectionne « Personne morale » sans renseigner RCCM ou Type d'entité, le bouton est bloqué (validation OK) mais l'utilisateur ne sait pas pourquoi.
 
-- **Même ergonomie** (Card, labels, popovers, picklists Supabase via `getPicklistOptions`)
-- **Mêmes règles** (Personne physique → genre obligatoire, Personne morale → entityType + RCCM, État → rightType + stateExploitedBy)
-- **Champs spécifiques demande conservés** : Téléphone (obligatoire), Email, Qualité du demandeur (Propriétaire / Mandataire / Notaire / Autre)
+**Fix** : enrichir `missingFields` avec `legalStatus`, `nationality`, `gender` (si physique), `entityType` + `rccmNumber` (si morale), `rightType` + `stateExploitedBy` (si État).
 
-### Livrables
+#### Bug #2 — `firstName` écrasé par RCCM (effet secondaire indésirable)
 
-#### 1. Nouveau type `RequesterInfo` enrichi (`subdivision/types.ts`)
+Fichier : `RequesterIdentityBlock.tsx` ligne 291
 
-```ts
-export interface RequesterInfo {
-  // Identité (aligné CurrentOwner)
-  legalStatus: 'Personne physique' | 'Personne morale' | 'État' | '';
-  gender?: string;
-  lastName: string;
-  middleName?: string;        // post-nom
-  firstName: string;
-  // Personne morale
-  entityType?: string;
-  entitySubType?: string;
-  entitySubTypeOther?: string;
-  rccmNumber?: string;
-  // État
-  rightType?: 'Concession' | 'Affectation' | '';
-  stateExploitedBy?: string;
-  // Commun
-  nationality?: 'Congolais (RD)' | 'Étranger' | '';
-  // Spécifique demande lotissement
-  phone: string;
-  email?: string;
-  type: 'owner' | 'mandatary' | 'notary' | 'other';
-  isOwner: boolean;
-}
+```tsx
+onChange={(e) => update({ rccmNumber: e.target.value, firstName: e.target.value })}
 ```
 
-Migration douce du draft local : valeurs par défaut vides pour les nouveaux champs.
+Le RCCM est dupliqué dans `firstName` à chaque saisie. Côté CCC, c'est intentionnel (compat affichage), mais ici l'edge function persiste `requester_first_name = RCCM` → données incohérentes en BD pour les personnes morales (le récap admin affiche déjà correctement « Dénomination », donc cette duplication n'apporte rien et pollue la colonne).
 
-#### 2. Nouveau composant `RequesterIdentityBlock.tsx`
+**Fix** : retirer `firstName: e.target.value` ; pour les personnes morales, `firstName` reste vide et `lastName` porte la dénomination (déjà géré dans `StepSummary` et admin).
 
-Localisation : `src/components/cadastral/subdivision/RequesterIdentityBlock.tsx`
+Idem pour le bloc État ligne 345 : `firstName: 'État'` peut être laissé (sentinelle utile à l'affichage), mais à documenter.
 
-- Rendu calqué sur `CurrentOwnersSection` (même Card, mêmes Selects, mêmes RadioGroups)
-- Consomme `getPicklistOptions('picklist_legal_status')`, `'picklist_gender'`, etc. via le hook existant `usePicklistOptions`
-- Sous-composants internes `RequesterPersonneMoraleFields`, `RequesterEtatFields` (versions allégées des helpers du CCC, sans champ « Propriétaire depuis » ni `previousTitleType` qui relèvent du titre foncier)
-- Bloc « Qualité du demandeur » + Téléphone + Email préservé (champs propres à la demande)
-- Validation requise : `legalStatus`, `nationality`, `phone`, `type`, et selon statut : `gender` (physique) / `entityType` + `rccmNumber` (morale) / `rightType` + `stateExploitedBy` (État)
+### Vérifications
 
-#### 3. Refonte `StepParentParcel.tsx`
+1. Ouvrir le dialog lotissement, choisir « Personne morale » sans remplir RCCM → vérifier que le tooltip mentionne « RCCM ».
+2. Saisir un RCCM → vérifier en BD (`requester_first_name`) qu'il reste vide (et non = RCCM).
+3. Soumettre une demande complète pour les 3 statuts → vérifier l'affichage admin.
 
-Remplacer la `Card` actuelle (lignes 86-157) par `<RequesterIdentityBlock requester={requester} onChange={onRequesterChange} />`.
+### Fichiers à modifier
 
-#### 4. Mise à jour `useSubdivisionForm.ts`
+- `src/components/cadastral/SubdivisionRequestDialog.tsx` (enrichir `missingFields`)
+- `src/components/cadastral/subdivision/RequesterIdentityBlock.tsx` (retirer la duplication `firstName ← rccmNumber`)
 
-- État initial enrichi (tous les nouveaux champs vides)
-- `isStepValid('parcel')` : ajouter règles de validation par statut juridique
-- Auto-fill `authUser` : préremplir `legalStatus = 'Personne physique'` par défaut
-- Submit (`payload.requester`) : transmettre tous les nouveaux champs
-
-#### 5. Mise à jour edge function `subdivision-request/index.ts`
-
-- Étendre l'interface `requester` avec les nouveaux champs
-- Persister dans `subdivision_requests` les colonnes additionnelles
-
-#### 6. Migration BD
-
-Ajouter colonnes à `subdivision_requests` :
-- `requester_legal_status text`
-- `requester_gender text`
-- `requester_entity_type text`
-- `requester_entity_subtype text`
-- `requester_rccm_number text`
-- `requester_right_type text`
-- `requester_state_exploited_by text`
-- `requester_nationality text`
-
-Toutes nullable (rétrocompatibilité avec les demandes existantes).
-
-#### 7. Affichage admin & récap
-
-- `StepSummary.tsx` : enrichir le bloc « Demandeur » (statut juridique, RCCM si morale, nationalité)
-- `AdminSubdivisionRequests.tsx` : afficher les nouveaux champs dans le détail demande
-
-### Détails techniques
-
-- Picklists : réutilisation directe du hook `usePicklistOptions` déjà utilisé dans `CadastralContributionDialog`
-- Le bloc « Pièce d'identité » côté CCC reste à l'étape **Docs** du lotissement (déjà géré par `requester_id_document_url`) — pas de duplication d'upload
-- Aucun lien avec `titleIssueDate` / `previousTitleType` (ces concepts appartiennent au titre foncier de la parcelle mère, déjà chargée automatiquement)
-- Brouillon local : versionner le `localStorage` (clé `subdivision-draft-v2`) pour invalider proprement les anciens drafts incompatibles
-
-### Vérification
-
-1. Ouvrir le formulaire lotissement → onglet Parcelle
-2. Le bloc affiche : Statut juridique, Genre, Nom/Post-nom/Prénom, Date, Nationalité — visuellement identique au CCC
-3. Basculer sur « Personne morale » → champs Type d'entité + RCCM apparaissent
-4. Basculer sur « État » → champs Concession/Affectation + Exploité par apparaissent
-5. Téléphone / Email / Qualité du demandeur restent en bas
-6. Soumission → toutes les valeurs sont persistées dans `subdivision_requests` et visibles dans l'admin
+Aucune migration BD nécessaire.
 
