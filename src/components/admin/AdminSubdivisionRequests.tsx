@@ -306,6 +306,7 @@ export function AdminSubdivisionRequests() {
     });
   };
 
+  return (
     <div className="space-y-6">
       <RequestsToolbar
         pendingCount={pendingCount}
@@ -319,6 +320,14 @@ export function AdminSubdivisionRequests() {
         onExport={handleExportCsv}
       />
 
+      <BulkActionsBar
+        selectedCount={selectedIds.length}
+        processing={bulkProcessing}
+        onClear={() => setSelectedIds([])}
+        onBulk={(action) => setBulkAction(action)}
+        onReassign={handleBulkReassign}
+      />
+
       <RequestsList
         loading={loading}
         rows={paginatedRequests}
@@ -329,6 +338,10 @@ export function AdminSubdivisionRequests() {
         onOpenDetails={(req) => { setSelectedRequest(req); setShowDetailsDialog(true); }}
         onStartReview={handleStartReview}
         onAction={handleAction}
+        selectedIds={selectedIds}
+        onToggleSelect={toggleSelect}
+        onToggleSelectAll={toggleSelectAllVisible}
+        onReassignOne={handleReassignOne}
       />
 
       <RequestDetailsDialog
@@ -349,6 +362,15 @@ export function AdminSubdivisionRequests() {
         returnReason={returnReason} setReturnReason={setReturnReason}
         processingNotes={processingNotes} setProcessingNotes={setProcessingNotes}
         onSubmit={submitAction}
+      />
+
+      <BulkReasonDialog
+        open={!!bulkAction}
+        onOpenChange={(o) => !o && setBulkAction(null)}
+        action={bulkAction}
+        count={selectedIds.length}
+        processing={bulkProcessing}
+        onConfirm={handleBulkConfirm}
       />
     </div>
   );
