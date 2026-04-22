@@ -13,7 +13,7 @@ import { MonthlyExportPanel } from './requests/MonthlyExportPanel';
 const TAB_BY_SERVICE: Record<string, string> = {
   land_title_requests: 'land-title-requests',
   mutation_requests: 'mutations',
-  subdivision_requests: 'subdivision-requests',
+  subdivision_requests: 'subdivision-hub',
   real_estate_expertise_requests: 'expertise-requests',
   cadastral_building_permits: 'permits',
   cadastral_land_disputes: 'land-disputes',
