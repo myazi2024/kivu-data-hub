@@ -1,95 +1,130 @@
 
 
-## Plan — Reclassification des zones tracées (Lot / Voie / Espace commun)
+## Audit — Contrôle, configuration et gestion des lotissements (espace admin)
 
-### Constat
+### État des lieux
 
-Aujourd'hui, lorsqu'un utilisateur trace une forme dans la parcelle mère, elle devient automatiquement un **lot**. Pour créer une voie ou un espace commun, il fallait changer d'outil avant de dessiner. Or l'utilisateur veut **dessiner librement** puis **attribuer la fonction** à chaque zone tracée a posteriori.
+**3 entrées admin** dédiées au lotissement :
+- `subdivision-requests` → `AdminSubdivisionRequests` (628 LOC) — gestion des demandes
+- `subdivision-fees-config` → `AdminSubdivisionFeesConfig` (262 LOC) — tarifs $/m²
+- Inclus dans `AdminConfigHub`, `AdminRequestsHub`, `BillingOverviewTab`, mode test
 
-### Principe
+**Tables BD** : `subdivision_requests` (47 col., RLS OK), `subdivision_lots`, `subdivision_roads`, `subdivision_rate_config` (2 lignes seed urban/rural `*`).
 
-> Un seul geste de tracé. La nature de la zone (Lot / Voie / Espace commun) est un **attribut modifiable** depuis le panneau de droite, pas un mode de dessin.
+**Edge functions** : `subdivision-request` (création + calcul fee server-side), `approve-subdivision` (approve/reject/return atomique avec rollback lots).
 
-### 1. Unification du tracé
+### Constats — points forts
 
-- Tous les nouveaux tracés produisent par défaut une **zone de type « Lot »** (comportement actuel).
-- L'outil ✂️ « Diviser un lot » reste tel quel : il découpe une zone existante en deux zones de **même type** que le parent.
-- Plus aucun outil dédié à « Voie » ou « Espace commun » dans la toolbar.
-
-### 2. Sélecteur de fonction dans le panneau de détail
-
-Dans `StepLotDesigner.tsx`, panneau de droite (détail du lot sélectionné), ajouter en **tout premier champ** :
-
-```text
-┌─ Type de zone ────────────────────────────────┐
-│ ◉ Lot       ○ Voie       ○ Espace commun     │
-└───────────────────────────────────────────────┘
-```
-
-Comportement à la conversion :
-- **Lot → Voie** : la zone est retirée de `lots[]`, ajoutée à `roads[]` (path = polyline simplifiée du polygone, largeur = `recommended_road_width_m` à venir du Lot 1, ou 6 m par défaut). Champs lot-spécifiques (usage, propriétaire, clôture…) masqués.
-- **Lot → Espace commun** : retirée de `lots[]`, ajoutée à `commonSpaces[]` (avec sous-type : `green_space` / `parking` / `playground` / `market` / `drainage` / `other`).
-- **Voie → Lot** ou **Espace commun → Lot** : reconversion vers `lots[]` avec usage par défaut `residential`.
-- **Voie ↔ Espace commun** : conversion directe.
-
-Toutes les conversions passent par un helper `convertZoneType(zone, fromType, toType)` qui mappe correctement la géométrie et préserve l'historique undo/redo.
-
-### 3. Sous-type contextuel
-
-Quand « Espace commun » est choisi, un second select apparaît juste en dessous :
-- Espace vert · Parking · Aire de jeux · Marché · Drainage · Autre
-
-Quand « Voie » est choisie : champs **largeur (m)**, **type de surface** (asphalte / gravier / terre / pavé / planifiée), **nom**.
-
-### 4. Toolbar finale (rappel)
-
-```text
-┌─ Outils ──────────────┬─ Actions rapides ────────────────┬─ État ──────────┐
-│ 🎯 Sélection           │ ➕ Lot = parcelle entière         │ 4 lots / 1 voie │
-│ ✂️  Diviser une zone   │ ↶ Annuler   ↷ Rétablir           │ 1 espace commun │
-└────────────────────────┴───────────────────────────────────┴─────────────────┘
-```
-
-Renommage : « Diviser un lot » → **« Diviser une zone »** (puisque ça s'applique aussi aux espaces communs).
-
-### 5. Tooltip permanent contextualisé
-
-- **Sélection** : « Cliquez sur une zone pour la sélectionner. Dans le panneau de droite, choisissez si c'est un lot, une voie ou un espace commun. »
-- **Diviser** : « Cliquez sur le premier bord de la zone, puis sur le second bord, pour la couper en deux. »
-
-### 6. Liste de droite réorganisée
-
-Une seule liste « Zones » groupée par type avec compteurs :
-```text
-🟢 Lots (4)
-   ├─ Lot 1 · 245 m² · résidentiel
-   └─ …
-🛣️ Voies (1)
-   └─ Voie A · 6 m · asphalte
-🌳 Espaces communs (1)
-   └─ Espace vert · 180 m²
-```
-
-### 7. Fichiers impactés
-
-| Fichier | Action |
+| ✅ Élément | Détail |
 |---|---|
-| `subdivision/steps/StepLotDesigner.tsx` | Sélecteur type zone + champs contextuels + liste regroupée + renommages |
-| `subdivision/utils/convertZoneType.ts` | **Nouveau** : helper de conversion lot↔voie↔espace commun avec préservation géométrie + historique |
-| `subdivision/LotCanvas.tsx` | Le tracé / la division produit toujours un lot ; aucune logique mode `drawRoad` à exposer (reste interne) |
-| `subdivision/types.ts` | Aucun changement de type (déjà 3 types distincts existants) |
+| Calcul frais server-side | `subdivision-request` est source de vérité (rate × surface, min/max par lot) |
+| Approbation atomique | `approve-subdivision` insère lots + flag `is_subdivided` + rollback si insertion lots échoue |
+| Statuts EN normalisés | `pending/in_review/approved/rejected/returned/awaiting_payment/completed` |
+| Workflow renvoi | Action « Renvoyer pour correction » avec motif obligatoire |
+| Certificat auto | `generateAndUploadCertificate('lotissement', …)` après approve |
+| RLS complet | 4 tables couvertes, séparation user/admin/public-approved |
+| Documents privés | Bucket `cadastral-documents` + signed URL 1h |
+| Pass-through hub | Inclus dans `AdminRequestsHub`, `AdminHistoryHub`, `AdminConfigHub` |
 
-### Hors scope (lots suivants)
+### Constats — manques et lacunes
 
-- Lot 1 BD : `subdivision_zoning_rules` (largeur voie pré-remplie, validations min)
-- Lot 2b : Mode avancé (vertex, fusion, rotation)
-- Lot 2c : Badges « Trop petit » + highlight côté route
+#### A. Configuration des règles de zonage (gap critique)
 
-### Vérification
+> **C'est exactement ce que l'utilisateur a demandé en Lot 1 du chantier en cours.**
 
-1. Tracer une zone → apparaît comme « Lot » par défaut
-2. Dans le panneau, basculer le radio sur « Voie » → la zone disparaît de la liste Lots et apparaît dans Voies, champs largeur/surface visibles
-3. Basculer sur « Espace commun » → sous-type visible, couleur change selon sous-type
-4. Reconvertir en « Lot » → géométrie préservée, usage par défaut résidentiel
-5. Undo/Redo restitue correctement le type précédent
+`subdivision_rate_config` ne contient **que des tarifs** — aucune règle de contrôle des mesures. Conséquences :
+- Pas de **surface min/max par lot** par zone
+- Pas de **largeur min/recommandée des voies** par zone
+- Pas de **% min d'espaces communs**
+- Pas de **front route minimum**
+- Pas de **nombre max de lots** par parcelle mère
+- L'algorithme post-tracé (validation des lots et voies utilisateurs) **n'a aucune source de vérité** pour valider
+
+**À créer** : table `subdivision_zoning_rules` (ou extension de `subdivision_rate_config`) + UI admin dédiée.
+
+#### B. Demandes — workflow incomplet
+
+- **Pas de bouton « Mettre en examen »** (`in_review`) — passage direct pending→approved/rejected/returned
+- **Pas d'assignation** (`assigned_to`) — toute la file est partagée
+- **Pas de SLA visible** — le champ `estimated_processing_days` existe en BD mais n'est ni affiché ni configuré
+- **Pas de filtre dates** ni de tri par âge / urgence
+- **Pas d'export CSV** des demandes
+- **Pas de bulk action** (approbation/rejet groupés)
+- **Pas d'audit log** spécifique des décisions admin (qui a approuvé quoi, motif, ancien/nouveau statut) — `audit_logs` générique non utilisé ici
+- **Pas de highlight escalade** alors que `escalated`/`escalated_at` existent en BD
+- **Pas de visualisation du plan** (lots + voies + espaces) sous forme de mini-canvas dans le détail — uniquement listes textuelles
+
+#### C. Validation post-tracé inexistante
+
+Aujourd'hui une demande passe en `pending` même si :
+- 1 lot fait 2 m² (pas de min)
+- Aucune voie tracée alors que la zone l'exige
+- Surface lots > surface parcelle mère
+- Voies < 3 m de large
+
+**À créer** : RPC `validate_subdivision_against_rules(request_id)` exécutée :
+1. Côté front (pré-soumission, bandeau d'aide)
+2. Côté admin (badge « ⚠️ Non conforme : Lot 3 < min, Voie A < largeur min »)
+
+#### D. Tarification — limitations
+
+- Pas de **tarif par taille de lot** (palier dégressif)
+- Pas de **frais d'aménagement voirie** (au mètre linéaire)
+- Pas de **frais espaces communs**
+- Pas d'**aperçu de calcul** dans l'admin (« si je demande 5 lots de 200m² à Goma → X $ »)
+- Pas d'**audit** des changements de tarifs (`system_config_audit` ne couvre pas cette table — à vérifier)
+
+#### E. Lots & voies générés — sans gestion admin
+
+Tables `subdivision_lots` et `subdivision_roads` sont **alimentées** par `approve-subdivision` mais **aucun écran admin** ne permet :
+- De lister tous les lots créés (vue cadastrale globale)
+- De corriger une erreur de saisie post-approbation
+- De voir l'historique de modification d'un lot
+
+#### F. Suivi & analytics absents
+
+- Aucun KPI dédié (volume mensuel, surface totale lotie, délai moyen, taux d'approbation/rejet/renvoi)
+- Pas de carte de chaleur des zones avec le plus de demandes
+- Pas d'export pour la DGI / cadastre national
+
+### Plan d'action proposé (en 4 lots)
+
+#### Lot 1 — Règles de zonage (priorité 1, demandé par l'utilisateur)
+
+| Livrable | Détail |
+|---|---|
+| Table `subdivision_zoning_rules` | `section_type`, `location_name`, `min_lot_area_sqm`, `max_lot_area_sqm`, `min_road_width_m`, `recommended_road_width_m`, `min_common_space_pct`, `min_front_road_m`, `max_lots_per_request`, `notes`, `is_active` |
+| Composant `AdminSubdivisionZoningRules.tsx` | CRUD identique au pattern `AdminSubdivisionFeesConfig` + filtres urban/rural + fallback `*` |
+| Onglet sidebar | « Règles de zonage » sous « Demandes & Procédures » |
+| Hook front `useZoningRules(zone)` | Consommé par `LotCanvas` pour bandeau d'aide live |
+| RPC `validate_subdivision_against_rules(request_id)` | Retourne `{ valid: bool, violations: [...] }` |
+| Audit | Inclure cette table dans `system_config_audit` |
+
+#### Lot 2 — Hardening de la file admin
+
+- Bouton « Mettre en examen » + colonne assignation (`assigned_to uuid`)
+- Affichage SLA (`estimated_processing_days` − âge), badge orange dès 80%, rouge si dépassé
+- Highlight `escalated = true` + cron escalade (J+SLA sans décision)
+- Filtres date_from/date_to, tri par âge
+- Export CSV (filtres appliqués)
+- Audit log dédié `subdivision_admin_actions` (action, before, after, motif, admin_id, ts)
+- Badge « ⚠️ Non conforme » sur la ligne si la RPC de validation échoue
+
+#### Lot 3 — Visualisation & gestion des lots
+
+- Mini-canvas SVG read-only dans le détail (réutilise `LotCanvas` en mode `viewerOnly`)
+- Nouvel onglet « Lots & voies créés » (table globale `subdivision_lots` + filtres)
+- Édition admin d'un lot post-approbation (avec audit + notification user)
+
+#### Lot 4 — Analytics & enrichissement tarifaire
+
+- Dashboard `AdminSubdivisionAnalytics` : volumes, surface lotie, délai moyen, taux décisions, top zones
+- Tarifs par paliers (rate_per_sqm dégressif au-delà de N m²)
+- Frais voirie au m linéaire + frais espaces communs
+- Aperçu de calcul dans `AdminSubdivisionFeesConfig`
+- Couverture `system_config_audit` sur `subdivision_rate_config` et `subdivision_zoning_rules`
+
+### Recommandation immédiate
+
+Commencer par le **Lot 1** : c'est le bloquant produit (l'utilisateur l'a déjà demandé pour le designer grand public), et il débloque ensuite la validation post-tracé du Lot 2. Les Lots 3 et 4 sont des améliorations qualité / observabilité.
 
