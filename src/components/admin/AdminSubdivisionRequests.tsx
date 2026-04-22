@@ -19,7 +19,7 @@ import {
   Grid3X3, Search, Eye, Check, X, FileText, User, MapPin,
   Clock, AlertTriangle, Loader2, RefreshCw, DollarSign,
   ChevronLeft, ChevronRight, Square, RotateCcw, Mail, Phone,
-  TreePine, Route, Shield
+  TreePine, Route, Shield, Paperclip
 } from 'lucide-react';
 import { generateAndUploadCertificate } from '@/utils/certificateService';
 import { StatusBadge, StatusType } from '@/components/shared/StatusBadge';
@@ -57,6 +57,9 @@ interface SubdivisionRequest {
   reviewed_at?: string;
   created_at: string;
   updated_at: string;
+  requester_id_document_url?: string | null;
+  proof_of_ownership_url?: string | null;
+  subdivision_sketch_url?: string | null;
 }
 
 const SUBDIVISION_STATUS_MAP: Record<string, StatusType> = {
