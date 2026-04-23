@@ -11,6 +11,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Save, Eye, Palette, Type, Image, Stamp, FileText, Loader2, Upload } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { untypedTables, asUntypedPayload } from '@/integrations/supabase/untyped';
 import { toast } from 'sonner';
 import type { CertificateTemplate, CertificateType } from '@/types/certificate';
 import { CERTIFICATE_TYPE_LABELS } from '@/types/certificate';
@@ -62,8 +63,8 @@ export const CertificateTemplateEditor: React.FC = () => {
 
   const fetchTemplates = async () => {
     try {
-      const { data, error } = await (supabase as any)
-        .from('certificate_templates')
+      const { data, error } = await untypedTables
+        .certificate_templates()
         .select('*')
         .order('certificate_type');
       if (error) throw error;
@@ -132,15 +133,15 @@ export const CertificateTemplateEditor: React.FC = () => {
       };
 
       if (existing) {
-        const { error } = await (supabase as any)
-          .from('certificate_templates')
-          .update(payload)
+        const { error } = await untypedTables
+          .certificate_templates()
+          .update(asUntypedPayload(payload))
           .eq('id', existing.id);
         if (error) throw error;
       } else {
-        const { error } = await (supabase as any)
-          .from('certificate_templates')
-          .insert([payload]);
+        const { error } = await untypedTables
+          .certificate_templates()
+          .insert([asUntypedPayload(payload)]);
         if (error) throw error;
       }
 

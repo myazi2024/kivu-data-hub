@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
+import { untypedRpc } from '@/integrations/supabase/untyped';
 import { toast } from 'sonner';
 import { Shield, Search, Eye, Edit, Trash, Plus, FileText, Download, Trash2, ExternalLink, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
@@ -41,9 +42,9 @@ export default function AdminAuditLogs() {
   const handlePurge = async () => {
     setPurging(true);
     try {
-      const { data, error } = await (supabase as any).rpc('purge_old_audit_logs', { _days: purgeDays });
+      const { data, error } = await untypedRpc.purge_old_audit_logs({ _days: purgeDays });
       if (error) throw error;
-      toast.success(`${(data as any)?.deleted || 0} entrées supprimées`);
+      toast.success(`${(data as { deleted?: number } | null)?.deleted || 0} entrées supprimées`);
       setPage(0);
     } catch (e: any) {
       toast.error('Erreur purge: ' + e.message);
@@ -56,8 +57,8 @@ export default function AdminAuditLogs() {
     const icon = action === 'INSERT' ? <Plus className="h-3 w-3" /> :
                  action === 'UPDATE' ? <Edit className="h-3 w-3" /> :
                  action === 'DELETE' ? <Trash className="h-3 w-3" /> : <FileText className="h-3 w-3" />;
-    const variant = action === 'DELETE' ? 'destructive' : action === 'INSERT' ? 'default' : 'secondary';
-    return <Badge variant={variant as any} className="gap-1 text-[10px]">{icon}{action}</Badge>;
+    const variant: 'destructive' | 'default' | 'secondary' = action === 'DELETE' ? 'destructive' : action === 'INSERT' ? 'default' : 'secondary';
+    return <Badge variant={variant} className="gap-1 text-[10px]">{icon}{action}</Badge>;
   };
 
   const handleExportCSV = () => {

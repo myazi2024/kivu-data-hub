@@ -26,6 +26,12 @@ export const untypedTables = {
   payment_refunds: () => cast.from('payment_refunds'),
   fiscal_periods: () => cast.from('fiscal_periods'),
   tva_collected_by_period: () => cast.from('tva_collected_by_period'),
+  map_providers: () => cast.from('map_providers'),
+  certificate_templates: () => cast.from('certificate_templates'),
+  subdivision_requests: () => cast.from('subdivision_requests'),
+  reseller_commissions_summary: () => cast.from('reseller_commissions_summary'),
+  revenue_net_by_period: () => cast.from('revenue_net_by_period'),
+  payment_transactions: () => cast.from('payment_transactions'),
   generic: (table: string) => cast.from(table),
 } as const;
 
@@ -38,6 +44,16 @@ export const untypedRpc = {
     cast.rpc('close_fiscal_period', params),
   reopen_fiscal_period: (params: Record<string, unknown>) =>
     cast.rpc('reopen_fiscal_period', params),
+  get_orphan_reseller_invoices_count: () =>
+    cast.rpc('get_orphan_reseller_invoices_count'),
+  regenerate_orphan_reseller_sales: () =>
+    cast.rpc('regenerate_orphan_reseller_sales'),
+  backfill_provider_fees: (params: Record<string, unknown>) =>
+    cast.rpc('backfill_provider_fees', params),
+  get_billing_summary: (params: Record<string, unknown>) =>
+    cast.rpc('get_billing_summary', params),
+  purge_old_audit_logs: (params: { _days: number }) =>
+    cast.rpc('purge_old_audit_logs', params),
 } as const;
 
 /** Cast générique pour payload partiel (Insert/Update) sur table non typée */
