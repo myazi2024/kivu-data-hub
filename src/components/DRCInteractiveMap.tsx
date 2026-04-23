@@ -76,7 +76,6 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
   const analyticsTitleRef = React.useRef<HTMLSpanElement>(null);
   const mapTitleRef = React.useRef<HTMLHeadingElement>(null);
   const trackRef = React.useRef<HTMLDivElement>(null);
-  const teaserTimersRef = React.useRef<number[]>([]);
 
   const isMobile = useIsMobile();
   const prefersReducedMotion = typeof window !== 'undefined'
@@ -92,55 +91,16 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
     ignoreSelector: '[data-swipe-ignore], [role="dialog"], [data-radix-popper-content-wrapper], button, a, input, textarea, select',
   });
 
-  // Reset scroll + focus management quand le panneau mobile change (UX + a11y)
-  useEffect(() => {
-    if (!isMobile) return;
-    const id = window.setTimeout(() => {
-      if (onAnalyticsPanel) {
-        const scrollEl = analyticsColRef.current?.querySelector('[data-radix-scroll-area-viewport]') as HTMLElement | null;
-        if (scrollEl) scrollEl.scrollTop = 0;
-        analyticsTitleRef.current?.focus({ preventScroll: true });
-      } else {
-        mapTitleRef.current?.focus({ preventScroll: true });
-      }
-    }, 320);
-    return () => window.clearTimeout(id);
-  }, [activeMobilePanel, isMobile, onAnalyticsPanel]);
-
-  // Teaser physique au mount : la page Analytics « pointe le bout de son nez ».
-  // Une seule fois par device, skip si reduced-motion.
-  useEffect(() => {
-    if (!isMobile || prefersReducedMotion) return;
-    let seen = false;
-    try { seen = localStorage.getItem('drc-pager-teaser-seen') === '1'; } catch { /* noop */ }
-    if (seen) return;
-    const el = trackRef.current;
-    if (!el) return;
-    const startId = window.setTimeout(() => {
-      // Animation keyframes : 0 → -40 → +18 → 0 sur ~900ms (easeOutBack via CSS)
-      const prevTransition = el.style.transition;
-      el.style.transition = 'transform 320ms cubic-bezier(.34,1.56,.64,1)';
-      el.style.setProperty('--pager-teaser', '-40px');
-      const t1 = window.setTimeout(() => {
-        el.style.setProperty('--pager-teaser', '18px');
-      }, 340);
-      const t2 = window.setTimeout(() => {
-        el.style.setProperty('--pager-teaser', '0px');
-      }, 640);
-      const t3 = window.setTimeout(() => {
-        el.style.transition = prevTransition;
-        try { localStorage.setItem('drc-pager-teaser-seen', '1'); } catch { /* noop */ }
-      }, 980);
-      // Cleanup nested timers via ref-bound array
-      teaserTimersRef.current = [t1, t2, t3];
-    }, 600);
-    return () => {
-      window.clearTimeout(startId);
-      teaserTimersRef.current.forEach((t) => window.clearTimeout(t));
-      teaserTimersRef.current = [];
-      el.style.setProperty('--pager-teaser', '0px');
-    };
-  }, [isMobile, prefersReducedMotion]);
+  useMobilePagerEffects({
+    isMobile,
+    onAnalyticsPanel,
+    prefersReducedMotion,
+    trackRef,
+    analyticsColRef,
+    analyticsTitleRef,
+    mapTitleRef,
+    activeMobilePanel,
+  });
 
 
   const { isTestRoute } = useTestEnvironment();
@@ -242,40 +202,8 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
 
 
 
-  // Fullscreen sync
-  React.useEffect(() => {
-    const handler = () => {
-      const fs = !!document.fullscreenElement;
-      setIsFullscreen(fs);
-      onFullscreenChange?.(fs);
-    };
-    document.addEventListener('fullscreenchange', handler);
-    return () => document.removeEventListener('fullscreenchange', handler);
-  }, [onFullscreenChange]);
-
-  const toggleFullscreen = React.useCallback(() => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().catch(() => {
-        toast.error('Le mode plein écran n\'est pas disponible');
-      });
-    } else {
-      document.exitFullscreen();
-    }
-  }, []);
-
-  // Keyboard shortcut: F to toggle fullscreen
-  React.useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key.toLowerCase() !== 'f') return;
-      if (e.ctrlKey || e.metaKey || e.altKey) return;
-      const target = e.target as HTMLElement | null;
-      if (target && target.matches('input, textarea, select, [contenteditable="true"]')) return;
-      e.preventDefault();
-      toggleFullscreen();
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [toggleFullscreen]);
+  // Fullscreen: state, toggle, keyboard shortcut (F)
+  const { isFullscreen, toggleFullscreen } = useMapFullscreen(onFullscreenChange);
 
   const getMapBlob = useCallback(async (): Promise<Blob> => {
     if (!mapCardRef.current) throw new Error('No map ref');
