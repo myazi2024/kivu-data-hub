@@ -86,7 +86,7 @@ const AdminCadastralTooltip = () => {
       }
 
       if (data?.config_value) {
-        setConfig({ ...DEFAULT_CONFIG, ...data.config_value as any });
+        setConfig({ ...DEFAULT_CONFIG, ...(data.config_value as Partial<typeof DEFAULT_CONFIG>) });
       }
     } catch (error) {
       console.error('Erreur chargement config:', error);
@@ -112,7 +112,7 @@ const AdminCadastralTooltip = () => {
         const { error } = await supabase
           .from('cadastral_search_config')
           .update({
-            config_value: config as any,
+            config_value: config as unknown as import('@/integrations/supabase/types').Json,
             updated_at: new Date().toISOString(),
           })
           .eq('config_key', 'tooltip_config');
@@ -124,7 +124,7 @@ const AdminCadastralTooltip = () => {
           .from('cadastral_search_config')
           .insert([{
             config_key: 'tooltip_config',
-            config_value: config as any,
+            config_value: config as unknown as import('@/integrations/supabase/types').Json,
             description: 'Configuration de l\'infobulle de la carte cadastrale',
             is_active: true,
           }]);

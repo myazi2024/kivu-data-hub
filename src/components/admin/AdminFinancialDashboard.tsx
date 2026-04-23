@@ -6,6 +6,7 @@ import { PeriodFilter } from '@/components/admin/dashboard/PeriodFilter';
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { DollarSign, TrendingUp, TrendingDown, CreditCard, FileText, Percent, Wallet } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { untypedTables, untypedRpc } from '@/integrations/supabase/untyped';
 import TestModeBanner from '@/components/admin/billing/TestModeBanner';
 import BillingAnomaliesPanel from '@/components/admin/billing/BillingAnomaliesPanel';
 
@@ -49,16 +50,16 @@ const AdminFinancialDashboard = () => {
       const prevStart = new Date(start.getTime() - durationMs);
 
       const [{ data: curData, error: curErr }, { data: prevData, error: prevErr }, { data: netData }] = await Promise.all([
-        (supabase as any).rpc('get_billing_summary', {
+        untypedRpc.get_billing_summary({
           p_from: start.toISOString(),
           p_to: end.toISOString(),
         }),
-        (supabase as any).rpc('get_billing_summary', {
+        untypedRpc.get_billing_summary({
           p_from: prevStart.toISOString(),
           p_to: start.toISOString(),
         }),
-        (supabase as any)
-          .from('payment_transactions')
+        untypedTables
+          .payment_transactions()
           .select('amount_usd, provider_fee_usd, net_amount_usd')
           .eq('status', 'completed')
           .gte('created_at', start.toISOString())

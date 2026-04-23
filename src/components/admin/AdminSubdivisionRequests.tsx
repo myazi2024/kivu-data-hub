@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { asUntypedPayload } from '@/integrations/supabase/untyped';
 import { useAuth } from '@/hooks/useAuth';
 import { format } from 'date-fns';
 import { generateAndUploadCertificate } from '@/utils/certificateService';
@@ -136,12 +137,12 @@ export function AdminSubdivisionRequests() {
     if (!user) return;
     const { error } = await supabase
       .from('subdivision_requests')
-      .update({
+      .update(asUntypedPayload({
         status: 'in_review',
         assigned_to: user.id,
         assigned_at: new Date().toISOString(),
         in_review_at: new Date().toISOString(),
-      } as any)
+      }))
       .eq('id', req.id);
     if (error) {
       toast({ title: 'Erreur', description: error.message, variant: 'destructive' });
@@ -286,7 +287,7 @@ export function AdminSubdivisionRequests() {
   const handleReassignOne = async (req: SubdivisionRequest, assigneeId: string) => {
     const { error } = await supabase
       .from('subdivision_requests')
-      .update({ assigned_to: assigneeId, assigned_at: new Date().toISOString() } as any)
+      .update(asUntypedPayload({ assigned_to: assigneeId, assigned_at: new Date().toISOString() }))
       .eq('id', req.id);
     if (error) {
       toast({ title: 'Erreur', description: error.message, variant: 'destructive' });
@@ -301,7 +302,7 @@ export function AdminSubdivisionRequests() {
     setBulkProcessing(true);
     const { error } = await supabase
       .from('subdivision_requests')
-      .update({ assigned_to: assigneeId, assigned_at: new Date().toISOString() } as any)
+      .update(asUntypedPayload({ assigned_to: assigneeId, assigned_at: new Date().toISOString() }))
       .in('id', selectedIds);
     setBulkProcessing(false);
     if (error) {

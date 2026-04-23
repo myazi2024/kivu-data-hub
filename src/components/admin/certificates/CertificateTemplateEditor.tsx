@@ -11,6 +11,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Save, Eye, Palette, Type, Image, Stamp, FileText, Loader2, Upload } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { untypedTables, asUntypedPayload } from '@/integrations/supabase/untyped';
 import { toast } from 'sonner';
 import type { CertificateTemplate, CertificateType } from '@/types/certificate';
 import { CERTIFICATE_TYPE_LABELS } from '@/types/certificate';

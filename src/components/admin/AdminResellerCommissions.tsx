@@ -8,6 +8,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
 import { supabase } from '@/integrations/supabase/client';
+import { untypedTables, untypedRpc } from '@/integrations/supabase/untyped';
 import { toast } from 'sonner';
 import { RefreshCw, Users, Search, DollarSign, TrendingUp, Wallet } from 'lucide-react';
 import { format } from 'date-fns';
@@ -52,13 +53,13 @@ const AdminResellerCommissions = () => {
     try {
       const [{ data: sumData, error: sumErr }, { data: salesData, error: salesErr }, { data: orphanData }] =
         await Promise.all([
-          supabase.from('reseller_commissions_summary' as any).select('*'),
+          untypedTables.reseller_commissions_summary().select('*'),
           supabase
             .from('reseller_sales')
             .select(`*, resellers!reseller_sales_reseller_id_fkey(business_name), cadastral_invoices!reseller_sales_invoice_id_fkey(invoice_number)`)
             .order('created_at', { ascending: false })
             .limit(500),
-          (supabase as any).rpc('get_orphan_reseller_invoices_count'),
+          untypedRpc.get_orphan_reseller_invoices_count(),
         ]);
       if (sumErr) throw sumErr;
       if (salesErr) throw salesErr;
@@ -89,7 +90,7 @@ const AdminResellerCommissions = () => {
   const regenerateOrphans = async () => {
     setRegenerating(true);
     try {
-      const { data, error } = await (supabase as any).rpc('regenerate_orphan_reseller_sales');
+      const { data, error } = await untypedRpc.regenerate_orphan_reseller_sales();
       if (error) throw error;
       const row = Array.isArray(data) ? data[0] : data;
       toast.success(`${row?.inserted_count ?? 0} vente(s) régénérée(s) sur ${row?.scanned_count ?? 0} scannée(s).`);

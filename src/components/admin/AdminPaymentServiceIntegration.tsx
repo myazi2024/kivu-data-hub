@@ -32,6 +32,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { untypedTables, untypedRpc } from '@/integrations/supabase/untyped';
 import { usePaymentConfig } from '@/hooks/usePaymentConfig';
 import { useCadastralServices } from '@/hooks/useCadastralServices';
 
@@ -91,8 +92,8 @@ const AdminPaymentServiceIntegration: React.FC = () => {
   const loadRealRevenue = useCallback(async () => {
     setLoadingRevenue(true);
     try {
-      const { data, error } = await (supabase as any)
-        .from('revenue_net_by_period')
+      const { data, error } = await untypedTables
+        .revenue_net_by_period()
         .select('*');
       if (error) throw error;
 
@@ -129,12 +130,12 @@ const AdminPaymentServiceIntegration: React.FC = () => {
   const handleBackfill = async () => {
     setBackfilling(true);
     try {
-      const { data, error } = await (supabase as any).rpc('backfill_provider_fees', {
+      const { data, error } = await untypedRpc.backfill_provider_fees({
         p_from: null,
         p_to: null,
       });
       if (error) throw error;
-      const result = (data as any) || {};
+      const result = (data as { updated_count?: number; total_fees_estimated_usd?: number } | null) || {};
       toast.success('Backfill terminé', {
         description: `${result.updated_count ?? 0} transactions mises à jour, ~$${Number(result.total_fees_estimated_usd ?? 0).toFixed(2)} de frais estimés.`,
       });

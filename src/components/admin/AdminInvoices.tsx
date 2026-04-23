@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { untypedRpc } from '@/integrations/supabase/untyped';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -79,12 +80,12 @@ const AdminInvoices = () => {
       const to = new Date();
       const from = new Date();
       from.setFullYear(from.getFullYear() - 5);
-      const { data, error } = await (supabase as any).rpc('get_billing_summary', {
+      const { data, error } = await untypedRpc.get_billing_summary({
         p_from: from.toISOString(),
         p_to: to.toISOString(),
       });
       if (error) throw error;
-      setServerStats(data as any);
+      setServerStats(data as typeof serverStats);
     } catch (e) {
       console.warn('get_billing_summary unavailable, falling back to client stats', e);
     }
