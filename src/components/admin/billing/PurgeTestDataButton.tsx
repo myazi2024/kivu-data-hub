@@ -15,6 +15,7 @@ import { Trash2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useAdminAnalytics } from '@/lib/adminAnalytics';
 
 /**
  * Admin-only button that triggers `purge_test_billing_data` RPC.
@@ -24,6 +25,7 @@ const PurgeTestDataButton = ({ onDone }: { onDone?: () => void }) => {
   const [confirm, setConfirm] = useState('');
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
+  const { trackAdminAction } = useAdminAnalytics();
 
   const handlePurge = async () => {
     if (confirm !== 'PURGE') return;
@@ -42,6 +44,14 @@ const PurgeTestDataButton = ({ onDone }: { onDone?: () => void }) => {
         result.archived_transactions ?? 0
       } transactions archivées.`,
     );
+    trackAdminAction({
+      module: 'billing',
+      action: 'purge_test_data',
+      meta: {
+        archived_invoices: result.archived_invoices ?? 0,
+        archived_transactions: result.archived_transactions ?? 0,
+      },
+    });
     setOpen(false);
     setConfirm('');
     onDone?.();

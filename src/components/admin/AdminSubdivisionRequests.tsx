@@ -21,12 +21,14 @@ import { BulkReasonDialog } from './subdivision/requests/BulkReasonDialog';
 import {
   getCachedValidation, setCachedValidation, invalidateValidation,
 } from './subdivision/requests/validationCache';
+import { useAdminAnalytics } from '@/lib/adminAnalytics';
 
 const ITEMS_PER_PAGE = 10;
 
 export function AdminSubdivisionRequests() {
   const { toast } = useToast();
   const { user } = useAuth();
+  const { trackAdminAction } = useAdminAnalytics();
   const [requests, setRequests] = useState<SubdivisionRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -148,6 +150,11 @@ export function AdminSubdivisionRequests() {
       toast({ title: 'Erreur', description: error.message, variant: 'destructive' });
     } else {
       toast({ title: 'Demande mise en examen' });
+      trackAdminAction({
+        module: 'subdivision',
+        action: 'start_review',
+        ref: { request_id: req.id, reference_number: req.reference_number },
+      });
       fetchRequests();
     }
   };
@@ -273,6 +280,11 @@ export function AdminSubdivisionRequests() {
         title: `Demande ${labels[actionType]}`,
         description: `${selectedRequest.reference_number} traitée.`,
       });
+      trackAdminAction({
+        module: 'subdivision',
+        action: actionType,
+        ref: { request_id: selectedRequest.id, reference_number: selectedRequest.reference_number },
+      });
       setShowActionDialog(false);
       invalidateValidation(selectedRequest.id);
       setValidations(prev => { const n = { ...prev }; delete n[selectedRequest.id]; return n; });
@@ -293,6 +305,12 @@ export function AdminSubdivisionRequests() {
       toast({ title: 'Erreur', description: error.message, variant: 'destructive' });
     } else {
       toast({ title: 'Demande réassignée', description: req.reference_number });
+      trackAdminAction({
+        module: 'subdivision',
+        action: 'reassign',
+        ref: { request_id: req.id, reference_number: req.reference_number },
+        meta: { assignee_id: assigneeId },
+      });
       fetchRequests();
     }
   };
@@ -309,6 +327,11 @@ export function AdminSubdivisionRequests() {
       toast({ title: 'Erreur', description: error.message, variant: 'destructive' });
     } else {
       toast({ title: `${selectedIds.length} demande(s) réassignée(s)` });
+      trackAdminAction({
+        module: 'subdivision',
+        action: 'bulk_reassign',
+        meta: { count: selectedIds.length, assignee_id: assigneeId },
+      });
       setSelectedIds([]);
       fetchRequests();
     }
@@ -350,6 +373,11 @@ export function AdminSubdivisionRequests() {
     });
     setSelectedIds([]);
     fetchRequests();
+    trackAdminAction({
+      module: 'subdivision',
+      action: `bulk_${bulkAction}`,
+      meta: { count: idsSnapshot.length, success, failed },
+    });
     toast({
       title: 'Action groupée terminée',
       description: `${success} succès, ${failed} échec(s).`,
