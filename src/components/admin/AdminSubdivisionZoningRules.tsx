@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { untypedTables } from '@/integrations/supabase/untyped';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,6 +13,17 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { Plus, Pencil, Trash2, Ruler, Loader2 } from 'lucide-react';
+import {
+  getAllProvinces,
+  getVillesForProvince,
+  getCommunesForVille,
+  getQuartiersForCommune,
+  getAvenuesForQuartier,
+  getTerritoiresForProvince,
+  getCollectivitesForTerritoire,
+} from '@/lib/geographicData';
+
+const NONE = '__none__'; // marqueur "non sélectionné" (Radix Select n'autorise pas value="")
 
 interface ZoningRule {
   id: string;
@@ -33,7 +44,17 @@ interface ZoningRule {
 
 const emptyForm = {
   section_type: 'urban' as 'urban' | 'rural',
-  location_name: '*',
+  // Géographie cascadée (urbain : province > ville > commune > quartier > avenue / rural : province > territoire > collectivité > groupement > village)
+  province: '',
+  ville: '',
+  commune: '',
+  quartier: '',
+  avenue: '',
+  territoire: '',
+  collectivite: '',
+  groupement: '',
+  village: '',
+  apply_to_default: false, // si coché => location_name = '*'
   min_lot_area_sqm: '200',
   max_lot_area_sqm: '5000',
   min_road_width_m: '6',
@@ -43,6 +64,210 @@ const emptyForm = {
   max_lots_per_request: '50',
   notes: '',
   is_active: true,
+};
+
+/**
+ * Reconstitue (au mieux) les niveaux géographiques d'une règle existante
+ * à partir de son `location_name` (qui ne stocke que le nom du niveau le plus précis).
+ * Recherche dans la base statique tous les chemins compatibles.
+ */
+const reverseGeographicLookup = (
+  sectionType: 'urban' | 'rural',
+  locationName: string,
+): Partial<typeof emptyForm> => {
+  if (!locationName || locationName === '*') return { apply_to_default: true };
+  const provinces = getAllProvinces();
+  if (sectionType === 'urban') {
+    for (const province of provinces) {
+      // Ville ?
+      const villes = getVillesForProvince(province);
+      if (villes.includes(locationName)) return { province, ville: locationName };
+      for (const ville of villes) {
+        const communes = getCommunesForVille(province, ville);
+        if (communes.includes(locationName)) return { province, ville, commune: locationName };
+        for (const commune of communes) {
+          const quartiers = getQuartiersForCommune(province, ville, commune);
+          if (quartiers.includes(locationName)) return { province, ville, commune, quartier: locationName };
+          for (const quartier of quartiers) {
+            const avenues = getAvenuesForQuartier(province, ville, commune, quartier);
+            if (avenues.includes(locationName)) return { province, ville, commune, quartier, avenue: locationName };
+          }
+        }
+      }
+    }
+  } else {
+    for (const province of provinces) {
+      const territoires = getTerritoiresForProvince(province);
+      if (territoires.includes(locationName)) return { province, territoire: locationName };
+      for (const territoire of territoires) {
+        const collectivites = getCollectivitesForTerritoire(province, territoire);
+        if (collectivites.includes(locationName)) return { province, territoire, collectivite: locationName };
+      }
+    }
+    // Groupement / village ne sont pas dans la base statique → restaure au moins le nom
+    return { groupement: locationName };
+  }
+  return {};
+};
+
+/** Détermine le niveau le plus précis sélectionné — c'est cette valeur qui devient `location_name`. */
+const computeLocationName = (f: typeof emptyForm): string => {
+  if (f.apply_to_default) return '*';
+  if (f.section_type === 'urban') {
+    return f.avenue || f.quartier || f.commune || f.ville || '';
+  }
+  return f.village || f.groupement || f.collectivite || f.territoire || '';
+};
+
+/** Fil d'Ariane lisible pour l'affichage dans la table. */
+const formatBreadcrumb = (r: ZoningRule): string => {
+  if (r.location_name === '*') return 'Par défaut';
+  const found = reverseGeographicLookup(r.section_type, r.location_name);
+  const parts = r.section_type === 'urban'
+    ? [found.province, found.ville, found.commune, found.quartier, found.avenue]
+    : [found.province, found.territoire, found.collectivite, found.groupement, found.village];
+  const trail = parts.filter(Boolean);
+  return trail.length > 0 ? trail.join(' › ') : r.location_name;
+};
+
+type FormState = typeof emptyForm;
+type FormSetter = React.Dispatch<React.SetStateAction<FormState>>;
+
+const UrbanCascade: React.FC<{ form: FormState; setForm: FormSetter }> = ({ form, setForm }) => {
+  const villes = useMemo(() => form.province ? getVillesForProvince(form.province) : [], [form.province]);
+  const communes = useMemo(
+    () => (form.province && form.ville) ? getCommunesForVille(form.province, form.ville) : [],
+    [form.province, form.ville],
+  );
+  const quartiers = useMemo(
+    () => (form.province && form.ville && form.commune) ? getQuartiersForCommune(form.province, form.ville, form.commune) : [],
+    [form.province, form.ville, form.commune],
+  );
+  const avenues = useMemo(
+    () => (form.province && form.ville && form.commune && form.quartier) ? getAvenuesForQuartier(form.province, form.ville, form.commune, form.quartier) : [],
+    [form.province, form.ville, form.commune, form.quartier],
+  );
+
+  return (
+    <>
+      <div>
+        <Label>Ville</Label>
+        <Select
+          value={form.ville || NONE}
+          onValueChange={v => setForm(f => ({ ...f, ville: v === NONE ? '' : v, commune: '', quartier: '', avenue: '' }))}
+          disabled={!form.province}
+        >
+          <SelectTrigger><SelectValue placeholder={form.province ? 'Toutes' : '— sélectionnez une province —'} /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value={NONE}>— Toutes les villes —</SelectItem>
+            {villes.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      </div>
+      <div>
+        <Label>Commune</Label>
+        <Select
+          value={form.commune || NONE}
+          onValueChange={v => setForm(f => ({ ...f, commune: v === NONE ? '' : v, quartier: '', avenue: '' }))}
+          disabled={!form.ville}
+        >
+          <SelectTrigger><SelectValue placeholder="Toutes" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value={NONE}>— Toutes les communes —</SelectItem>
+            {communes.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      </div>
+      <div>
+        <Label>Quartier</Label>
+        <Select
+          value={form.quartier || NONE}
+          onValueChange={v => setForm(f => ({ ...f, quartier: v === NONE ? '' : v, avenue: '' }))}
+          disabled={!form.commune || quartiers.length === 0}
+        >
+          <SelectTrigger><SelectValue placeholder="Tous" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value={NONE}>— Tous les quartiers —</SelectItem>
+            {quartiers.map(q => <SelectItem key={q} value={q}>{q}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      </div>
+      <div>
+        <Label>Avenue</Label>
+        <Select
+          value={form.avenue || NONE}
+          onValueChange={v => setForm(f => ({ ...f, avenue: v === NONE ? '' : v }))}
+          disabled={!form.quartier || avenues.length === 0}
+        >
+          <SelectTrigger><SelectValue placeholder="Toutes" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value={NONE}>— Toutes les avenues —</SelectItem>
+            {avenues.map(a => <SelectItem key={a} value={a}>{a}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      </div>
+    </>
+  );
+};
+
+const RuralCascade: React.FC<{ form: FormState; setForm: FormSetter }> = ({ form, setForm }) => {
+  const territoires = useMemo(() => form.province ? getTerritoiresForProvince(form.province) : [], [form.province]);
+  const collectivites = useMemo(
+    () => (form.province && form.territoire) ? getCollectivitesForTerritoire(form.province, form.territoire) : [],
+    [form.province, form.territoire],
+  );
+
+  return (
+    <>
+      <div>
+        <Label>Territoire</Label>
+        <Select
+          value={form.territoire || NONE}
+          onValueChange={v => setForm(f => ({ ...f, territoire: v === NONE ? '' : v, collectivite: '', groupement: '', village: '' }))}
+          disabled={!form.province}
+        >
+          <SelectTrigger><SelectValue placeholder={form.province ? 'Tous' : '— sélectionnez une province —'} /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value={NONE}>— Tous les territoires —</SelectItem>
+            {territoires.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      </div>
+      <div>
+        <Label>Collectivité</Label>
+        <Select
+          value={form.collectivite || NONE}
+          onValueChange={v => setForm(f => ({ ...f, collectivite: v === NONE ? '' : v, groupement: '', village: '' }))}
+          disabled={!form.territoire}
+        >
+          <SelectTrigger><SelectValue placeholder="Toutes" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value={NONE}>— Toutes les collectivités —</SelectItem>
+            {collectivites.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      </div>
+      {/* Groupement et village ne sont pas dans la base statique : saisie libre */}
+      <div>
+        <Label>Groupement</Label>
+        <Input
+          value={form.groupement}
+          onChange={e => setForm(f => ({ ...f, groupement: e.target.value, village: '' }))}
+          placeholder="Optionnel"
+          disabled={!form.collectivite}
+        />
+      </div>
+      <div>
+        <Label>Village</Label>
+        <Input
+          value={form.village}
+          onChange={e => setForm(f => ({ ...f, village: e.target.value }))}
+          placeholder="Optionnel"
+          disabled={!form.groupement}
+        />
+      </div>
+    </>
+  );
 };
 
 const AdminSubdivisionZoningRules: React.FC = () => {
@@ -80,9 +305,11 @@ const AdminSubdivisionZoningRules: React.FC = () => {
 
   const openEdit = (r: ZoningRule) => {
     setEditing(r);
+    const reversed = reverseGeographicLookup(r.section_type, r.location_name);
     setForm({
+      ...emptyForm,
+      ...reversed,
       section_type: r.section_type,
-      location_name: r.location_name,
       min_lot_area_sqm: String(r.min_lot_area_sqm),
       max_lot_area_sqm: r.max_lot_area_sqm != null ? String(r.max_lot_area_sqm) : '',
       min_road_width_m: String(r.min_road_width_m),
@@ -97,8 +324,9 @@ const AdminSubdivisionZoningRules: React.FC = () => {
   };
 
   const handleSave = async () => {
-    if (!form.location_name.trim()) {
-      toast.error("Le nom de l'emplacement est requis (* pour défaut)");
+    const locationName = computeLocationName(form);
+    if (!locationName) {
+      toast.error("Sélectionnez au moins un niveau géographique ou cochez « Règle par défaut »");
       return;
     }
     const minLot = parseFloat(form.min_lot_area_sqm);
@@ -112,7 +340,7 @@ const AdminSubdivisionZoningRules: React.FC = () => {
     setSaving(true);
     const payload = {
       section_type: form.section_type,
-      location_name: form.location_name.trim(),
+      location_name: locationName,
       min_lot_area_sqm: minLot,
       max_lot_area_sqm: maxLot,
       min_road_width_m: minRoad,
@@ -207,7 +435,9 @@ const AdminSubdivisionZoningRules: React.FC = () => {
                         </Badge>
                       </TableCell>
                       <TableCell className="font-medium">
-                        {r.location_name === '*' ? <span className="italic text-muted-foreground">Par défaut</span> : r.location_name}
+                        {r.location_name === '*'
+                          ? <span className="italic text-muted-foreground">Par défaut (toute la RDC)</span>
+                          : <span title={r.location_name}>{formatBreadcrumb(r)}</span>}
                       </TableCell>
                       <TableCell className="text-right font-mono">{r.min_lot_area_sqm} / {r.max_lot_area_sqm ?? '∞'}</TableCell>
                       <TableCell className="text-right font-mono">{r.min_road_width_m} / {r.recommended_road_width_m}</TableCell>
@@ -239,10 +469,20 @@ const AdminSubdivisionZoningRules: React.FC = () => {
             <DialogTitle>{editing ? 'Modifier la règle' : 'Ajouter une règle de zonage'}</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-3">
+            {/* Section + portée par défaut */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <Label>Type de section</Label>
-                <Select value={form.section_type} onValueChange={v => setForm(f => ({ ...f, section_type: v as 'urban' | 'rural' }))}>
+                <Select
+                  value={form.section_type}
+                  onValueChange={v => setForm(f => ({
+                    ...f,
+                    section_type: v as 'urban' | 'rural',
+                    // reset des niveaux de l'autre branche pour éviter les états incohérents
+                    ville: '', commune: '', quartier: '', avenue: '',
+                    territoire: '', collectivite: '', groupement: '', village: '',
+                  }))}
+                >
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="urban">Urbain (Quartier)</SelectItem>
@@ -250,11 +490,57 @@ const AdminSubdivisionZoningRules: React.FC = () => {
                   </SelectContent>
                 </Select>
               </div>
-              <div>
-                <Label>Emplacement</Label>
-                <Input value={form.location_name} onChange={e => setForm(f => ({ ...f, location_name: e.target.value }))} placeholder="* ou nom ville/quartier" />
+              <div className="flex items-end gap-2">
+                <Switch
+                  checked={form.apply_to_default}
+                  onCheckedChange={v => setForm(f => ({ ...f, apply_to_default: v }))}
+                />
+                <Label className="mb-2">Règle par défaut (toute la RDC)</Label>
               </div>
             </div>
+
+            {/* Cascade géographique — désactivée si "Règle par défaut" */}
+            <fieldset
+              disabled={form.apply_to_default}
+              className="border rounded-md p-3 space-y-3 disabled:opacity-50"
+            >
+              <legend className="text-xs font-medium px-1 text-muted-foreground">
+                Emplacement — Rép. Dém. du Congo
+              </legend>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <Label>Province</Label>
+                  <Select
+                    value={form.province || NONE}
+                    onValueChange={v => setForm(f => ({
+                      ...f,
+                      province: v === NONE ? '' : v,
+                      ville: '', commune: '', quartier: '', avenue: '',
+                      territoire: '', collectivite: '', groupement: '', village: '',
+                    }))}
+                  >
+                    <SelectTrigger><SelectValue placeholder="Toutes" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={NONE}>— Toutes les provinces —</SelectItem>
+                      {getAllProvinces().map(p => (
+                        <SelectItem key={p} value={p}>{p}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {form.section_type === 'urban' ? (
+                  <UrbanCascade form={form} setForm={setForm} />
+                ) : (
+                  <RuralCascade form={form} setForm={setForm} />
+                )}
+              </div>
+
+              <p className="text-xs text-muted-foreground">
+                La règle s'applique au niveau le plus précis sélectionné. Les niveaux supérieurs servent à filtrer les choix proposés.
+              </p>
+            </fieldset>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
