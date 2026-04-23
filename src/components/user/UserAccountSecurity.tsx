@@ -14,12 +14,17 @@ import { MfaEnrollDialog } from "@/components/auth/MfaEnrollDialog";
 import { SENSITIVE_ROLES_LABEL_REQUIRED, isAdminRole } from "@/components/auth/mfaConstants";
 
 export const UserAccountSecurity = () => {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+
+  const mfa = useMfaStatus();
+  const [enrollOpen, setEnrollOpen] = useState(false);
+  const [removingId, setRemovingId] = useState<string | null>(null);
+  const adminMustMfa = isAdminRole(profile?.role);
 
   const check = useMemo(() => validatePassword(newPassword), [newPassword]);
   const matches = newPassword.length > 0 && newPassword === confirmPassword;
