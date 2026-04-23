@@ -34,12 +34,23 @@ export const MfaEnrollDialog: React.FC<Props> = ({ open, onOpenChange, onEnrolle
   const [copied, setCopied] = useState(false);
   const enrollAbortedRef = useRef<string | null>(null);
 
-  // Cleanup unverified factor on close
+  // Cleanup unverified factor on close (skip if it has been verified meanwhile)
   useEffect(() => {
     if (!open && enrollAbortedRef.current) {
       const id = enrollAbortedRef.current;
       enrollAbortedRef.current = null;
-      supabase.auth.mfa.unenroll({ factorId: id }).catch(() => {});
+      (async () => {
+        try {
+          const { data } = await supabase.auth.mfa.listFactors();
+          const factor = data?.all?.find((f) => f.id === id);
+          // Only delete if still unverified (otherwise another flow confirmed it)
+          if (factor && factor.status !== 'verified') {
+            await supabase.auth.mfa.unenroll({ factorId: id });
+          }
+        } catch {
+          // ignore
+        }
+      })();
     }
   }, [open]);
 
@@ -53,6 +64,7 @@ export const MfaEnrollDialog: React.FC<Props> = ({ open, onOpenChange, onEnrolle
       setCode('');
       setFriendlyName('Authenticator');
       setCopied(false);
+      enrollAbortedRef.current = null;
     }
   }, [open]);
 
@@ -93,7 +105,14 @@ export const MfaEnrollDialog: React.FC<Props> = ({ open, onOpenChange, onEnrolle
       enrollAbortedRef.current = null;
       setStep('done');
       toast({ title: '2FA activée', description: 'Votre application sera désormais demandée.' });
+      // Refresh session so AAL upgrades to aal2 on the next JWT
+      try { await supabase.auth.refreshSession(); } catch { /* ignore */ }
       onEnrolled?.();
+      // Auto-close after a short delay so the user sees the success state
+      setTimeout(() => {
+        enrollAbortedRef.current = null;
+        onOpenChange(false);
+      }, 1500);
     } catch (err: any) {
       toast({ variant: 'destructive', title: 'Code invalide', description: err.message || 'Veuillez réessayer.' });
     } finally {
