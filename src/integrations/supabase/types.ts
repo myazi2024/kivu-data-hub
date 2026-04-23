@@ -5875,6 +5875,47 @@ export type Database = {
           },
         ]
       }
+      subdivision_plan_versions: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          lots_data: Json | null
+          plan_data: Json
+          reason: string | null
+          subdivision_request_id: string
+          version_number: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          lots_data?: Json | null
+          plan_data: Json
+          reason?: string | null
+          subdivision_request_id: string
+          version_number: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          lots_data?: Json | null
+          plan_data?: Json
+          reason?: string | null
+          subdivision_request_id?: string
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subdivision_plan_versions_subdivision_request_id_fkey"
+            columns: ["subdivision_request_id"]
+            isOneToOne: false
+            referencedRelation: "subdivision_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subdivision_rate_config: {
         Row: {
           common_space_fee_per_sqm_usd: number | null
