@@ -26,9 +26,12 @@ import { MAP_TAB_PROFILES, computeAdaptiveTiers, NO_DATA_COLOR, type MapTabProfi
 import { norm, buildScopePredicate, sliceAnalyticsByPredicate, type GeoScopedRecord } from './map/meta/mapMeta';
 import { useMapDrilldown } from './map/hooks/useMapDrilldown';
 import { useMapIndicators } from './map/hooks/useMapIndicators';
+import { useMapFullscreen } from './map/hooks/useMapFullscreen';
+import { useMobilePagerEffects } from './map/hooks/useMobilePagerEffects';
 import { MapLegend } from './map/ui/MapLegend';
 import { MapScopeLegend } from './map/ui/MapScopeLegend';
 import { MapKPICards } from './map/ui/MapKPICards';
+import { MapMobilePager } from './map/ui/MapMobilePager';
 
 
 
@@ -66,14 +69,12 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
   const [activeMobilePanel, setActiveMobilePanel] = useState<'map' | 'analytics'>('map');
   const [isMapZoomed, setIsMapZoomed] = useState(false);
 
-  const [isFullscreen, setIsFullscreen] = useState(false);
   const [forcedTab, setForcedTab] = useState<string | null>(null);
   const mapCardRef = React.useRef<HTMLDivElement>(null);
   const analyticsColRef = React.useRef<HTMLDivElement>(null);
   const analyticsTitleRef = React.useRef<HTMLSpanElement>(null);
   const mapTitleRef = React.useRef<HTMLHeadingElement>(null);
   const trackRef = React.useRef<HTMLDivElement>(null);
-  const teaserTimersRef = React.useRef<number[]>([]);
 
   const isMobile = useIsMobile();
   const prefersReducedMotion = typeof window !== 'undefined'
@@ -89,55 +90,16 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
     ignoreSelector: '[data-swipe-ignore], [role="dialog"], [data-radix-popper-content-wrapper], button, a, input, textarea, select',
   });
 
-  // Reset scroll + focus management quand le panneau mobile change (UX + a11y)
-  useEffect(() => {
-    if (!isMobile) return;
-    const id = window.setTimeout(() => {
-      if (onAnalyticsPanel) {
-        const scrollEl = analyticsColRef.current?.querySelector('[data-radix-scroll-area-viewport]') as HTMLElement | null;
-        if (scrollEl) scrollEl.scrollTop = 0;
-        analyticsTitleRef.current?.focus({ preventScroll: true });
-      } else {
-        mapTitleRef.current?.focus({ preventScroll: true });
-      }
-    }, 320);
-    return () => window.clearTimeout(id);
-  }, [activeMobilePanel, isMobile, onAnalyticsPanel]);
-
-  // Teaser physique au mount : la page Analytics « pointe le bout de son nez ».
-  // Une seule fois par device, skip si reduced-motion.
-  useEffect(() => {
-    if (!isMobile || prefersReducedMotion) return;
-    let seen = false;
-    try { seen = localStorage.getItem('drc-pager-teaser-seen') === '1'; } catch { /* noop */ }
-    if (seen) return;
-    const el = trackRef.current;
-    if (!el) return;
-    const startId = window.setTimeout(() => {
-      // Animation keyframes : 0 → -40 → +18 → 0 sur ~900ms (easeOutBack via CSS)
-      const prevTransition = el.style.transition;
-      el.style.transition = 'transform 320ms cubic-bezier(.34,1.56,.64,1)';
-      el.style.setProperty('--pager-teaser', '-40px');
-      const t1 = window.setTimeout(() => {
-        el.style.setProperty('--pager-teaser', '18px');
-      }, 340);
-      const t2 = window.setTimeout(() => {
-        el.style.setProperty('--pager-teaser', '0px');
-      }, 640);
-      const t3 = window.setTimeout(() => {
-        el.style.transition = prevTransition;
-        try { localStorage.setItem('drc-pager-teaser-seen', '1'); } catch { /* noop */ }
-      }, 980);
-      // Cleanup nested timers via ref-bound array
-      teaserTimersRef.current = [t1, t2, t3];
-    }, 600);
-    return () => {
-      window.clearTimeout(startId);
-      teaserTimersRef.current.forEach((t) => window.clearTimeout(t));
-      teaserTimersRef.current = [];
-      el.style.setProperty('--pager-teaser', '0px');
-    };
-  }, [isMobile, prefersReducedMotion]);
+  useMobilePagerEffects({
+    isMobile,
+    onAnalyticsPanel,
+    prefersReducedMotion,
+    trackRef,
+    analyticsColRef,
+    analyticsTitleRef,
+    mapTitleRef,
+    activeMobilePanel,
+  });
 
 
   const { isTestRoute } = useTestEnvironment();
@@ -239,40 +201,8 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
 
 
 
-  // Fullscreen sync
-  React.useEffect(() => {
-    const handler = () => {
-      const fs = !!document.fullscreenElement;
-      setIsFullscreen(fs);
-      onFullscreenChange?.(fs);
-    };
-    document.addEventListener('fullscreenchange', handler);
-    return () => document.removeEventListener('fullscreenchange', handler);
-  }, [onFullscreenChange]);
-
-  const toggleFullscreen = React.useCallback(() => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().catch(() => {
-        toast.error('Le mode plein écran n\'est pas disponible');
-      });
-    } else {
-      document.exitFullscreen();
-    }
-  }, []);
-
-  // Keyboard shortcut: F to toggle fullscreen
-  React.useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key.toLowerCase() !== 'f') return;
-      if (e.ctrlKey || e.metaKey || e.altKey) return;
-      const target = e.target as HTMLElement | null;
-      if (target && target.matches('input, textarea, select, [contenteditable="true"]')) return;
-      e.preventDefault();
-      toggleFullscreen();
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [toggleFullscreen]);
+  // Fullscreen: state, toggle, keyboard shortcut (F)
+  const { isFullscreen, toggleFullscreen } = useMapFullscreen(onFullscreenChange);
 
   const getMapBlob = useCallback(async (): Promise<Blob> => {
     if (!mapCardRef.current) throw new Error('No map ref');
@@ -354,47 +284,16 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
     );
   }
 
-  // Fluid iOS-style page indicators driven by dragProgress
-  const progressTowardNext = isMobile && isDragging
-    ? Math.max(0, Math.min(1, onAnalyticsPanel ? dragProgress : -dragProgress))
-    : 0;
-  const activeBarW = 16 - progressTowardNext * 10;
-  const inactiveBarW = 6 + progressTowardNext * 10;
-
   return (
     <div ref={pagerRef} className="w-full h-full flex flex-col overflow-hidden relative" style={{ touchAction: isMobile ? 'pan-y' : undefined }}>
 
-        <div className="lg:hidden fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50">
-          <div className="flex flex-col items-center gap-1.5">
-            {/* Pagination bars — fluid stretch driven by dragProgress */}
-            <div className="flex items-center gap-1.5" role="tablist" aria-label="Vue active">
-              <span
-                role="tab"
-                aria-selected={!onAnalyticsPanel}
-                aria-label="Carte"
-                className="h-1.5 rounded-full transition-[width,background-color] duration-150"
-                style={{ width: `${onAnalyticsPanel ? inactiveBarW : activeBarW}px`, backgroundColor: onAnalyticsPanel ? 'hsl(var(--muted-foreground) / 0.4)' : 'hsl(var(--primary))' }}
-              />
-              <span
-                role="tab"
-                aria-selected={onAnalyticsPanel}
-                aria-label="Analytics"
-                className="h-1.5 rounded-full transition-[width,background-color] duration-150"
-                style={{ width: `${onAnalyticsPanel ? activeBarW : inactiveBarW}px`, backgroundColor: !onAnalyticsPanel ? 'hsl(var(--muted-foreground) / 0.4)' : 'hsl(var(--primary))' }}
-              />
-            </div>
-            <div className="flex items-center justify-center gap-1.5 bg-background/95 backdrop-blur-sm border border-border/50 rounded-full px-2.5 py-1.5 shadow-lg">
-              <Button size="sm" variant={activeMobilePanel !== 'analytics' ? 'default' : 'outline'} onClick={() => setActiveMobilePanel('map')} aria-label="Carte & Données" aria-live="polite" className="rounded-full h-7 px-3 text-[10px] gap-1">
-                <MapPin className="w-3 h-3" />
-                Carte
-              </Button>
-              <Button size="sm" variant={activeMobilePanel === 'analytics' ? 'default' : 'outline'} onClick={() => setActiveMobilePanel('analytics')} aria-label="Analytics" aria-live="polite" className="rounded-full h-7 px-3 text-[10px] gap-1">
-                <BarChart3 className="w-3 h-3" />
-                Analytics
-              </Button>
-            </div>
-          </div>
-        </div>
+        <MapMobilePager
+          activeMobilePanel={activeMobilePanel}
+          setActiveMobilePanel={setActiveMobilePanel}
+          isDragging={isDragging}
+          isMobile={isMobile}
+          dragProgress={dragProgress}
+        />
 
         {/* Desktop: grille 2 colonnes | Mobile: track horizontal 200% piloté par CSS var pour 60fps */}
         <div className="flex-1 min-h-0 overflow-hidden p-1 sm:p-2 pb-14 lg:pb-2">
