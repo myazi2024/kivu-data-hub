@@ -26,6 +26,7 @@ export const untypedTables = {
   payment_refunds: () => cast.from('payment_refunds'),
   fiscal_periods: () => cast.from('fiscal_periods'),
   tva_collected_by_period: () => cast.from('tva_collected_by_period'),
+  map_providers: () => cast.from('map_providers'),
   generic: (table: string) => cast.from(table),
 } as const;
 
