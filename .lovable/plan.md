@@ -1,53 +1,29 @@
 
 
-## Élargir ton compte au rôle `super_admin`
+## Fix — `get_user_statistics` accessible aux admins
 
-### Objectif
+### Problème
 
-Ajouter le rôle `super_admin` à ton compte utilisateur courant pour bypasser toutes les vérifications de permissions granulaires et débloquer instantanément l'accès à 100% des onglets admin.
+La fonction RPC `get_user_statistics` rejette toute requête où `auth.uid() != target_user_id`. Conséquence : même connecté en `super_admin`, impossible de consulter les statistiques d'un autre utilisateur depuis le panneau admin (`useAdminUserStatistics`).
 
-### Pourquoi ça marche
+### Correctif
 
-`useAdminTabAccess` court-circuite la matrice de permissions dès qu'il détecte `super_admin` dans `user_roles` (`isSuperAdmin → return true`). Aucune entrée à seeder dans `permissions` ni `role_permissions`.
+Migration SQL : remplacer le `CREATE OR REPLACE FUNCTION public.get_user_statistics(...)` pour autoriser l'accès si :
+- `auth.uid() = target_user_id` (le user lui-même), **OU**
+- `has_role(auth.uid(), 'super_admin')`, **OU**
+- `has_role(auth.uid(), 'admin')`
 
-### Action
+Le reste du corps de la fonction (calculs des 9 KPIs sur la fenêtre `start_date`/`end_date`) reste strictement identique. On conserve `SECURITY DEFINER`, `SET search_path = public`, et la signature exacte (`target_user_id uuid, start_date date, end_date date`) pour ne casser ni `useUserStatistics` ni `useAdminUserStatistics`.
 
-**1. Identifier ton `user_id`**
+### Validation post-migration
 
-Récupération via une requête sur `profiles` filtrée sur ton email (tu me le donnes après approbation, ou je le déduis de la session courante via les logs auth).
-
-**2. Insérer le rôle `super_admin`**
-
-Une seule ligne dans `user_roles` (idempotent grâce à la contrainte unique `(user_id, role)`) :
-
-```sql
-INSERT INTO public.user_roles (user_id, role)
-VALUES ('<TON_USER_ID>', 'super_admin')
-ON CONFLICT (user_id, role) DO NOTHING;
-```
-
-Tu conserves ton rôle `admin` existant — les deux coexistent, `getHighestRole` remontera `super_admin`.
-
-### Validation post-action
-
-1. Recharger `/admin` (pas besoin de logout — `useAdminTabAccess` recharge à chaque mount du provider).
-2. Tous les onglets accessibles : Mode test, Sécurité, RH, Comptabilité, Paramètres système, Apparence, Audit, Permissions, Rôles.
-3. Badge utilisateur dans la sidebar : passe de "Administrateur" à "Super Admin" (gradient violet→rose).
-4. La 2FA reste exigée (AdminMfaGate ne change pas de comportement).
-
-### Précautions
-
-- **MFA obligatoire** : tu l'as déjà activée → OK. Sans 2FA, super_admin serait un risque majeur.
-- **Réversibilité** : pour redescendre plus tard, simple `DELETE FROM user_roles WHERE user_id='...' AND role='super_admin';`.
-- **Recovery** : note ton `user_id` quelque part — si tu te bloques (perte 2FA), tu auras besoin d'aide via SQL pour réinitialiser.
-
-### Question avant exécution
-
-Donne-moi ton **email** (celui utilisé pour te connecter en admin actuellement) pour que je récupère ton `user_id` exact avant l'insertion. Ou si tu préfères, copie-colle directement ton `user_id` depuis l'onglet **Auth → Users** du dashboard Supabase.
+1. Connecté en `super_admin` (`myazi2024@gmail.com`), ouvrir n'importe quel utilisateur dans la gestion admin → les KPIs s'affichent (factures, dépenses, contributions, CCC…).
+2. Connecté en user standard, `useUserStatistics` continue de fonctionner pour son propre `user_id`.
+3. Un user standard tentant un appel RPC avec un `target_user_id` ≠ son uid → rejet (sécurité préservée).
 
 ### Hors périmètre
 
-- Pas de modification de `adminTabPermissions.ts` ni de la matrice (intacts pour les autres admins).
-- Pas de migration de schéma (juste un INSERT data).
-- Plan B disponible plus tard si tu veux finalement seeder la matrice complète pour les autres admins.
+- Pas de changement de signature ni des champs retournés → zéro impact frontend.
+- Pas de modification des autres RPC PII (qui ont leur propre logique d'accès payant).
+- Pas de touche aux hooks (`useUserStatistics`, `useAdminUserStatistics`) — ils marcheront tels quels.
 
