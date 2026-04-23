@@ -41,19 +41,29 @@ const AdminCCCUsage = () => {
     try {
       const { data, error } = await supabase
         .from('cadastral_contributor_codes')
-        .select(`
-          *,
-          profiles!cadastral_contributor_codes_user_id_fkey(full_name)
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      
-      const codesWithUser = (data || []).map(c => ({
+
+      const userIds = Array.from(new Set((data || []).map((c) => c.user_id).filter(Boolean)));
+      let profilesMap: Record<string, string> = {};
+      if (userIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('user_id, full_name')
+          .in('user_id', userIds);
+        profilesMap = (profiles || []).reduce((acc, p: { user_id: string; full_name: string | null }) => {
+          acc[p.user_id] = p.full_name || 'Utilisateur inconnu';
+          return acc;
+        }, {} as Record<string, string>);
+      }
+
+      const codesWithUser = (data || []).map((c) => ({
         ...c,
-        user_name: (c.profiles as { full_name?: string } | null)?.full_name || 'Utilisateur inconnu'
+        user_name: profilesMap[c.user_id] || 'Utilisateur inconnu',
       }));
-      
+
       setCodes(codesWithUser);
     } catch (error) {
       console.error('Error fetching CCC codes:', error);
