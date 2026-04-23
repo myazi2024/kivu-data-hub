@@ -34,9 +34,9 @@ const InactiveUsersPanel: React.FC = () => {
     try {
       const { data, error } = await supabase.rpc('get_inactive_users', {
         threshold_days: days,
-      } as any);
+      });
       if (error) throw error;
-      setUsers((data as any[]) || []);
+      setUsers((data as unknown as InactiveUser[]) || []);
       setSelected([]);
     } catch (e: any) {
       console.error('inactive_users error', e);

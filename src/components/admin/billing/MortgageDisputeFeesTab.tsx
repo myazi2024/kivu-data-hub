@@ -40,11 +40,11 @@ export const MortgageDisputeFeesTab = () => {
           .select('config_value').eq('config_key', 'dispute_lifting_fee').eq('is_active', true).maybeSingle(),
       ]);
       if (mRes.data?.config_value) {
-        const m = { ...DEFAULT_MORTGAGE, ...(mRes.data.config_value as any) };
+        const m = { ...DEFAULT_MORTGAGE, ...(mRes.data.config_value as Partial<MortgageFees>) };
         setMortgage(m); setOrigMortgage(m);
       }
       if (dRes.data?.config_value) {
-        const d = { ...DEFAULT_DISPUTE, ...(dRes.data.config_value as any) };
+        const d = { ...DEFAULT_DISPUTE, ...(dRes.data.config_value as Partial<DisputeFee>) };
         setDispute(d); setOrigDispute(d);
       }
     } catch (e) {

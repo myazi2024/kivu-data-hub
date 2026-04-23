@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
+import { untypedTables } from '@/integrations/supabase/untyped';
 import { Database, Loader2 } from 'lucide-react';
 import { SystemConfigAuditViewer } from './config/SystemConfigAuditViewer';
 
@@ -44,11 +45,9 @@ const AdminConfigHub: React.FC = () => {
       setLoading(true);
       const results: ConfigTableStat[] = [];
       for (const t of CONFIG_TABLES) {
-        const { count } = await (supabase as any)
-          .from(t)
+        const { count } = await untypedTables.generic(t)
           .select('*', { count: 'exact', head: true });
-        const { data: lastAudit } = await (supabase as any)
-          .from('system_config_audit')
+        const { data: lastAudit } = await untypedTables.system_config_audit()
           .select('created_at, admin_name')
           .eq('table_name', t)
           .order('created_at', { ascending: false })

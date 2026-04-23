@@ -1,7 +1,7 @@
 import React, { useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Download, Upload } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { untypedTables } from '@/integrations/supabase/untyped';
 import { toast } from 'sonner';
 
 interface Props {
@@ -18,7 +18,7 @@ export const ConfigJsonExportImport: React.FC<Props> = ({ tableName, onAfterImpo
   const fileRef = useRef<HTMLInputElement>(null);
 
   const handleExport = async () => {
-    const { data, error } = await (supabase as any).from(tableName).select('*');
+    const { data, error } = await untypedTables.generic(tableName).select('*');
     if (error) {
       toast.error(`Export échoué: ${error.message}`);
       return;
@@ -40,7 +40,7 @@ export const ConfigJsonExportImport: React.FC<Props> = ({ tableName, onAfterImpo
       const text = await f.text();
       const rows = JSON.parse(text);
       if (!Array.isArray(rows)) throw new Error('JSON doit être un tableau');
-      const { error } = await (supabase as any).from(tableName).upsert(rows, { onConflict: 'id' });
+      const { error } = await untypedTables.generic(tableName).upsert(rows, { onConflict: 'id' });
       if (error) throw error;
       toast.success(`Import : ${rows.length} lignes`);
       onAfterImport?.();
