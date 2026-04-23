@@ -5,9 +5,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Lock, Shield, Smartphone, Eye, EyeOff, Check, X } from "lucide-react";
+import { Loader2, Lock, Shield, Smartphone, Eye, EyeOff, Check, X, Trash2, ShieldCheck } from "lucide-react";
 import { validatePassword } from "@/lib/passwordPolicy";
+import { useMfaStatus } from "@/hooks/useMfaStatus";
+import { MfaEnrollDialog } from "@/components/auth/MfaEnrollDialog";
+import { SENSITIVE_ROLES_LABEL_REQUIRED, isAdminRole } from "@/components/auth/mfaConstants";
 
 export const UserAccountSecurity = () => {
   const { user } = useAuth();
