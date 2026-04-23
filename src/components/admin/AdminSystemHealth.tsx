@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
+import { untypedRpc } from '@/integrations/supabase/untyped';
 import { Activity, Database, Server, RefreshCw, CheckCircle, AlertTriangle, XCircle, Save, TrendingUp } from 'lucide-react';
 import { toast } from 'sonner';
 import { useSystemSettings } from '@/hooks/useSystemSettings';

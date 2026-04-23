@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Download, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { untypedTables } from '@/integrations/supabase/untyped';
 import { loadTestEntities } from '@/constants/testEntities';
 import { toast } from 'sonner';
 
