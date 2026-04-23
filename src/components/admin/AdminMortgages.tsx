@@ -185,9 +185,10 @@ const AdminMortgages = () => {
         if (durationValue != null && durationValue > 0) {
           mortgageInsertData.duration_months = durationValue;
         }
+        // Cast: payload dynamique (champs conditionnels), validé runtime par Supabase
         const { error: insertError } = await supabase
           .from('cadastral_mortgages')
-          .insert(mortgageInsertData as Parameters<typeof supabase.from<'cadastral_mortgages'>>[0] extends never ? never : any);
+          .insert(mortgageInsertData as never);
 
         if (insertError) {
           console.error('Error inserting mortgage:', insertError);
@@ -220,7 +221,7 @@ const AdminMortgages = () => {
           user_id: user?.id || null,
           record_id: request.id,
           table_name: 'cadastral_contributions',
-          new_values: { parcel_number: request.parcel_number, status: 'approved' } as any,
+          new_values: { parcel_number: request.parcel_number, status: 'approved' },
         });
       } catch { /* Non-blocking */ }
 
@@ -277,7 +278,7 @@ const AdminMortgages = () => {
           user_id: user?.id || null,
           record_id: selectedRequest.id,
           table_name: 'cadastral_contributions',
-          new_values: { parcel_number: selectedRequest.parcel_number, status: 'rejected', reason: rejectionReason.trim() } as any,
+          new_values: { parcel_number: selectedRequest.parcel_number, status: 'rejected', reason: rejectionReason.trim() },
         });
       } catch { /* Non-blocking */ }
 
@@ -305,7 +306,7 @@ const AdminMortgages = () => {
       const { error } = await supabase
         .from('cadastral_contributions')
         .update({
-          status: 'returned' as any,
+          status: 'returned',
           change_justification: returnReason.trim(),
           reviewed_at: new Date().toISOString(),
           reviewed_by: user?.id || null,
@@ -331,7 +332,7 @@ const AdminMortgages = () => {
           user_id: user?.id || null,
           record_id: selectedRequest.id,
           table_name: 'cadastral_contributions',
-          new_values: { parcel_number: selectedRequest.parcel_number, status: 'returned', corrections: returnReason.trim() } as any,
+          new_values: { parcel_number: selectedRequest.parcel_number, status: 'returned', corrections: returnReason.trim() },
         });
       } catch { /* Non-blocking */ }
 
