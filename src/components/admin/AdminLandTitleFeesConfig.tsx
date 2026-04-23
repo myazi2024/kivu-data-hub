@@ -46,12 +46,12 @@ const AdminLandTitleFeesConfig = () => {
   const load = async () => {
     setLoading(true);
     try {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from('land_title_fees_by_type')
         .select('*')
         .order('title_type').order('display_order');
       if (error) throw error;
-      setFees(data || []);
+      setFees((data as unknown as Fee[]) || []);
     } catch (e) {
       console.error('[LandTitleFees] load', e);
       toast({ title: 'Erreur', description: 'Chargement impossible', variant: 'destructive' });
@@ -69,7 +69,7 @@ const AdminLandTitleFeesConfig = () => {
     try {
       const newAmount = parseFloat(editAmount);
       const newSurcharge = editSurcharge ? parseFloat(editSurcharge) : null;
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from('land_title_fees_by_type')
         .update({ base_amount_usd: newAmount, urban_surcharge_usd: newSurcharge })
         .eq('id', edit.id);

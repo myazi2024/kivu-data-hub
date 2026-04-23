@@ -65,7 +65,7 @@ const AdminInvoiceReminders = () => {
     queryKey: ['admin', 'invoices-aging'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('invoices_aging' as any)
+        .from('invoices_aging')
         .select('*')
         .order('days_overdue', { ascending: false })
         .limit(500);
@@ -137,7 +137,7 @@ const AdminInvoiceReminders = () => {
       errorMsg = e?.message || 'Edge function unavailable';
     }
 
-    const { error } = await supabase.from('invoice_reminders' as any).insert({
+    const { error } = await supabase.from('invoice_reminders').insert({
       invoice_id: row.invoice_id,
       reminder_number: reminderNum,
       channel: 'email',

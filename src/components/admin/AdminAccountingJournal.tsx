@@ -40,7 +40,7 @@ const AdminAccountingJournal = () => {
     const endDate = new Date(year, month, 0); // last day of month
     const end = format(endDate, 'yyyy-MM-dd');
     let query = supabase
-      .from('accounting_journal_entries' as any)
+      .from('accounting_journal_entries')
       .select('*')
       .gte('entry_date', start)
       .lte('entry_date', end)
@@ -50,7 +50,7 @@ const AdminAccountingJournal = () => {
     if (journalFilter !== 'all') query = query.eq('journal_code', journalFilter);
     const { data, error } = await query;
     if (error) toast.error(error.message);
-    else setEntries((data as any) || []);
+    else setEntries(data || []);
     setLoading(false);
   };
 

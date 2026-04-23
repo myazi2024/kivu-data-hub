@@ -121,8 +121,8 @@ const AdminSubdivisionLots: React.FC = () => {
       table_name: 'subdivision_lots',
       record_id: editing.id,
       user_id: user?.id ?? null,
-      old_values: before as any,
-      new_values: editForm as any,
+      old_values: before as unknown as Json,
+      new_values: editForm as unknown as Json,
     });
 
     toast({ title: 'Lot mis à jour', description: `Lot ${editing.lot_number} (${editing.parcel_number})` });

@@ -218,7 +218,7 @@ const AdminLandDisputes: React.FC = () => {
               try {
                 const { data, error } = await supabase.rpc('escalate_stale_disputes', { _threshold_days: 30 });
                 if (error) throw error;
-                const count = (data as any)?.[0]?.escalated_count ?? 0;
+                const count = (data as { escalated_count?: number }[] | null)?.[0]?.escalated_count ?? 0;
                 toast.success(`${count} litige(s) escaladé(s)`);
                 fetchDisputes();
               } catch (e: any) {
@@ -311,7 +311,7 @@ const AdminLandDisputes: React.FC = () => {
                   <td className="p-3 font-mono text-xs font-bold">
                     <span className="inline-flex items-center gap-1">
                       {dispute.reference_number}
-                      {(dispute as any).escalated && (
+                      {dispute.escalated && (
                         <AlertTriangle className="h-3 w-3 text-destructive" aria-label="Escaladé" />
                       )}
                     </span>
