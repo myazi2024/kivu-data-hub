@@ -1,59 +1,53 @@
 
 
-## Fix — Boucle infinie d'enrôlement 2FA admin
+## Élargir ton compte au rôle `super_admin`
 
-### Problème
+### Objectif
 
-L'utilisateur active la 2FA, le facteur est créé et vérifié, **mais immédiatement supprimé** (logs Supabase : `factor_unenrolled` 1 seconde après `factor verified`). Le dialog se rouvre alors en boucle.
+Ajouter le rôle `super_admin` à ton compte utilisateur courant pour bypasser toutes les vérifications de permissions granulaires et débloquer instantanément l'accès à 100% des onglets admin.
 
-### Cause racine
+### Pourquoi ça marche
 
-Deux problèmes combinés :
+`useAdminTabAccess` court-circuite la matrice de permissions dès qu'il détecte `super_admin` dans `user_roles` (`isSuperAdmin → return true`). Aucune entrée à seeder dans `permissions` ni `role_permissions`.
 
-1. **Double instance de `MfaEnrollDialog`** : à la fois dans `MfaGuardProvider` (global) et dans `AdminMfaGate` (route admin). Les deux écoutent `mustEnroll` et ouvrent/ferment indépendamment.
+### Action
 
-2. **Cleanup destructif sur fermeture** (`MfaEnrollDialog.tsx` lignes 38-44) : quand `open` passe à `false`, `enrollAbortedRef.current` est utilisé pour `mfa.unenroll(...)` — mais ce ref est défini **dès `enroll()`** (ligne 68) et seul le `verify()` réussi le remet à `null` (ligne 93). L'instance "fantôme" (celle de l'autre composant) ne voit JAMAIS le verify, garde le ref pointant sur le factor, et le supprime à la fermeture.
+**1. Identifier ton `user_id`**
 
-3. **AAL non élevé après enroll-verify** : Supabase reste en `aal1` après l'enrôlement initial → `AdminMfaGate` détecte `needChallenge = true` et ouvre le **challenge dialog**, ce qui force la fermeture de l'enroll dialog → déclenche le cleanup → suppression.
+Récupération via une requête sur `profiles` filtrée sur ton email (tu me le donnes après approbation, ou je le déduis de la session courante via les logs auth).
 
-### Plan de correction
+**2. Insérer le rôle `super_admin`**
 
-**1. Supprimer la duplication d'`MfaEnrollDialog`**
+Une seule ligne dans `user_roles` (idempotent grâce à la contrainte unique `(user_id, role)`) :
 
-Dans `AdminMfaGate.tsx` : retirer entièrement le `<MfaEnrollDialog>` rendu localement. Garder uniquement la délégation à `MfaGuardProvider` (déjà global via `App.tsx`). Conserver `<MfaChallengeDialog>` car il est contextuel à la route admin.
+```sql
+INSERT INTO public.user_roles (user_id, role)
+VALUES ('<TON_USER_ID>', 'super_admin')
+ON CONFLICT (user_id, role) DO NOTHING;
+```
 
-**2. Sécuriser le cleanup d'`MfaEnrollDialog`**
+Tu conserves ton rôle `admin` existant — les deux coexistent, `getHighestRole` remontera `super_admin`.
 
-Dans le `useEffect` lignes 38-44 :
-- Avant d'appeler `unenroll`, vérifier via `listFactors()` que le facteur est encore en statut `unverified`. Si verified → ne PAS le supprimer (c'est qu'un autre flow l'a confirmé).
-- Toujours remettre `enrollAbortedRef.current = null` après `setStep('done')` ET dans le reset d'ouverture pour éviter qu'un ancien id traîne entre montages.
+### Validation post-action
 
-**3. Élever automatiquement la session à AAL2 après enroll-verify**
+1. Recharger `/admin` (pas besoin de logout — `useAdminTabAccess` recharge à chaque mount du provider).
+2. Tous les onglets accessibles : Mode test, Sécurité, RH, Comptabilité, Paramètres système, Apparence, Audit, Permissions, Rôles.
+3. Badge utilisateur dans la sidebar : passe de "Administrateur" à "Super Admin" (gradient violet→rose).
+4. La 2FA reste exigée (AdminMfaGate ne change pas de comportement).
 
-Après `setStep('done')` :
-- Appeler `mfa.refresh()` (déjà fait via `onEnrolled`) puis attendre.
-- Auto-fermer le dialog après 1.5s (toast déjà visible) et déclencher manuellement un refresh de session : `supabase.auth.refreshSession()` pour que l'AAL passe à `aal2` (Supabase met à jour l'AAL à la prochaine génération de token JWT).
-- Si malgré ça l'AAL reste `aal1`, `AdminMfaGate` ouvrira `MfaChallengeDialog` — ce qui est correct, l'utilisateur saisit son code une fois et termine en `aal2`.
+### Précautions
 
-**4. (Bonus) Supprimer le `mustEnroll` du `MfaGuardProvider` quand un dialog enroll est explicitement déjà fermé par l'utilisateur**
+- **MFA obligatoire** : tu l'as déjà activée → OK. Sans 2FA, super_admin serait un risque majeur.
+- **Réversibilité** : pour redescendre plus tard, simple `DELETE FROM user_roles WHERE user_id='...' AND role='super_admin';`.
+- **Recovery** : note ton `user_id` quelque part — si tu te bloques (perte 2FA), tu auras besoin d'aide via SQL pour réinitialiser.
 
-Pas nécessaire si #1 résout le conflit. À garder en réserve.
+### Question avant exécution
 
-### Fichiers modifiés
-
-- `src/components/auth/AdminMfaGate.tsx` — retirer `MfaEnrollDialog` et la state `enrollOpen` associée.
-- `src/components/auth/MfaEnrollDialog.tsx` — cleanup conditionnel (vérif statut), reset systématique de `enrollAbortedRef`, auto-close + `refreshSession()` après succès.
-
-### Validation post-fix
-
-1. Connexion admin sans facteur → 1 seul dialog enroll (provenant du provider).
-2. Scan QR + code → toast "2FA activée" → dialog se ferme tout seul après ~1.5s.
-3. Logs Supabase : un seul `factor_verified`, **AUCUN** `factor_unenrolled` derrière.
-4. La page `/admin` se débloque (soit directement aal2, soit via challenge instantané).
-5. Reload `/admin` après logout/login → demande le code TOTP au login (challenge), pas un nouvel enroll.
+Donne-moi ton **email** (celui utilisé pour te connecter en admin actuellement) pour que je récupère ton `user_id` exact avant l'insertion. Ou si tu préfères, copie-colle directement ton `user_id` depuis l'onglet **Auth → Users** du dashboard Supabase.
 
 ### Hors périmètre
 
-- Pas de changement Supabase Dashboard (TOTP déjà activé ✅).
-- Pas de modification des autres composants MFA (`MfaChallengeDialog`, `useMfaStatus`).
+- Pas de modification de `adminTabPermissions.ts` ni de la matrice (intacts pour les autres admins).
+- Pas de migration de schéma (juste un INSERT data).
+- Plan B disponible plus tard si tu veux finalement seeder la matrice complète pour les autres admins.
 
