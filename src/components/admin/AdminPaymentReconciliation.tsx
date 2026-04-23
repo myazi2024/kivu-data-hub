@@ -18,6 +18,7 @@ import { PaginationControls } from '@/components/shared/PaginationControls';
 import BillingAnomaliesPanel from '@/components/admin/billing/BillingAnomaliesPanel';
 import TestModeBanner from '@/components/admin/billing/TestModeBanner';
 import { logBillingAudit } from '@/utils/billingAudit';
+import { useAdminAnalytics } from '@/lib/adminAnalytics';
 
 interface PaymentTransaction {
   id: string;
@@ -34,6 +35,7 @@ interface PaymentTransaction {
 }
 
 const AdminPaymentReconciliation = () => {
+  const { trackAdminAction } = useAdminAnalytics();
   const [transactions, setTransactions] = useState<PaymentTransaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -105,6 +107,12 @@ const AdminPaymentReconciliation = () => {
       });
 
       toast.success('Transaction réconciliée et tracée');
+      trackAdminAction({
+        module: 'billing',
+        action: 'reconcile_transaction',
+        ref: { transaction_id: reconcileTarget.id },
+        meta: { reason: reconcileReason, old_status: oldStatus },
+      });
       setReconcileTarget(null);
       setReconcileReason('');
       setReconcileNote('');

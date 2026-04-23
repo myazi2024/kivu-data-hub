@@ -19,9 +19,11 @@ import {
 import { TaxDeclarationStats } from './tax-declarations/TaxDeclarationStats';
 import { TaxDeclarationFilters } from './tax-declarations/TaxDeclarationFilters';
 import { TaxDeclarationDetailDialog } from './tax-declarations/TaxDeclarationDetailDialog';
+import { useAdminAnalytics } from '@/lib/adminAnalytics';
 
 const AdminTaxDeclarations = () => {
   const { user } = useAuth();
+  const { trackAdminAction } = useAdminAnalytics();
   const [declarations, setDeclarations] = useState<TaxDeclaration[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -174,6 +176,12 @@ const AdminTaxDeclarations = () => {
         toast.success('Déclaration renvoyée pour correction');
       }
 
+      trackAdminAction({
+        module: 'tax',
+        action: actionType,
+        ref: { contribution_id: selectedDeclaration.id, parcel_number: selectedDeclaration.parcel_number },
+        meta: { tax_year: info.taxYear },
+      });
       setDialogOpen(false);
       setSelectedDeclaration(null);
       setActionType(null);

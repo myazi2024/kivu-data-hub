@@ -33,8 +33,12 @@ trackAdminAction({
 
 ### Modules instrumentés
 
-`expertise`, `land_title`, `mutation`, `mortgage`, `land_dispute`, `ccc`
-(approve/reject/return + bulk_approve/bulk_reject + escalate_stale + block_user/unblock_user pour `fraud`).
+- `expertise`, `land_title`, `mutation`, `mortgage`, `land_dispute`, `ccc` — approve/reject/return + bulk_approve/bulk_reject + escalate_stale.
+- `fraud` — block_user / unblock_user.
+- `subdivision` — start_review, approve/reject/return, reassign, bulk_reassign, bulk_approve/bulk_reject/bulk_return.
+- `permits` — approve/reject/return (`meta.certificate_generated`).
+- `billing` — purge_test_data, update_fees_config, send_reminder, bulk_send_reminders, reconcile_transaction, close_period, reopen_period.
+- `tax` — approve/reject/return (déclarations fiscales sur `cadastral_contributions`).
 
 ### Ajouter un nouveau module
 

@@ -33,6 +33,7 @@ export type AdminModule =
   | 'billing'
   | 'users'
   | 'roles'
+  | 'tax'
   | 'config';
 
 export interface AdminActionPayload {
@@ -63,6 +64,7 @@ const INVALIDATION_MAP: Record<AdminModule, string[][]> = {
   billing: [['admin-pending-counts'], ['invoices'], ['transactions']],
   users: [['admin-users']],
   roles: [['admin-users'], ['user-roles']],
+  tax: [['admin-pending-counts'], ['tax-declarations'], ['user-resource', 'cadastral_contributions']],
   config: [],
 };
 

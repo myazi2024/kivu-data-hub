@@ -14,6 +14,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Textarea } from '@/components/ui/textarea';
+import { useAdminAnalytics } from '@/lib/adminAnalytics';
 
 interface FiscalPeriod {
   id: string;
@@ -35,6 +36,7 @@ const monthLabel = (m: number | null) => m ? format(new Date(2000, m - 1, 1), 'M
 
 const AdminFiscalPeriods = () => {
   const today = new Date();
+  const { trackAdminAction } = useAdminAnalytics();
   const [periods, setPeriods] = useState<FiscalPeriod[]>([]);
   const [loading, setLoading] = useState(false);
   const [closeYear, setCloseYear] = useState(today.getFullYear());
@@ -61,6 +63,11 @@ const AdminFiscalPeriods = () => {
       });
       if (error) throw error;
       toast.success(`Période ${closeYear}-${String(closeMonth).padStart(2, '0')} clôturée`);
+      trackAdminAction({
+        module: 'billing',
+        action: 'close_period',
+        ref: { year: closeYear, month: closeMonth },
+      });
       fetchPeriods();
     } catch (e: any) {
       toast.error(e.message || 'Erreur');
@@ -78,6 +85,11 @@ const AdminFiscalPeriods = () => {
       });
       if (error) throw error;
       toast.success('Période réouverte');
+      trackAdminAction({
+        module: 'billing',
+        action: 'reopen_period',
+        ref: { period_id: id },
+      });
       setReopenReason('');
       fetchPeriods();
     } catch (e: any) {

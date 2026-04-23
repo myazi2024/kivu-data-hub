@@ -14,6 +14,7 @@ import { PermitActionsHistory } from './PermitActionsHistory';
 import { useAuth } from '@/hooks/useAuth';
 import { usePermitPayment } from '@/hooks/usePermitPayment';
 import { generateAndUploadCertificate } from '@/utils/certificateService';
+import { useAdminAnalytics } from '@/lib/adminAnalytics';
 
 interface PermitRequestDialogProps {
   open: boolean;
@@ -49,6 +50,7 @@ export const PermitRequestDialog: React.FC<PermitRequestDialogProps> = ({
 }) => {
   const { user } = useAuth();
   const { checkPaymentStatus } = usePermitPayment();
+  const { trackAdminAction } = useAdminAnalytics();
   const [processing, setProcessing] = useState(false);
   const [response, setResponse] = useState('');
   const [paymentStatus, setPaymentStatus] = useState<'paid' | 'pending' | 'not_found' | 'failed' | null>(null);
@@ -219,6 +221,12 @@ export const PermitRequestDialog: React.FC<PermitRequestDialogProps> = ({
       });
 
       toast.success(action === 'approve' ? 'Autorisation délivrée avec succès' : action === 'reject' ? 'Demande rejetée' : 'Demande renvoyée pour correction');
+      trackAdminAction({
+        module: 'permits',
+        action,
+        ref: { contribution_id: contributionId, parcel_number: parcelNumber },
+        meta: { certificate_generated: action === 'approve' },
+      });
       onProcessed();
       onOpenChange(false);
     } catch (error: any) {

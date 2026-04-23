@@ -26,6 +26,7 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { exportToCSV } from '@/utils/csvExport';
+import { useAdminAnalytics } from '@/lib/adminAnalytics';
 
 type AgingBucket = 'all' | 'current' | '30_60' | '60_90' | 'over_90';
 
@@ -55,6 +56,7 @@ const BUCKET_LABELS: Record<Exclude<AgingBucket, 'all'>, { label: string; color:
 
 const AdminInvoiceReminders = () => {
   const qc = useQueryClient();
+  const { trackAdminAction } = useAdminAnalytics();
   const [busyId, setBusyId] = useState<string | null>(null);
   const [bulkSending, setBulkSending] = useState(false);
   const [search, setSearch] = useState('');
@@ -160,9 +162,15 @@ const AdminInvoiceReminders = () => {
       const ok = await sendOne(row);
       return ok;
     },
-    onSuccess: (ok) => {
+    onSuccess: (ok, row) => {
       if (ok) toast.success('Relance envoyée');
       else toast.warning('Relance enregistrée (envoi indisponible)');
+      trackAdminAction({
+        module: 'billing',
+        action: 'send_reminder',
+        ref: { invoice_id: row.invoice_id, invoice_number: row.invoice_number },
+        meta: { ok: ok ? 1 : 0, failed: ok ? 0 : 1 },
+      });
       qc.invalidateQueries({ queryKey: ['admin', 'invoices-aging'] });
       setBusyId(null);
     },
@@ -189,6 +197,11 @@ const AdminInvoiceReminders = () => {
     setBulkSending(false);
     setSelected(new Set());
     qc.invalidateQueries({ queryKey: ['admin', 'invoices-aging'] });
+    trackAdminAction({
+      module: 'billing',
+      action: 'bulk_send_reminders',
+      meta: { ok: okCount, failed: failCount, count: okCount + failCount },
+    });
     toast.success(`${okCount} relance(s) envoyée(s)${failCount ? ` — ${failCount} échec(s)` : ''}`);
   };
 

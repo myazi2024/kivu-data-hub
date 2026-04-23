@@ -8,6 +8,7 @@ import { Save, Info } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { logBillingAudit } from '@/utils/billingAudit';
+import { useAdminAnalytics } from '@/lib/adminAnalytics';
 
 type MortgageFees = {
   base_fee_usd: number;
@@ -24,6 +25,7 @@ const DEFAULT_DISPUTE: DisputeFee = { lifting_fee_usd: 30 };
 
 export const MortgageDisputeFeesTab = () => {
   const { toast } = useToast();
+  const { trackAdminAction } = useAdminAnalytics();
   const [loading, setLoading] = useState(false);
   const [mortgage, setMortgage] = useState<MortgageFees>(DEFAULT_MORTGAGE);
   const [dispute, setDispute] = useState<DisputeFee>(DEFAULT_DISPUTE);
@@ -82,6 +84,11 @@ export const MortgageDisputeFeesTab = () => {
         newValues: { config_key: key, config_value: value },
       });
       toast({ title: 'Frais enregistrés', description: 'Configuration mise à jour' });
+      trackAdminAction({
+        module: 'billing',
+        action: 'update_fees_config',
+        ref: { config_key: key },
+      });
       load();
     } catch (e: any) {
       console.error('[MortgageDisputeFees] save error', e);
