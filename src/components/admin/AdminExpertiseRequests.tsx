@@ -15,10 +15,11 @@ import ExpertiseProcessDialog, { type ExpertiseProcessAction } from './expertise
 import ExpertiseRequestsTable from './expertise/ExpertiseRequestsTable';
 import ExpertiseDetailsDialog from './expertise/ExpertiseDetailsDialog';
 import { getExtendedData } from './expertise/expertiseHelpers';
-import { trackEvent } from '@/lib/analytics';
+import { useAdminAnalytics } from '@/lib/adminAnalytics';
 
 export const AdminExpertiseRequests: React.FC = () => {
   const { user } = useAuth();
+  const { trackAdminAction } = useAdminAnalytics();
   const [requests, setRequests] = useState<ExpertiseRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -229,11 +230,10 @@ export const AdminExpertiseRequests: React.FC = () => {
         ? 'Certificat généré et envoyé automatiquement'
         : 'Demande rejetée');
 
-      trackEvent('admin_action', {
+      trackAdminAction({
         module: 'expertise',
         action: processAction,
-        request_id: selectedRequest.id,
-        parcel_number: selectedRequest.parcel_number,
+        ref: { request_id: selectedRequest.id, parcel_number: selectedRequest.parcel_number },
       });
 
       setShowProcessDialog(false);
