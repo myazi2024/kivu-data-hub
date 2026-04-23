@@ -165,9 +165,11 @@ const AdminSubdivisionZoningRules: React.FC = () => {
 
   const openEdit = (r: ZoningRule) => {
     setEditing(r);
+    const reversed = reverseGeographicLookup(r.section_type, r.location_name);
     setForm({
+      ...emptyForm,
+      ...reversed,
       section_type: r.section_type,
-      location_name: r.location_name,
       min_lot_area_sqm: String(r.min_lot_area_sqm),
       max_lot_area_sqm: r.max_lot_area_sqm != null ? String(r.max_lot_area_sqm) : '',
       min_road_width_m: String(r.min_road_width_m),
@@ -182,8 +184,9 @@ const AdminSubdivisionZoningRules: React.FC = () => {
   };
 
   const handleSave = async () => {
-    if (!form.location_name.trim()) {
-      toast.error("Le nom de l'emplacement est requis (* pour défaut)");
+    const locationName = computeLocationName(form);
+    if (!locationName) {
+      toast.error("Sélectionnez au moins un niveau géographique ou cochez « Règle par défaut »");
       return;
     }
     const minLot = parseFloat(form.min_lot_area_sqm);
@@ -197,7 +200,7 @@ const AdminSubdivisionZoningRules: React.FC = () => {
     setSaving(true);
     const payload = {
       section_type: form.section_type,
-      location_name: form.location_name.trim(),
+      location_name: locationName,
       min_lot_area_sqm: minLot,
       max_lot_area_sqm: maxLot,
       min_road_width_m: minRoad,
