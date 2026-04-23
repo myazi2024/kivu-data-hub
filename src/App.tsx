@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { HelmetProvider } from "react-helmet-async";
 import { Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
+import { MfaGuardProvider } from "@/components/auth/MfaGuardProvider";
 import { CartProvider } from '@/hooks/useCart';
 import { CadastralCartProvider } from '@/hooks/useCadastralCart';
 import { CookieProvider } from "@/hooks/useCookies";
@@ -84,6 +85,7 @@ const App = () => (
     <QueryClientProvider client={queryClient}>
       <CookieProvider>
         <AuthProvider>
+          <MfaGuardProvider>
           <CartProvider>
             <CadastralCartProvider>
               <TooltipProvider>
@@ -170,6 +172,7 @@ const App = () => (
               </TooltipProvider>
             </CadastralCartProvider>
           </CartProvider>
+          </MfaGuardProvider>
         </AuthProvider>
       </CookieProvider>
     </QueryClientProvider>
