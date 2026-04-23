@@ -28,7 +28,7 @@ const PurgeTestDataButton = ({ onDone }: { onDone?: () => void }) => {
   const handlePurge = async () => {
     if (confirm !== 'PURGE') return;
     setLoading(true);
-    const { data, error } = await (supabase as any).rpc('purge_test_billing_data', {
+    const { data, error } = await supabase.rpc('purge_test_billing_data', {
       p_reason: 'manual_admin_purge',
     });
     setLoading(false);

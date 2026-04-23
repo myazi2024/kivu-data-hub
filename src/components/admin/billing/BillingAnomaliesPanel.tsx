@@ -37,12 +37,12 @@ const BillingAnomaliesPanel = () => {
   const load = async () => {
     setLoading(true);
     // billing_anomalies is a security_invoker view — admin only via underlying RLS
-    const { data, error } = await (supabase as any)
+    const { data, error } = await supabase
       .from('billing_anomalies')
       .select('*')
       .order('created_at', { ascending: false })
       .limit(500);
-    if (!error) setAnomalies((data ?? []) as Anomaly[]);
+    if (!error) setAnomalies((data ?? []) as unknown as Anomaly[]);
     setLoading(false);
   };
 

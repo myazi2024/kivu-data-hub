@@ -72,7 +72,7 @@ export const MortgagePaymentsPanel: React.FC<Props> = ({ mortgageId, totalAmount
         _payment_id: paymentId,
       });
       if (error) throw error;
-      const code = (data as any)?.[0]?.verification_code;
+      const code = (data as Array<{ verification_code?: string }> | null)?.[0]?.verification_code;
       if (code) {
         await navigator.clipboard.writeText(code).catch(() => {});
         toast.success(`Reçu généré : ${code} (copié)`);

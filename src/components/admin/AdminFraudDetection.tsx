@@ -86,7 +86,7 @@ export default function AdminFraudDetection() {
       .select('role')
       .eq('user_id', userId);
     const userRoles = roles?.map((r) => r.role) || [];
-    if (userRoles.includes('super_admin' as any) || userRoles.includes('admin' as any)) {
+    if (userRoles.includes('super_admin') || userRoles.includes('admin')) {
       toast.error('Impossible de bloquer un administrateur depuis cette interface');
       return;
     }

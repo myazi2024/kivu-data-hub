@@ -291,7 +291,7 @@ const AdminAppearance = () => {
 
         if (data) {
           for (const row of data) {
-            const val = row.config_value as any;
+            const val = row.config_value as unknown as string;
             switch (row.config_key) {
               case 'app_name': setAppName(val || 'BIC'); break;
               case 'app_tagline': setAppTagline(val || "Bureau d'Informations Cadastrales"); break;

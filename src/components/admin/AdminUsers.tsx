@@ -47,7 +47,9 @@ const AdminUsers: React.FC<AdminUsersProps> = ({ onRefresh }) => {
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles' }, (payload) => {
         const { new: newRow, old: oldRow } = payload;
         const visibleFields = ['full_name', 'email', 'organization', 'is_blocked', 'blocked_at', 'blocked_reason', 'fraud_strikes', 'avatar_url'];
-        const changed = visibleFields.some(f => (newRow as any)?.[f] !== (oldRow as any)?.[f]);
+        const newRec = newRow as Record<string, unknown>;
+        const oldRec = oldRow as Record<string, unknown>;
+        const changed = visibleFields.some(f => newRec?.[f] !== oldRec?.[f]);
         if (changed) refresh();
       })
       .subscribe();
