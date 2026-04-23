@@ -10,7 +10,7 @@ export interface TimelineEvent {
   status: string | null;
   amount_usd: number | null;
   reference: string | null;
-  metadata: Record<string, any> | null;
+  metadata: Record<string, unknown> | null;
 }
 
 export const useParcelTimeline = (parcelNumber: string | null) => {
@@ -28,8 +28,9 @@ export const useParcelTimeline = (parcelNumber: string | null) => {
       });
       if (rpcErr) throw rpcErr;
       setEvents((data || []) as TimelineEvent[]);
-    } catch (e: any) {
-      setError(e.message || 'Erreur de chargement de la timeline');
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Erreur de chargement de la timeline';
+      setError(msg);
     } finally {
       setLoading(false);
     }
