@@ -64,10 +64,10 @@ const AdminMortgages = () => {
         .limit(2000);
 
       if (approvedError) throw approvedError;
-      setMortgages((approvedData || []).map(m => ({
-        ...m,
-        parcel_number: (m.cadastral_parcels as any)?.parcel_number || 'N/A'
-      })));
+      setMortgages((approvedData || []).map(m => {
+        const parcel = m.cadastral_parcels as { parcel_number?: string } | null;
+        return { ...m, parcel_number: parcel?.parcel_number || 'N/A' };
+      }));
 
       const { data: requestData, error: requestError } = await supabase
         .from('cadastral_contributions')
@@ -80,7 +80,7 @@ const AdminMortgages = () => {
       setRequests((requestData || []).filter(item => {
         const history = item.mortgage_history;
         return Array.isArray(history) && history.length > 0;
-      }).map(item => ({ ...item, mortgage_history: item.mortgage_history as any[] })));
+      }).map(item => ({ ...item, mortgage_history: (item.mortgage_history as unknown as unknown[]) ?? [] })));
     } catch (error) {
       console.error('Error fetching mortgages:', error);
       toast.error('Erreur lors du chargement');
@@ -187,7 +187,7 @@ const AdminMortgages = () => {
         }
         const { error: insertError } = await supabase
           .from('cadastral_mortgages')
-          .insert(mortgageInsertData as any);
+          .insert(mortgageInsertData as Parameters<typeof supabase.from<'cadastral_mortgages'>>[0] extends never ? never : any);
 
         if (insertError) {
           console.error('Error inserting mortgage:', insertError);
