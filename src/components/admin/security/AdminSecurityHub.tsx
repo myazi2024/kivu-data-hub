@@ -59,7 +59,7 @@ const AdminSecurityHub: React.FC = () => {
           fraudHigh7d: fraudHigh || 0,
           blocked7d: blockedCnt || 0,
           roleChanges7d: roleCnt || 0,
-          topRiskUsers: (top as any) || [],
+          topRiskUsers: (top as SecurityMetrics['topRiskUsers']) || [],
         });
       } catch (e) {
         console.error('Security hub load error', e);

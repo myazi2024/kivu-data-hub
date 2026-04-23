@@ -36,7 +36,7 @@ const LandTitleDetailsDialog: React.FC<Props> = ({
 }) => {
   if (!selectedRequest) return null;
   const r = detailData || selectedRequest;
-  const ad = r.additional_documents as Record<string, unknown> | null;
+  const ad = r.additional_documents as Record<string, string | undefined> | null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
