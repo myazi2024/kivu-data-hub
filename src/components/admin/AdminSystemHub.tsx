@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
+import { untypedTables, untypedRpc } from '@/integrations/supabase/untyped';
 import { Activity, Database, Users, Shield, AlertTriangle, Settings, FileDown, Loader2, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useSystemSettings } from '@/hooks/useSystemSettings';
@@ -34,10 +35,10 @@ const AdminSystemHub = () => {
         supabase.from('audit_logs').select('*', { count: 'exact', head: true }),
         supabase.from('hr_employees').select('*', { count: 'exact', head: true }),
         supabase.from('cadastral_search_config').select('config_value').eq('config_key', 'test_mode').maybeSingle(),
-        (supabase as any).from('app_appearance_config').select('*', { count: 'exact', head: true }),
-        (supabase as any).from('system_config_audit').select('*', { count: 'exact', head: true })
+        untypedTables.app_appearance_config().select('*', { count: 'exact', head: true }),
+        untypedTables.system_config_audit().select('*', { count: 'exact', head: true })
           .gte('created_at', new Date(Date.now() - 86400_000).toISOString()),
-        (supabase as any).rpc('list_public_tables_with_count'),
+        untypedRpc.list_public_tables_with_count(),
       ]);
 
       const totalRecords = (tablesData.data || []).reduce((s: number, t: any) => s + Number(t.row_count || 0), 0);
@@ -45,7 +46,7 @@ const AdminSystemHub = () => {
       setStats({
         auditLogsCount: auditCount.count || 0,
         hrEmployeesCount: hrCount.count || 0,
-        testModeActive: (testMode.data?.config_value as any)?.enabled === true,
+        testModeActive: (testMode.data?.config_value as { enabled?: boolean } | null)?.enabled === true,
         appearanceConfigCount: appearance.count || 0,
         recentConfigChanges: recentAudit.count || 0,
         totalTables: (tablesData.data || []).length,
@@ -64,7 +65,7 @@ const AdminSystemHub = () => {
       const tables = ['app_appearance_config', 'parcel_actions_config', 'cadastral_search_config', 'cadastral_results_config', 'system_settings', 'analytics_charts_config', 'catalog_config', 'cadastral_contribution_config', 'certificate_templates'];
       const result: any = { exported_at: new Date().toISOString() };
       for (const t of tables) {
-        const { data } = await (supabase as any).from(t).select('*');
+        const { data } = await untypedTables.generic(t).select('*');
         result[t] = data || [];
       }
       const blob = new Blob([JSON.stringify(result, null, 2)], { type: 'application/json' });

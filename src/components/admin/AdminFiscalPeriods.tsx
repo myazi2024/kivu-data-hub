@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { untypedTables, untypedRpc } from '@/integrations/supabase/untyped';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -43,13 +43,12 @@ const AdminFiscalPeriods = () => {
 
   const fetchPeriods = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from('fiscal_periods' as any)
+    const { data, error } = await untypedTables.fiscal_periods()
       .select('*')
       .order('year', { ascending: false })
       .order('month', { ascending: false });
     if (error) toast.error(error.message);
-    else setPeriods((data as any) || []);
+    else setPeriods((data as FiscalPeriod[]) || []);
     setLoading(false);
   };
 
@@ -57,7 +56,7 @@ const AdminFiscalPeriods = () => {
 
   const handleClose = async () => {
     try {
-      const { error } = await supabase.rpc('close_fiscal_period' as any, {
+      const { error } = await untypedRpc.close_fiscal_period({
         p_year: closeYear, p_month: closeMonth,
       });
       if (error) throw error;
@@ -74,7 +73,7 @@ const AdminFiscalPeriods = () => {
       return;
     }
     try {
-      const { error } = await supabase.rpc('reopen_fiscal_period' as any, {
+      const { error } = await untypedRpc.reopen_fiscal_period({
         p_id: id, p_reason: reopenReason,
       });
       if (error) throw error;

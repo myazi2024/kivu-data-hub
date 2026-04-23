@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { untypedTables } from '@/integrations/supabase/untyped';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -57,8 +57,7 @@ const AdminSubdivisionZoningRules: React.FC = () => {
 
   const fetchRules = async () => {
     setLoading(true);
-    const { data, error } = await (supabase as any)
-      .from('subdivision_zoning_rules')
+    const { data, error } = await untypedTables.subdivision_zoning_rules()
       .select('*')
       .order('section_type')
       .order('location_name');
@@ -124,7 +123,7 @@ const AdminSubdivisionZoningRules: React.FC = () => {
       notes: form.notes.trim() || null,
       is_active: form.is_active,
     };
-    const q = (supabase as any).from('subdivision_zoning_rules');
+    const q = untypedTables.subdivision_zoning_rules();
     const { error } = editing
       ? await q.update(payload).eq('id', editing.id)
       : await q.insert(payload);
@@ -143,15 +142,14 @@ const AdminSubdivisionZoningRules: React.FC = () => {
 
   const confirmDelete = async () => {
     if (!deleteId) return;
-    const { error } = await (supabase as any).from('subdivision_zoning_rules').delete().eq('id', deleteId);
+    const { error } = await untypedTables.subdivision_zoning_rules().delete().eq('id', deleteId);
     if (error) toast.error('Erreur lors de la suppression');
     else { toast.success('Règle supprimée'); fetchRules(); }
     setDeleteId(null);
   };
 
   const toggleActive = async (r: ZoningRule) => {
-    const { error } = await (supabase as any)
-      .from('subdivision_zoning_rules')
+    const { error } = await untypedTables.subdivision_zoning_rules()
       .update({ is_active: !r.is_active })
       .eq('id', r.id);
     if (!error) fetchRules();
@@ -244,7 +242,7 @@ const AdminSubdivisionZoningRules: React.FC = () => {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label>Type de section</Label>
-                <Select value={form.section_type} onValueChange={v => setForm(f => ({ ...f, section_type: v as any }))}>
+                <Select value={form.section_type} onValueChange={v => setForm(f => ({ ...f, section_type: v as 'urban' | 'rural' }))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="urban">Urbain (Quartier)</SelectItem>

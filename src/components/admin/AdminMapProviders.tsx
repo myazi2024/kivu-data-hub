@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { supabase } from '@/integrations/supabase/client';
+import { getSupabaseUrl } from '@/integrations/supabase/untyped';
 import { toast } from 'sonner';
 import { logAuditAction } from '@/utils/supabaseConfigUtils';
 import { GoogleProviderWarning } from './map/GoogleProviderWarning';
@@ -117,8 +118,9 @@ const AdminMapProviders: React.FC = () => {
       try {
         const res = await fetch(sample, { method: 'GET', mode: 'no-cors' });
         // En no-cors, on ne peut pas lire le statut, mais une erreur réseau lèvera
-        if ((res as any).status && (res as any).status >= 400) {
-          const proceed = window.confirm(`La tuile de test a renvoyé HTTP ${(res as any).status}. Continuer quand même ?`);
+        const status = (res as Response).status;
+        if (status && status >= 400) {
+          const proceed = window.confirm(`La tuile de test a renvoyé HTTP ${status}. Continuer quand même ?`);
           if (!proceed) return;
         }
       } catch (err) {
@@ -249,7 +251,7 @@ const AdminMapProviders: React.FC = () => {
       // Pour Mapbox : router via la edge function proxy (clé jamais exposée)
       if (previewProvider.requires_api_key) {
         const m = tileUrl.match(/\/styles\/v1\/([^/]+)\/([^/]+)\/tiles/);
-        const supabaseUrl = (import.meta as any).env?.VITE_SUPABASE_URL;
+        const supabaseUrl = getSupabaseUrl();
         if (m && supabaseUrl) {
           tileUrl = `${supabaseUrl}/functions/v1/proxy-mapbox-tiles/styles/v1/${m[1]}/${m[2]}/tiles/{z}/{x}/{y}`;
         } else {

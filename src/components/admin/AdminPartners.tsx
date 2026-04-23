@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { untypedTables } from '@/integrations/supabase/untyped';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -33,7 +34,7 @@ const AdminPartners = () => {
 
   const fetchPartners = async () => {
     setLoading(true);
-    const { data } = await (supabase as any).from('partners')
+    const { data } = await untypedTables.partners()
       .select('*')
       .is('deleted_at', null)
       .order('display_order', { ascending: true });
@@ -49,7 +50,7 @@ const AdminPartners = () => {
     try {
       // Mise à jour séquentielle (5-50 lignes max attendues)
       const updates = ordered.map((p, idx) =>
-        (supabase as any).from('partners').update({ display_order: idx }).eq('id', p.id)
+        untypedTables.partners().update({ display_order: idx }).eq('id', p.id)
       );
       const results = await Promise.all(updates);
       if (results.some(r => r.error)) throw new Error('Réordonnancement partiel');
@@ -128,11 +129,11 @@ const AdminPartners = () => {
       };
 
       if (editing) {
-        const { error } = await (supabase as any).from('partners').update(payload).eq('id', editing.id);
+        const { error } = await untypedTables.partners().update(payload).eq('id', editing.id);
         if (error) throw error;
         toast.success('Partenaire mis à jour');
       } else {
-        const { error } = await (supabase as any).from('partners').insert(payload);
+        const { error } = await untypedTables.partners().insert(payload);
         if (error) throw error;
         toast.success('Partenaire ajouté');
       }
@@ -147,7 +148,7 @@ const AdminPartners = () => {
 
   const handleDelete = async (id: string) => {
     if (!confirm('Supprimer ce partenaire ?')) return;
-    const { error } = await (supabase as any).from('partners')
+    const { error } = await untypedTables.partners()
       .update({ deleted_at: new Date().toISOString() })
       .eq('id', id);
     if (error) { toast.error(error.message); return; }

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { untypedTables, untypedRpc } from '@/integrations/supabase/untyped';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -44,13 +45,13 @@ const AdminTvaReporting = () => {
   const fetchData = async () => {
     setLoading(true);
     const [declRes, histRes] = await Promise.all([
-      supabase.rpc('get_tva_declaration' as any, { p_year: year, p_month: month }),
-      supabase.from('tva_collected_by_period' as any).select('*').limit(24),
+      untypedRpc.get_tva_declaration({ p_year: year, p_month: month }),
+      untypedTables.tva_collected_by_period().select('*').limit(24),
     ]);
     if (declRes.error) toast.error(declRes.error.message);
-    else setDeclaration(declRes.data as any);
+    else setDeclaration(declRes.data as TvaDeclaration);
     if (histRes.error) toast.error(histRes.error.message);
-    else setHistory((histRes.data as any) || []);
+    else setHistory((histRes.data as PeriodRow[]) || []);
     setLoading(false);
   };
 
