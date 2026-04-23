@@ -13,6 +13,7 @@ import CookieBanner from "@/components/CookieBanner";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import LandDataAccessGate from "@/components/access/LandDataAccessGate";
+import AdminMfaGate from "@/components/auth/AdminMfaGate";
 import { CartButton } from '@/components/cart/CartButton';
 import { TestEnvironmentProvider } from '@/hooks/useTestEnvironment';
 import TestEnvironmentBanner from '@/components/TestEnvironmentBanner';
@@ -112,7 +113,9 @@ const App = () => (
                   } />
                   <Route path="/admin" element={
                     <ProtectedRoute requiredRoles={['admin', 'super_admin']}>
-                      <Admin />
+                      <AdminMfaGate>
+                        <Admin />
+                      </AdminMfaGate>
                     </ProtectedRoute>
                   } />
                   <Route path="/auth" element={<Auth />} />
