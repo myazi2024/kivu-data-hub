@@ -295,7 +295,9 @@ const AdminSubdivisionZoningRules: React.FC = () => {
                         </Badge>
                       </TableCell>
                       <TableCell className="font-medium">
-                        {r.location_name === '*' ? <span className="italic text-muted-foreground">Par défaut</span> : r.location_name}
+                        {r.location_name === '*'
+                          ? <span className="italic text-muted-foreground">Par défaut (toute la RDC)</span>
+                          : <span title={r.location_name}>{formatBreadcrumb(r)}</span>}
                       </TableCell>
                       <TableCell className="text-right font-mono">{r.min_lot_area_sqm} / {r.max_lot_area_sqm ?? '∞'}</TableCell>
                       <TableCell className="text-right font-mono">{r.min_road_width_m} / {r.recommended_road_width_m}</TableCell>
