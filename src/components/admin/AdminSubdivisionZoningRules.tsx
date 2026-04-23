@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { untypedTables } from '@/integrations/supabase/untyped';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,6 +13,17 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { Plus, Pencil, Trash2, Ruler, Loader2 } from 'lucide-react';
+import {
+  getAllProvinces,
+  getVillesForProvince,
+  getCommunesForVille,
+  getQuartiersForCommune,
+  getAvenuesForQuartier,
+  getTerritoiresForProvince,
+  getCollectivitesForTerritoire,
+} from '@/lib/geographicData';
+
+const NONE = '__none__'; // marqueur "non sélectionné" (Radix Select n'autorise pas value="")
 
 interface ZoningRule {
   id: string;
