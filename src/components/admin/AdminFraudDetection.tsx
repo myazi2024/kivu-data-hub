@@ -11,8 +11,10 @@ import SuspiciousUsersTable, { type SuspiciousUser } from './fraud/SuspiciousUse
 import FraudAttemptsTable, { type FraudAttempt } from './fraud/FraudAttemptsTable';
 import { UserDetailsDialog } from './users/UserDetailsDialog';
 import { useUserManagement } from '@/hooks/useUserManagement';
+import { useAdminAnalytics } from '@/lib/adminAnalytics';
 
 export default function AdminFraudDetection() {
+  const { trackAdminAction } = useAdminAnalytics();
   const [fraudAttempts, setFraudAttempts] = useState<FraudAttempt[]>([]);
   const [suspiciousUsers, setSuspiciousUsers] = useState<SuspiciousUser[]>([]);
   const [loading, setLoading] = useState(true);
@@ -102,6 +104,7 @@ export default function AdminFraudDetection() {
         .eq('user_id', userId);
       if (error) throw error;
       toast.success('Utilisateur bloqué');
+      trackAdminAction({ module: 'fraud', action: 'block_user', ref: { user_id: userId } });
       fetchData();
     } catch (e) {
       toast.error('Erreur lors du blocage');
@@ -116,6 +119,7 @@ export default function AdminFraudDetection() {
         .eq('user_id', userId);
       if (error) throw error;
       toast.success('Utilisateur débloqué');
+      trackAdminAction({ module: 'fraud', action: 'unblock_user', ref: { user_id: userId } });
       fetchData();
     } catch (e) {
       toast.error('Erreur lors du déblocage');

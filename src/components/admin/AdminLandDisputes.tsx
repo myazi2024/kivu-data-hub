@@ -22,6 +22,7 @@ import {
 } from '@/utils/disputeSharedTypes';
 import DisputeDocumentLinks from '@/components/cadastral/DisputeDocumentLinks';
 import DisputeStatusBadge from '@/components/cadastral/DisputeStatusBadge';
+import { useAdminAnalytics } from '@/lib/adminAnalytics';
 
 const STATUS_OPTIONS = [
   { value: 'all', label: 'Tous les statuts' },

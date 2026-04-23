@@ -23,11 +23,13 @@ import MortgageDetailsDialog from './mortgage/MortgageDetailsDialog';
 import MortgageRequestDetailsDialog from './mortgage/MortgageRequestDetailsDialog';
 import { ApproveConfirmDialog, RejectDialog, ReturnDialog } from './mortgage/MortgageAdminDialogs';
 import { getMortgageStatusType, getCreditorTypeLabel, getRequestTypeLabel, resolveLifecycleState } from './mortgage/mortgageHelpers';
+import { useAdminAnalytics } from '@/lib/adminAnalytics';
 
 import type { Mortgage, MortgageRequest } from './mortgage/mortgageTypes';
 
 const AdminMortgages = () => {
   const { user } = useAuth();
+  const { trackAdminAction } = useAdminAnalytics();
   const [mortgages, setMortgages] = useState<Mortgage[]>([]);
   const [requests, setRequests] = useState<MortgageRequest[]>([]);
   const [loading, setLoading] = useState(true);
@@ -226,6 +228,11 @@ const AdminMortgages = () => {
       } catch { /* Non-blocking */ }
 
       toast.success('Demande approuvée avec succès');
+      trackAdminAction({
+        module: 'mortgage',
+        action: 'approve',
+        ref: { request_id: request.id, parcel_number: request.parcel_number, type: request.contribution_type },
+      });
       setApproveConfirmOpen(false);
       setPendingApproveRequest(null);
       setRequestDetailsOpen(false);
@@ -283,6 +290,12 @@ const AdminMortgages = () => {
       } catch { /* Non-blocking */ }
 
       toast.success('Demande rejetée');
+      trackAdminAction({
+        module: 'mortgage',
+        action: 'reject',
+        ref: { request_id: selectedRequest.id, parcel_number: selectedRequest.parcel_number },
+        meta: { reason: rejectionReason.trim() },
+      });
       setRejectDialogOpen(false);
       setRequestDetailsOpen(false);
       setRejectionReason('');
@@ -337,6 +350,11 @@ const AdminMortgages = () => {
       } catch { /* Non-blocking */ }
 
       toast.success('Demande renvoyée pour correction');
+      trackAdminAction({
+        module: 'mortgage',
+        action: 'return',
+        ref: { request_id: selectedRequest.id, parcel_number: selectedRequest.parcel_number },
+      });
       setReturnDialogOpen(false);
       setRequestDetailsOpen(false);
       setReturnReason('');

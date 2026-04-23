@@ -30,11 +30,13 @@ import { PaginationControls } from '@/components/shared/PaginationControls';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { exportToCSV } from '@/utils/csvExport';
 import { getMutationTypeLabel, MUTATION_TYPES, MUTATION_STATUS_LABELS } from '@/components/cadastral/mutation/MutationConstants';
+import { useAdminAnalytics } from '@/lib/adminAnalytics';
 
 import type { MutationFee, MutationRequest, MutationRequestWithProfile } from '@/types/mutation';
 
 const AdminMutationRequests: React.FC = () => {
   const { user, profile } = useAuth();
+  const { trackAdminAction } = useAdminAnalytics();
   const [activeTab, setActiveTab] = useState('requests');
   const [requests, setRequests] = useState<MutationRequestWithProfile[]>([]);
   const [fees, setFees] = useState<MutationFee[]>([]);
@@ -240,6 +242,13 @@ const AdminMutationRequests: React.FC = () => {
       });
 
       toast.success('Demande traitée avec succès');
+
+      trackAdminAction({
+        module: 'mutation',
+        action: processAction,
+        ref: { request_id: selectedRequest.id, reference_number: selectedRequest.reference_number },
+      });
+
       setShowProcessDialog(false);
       setProcessingNotes('');
       setRejectionReason('');
