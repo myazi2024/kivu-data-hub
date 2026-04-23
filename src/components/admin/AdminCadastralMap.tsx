@@ -91,9 +91,9 @@ const AdminCadastralMap = () => {
         
         // Extraire latitude/longitude depuis gps_coordinates
         if (contribution.gps_coordinates && Array.isArray(contribution.gps_coordinates) && contribution.gps_coordinates.length > 0) {
-          const firstCoord = contribution.gps_coordinates[0] as any;
-          latitude = firstCoord.lat || firstCoord.latitude;
-          longitude = firstCoord.lng || firstCoord.longitude;
+          const firstCoord = contribution.gps_coordinates[0] as { lat?: number; latitude?: number; lng?: number; longitude?: number };
+          latitude = firstCoord.lat ?? firstCoord.latitude ?? null;
+          longitude = firstCoord.lng ?? firstCoord.longitude ?? null;
         }
 
         return {
