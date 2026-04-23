@@ -39,6 +39,16 @@ export const untypedRpc = {
     cast.rpc('close_fiscal_period', params),
   reopen_fiscal_period: (params: Record<string, unknown>) =>
     cast.rpc('reopen_fiscal_period', params),
+  get_orphan_reseller_invoices_count: () =>
+    cast.rpc('get_orphan_reseller_invoices_count'),
+  regenerate_orphan_reseller_sales: () =>
+    cast.rpc('regenerate_orphan_reseller_sales'),
+  backfill_provider_fees: (params: Record<string, unknown>) =>
+    cast.rpc('backfill_provider_fees', params),
+  get_billing_summary: (params: Record<string, unknown>) =>
+    cast.rpc('get_billing_summary', params),
+  purge_old_audit_logs: (params: { _days: number }) =>
+    cast.rpc('purge_old_audit_logs', params),
 } as const;
 
 /** Cast générique pour payload partiel (Insert/Update) sur table non typée */
