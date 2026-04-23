@@ -232,7 +232,7 @@ const AdminAnalyticsChartsConfig: React.FC = () => {
       Object.entries(defaults).forEach(([chartKey, vars]) => {
         resetCross[chartKey] = {
           enabled: true,
-          variables: (vars as any[]).map((d: any) => ({ label: d.label, field: d.field, enabled: true })),
+          variables: (vars as Array<{ label: string; field: string }>).map((d) => ({ label: d.label, field: d.field, enabled: true })),
         };
       });
       setLocalCross(prev => ({ ...prev, [activeTab]: resetCross }));

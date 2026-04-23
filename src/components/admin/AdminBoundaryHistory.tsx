@@ -53,7 +53,7 @@ const AdminBoundaryHistory = () => {
       
       const recordsWithParcel = (data || []).map(r => ({
         ...r,
-        parcel_number: (r.cadastral_parcels as any)?.parcel_number || 'N/A'
+        parcel_number: (r.cadastral_parcels as { parcel_number?: string } | null)?.parcel_number || 'N/A'
       }));
       
       setRecords(recordsWithParcel);

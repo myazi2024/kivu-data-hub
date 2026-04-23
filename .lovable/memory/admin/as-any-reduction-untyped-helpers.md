@@ -19,20 +19,19 @@ const { data } = await untypedTables.partners().select('*');
 await untypedRpc.get_tva_declaration({ p_year, p_month });
 ```
 
-## Tables/RPC enregistrées
-- Tables: `subdivision_rate_config`, `subdivision_zoning_rules`, `partners`, `app_appearance_config`, `system_config_audit`, `mutation_fees_config`, `land_title_fees_by_type`, `expertise_fees_config`, `publication_categories`, `payment_refunds`, `fiscal_periods`, `tva_collected_by_period`, `map_providers`, `certificate_templates`, `subdivision_requests`, `reseller_commissions_summary`, `revenue_net_by_period`, `payment_transactions`, `generic(name)`
-- RPC: `list_public_tables_with_count`, `get_tva_declaration`, `close_fiscal_period`, `reopen_fiscal_period`, `get_orphan_reseller_invoices_count`, `regenerate_orphan_reseller_sales`, `backfill_provider_fees`, `get_billing_summary`, `purge_old_audit_logs`
+## Bilan cumulé final
+- **153 → 18 occurrences `as any`** dans `src/components/admin` (-88%)
+- Lot 1 (10 fichiers) + Lot 2 (9 fichiers) + Lot 3 (28 fichiers) — tables/RPC déjà typées dans `types.ts` débarrassées de leur cast inutile, payloads `Json` typés strict (`Json`, `Partial<T>`, `Record<string, unknown>`).
+- Bug latent corrigé : RPC `get_inactive_users` appelée avec `threshold_days` au lieu de `_threshold_days` (révélé en retirant `as any`).
 
-## Bilan cumulé
-- **153 → 71 occurrences `as any`** dans `src/components/admin` (-54%)
-- Lot 1 (10 fichiers): `AdminMortgages`, `AdminPartners`, `AdminSubdivisionFeesConfig`, `AdminSubdivisionZoningRules`, `AdminSystemHub`, `AdminTvaReporting`, `AdminRefunds`, `AdminPublicationCategories`, `AdminFiscalPeriods`, `billing/BillingOverviewTab`
-- Lot 2 (9 fichiers): `AdminMapProviders`, `CertificateTemplateEditor`, `AdminSubdivisionRequests`, `AdminResellerCommissions`, `AdminPaymentServiceIntegration`, `AdminInvoices`, `AdminFinancialDashboard`, `AdminCadastralTooltip`, `AdminAuditLogs`
-- Casts évitables retirés: `audit_logs.new_values` Json, `Response.status` natif, `import.meta.env` via `getSupabaseUrl()`, variant Badge typé strict
-
-## Reste (faible ROI)
-- ~71 occurrences réparties sur ~30 fichiers à 1-4 occurrences chacun
-- `AdminDashboardOverview` (4), `AdminCadastralMap` (3) — JSON dynamique légitime principalement
-- Les casts résiduels sont majoritairement sur payloads Json complexes ou variantes UI
+## Reste — 18 occurrences strictement légitimes
+- **API tierces privées** : `L.Icon.Default.prototype._getIconUrl`, `LucideIcons[name]` (index dynamique), `jsPDF.internal`
+- **Cast volontaire TS2589** : `rollback.ts` (deep union inference, commenté)
+- **`StatusBadge status={x as any}`** : prop souple voulue (5 fichiers)
+- **Fixtures preview** : `InvoicePreviewPanel` (2 objets statiques)
+- **Commentaire descriptif** : `cccHelpers.ts:15` (mention dans doc)
+- **Champ étendu hors typage Supabase** : `parent_parcel_title_type` (RequestDetailsDialog), `kpis`/`dashFull` exportés vers util `ExportData { statistics: any }`, `revenue_by_day` cast vers `DayPoint[]`
+- **Chaîne query Supabase** : `AdminCadastralMap:72` (cast en fin de chaîne)
 
 ## Future migration
-Quand `types.ts` sera regénéré avec ces tables, remplacer `untypedTables.X()` par `supabase.from('X')` direct et supprimer l'entrée du helper.
+Quand `types.ts` sera regénéré avec les tables ajoutées, remplacer `untypedTables.X()` par `supabase.from('X')` direct et supprimer l'entrée du helper. Pour réduire les derniers : typer `ExportData.statistics`, ajouter `parent_parcel_title_type` à `subdivision_requests`, et remplacer `StatusBadge status: any` par `string`.

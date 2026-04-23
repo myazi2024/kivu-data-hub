@@ -33,9 +33,9 @@ export const RoleAssignForm: React.FC<Props> = ({ allUsers, currentUserId, isSup
       if (!confirm(`Attribuer le rôle sensible "${ROLE_CONFIG[selectedRole].label}" ?`)) return;
     }
     const { data: existing } = await supabase
-      .from('user_roles').select('id').eq('user_id', selectedUserId).eq('role', selectedRole as any).maybeSingle();
+      .from('user_roles').select('id').eq('user_id', selectedUserId).eq('role', selectedRole).maybeSingle();
     if (existing) { toast.error(`Rôle ${ROLE_CONFIG[selectedRole].label} déjà attribué`); return; }
-    const { error } = await supabase.from('user_roles').insert({ user_id: selectedUserId, role: selectedRole as any, created_by: currentUserId });
+    const { error } = await supabase.from('user_roles').insert({ user_id: selectedUserId, role: selectedRole, created_by: currentUserId });
     if (error) { toast.error(error.message); return; }
     toast.success('Rôle ajouté avec succès');
     setSelectedUserId('');

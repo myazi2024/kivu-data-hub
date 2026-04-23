@@ -52,7 +52,7 @@ export const ItemEditor: React.FC<ItemEditorProps> = ({ item, onChange, onMoveUp
             <Button variant="ghost" size="icon" className="h-6 w-6" onClick={onMoveDown} disabled={isLast}><ChevronDown className="h-3 w-3" /></Button>
           </div>
           {item.item_type === 'chart' && !fixedType && item.chart_type && (
-            <Select value={item.chart_type || ''} onValueChange={(v) => onChange({ ...item, chart_type: v as any })}>
+            <Select value={item.chart_type || ''} onValueChange={(v) => onChange({ ...item, chart_type: v as typeof item.chart_type })}>
               <SelectTrigger className="w-[100px] h-7 text-xs"><SelectValue /></SelectTrigger>
               <SelectContent>
                 {CHART_TYPE_OPTIONS.map(opt => (
@@ -100,7 +100,7 @@ export const ItemEditor: React.FC<ItemEditorProps> = ({ item, onChange, onMoveUp
         <Input value={item.custom_title || ''} onChange={(e) => onChange({ ...item, custom_title: e.target.value })} className="h-7 text-xs" placeholder="Titre..." />
       </div>
       {item.item_type === 'chart' && !fixedType && item.chart_type && (
-        <Select value={item.chart_type || ''} onValueChange={(v) => onChange({ ...item, chart_type: v as any })}>
+        <Select value={item.chart_type || ''} onValueChange={(v) => onChange({ ...item, chart_type: v as typeof item.chart_type })}>
           <SelectTrigger className="w-[110px] h-7 text-xs"><SelectValue /></SelectTrigger>
           <SelectContent>
             {CHART_TYPE_OPTIONS.map(opt => (

@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import type { Json } from '@/integrations/supabase/types';
 import { useAuth } from '@/hooks/useAuth';
 import { Layers, Search, Loader2, RefreshCw, Pencil, Download } from 'lucide-react';
 import { downloadCsv } from '@/utils/adminQueueUtils';
@@ -121,8 +122,8 @@ const AdminSubdivisionLots: React.FC = () => {
       table_name: 'subdivision_lots',
       record_id: editing.id,
       user_id: user?.id ?? null,
-      old_values: before as any,
-      new_values: editForm as any,
+      old_values: before as unknown as Json,
+      new_values: editForm as unknown as Json,
     });
 
     toast({ title: 'Lot mis à jour', description: `Lot ${editing.lot_number} (${editing.parcel_number})` });

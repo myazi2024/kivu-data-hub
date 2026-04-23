@@ -56,14 +56,14 @@ const AdminContentHub: React.FC = () => {
 
   const load = async () => {
     setLoading(true);
-    const { data, error } = await (supabase as any)
+    const { data, error } = await supabase
       .from('content_hub_stats')
       .select('*')
       .maybeSingle();
     if (error) {
       toast.error('Erreur chargement KPIs');
     } else {
-      setStats(data as HubStats);
+      setStats(data as unknown as HubStats);
     }
     setLoading(false);
   };
@@ -75,7 +75,7 @@ const AdminContentHub: React.FC = () => {
   const runAutoArchive = async () => {
     if (!confirm('Dépublier tous les articles non vus depuis 12 mois ?')) return;
     setArchiving(true);
-    const { data, error } = await (supabase as any).rpc('auto_archive_stale_articles');
+    const { data, error } = await supabase.rpc('auto_archive_stale_articles');
     if (error) {
       toast.error(error.message);
     } else {

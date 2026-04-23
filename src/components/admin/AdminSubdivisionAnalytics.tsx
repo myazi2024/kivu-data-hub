@@ -28,14 +28,14 @@ const AdminSubdivisionAnalytics: React.FC = () => {
   useEffect(() => {
     (async () => {
       const { data, error } = await supabase
-        .from('subdivision_requests' as any)
+        .from('subdivision_requests')
         .select('id,status,created_at,reviewed_at,total_amount_usd,number_of_lots,parent_parcel_area_sqm,province,ville,commune')
         .order('created_at', { ascending: false })
         .limit(1000);
       if (error) {
         console.error(error);
       } else {
-        setRows((data as any) || []);
+        setRows((data as unknown as Row[]) || []);
       }
       setLoading(false);
     })();

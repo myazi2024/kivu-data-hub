@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
+import { untypedRpc } from '@/integrations/supabase/untyped';
 import { Activity, Database, Server, RefreshCw, CheckCircle, AlertTriangle, XCircle, Save, TrendingUp } from 'lucide-react';
 import { toast } from 'sonner';
 import { useSystemSettings } from '@/hooks/useSystemSettings';
@@ -49,10 +50,11 @@ const AdminSystemHealth = () => {
       let totalTables = 0;
       let totalRecords = 0;
       try {
-        const { data: tablesData, error: rpcErr } = await (supabase as any).rpc('list_public_tables_with_count');
+        const { data: tablesData, error: rpcErr } = await untypedRpc.list_public_tables_with_count();
         if (!rpcErr && tablesData) {
-          totalTables = tablesData.length;
-          totalRecords = tablesData.reduce((s: number, t: any) => s + Number(t.row_count || 0), 0);
+          const list = tablesData as Array<{ row_count?: number | string }>;
+          totalTables = list.length;
+          totalRecords = list.reduce((s, t) => s + Number(t.row_count || 0), 0);
         }
       } catch { /* fallback */ }
       setDbStats({ totalTables, totalRecords });

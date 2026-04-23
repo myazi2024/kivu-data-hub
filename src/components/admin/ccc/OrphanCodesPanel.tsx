@@ -30,13 +30,13 @@ export const OrphanCodesPanel: React.FC = () => {
   const fetchOrphans = async () => {
     try {
       setLoading(true);
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from('cadastral_orphan_codes')
         .select('*')
         .order('created_at', { ascending: false })
         .limit(500);
       if (error) throw error;
-      setCodes((data as OrphanCode[]) || []);
+      setCodes((data as unknown as OrphanCode[]) || []);
     } catch (err: any) {
       console.error(err);
       toast.error('Impossible de charger les codes orphelins');

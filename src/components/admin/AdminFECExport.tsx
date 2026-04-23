@@ -24,11 +24,11 @@ const AdminFECExport = () => {
   const [preview, setPreview] = useState<any[]>([]);
 
   const fetchEntries = async () => {
-    const { data, error } = await supabase.rpc('export_fec_period' as any, {
+    const { data, error } = await supabase.rpc('export_fec_period', {
       _start_date: startDate, _end_date: endDate,
     });
     if (error) throw error;
-    return (data as any[]) || [];
+    return (data as Array<Record<string, unknown>>) || [];
   };
 
   const handlePreview = async () => {

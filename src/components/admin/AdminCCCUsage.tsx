@@ -51,7 +51,7 @@ const AdminCCCUsage = () => {
       
       const codesWithUser = (data || []).map(c => ({
         ...c,
-        user_name: (c.profiles as any)?.full_name || 'Utilisateur inconnu'
+        user_name: (c.profiles as { full_name?: string } | null)?.full_name || 'Utilisateur inconnu'
       }));
       
       setCodes(codesWithUser);

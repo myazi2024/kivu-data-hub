@@ -66,7 +66,8 @@ const MutationProcessDialog: React.FC<MutationProcessDialogProps> = ({
                   <span className="font-bold text-primary">${Number(request.total_amount_usd).toFixed(2)}</span>
                 </div>
                 {request.proposed_changes && (() => {
-                  const mv = (request as any).market_value_usd ?? (request.proposed_changes as any)?.market_value_usd;
+                  const proposed = request.proposed_changes as { market_value_usd?: number } | null;
+                  const mv = (request as { market_value_usd?: number }).market_value_usd ?? proposed?.market_value_usd;
                   if (!mv) return null;
                   return (
                     <div className="flex justify-between text-xs">

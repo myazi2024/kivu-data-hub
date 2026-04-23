@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Download, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { untypedTables } from '@/integrations/supabase/untyped';
 import { loadTestEntities } from '@/constants/testEntities';
 import { toast } from 'sonner';
 
@@ -21,8 +22,7 @@ const TestDataExportButton: React.FC<{ disabled?: boolean }> = ({ disabled }) =>
       const entities = await loadTestEntities();
 
       for (const entity of entities) {
-        const { data, error } = await (supabase as any)
-          .from(entity.tableName)
+        const { data, error } = await untypedTables.generic(entity.tableName)
           .select('*')
           .ilike(entity.markerColumn, entity.markerPattern)
           .limit(5000);

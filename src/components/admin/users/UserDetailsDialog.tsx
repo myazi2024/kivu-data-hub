@@ -93,7 +93,7 @@ export const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
       // Data is ordered ascending (oldest first) so blocks appear before their unblocks
       (data || []).forEach((log) => {
         if (log.new_values && typeof log.new_values === 'object') {
-          const newVals = log.new_values as any;
+          const newVals = log.new_values as { is_blocked?: boolean; blocked_reason?: string };
           if (newVals.is_blocked === true && newVals.blocked_reason) {
             history.push({
               blocked_at: log.created_at,

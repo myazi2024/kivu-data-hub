@@ -207,16 +207,17 @@ const AdminBillingConfig = () => {
 
     try {
       // B6 — RPC transactionnelle + audit unique côté SQL
-      const { data, error } = await (supabase as any).rpc('bulk_update_service_prices', {
+      const { data, error } = await supabase.rpc('bulk_update_service_prices', {
         p_table: tableMap[category],
         p_operation: bulkOperation,
         p_percentage: percentage,
       });
       if (error) throw error;
 
+      const updatedCount = (data as { updated_count?: number } | null)?.updated_count ?? 0;
       toast({
         title: "Mise à jour en masse effectuée",
-        description: `${(data as any)?.updated_count ?? 0} prix ${bulkOperation === 'increase' ? 'augmentés' : 'diminués'} de ${percentage}% (transactionnel)`,
+        description: `${updatedCount} prix ${bulkOperation === 'increase' ? 'augmentés' : 'diminués'} de ${percentage}% (transactionnel)`,
       });
 
       fetchAllPricing();

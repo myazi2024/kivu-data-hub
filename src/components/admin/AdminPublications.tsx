@@ -84,12 +84,12 @@ const AdminPublications: React.FC<AdminPublicationsProps> = ({ onRefresh }) => {
   useEffect(() => { fetchPublications(); fetchCategories(); }, []);
 
   const fetchCategories = async () => {
-    const { data } = await (supabase as any)
+    const { data } = await supabase
       .from('publication_categories')
       .select('id, slug, name, is_active')
       .eq('is_active', true)
       .order('display_order', { ascending: true });
-    setCategories((data as PublicationCategory[]) || []);
+    setCategories((data as unknown as PublicationCategory[]) || []);
   };
 
 

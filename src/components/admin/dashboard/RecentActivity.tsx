@@ -85,7 +85,7 @@ export function RecentActivity({ loading, activities, onViewDetails }: RecentAct
       <CardHeader className="p-4 md:p-6">
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <CardTitle className="text-sm md:text-base">Activité récente</CardTitle>
-          <Tabs value={filter} onValueChange={(v) => setFilter(v as any)}>
+          <Tabs value={filter} onValueChange={(v) => setFilter(v as typeof filter)}>
             <TabsList className="h-7">
               <TabsTrigger value="all" className="text-[10px] px-2">Tout</TabsTrigger>
               <TabsTrigger value="contribution" className="text-[10px] px-2">Contrib</TabsTrigger>

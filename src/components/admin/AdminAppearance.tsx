@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import type { Json } from '@/integrations/supabase/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -291,24 +292,24 @@ const AdminAppearance = () => {
 
         if (data) {
           for (const row of data) {
-            const val = row.config_value as any;
+            const val = row.config_value as Json;
             switch (row.config_key) {
-              case 'app_name': setAppName(val || 'BIC'); break;
-              case 'app_tagline': setAppTagline(val || "Bureau d'Informations Cadastrales"); break;
-              case 'logo_url': setLogoUrl(val || ''); break;
-              case 'favicon_url': setFaviconUrl(val || ''); break;
+              case 'app_name': setAppName(typeof val === 'string' ? val : 'BIC'); break;
+              case 'app_tagline': setAppTagline(typeof val === 'string' ? val : "Bureau d'Informations Cadastrales"); break;
+              case 'logo_url': setLogoUrl(typeof val === 'string' ? val : ''); break;
+              case 'favicon_url': setFaviconUrl(typeof val === 'string' ? val : ''); break;
               case 'theme_colors':
-                if (val && typeof val === 'object') setLightColors(prev => ({ ...prev, ...val }));
+                if (val && typeof val === 'object' && !Array.isArray(val)) setLightColors(prev => ({ ...prev, ...(val as Record<string, string>) }));
                 break;
               case 'theme_colors_dark':
-                if (val && typeof val === 'object') setDarkColors(prev => ({ ...prev, ...val }));
+                if (val && typeof val === 'object' && !Array.isArray(val)) setDarkColors(prev => ({ ...prev, ...(val as Record<string, string>) }));
                 break;
               case 'default_theme_mode': setDarkMode(val === 'dark'); break;
-              case 'font_family': setFontFamily(val || 'Inter, sans-serif'); break;
-              case 'font_size_base': setFontSizeBase(val || '16'); break;
-              case 'border_radius': setBorderRadius(val || '0.375'); break;
-              case 'hero_image_url': setHeroImageUrl(val || ''); break;
-              case 'hero_title': setHeroTitle(val || 'Consultez les informations cadastrales des parcelles depuis chez vous.'); break;
+              case 'font_family': setFontFamily(typeof val === 'string' ? val : 'Inter, sans-serif'); break;
+              case 'font_size_base': setFontSizeBase(typeof val === 'string' ? val : '16'); break;
+              case 'border_radius': setBorderRadius(typeof val === 'string' ? val : '0.375'); break;
+              case 'hero_image_url': setHeroImageUrl(typeof val === 'string' ? val : ''); break;
+              case 'hero_title': setHeroTitle(typeof val === 'string' ? val : 'Consultez les informations cadastrales des parcelles depuis chez vous.'); break;
               case 'hero_overlay_opacity': setHeroOverlayOpacity(typeof val === 'number' ? val : 80); break;
               case 'google_font_url': setGoogleFontUrl(typeof val === 'string' ? val : ''); break;
             }

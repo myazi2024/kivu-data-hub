@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Plus, Trash2, Edit2, Check, X, Settings2, GripVertical } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import type { Json } from '@/integrations/supabase/types';
 import { useToast } from '@/hooks/use-toast';
 import { CCC_STATIC_PICKLIST_REGISTRY } from '@/hooks/useCCCFormPicklists';
 
@@ -179,7 +180,7 @@ const AdminStaticPicklistManager: React.FC = () => {
       if (config) {
         const { error } = await supabase
           .from('cadastral_contribution_config')
-          .update({ config_value: map as any, updated_at: new Date().toISOString() })
+          .update({ config_value: map as Json, updated_at: new Date().toISOString() })
           .eq('id', config.id);
         if (error) throw error;
       }
@@ -205,7 +206,7 @@ const AdminStaticPicklistManager: React.FC = () => {
       if (config) {
         const { error } = await supabase
           .from('cadastral_contribution_config')
-          .update({ config_value: map as any, updated_at: new Date().toISOString() })
+          .update({ config_value: map as Json, updated_at: new Date().toISOString() })
           .eq('id', config.id);
         if (error) throw error;
       }
