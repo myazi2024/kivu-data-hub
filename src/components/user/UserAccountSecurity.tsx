@@ -166,22 +166,87 @@ export const UserAccountSecurity = () => {
       {/* 2FA */}
       <Card className="border-none shadow-md rounded-2xl">
         <CardContent className="p-3">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="h-7 w-7 rounded-lg bg-muted flex items-center justify-center">
-              <Shield className="h-3.5 w-3.5 text-muted-foreground" />
+          <div className="flex items-center justify-between mb-3 gap-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className={`h-7 w-7 rounded-lg flex items-center justify-center ${mfa.hasVerifiedFactor ? 'bg-success/10' : 'bg-muted'}`}>
+                {mfa.hasVerifiedFactor
+                  ? <ShieldCheck className="h-3.5 w-3.5 text-success" />
+                  : <Shield className="h-3.5 w-3.5 text-muted-foreground" />}
+              </div>
+              <div className="min-w-0">
+                <h3 className="text-sm font-semibold flex items-center gap-1.5">
+                  Authentification à deux facteurs
+                  {mfa.hasVerifiedFactor && <Badge variant="default" className="text-[9px] h-4 px-1.5">Active</Badge>}
+                </h3>
+                <p className="text-[10px] text-muted-foreground truncate">
+                  {adminMustMfa ? SENSITIVE_ROLES_LABEL_REQUIRED : 'Recommandée pour sécuriser votre compte'}
+                </p>
+              </div>
             </div>
-            <div>
-              <h3 className="text-sm font-semibold">Authentification à deux facteurs</h3>
-              <p className="text-[10px] text-muted-foreground">Bientôt disponible</p>
-            </div>
+            {!mfa.hasVerifiedFactor && (
+              <Button size="sm" className="h-8 text-xs shrink-0" onClick={() => setEnrollOpen(true)} disabled={mfa.loading}>
+                Activer
+              </Button>
+            )}
           </div>
 
-          <div className="flex items-center gap-2 p-2.5 bg-muted/30 rounded-xl">
-            <Smartphone className="h-3.5 w-3.5 text-muted-foreground" />
-            <p className="text-[11px] text-muted-foreground">
-              La 2FA (TOTP) sera activée prochainement. En attendant, utilisez un mot de passe fort.
-            </p>
-          </div>
+          {mfa.loading ? (
+            <div className="flex items-center gap-2 p-2.5 bg-muted/30 rounded-xl">
+              <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+              <p className="text-[11px] text-muted-foreground">Chargement…</p>
+            </div>
+          ) : mfa.factors.length > 0 ? (
+            <ul className="space-y-1.5">
+              {mfa.factors.map((f) => (
+                <li key={f.id} className="flex items-center justify-between gap-2 p-2 bg-muted/30 rounded-xl">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Smartphone className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                    <div className="min-w-0">
+                      <div className="text-xs font-medium truncate">{f.friendly_name || 'Authenticator'}</div>
+                      <div className="text-[10px] text-muted-foreground">
+                        {f.status === 'verified' ? 'Vérifié' : 'En attente'} ·{' '}
+                        {new Date(f.created_at).toLocaleDateString('fr-FR')}
+                      </div>
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 w-7 p-0 text-destructive shrink-0"
+                    disabled={removingId === f.id || (adminMustMfa && mfa.factors.filter((x) => x.status === 'verified').length === 1)}
+                    title={adminMustMfa && mfa.factors.filter((x) => x.status === 'verified').length === 1
+                      ? 'Vous devez conserver au moins un facteur 2FA actif (rôle administrateur).'
+                      : 'Supprimer ce facteur'}
+                    onClick={async () => {
+                      setRemovingId(f.id);
+                      try {
+                        const { error } = await supabase.auth.mfa.unenroll({ factorId: f.id });
+                        if (error) throw error;
+                        toast({ title: 'Facteur supprimé' });
+                        await mfa.refresh();
+                      } catch (err: any) {
+                        toast({ variant: 'destructive', title: 'Erreur', description: err.message });
+                      } finally {
+                        setRemovingId(null);
+                      }
+                    }}
+                  >
+                    {removingId === f.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="flex items-center gap-2 p-2.5 bg-muted/30 rounded-xl">
+              <Smartphone className="h-3.5 w-3.5 text-muted-foreground" />
+              <p className="text-[11px] text-muted-foreground">
+                Aucun facteur configuré. {adminMustMfa
+                  ? 'Vous devez activer la 2FA pour accéder aux outils d\'administration.'
+                  : 'Activez une application TOTP (Google Authenticator, 1Password…).'}
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
