@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { supabase } from '@/integrations/supabase/client';
-import { getSupabaseUrl } from '@/integrations/supabase/untyped';
+import { getSupabaseUrl, untypedTables, asUntypedPayload } from '@/integrations/supabase/untyped';
 import { toast } from 'sonner';
 import { logAuditAction } from '@/utils/supabaseConfigUtils';
 import { GoogleProviderWarning } from './map/GoogleProviderWarning';
@@ -75,8 +75,8 @@ const AdminMapProviders: React.FC = () => {
   const fetchProviders = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('map_providers')
+      const { data, error } = await untypedTables
+        .map_providers()
         .select('*')
         .order('display_order');
 
@@ -114,11 +114,11 @@ const AdminMapProviders: React.FC = () => {
       const sample = editingProvider
         .tile_url_template!
         .replace('{z}', '2').replace('{x}', '1').replace('{y}', '1')
-        .replace(/\{s\}/, (editingProvider.extra_config?.subdomains as string)?.[0] || 'a');
+        .replace(/\{s\}/, ((editingProvider.extra_config?.subdomains as string | undefined) ?? 'a')[0]);
       try {
         const res = await fetch(sample, { method: 'GET', mode: 'no-cors' });
         // En no-cors, on ne peut pas lire le statut, mais une erreur réseau lèvera
-        const status = (res as Response).status;
+        const status = res.status;
         if (status && status >= 400) {
           const proceed = window.confirm(`La tuile de test a renvoyé HTTP ${status}. Continuer quand même ?`);
           if (!proceed) return;
@@ -149,18 +149,18 @@ const AdminMapProviders: React.FC = () => {
       };
 
       if (isNew) {
-        const { error } = await supabase.from('map_providers').insert(payload as any);
+        const { error } = await untypedTables.map_providers().insert(asUntypedPayload(payload));
         if (error) throw error;
         toast.success(`Fournisseur "${payload.provider_name}" ajouté`);
-        await logAuditAction('MAP_PROVIDER_CREATE', 'map_providers', undefined, undefined, payload as any);
+        await logAuditAction('MAP_PROVIDER_CREATE', 'map_providers', undefined, undefined, payload);
       } else {
-        const { error } = await supabase
-          .from('map_providers')
-          .update(payload as any)
+        const { error } = await untypedTables
+          .map_providers()
+          .update(asUntypedPayload(payload))
           .eq('id', editingProvider.id!);
         if (error) throw error;
         toast.success(`Fournisseur "${payload.provider_name}" mis à jour`);
-        await logAuditAction('MAP_PROVIDER_UPDATE', 'map_providers', editingProvider.id, undefined, payload as any);
+        await logAuditAction('MAP_PROVIDER_UPDATE', 'map_providers', editingProvider.id, undefined, payload);
       }
 
       setEditDialogOpen(false);
@@ -174,9 +174,9 @@ const AdminMapProviders: React.FC = () => {
 
   const handleSetDefault = async (provider: MapProvider) => {
     try {
-      const { error } = await supabase
-        .from('map_providers')
-        .update({ is_default: true } as any)
+      const { error } = await untypedTables
+        .map_providers()
+        .update(asUntypedPayload({ is_default: true }))
         .eq('id', provider.id);
       if (error) throw error;
       toast.success(`"${provider.provider_name}" est maintenant le fournisseur par défaut`);
@@ -193,13 +193,13 @@ const AdminMapProviders: React.FC = () => {
       return;
     }
     try {
-      const { error } = await supabase
-        .from('map_providers')
-        .update({ is_active: !provider.is_active } as any)
+      const { error } = await untypedTables
+        .map_providers()
+        .update(asUntypedPayload({ is_active: !provider.is_active }))
         .eq('id', provider.id);
       if (error) throw error;
       toast.success(`Fournisseur ${provider.is_active ? 'désactivé' : 'activé'}`);
-      await logAuditAction('MAP_PROVIDER_TOGGLE', 'map_providers', provider.id, { is_active: provider.is_active } as any, { is_active: !provider.is_active } as any);
+      await logAuditAction('MAP_PROVIDER_TOGGLE', 'map_providers', provider.id, { is_active: provider.is_active }, { is_active: !provider.is_active });
       fetchProviders();
     } catch (error: any) {
       toast.error(`Erreur: ${error.message}`);
@@ -212,10 +212,10 @@ const AdminMapProviders: React.FC = () => {
       return;
     }
     try {
-      const { error } = await supabase.from('map_providers').delete().eq('id', provider.id);
+      const { error } = await untypedTables.map_providers().delete().eq('id', provider.id);
       if (error) throw error;
       toast.success(`Fournisseur "${provider.provider_name}" supprimé`);
-      await logAuditAction('MAP_PROVIDER_DELETE', 'map_providers', provider.id, { provider_name: provider.provider_name } as any);
+      await logAuditAction('MAP_PROVIDER_DELETE', 'map_providers', provider.id, { provider_name: provider.provider_name });
       fetchProviders();
     } catch (error: any) {
       toast.error(`Erreur: ${error.message}`);
