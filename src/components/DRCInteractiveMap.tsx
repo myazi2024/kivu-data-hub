@@ -26,9 +26,12 @@ import { MAP_TAB_PROFILES, computeAdaptiveTiers, NO_DATA_COLOR, type MapTabProfi
 import { norm, buildScopePredicate, sliceAnalyticsByPredicate, type GeoScopedRecord } from './map/meta/mapMeta';
 import { useMapDrilldown } from './map/hooks/useMapDrilldown';
 import { useMapIndicators } from './map/hooks/useMapIndicators';
+import { useMapFullscreen } from './map/hooks/useMapFullscreen';
+import { useMobilePagerEffects } from './map/hooks/useMobilePagerEffects';
 import { MapLegend } from './map/ui/MapLegend';
 import { MapScopeLegend } from './map/ui/MapScopeLegend';
 import { MapKPICards } from './map/ui/MapKPICards';
+import { MapMobilePager } from './map/ui/MapMobilePager';
 
 
 
