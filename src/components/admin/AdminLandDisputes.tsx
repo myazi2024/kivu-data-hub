@@ -311,7 +311,7 @@ const AdminLandDisputes: React.FC = () => {
                   <td className="p-3 font-mono text-xs font-bold">
                     <span className="inline-flex items-center gap-1">
                       {dispute.reference_number}
-                      {dispute.escalated && (
+                      {(dispute as LandDispute & { escalated?: boolean }).escalated && (
                         <AlertTriangle className="h-3 w-3 text-destructive" aria-label="Escaladé" />
                       )}
                     </span>
