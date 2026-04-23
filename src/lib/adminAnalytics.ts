@@ -33,6 +33,7 @@ export type AdminModule =
   | 'billing'
   | 'users'
   | 'roles'
+  | 'tax'
   | 'config';
 
 export interface AdminActionPayload {
