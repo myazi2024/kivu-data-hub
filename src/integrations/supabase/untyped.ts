@@ -27,6 +27,11 @@ export const untypedTables = {
   fiscal_periods: () => cast.from('fiscal_periods'),
   tva_collected_by_period: () => cast.from('tva_collected_by_period'),
   map_providers: () => cast.from('map_providers'),
+  certificate_templates: () => cast.from('certificate_templates'),
+  subdivision_requests: () => cast.from('subdivision_requests'),
+  reseller_commissions_summary: () => cast.from('reseller_commissions_summary'),
+  revenue_net_by_period: () => cast.from('revenue_net_by_period'),
+  payment_transactions: () => cast.from('payment_transactions'),
   generic: (table: string) => cast.from(table),
 } as const;
 

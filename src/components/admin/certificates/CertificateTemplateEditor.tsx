@@ -62,8 +62,8 @@ export const CertificateTemplateEditor: React.FC = () => {
 
   const fetchTemplates = async () => {
     try {
-      const { data, error } = await (supabase as any)
-        .from('certificate_templates')
+      const { data, error } = await untypedTables
+        .certificate_templates()
         .select('*')
         .order('certificate_type');
       if (error) throw error;
@@ -132,15 +132,15 @@ export const CertificateTemplateEditor: React.FC = () => {
       };
 
       if (existing) {
-        const { error } = await (supabase as any)
-          .from('certificate_templates')
-          .update(payload)
+        const { error } = await untypedTables
+          .certificate_templates()
+          .update(asUntypedPayload(payload))
           .eq('id', existing.id);
         if (error) throw error;
       } else {
-        const { error } = await (supabase as any)
-          .from('certificate_templates')
-          .insert([payload]);
+        const { error } = await untypedTables
+          .certificate_templates()
+          .insert([asUntypedPayload(payload)]);
         if (error) throw error;
       }
 
