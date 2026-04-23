@@ -44,7 +44,17 @@ interface ZoningRule {
 
 const emptyForm = {
   section_type: 'urban' as 'urban' | 'rural',
-  location_name: '*',
+  // Géographie cascadée (urbain : province > ville > commune > quartier > avenue / rural : province > territoire > collectivité > groupement > village)
+  province: '',
+  ville: '',
+  commune: '',
+  quartier: '',
+  avenue: '',
+  territoire: '',
+  collectivite: '',
+  groupement: '',
+  village: '',
+  apply_to_default: false, // si coché => location_name = '*'
   min_lot_area_sqm: '200',
   max_lot_area_sqm: '5000',
   min_road_width_m: '6',
@@ -54,6 +64,70 @@ const emptyForm = {
   max_lots_per_request: '50',
   notes: '',
   is_active: true,
+};
+
+/**
+ * Reconstitue (au mieux) les niveaux géographiques d'une règle existante
+ * à partir de son `location_name` (qui ne stocke que le nom du niveau le plus précis).
+ * Recherche dans la base statique tous les chemins compatibles.
+ */
+const reverseGeographicLookup = (
+  sectionType: 'urban' | 'rural',
+  locationName: string,
+): Partial<typeof emptyForm> => {
+  if (!locationName || locationName === '*') return { apply_to_default: true };
+  const provinces = getAllProvinces();
+  if (sectionType === 'urban') {
+    for (const province of provinces) {
+      // Ville ?
+      const villes = getVillesForProvince(province);
+      if (villes.includes(locationName)) return { province, ville: locationName };
+      for (const ville of villes) {
+        const communes = getCommunesForVille(province, ville);
+        if (communes.includes(locationName)) return { province, ville, commune: locationName };
+        for (const commune of communes) {
+          const quartiers = getQuartiersForCommune(province, ville, commune);
+          if (quartiers.includes(locationName)) return { province, ville, commune, quartier: locationName };
+          for (const quartier of quartiers) {
+            const avenues = getAvenuesForQuartier(province, ville, commune, quartier);
+            if (avenues.includes(locationName)) return { province, ville, commune, quartier, avenue: locationName };
+          }
+        }
+      }
+    }
+  } else {
+    for (const province of provinces) {
+      const territoires = getTerritoiresForProvince(province);
+      if (territoires.includes(locationName)) return { province, territoire: locationName };
+      for (const territoire of territoires) {
+        const collectivites = getCollectivitesForTerritoire(province, territoire);
+        if (collectivites.includes(locationName)) return { province, territoire, collectivite: locationName };
+      }
+    }
+    // Groupement / village ne sont pas dans la base statique → restaure au moins le nom
+    return { groupement: locationName };
+  }
+  return {};
+};
+
+/** Détermine le niveau le plus précis sélectionné — c'est cette valeur qui devient `location_name`. */
+const computeLocationName = (f: typeof emptyForm): string => {
+  if (f.apply_to_default) return '*';
+  if (f.section_type === 'urban') {
+    return f.avenue || f.quartier || f.commune || f.ville || '';
+  }
+  return f.village || f.groupement || f.collectivite || f.territoire || '';
+};
+
+/** Fil d'Ariane lisible pour l'affichage dans la table. */
+const formatBreadcrumb = (r: ZoningRule): string => {
+  if (r.location_name === '*') return 'Par défaut';
+  const found = reverseGeographicLookup(r.section_type, r.location_name);
+  const parts = r.section_type === 'urban'
+    ? [found.province, found.ville, found.commune, found.quartier, found.avenue]
+    : [found.province, found.territoire, found.collectivite, found.groupement, found.village];
+  const trail = parts.filter(Boolean);
+  return trail.length > 0 ? trail.join(' › ') : r.location_name;
 };
 
 const AdminSubdivisionZoningRules: React.FC = () => {
