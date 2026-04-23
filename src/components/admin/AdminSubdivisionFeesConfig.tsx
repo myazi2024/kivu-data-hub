@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { untypedTables } from '@/integrations/supabase/untyped';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -56,8 +56,7 @@ const AdminSubdivisionFeesConfig: React.FC = () => {
 
   const fetchRates = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from('subdivision_rate_config' as any)
+    const { data, error } = await untypedTables.subdivision_rate_config()
       .select('*')
       .order('section_type')
       .order('location_name');
@@ -66,7 +65,7 @@ const AdminSubdivisionFeesConfig: React.FC = () => {
       toast.error('Erreur de chargement des tarifs');
       console.error(error);
     } else {
-      setRates((data as any[]) || []);
+      setRates((data as RateConfig[]) || []);
     }
     setLoading(false);
   };
@@ -118,9 +117,9 @@ const AdminSubdivisionFeesConfig: React.FC = () => {
 
     let error;
     if (editing) {
-      ({ error } = await supabase.from('subdivision_rate_config' as any).update(payload as any).eq('id', editing.id));
+      ({ error } = await untypedTables.subdivision_rate_config().update(payload).eq('id', editing.id));
     } else {
-      ({ error } = await supabase.from('subdivision_rate_config' as any).insert(payload as any));
+      ({ error } = await untypedTables.subdivision_rate_config().insert(payload));
     }
 
     if (error) {
@@ -138,7 +137,7 @@ const AdminSubdivisionFeesConfig: React.FC = () => {
 
   const confirmDelete = async () => {
     if (!deleteId) return;
-    const { error } = await supabase.from('subdivision_rate_config' as any).delete().eq('id', deleteId);
+    const { error } = await untypedTables.subdivision_rate_config().delete().eq('id', deleteId);
     if (error) {
       toast.error('Erreur lors de la suppression');
     } else {
@@ -149,7 +148,7 @@ const AdminSubdivisionFeesConfig: React.FC = () => {
   };
 
   const toggleActive = async (r: RateConfig) => {
-    const { error } = await supabase.from('subdivision_rate_config' as any).update({ is_active: !r.is_active, updated_at: new Date().toISOString() } as any).eq('id', r.id);
+    const { error } = await untypedTables.subdivision_rate_config().update({ is_active: !r.is_active, updated_at: new Date().toISOString() }).eq('id', r.id);
     if (!error) {
       fetchRates();
     }
