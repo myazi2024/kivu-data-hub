@@ -249,6 +249,12 @@ export const UserAccountSecurity = () => {
           )}
         </CardContent>
       </Card>
+
+      <MfaEnrollDialog
+        open={enrollOpen}
+        onOpenChange={setEnrollOpen}
+        onEnrolled={() => mfa.refresh()}
+      />
     </div>
   );
 };
