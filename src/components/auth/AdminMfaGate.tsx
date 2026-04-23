@@ -3,7 +3,6 @@ import { useAuth } from '@/hooks/useAuth';
 import { useMfaStatus } from '@/hooks/useMfaStatus';
 import { isAdminRole } from '@/components/auth/mfaConstants';
 import { MfaChallengeDialog } from '@/components/auth/MfaChallengeDialog';
-import { MfaEnrollDialog } from '@/components/auth/MfaEnrollDialog';
 import { Loader2, ShieldAlert } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -22,18 +21,14 @@ const AdminMfaGate: React.FC<Props> = ({ children }) => {
   const mfa = useMfaStatus();
   const navigate = useNavigate();
   const [challengeOpen, setChallengeOpen] = useState(false);
-  const [enrollOpen, setEnrollOpen] = useState(false);
 
   const mustGuard = !!profile && isAdminRole(profile.role);
   const needEnroll = mustGuard && !mfa.loading && !mfa.hasVerifiedFactor;
   const needChallenge = mustGuard && !mfa.loading && mfa.hasVerifiedFactor && mfa.currentLevel !== 'aal2';
 
   useEffect(() => {
-    if (needEnroll) setEnrollOpen(true);
-    else setEnrollOpen(false);
-    if (needChallenge) setChallengeOpen(true);
-    else setChallengeOpen(false);
-  }, [needEnroll, needChallenge]);
+    setChallengeOpen(needChallenge);
+  }, [needChallenge]);
 
   if (authLoading || mfa.loading) {
     return (
@@ -61,16 +56,6 @@ const AdminMfaGate: React.FC<Props> = ({ children }) => {
             </CardContent>
           </Card>
         </div>
-
-        <MfaEnrollDialog
-          open={enrollOpen}
-          onOpenChange={(o) => {
-            // not dismissible while admin has no factor
-            if (needEnroll && !o) return;
-            setEnrollOpen(o);
-          }}
-          onEnrolled={() => mfa.refresh()}
-        />
 
         <MfaChallengeDialog
           open={challengeOpen}
