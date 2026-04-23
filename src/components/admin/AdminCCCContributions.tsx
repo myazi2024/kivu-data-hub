@@ -24,8 +24,10 @@ import type {
   OwnershipHistoryEntry, BoundaryHistoryEntry, BuildingPermitEntry,
   MortgageHistoryEntry, GpsCoordinate,
 } from './ccc/cccHelpers';
+import { useAdminAnalytics } from '@/lib/adminAnalytics';
 
 const AdminCCCContributions: React.FC = () => {
+  const { trackAdminAction } = useAdminAnalytics();
   const [contributions, setContributions] = useState<Contribution[]>([]);
   const [stats, setStats] = useState<ContributionStats>({
     total: 0,
@@ -512,6 +514,7 @@ const AdminCCCContributions: React.FC = () => {
         : 'Contribution approuvée et parcelle créée ! Le code CCC a été généré.';
       toast.success(successMessage);
       await logContributionAudit({ contributionId, action: 'approve', payload: { isUpdateContribution } });
+      trackAdminAction({ module: 'ccc', action: 'approve', ref: { contribution_id: contributionId } });
       await fetchContributions();
       setIsDetailsOpen(false);
       setValidationResult(null);
@@ -579,6 +582,7 @@ const AdminCCCContributions: React.FC = () => {
 
       toast.success('Contribution rejetée');
       await logContributionAudit({ contributionId, action: 'reject', payload: { reason: rejectionReason } });
+      trackAdminAction({ module: 'ccc', action: 'reject', ref: { contribution_id: contributionId }, meta: { reason: rejectionReason } });
       await fetchContributions();
       setIsDetailsOpen(false);
       setRejectionReason('');
@@ -649,6 +653,7 @@ const AdminCCCContributions: React.FC = () => {
 
       toast.success('Contribution renvoyée pour correction');
       await logContributionAudit({ contributionId, action: 'return', payload: { reason: returnReason } });
+      trackAdminAction({ module: 'ccc', action: 'return', ref: { contribution_id: contributionId }, meta: { reason: returnReason } });
       await fetchContributions();
       setIsDetailsOpen(false);
       setReturnReason('');
@@ -726,6 +731,7 @@ const AdminCCCContributions: React.FC = () => {
         logContributionAudit({ contributionId: id, action: 'bulk_approve', payload: { count: ids.length } })
       ));
       toast.success(`${ids.length} contribution(s) approuvée(s)`);
+      trackAdminAction({ module: 'ccc', action: 'bulk_approve', meta: { count: ids.length } });
       setSelectedIds(new Set());
       await fetchContributions();
     } catch (err: any) {
@@ -761,6 +767,7 @@ const AdminCCCContributions: React.FC = () => {
         logContributionAudit({ contributionId: id, action: 'bulk_reject', payload: { reason, count: ids.length } })
       ));
       toast.success(`${ids.length} contribution(s) rejetée(s)`);
+      trackAdminAction({ module: 'ccc', action: 'bulk_reject', meta: { count: ids.length, reason } });
       setSelectedIds(new Set());
       await fetchContributions();
     } catch (err: any) {
