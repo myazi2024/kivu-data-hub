@@ -22,6 +22,7 @@ import {
 } from '@/utils/disputeSharedTypes';
 import DisputeDocumentLinks from '@/components/cadastral/DisputeDocumentLinks';
 import DisputeStatusBadge from '@/components/cadastral/DisputeStatusBadge';
+import { useAdminAnalytics } from '@/lib/adminAnalytics';
 
 const STATUS_OPTIONS = [
   { value: 'all', label: 'Tous les statuts' },
@@ -49,6 +50,7 @@ const ADMIN_STATUS_TRANSITIONS = [
 ];
 
 const AdminLandDisputes: React.FC = () => {
+  const { trackAdminAction } = useAdminAnalytics();
   const [disputes, setDisputes] = useState<LandDispute[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -138,6 +140,12 @@ const AdminLandDisputes: React.FC = () => {
       }
 
       toast.success('Statut mis à jour');
+      trackAdminAction({
+        module: 'land_dispute',
+        action: 'update_status',
+        ref: { dispute_id: disputeId, reference_number: selectedDispute?.reference_number },
+        meta: { new_status: newStatus },
+      });
       setAdminNotes('');
       setNewStatus('');
       fetchDisputes();
@@ -219,6 +227,7 @@ const AdminLandDisputes: React.FC = () => {
                 const { data, error } = await supabase.rpc('escalate_stale_disputes', { _threshold_days: 30 });
                 if (error) throw error;
                 const count = (data as { escalated_count?: number }[] | null)?.[0]?.escalated_count ?? 0;
+                trackAdminAction({ module: 'land_dispute', action: 'escalate_stale', meta: { count, threshold_days: 30 } });
                 toast.success(`${count} litige(s) escaladé(s)`);
                 fetchDisputes();
               } catch (e: any) {

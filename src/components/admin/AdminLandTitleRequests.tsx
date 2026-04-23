@@ -23,13 +23,14 @@ import { usePagination } from '@/hooks/usePagination';
 import { StatusBadge, StatusType } from '@/components/shared/StatusBadge';
 import { generateAndUploadCertificate } from '@/utils/certificateService';
 import { exportToCSV } from '@/utils/csvExport';
-import { trackEvent } from '@/lib/analytics';
+import { useAdminAnalytics } from '@/lib/adminAnalytics';
 import { LandTitleRequestRow, getRequestFullName, getRequestLocation, ADMIN_LIST_COLUMNS } from '@/types/landTitleRequest';
 import LandTitleDetailsDialog from './land-title/LandTitleDetailsDialog';
 import LandTitleProcessDialog, { ProcessAction } from './land-title/LandTitleProcessDialog';
 
 const AdminLandTitleRequests: React.FC = () => {
   const { user } = useAuth();
+  const { trackAdminAction } = useAdminAnalytics();
   const [requests, setRequests] = useState<LandTitleRequestRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -193,11 +194,10 @@ const AdminLandTitleRequests: React.FC = () => {
 
       toast.success('Demande traitée avec succès');
 
-      trackEvent('admin_action', {
+      trackAdminAction({
         module: 'land_title',
         action: processAction,
-        request_id: selectedRequest.id,
-        reference_number: selectedRequest.reference_number,
+        ref: { request_id: selectedRequest.id, reference_number: selectedRequest.reference_number },
       });
 
       setShowProcessDialog(false);
