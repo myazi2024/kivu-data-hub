@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { untypedTables } from '@/integrations/supabase/untyped';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -34,8 +34,7 @@ const AdminPublicationCategories: React.FC = () => {
 
   const load = async () => {
     setLoading(true);
-    const { data, error } = await (supabase as any)
-      .from('publication_categories')
+    const { data, error } = await untypedTables.publication_categories()
       .select('*')
       .order('display_order', { ascending: true });
     if (error) toast.error(error.message);
@@ -73,8 +72,8 @@ const AdminPublicationCategories: React.FC = () => {
       is_active: form.is_active,
     };
     const { error } = editing
-      ? await (supabase as any).from('publication_categories').update(payload).eq('id', editing.id)
-      : await (supabase as any).from('publication_categories').insert(payload);
+      ? await untypedTables.publication_categories().update(payload).eq('id', editing.id)
+      : await untypedTables.publication_categories().insert(payload);
     setSaving(false);
     if (error) return toast.error(error.message);
     toast.success(editing ? 'Catégorie mise à jour' : 'Catégorie créée');
@@ -83,8 +82,7 @@ const AdminPublicationCategories: React.FC = () => {
   };
 
   const toggle = async (c: PublicationCategory) => {
-    const { error } = await (supabase as any)
-      .from('publication_categories')
+    const { error } = await untypedTables.publication_categories()
       .update({ is_active: !c.is_active })
       .eq('id', c.id);
     if (error) toast.error(error.message);

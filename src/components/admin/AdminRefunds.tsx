@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { untypedTables } from '@/integrations/supabase/untyped';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -48,13 +49,12 @@ const AdminRefunds = () => {
   const { data: refunds = [], isLoading, refetch } = useQuery({
     queryKey: ['admin', 'refunds'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('payment_refunds' as any)
+      const { data, error } = await untypedTables.payment_refunds()
         .select('*')
         .order('created_at', { ascending: false })
         .limit(500);
       if (error) throw error;
-      return (data || []) as unknown as Refund[];
+      return (data || []) as Refund[];
     },
   });
 
@@ -76,8 +76,7 @@ const AdminRefunds = () => {
 
       const { data: { user } } = await supabase.auth.getUser();
 
-      const { data: created, error } = await supabase
-        .from('payment_refunds' as any)
+      const { data: created, error } = await untypedTables.payment_refunds()
         .insert({
           invoice_id: inv.id,
           payment_id: inv.payment_id,
@@ -93,10 +92,11 @@ const AdminRefunds = () => {
         .single();
       if (error) throw error;
 
+      const createdRow = created as { id: string };
       // Try invoking edge function (graceful if not deployed)
       try {
         await supabase.functions.invoke('process-refund', {
-          body: { refund_id: (created as any).id },
+          body: { refund_id: createdRow.id },
         });
       } catch (e) {
         console.warn('process-refund function not invoked:', e);
@@ -105,7 +105,7 @@ const AdminRefunds = () => {
       await logBillingAudit({
         action: 'refund_initiated',
         tableName: 'payment_refunds',
-        recordId: (created as any).id,
+        recordId: createdRow.id,
         newValues: { amount_usd: amt, reason, invoice_id: inv.id },
       });
 
