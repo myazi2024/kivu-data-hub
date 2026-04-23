@@ -329,10 +329,20 @@ const AdminSubdivisionZoningRules: React.FC = () => {
             <DialogTitle>{editing ? 'Modifier la règle' : 'Ajouter une règle de zonage'}</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-3">
+            {/* Section + portée par défaut */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <Label>Type de section</Label>
-                <Select value={form.section_type} onValueChange={v => setForm(f => ({ ...f, section_type: v as 'urban' | 'rural' }))}>
+                <Select
+                  value={form.section_type}
+                  onValueChange={v => setForm(f => ({
+                    ...f,
+                    section_type: v as 'urban' | 'rural',
+                    // reset des niveaux de l'autre branche pour éviter les états incohérents
+                    ville: '', commune: '', quartier: '', avenue: '',
+                    territoire: '', collectivite: '', groupement: '', village: '',
+                  }))}
+                >
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="urban">Urbain (Quartier)</SelectItem>
@@ -340,11 +350,57 @@ const AdminSubdivisionZoningRules: React.FC = () => {
                   </SelectContent>
                 </Select>
               </div>
-              <div>
-                <Label>Emplacement</Label>
-                <Input value={form.location_name} onChange={e => setForm(f => ({ ...f, location_name: e.target.value }))} placeholder="* ou nom ville/quartier" />
+              <div className="flex items-end gap-2">
+                <Switch
+                  checked={form.apply_to_default}
+                  onCheckedChange={v => setForm(f => ({ ...f, apply_to_default: v }))}
+                />
+                <Label className="mb-2">Règle par défaut (toute la RDC)</Label>
               </div>
             </div>
+
+            {/* Cascade géographique — désactivée si "Règle par défaut" */}
+            <fieldset
+              disabled={form.apply_to_default}
+              className="border rounded-md p-3 space-y-3 disabled:opacity-50"
+            >
+              <legend className="text-xs font-medium px-1 text-muted-foreground">
+                Emplacement — Rép. Dém. du Congo
+              </legend>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <Label>Province</Label>
+                  <Select
+                    value={form.province || NONE}
+                    onValueChange={v => setForm(f => ({
+                      ...f,
+                      province: v === NONE ? '' : v,
+                      ville: '', commune: '', quartier: '', avenue: '',
+                      territoire: '', collectivite: '', groupement: '', village: '',
+                    }))}
+                  >
+                    <SelectTrigger><SelectValue placeholder="Toutes" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={NONE}>— Toutes les provinces —</SelectItem>
+                      {getAllProvinces().map(p => (
+                        <SelectItem key={p} value={p}>{p}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {form.section_type === 'urban' ? (
+                  <UrbanCascade form={form} setForm={setForm} />
+                ) : (
+                  <RuralCascade form={form} setForm={setForm} />
+                )}
+              </div>
+
+              <p className="text-xs text-muted-foreground">
+                La règle s'applique au niveau le plus précis sélectionné. Les niveaux supérieurs servent à filtrer les choix proposés.
+              </p>
+            </fieldset>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
