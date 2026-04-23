@@ -1,11 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
-import { AlertTriangle, Ban, ShieldAlert, KeyRound, TrendingUp } from 'lucide-react';
+import { AlertTriangle, Ban, ShieldAlert, ShieldCheck, KeyRound, TrendingUp } from 'lucide-react';
 import { format, subDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import InactiveUsersPanel from './InactiveUsersPanel';
+import { useMfaStatus } from '@/hooks/useMfaStatus';
+import { useMfaGuard } from '@/components/auth/MfaGuardProvider';
 
 interface SecurityMetrics {
   fraudHigh7d: number;
@@ -146,20 +149,47 @@ const AdminSecurityHub: React.FC = () => {
       {/* Inactive users panel */}
       <InactiveUsersPanel />
 
-      {/* 2FA debt notice */}
-      <Card className="border-warning/50 bg-warning/5">
-        <CardHeader className="p-2 md:p-3">
-          <CardTitle className="flex items-center gap-1.5 text-sm text-warning">
-            <ShieldAlert className="w-4 h-4" /> Dette sécurité — 2FA admin
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-2 pt-0 text-xs text-muted-foreground">
-          L'authentification à deux facteurs n'est pas encore appliquée aux comptes
-          <span className="font-medium"> admin / super_admin</span>. À planifier
-          (Supabase Auth MFA) pour toute mise en production publique.
-        </CardContent>
-      </Card>
+      {/* MFA admin status (formerly "Dette sécurité — 2FA admin") */}
+      <MfaStatusCard />
     </div>
+  );
+};
+
+const MfaStatusCard: React.FC = () => {
+  const mfa = useMfaStatus();
+  const { openEnroll } = useMfaGuard();
+
+  const isActive = mfa.hasVerifiedFactor;
+  const isAal2 = mfa.currentLevel === 'aal2';
+
+  return (
+    <Card className={isActive ? 'border-success/50 bg-success/5' : 'border-warning/50 bg-warning/5'}>
+      <CardHeader className="p-2 md:p-3">
+        <CardTitle className={`flex items-center gap-1.5 text-sm ${isActive ? 'text-success' : 'text-warning'}`}>
+          {isActive ? <ShieldCheck className="w-4 h-4" /> : <ShieldAlert className="w-4 h-4" />}
+          2FA administrateur
+          <Badge variant={isActive ? 'default' : 'destructive'} className="text-[9px] h-4 px-1.5 ml-auto">
+            {mfa.loading ? '…' : isActive ? (isAal2 ? 'AAL2' : 'AAL1') : 'Inactive'}
+          </Badge>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="p-2 pt-0 text-xs text-muted-foreground space-y-2">
+        {isActive ? (
+          <p>
+            Votre compte est protégé par {mfa.factors.filter((f) => f.status === 'verified').length} facteur(s) TOTP.
+            {!isAal2 && ' Une vérification 2FA sera demandée avant chaque action sensible.'}
+          </p>
+        ) : (
+          <>
+            <p>
+              L'authentification à deux facteurs n'est <span className="font-medium">pas activée</span> sur votre compte
+              administrateur. Activez-la dès maintenant pour conserver l'accès.
+            </p>
+            <Button size="sm" variant="default" onClick={openEnroll}>Activer la 2FA</Button>
+          </>
+        )}
+      </CardContent>
+    </Card>
   );
 };
 
