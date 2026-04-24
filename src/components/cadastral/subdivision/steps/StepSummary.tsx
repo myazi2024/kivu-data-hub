@@ -10,6 +10,8 @@ import {
 import { SubdivisionLot, SubdivisionRoad, ParentParcelInfo, RequesterInfo, USAGE_LABELS, LOT_COLORS, FeeBreakdown } from '../types';
 import { ValidationResult } from '../utils/geometry';
 import { SUBDIVISION_PURPOSE_LABELS } from '../constants';
+import { ZoningComplianceCard } from '../ZoningComplianceCard';
+import type { ZoningComplianceResult } from '../hooks/useZoningCompliance';
 
 interface StepSummaryProps {
   parentParcel: ParentParcelInfo | null;
@@ -17,6 +19,7 @@ interface StepSummaryProps {
   lots: SubdivisionLot[];
   roads: SubdivisionRoad[];
   validation: ValidationResult;
+  zoningCompliance: ZoningComplianceResult;
   purpose: string;
   submitted: boolean;
   referenceNumber: string;
@@ -34,7 +37,7 @@ const REQUESTER_TYPE_LABELS: Record<string, string> = {
 };
 
 const StepSummary: React.FC<StepSummaryProps> = ({
-  parentParcel, requester, lots, roads, validation, purpose,
+  parentParcel, requester, lots, roads, validation, zoningCompliance, purpose,
   submitted, referenceNumber, submitting, submissionFee, feeBreakdown, onSubmit
 }) => {
   const totalArea = lots.reduce((s, l) => s + l.areaSqm, 0);
@@ -95,6 +98,19 @@ const StepSummary: React.FC<StepSummaryProps> = ({
           <AlertDescription className="text-xs">
             {validation.errors.length} erreur(s) à corriger avant la soumission.
             Retournez à l'étape "Lots" pour les résoudre.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Conformité aux règles de zonage admin */}
+      <ZoningComplianceCard compliance={zoningCompliance} />
+
+      {zoningCompliance.hasErrors && (
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription className="text-xs">
+            Le plan ne respecte pas les règles de zonage en vigueur. Corrigez les
+            violations ci-dessus à l'étape « Lots » avant de soumettre.
           </AlertDescription>
         </Alert>
       )}

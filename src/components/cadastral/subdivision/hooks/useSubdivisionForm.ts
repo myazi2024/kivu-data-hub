@@ -8,6 +8,7 @@ import {
 } from '../types';
 import { validateSubdivision, ValidationResult, gpsToNormalized, polygonArea, polygonPerimeter, snapNearbyLotVertices } from '../utils/geometry';
 import { buildMetricFrame, polygonPerimeterM, polygonAreaSqmAccurate, MetricFrame } from '../utils/metrics';
+import { useZoningCompliance } from './useZoningCompliance';
 
 const DRAFT_KEY_PREFIX = 'subdivision-draft-v2-';
 
@@ -280,6 +281,27 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
   const metricFrame = useMemo<MetricFrame>(() => {
     return buildMetricFrame(parentParcel?.gpsCoordinates, parentParcel?.areaSqm || 0);
   }, [parentParcel]);
+
+  // Conformité aux règles de zonage admin (live, basée sur le plan en cours d'édition)
+  const zoningCompliance = useZoningCompliance(
+    parcelData
+      ? {
+          province: parcelData.province,
+          ville: parcelData.ville,
+          commune: parcelData.commune,
+          quartier: parcelData.quartier,
+          avenue: parcelData.avenue,
+          territoire: parcelData.territoire,
+          collectivite: parcelData.collectivite,
+          groupement: parcelData.groupement,
+          village: parcelData.village,
+        }
+      : null,
+    parentParcel?.areaSqm || 0,
+    lots,
+    roads,
+    commonSpaces,
+  );
 
   // History management
   const pushHistory = useCallback((newLots: SubdivisionLot[]) => {
@@ -554,6 +576,8 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
     undo, redo, canUndo: historyIndexRef.current > 0, canRedo: historyIndexRef.current < historyRef.current.length - 1, historyVersion,
     // Validation
     validation, runValidation,
+    // Conformité zonage admin
+    zoningCompliance,
     // Purpose
     purpose, setPurpose,
     // Documents
