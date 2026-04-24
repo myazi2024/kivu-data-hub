@@ -12,8 +12,36 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
-import { Plus, Pencil, Trash2, Ruler, Loader2, MapPin, Building2, TreePine, Settings2, FileText, Globe2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, Ruler, Loader2, MapPin, Building2, TreePine, Settings2, FileText, Globe2, Info } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+
+/** Petit indicateur d'aide affichant un popover explicatif au clic. */
+const FieldHelp: React.FC<{ title: string; description: string; example?: string }> = ({ title, description, example }) => (
+  <Popover>
+    <PopoverTrigger asChild>
+      <button
+        type="button"
+        aria-label={`Aide : ${title}`}
+        className="inline-flex items-center justify-center h-4 w-4 rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+      >
+        <Info className="h-3 w-3" />
+      </button>
+    </PopoverTrigger>
+    <PopoverContent side="top" align="start" className="w-72 text-xs space-y-1.5 z-[10001]">
+      <h4 className="font-semibold text-sm flex items-center gap-1.5">
+        <Info className="h-3.5 w-3.5 text-primary" />
+        {title}
+      </h4>
+      <p className="text-muted-foreground leading-relaxed">{description}</p>
+      {example && (
+        <p className="text-[11px] text-muted-foreground/80 italic border-l-2 border-primary/40 pl-2">
+          Exemple : {example}
+        </p>
+      )}
+    </PopoverContent>
+  </Popover>
+);
 import {
   getAllProvinces,
   getVillesForProvince,
@@ -625,34 +653,83 @@ const AdminSubdivisionZoningRules: React.FC = () => {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <Label className="text-xs">Surface min lot (m²)</Label>
+                  <Label className="text-xs flex items-center gap-1.5">
+                    Surface min lot (m²)
+                    <FieldHelp
+                      title="Surface minimale par lot"
+                      description="Aire en m² en dessous de laquelle un lot du plan de lotissement sera refusé. Sert à empêcher la création de parcelles trop petites pour être habitables ou conformes au plan d'urbanisme local."
+                      example="500 m² en zone résidentielle urbaine standard."
+                    />
+                  </Label>
                   <Input type="number" step="1" inputMode="numeric" value={form.min_lot_area_sqm} onChange={e => setForm(f => ({ ...f, min_lot_area_sqm: e.target.value }))} />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs">Surface max lot (m²)</Label>
+                  <Label className="text-xs flex items-center gap-1.5">
+                    Surface max lot (m²)
+                    <FieldHelp
+                      title="Surface maximale par lot"
+                      description="Aire en m² au-dessus de laquelle un lot sera signalé. Utile pour éviter la concentration foncière et garantir une densité minimale dans la zone. Laisser vide pour ne pas imposer de plafond."
+                      example="2 000 m² en zone résidentielle dense."
+                    />
+                  </Label>
                   <Input type="number" step="1" inputMode="numeric" value={form.max_lot_area_sqm} onChange={e => setForm(f => ({ ...f, max_lot_area_sqm: e.target.value }))} placeholder="Optionnel" />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs">Largeur min voie (m)</Label>
+                  <Label className="text-xs flex items-center gap-1.5">
+                    Largeur min voie (m)
+                    <FieldHelp
+                      title="Largeur minimale des voies"
+                      description="Largeur minimale (en mètres) acceptée pour les voies de desserte du lotissement. En dessous de cette valeur, la demande est rejetée pour non-conformité (accès secours, circulation, viabilisation)."
+                      example="6 m pour une voie résidentielle de desserte."
+                    />
+                  </Label>
                   <Input type="number" step="0.5" inputMode="decimal" value={form.min_road_width_m} onChange={e => setForm(f => ({ ...f, min_road_width_m: e.target.value }))} />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs">Largeur recommandée (m)</Label>
+                  <Label className="text-xs flex items-center gap-1.5">
+                    Largeur recommandée (m)
+                    <FieldHelp
+                      title="Largeur recommandée des voies"
+                      description="Largeur idéale (en mètres) suggérée au demandeur. En dessous, la demande passe mais un avertissement (warning) est affiché pour inviter à élargir la voirie. N'empêche pas la soumission."
+                      example="8 m pour conforter trottoirs et stationnement."
+                    />
+                  </Label>
                   <Input type="number" step="0.5" inputMode="decimal" value={form.recommended_road_width_m} onChange={e => setForm(f => ({ ...f, recommended_road_width_m: e.target.value }))} />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="space-y-1.5">
-                  <Label className="text-xs">% Espaces communs min</Label>
+                  <Label className="text-xs flex items-center gap-1.5">
+                    % Espaces communs min
+                    <FieldHelp
+                      title="Pourcentage minimum d'espaces communs"
+                      description="Part minimale de la surface totale du lotissement (en %) à réserver aux espaces communs : voiries, espaces verts, équipements collectifs. En dessous, la demande est non conforme."
+                      example="15 % pour un lotissement résidentiel urbain."
+                    />
+                  </Label>
                   <Input type="number" step="1" inputMode="numeric" value={form.min_common_space_pct} onChange={e => setForm(f => ({ ...f, min_common_space_pct: e.target.value }))} />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs">Front route min (m)</Label>
+                  <Label className="text-xs flex items-center gap-1.5">
+                    Front route min (m)
+                    <FieldHelp
+                      title="Front sur rue minimal"
+                      description="Longueur minimale (en mètres) de la façade d'un lot donnant sur une voie. Garantit que chaque lot dispose d'un accès direct suffisant à la voirie pour viabilisation et accès véhicule."
+                      example="12 m pour un lot résidentiel standard."
+                    />
+                  </Label>
                   <Input type="number" step="0.5" inputMode="decimal" value={form.min_front_road_m} onChange={e => setForm(f => ({ ...f, min_front_road_m: e.target.value }))} />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs">Max lots / demande</Label>
+                  <Label className="text-xs flex items-center gap-1.5">
+                    Max lots / demande
+                    <FieldHelp
+                      title="Nombre maximal de lots par demande"
+                      description="Plafond du nombre de lots qu'une seule demande de lotissement peut contenir dans cette zone. Au-delà, la demande devra être scindée. Laisser vide pour ne pas limiter."
+                      example="50 lots maximum pour une opération courante."
+                    />
+                  </Label>
                   <Input type="number" step="1" inputMode="numeric" value={form.max_lots_per_request} onChange={e => setForm(f => ({ ...f, max_lots_per_request: e.target.value }))} placeholder="Optionnel" />
                 </div>
               </div>
