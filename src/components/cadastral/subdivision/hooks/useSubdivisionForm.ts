@@ -282,6 +282,27 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
     return buildMetricFrame(parentParcel?.gpsCoordinates, parentParcel?.areaSqm || 0);
   }, [parentParcel]);
 
+  // Conformité aux règles de zonage admin (live, basée sur le plan en cours d'édition)
+  const zoningCompliance = useZoningCompliance(
+    parcelData
+      ? {
+          province: parcelData.province,
+          ville: parcelData.ville,
+          commune: parcelData.commune,
+          quartier: parcelData.quartier,
+          avenue: parcelData.avenue,
+          territoire: parcelData.territoire,
+          collectivite: parcelData.collectivite,
+          groupement: parcelData.groupement,
+          village: parcelData.village,
+        }
+      : null,
+    parentParcel?.areaSqm || 0,
+    lots,
+    roads,
+    commonSpaces,
+  );
+
   // History management
   const pushHistory = useCallback((newLots: SubdivisionLot[]) => {
     const newHistory = historyRef.current.slice(0, historyIndexRef.current + 1);
