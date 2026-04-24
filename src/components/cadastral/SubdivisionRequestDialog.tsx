@@ -271,6 +271,7 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
                 lots={form.lots}
                 roads={form.roads}
                 validation={form.validation}
+                zoningCompliance={form.zoningCompliance}
                 purpose={form.purpose}
                 submitted={form.submitted}
                 referenceNumber={form.referenceNumber}
@@ -328,7 +329,7 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
                 <Button
                   size="sm"
                   onClick={handleSubmit}
-                  disabled={form.submitting || !form.isStepValid('designer') || !form.isStepValid('documents') || form.loadingFee}
+                  disabled={form.submitting || !form.isStepValid('designer') || !form.isStepValid('documents') || form.loadingFee || form.zoningCompliance.hasErrors}
                   className="gap-1"
                 >
                   {form.submitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}

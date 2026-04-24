@@ -576,6 +576,8 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
     undo, redo, canUndo: historyIndexRef.current > 0, canRedo: historyIndexRef.current < historyRef.current.length - 1, historyVersion,
     // Validation
     validation, runValidation,
+    // Conformité zonage admin
+    zoningCompliance,
     // Purpose
     purpose, setPurpose,
     // Documents
