@@ -12,7 +12,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
-import { Plus, Pencil, Trash2, Ruler, Loader2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, Ruler, Loader2, MapPin, Building2, TreePine, Settings2, FileText, Globe2 } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
 import {
   getAllProvinces,
   getVillesForProvince,
