@@ -465,136 +465,229 @@ const AdminSubdivisionZoningRules: React.FC = () => {
       </Card>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>{editing ? 'Modifier la règle' : 'Ajouter une règle de zonage'}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3">
-            {/* Section + portée par défaut */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <Label>Type de section</Label>
-                <Select
-                  value={form.section_type}
-                  onValueChange={v => setForm(f => ({
-                    ...f,
-                    section_type: v as 'urban' | 'rural',
-                    // reset des niveaux de l'autre branche pour éviter les états incohérents
-                    ville: '', commune: '', quartier: '', avenue: '',
-                    territoire: '', collectivite: '', groupement: '', village: '',
-                  }))}
-                >
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="urban">Urbain (Quartier)</SelectItem>
-                    <SelectItem value="rural">Rural (Village)</SelectItem>
-                  </SelectContent>
-                </Select>
+        <DialogContent className="max-w-3xl p-0 gap-0 max-h-[92vh] flex flex-col overflow-hidden">
+          {/* Header sticky avec dégradé */}
+          <DialogHeader className="px-4 sm:px-6 py-4 border-b bg-gradient-to-r from-primary/5 via-background to-accent/5 shrink-0">
+            <div className="flex items-start gap-3">
+              <div className="h-10 w-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                <Ruler className="h-5 w-5" />
               </div>
-              <div className="flex items-end gap-2">
-                <Switch
-                  checked={form.apply_to_default}
-                  onCheckedChange={v => setForm(f => ({ ...f, apply_to_default: v }))}
-                />
-                <Label className="mb-2">Règle par défaut (toute la RDC)</Label>
+              <div className="flex-1 min-w-0">
+                <DialogTitle className="text-base sm:text-lg">
+                  {editing ? 'Modifier la règle de zonage' : 'Ajouter une règle de zonage'}
+                </DialogTitle>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Définissez les contraintes applicables à un emplacement géographique précis.
+                </p>
               </div>
+              {form.apply_to_default && (
+                <Badge variant="secondary" className="hidden sm:inline-flex shrink-0">
+                  <Globe2 className="h-3 w-3 mr-1" /> Défaut RDC
+                </Badge>
+              )}
             </div>
+          </DialogHeader>
 
-            {/* Cascade géographique — désactivée si "Règle par défaut" */}
-            <fieldset
-              disabled={form.apply_to_default}
-              className="border rounded-md p-3 space-y-3 disabled:opacity-50"
-            >
-              <legend className="text-xs font-medium px-1 text-muted-foreground">
-                Emplacement — Rép. Dém. du Congo
-              </legend>
+          {/* Corps scrollable */}
+          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 space-y-5">
+            {/* Section 1 — Portée */}
+            <section className="space-y-3">
+              <div className="flex items-center gap-2">
+                <MapPin className="h-4 w-4 text-primary" />
+                <h3 className="text-sm font-semibold">Portée de la règle</h3>
+              </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <Label>Province</Label>
-                  <Select
-                    value={form.province || NONE}
-                    onValueChange={v => setForm(f => ({
-                      ...f,
-                      province: v === NONE ? '' : v,
-                      ville: '', commune: '', quartier: '', avenue: '',
-                      territoire: '', collectivite: '', groupement: '', village: '',
-                    }))}
-                  >
-                    <SelectTrigger><SelectValue placeholder="Toutes" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value={NONE}>— Toutes les provinces —</SelectItem>
-                      {getAllProvinces().map(p => (
-                        <SelectItem key={p} value={p}>{p}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Type de section</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {(['urban', 'rural'] as const).map(t => {
+                      const Icon = t === 'urban' ? Building2 : TreePine;
+                      const active = form.section_type === t;
+                      return (
+                        <button
+                          key={t}
+                          type="button"
+                          onClick={() => setForm(f => ({
+                            ...f,
+                            section_type: t,
+                            ville: '', commune: '', quartier: '', avenue: '',
+                            territoire: '', collectivite: '', groupement: '', village: '',
+                          }))}
+                          className={`flex items-center gap-2 px-3 py-2 rounded-md border text-sm transition-all ${
+                            active
+                              ? 'border-primary bg-primary/10 text-primary font-medium shadow-sm'
+                              : 'border-border hover:border-primary/40 hover:bg-accent'
+                          }`}
+                        >
+                          <Icon className="h-4 w-4" />
+                          {t === 'urban' ? 'Urbain' : 'Rural'}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
 
-                {form.section_type === 'urban' ? (
-                  <UrbanCascade form={form} setForm={setForm} />
-                ) : (
-                  <RuralCascade form={form} setForm={setForm} />
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Application</Label>
+                  <label className="flex items-center justify-between gap-3 px-3 py-2 rounded-md border bg-muted/30 cursor-pointer hover:bg-muted/60 transition-colors h-[42px]">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Globe2 className="h-4 w-4 text-muted-foreground shrink-0" />
+                      <span className="text-sm truncate">Règle par défaut (toute la RDC)</span>
+                    </div>
+                    <Switch
+                      checked={form.apply_to_default}
+                      onCheckedChange={v => setForm(f => ({ ...f, apply_to_default: v }))}
+                    />
+                  </label>
+                </div>
+              </div>
+            </section>
+
+            <Separator />
+
+            {/* Section 2 — Cascade géographique */}
+            <section className="space-y-3">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <MapPin className="h-4 w-4 text-primary" />
+                  <h3 className="text-sm font-semibold">Emplacement</h3>
+                </div>
+                {!form.apply_to_default && (
+                  <span className="text-[11px] text-muted-foreground hidden sm:inline">
+                    Sélectionnez le niveau le plus précis
+                  </span>
                 )}
               </div>
 
-              <p className="text-xs text-muted-foreground">
-                La règle s'applique au niveau le plus précis sélectionné. Les niveaux supérieurs servent à filtrer les choix proposés.
-              </p>
-            </fieldset>
+              <fieldset
+                disabled={form.apply_to_default}
+                className="rounded-lg border bg-card/50 p-3 sm:p-4 space-y-3 disabled:opacity-50 transition-opacity"
+              >
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Province</Label>
+                    <Select
+                      value={form.province || NONE}
+                      onValueChange={v => setForm(f => ({
+                        ...f,
+                        province: v === NONE ? '' : v,
+                        ville: '', commune: '', quartier: '', avenue: '',
+                        territoire: '', collectivite: '', groupement: '', village: '',
+                      }))}
+                    >
+                      <SelectTrigger><SelectValue placeholder="Toutes" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value={NONE}>— Toutes les provinces —</SelectItem>
+                        {getAllProvinces().map(p => (
+                          <SelectItem key={p} value={p}>{p}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label>Surface min lot (m²)</Label>
-                <Input type="number" step="1" value={form.min_lot_area_sqm} onChange={e => setForm(f => ({ ...f, min_lot_area_sqm: e.target.value }))} />
-              </div>
-              <div>
-                <Label>Surface max lot (m²)</Label>
-                <Input type="number" step="1" value={form.max_lot_area_sqm} onChange={e => setForm(f => ({ ...f, max_lot_area_sqm: e.target.value }))} placeholder="Optionnel" />
-              </div>
-            </div>
+                  {form.section_type === 'urban' ? (
+                    <UrbanCascade form={form} setForm={setForm} />
+                  ) : (
+                    <RuralCascade form={form} setForm={setForm} />
+                  )}
+                </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label>Largeur min voie (m)</Label>
-                <Input type="number" step="0.5" value={form.min_road_width_m} onChange={e => setForm(f => ({ ...f, min_road_width_m: e.target.value }))} />
-              </div>
-              <div>
-                <Label>Largeur recommandée (m)</Label>
-                <Input type="number" step="0.5" value={form.recommended_road_width_m} onChange={e => setForm(f => ({ ...f, recommended_road_width_m: e.target.value }))} />
-              </div>
-            </div>
+                {/* Aperçu fil d'Ariane */}
+                {!form.apply_to_default && (() => {
+                  const trail = form.section_type === 'urban'
+                    ? [form.province, form.ville, form.commune, form.quartier, form.avenue].filter(Boolean)
+                    : [form.province, form.territoire, form.collectivite, form.groupement, form.village].filter(Boolean);
+                  if (trail.length === 0) return null;
+                  return (
+                    <div className="flex items-center gap-1.5 flex-wrap text-xs bg-primary/5 border border-primary/20 rounded-md px-2.5 py-1.5">
+                      <MapPin className="h-3 w-3 text-primary shrink-0" />
+                      {trail.map((part, i) => (
+                        <React.Fragment key={i}>
+                          {i > 0 && <span className="text-muted-foreground">›</span>}
+                          <span className={i === trail.length - 1 ? 'font-medium text-primary' : 'text-muted-foreground'}>{part}</span>
+                        </React.Fragment>
+                      ))}
+                    </div>
+                  );
+                })()}
+              </fieldset>
+            </section>
 
-            <div className="grid grid-cols-3 gap-3">
-              <div>
-                <Label>% Espaces communs min</Label>
-                <Input type="number" step="1" value={form.min_common_space_pct} onChange={e => setForm(f => ({ ...f, min_common_space_pct: e.target.value }))} />
-              </div>
-              <div>
-                <Label>Front route min (m)</Label>
-                <Input type="number" step="0.5" value={form.min_front_road_m} onChange={e => setForm(f => ({ ...f, min_front_road_m: e.target.value }))} />
-              </div>
-              <div>
-                <Label>Max lots / demande</Label>
-                <Input type="number" step="1" value={form.max_lots_per_request} onChange={e => setForm(f => ({ ...f, max_lots_per_request: e.target.value }))} placeholder="Optionnel" />
-              </div>
-            </div>
+            <Separator />
 
-            <div>
-              <Label>Notes</Label>
-              <Textarea rows={2} value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} placeholder="Précisions, base légale, etc." />
-            </div>
+            {/* Section 3 — Contraintes techniques */}
+            <section className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Settings2 className="h-4 w-4 text-primary" />
+                <h3 className="text-sm font-semibold">Contraintes techniques</h3>
+              </div>
 
-            <div className="flex items-center gap-2">
-              <Switch checked={form.is_active} onCheckedChange={v => setForm(f => ({ ...f, is_active: v }))} />
-              <Label>Actif</Label>
-            </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Surface min lot (m²)</Label>
+                  <Input type="number" step="1" inputMode="numeric" value={form.min_lot_area_sqm} onChange={e => setForm(f => ({ ...f, min_lot_area_sqm: e.target.value }))} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Surface max lot (m²)</Label>
+                  <Input type="number" step="1" inputMode="numeric" value={form.max_lot_area_sqm} onChange={e => setForm(f => ({ ...f, max_lot_area_sqm: e.target.value }))} placeholder="Optionnel" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Largeur min voie (m)</Label>
+                  <Input type="number" step="0.5" inputMode="decimal" value={form.min_road_width_m} onChange={e => setForm(f => ({ ...f, min_road_width_m: e.target.value }))} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Largeur recommandée (m)</Label>
+                  <Input type="number" step="0.5" inputMode="decimal" value={form.recommended_road_width_m} onChange={e => setForm(f => ({ ...f, recommended_road_width_m: e.target.value }))} />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="space-y-1.5">
+                  <Label className="text-xs">% Espaces communs min</Label>
+                  <Input type="number" step="1" inputMode="numeric" value={form.min_common_space_pct} onChange={e => setForm(f => ({ ...f, min_common_space_pct: e.target.value }))} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Front route min (m)</Label>
+                  <Input type="number" step="0.5" inputMode="decimal" value={form.min_front_road_m} onChange={e => setForm(f => ({ ...f, min_front_road_m: e.target.value }))} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Max lots / demande</Label>
+                  <Input type="number" step="1" inputMode="numeric" value={form.max_lots_per_request} onChange={e => setForm(f => ({ ...f, max_lots_per_request: e.target.value }))} placeholder="Optionnel" />
+                </div>
+              </div>
+            </section>
+
+            <Separator />
+
+            {/* Section 4 — Notes & statut */}
+            <section className="space-y-3">
+              <div className="flex items-center gap-2">
+                <FileText className="h-4 w-4 text-primary" />
+                <h3 className="text-sm font-semibold">Notes & statut</h3>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs">Notes</Label>
+                <Textarea rows={2} value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} placeholder="Précisions, base légale, etc." />
+              </div>
+
+              <label className="flex items-center justify-between gap-3 px-3 py-2 rounded-md border bg-muted/30 cursor-pointer hover:bg-muted/60 transition-colors">
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium">Règle active</span>
+                  <span className="text-[11px] text-muted-foreground">Si désactivée, elle ne sera pas appliquée aux validations.</span>
+                </div>
+                <Switch checked={form.is_active} onCheckedChange={v => setForm(f => ({ ...f, is_active: v }))} />
+              </label>
+            </section>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>Annuler</Button>
-            <Button onClick={handleSave} disabled={saving}>
+
+          {/* Footer sticky */}
+          <DialogFooter className="px-4 sm:px-6 py-3 border-t bg-muted/30 shrink-0 flex-col-reverse sm:flex-row gap-2">
+            <Button variant="outline" onClick={() => setDialogOpen(false)} className="w-full sm:w-auto">Annuler</Button>
+            <Button onClick={handleSave} disabled={saving} className="w-full sm:w-auto">
               {saving && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
-              {editing ? 'Mettre à jour' : 'Ajouter'}
+              {editing ? 'Mettre à jour' : 'Ajouter la règle'}
             </Button>
           </DialogFooter>
         </DialogContent>
