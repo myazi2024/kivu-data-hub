@@ -304,6 +304,33 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
     commonSpaces,
   );
 
+  // Éligibilité de la parcelle-mère vérifiée en amont (avant tout tracé)
+  const parentEligibility = useParentParcelEligibility(
+    parentParcel
+      ? {
+          id: parcelId,
+          parcel_number: parcelNumber,
+          area_sqm: parentParcel.areaSqm,
+          property_title_type: parentParcel.titleType,
+          title_issue_date: parentParcel.titleIssueDate,
+          gps_coordinates: parentParcel.gpsCoordinates,
+        }
+      : null,
+    parcelData
+      ? {
+          province: parcelData.province,
+          ville: parcelData.ville,
+          commune: parcelData.commune,
+          quartier: parcelData.quartier,
+          avenue: parcelData.avenue,
+          territoire: parcelData.territoire,
+          collectivite: parcelData.collectivite,
+          groupement: parcelData.groupement,
+          village: parcelData.village,
+        }
+      : null,
+  );
+
   // History management
   const pushHistory = useCallback((newLots: SubdivisionLot[]) => {
     const newHistory = historyRef.current.slice(0, historyIndexRef.current + 1);
