@@ -6213,6 +6213,54 @@ export type Database = {
           },
         ]
       }
+      subdivision_required_documents: {
+        Row: {
+          accepted_mime_types: string[]
+          created_at: string
+          display_order: number
+          doc_key: string
+          help_text: string | null
+          id: string
+          is_active: boolean
+          is_required: boolean
+          label: string
+          max_size_mb: number
+          metadata: Json
+          requester_types: string[]
+          updated_at: string
+        }
+        Insert: {
+          accepted_mime_types?: string[]
+          created_at?: string
+          display_order?: number
+          doc_key: string
+          help_text?: string | null
+          id?: string
+          is_active?: boolean
+          is_required?: boolean
+          label: string
+          max_size_mb?: number
+          metadata?: Json
+          requester_types?: string[]
+          updated_at?: string
+        }
+        Update: {
+          accepted_mime_types?: string[]
+          created_at?: string
+          display_order?: number
+          doc_key?: string
+          help_text?: string | null
+          id?: string
+          is_active?: boolean
+          is_required?: boolean
+          label?: string
+          max_size_mb?: number
+          metadata?: Json
+          requester_types?: string[]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       subdivision_roads: {
         Row: {
           created_at: string
