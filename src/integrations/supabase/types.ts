@@ -5875,6 +5875,51 @@ export type Database = {
           },
         ]
       }
+      subdivision_plan_elements: {
+        Row: {
+          category: string
+          created_at: string
+          description: string | null
+          display_order: number
+          element_key: string
+          id: string
+          is_active: boolean
+          is_required: boolean
+          label: string
+          metadata: Json
+          updated_at: string
+          validation_rule: string | null
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          element_key: string
+          id?: string
+          is_active?: boolean
+          is_required?: boolean
+          label: string
+          metadata?: Json
+          updated_at?: string
+          validation_rule?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          element_key?: string
+          id?: string
+          is_active?: boolean
+          is_required?: boolean
+          label?: string
+          metadata?: Json
+          updated_at?: string
+          validation_rule?: string | null
+        }
+        Relationships: []
+      }
       subdivision_plan_versions: {
         Row: {
           created_at: string
