@@ -34,6 +34,7 @@ export const UserSubdivisionRequests: React.FC = () => {
   const { isTestRoute } = useTestEnvironment();
   const [requests, setRequests] = useState<SubdivisionRequest[]>([]);
   const [loading, setLoading] = useState(true);
+  const [hiddenTestCount, setHiddenTestCount] = useState(0);
 
   useEffect(() => {
     if (!user) return;
@@ -50,6 +51,18 @@ export const UserSubdivisionRequests: React.FC = () => {
 
         if (error) throw error;
         setRequests(data || []);
+
+        // En mode production, vérifie si des demandes de test existent (cachées par le filtre)
+        if (!isTestRoute) {
+          const { count } = await (supabase as any)
+            .from('subdivision_requests')
+            .select('id', { count: 'exact', head: true })
+            .eq('user_id', user.id)
+            .ilike('reference_number', 'TEST-%');
+          setHiddenTestCount(count || 0);
+        } else {
+          setHiddenTestCount(0);
+        }
       } catch (error) {
         console.error('Error fetching subdivision requests:', error);
       } finally {
@@ -58,7 +71,7 @@ export const UserSubdivisionRequests: React.FC = () => {
     };
 
     fetchRequests();
-  }, [user]);
+  }, [user, isTestRoute]);
 
   if (loading) {
     return (
