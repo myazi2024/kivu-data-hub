@@ -35,6 +35,13 @@ export async function generateSubdivisionPlanPDF(req: SubdivisionPlanData): Prom
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
 
+  // Charger la config admin des éléments de plan obligatoires
+  const planElements = await getSubdivisionPlanElementsAsync();
+  const activeRequiredKeys = new Set(
+    planElements.filter(e => e.is_active && e.is_required).map(e => e.element_key)
+  );
+  const has = (key: string) => activeRequiredKeys.has(key);
+
   // Si les lots ne sont pas dans la requête, charger depuis subdivision_lots
   let lots: any[] = Array.isArray(req.lots_data) ? req.lots_data : [];
   if (lots.length === 0) {
