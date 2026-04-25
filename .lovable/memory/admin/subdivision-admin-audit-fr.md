@@ -42,3 +42,21 @@ type: feature
 - `AdminSubdivisionRequiredDocs` (onglet « Documents » du hub) — CRUD complet, restriction par type de demandeur, formats multi-select.
 - `StepDocuments.tsx` rendu data-driven: itère sur la config admin, validation MIME/taille dynamique côté client.
 - `SubdivisionDocuments` étendu avec signature index `[k: string]: string|null` (clés legacy conservées pour rétrocompat). Convention: stockage sous `${doc_key}_url`.
+
+## Lot C — Éléments de plan obligatoires configurables ✅
+- Table `subdivision_plan_elements` (element_key, category, is_required, validation_rule, display_order, is_active).
+- Hook `useSubdivisionPlanElements` + `getSubdivisionPlanElementsAsync` (cache 5 min, fallbacks).
+- `AdminSubdivisionPlanElements` (onglet « Plan » du hub) — CRUD, toggles, ordre.
+- `generateSubdivisionPlanPDF.ts` rend conditionnellement north arrow / échelle graphique / légende dynamique.
+
+## Lot D — Tarifs détaillés par infrastructure ✅
+- Table `subdivision_infrastructure_tariffs` (key, label, category, unit linear_m|sqm|unit|lot, rate_usd, section_type, min/max_total_usd, is_required).
+- 9 entrées seedées (voirie principale/secondaire, drainage, éclairage, etc.).
+- Hook `useSubdivisionInfrastructureTariffs({sectionType})` + `fetchInfrastructureTariffsAsync` (cache 5 min, fallback).
+- `AdminSubdivisionInfrastructureTariffs` intégré dans l'onglet « Tarifs » via `AdminSubdivisionFeesConfig`.
+
+## Lot E — Intégration infrastructures dans le formulaire ✅
+- Nouveau step **Infrastructures** (`StepInfrastructures.tsx`) après Plan, avant Documents — checkbox + quantité + sous-total live, groupé par catégorie, badges « Obligatoire ».
+- `useSubdivisionForm` : state `selectedInfrastructures` (key→qty), recompute fee debouncé incluant le surcoût infra, persistance dans le brouillon localStorage.
+- `FeeBreakdown` étendu (`infrastructures[]`, `infrastructuresTotal`, `lotsTotal`) — `StepSummary` affiche tableau infra séparé + sous-totaux + total.
+- Edge function `subdivision-request` : recalcul serveur (source de vérité) à partir de `subdivision_infrastructure_tariffs` filtrées sur `is_active`, persistance dans deux nouvelles colonnes `subdivision_requests.selected_infrastructures` (jsonb) et `infrastructure_fee_usd` (numeric).
