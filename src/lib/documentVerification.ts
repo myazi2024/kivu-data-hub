@@ -34,7 +34,7 @@ export async function createDocumentVerification(params: CreateVerificationParam
 
     const verificationCode = codeData as string;
 
-    const { error: insertError } = await supabase
+    const { error: insertError } = await (supabase as any)
       .from('document_verifications')
       .insert({
         verification_code: verificationCode,
