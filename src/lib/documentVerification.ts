@@ -1,6 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 
-export type DocumentType = 'report' | 'invoice' | 'permit' | 'certificate' | 'expertise' | 'mortgage_receipt';
+export type DocumentType = 'report' | 'invoice' | 'permit' | 'certificate' | 'expertise' | 'mortgage_receipt' | 'subdivision_plan';
 
 interface CreateVerificationParams {
   documentType: DocumentType;
