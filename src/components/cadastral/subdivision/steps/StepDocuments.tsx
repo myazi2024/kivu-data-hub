@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Upload, CheckCircle2, FileText, Loader2, Trash2, Info, Image as ImageIcon } from 'lucide-react';
 import type { SubdivisionDocuments } from '../types';
+import { useSubdivisionRequiredDocuments } from '@/hooks/useSubdivisionRequiredDocuments';
 
 export type { SubdivisionDocuments };
 
@@ -15,61 +16,50 @@ interface StepDocumentsProps {
   documents: SubdivisionDocuments;
   onChange: (next: SubdivisionDocuments) => void;
   userId?: string;
+  /** Type de demandeur sélectionné, pour filtrer les documents requis configurés. */
+  requesterType?: string;
 }
 
-const MAX_SIZE_MB = 5;
-const ACCEPT = 'image/jpeg,image/png,image/webp,application/pdf';
+// Convention: chaque doc_key configuré est stocké dans `documents` sous la clé `${doc_key}_url`.
+const urlKey = (docKey: string): keyof SubdivisionDocuments => `${docKey}_url`;
 
-type DocKey = keyof SubdivisionDocuments;
-
-const DOC_CONFIG: { key: DocKey; label: string; required: boolean; help: string }[] = [
-  {
-    key: 'requester_id_document_url',
-    label: "Pièce d'identité du demandeur",
-    required: true,
-    help: "Carte d'électeur, passeport ou permis de conduire (recto/verso si nécessaire).",
-  },
-  {
-    key: 'proof_of_ownership_url',
-    label: 'Preuve de propriété',
-    required: true,
-    help: "Certificat d'enregistrement, contrat de location, ou autre titre foncier valide.",
-  },
-  {
-    key: 'subdivision_sketch_url',
-    label: 'Croquis annexe (optionnel)',
-    required: false,
-    help: 'Schéma manuscrit ou plan annexe complémentaire.',
-  },
-];
-
-const StepDocuments: React.FC<StepDocumentsProps> = ({ documents, onChange, userId }) => {
+const StepDocuments: React.FC<StepDocumentsProps> = ({ documents, onChange, userId, requesterType }) => {
   const { toast } = useToast();
-  const [uploadingKey, setUploadingKey] = useState<DocKey | null>(null);
+  const { documents: requiredDocs, loading } = useSubdivisionRequiredDocuments(requesterType);
+  const [uploadingKey, setUploadingKey] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
-  const inputRefs = useRef<Record<DocKey, HTMLInputElement | null>>({
-    requester_id_document_url: null,
-    proof_of_ownership_url: null,
-    subdivision_sketch_url: null,
-  });
+  const inputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
-  const handleUpload = async (key: DocKey, file: File) => {
+  const handleUpload = async (
+    docKey: string,
+    file: File,
+    accepted: string[],
+    maxSizeMb: number,
+  ) => {
     if (!userId) {
       toast({ title: 'Authentification requise', variant: 'destructive' });
       return;
     }
-    if (file.size > MAX_SIZE_MB * 1024 * 1024) {
-      toast({ title: 'Fichier trop volumineux', description: `Maximum ${MAX_SIZE_MB} MB.`, variant: 'destructive' });
+    if (!accepted.includes(file.type)) {
+      toast({
+        title: 'Format non accepté',
+        description: `Formats autorisés : ${accepted.map(m => m.split('/')[1]?.toUpperCase()).join(', ')}.`,
+        variant: 'destructive',
+      });
+      return;
+    }
+    if (file.size > maxSizeMb * 1024 * 1024) {
+      toast({ title: 'Fichier trop volumineux', description: `Maximum ${maxSizeMb} Mo.`, variant: 'destructive' });
       return;
     }
 
-    setUploadingKey(key);
+    setUploadingKey(docKey);
     setProgress(20);
     try {
       const ext = file.name.split('.').pop() || 'bin';
       const fileName = `${crypto.randomUUID()}.${ext}`;
       // RLS storage policy requires the user id to be the FIRST folder segment.
-      const path = `${userId}/subdivision-documents/${key}/${fileName}`;
+      const path = `${userId}/subdivision-documents/${docKey}/${fileName}`;
       setProgress(50);
 
       const { error: uploadError } = await supabase.storage
@@ -78,8 +68,7 @@ const StepDocuments: React.FC<StepDocumentsProps> = ({ documents, onChange, user
       if (uploadError) throw uploadError;
       setProgress(80);
 
-      // Bucket is private — store the path; admins generate signed URLs on demand.
-      onChange({ ...documents, [key]: path });
+      onChange({ ...documents, [urlKey(docKey)]: path });
       setProgress(100);
       toast({ title: 'Fichier ajouté', description: file.name });
     } catch (err: any) {
@@ -93,8 +82,8 @@ const StepDocuments: React.FC<StepDocumentsProps> = ({ documents, onChange, user
     }
   };
 
-  const handleRemove = (key: DocKey) => {
-    onChange({ ...documents, [key]: null });
+  const handleRemove = (docKey: string) => {
+    onChange({ ...documents, [urlKey(docKey)]: null });
   };
 
   return (
@@ -108,24 +97,46 @@ const StepDocuments: React.FC<StepDocumentsProps> = ({ documents, onChange, user
         <Info className="h-3.5 w-3.5" />
         <AlertDescription className="text-xs">
           Les pièces marquées <span className="text-destructive font-medium">obligatoires</span> sont requises pour soumettre la demande.
-          Formats acceptés : JPEG, PNG, WebP, PDF · taille maximale {MAX_SIZE_MB} MB.
+          Les formats et tailles autorisés sont indiqués sur chaque pièce.
         </AlertDescription>
       </Alert>
 
-      {DOC_CONFIG.map((doc) => {
-        const url = documents[doc.key];
-        const isUploading = uploadingKey === doc.key;
+      {loading && (
+        <div className="flex items-center justify-center py-6 text-xs text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin mr-2" /> Chargement de la liste…
+        </div>
+      )}
+
+      {!loading && requiredDocs.length === 0 && (
+        <Alert variant="destructive" className="py-2">
+          <AlertDescription className="text-xs">
+            Aucun document configuré par l'administration pour ce type de demande.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {requiredDocs.map((doc) => {
+        const key = urlKey(doc.doc_key);
+        const url = documents[key];
+        const isUploading = uploadingKey === doc.doc_key;
+        const acceptAttr = doc.accepted_mime_types.join(',');
+        const formatLabel = doc.accepted_mime_types.map(m => m.split('/')[1]?.toUpperCase()).join(', ');
         return (
-          <Card key={doc.key} className={url ? 'border-primary/40 bg-primary/5' : ''}>
+          <Card key={doc.doc_key} className={url ? 'border-primary/40 bg-primary/5' : ''}>
             <CardContent className="pt-3 space-y-2">
               <div className="flex items-start justify-between gap-2">
                 <div className="flex-1 min-w-0">
                   <Label className="text-xs font-semibold flex items-center gap-1.5">
                     {url && <CheckCircle2 className="h-3.5 w-3.5 text-primary" />}
                     {doc.label}
-                    {doc.required && <span className="text-destructive">*</span>}
+                    {doc.is_required && <span className="text-destructive">*</span>}
                   </Label>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">{doc.help}</p>
+                  {doc.help_text && (
+                    <p className="text-[11px] text-muted-foreground mt-0.5">{doc.help_text}</p>
+                  )}
+                  <p className="text-[10px] text-muted-foreground mt-0.5">
+                    Formats : {formatLabel} · Taille max : {doc.max_size_mb} Mo
+                  </p>
                 </div>
               </div>
 
@@ -152,7 +163,7 @@ const StepDocuments: React.FC<StepDocumentsProps> = ({ documents, onChange, user
                     variant="ghost"
                     size="sm"
                     className="h-7 text-xs gap-1 text-destructive hover:text-destructive"
-                    onClick={() => handleRemove(doc.key)}
+                    onClick={() => handleRemove(doc.doc_key)}
                   >
                     <Trash2 className="h-3 w-3" />
                     Retirer
@@ -161,13 +172,13 @@ const StepDocuments: React.FC<StepDocumentsProps> = ({ documents, onChange, user
               ) : (
                 <>
                   <input
-                    ref={(el) => (inputRefs.current[doc.key] = el)}
+                    ref={(el) => { inputRefs.current[doc.doc_key] = el; }}
                     type="file"
-                    accept={ACCEPT}
+                    accept={acceptAttr}
                     className="hidden"
                     onChange={(e) => {
                       const file = e.target.files?.[0];
-                      if (file) handleUpload(doc.key, file);
+                      if (file) handleUpload(doc.doc_key, file, doc.accepted_mime_types, doc.max_size_mb);
                       e.target.value = '';
                     }}
                   />
@@ -175,7 +186,7 @@ const StepDocuments: React.FC<StepDocumentsProps> = ({ documents, onChange, user
                     variant="outline"
                     size="sm"
                     className="w-full gap-1.5 h-8 text-xs"
-                    onClick={() => inputRefs.current[doc.key]?.click()}
+                    onClick={() => inputRefs.current[doc.doc_key]?.click()}
                     disabled={isUploading}
                   >
                     {isUploading ? (

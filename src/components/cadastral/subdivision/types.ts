@@ -144,6 +144,13 @@ export interface FeeBreakdown {
   total: number;
 }
 
+/**
+ * Stockage des paths d'upload pour chaque document configuré.
+ * Les 3 clés legacy (requester_id_document_url, proof_of_ownership_url,
+ * subdivision_sketch_url) restent typées explicitement pour rétrocompatibilité.
+ * Les documents additionnels créés via l'admin sont stockés avec la convention
+ * `${doc_key}_url` (signature index `[k: string]: string | null`).
+ */
 export interface SubdivisionDocuments {
   /** Storage path inside the `cadastral-documents` private bucket. */
   requester_id_document_url: string | null;
@@ -151,6 +158,8 @@ export interface SubdivisionDocuments {
   proof_of_ownership_url: string | null;
   /** Storage path inside the `cadastral-documents` private bucket (optional). */
   subdivision_sketch_url: string | null;
+  /** Tout document additionnel configuré dynamiquement par l'admin. */
+  [docKeyUrl: string]: string | null;
 }
 
 export interface RequesterInfo {
