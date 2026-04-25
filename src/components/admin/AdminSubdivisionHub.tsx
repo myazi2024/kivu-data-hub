@@ -2,7 +2,7 @@ import { lazy, Suspense } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Card } from '@/components/ui/card';
-import { Grid3X3, DollarSign, Ruler, Layers, BarChart3, Loader2 } from 'lucide-react';
+import { Grid3X3, DollarSign, Ruler, Layers, BarChart3, Loader2, ListTree } from 'lucide-react';
 
 // Lazy-load tab contents — keeps the hub light and avoids upfront cost
 // when an admin only wants one tab.
@@ -11,6 +11,7 @@ const AdminSubdivisionRequests = lazy(() =>
 );
 const AdminSubdivisionFeesConfig = lazy(() => import('./AdminSubdivisionFeesConfig'));
 const AdminSubdivisionZoningRules = lazy(() => import('./AdminSubdivisionZoningRules'));
+const AdminSubdivisionReferences = lazy(() => import('./AdminSubdivisionReferences'));
 const AdminSubdivisionLots = lazy(() => import('./AdminSubdivisionLots'));
 const AdminSubdivisionAnalytics = lazy(() => import('./AdminSubdivisionAnalytics'));
 
@@ -20,7 +21,7 @@ const Fallback = () => (
   </div>
 );
 
-const VALID_SUBS = ['requests', 'fees', 'zoning', 'lots', 'analytics'] as const;
+const VALID_SUBS = ['requests', 'fees', 'zoning', 'references', 'lots', 'analytics'] as const;
 
 export default function AdminSubdivisionHub() {
   const [params, setParams] = useSearchParams();
@@ -49,7 +50,7 @@ export default function AdminSubdivisionHub() {
 
       <Tabs value={active} onValueChange={handleChange} className="w-full">
         <Card className="p-2">
-          <TabsList className="grid grid-cols-2 sm:grid-cols-5 w-full">
+          <TabsList className="grid grid-cols-3 sm:grid-cols-6 w-full">
             <TabsTrigger value="requests" className="gap-1.5">
               <Grid3X3 className="h-4 w-4" /> <span className="hidden sm:inline">Demandes</span>
             </TabsTrigger>
@@ -58,6 +59,9 @@ export default function AdminSubdivisionHub() {
             </TabsTrigger>
             <TabsTrigger value="zoning" className="gap-1.5">
               <Ruler className="h-4 w-4" /> <span className="hidden sm:inline">Zonage</span>
+            </TabsTrigger>
+            <TabsTrigger value="references" className="gap-1.5">
+              <ListTree className="h-4 w-4" /> <span className="hidden sm:inline">Référentiels</span>
             </TabsTrigger>
             <TabsTrigger value="lots" className="gap-1.5">
               <Layers className="h-4 w-4" /> <span className="hidden sm:inline">Lots & voies</span>
@@ -76,6 +80,9 @@ export default function AdminSubdivisionHub() {
         </TabsContent>
         <TabsContent value="zoning" className="mt-4">
           <Suspense fallback={<Fallback />}><AdminSubdivisionZoningRules /></Suspense>
+        </TabsContent>
+        <TabsContent value="references" className="mt-4">
+          <Suspense fallback={<Fallback />}><AdminSubdivisionReferences /></Suspense>
         </TabsContent>
         <TabsContent value="lots" className="mt-4">
           <Suspense fallback={<Fallback />}><AdminSubdivisionLots /></Suspense>

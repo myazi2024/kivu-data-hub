@@ -29,6 +29,7 @@ export const untypedTables = {
   map_providers: () => cast.from('map_providers'),
   certificate_templates: () => cast.from('certificate_templates'),
   subdivision_requests: () => cast.from('subdivision_requests'),
+  subdivision_reference_lists: () => cast.from('subdivision_reference_lists'),
   reseller_commissions_summary: () => cast.from('reseller_commissions_summary'),
   revenue_net_by_period: () => cast.from('revenue_net_by_period'),
   payment_transactions: () => cast.from('payment_transactions'),

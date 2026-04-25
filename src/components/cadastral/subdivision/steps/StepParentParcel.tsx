@@ -7,8 +7,8 @@ import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { MapPin, Loader2, CheckCircle, Info, ShieldAlert, ShieldCheck } from 'lucide-react';
 import { ParentParcelInfo, RequesterInfo } from '../types';
-import { SUBDIVISION_PURPOSE_LABELS } from '../constants';
 import RequesterIdentityBlock from '../RequesterIdentityBlock';
+import { useSubdivisionReferences } from '@/hooks/useSubdivisionReferences';
 import type { EligibilityResult } from '../hooks/useParentParcelEligibility';
 
 interface StepParentParcelProps {
@@ -24,6 +24,7 @@ interface StepParentParcelProps {
 const StepParentParcel: React.FC<StepParentParcelProps> = ({
   parentParcel, loadingParcel, requester, onRequesterChange, purpose, onPurposeChange, parentEligibility
 }) => {
+  const purposes = useSubdivisionReferences('purpose');
 
   if (loadingParcel) {
     return (
@@ -139,8 +140,8 @@ const StepParentParcel: React.FC<StepParentParcelProps> = ({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="_none" disabled>Sélectionnez le motif</SelectItem>
-              {Object.entries(SUBDIVISION_PURPOSE_LABELS).map(([key, label]) => (
-                <SelectItem key={key} value={key}>{label}</SelectItem>
+              {purposes.entries.map((p) => (
+                <SelectItem key={p.key} value={p.key}>{p.label}</SelectItem>
               ))}
             </SelectContent>
           </Select>
