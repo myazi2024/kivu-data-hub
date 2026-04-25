@@ -52,7 +52,7 @@ export default function AdminSubdivisionHub() {
 
       <Tabs value={active} onValueChange={handleChange} className="w-full">
         <Card className="p-2">
-          <TabsList className="grid grid-cols-4 sm:grid-cols-7 w-full">
+          <TabsList className="grid grid-cols-4 sm:grid-cols-8 w-full">
             <TabsTrigger value="requests" className="gap-1.5">
               <Grid3X3 className="h-4 w-4" /> <span className="hidden sm:inline">Demandes</span>
             </TabsTrigger>
@@ -67,6 +67,9 @@ export default function AdminSubdivisionHub() {
             </TabsTrigger>
             <TabsTrigger value="documents" className="gap-1.5">
               <FileText className="h-4 w-4" /> <span className="hidden sm:inline">Documents</span>
+            </TabsTrigger>
+            <TabsTrigger value="plan-elements" className="gap-1.5">
+              <Compass className="h-4 w-4" /> <span className="hidden sm:inline">Plan</span>
             </TabsTrigger>
             <TabsTrigger value="lots" className="gap-1.5">
               <Layers className="h-4 w-4" /> <span className="hidden sm:inline">Lots & voies</span>
