@@ -65,6 +65,18 @@ interface ZoningRule {
   min_common_space_pct: number;
   min_front_road_m: number;
   max_lots_per_request: number | null;
+  // Contraintes parcelle-mère
+  parent_min_area_sqm: number;
+  parent_max_area_sqm: number | null;
+  allow_if_active_dispute: boolean;
+  allow_if_active_mortgage: boolean;
+  require_registered_title: boolean;
+  min_title_age_years: number;
+  allow_if_pending_mutation: boolean;
+  require_gps_coordinates: boolean;
+  min_gps_points: number;
+  allow_if_pending_subdivision: boolean;
+  exclude_title_types: string[];
   notes: string | null;
   is_active: boolean;
   created_at: string;
@@ -91,6 +103,18 @@ const emptyForm = {
   min_common_space_pct: '5',
   min_front_road_m: '10',
   max_lots_per_request: '50',
+  // Contraintes parcelle-mère
+  parent_min_area_sqm: '1000',
+  parent_max_area_sqm: '',
+  allow_if_active_dispute: false,
+  allow_if_active_mortgage: false,
+  require_registered_title: true,
+  min_title_age_years: '0',
+  allow_if_pending_mutation: false,
+  require_gps_coordinates: true,
+  min_gps_points: '3',
+  allow_if_pending_subdivision: false,
+  exclude_title_types: '' as string,
   notes: '',
   is_active: true,
 };
