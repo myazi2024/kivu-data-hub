@@ -200,7 +200,7 @@ export interface RequesterInfo {
   isOwner: boolean;
 }
 
-export type SubdivisionStep = 'parcel' | 'designer' | 'plan' | 'documents' | 'summary';
+export type SubdivisionStep = 'parcel' | 'designer' | 'plan' | 'infrastructures' | 'documents' | 'summary';
 
 // Parcel side info
 export interface ParcelSideInfo {
