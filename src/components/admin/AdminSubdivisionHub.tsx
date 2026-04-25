@@ -50,7 +50,7 @@ export default function AdminSubdivisionHub() {
 
       <Tabs value={active} onValueChange={handleChange} className="w-full">
         <Card className="p-2">
-          <TabsList className="grid grid-cols-2 sm:grid-cols-5 w-full">
+          <TabsList className="grid grid-cols-3 sm:grid-cols-6 w-full">
             <TabsTrigger value="requests" className="gap-1.5">
               <Grid3X3 className="h-4 w-4" /> <span className="hidden sm:inline">Demandes</span>
             </TabsTrigger>
@@ -59,6 +59,9 @@ export default function AdminSubdivisionHub() {
             </TabsTrigger>
             <TabsTrigger value="zoning" className="gap-1.5">
               <Ruler className="h-4 w-4" /> <span className="hidden sm:inline">Zonage</span>
+            </TabsTrigger>
+            <TabsTrigger value="references" className="gap-1.5">
+              <ListTree className="h-4 w-4" /> <span className="hidden sm:inline">Référentiels</span>
             </TabsTrigger>
             <TabsTrigger value="lots" className="gap-1.5">
               <Layers className="h-4 w-4" /> <span className="hidden sm:inline">Lots & voies</span>
@@ -77,6 +80,9 @@ export default function AdminSubdivisionHub() {
         </TabsContent>
         <TabsContent value="zoning" className="mt-4">
           <Suspense fallback={<Fallback />}><AdminSubdivisionZoningRules /></Suspense>
+        </TabsContent>
+        <TabsContent value="references" className="mt-4">
+          <Suspense fallback={<Fallback />}><AdminSubdivisionReferences /></Suspense>
         </TabsContent>
         <TabsContent value="lots" className="mt-4">
           <Suspense fallback={<Fallback />}><AdminSubdivisionLots /></Suspense>
