@@ -198,6 +198,25 @@ export const UserSubdivisionRequests: React.FC = () => {
                   {req.purpose_of_subdivision}
                 </p>
               )}
+
+              {req.status === 'approved' && (
+                <div className="mt-2 flex justify-end">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 text-[11px] gap-1.5"
+                    onClick={() => handleDownloadPlan(req)}
+                    disabled={downloadingId === req.id}
+                  >
+                    {downloadingId === req.id ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Download className="h-3.5 w-3.5" />
+                    )}
+                    Télécharger le plan (PDF)
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
         );
