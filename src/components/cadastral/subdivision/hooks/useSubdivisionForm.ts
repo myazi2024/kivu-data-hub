@@ -214,6 +214,7 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
           setServitudes(draft.servitudes || []);
           setPurpose(draft.purpose || '');
           if (draft.planElements) setPlanElements(draft.planElements);
+          if (draft.selectedInfrastructures) setSelectedInfrastructures(draft.selectedInfrastructures);
           setDraftRestored(true);
         }
       }
