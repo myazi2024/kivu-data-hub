@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
-import { Grid3X3, MapPin, Pencil, Eye, FileText, ChevronLeft, ChevronRight, Check, Loader2, Info, Trash2, Upload } from 'lucide-react';
+import { Grid3X3, MapPin, Pencil, Eye, FileText, ChevronLeft, ChevronRight, Check, Loader2, Info, Trash2, Upload, Building2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import FormIntroDialog, { FORM_INTRO_CONFIGS } from './FormIntroDialog';
 import WhatsAppFloatingButton from './WhatsAppFloatingButton';
@@ -16,6 +16,7 @@ import StepParentParcel from './subdivision/steps/StepParentParcel';
 import StepLotDesigner from './subdivision/steps/StepLotDesigner';
 import StepPlanView from './subdivision/steps/StepPlanView';
 import StepDocuments from './subdivision/steps/StepDocuments';
+import StepInfrastructures from './subdivision/steps/StepInfrastructures';
 import StepSummary from './subdivision/steps/StepSummary';
 
 interface SubdivisionRequestDialogProps {
@@ -30,6 +31,7 @@ const STEP_CONFIG: { key: SubdivisionStep; label: string; icon: React.ReactNode;
   { key: 'parcel', label: 'Parcelle & Demandeur', icon: <MapPin className="h-3.5 w-3.5" />, shortLabel: 'Parcelle' },
   { key: 'designer', label: 'Conception des lots', icon: <Pencil className="h-3.5 w-3.5" />, shortLabel: 'Lots' },
   { key: 'plan', label: 'Plan personnalisé', icon: <Eye className="h-3.5 w-3.5" />, shortLabel: 'Plan' },
+  { key: 'infrastructures', label: 'Infrastructures', icon: <Building2 className="h-3.5 w-3.5" />, shortLabel: 'Infra' },
   { key: 'documents', label: 'Pièces justificatives', icon: <Upload className="h-3.5 w-3.5" />, shortLabel: 'Docs' },
   { key: 'summary', label: 'Récapitulatif & paiement', icon: <FileText className="h-3.5 w-3.5" />, shortLabel: 'Envoi' },
 ];
@@ -256,6 +258,14 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
                 servitudes={form.servitudes}
                 planElements={form.planElements}
                 onPlanElementsChange={form.setPlanElements}
+              />
+            )}
+            {form.currentStep === 'infrastructures' && (
+              <StepInfrastructures
+                sectionType={parcelData?.quartier ? 'urban' : (parcelData?.village ? 'rural' : 'urban')}
+                selections={form.selectedInfrastructures}
+                onChange={form.setSelectedInfrastructures}
+                numberOfLots={form.lots.length}
               />
             )}
             {form.currentStep === 'documents' && (

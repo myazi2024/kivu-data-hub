@@ -135,12 +135,26 @@ export interface FeeBreakdownItem {
   fee: number;
 }
 
+export interface InfrastructureFeeItem {
+  infrastructure_key: string;
+  label: string;
+  unit: string;
+  quantity: number;
+  rate_usd: number;
+  subtotal_usd: number;
+}
+
 export interface FeeBreakdown {
   ratePerSqm: number;
   locationName: string;
   sectionType: string;
   isDefault: boolean;
   items: FeeBreakdownItem[];
+  /** Sum of per-lot fees only (excluding infrastructures). */
+  lotsTotal?: number;
+  /** Lot E — infrastructure surcharge */
+  infrastructures?: InfrastructureFeeItem[];
+  infrastructuresTotal?: number;
   total: number;
 }
 
@@ -186,7 +200,7 @@ export interface RequesterInfo {
   isOwner: boolean;
 }
 
-export type SubdivisionStep = 'parcel' | 'designer' | 'plan' | 'documents' | 'summary';
+export type SubdivisionStep = 'parcel' | 'designer' | 'plan' | 'infrastructures' | 'documents' | 'summary';
 
 // Parcel side info
 export interface ParcelSideInfo {

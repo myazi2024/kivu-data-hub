@@ -10,6 +10,7 @@ import { validateSubdivision, ValidationResult, gpsToNormalized, polygonArea, po
 import { buildMetricFrame, polygonPerimeterM, polygonAreaSqmAccurate, MetricFrame } from '../utils/metrics';
 import { useZoningCompliance } from './useZoningCompliance';
 import { useParentParcelEligibility } from './useParentParcelEligibility';
+import { fetchInfrastructureTariffsAsync } from '@/hooks/useSubdivisionInfrastructureTariffs';
 
 const DRAFT_KEY_PREFIX = 'subdivision-draft-v2-';
 
@@ -63,8 +64,11 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
     }
   }, [authUser]);
   
+  // Lot E — infrastructures sélectionnées (key -> quantité)
+  const [selectedInfrastructures, setSelectedInfrastructures] = useState<Record<string, number>>({});
+
   // Load subdivision rate from config based on location
-  const computeFee = useCallback(async (currentLots: SubdivisionLot[]) => {
+  const computeFee = useCallback(async (currentLots: SubdivisionLot[], infraSelections: Record<string, number>) => {
     try {
       // Determine section type and location from parcelData
       const sectionType = parcelData?.province && !parcelData?.quartier ? 'rural' : 'urban';
@@ -86,10 +90,30 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
       const fallbackRate = ratesData.find(r => r.location_name === '*');
       const rate = specificRate || fallbackRate;
 
+      // Lot E — compute infra surcharge from admin tariffs
+      const tariffs = await fetchInfrastructureTariffsAsync();
+      const infraItems = Object.entries(infraSelections)
+        .filter(([, qty]) => qty > 0)
+        .map(([key, qty]) => {
+          const t = tariffs.find(x => x.infrastructure_key === key);
+          if (!t) return null;
+          const subtotal = Math.round(qty * t.rate_usd * 100) / 100;
+          return {
+            infrastructure_key: key,
+            label: t.label,
+            unit: t.unit as string,
+            quantity: qty,
+            rate_usd: t.rate_usd,
+            subtotal_usd: subtotal,
+          };
+        })
+        .filter(Boolean) as NonNullable<FeeBreakdown['infrastructures']>;
+      const infrastructuresTotal = Math.round(infraItems.reduce((s, i) => s + i.subtotal_usd, 0) * 100) / 100;
+
       if (!rate) {
-        // Safe fallback: 10$ per lot (aligned with edge function)
-        const fallback = Math.max(10, currentLots.length * 10);
-        setSubmissionFee(fallback);
+        // Safe fallback: 10$ per lot (aligned with edge function) + infra
+        const fallback = Math.max(10, currentLots.length * 10) + infrastructuresTotal;
+        setSubmissionFee(Math.round(fallback * 100) / 100);
         setFeeBreakdown(null);
         setLoadingFee(false);
         return;
@@ -105,7 +129,8 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
         return { lotId: lot.id, lotNumber: lot.lotNumber, areaSqm: lot.areaSqm, fee };
       });
 
-      const total = Math.round(items.reduce((s, i) => s + i.fee, 0) * 100) / 100;
+      const lotsTotal = Math.round(items.reduce((s, i) => s + i.fee, 0) * 100) / 100;
+      const total = Math.round((lotsTotal + infrastructuresTotal) * 100) / 100;
 
       setFeeBreakdown({
         ratePerSqm,
@@ -113,6 +138,9 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
         sectionType,
         isDefault: !specificRate,
         items,
+        lotsTotal,
+        infrastructures: infraItems,
+        infrastructuresTotal,
         total,
       });
       setSubmissionFee(total);
@@ -131,15 +159,15 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
   // Debounced fee recompute (400ms) — avoids hammering Supabase on every drag
   const feeDebounceRef = useRef<number | null>(null);
   useEffect(() => {
-    if (lots.length === 0) return;
+    if (lots.length === 0 && Object.keys(selectedInfrastructures).length === 0) return;
     if (feeDebounceRef.current) window.clearTimeout(feeDebounceRef.current);
     feeDebounceRef.current = window.setTimeout(() => {
-      computeFee(lots);
+      computeFee(lots, selectedInfrastructures);
     }, 400);
     return () => {
       if (feeDebounceRef.current) window.clearTimeout(feeDebounceRef.current);
     };
-  }, [lots, computeFee]);
+  }, [lots, selectedInfrastructures, computeFee]);
 
   const [roads, setRoads] = useState<SubdivisionRoad[]>([]);
   const [commonSpaces, setCommonSpaces] = useState<SubdivisionCommonSpace[]>([]);
@@ -186,6 +214,7 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
           setServitudes(draft.servitudes || []);
           setPurpose(draft.purpose || '');
           if (draft.planElements) setPlanElements(draft.planElements);
+          if (draft.selectedInfrastructures) setSelectedInfrastructures(draft.selectedInfrastructures);
           setDraftRestored(true);
         }
       }
@@ -200,12 +229,13 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
     try {
       localStorage.setItem(draftKey, JSON.stringify({
         lots, roads, commonSpaces, servitudes, purpose, planElements,
+        selectedInfrastructures,
         savedAt: new Date().toISOString(),
       }));
     } catch {
       // storage full — ignore
     }
-  }, [lots, roads, commonSpaces, servitudes, purpose, planElements, draftKey]);
+  }, [lots, roads, commonSpaces, servitudes, purpose, planElements, selectedInfrastructures, draftKey]);
   
   const clearDraft = useCallback(() => {
     localStorage.removeItem(draftKey);
@@ -481,6 +511,8 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
         return lots.length >= 2 && validation.isValid;
       case 'plan':
         return true;
+      case 'infrastructures':
+        return true; // toutes optionnelles côté UX (les obligatoires sont auto-cochées)
       case 'documents':
         return !!(documents.requester_id_document_url && documents.proof_of_ownership_url);
       case 'summary':
@@ -491,7 +523,7 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
   }, [parentParcel, requester, lots, validation, purpose, documents, parentEligibility]);
 
   // Navigation
-  const steps: SubdivisionStep[] = ['parcel', 'designer', 'plan', 'documents', 'summary'];
+  const steps: SubdivisionStep[] = ['parcel', 'designer', 'plan', 'infrastructures', 'documents', 'summary'];
 
   const goNext = useCallback(() => {
     const idx = steps.indexOf(currentStep);
@@ -554,6 +586,7 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
           planElements,
           purpose,
           documents,
+          selected_infrastructures: selectedInfrastructures,
         },
       });
 
@@ -581,7 +614,7 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
     } finally {
       setSubmitting(false);
     }
-  }, [parentParcel, parcelData, requester, lots, roads, commonSpaces, servitudes, planElements, purpose, parcelNumber, parcelId, documents, clearDraft]);
+  }, [parentParcel, parcelData, requester, lots, roads, commonSpaces, servitudes, planElements, purpose, parcelNumber, parcelId, documents, selectedInfrastructures, clearDraft]);
 
   const markSubmittedFallback = useCallback(() => setSubmitted(true), []);
 
@@ -614,6 +647,8 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
     purpose, setPurpose,
     // Documents
     documents, setDocuments,
+    // Lot E — infrastructures sélectionnées
+    selectedInfrastructures, setSelectedInfrastructures,
     // Submission
     submitting, submitted, referenceNumber, createdRequestId, submit, markSubmittedFallback,
     // Pricing
