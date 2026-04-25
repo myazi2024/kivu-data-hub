@@ -6136,6 +6136,7 @@ export type Database = {
           final_payment_status: string | null
           id: string
           in_review_at: string | null
+          infrastructure_fee_usd: number
           intended_use_per_lot: Json | null
           lots_data: Json
           number_of_lots: number
@@ -6169,6 +6170,7 @@ export type Database = {
           requester_type: string | null
           reviewed_at: string | null
           reviewed_by: string | null
+          selected_infrastructures: Json
           status: string | null
           subdivision_plan_data: Json | null
           subdivision_sketch_url: string | null
@@ -6195,6 +6197,7 @@ export type Database = {
           final_payment_status?: string | null
           id?: string
           in_review_at?: string | null
+          infrastructure_fee_usd?: number
           intended_use_per_lot?: Json | null
           lots_data?: Json
           number_of_lots: number
@@ -6228,6 +6231,7 @@ export type Database = {
           requester_type?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
+          selected_infrastructures?: Json
           status?: string | null
           subdivision_plan_data?: Json | null
           subdivision_sketch_url?: string | null
@@ -6254,6 +6258,7 @@ export type Database = {
           final_payment_status?: string | null
           id?: string
           in_review_at?: string | null
+          infrastructure_fee_usd?: number
           intended_use_per_lot?: Json | null
           lots_data?: Json
           number_of_lots?: number
@@ -6287,6 +6292,7 @@ export type Database = {
           requester_type?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
+          selected_infrastructures?: Json
           status?: string | null
           subdivision_plan_data?: Json | null
           subdivision_sketch_url?: string | null
