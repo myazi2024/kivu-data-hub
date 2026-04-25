@@ -586,6 +586,7 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
           planElements,
           purpose,
           documents,
+          selected_infrastructures: selectedInfrastructures,
         },
       });
 
