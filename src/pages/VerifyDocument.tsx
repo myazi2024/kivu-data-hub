@@ -16,6 +16,7 @@ const DOCUMENT_TYPE_LABELS: Record<string, string> = {
   certificate: 'Certificat',
   expertise: "Rapport d'Expertise",
   mortgage_receipt: 'Reçu Hypothécaire',
+  subdivision_plan: 'Plan de Lotissement',
 };
 
 interface VerificationResult {
