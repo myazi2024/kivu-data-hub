@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useTestEnvironment, applyTestFilter } from '@/hooks/useTestEnvironment';
-import { Loader2, LayoutGrid, MapPin, Calendar, Hash } from 'lucide-react';
+import { Loader2, LayoutGrid, MapPin, Calendar, Hash, FlaskConical } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
