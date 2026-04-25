@@ -219,7 +219,77 @@ export async function generateSubdivisionPlanPDF(req: SubdivisionPlanData): Prom
     doc.text('Schéma non disponible', planX + planW / 2, planY + planH / 2, { align: 'center' });
   }
 
-  // ===== Tableau des lots =====
+  // ===== Éléments obligatoires du plan (configurables par l'admin) =====
+  // Flèche du Nord (en haut-droite du cadre schéma)
+  if (has('north_arrow')) {
+    const nx = planX + planW - 8;
+    const ny = planY + 8;
+    doc.setDrawColor(40, 40, 40);
+    doc.setFillColor(40, 40, 40);
+    doc.setLineWidth(0.4);
+    // Flèche : triangle pointant vers le haut + ligne
+    doc.triangle(nx, ny - 5, nx - 2.5, ny + 2, nx + 2.5, ny + 2, 'F');
+    doc.line(nx, ny + 2, nx, ny + 6);
+    doc.setFontSize(7);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(40, 40, 40);
+    doc.text('N', nx, ny - 6, { align: 'center' });
+  }
+
+  // Échelle graphique (en bas-gauche du cadre schéma)
+  if (has('echelle_graphique')) {
+    const sx = planX + 4;
+    const sy = planY + planH - 5;
+    const segW = 6; // mm par segment
+    doc.setDrawColor(40, 40, 40);
+    doc.setLineWidth(0.4);
+    // Barres alternées noir/blanc
+    for (let i = 0; i < 4; i++) {
+      if (i % 2 === 0) {
+        doc.setFillColor(40, 40, 40);
+        doc.rect(sx + i * segW, sy, segW, 1.5, 'F');
+      } else {
+        doc.setFillColor(255, 255, 255);
+        doc.rect(sx + i * segW, sy, segW, 1.5, 'FD');
+      }
+    }
+    doc.setFontSize(6);
+    doc.setTextColor(40, 40, 40);
+    doc.text('0', sx, sy + 4);
+    doc.text('échelle indicative', sx + segW * 4 + 1, sy + 1.2);
+  }
+
+  // Légende dynamique (en bas-droite du cadre schéma)
+  if (has('legende') && lots.length > 0) {
+    // Regrouper par usage prévu
+    const usageColors = new Map<string, string>();
+    lots.forEach(l => {
+      const u = (l.intendedUse || 'Non défini').slice(0, 24);
+      if (!usageColors.has(u)) usageColors.set(u, l.color || '#22c55e');
+    });
+    const entries = Array.from(usageColors.entries()).slice(0, 5);
+    const lgX = planX + planW - 50;
+    let lgY = planY + planH - 4 - entries.length * 4;
+    doc.setFontSize(7);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(60, 60, 60);
+    doc.text('Légende', lgX, lgY - 1.5);
+    doc.setFont('helvetica', 'normal');
+    entries.forEach(([usage, color]) => {
+      const m = /^#?([0-9a-f]{6})$/i.exec(color || '');
+      if (m) {
+        const n = parseInt(m[1], 16);
+        doc.setFillColor((n >> 16) & 255, (n >> 8) & 255, n & 255);
+      } else {
+        doc.setFillColor(34, 197, 94);
+      }
+      doc.rect(lgX, lgY, 3, 3, 'F');
+      doc.setTextColor(40, 40, 40);
+      doc.text(usage, lgX + 4.5, lgY + 2.4);
+      lgY += 4;
+    });
+  }
+
   let yTable = Math.max(yInfo + 4, planY + planH + 6);
   if (yTable > pageHeight - 50) { doc.addPage(); yTable = 20; }
 
