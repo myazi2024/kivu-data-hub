@@ -138,6 +138,43 @@ Deno.serve(async (req) => {
       totalFee = body.lots.length * 10;
     }
 
+    // === Lot E — Server-side infrastructure surcharge ===
+    let infrastructureFee = 0;
+    const persistedInfrastructures: Array<{
+      infrastructure_key: string;
+      label: string;
+      unit: string;
+      quantity: number;
+      rate_usd: number;
+      subtotal_usd: number;
+    }> = [];
+    const selectedInfra = body.selected_infrastructures || {};
+    const selectedKeys = Object.keys(selectedInfra).filter((k) => Number(selectedInfra[k]) > 0);
+    if (selectedKeys.length > 0) {
+      const { data: infraTariffs } = await supabase
+        .from("subdivision_infrastructure_tariffs")
+        .select("infrastructure_key,label,unit,rate_usd,is_active")
+        .in("infrastructure_key", selectedKeys)
+        .eq("is_active", true);
+      for (const t of (infraTariffs as any[]) || []) {
+        const qty = Math.max(0, Number(selectedInfra[t.infrastructure_key]) || 0);
+        const subtotal = Math.round(qty * Number(t.rate_usd) * 100) / 100;
+        if (subtotal <= 0) continue;
+        infrastructureFee += subtotal;
+        persistedInfrastructures.push({
+          infrastructure_key: t.infrastructure_key,
+          label: t.label,
+          unit: t.unit,
+          quantity: qty,
+          rate_usd: Number(t.rate_usd),
+          subtotal_usd: subtotal,
+        });
+      }
+      infrastructureFee = Math.round(infrastructureFee * 100) / 100;
+      totalFee = Math.round((totalFee + infrastructureFee) * 100) / 100;
+      if (feeBreakdown) feeBreakdown.infrastructure_total = infrastructureFee;
+    }
+
     if (totalFee <= 0) throw new Error("Computed fee must be positive");
 
     // === Generate reference_number atomically ===
