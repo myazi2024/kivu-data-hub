@@ -19,7 +19,7 @@ Deno.serve(async (req) => {
     catch { return { ms: Math.round(performance.now() - t0), ok: false }; }
   };
 
-  const db = await ping(() => supabase.from('system_settings').select('setting_key').limit(1));
+  const db = await ping(async () => { await supabase.from('system_settings').select('setting_key').limit(1); });
   const auth = await ping(() => supabase.auth.getSession());
   const storage = await ping(() => supabase.storage.listBuckets());
   const edge = await ping(() => fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/health-snapshot?ping=1`, { method: 'HEAD' }));

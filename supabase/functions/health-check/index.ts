@@ -46,7 +46,7 @@ Deno.serve(async (req) => {
         ok: false,
         timestamp: new Date().toISOString(),
         latency_ms: Date.now() - start,
-        error: err.message,
+        error: err instanceof Error ? err.message : String(err),
       }),
       {
         status: 503,
