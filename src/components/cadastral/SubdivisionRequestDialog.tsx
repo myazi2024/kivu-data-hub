@@ -260,6 +260,14 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
                 onPlanElementsChange={form.setPlanElements}
               />
             )}
+            {form.currentStep === 'infrastructures' && (
+              <StepInfrastructures
+                sectionType={parcelData?.quartier ? 'urban' : (parcelData?.village ? 'rural' : 'urban')}
+                selections={form.selectedInfrastructures}
+                onChange={form.setSelectedInfrastructures}
+                numberOfLots={form.lots.length}
+              />
+            )}
             {form.currentStep === 'documents' && (
               <StepDocuments
                 documents={form.documents}
