@@ -259,12 +259,51 @@ const StepSummary: React.FC<StepSummaryProps> = ({
                     ))}
                   </tbody>
                   <tfoot>
-                    <tr className="border-t-2">
-                      <td className="py-1 px-2 font-bold" colSpan={2}>Total</td>
-                      <td className="py-1 px-2 text-right font-mono font-bold text-primary">{feeBreakdown.total.toFixed(2)} USD</td>
+                    <tr className="border-t">
+                      <td className="py-1 px-2 font-semibold" colSpan={2}>Sous-total lots</td>
+                      <td className="py-1 px-2 text-right font-mono font-semibold">
+                        {(feeBreakdown.lotsTotal ?? feeBreakdown.items.reduce((s, i) => s + i.fee, 0)).toFixed(2)} USD
+                      </td>
                     </tr>
                   </tfoot>
                 </table>
+              </div>
+
+              {feeBreakdown.infrastructures && feeBreakdown.infrastructures.length > 0 && (
+                <div className="mt-2 overflow-x-auto">
+                  <div className="text-xs font-semibold mb-1 text-muted-foreground">Infrastructures sélectionnées</div>
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left py-1 px-2 font-medium">Infrastructure</th>
+                        <th className="text-right py-1 px-2 font-medium">Quantité</th>
+                        <th className="text-right py-1 px-2 font-medium">Sous-total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {feeBreakdown.infrastructures.map(it => (
+                        <tr key={it.infrastructure_key} className="border-b border-dashed last:border-0">
+                          <td className="py-1 px-2">{it.label}</td>
+                          <td className="py-1 px-2 text-right font-mono">{it.quantity} {it.unit}</td>
+                          <td className="py-1 px-2 text-right font-mono">{it.subtotal_usd.toFixed(2)} USD</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot>
+                      <tr className="border-t">
+                        <td className="py-1 px-2 font-semibold" colSpan={2}>Sous-total infrastructures</td>
+                        <td className="py-1 px-2 text-right font-mono font-semibold">
+                          {(feeBreakdown.infrastructuresTotal ?? 0).toFixed(2)} USD
+                        </td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              )}
+
+              <div className="flex items-center justify-between border-t-2 pt-2 mt-2">
+                <span className="text-sm font-bold">Total</span>
+                <span className="text-base font-bold text-primary font-mono">{feeBreakdown.total.toFixed(2)} USD</span>
               </div>
             </>
           ) : (
