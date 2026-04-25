@@ -5801,6 +5801,63 @@ export type Database = {
           },
         ]
       }
+      subdivision_infrastructure_tariffs: {
+        Row: {
+          category: string
+          created_at: string
+          description: string | null
+          display_order: number
+          id: string
+          infrastructure_key: string
+          is_active: boolean
+          is_required: boolean
+          label: string
+          max_total_usd: number | null
+          metadata: Json
+          min_total_usd: number | null
+          rate_usd: number
+          section_type: string | null
+          unit: string
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          infrastructure_key: string
+          is_active?: boolean
+          is_required?: boolean
+          label: string
+          max_total_usd?: number | null
+          metadata?: Json
+          min_total_usd?: number | null
+          rate_usd?: number
+          section_type?: string | null
+          unit: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          infrastructure_key?: string
+          is_active?: boolean
+          is_required?: boolean
+          label?: string
+          max_total_usd?: number | null
+          metadata?: Json
+          min_total_usd?: number | null
+          rate_usd?: number
+          section_type?: string | null
+          unit?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       subdivision_lots: {
         Row: {
           area_sqm: number

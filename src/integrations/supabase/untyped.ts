@@ -32,6 +32,7 @@ export const untypedTables = {
   subdivision_reference_lists: () => cast.from('subdivision_reference_lists'),
   subdivision_required_documents: () => cast.from('subdivision_required_documents'),
   subdivision_plan_elements: () => cast.from('subdivision_plan_elements'),
+  subdivision_infrastructure_tariffs: () => cast.from('subdivision_infrastructure_tariffs'),
   reseller_commissions_summary: () => cast.from('reseller_commissions_summary'),
   revenue_net_by_period: () => cast.from('revenue_net_by_period'),
   payment_transactions: () => cast.from('payment_transactions'),
