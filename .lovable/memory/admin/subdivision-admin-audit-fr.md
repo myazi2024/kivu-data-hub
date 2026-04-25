@@ -34,3 +34,11 @@ type: feature
 ## Reste (low priority)
 - 2 `as any` sur `.update({ assigned_to, assigned_at })` — décalage entre types Supabase générés et schema effectif (assigned_to nullable). Toléré.
 - RLS audit complet `subdivision_requests` (admin/super_admin only sur update assigned_to) — déjà couvert par `request_admin_audit` mais à valider via `supabase--linter` à la prochaine itération.
+
+## Lot B — Documents requis configurables ✅
+- Table `subdivision_required_documents` (doc_key unique, label, help_text, is_required, requester_types[], accepted_mime_types[], max_size_mb, display_order, is_active, metadata jsonb).
+- RLS: lecture publique sur entrées actives; CRUD admin/super_admin uniquement.
+- Hook `useSubdivisionRequiredDocuments(requesterType?)` — cache module 5 min, fallback hardcoded sur 3 docs legacy.
+- `AdminSubdivisionRequiredDocs` (onglet « Documents » du hub) — CRUD complet, restriction par type de demandeur, formats multi-select.
+- `StepDocuments.tsx` rendu data-driven: itère sur la config admin, validation MIME/taille dynamique côté client.
+- `SubdivisionDocuments` étendu avec signature index `[k: string]: string|null` (clés legacy conservées pour rétrocompat). Convention: stockage sous `${doc_key}_url`.
