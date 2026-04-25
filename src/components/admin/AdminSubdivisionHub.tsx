@@ -23,7 +23,7 @@ const Fallback = () => (
   </div>
 );
 
-const VALID_SUBS = ['requests', 'fees', 'zoning', 'references', 'documents', 'lots', 'analytics'] as const;
+const VALID_SUBS = ['requests', 'fees', 'zoning', 'references', 'documents', 'plan-elements', 'lots', 'analytics'] as const;
 
 export default function AdminSubdivisionHub() {
   const [params, setParams] = useSearchParams();
