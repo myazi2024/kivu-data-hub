@@ -608,6 +608,8 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
     validation, runValidation,
     // Conformité zonage admin
     zoningCompliance,
+    // Éligibilité de la parcelle-mère (vérifiée en amont)
+    parentEligibility,
     // Purpose
     purpose, setPurpose,
     // Documents
