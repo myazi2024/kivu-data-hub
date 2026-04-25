@@ -459,6 +459,8 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
     switch (step) {
       case 'parcel': {
         if (!parentParcel || !requester.type || !purpose || !requester.phone) return false;
+        // Bloquer la suite si la parcelle-mère ne respecte pas les contraintes admin
+        if (!parentEligibility.loading && !parentEligibility.eligible) return false;
         const status = requester.legalStatus;
         if (!status) return false;
         if (status !== 'État' && !requester.nationality) return false;
@@ -486,7 +488,7 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
       default:
         return false;
     }
-  }, [parentParcel, requester, lots, validation, purpose, documents]);
+  }, [parentParcel, requester, lots, validation, purpose, documents, parentEligibility]);
 
   // Navigation
   const steps: SubdivisionStep[] = ['parcel', 'designer', 'plan', 'documents', 'summary'];
