@@ -81,22 +81,47 @@ export const UserSubdivisionRequests: React.FC = () => {
     );
   }
 
+  const testHint = hiddenTestCount > 0 && !isTestRoute ? (
+    <Alert className="border-warning/50 bg-warning/5">
+      <FlaskConical className="h-4 w-4 text-warning" />
+      <AlertTitle className="text-sm">
+        {hiddenTestCount} demande{hiddenTestCount > 1 ? 's' : ''} de test masquée{hiddenTestCount > 1 ? 's' : ''}
+      </AlertTitle>
+      <AlertDescription className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mt-1">
+        <span className="text-xs">
+          Vous avez {hiddenTestCount} demande{hiddenTestCount > 1 ? 's' : ''} de lotissement créée{hiddenTestCount > 1 ? 's' : ''} en mode test.
+          Elles ne sont pas affichées ici car vous êtes en environnement de production.
+        </span>
+        <Button asChild size="sm" variant="outline" className="shrink-0">
+          <Link to="/test/mon-compte?tab=subdivisions">
+            <FlaskConical className="h-3.5 w-3.5 mr-1.5" />
+            Voir en mode test
+          </Link>
+        </Button>
+      </AlertDescription>
+    </Alert>
+  ) : null;
+
   if (requests.length === 0) {
     return (
-      <Card>
-        <CardContent className="py-12 text-center">
-          <LayoutGrid className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
-          <h3 className="text-sm font-medium mb-1">Aucune demande de lotissement</h3>
-          <p className="text-xs text-muted-foreground">
-            Vos demandes de lotissement apparaîtront ici.
-          </p>
-        </CardContent>
-      </Card>
+      <div className="space-y-3">
+        {testHint}
+        <Card>
+          <CardContent className="py-12 text-center">
+            <LayoutGrid className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
+            <h3 className="text-sm font-medium mb-1">Aucune demande de lotissement</h3>
+            <p className="text-xs text-muted-foreground">
+              Vos demandes de lotissement soumises apparaîtront ici, qu'elles soient en attente, approuvées, rejetées ou renvoyées.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
   return (
     <div className="space-y-3">
+      {testHint}
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold">{requests.length} demande{requests.length > 1 ? 's' : ''}</h3>
       </div>
