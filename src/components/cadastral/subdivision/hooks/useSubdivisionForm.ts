@@ -647,6 +647,8 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
     purpose, setPurpose,
     // Documents
     documents, setDocuments,
+    // Lot E — infrastructures sélectionnées
+    selectedInfrastructures, setSelectedInfrastructures,
     // Submission
     submitting, submitted, referenceNumber, createdRequestId, submit, markSubmittedFallback,
     // Pricing
