@@ -511,6 +511,8 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
         return lots.length >= 2 && validation.isValid;
       case 'plan':
         return true;
+      case 'infrastructures':
+        return true; // toutes optionnelles côté UX (les obligatoires sont auto-cochées)
       case 'documents':
         return !!(documents.requester_id_document_url && documents.proof_of_ownership_url);
       case 'summary':
@@ -521,7 +523,7 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
   }, [parentParcel, requester, lots, validation, purpose, documents, parentEligibility]);
 
   // Navigation
-  const steps: SubdivisionStep[] = ['parcel', 'designer', 'plan', 'documents', 'summary'];
+  const steps: SubdivisionStep[] = ['parcel', 'designer', 'plan', 'infrastructures', 'documents', 'summary'];
 
   const goNext = useCallback(() => {
     const idx = steps.indexOf(currentStep);
