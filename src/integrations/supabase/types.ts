@@ -5964,6 +5964,60 @@ export type Database = {
         }
         Relationships: []
       }
+      subdivision_reference_lists: {
+        Row: {
+          applies_to_section: string | null
+          category: Database["public"]["Enums"]["subdivision_reference_category"]
+          color: string | null
+          created_at: string
+          extra_cost_per_unit_usd: number | null
+          id: string
+          is_active: boolean
+          is_required: boolean | null
+          key: string
+          label: string
+          min_pct: number | null
+          min_width_m: number | null
+          notes: string | null
+          ordering: number
+          updated_at: string
+        }
+        Insert: {
+          applies_to_section?: string | null
+          category: Database["public"]["Enums"]["subdivision_reference_category"]
+          color?: string | null
+          created_at?: string
+          extra_cost_per_unit_usd?: number | null
+          id?: string
+          is_active?: boolean
+          is_required?: boolean | null
+          key: string
+          label: string
+          min_pct?: number | null
+          min_width_m?: number | null
+          notes?: string | null
+          ordering?: number
+          updated_at?: string
+        }
+        Update: {
+          applies_to_section?: string | null
+          category?: Database["public"]["Enums"]["subdivision_reference_category"]
+          color?: string | null
+          created_at?: string
+          extra_cost_per_unit_usd?: number | null
+          id?: string
+          is_active?: boolean
+          is_required?: boolean | null
+          key?: string
+          label?: string
+          min_pct?: number | null
+          min_width_m?: number | null
+          notes?: string | null
+          ordering?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       subdivision_requests: {
         Row: {
           additional_documents: Json | null
@@ -7737,6 +7791,15 @@ export type Database = {
         | "defaulted"
         | "renegotiated"
         | "cancelled"
+      subdivision_reference_category:
+        | "purpose"
+        | "requester_type"
+        | "lot_use"
+        | "road_surface"
+        | "common_space_type"
+        | "servitude_type"
+        | "fence_type"
+        | "construction_type"
       user_role: "admin" | "partner" | "user"
     }
     CompositeTypes: {
@@ -7891,6 +7954,16 @@ export const Constants = {
         "defaulted",
         "renegotiated",
         "cancelled",
+      ],
+      subdivision_reference_category: [
+        "purpose",
+        "requester_type",
+        "lot_use",
+        "road_surface",
+        "common_space_type",
+        "servitude_type",
+        "fence_type",
+        "construction_type",
       ],
       user_role: ["admin", "partner", "user"],
     },
