@@ -159,15 +159,15 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
   // Debounced fee recompute (400ms) — avoids hammering Supabase on every drag
   const feeDebounceRef = useRef<number | null>(null);
   useEffect(() => {
-    if (lots.length === 0) return;
+    if (lots.length === 0 && Object.keys(selectedInfrastructures).length === 0) return;
     if (feeDebounceRef.current) window.clearTimeout(feeDebounceRef.current);
     feeDebounceRef.current = window.setTimeout(() => {
-      computeFee(lots);
+      computeFee(lots, selectedInfrastructures);
     }, 400);
     return () => {
       if (feeDebounceRef.current) window.clearTimeout(feeDebounceRef.current);
     };
-  }, [lots, computeFee]);
+  }, [lots, selectedInfrastructures, computeFee]);
 
   const [roads, setRoads] = useState<SubdivisionRoad[]>([]);
   const [commonSpaces, setCommonSpaces] = useState<SubdivisionCommonSpace[]>([]);
