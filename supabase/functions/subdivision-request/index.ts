@@ -57,7 +57,10 @@ interface SubdivisionRequestBody {
     requester_id_document_url?: string | null;
     proof_of_ownership_url?: string | null;
     subdivision_sketch_url?: string | null;
+    [k: string]: string | null | undefined;
   };
+  /** Lot E — infrastructures sélectionnées par l'utilisateur (key -> quantité). */
+  selected_infrastructures?: Record<string, number>;
 }
 
 Deno.serve(async (req) => {
