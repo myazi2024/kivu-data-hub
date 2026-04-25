@@ -31,6 +31,7 @@ const STEP_CONFIG: { key: SubdivisionStep; label: string; icon: React.ReactNode;
   { key: 'parcel', label: 'Parcelle & Demandeur', icon: <MapPin className="h-3.5 w-3.5" />, shortLabel: 'Parcelle' },
   { key: 'designer', label: 'Conception des lots', icon: <Pencil className="h-3.5 w-3.5" />, shortLabel: 'Lots' },
   { key: 'plan', label: 'Plan personnalisé', icon: <Eye className="h-3.5 w-3.5" />, shortLabel: 'Plan' },
+  { key: 'infrastructures', label: 'Infrastructures', icon: <Building2 className="h-3.5 w-3.5" />, shortLabel: 'Infra' },
   { key: 'documents', label: 'Pièces justificatives', icon: <Upload className="h-3.5 w-3.5" />, shortLabel: 'Docs' },
   { key: 'summary', label: 'Récapitulatif & paiement', icon: <FileText className="h-3.5 w-3.5" />, shortLabel: 'Envoi' },
 ];
