@@ -6205,7 +6205,12 @@ export type Database = {
       }
       subdivision_zoning_rules: {
         Row: {
+          allow_if_active_dispute: boolean
+          allow_if_active_mortgage: boolean
+          allow_if_pending_mutation: boolean
+          allow_if_pending_subdivision: boolean
           created_at: string
+          exclude_title_types: string[]
           id: string
           is_active: boolean
           location_name: string
@@ -6213,15 +6218,26 @@ export type Database = {
           max_lots_per_request: number | null
           min_common_space_pct: number
           min_front_road_m: number
+          min_gps_points: number
           min_lot_area_sqm: number
           min_road_width_m: number
+          min_title_age_years: number
           notes: string | null
+          parent_max_area_sqm: number | null
+          parent_min_area_sqm: number
           recommended_road_width_m: number
+          require_gps_coordinates: boolean
+          require_registered_title: boolean
           section_type: string
           updated_at: string
         }
         Insert: {
+          allow_if_active_dispute?: boolean
+          allow_if_active_mortgage?: boolean
+          allow_if_pending_mutation?: boolean
+          allow_if_pending_subdivision?: boolean
           created_at?: string
+          exclude_title_types?: string[]
           id?: string
           is_active?: boolean
           location_name?: string
@@ -6229,15 +6245,26 @@ export type Database = {
           max_lots_per_request?: number | null
           min_common_space_pct?: number
           min_front_road_m?: number
+          min_gps_points?: number
           min_lot_area_sqm?: number
           min_road_width_m?: number
+          min_title_age_years?: number
           notes?: string | null
+          parent_max_area_sqm?: number | null
+          parent_min_area_sqm?: number
           recommended_road_width_m?: number
+          require_gps_coordinates?: boolean
+          require_registered_title?: boolean
           section_type: string
           updated_at?: string
         }
         Update: {
+          allow_if_active_dispute?: boolean
+          allow_if_active_mortgage?: boolean
+          allow_if_pending_mutation?: boolean
+          allow_if_pending_subdivision?: boolean
           created_at?: string
+          exclude_title_types?: string[]
           id?: string
           is_active?: boolean
           location_name?: string
@@ -6245,10 +6272,16 @@ export type Database = {
           max_lots_per_request?: number | null
           min_common_space_pct?: number
           min_front_road_m?: number
+          min_gps_points?: number
           min_lot_area_sqm?: number
           min_road_width_m?: number
+          min_title_age_years?: number
           notes?: string | null
+          parent_max_area_sqm?: number | null
+          parent_min_area_sqm?: number
           recommended_road_width_m?: number
+          require_gps_coordinates?: boolean
+          require_registered_title?: boolean
           section_type?: string
           updated_at?: string
         }

@@ -5,10 +5,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { MapPin, Loader2, CheckCircle, Info } from 'lucide-react';
+import { MapPin, Loader2, CheckCircle, Info, ShieldAlert, ShieldCheck } from 'lucide-react';
 import { ParentParcelInfo, RequesterInfo } from '../types';
 import { SUBDIVISION_PURPOSE_LABELS } from '../constants';
 import RequesterIdentityBlock from '../RequesterIdentityBlock';
+import type { EligibilityResult } from '../hooks/useParentParcelEligibility';
 
 interface StepParentParcelProps {
   parentParcel: ParentParcelInfo | null;
@@ -17,10 +18,11 @@ interface StepParentParcelProps {
   onRequesterChange: (r: RequesterInfo) => void;
   purpose: string;
   onPurposeChange: (p: string) => void;
+  parentEligibility?: EligibilityResult;
 }
 
 const StepParentParcel: React.FC<StepParentParcelProps> = ({
-  parentParcel, loadingParcel, requester, onRequesterChange, purpose, onPurposeChange
+  parentParcel, loadingParcel, requester, onRequesterChange, purpose, onPurposeChange, parentEligibility
 }) => {
 
   if (loadingParcel) {
@@ -32,8 +34,49 @@ const StepParentParcel: React.FC<StepParentParcelProps> = ({
     );
   }
 
+  const showEligibility = parentParcel && parentEligibility && parentEligibility.ruleApplied;
+  const blocked = showEligibility && !parentEligibility.eligible && !parentEligibility.loading;
+
   return (
     <div className="space-y-4">
+      {/* Bandeau d'éligibilité — affiché en tête si des contraintes ne sont pas respectées */}
+      {blocked && (
+        <div className="rounded-xl border-2 border-destructive/40 bg-destructive/5 overflow-hidden shadow-sm">
+          <div className="flex items-start gap-3 px-4 py-3 bg-destructive/10 border-b border-destructive/20">
+            <ShieldAlert className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+            <div className="flex-1 min-w-0">
+              <h3 className="font-semibold text-sm text-destructive">
+                Cette parcelle ne peut pas faire l'objet d'un lotissement
+              </h3>
+              <p className="text-xs text-destructive/80 mt-0.5">
+                Les contraintes techniques suivantes, définies par les règles de zonage en vigueur, ne sont pas respectées :
+              </p>
+            </div>
+          </div>
+          <ul className="px-4 py-3 space-y-2">
+            {parentEligibility!.issues.map((iss) => (
+              <li key={iss.code} className="flex items-start gap-2 text-xs">
+                <span className="mt-1 h-1.5 w-1.5 rounded-full bg-destructive shrink-0" />
+                <span className="text-foreground/90 leading-relaxed">{iss.message}</span>
+              </li>
+            ))}
+          </ul>
+          <div className="px-4 py-2.5 bg-muted/40 border-t text-[11px] text-muted-foreground">
+            Veuillez régulariser ces points (mise à jour du titre, levée du litige, complément GPS, etc.) avant de soumettre votre demande. Pour toute assistance, contactez le service cadastral.
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation d'éligibilité */}
+      {showEligibility && parentEligibility!.eligible && !parentEligibility!.loading && (
+        <Alert className="border-emerald-500/40 bg-emerald-50/60">
+          <ShieldCheck className="h-4 w-4 text-emerald-600" />
+          <AlertDescription className="text-xs text-emerald-900">
+            Cette parcelle respecte l'ensemble des contraintes techniques requises pour faire l'objet d'un lotissement.
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Parent parcel info */}
       <Card className="border-primary/20">
         <CardContent className="pt-4 space-y-3">

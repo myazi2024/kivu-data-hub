@@ -9,6 +9,7 @@ import {
 import { validateSubdivision, ValidationResult, gpsToNormalized, polygonArea, polygonPerimeter, snapNearbyLotVertices } from '../utils/geometry';
 import { buildMetricFrame, polygonPerimeterM, polygonAreaSqmAccurate, MetricFrame } from '../utils/metrics';
 import { useZoningCompliance } from './useZoningCompliance';
+import { useParentParcelEligibility } from './useParentParcelEligibility';
 
 const DRAFT_KEY_PREFIX = 'subdivision-draft-v2-';
 
@@ -303,6 +304,33 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
     commonSpaces,
   );
 
+  // Éligibilité de la parcelle-mère vérifiée en amont (avant tout tracé)
+  const parentEligibility = useParentParcelEligibility(
+    parentParcel
+      ? {
+          id: parcelId,
+          parcel_number: parcelNumber,
+          area_sqm: parentParcel.areaSqm,
+          property_title_type: parentParcel.titleType,
+          title_issue_date: parentParcel.titleIssueDate,
+          gps_coordinates: parentParcel.gpsCoordinates,
+        }
+      : null,
+    parcelData
+      ? {
+          province: parcelData.province,
+          ville: parcelData.ville,
+          commune: parcelData.commune,
+          quartier: parcelData.quartier,
+          avenue: parcelData.avenue,
+          territoire: parcelData.territoire,
+          collectivite: parcelData.collectivite,
+          groupement: parcelData.groupement,
+          village: parcelData.village,
+        }
+      : null,
+  );
+
   // History management
   const pushHistory = useCallback((newLots: SubdivisionLot[]) => {
     const newHistory = historyRef.current.slice(0, historyIndexRef.current + 1);
@@ -431,6 +459,8 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
     switch (step) {
       case 'parcel': {
         if (!parentParcel || !requester.type || !purpose || !requester.phone) return false;
+        // Bloquer la suite si la parcelle-mère ne respecte pas les contraintes admin
+        if (!parentEligibility.loading && !parentEligibility.eligible) return false;
         const status = requester.legalStatus;
         if (!status) return false;
         if (status !== 'État' && !requester.nationality) return false;
@@ -458,7 +488,7 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
       default:
         return false;
     }
-  }, [parentParcel, requester, lots, validation, purpose, documents]);
+  }, [parentParcel, requester, lots, validation, purpose, documents, parentEligibility]);
 
   // Navigation
   const steps: SubdivisionStep[] = ['parcel', 'designer', 'plan', 'documents', 'summary'];
@@ -578,6 +608,8 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
     validation, runValidation,
     // Conformité zonage admin
     zoningCompliance,
+    // Éligibilité de la parcelle-mère (vérifiée en amont)
+    parentEligibility,
     // Purpose
     purpose, setPurpose,
     // Documents
