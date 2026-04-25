@@ -786,6 +786,100 @@ const AdminSubdivisionZoningRules: React.FC = () => {
 
             <Separator />
 
+            {/* Section 3 bis — Contraintes parcelle-mère */}
+            <section className="space-y-3">
+              <div className="flex items-center gap-2">
+                <MapPin className="h-4 w-4 text-primary" />
+                <h3 className="text-sm font-semibold">Contraintes sur la parcelle-mère</h3>
+              </div>
+              <p className="text-[11px] text-muted-foreground -mt-1">
+                Conditions vérifiées dès l'ouverture du formulaire de demande de lotissement. Si l'une d'elles n'est pas respectée, la demande est bloquée en amont.
+              </p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label className="text-xs flex items-center gap-1.5">
+                    Surface min parcelle-mère (m²)
+                    <FieldHelp
+                      title="Surface minimale de la parcelle-mère"
+                      description="Aire totale minimale (en m²) que doit avoir la parcelle pour pouvoir faire l'objet d'un lotissement. Une parcelle plus petite ne permet pas un découpage viable."
+                      example="1 000 m² pour autoriser un mini-lotissement résidentiel."
+                    />
+                  </Label>
+                  <Input type="number" step="1" inputMode="numeric" value={form.parent_min_area_sqm} onChange={e => setForm(f => ({ ...f, parent_min_area_sqm: e.target.value }))} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs flex items-center gap-1.5">
+                    Surface max parcelle-mère (m²)
+                    <FieldHelp
+                      title="Surface maximale de la parcelle-mère"
+                      description="Aire totale au-delà de laquelle un lotissement classique n'est plus autorisé (relèverait d'une procédure d'aménagement). Laisser vide pour ne pas plafonner."
+                      example="100 000 m² (10 ha)."
+                    />
+                  </Label>
+                  <Input type="number" step="1" inputMode="numeric" value={form.parent_max_area_sqm} onChange={e => setForm(f => ({ ...f, parent_max_area_sqm: e.target.value }))} placeholder="Optionnel" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs flex items-center gap-1.5">
+                    Âge min du titre foncier (années)
+                    <FieldHelp
+                      title="Ancienneté minimale du titre"
+                      description="Nombre d'années minimum depuis la date de délivrance du titre foncier. Permet d'éviter le lotissement de parcelles très récemment titrées (anti-spéculation)."
+                      example="2 ans pour limiter la revente immédiate après titrement."
+                    />
+                  </Label>
+                  <Input type="number" step="1" inputMode="numeric" value={form.min_title_age_years} onChange={e => setForm(f => ({ ...f, min_title_age_years: e.target.value }))} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs flex items-center gap-1.5">
+                    Nombre min de points GPS
+                    <FieldHelp
+                      title="Nombre minimal de sommets GPS"
+                      description="Nombre minimum de points GPS (sommets) géoréférencés exigés sur la parcelle pour autoriser le lotissement. Garantit la précision du tracé."
+                      example="3 pour un triangle, 4 pour un quadrilatère, etc."
+                    />
+                  </Label>
+                  <Input type="number" step="1" inputMode="numeric" value={form.min_gps_points} onChange={e => setForm(f => ({ ...f, min_gps_points: e.target.value }))} />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs flex items-center gap-1.5">
+                  Types de titres exclus (séparés par virgule)
+                  <FieldHelp
+                    title="Types de titres exclus du lotissement"
+                    description="Types de titres fonciers qui ne permettent pas de demander un lotissement (ex: contrats temporaires). Saisir les libellés exacts séparés par des virgules."
+                    example="Contrat de location, Contrat d'occupation provisoire"
+                  />
+                </Label>
+                <Input value={form.exclude_title_types} onChange={e => setForm(f => ({ ...f, exclude_title_types: e.target.value }))} placeholder="Ex: Contrat de location, Contrat d'occupation provisoire" />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {[
+                  { key: 'require_registered_title' as const, label: 'Exiger un certificat d\'enregistrement', desc: 'La parcelle doit posséder un titre de pleine propriété enregistré.' },
+                  { key: 'require_gps_coordinates' as const, label: 'Exiger des coordonnées GPS', desc: 'La parcelle doit avoir un tracé géoréférencé valide.' },
+                  { key: 'allow_if_active_dispute' as const, label: 'Autoriser si litige foncier actif', desc: 'Si désactivé : un litige actif bloque la demande.' },
+                  { key: 'allow_if_active_mortgage' as const, label: 'Autoriser si hypothèque active', desc: 'Si désactivé : une hypothèque active bloque la demande.' },
+                  { key: 'allow_if_pending_mutation' as const, label: 'Autoriser si mutation en cours', desc: 'Si désactivé : une mutation en attente bloque la demande.' },
+                  { key: 'allow_if_pending_subdivision' as const, label: 'Autoriser si lotissement en cours', desc: 'Si désactivé : une demande de lotissement déjà ouverte sur la parcelle bloque toute nouvelle demande.' },
+                ].map(opt => (
+                  <label key={opt.key} className="flex items-center justify-between gap-3 px-3 py-2 rounded-md border bg-muted/30 hover:bg-muted/60 cursor-pointer transition-colors">
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-xs font-medium truncate">{opt.label}</span>
+                      <span className="text-[10px] text-muted-foreground line-clamp-2">{opt.desc}</span>
+                    </div>
+                    <Switch
+                      checked={form[opt.key] as boolean}
+                      onCheckedChange={v => setForm(f => ({ ...f, [opt.key]: v }))}
+                    />
+                  </label>
+                ))}
+              </div>
+            </section>
+
+            <Separator />
+
             {/* Section 4 — Notes & statut */}
             <section className="space-y-3">
               <div className="flex items-center gap-2">
