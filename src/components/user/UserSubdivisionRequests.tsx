@@ -122,6 +122,41 @@ export const UserSubdivisionRequests: React.FC = () => {
     );
   }
 
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+
+  const handleDownloadPlan = async (req: SubdivisionRequest) => {
+    setDownloadingId(req.id);
+    try {
+      // Charger les données complètes nécessaires au plan
+      const { data: full, error } = await (supabase as any)
+        .from('subdivision_requests')
+        .select('id, reference_number, parcel_number, number_of_lots, purpose_of_subdivision, parent_parcel_area_sqm, parent_parcel_location, parent_parcel_owner_name, requester_first_name, requester_last_name, approved_at, reviewed_at, lots_data, subdivision_plan_data')
+        .eq('id', req.id)
+        .single();
+      if (error) throw error;
+
+      const blob = await generateSubdivisionPlanPDF(full);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `plan-lotissement-${req.reference_number}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast({ title: 'Plan téléchargé', description: 'Le plan de lotissement a été généré avec succès.' });
+    } catch (err: any) {
+      console.error('Download plan error:', err);
+      toast({
+        title: 'Erreur',
+        description: err?.message || 'Impossible de générer le plan.',
+        variant: 'destructive',
+      });
+    } finally {
+      setDownloadingId(null);
+    }
+  };
+
   return (
     <div className="space-y-3">
       {testHint}
