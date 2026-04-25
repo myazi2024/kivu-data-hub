@@ -290,6 +290,7 @@ export async function generateSubdivisionPlanPDF(req: SubdivisionPlanData): Prom
     });
   }
 
+  // ===== Tableau des lots =====
   let yTable = Math.max(yInfo + 4, planY + planH + 6);
   if (yTable > pageHeight - 50) { doc.addPage(); yTable = 20; }
 
