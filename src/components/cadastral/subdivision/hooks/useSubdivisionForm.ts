@@ -64,8 +64,11 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
     }
   }, [authUser]);
   
+  // Lot E — infrastructures sélectionnées (key -> quantité)
+  const [selectedInfrastructures, setSelectedInfrastructures] = useState<Record<string, number>>({});
+
   // Load subdivision rate from config based on location
-  const computeFee = useCallback(async (currentLots: SubdivisionLot[]) => {
+  const computeFee = useCallback(async (currentLots: SubdivisionLot[], infraSelections: Record<string, number>) => {
     try {
       // Determine section type and location from parcelData
       const sectionType = parcelData?.province && !parcelData?.quartier ? 'rural' : 'urban';
@@ -87,10 +90,30 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
       const fallbackRate = ratesData.find(r => r.location_name === '*');
       const rate = specificRate || fallbackRate;
 
+      // Lot E — compute infra surcharge from admin tariffs
+      const tariffs = await fetchInfrastructureTariffsAsync();
+      const infraItems = Object.entries(infraSelections)
+        .filter(([, qty]) => qty > 0)
+        .map(([key, qty]) => {
+          const t = tariffs.find(x => x.infrastructure_key === key);
+          if (!t) return null;
+          const subtotal = Math.round(qty * t.rate_usd * 100) / 100;
+          return {
+            infrastructure_key: key,
+            label: t.label,
+            unit: t.unit as string,
+            quantity: qty,
+            rate_usd: t.rate_usd,
+            subtotal_usd: subtotal,
+          };
+        })
+        .filter(Boolean) as NonNullable<FeeBreakdown['infrastructures']>;
+      const infrastructuresTotal = Math.round(infraItems.reduce((s, i) => s + i.subtotal_usd, 0) * 100) / 100;
+
       if (!rate) {
-        // Safe fallback: 10$ per lot (aligned with edge function)
-        const fallback = Math.max(10, currentLots.length * 10);
-        setSubmissionFee(fallback);
+        // Safe fallback: 10$ per lot (aligned with edge function) + infra
+        const fallback = Math.max(10, currentLots.length * 10) + infrastructuresTotal;
+        setSubmissionFee(Math.round(fallback * 100) / 100);
         setFeeBreakdown(null);
         setLoadingFee(false);
         return;
@@ -106,7 +129,8 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
         return { lotId: lot.id, lotNumber: lot.lotNumber, areaSqm: lot.areaSqm, fee };
       });
 
-      const total = Math.round(items.reduce((s, i) => s + i.fee, 0) * 100) / 100;
+      const lotsTotal = Math.round(items.reduce((s, i) => s + i.fee, 0) * 100) / 100;
+      const total = Math.round((lotsTotal + infrastructuresTotal) * 100) / 100;
 
       setFeeBreakdown({
         ratePerSqm,
@@ -114,6 +138,9 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
         sectionType,
         isDefault: !specificRate,
         items,
+        lotsTotal,
+        infrastructures: infraItems,
+        infrastructuresTotal,
         total,
       });
       setSubmissionFee(total);
