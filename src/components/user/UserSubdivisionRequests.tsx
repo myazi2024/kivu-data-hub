@@ -46,7 +46,7 @@ export const UserSubdivisionRequests: React.FC = () => {
       try {
         let query = (supabase as any)
           .from('subdivision_requests')
-          .select('id, reference_number, parcel_number, number_of_lots, purpose_of_subdivision, status, created_at, reviewed_at')
+          .select('id, reference_number, parcel_number, number_of_lots, purpose_of_subdivision, status, created_at, reviewed_at, approved_at')
           .eq('user_id', user.id)
           .order('created_at', { ascending: false });
         query = applyTestFilter(query, 'reference_number', isTestRoute);
