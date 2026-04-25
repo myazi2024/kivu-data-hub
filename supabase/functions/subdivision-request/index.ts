@@ -225,6 +225,9 @@ Deno.serve(async (req) => {
       requester_id_document_url: body.documents.requester_id_document_url,
       proof_of_ownership_url: body.documents.proof_of_ownership_url,
       subdivision_sketch_url: body.documents.subdivision_sketch_url || null,
+      // Lot E
+      selected_infrastructures: persistedInfrastructures,
+      infrastructure_fee_usd: infrastructureFee,
     };
 
     const { data, error } = await supabase
