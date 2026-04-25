@@ -2,7 +2,7 @@ import { lazy, Suspense } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Card } from '@/components/ui/card';
-import { Grid3X3, DollarSign, Ruler, Layers, BarChart3, Loader2 } from 'lucide-react';
+import { Grid3X3, DollarSign, Ruler, Layers, BarChart3, Loader2, ListTree } from 'lucide-react';
 
 // Lazy-load tab contents — keeps the hub light and avoids upfront cost
 // when an admin only wants one tab.
@@ -11,6 +11,7 @@ const AdminSubdivisionRequests = lazy(() =>
 );
 const AdminSubdivisionFeesConfig = lazy(() => import('./AdminSubdivisionFeesConfig'));
 const AdminSubdivisionZoningRules = lazy(() => import('./AdminSubdivisionZoningRules'));
+const AdminSubdivisionReferences = lazy(() => import('./AdminSubdivisionReferences'));
 const AdminSubdivisionLots = lazy(() => import('./AdminSubdivisionLots'));
 const AdminSubdivisionAnalytics = lazy(() => import('./AdminSubdivisionAnalytics'));
 
@@ -20,7 +21,7 @@ const Fallback = () => (
   </div>
 );
 
-const VALID_SUBS = ['requests', 'fees', 'zoning', 'lots', 'analytics'] as const;
+const VALID_SUBS = ['requests', 'fees', 'zoning', 'references', 'lots', 'analytics'] as const;
 
 export default function AdminSubdivisionHub() {
   const [params, setParams] = useSearchParams();
