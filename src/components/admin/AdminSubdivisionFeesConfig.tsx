@@ -12,6 +12,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { Plus, Pencil, Trash2, DollarSign, Loader2, Calculator } from 'lucide-react';
+import AdminSubdivisionInfrastructureTariffs from './AdminSubdivisionInfrastructureTariffs';
 
 interface RateConfig {
   id: string;
@@ -397,6 +398,9 @@ const AdminSubdivisionFeesConfig: React.FC = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Lot D — tarifs détaillés par type d'infrastructure */}
+      <AdminSubdivisionInfrastructureTariffs />
     </div>
   );
 };
