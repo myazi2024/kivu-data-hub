@@ -229,12 +229,13 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
     try {
       localStorage.setItem(draftKey, JSON.stringify({
         lots, roads, commonSpaces, servitudes, purpose, planElements,
+        selectedInfrastructures,
         savedAt: new Date().toISOString(),
       }));
     } catch {
       // storage full — ignore
     }
-  }, [lots, roads, commonSpaces, servitudes, purpose, planElements, draftKey]);
+  }, [lots, roads, commonSpaces, servitudes, purpose, planElements, selectedInfrastructures, draftKey]);
   
   const clearDraft = useCallback(() => {
     localStorage.removeItem(draftKey);
