@@ -412,6 +412,20 @@ const AdminSubdivisionZoningRules: React.FC = () => {
       min_common_space_pct: parseFloat(form.min_common_space_pct) || 0,
       min_front_road_m: parseFloat(form.min_front_road_m) || 0,
       max_lots_per_request: form.max_lots_per_request ? parseInt(form.max_lots_per_request) : null,
+      parent_min_area_sqm: parseFloat(form.parent_min_area_sqm) || 0,
+      parent_max_area_sqm: form.parent_max_area_sqm ? parseFloat(form.parent_max_area_sqm) : null,
+      allow_if_active_dispute: form.allow_if_active_dispute,
+      allow_if_active_mortgage: form.allow_if_active_mortgage,
+      require_registered_title: form.require_registered_title,
+      min_title_age_years: parseInt(form.min_title_age_years) || 0,
+      allow_if_pending_mutation: form.allow_if_pending_mutation,
+      require_gps_coordinates: form.require_gps_coordinates,
+      min_gps_points: parseInt(form.min_gps_points) || 3,
+      allow_if_pending_subdivision: form.allow_if_pending_subdivision,
+      exclude_title_types: form.exclude_title_types
+        .split(',')
+        .map(s => s.trim())
+        .filter(Boolean),
       notes: form.notes.trim() || null,
       is_active: form.is_active,
     };
