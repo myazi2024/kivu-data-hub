@@ -7,9 +7,11 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useTestEnvironment, applyTestFilter } from '@/hooks/useTestEnvironment';
-import { Loader2, LayoutGrid, MapPin, Calendar, Hash, FlaskConical } from 'lucide-react';
+import { Loader2, LayoutGrid, MapPin, Calendar, Hash, FlaskConical, Download } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { generateSubdivisionPlanPDF } from '@/utils/generateSubdivisionPlanPDF';
+import { toast } from '@/hooks/use-toast';
 
 interface SubdivisionRequest {
   id: string;
@@ -20,6 +22,7 @@ interface SubdivisionRequest {
   status: string;
   created_at: string;
   reviewed_at: string | null;
+  approved_at?: string | null;
 }
 
 const statusConfig: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
@@ -43,7 +46,7 @@ export const UserSubdivisionRequests: React.FC = () => {
       try {
         let query = (supabase as any)
           .from('subdivision_requests')
-          .select('id, reference_number, parcel_number, number_of_lots, purpose_of_subdivision, status, created_at, reviewed_at')
+          .select('id, reference_number, parcel_number, number_of_lots, purpose_of_subdivision, status, created_at, reviewed_at, approved_at')
           .eq('user_id', user.id)
           .order('created_at', { ascending: false });
         query = applyTestFilter(query, 'reference_number', isTestRoute);
@@ -119,6 +122,41 @@ export const UserSubdivisionRequests: React.FC = () => {
     );
   }
 
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+
+  const handleDownloadPlan = async (req: SubdivisionRequest) => {
+    setDownloadingId(req.id);
+    try {
+      // Charger les données complètes nécessaires au plan
+      const { data: full, error } = await (supabase as any)
+        .from('subdivision_requests')
+        .select('id, reference_number, parcel_number, number_of_lots, purpose_of_subdivision, parent_parcel_area_sqm, parent_parcel_location, parent_parcel_owner_name, requester_first_name, requester_last_name, approved_at, reviewed_at, lots_data, subdivision_plan_data')
+        .eq('id', req.id)
+        .single();
+      if (error) throw error;
+
+      const blob = await generateSubdivisionPlanPDF(full);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `plan-lotissement-${req.reference_number}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast({ title: 'Plan téléchargé', description: 'Le plan de lotissement a été généré avec succès.' });
+    } catch (err: any) {
+      console.error('Download plan error:', err);
+      toast({
+        title: 'Erreur',
+        description: err?.message || 'Impossible de générer le plan.',
+        variant: 'destructive',
+      });
+    } finally {
+      setDownloadingId(null);
+    }
+  };
+
   return (
     <div className="space-y-3">
       {testHint}
@@ -159,6 +197,25 @@ export const UserSubdivisionRequests: React.FC = () => {
                 <p className="mt-2 text-[11px] text-muted-foreground bg-muted/30 rounded-lg p-2">
                   {req.purpose_of_subdivision}
                 </p>
+              )}
+
+              {req.status === 'approved' && (
+                <div className="mt-2 flex justify-end">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 text-[11px] gap-1.5"
+                    onClick={() => handleDownloadPlan(req)}
+                    disabled={downloadingId === req.id}
+                  >
+                    {downloadingId === req.id ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Download className="h-3.5 w-3.5" />
+                    )}
+                    Télécharger le plan (PDF)
+                  </Button>
+                </div>
               )}
             </CardContent>
           </Card>

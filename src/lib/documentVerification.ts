@@ -1,6 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 
-export type DocumentType = 'report' | 'invoice' | 'permit' | 'certificate' | 'expertise' | 'mortgage_receipt';
+export type DocumentType = 'report' | 'invoice' | 'permit' | 'certificate' | 'expertise' | 'mortgage_receipt' | 'subdivision_plan';
 
 interface CreateVerificationParams {
   documentType: DocumentType;
@@ -34,7 +34,7 @@ export async function createDocumentVerification(params: CreateVerificationParam
 
     const verificationCode = codeData as string;
 
-    const { error: insertError } = await supabase
+    const { error: insertError } = await (supabase as any)
       .from('document_verifications')
       .insert({
         verification_code: verificationCode,
