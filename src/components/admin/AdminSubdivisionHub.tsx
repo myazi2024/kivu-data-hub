@@ -13,6 +13,7 @@ const AdminSubdivisionFeesConfig = lazy(() => import('./AdminSubdivisionFeesConf
 const AdminSubdivisionZoningRules = lazy(() => import('./AdminSubdivisionZoningRules'));
 const AdminSubdivisionReferences = lazy(() => import('./AdminSubdivisionReferences'));
 const AdminSubdivisionRequiredDocs = lazy(() => import('./AdminSubdivisionRequiredDocs'));
+const AdminSubdivisionPlanElements = lazy(() => import('./AdminSubdivisionPlanElements'));
 const AdminSubdivisionLots = lazy(() => import('./AdminSubdivisionLots'));
 const AdminSubdivisionAnalytics = lazy(() => import('./AdminSubdivisionAnalytics'));
 
