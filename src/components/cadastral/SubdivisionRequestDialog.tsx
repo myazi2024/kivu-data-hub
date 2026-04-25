@@ -221,6 +221,7 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
                 onRequesterChange={form.setRequester}
                 purpose={form.purpose}
                 onPurposeChange={form.setPurpose}
+                parentEligibility={form.parentEligibility}
               />
             )}
             {form.currentStep === 'designer' && (
