@@ -263,6 +263,7 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
                 documents={form.documents}
                 onChange={form.setDocuments}
                 userId={user?.id}
+                requesterType={form.requester?.type}
               />
             )}
             {form.currentStep === 'summary' && (
