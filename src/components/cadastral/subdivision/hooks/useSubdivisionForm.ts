@@ -10,6 +10,7 @@ import { validateSubdivision, ValidationResult, gpsToNormalized, polygonArea, po
 import { buildMetricFrame, polygonPerimeterM, polygonAreaSqmAccurate, MetricFrame } from '../utils/metrics';
 import { useZoningCompliance } from './useZoningCompliance';
 import { useParentParcelEligibility } from './useParentParcelEligibility';
+import { fetchInfrastructureTariffsAsync } from '@/hooks/useSubdivisionInfrastructureTariffs';
 
 const DRAFT_KEY_PREFIX = 'subdivision-draft-v2-';
 
