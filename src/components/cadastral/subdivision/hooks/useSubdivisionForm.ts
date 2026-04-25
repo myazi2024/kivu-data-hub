@@ -9,6 +9,7 @@ import {
 import { validateSubdivision, ValidationResult, gpsToNormalized, polygonArea, polygonPerimeter, snapNearbyLotVertices } from '../utils/geometry';
 import { buildMetricFrame, polygonPerimeterM, polygonAreaSqmAccurate, MetricFrame } from '../utils/metrics';
 import { useZoningCompliance } from './useZoningCompliance';
+import { useParentParcelEligibility } from './useParentParcelEligibility';
 
 const DRAFT_KEY_PREFIX = 'subdivision-draft-v2-';
 
