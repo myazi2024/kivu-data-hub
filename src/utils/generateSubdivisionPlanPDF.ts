@@ -3,6 +3,7 @@ import QRCode from 'qrcode';
 import { fetchAppLogo } from '@/utils/pdfLogoHelper';
 import { createDocumentVerification } from '@/lib/documentVerification';
 import { supabase } from '@/integrations/supabase/client';
+import { getSubdivisionPlanElementsAsync } from '@/hooks/useSubdivisionPlanElements';
 
 interface SubdivisionPlanData {
   id: string;
