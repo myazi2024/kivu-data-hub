@@ -1179,8 +1179,8 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
                   </Label>
                   <p className="text-[11px] text-muted-foreground">
                     Cette zone est une <span className="font-semibold text-foreground">voie</span>.
-                    Réglez ci-dessous sa largeur et son revêtement — la voie se met à jour
-                    immédiatement sur le plan.
+                    Sa largeur a été déduite automatiquement de la géométrie tracée
+                    (aire ÷ longueur). Vous pouvez l'ajuster manuellement si besoin.
                   </p>
                 </div>
 
