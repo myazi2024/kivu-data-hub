@@ -14,6 +14,7 @@ import {
 import { LucideIcon } from 'lucide-react';
 import ShareButton from '@/components/shared/ShareButton';
 import { ProjectOnMapButton } from './ProjectOnMapButton';
+import { useProjectionTab } from './ProjectionTabContext';
 import { CHART_HEIGHT as BASE_CH, NoData } from '@/utils/analyticsConstants';
 import { CHART_COLORS } from '@/utils/analyticsHelpers';
 import { CrossVariable } from '@/config/crossVariables';
