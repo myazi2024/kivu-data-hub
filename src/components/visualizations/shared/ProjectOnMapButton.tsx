@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
 import { useMapProjection, type MapProjection } from '@/components/map/context/MapProjectionContext';
+import { normalizeProvinceName } from '@/lib/provinceNameNormalize';
 
 interface Props {
   /** Identifiant stable du visuel (titre + bloc suffit en pratique) */
@@ -34,7 +35,7 @@ interface Props {
   onActivate?: () => void;
 }
 
-const norm = (s: unknown): string => (typeof s === 'string' ? s.trim().toLowerCase() : '');
+const norm = (s: unknown): string => normalizeProvinceName(s);
 
 export const ProjectOnMapButton: React.FC<Props> = ({
   projectionId,
@@ -50,9 +51,17 @@ export const ProjectOnMapButton: React.FC<Props> = ({
   const { projection, setProjection, clearProjection } = useMapProjection();
   const isActive = projection?.id === projectionId;
 
-  // Construire la map province → valeur
+  // Construire la map province → valeur (clés normalisées via normalizeProvinceName)
   const buildByProvince = (): Record<string, number> | null => {
-    if (precomputedByProvince) return precomputedByProvince;
+    if (precomputedByProvince) {
+      // Re-normaliser les clés pour matcher la carte
+      const out: Record<string, number> = {};
+      Object.entries(precomputedByProvince).forEach(([k, v]) => {
+        const nk = normalizeProvinceName(k);
+        if (nk) out[nk] = (out[nk] || 0) + (Number(v) || 0);
+      });
+      return Object.keys(out).length > 0 ? out : null;
+    }
     if (!rawRecords || rawRecords.length === 0) return null;
     const map: Record<string, number> = {};
     let any = false;
@@ -104,11 +113,11 @@ export const ProjectOnMapButton: React.FC<Props> = ({
             size="icon"
             variant={isActive ? 'default' : 'ghost'}
             onClick={handleClick}
-            className="h-5 w-5 shrink-0"
+            className="h-7 w-7 sm:h-5 sm:w-5 shrink-0"
             aria-label={isActive ? 'Retirer de la carte' : 'Afficher sur la carte'}
             aria-pressed={isActive}
           >
-            <MapIcon className="h-3 w-3" />
+            <MapIcon className="h-3.5 w-3.5 sm:h-3 sm:w-3" />
           </Button>
         </TooltipTrigger>
         <TooltipContent side="top" className="text-[10px]">
