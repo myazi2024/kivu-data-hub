@@ -112,11 +112,31 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
   commonSpaces, setCommonSpaces, servitudes, setServitudes, lotIds,
   onCreateInitialLot, validation, canUndo, canRedo, onUndo, onRedo
 }) => {
-  const [selectedLotId, setSelectedLotId] = useState<string | null>(null);
+  const [selectedLotId, setSelectedLotIdState] = useState<string | null>(null);
   const [selectedLotIds, setSelectedLotIds] = useState<string[]>([]);
-  const [editingRoadId, setEditingRoadId] = useState<string | null>(null);
+  const [editingRoadId, setEditingRoadIdState] = useState<string | null>(null);
   const [canvasMode, setCanvasMode] = useState<CanvasMode>('select');
   const [canvasShowGrid, setCanvasShowGrid] = useState(true);
+  const detailsPanelRef = React.useRef<HTMLDivElement>(null);
+
+  // Auto-scroll vers le panneau de détails sur mobile lors d'une sélection
+  const scrollToDetailsOnMobile = React.useCallback(() => {
+    if (typeof window === 'undefined') return;
+    if (window.matchMedia('(min-width: 1024px)').matches) return; // lg+: panneau déjà visible à droite
+    requestAnimationFrame(() => {
+      detailsPanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  }, []);
+
+  const setSelectedLotId = React.useCallback((id: string | null) => {
+    setSelectedLotIdState(id);
+    if (id) scrollToDetailsOnMobile();
+  }, [scrollToDetailsOnMobile]);
+
+  const setEditingRoadId = React.useCallback((id: string | null) => {
+    setEditingRoadIdState(id);
+    if (id) scrollToDetailsOnMobile();
+  }, [scrollToDetailsOnMobile]);
   // Measure mode state
   const [measurePoints, setMeasurePoints] = useState<Point2D[]>([]);
   // Road pre-configuration
