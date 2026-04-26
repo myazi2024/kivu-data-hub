@@ -1,106 +1,81 @@
+## Objectif
 
-# Audit — Pilotage admin du formulaire de demande de lotissement
+Permettre à l'utilisateur, depuis chaque visuel des onglets Analytics de la page **Données foncières** (`/map`), de projeter les données du graphique sur la carte RDC via un bouton « Afficher sur la carte ». La carte recolore son choroplèthe, met à jour sa légende, son titre et ses KPIs latéraux, et affiche un bandeau « Mode visuel : *X* » avec un bouton ✕ pour quitter. La projection se réinitialise automatiquement au changement d'onglet analytics.
 
-Périmètre : `Admin → Demandes & procédures → Lotissement` (`AdminSubdivisionHub` : Demandes / Frais / Zonage / Lots & voies / Analytics) vs formulaire utilisateur `SubdivisionRequestDialog` (5 étapes : Parcelle, Designer, Plan, Documents, Récap).
+## Architecture cible
 
-## Méthode
-Pour chaque champ/composant du formulaire frontend, on vérifie s'il existe (côté admin) un contrôle qui permet :
-- (C) Configurer les options proposées,
-- (V) Valider/contraindre la saisie,
-- (T) Tarifer ce qui doit l'être.
+```text
+ChartCard (wrapper partagé)
+  └─ Bouton « Afficher sur la carte »  ──┐
+                                          │ projection payload
+DRCInteractiveMap                         │ { id, label, byProvince, unit, source }
+  ├─ ProjectionContext (nouveau)  ◀──────┘
+  ├─ DRCMapWithTooltip   ← lit projection si présente, sinon profile actif
+  ├─ MapLegend           ← idem
+  ├─ MapKPICards         ← idem
+  └─ Bandeau « Mode visuel : X  ✕ »   (rendu si projection ≠ null)
+```
 
-## Résultats par étape du formulaire
+## 1. Contexte de projection
 
-### Étape 1 — Parcelle mère + Identité demandeur + Objet
-| Composant frontend | Admin couvre ? | Écart |
-|---|---|---|
-| Bandeau d'éligibilité parcelle (litige, hypothèque, mutation, lotissement en cours, titre, GPS, surface mère min/max, ancienneté titre, exclusion types titres) | ✅ Zonage (bloc « Contraintes parcelle-mère ») | OK |
-| Identité demandeur (statut juridique, genre, nationalité, RCCM, type de droit État…) | ⚠️ Aucun | **Pas de configuration admin** des règles d'identité (ex. autoriser/forcer Personne morale, RCCM obligatoire, types d'entités acceptés) |
-| Type demandeur (`owner / mandatary / notary / other`) | ⚠️ Codé en dur | Pas de table admin pour activer/désactiver un type, ni exiger des pièces différentes par type |
-| Objet du lotissement (`SUBDIVISION_PURPOSE_LABELS` : vente, succession, investissement, etc.) | ❌ Aucun | **Liste figée dans `constants.ts`** — non éditable depuis l'admin |
+Créer `src/components/map/context/MapProjectionContext.tsx` :
+- `MapProjection = { id, sourceTab, label, unit?, byProvince: Record<string, number>, palette?, dataSource? }`
+- `MapProjectionProvider` expose `projection`, `setProjection`, `clearProjection`
+- Wrap `DRCInteractiveMap` autour du provider.
 
-### Étape 2 — Designer (lots, voies, espaces communs, servitudes)
-| Composant | Admin | Écart |
-|---|---|---|
-| Surface min/max d'un lot, largeur min/recommandée des voies, % min espaces communs, façade min, nombre max de lots | ✅ Zonage | OK |
-| Usage d'un lot (`residential/commercial/industrial/agricultural/mixed`) | ⚠️ Codé en dur (`LOT_COLORS`/`USAGE_LABELS`) | Pas de configuration admin (ex. activer/désactiver « industriel » selon zone, libellés, couleurs) |
-| Type de surface de voie (`asphalt/gravel/earth/paved/planned`) | ⚠️ Codé en dur | Pas configurable + pas de tarif différencié par surface (alors que `road_fee_per_linear_m_usd` existe globalement) |
-| Type d'espace commun (`green_space/parking/playground/market/drainage/other`) | ⚠️ Codé en dur | Pas configurable, pas de % minimum **par sous-type** (ex. min espace vert ≠ min parking) |
-| Servitudes (`passage/drainage/utility/view/other`) | ❌ Aucun | Aucune règle admin (obligation, largeur min, types autorisés) |
-| Type de clôture (`wall/wire/hedge/mixed`) et type de construction (`house/building/warehouse/other`) | ❌ Aucun | Pas de référentiel admin |
+## 2. Calcul du payload côté visuel
 
-### Étape 3 — Plan (`PlanElements`)
-| Composant | Admin | Écart |
-|---|---|---|
-| Toggles du plan (grille, nord, légende, dimensions, n° lots, surfaces, voies, espaces communs, servitudes, propriétaires, échelle) | ❌ Aucun | Pas de **valeurs par défaut éditables** ni d'éléments rendus obligatoires (ex. forcer `showScale` et `showNorthIndicator` pour validité officielle) |
-| Export PNG | ❌ | Pas de contrôle admin sur le filigrane / DPI |
+Dans `ChartCard` (et variantes `StackedBarCard`, `MultiAreaChartCard`, `ColorMappedPieCard`, `GeoCharts`), ajouter une prop optionnelle :
+```ts
+projectionResolver?: () => MapProjection | null
+```
+- Si fournie, le bouton « Afficher sur la carte » apparaît dans l'en-tête (à côté de `ShareButton`).
+- Au clic : appel `setProjection(resolver())` du contexte ; le bouton bascule en état actif (variante `default`) et redevient outline si l'utilisateur reclique (toggle local).
 
-### Étape 4 — Documents
-| Composant | Admin | Écart |
-|---|---|---|
-| Liste de documents (`requester_id_document_url`, `proof_of_ownership_url`, `subdivision_sketch_url`) + obligatoire/optionnel | ❌ Codé en dur dans `DOC_CONFIG` | Pas de table admin permettant : ajouter un document requis (ex. plan topographique, attestation environnementale, autorisation conjoint), définir formats/poids, par type de demandeur ou par section urbain/rural |
-| Taille max (5 Mo) et formats acceptés (`jpeg/png/webp/pdf`) | ❌ Codé en dur | Non configurable |
+Chaque bloc passe son resolver. Pour les blocs déjà géo-agrégés (`GeoCharts`), le payload est direct (`byProvince` déjà calculé). Pour les autres visuels, on enrichit chaque bloc d'un mini-helper `aggregateByProvince(records, valueAccessor)` (ajouté à `src/utils/analyticsHelpers.ts`).
 
-### Étape 5 — Récapitulatif & soumission
-| Composant | Admin | Écart |
-|---|---|---|
-| Frais (palier, voirie, espaces communs, min/max par lot, taux $/m²) | ✅ Frais (`AdminSubdivisionFeesConfig`) | OK |
-| Conformité au zonage (carte `ZoningComplianceCard`) | ✅ via Zonage | OK |
-| Mode de paiement | Géré ailleurs (AdminPaymentMethods) | OK transversal |
-| Réf. dossier (préfixe, format) | ❌ | Non configurable depuis l'admin |
+## 3. Lecture côté carte
 
-### Transversal
-| Sujet | Admin | Écart |
-|---|---|---|
-| Activation globale du service « Lotissement » | À vérifier dans `AdminCatalogConfig` / `serviceAvailability` | À confirmer |
-| Notifications utilisateur (templates email/in-app) | Génériques | Pas de gabarit dédié lotissement |
-| SLA / délais de traitement affichés à l'utilisateur | ❌ | Non éditable |
-| Multi-langue des libellés (FR/EN) | ❌ | Hard-codé |
+Modifier `DRCInteractiveMap` :
+- Lire `projection` depuis le contexte.
+- `getProvinceColor(province)` : si `projection` ≠ null → utiliser `computeAdaptiveTiers(values, palette)` sur `projection.byProvince` au lieu du profil de l'onglet.
+- `MapLegend`, `MapScopeLegend`, `MapKPICards` reçoivent `projection` (override doux du profil courant) — mêmes composants, juste un override de label/unit/source.
+- Header de la carte : ajouter sous le titre un `Badge` « Mode visuel : *projection.label* » + bouton ✕ → `clearProjection()`. Stylé avec `bg-primary/10 text-primary`.
 
-## Synthèse — score de couverture
-- **Bien couvert (✅)** : géométrie (surface lot, voies, espaces communs %, façade), contraintes parcelle-mère (litige/hypothèque/mutation/titre/GPS), tarification globale, conformité zonage, gestion des dossiers admin (file, bulk, audit).
-- **Partiellement couvert (⚠️)** : tarification par sous-type (surface voie, type espace commun), libellés/couleurs lots.
-- **Non couvert (❌)** : objet du lotissement (purpose), types de demandeurs, identité juridique (règles RCCM/État), types d'espaces communs et servitudes, types de clôture/construction, documents requis (liste + formats + taille), valeurs par défaut/obligatoires des toggles du plan, gabarits notifications, SLA, format réf. dossier.
+## 4. Auto-reset
 
-## Plan de remédiation (proposé, en lots indépendants)
+Dans `useMapDrilldown` ou directement dans `DRCInteractiveMap`, `useEffect([activeAnalyticsTab])` → `clearProjection()`. Idem si l'utilisateur navigue hors `/map` (cleanup au unmount du provider).
 
-### Lot A — Référentiels métiers éditables (priorité haute)
-Nouveau sous-onglet « Référentiels » dans `AdminSubdivisionHub` (table `subdivision_reference_lists`) avec gestion CRUD pour :
-1. Objets de lotissement (remplace `SUBDIVISION_PURPOSE_LABELS`).
-2. Types de demandeur (label, exigences documentaires).
-3. Usages de lot (label, couleur, autorisé urbain/rural).
-4. Surfaces de voie (label, surcoût $/ml).
-5. Types d'espace commun (label, couleur, % min individuel).
-6. Types de servitude (label, largeur min, obligatoire ou non).
-7. Types de clôture / de construction (référentiels simples).
+## 5. Couverture
 
-Les composants `StepLotDesigner`, `StepParentParcel`, `StepPlanView` consomment ces référentiels via un hook `useSubdivisionReferences()` (cache 5 min).
+Tous les visuels héritent du bouton via `ChartCard`. Plan d'application :
 
-### Lot B — Documents requis configurables (priorité haute)
-Nouvelle table `subdivision_required_documents` (key, label, required, accept, max_size_mb, applies_to_section, applies_to_requester_type, ordering). UI admin dans le hub. `StepDocuments` lit la liste et adapte la validation `canProceed`.
+| Bloc | Resolver |
+|---|---|
+| TitleRequests, ParcelsWithTitle, Disputes, Mortgages, Permits, Taxes, Mutations, Subdivisions, Contributions, Expertises, Certificates, Invoices, Servitudes, Boundary, Geometry, Consistency, OwnershipHistory | `aggregateByProvince(filtered, r => 1)` par défaut, ou métrique spécifique (montant, surface) selon le visuel |
 
-### Lot C — Plan officiel : éléments obligatoires (priorité moyenne)
-Étendre `subdivision_zoning_rules` avec colonnes `required_plan_elements jsonb` (sous-set de `PlanElements`). `StepPlanView` force ces toggles à `true` et désactive l'interaction.
+Les visuels qui n'ont pas d'attribut `province` exploitable (ex. répartition par statut sans rattachement géo) reçoivent un resolver retournant `null` → bouton masqué automatiquement.
 
-### Lot D — Tarifs détaillés (priorité moyenne)
-Compléter `subdivision_rate_config` ou créer `subdivision_rate_modifiers` pour appliquer un coût additionnel selon la surface de voie et le type d'espace commun. Mettre à jour `_shared/subdivisionFees.ts` (calcul serveur unifié).
+## 6. Détails UX
 
-### Lot E — Identité & règles juridiques (priorité moyenne)
-Étendre `subdivision_zoning_rules` (ou nouvelle table `subdivision_requester_rules`) avec : `allowed_legal_statuses[]`, `require_rccm_for_entities`, `allowed_state_right_types[]`, `require_email`. Ajouter validation côté `useSubdivisionForm.canProceed`.
+- Bouton compact (icône `Map` lucide + tooltip) pour ne pas surcharger les cartes mobiles.
+- Sur mobile (viewport actuel 360px), le clic bascule aussi `activeMobilePanel` vers `'map'` pour que la carte soit visible immédiatement.
+- Le bandeau « Mode visuel » est responsive : pleine largeur sous le titre carte, ✕ aligné à droite.
+- Toast discret « Projection appliquée : *X* » au déclenchement.
 
-### Lot F — UX admin (priorité basse)
-- Sous-onglet « Notifications » (gabarits dédiés lotissement).
-- Champ « Format référence dossier » dans `AdminSubdivisionFeesConfig` (préfixe, padding numérique).
-- Champ SLA (jours moyens de traitement) affiché à l'utilisateur dans `StepSummary`.
+## Détails techniques (récap)
 
-## Détails techniques (pour l'implémentation)
-- Toutes les nouvelles tables sont préfixées `subdivision_` et soumises à RLS : lecture publique pour les listes de référence actives (`is_active=true`), écriture restreinte aux rôles `admin`/`super_admin` via `has_role()`.
-- Les hooks frontend (ex. `useZoningRules`, `useParentParcelEligibility`) sont étendus avec un fallback strict aux valeurs par défaut codées si la table n'est pas alimentée — pas de régression.
-- Les libellés dynamiques remplacent les `Record<...,string>` figés via une utility `resolveLabel(key, fallback)` pour rétro-compat.
-- Le calcul des frais reste **côté serveur** (`_shared/subdivisionFees.ts`) afin d'éviter toute manipulation client.
+- **Nouveau** : `src/components/map/context/MapProjectionContext.tsx`
+- **Nouveau** : `src/components/map/ui/MapProjectionBanner.tsx`
+- **Modif** : `src/components/visualizations/shared/ChartCard.tsx` + variantes (`StackedBarCard`, `MultiAreaChartCard`, `ColorMappedPieCard`, `GeoCharts`) — ajout prop `projectionResolver` + bouton
+- **Modif** : `src/components/DRCInteractiveMap.tsx` — wrap provider, lecture projection, override couleur/légende/KPI, bandeau, auto-reset sur `activeAnalyticsTab`
+- **Modif** : `src/components/map/ui/MapLegend.tsx`, `MapKPICards.tsx` — accepter override projection
+- **Modif** : 17 blocs `src/components/visualizations/blocks/*.tsx` — passer un resolver à chaque visuel
+- **Modif** : `src/utils/analyticsHelpers.ts` — helper `aggregateByProvince`
+- **Aucune** modification BD ou edge function
 
-## Ce qui n'est PAS dans ce plan
-- Refonte visuelle du formulaire frontend (déjà modernisé précédemment).
-- Workflow de validation admin des dossiers (déjà couvert dans la mémoire « Subdivision admin audit »).
+## Hors périmètre
 
-Une fois ce plan approuvé, je peux exécuter les lots un par un (recommandation : commencer par A puis B, qui apportent la plus grande valeur de configurabilité avec un risque faible).
+- Pas de persistence URL de la projection (état purement éphémère).
+- Pas d'animation entre profils (transition couleur déjà gérée par CSS du SVG).
+- Le dashboard admin (`/admin → Analytics`) n'est pas touché — uniquement la page `/map` (Données foncières).

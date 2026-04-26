@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Helmet } from 'react-helmet';
 import Navigation from '@/components/ui/navigation';
 import DRCInteractiveMap from '@/components/DRCInteractiveMap';
+import { MapProjectionProvider } from '@/components/map/context/MapProjectionContext';
 
 const Map = () => {
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -15,7 +16,9 @@ const Map = () => {
       {!isFullscreen && <Navigation />}
       
       <main className="flex-1 min-h-0 bg-background overflow-hidden">
-        <DRCInteractiveMap onFullscreenChange={setIsFullscreen} />
+        <MapProjectionProvider>
+          <DRCInteractiveMap onFullscreenChange={setIsFullscreen} />
+        </MapProjectionProvider>
       </main>
     </div>
   );

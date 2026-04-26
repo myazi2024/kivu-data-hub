@@ -32,6 +32,8 @@ import { MapLegend } from './map/ui/MapLegend';
 import { MapScopeLegend } from './map/ui/MapScopeLegend';
 import { MapKPICards } from './map/ui/MapKPICards';
 import { MapMobilePager } from './map/ui/MapMobilePager';
+import { useMapProjection } from './map/context/MapProjectionContext';
+import { Sparkles, X } from 'lucide-react';
 
 
 
@@ -156,6 +158,38 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
     return computeAdaptiveTiers(values, activeProfile.palette, activeProfile.tiers, activeProfile.adaptiveUnit || '');
   }, [activeProfile, provincesData]);
 
+  // ── Projection issue d'un visuel analytics (override doux du profil) ──
+  const { projection, clearProjection } = useMapProjection();
+
+  // Auto-reset de la projection quand l'utilisateur change d'onglet analytics
+  React.useEffect(() => {
+    if (projection && projection.sourceTab !== activeAnalyticsTab) {
+      clearProjection();
+    }
+  }, [activeAnalyticsTab, projection, clearProjection]);
+
+  /** Palette par défaut pour les tiers de projection (HSL semantic-aware) */
+  const PROJECTION_PALETTE: [string, string, string, string] = useMemo(
+    () => [
+      'hsl(var(--muted))',
+      'hsl(var(--primary) / 0.35)',
+      'hsl(var(--primary) / 0.65)',
+      'hsl(var(--primary))',
+    ],
+    [],
+  );
+
+  /** Tiers adaptatifs construits depuis la projection visuelle (si active) */
+  const projectionTiers: MapTier[] | null = useMemo(() => {
+    if (!projection) return null;
+    const values = Object.values(projection.byProvince).filter(v => Number.isFinite(v));
+    const fallback: MapTier[] = [
+      { label: '0', min: 0, max: 0, color: 'hsl(var(--muted))' },
+      { label: '1+', min: 1, max: Infinity, color: 'hsl(var(--primary))' },
+    ];
+    return computeAdaptiveTiers(values, projection.palette || PROJECTION_PALETTE, fallback, projection.unit || '');
+  }, [projection, PROJECTION_PALETTE]);
+
 
 
   /** Paliers choroplèthes — configurables depuis admin */
@@ -213,8 +247,15 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
     });
   }, []);
 
-  /** Choropleth color: profile-driven when an analytics tab is active, else default tiers */
+  /** Choropleth color: projection > profile > default density tiers */
   const getProvinceColor = useCallback((province: ProvinceData) => {
+    if (projection && projectionTiers) {
+      const key = (province.name || '').trim().toLowerCase();
+      const v = projection.byProvince[key] ?? 0;
+      if (v <= 0) return NO_DATA_COLOR;
+      const tier = projectionTiers.find(t => v >= t.min && v <= t.max) || projectionTiers[0];
+      return tier.color;
+    }
     if (activeProfile) {
       if (province.noData) return NO_DATA_COLOR;
       const v = province.metricValue ?? 0;
@@ -225,7 +266,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
     const count = province.parcelsCount;
     const tier = DENSITY_TIERS.find(t => count >= t.min && count <= t.max) || DENSITY_TIERS[0];
     return tier.color;
-  }, [activeProfile, adaptiveTiers, DENSITY_TIERS]);
+  }, [projection, projectionTiers, activeProfile, adaptiveTiers, DENSITY_TIERS]);
 
   /** Reset to default RDC map view */
   const resetToDefaultMap = useCallback(() => {
@@ -343,7 +384,27 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                       }
                     </p>
                   </div>
-                  
+
+                  {/* Bandeau « Mode visuel » — affiché quand un graphique projette ses données */}
+                  {projection && (
+                    <div className="flex items-center justify-between gap-2 px-2 py-1 bg-primary/10 border-b border-primary/30 animate-fade-in">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <Sparkles className="h-3 w-3 text-primary shrink-0" />
+                        <span className="text-[10px] sm:text-[11px] text-primary font-medium truncate">
+                          Mode visuel : {projection.label}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={clearProjection}
+                        className="shrink-0 h-5 w-5 inline-flex items-center justify-center rounded-full hover:bg-primary/20 text-primary transition-colors"
+                        aria-label="Quitter le mode visuel"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  )}
+
                    <div className="flex-1 min-h-0 overflow-hidden flex items-center justify-center p-1">
                     {selectedSectionType === 'rurale' || (selectedTerritoire && selectedProvince) ? (
                       <div key="territoires" className="w-full h-full animate-scale-in">
@@ -451,8 +512,22 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                     {brandingConfig?.logo_url && <img src={String(brandingConfig.logo_url)} alt="" className="h-3 w-3 inline-block object-contain" />}
                   </div>
 
-                  {/* Mini-légende choroplèthe par profil — visible quand un onglet métier est actif */}
-                  {activeProfile && (
+                  {/* Mini-légende choroplèthe — projection prioritaire, sinon profil */}
+                  {projection && projectionTiers ? (
+                    <MapLegend
+                      activeProfile={{
+                        tabKey: 'projection',
+                        label: projection.label,
+                        legendTitle: projection.label,
+                        tiers: projectionTiers,
+                        dataSource: projection.dataSource,
+                        metric: () => 0,
+                        tooltipLines: () => [],
+                      } as MapTabProfile}
+                      adaptiveTiers={projectionTiers}
+                      hasAnyMetricData={Object.values(projection.byProvince).some(v => v > 0)}
+                    />
+                  ) : activeProfile && (
                     <MapLegend
                       activeProfile={activeProfile}
                       adaptiveTiers={adaptiveTiers}

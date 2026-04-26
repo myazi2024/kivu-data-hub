@@ -13,6 +13,8 @@ import {
 } from 'recharts';
 import { LucideIcon } from 'lucide-react';
 import ShareButton from '@/components/shared/ShareButton';
+import { ProjectOnMapButton } from './ProjectOnMapButton';
+import { useProjectionTab } from './ProjectionTabContext';
 import { CHART_HEIGHT as BASE_CH, NoData } from '@/utils/analyticsConstants';
 import { CHART_COLORS } from '@/utils/analyticsHelpers';
 import { CrossVariable } from '@/config/crossVariables';
@@ -49,15 +51,22 @@ interface ChartCardProps {
   crossVariables?: CrossVariable[];
   rawRecords?: any[];
   groupField?: string;
+  /** Onglet analytics propriétaire (pour la projection sur la carte RDC) */
+  projectionTab?: string;
+  /** Source SQL principale (pour la projection) */
+  projectionSource?: string;
 }
 
 export const ChartCard: React.FC<ChartCardProps> = memo(({
   title, colSpan, data, type, color, colorIndex = 0,
   labelWidth = 90, maxItems = 10, hidden = false, insight,
   crossVariables, rawRecords, groupField,
+  projectionTab, projectionSource,
 }) => {
   const { ref, getBlob } = useChartImageBlob();
   const filterLabel = useContext(FilterLabelContext);
+  const ctxTab = useProjectionTab();
+  const effectiveTab = projectionTab || ctxTab;
   const [crossField, setCrossField] = useState<string | null>(null);
   const [focused, setFocused] = useState(false);
   if (hidden) return null;
@@ -94,6 +103,15 @@ export const ChartCard: React.FC<ChartCardProps> = memo(({
                 variables={crossVariables!}
                 selected={crossField}
                 onSelect={setCrossField}
+              />
+            )}
+            {rawRecords && effectiveTab && (
+              <ProjectOnMapButton
+                projectionId={`${effectiveTab}::${title}`}
+                label={title}
+                rawRecords={rawRecords}
+                sourceTab={effectiveTab}
+                dataSource={projectionSource}
               />
             )}
             <ShareButton getBlob={getBlob} title={title} variant="chart" />
