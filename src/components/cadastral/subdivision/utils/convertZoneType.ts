@@ -179,10 +179,16 @@ export function convertZoneType(
 
   if (toType === 'road') {
     const path = centerline.length >= 2 ? centerline : polygonToCenterline(polygon);
+    // Si on convertit un polygone (lot ou espace commun) et qu'on dispose d'un metric frame,
+    // on déduit la largeur réelle de la géométrie tracée plutôt que d'imposer le préréglage.
+    let inferredWidth: number | null = null;
+    if (!source.road && polygon.length >= 3 && ctx.metricFrame) {
+      inferredWidth = inferRoadWidthFromPolygon(polygon, ctx.metricFrame);
+    }
     const road: SubdivisionRoad = {
       id: source.road?.id ?? genId('road'),
       name: source.road?.name ?? `Voie ${ctx.nextNumber}`,
-      widthM: source.road?.widthM ?? widthM,
+      widthM: source.road?.widthM ?? inferredWidth ?? widthM,
       surfaceType: source.road?.surfaceType ?? 'planned',
       isExisting: false,
       path,
