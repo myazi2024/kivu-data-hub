@@ -60,6 +60,7 @@ export const ChartCard: React.FC<ChartCardProps> = memo(({
   title, colSpan, data, type, color, colorIndex = 0,
   labelWidth = 90, maxItems = 10, hidden = false, insight,
   crossVariables, rawRecords, groupField,
+  projectionTab, projectionSource,
 }) => {
   const { ref, getBlob } = useChartImageBlob();
   const filterLabel = useContext(FilterLabelContext);
