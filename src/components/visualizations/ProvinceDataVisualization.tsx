@@ -207,7 +207,9 @@ const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = ({
                                   <TerritoireFilterContext.Provider value={selectedTerritoire || null}>
                                     {BlockComponent ? (
                                       <Suspense fallback={<BlockFallback />}>
-                                        <BlockComponent data={analytics} />
+                                        <ProjectionTabContext.Provider value={activeTab}>
+                                          <BlockComponent data={analytics} />
+                                        </ProjectionTabContext.Provider>
                                       </Suspense>
                                     ) : null}
                                   </TerritoireFilterContext.Provider>
