@@ -32,6 +32,8 @@ import { MapLegend } from './map/ui/MapLegend';
 import { MapScopeLegend } from './map/ui/MapScopeLegend';
 import { MapKPICards } from './map/ui/MapKPICards';
 import { MapMobilePager } from './map/ui/MapMobilePager';
+import { useMapProjection } from './map/context/MapProjectionContext';
+import { Sparkles, X } from 'lucide-react';
 
 
 
