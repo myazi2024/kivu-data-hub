@@ -372,12 +372,12 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
       return Math.abs(a) / 2;
     };
 
-    const maxLotNum = lots.reduce((m, l) => Math.max(m, parseInt(l.lotNumber) || 0), 0);
+    const nextNum = nextLotNumber(lots);
 
     const newLot1: SubdivisionLot = {
       ...lot,
-      id: `lot-${Date.now()}-a`,
-      lotNumber: String(maxLotNum + 1),
+      id: genId('lot'),
+      lotNumber: String(nextNum),
       vertices: poly1,
       areaSqm: computeArea(poly1),
       perimeterM: computePerim(poly1),
@@ -385,8 +385,8 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
     };
     const newLot2: SubdivisionLot = {
       ...lot,
-      id: `lot-${Date.now()}-b`,
-      lotNumber: String(maxLotNum + 2),
+      id: genId('lot'),
+      lotNumber: String(nextNum + 1),
       vertices: poly2,
       areaSqm: computeArea(poly2),
       perimeterM: computePerim(poly2),
