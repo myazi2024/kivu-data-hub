@@ -168,12 +168,12 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
           
           {/* Draft restored notice */}
           {form.draftRestored && !form.submitted && (
-            <div className="px-4">
+            <div className="px-4 shrink-0">
               <Alert className="py-2 border-amber-500/30 bg-amber-50/50">
                 <Info className="h-3.5 w-3.5" />
-                <AlertDescription className="text-xs flex items-center justify-between">
+                <AlertDescription className="text-xs flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                   <span>Brouillon restauré automatiquement.</span>
-                  <Button variant="ghost" size="sm" className="h-6 text-xs gap-1" onClick={form.clearDraft}>
+                  <Button variant="ghost" size="sm" className="h-6 text-xs gap-1 self-start sm:self-auto" onClick={form.clearDraft}>
                     <Trash2 className="h-3 w-3" /> Effacer
                   </Button>
                 </AlertDescription>
@@ -182,8 +182,8 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
           )}
           
           {/* Step navigation */}
-          <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b px-4 py-2">
-            <div className="flex items-center gap-1">
+          <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b px-4 py-2 shrink-0">
+            <div className="flex items-center gap-1 overflow-x-auto -mx-1 px-1 scrollbar-thin">
               {STEP_CONFIG.map((step, index) => {
                 const isActive = step.key === form.currentStep;
                 const isDone = index < currentStepIndex;
@@ -192,12 +192,12 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
                 return (
                   <React.Fragment key={step.key}>
                     {index > 0 && (
-                      <div className={`flex-shrink-0 w-4 h-px ${isDone ? 'bg-primary' : 'bg-border'}`} />
+                      <div className={`flex-shrink-0 w-2 sm:w-4 h-px ${isDone ? 'bg-primary' : 'bg-border'}`} />
                     )}
                     <button
                       onClick={() => isClickable && form.setCurrentStep(step.key)}
                       disabled={!isClickable}
-                      className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all flex-shrink-0
+                      className={`flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-[10px] sm:text-xs font-medium transition-all flex-shrink-0
                         ${isActive ? 'bg-primary text-primary-foreground shadow-sm' : ''}
                         ${isDone ? 'text-primary hover:bg-primary/10' : ''}
                         ${!isActive && !isDone ? 'text-muted-foreground' : ''}
@@ -205,7 +205,7 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
                       `}
                     >
                       {isDone ? <Check className="h-3 w-3" /> : step.icon}
-                      <span className="hidden sm:inline">{step.shortLabel}</span>
+                      <span>{step.shortLabel}</span>
                     </button>
                   </React.Fragment>
                 );
@@ -214,7 +214,7 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
           </div>
           
           {/* Step content */}
-          <div className="flex-1 overflow-y-auto px-4 py-3" style={{ maxHeight: 'calc(92vh - 180px)' }}>
+          <div className="flex-1 overflow-y-auto px-4 py-3 min-h-0">
             {form.currentStep === 'parcel' && (
               <StepParentParcel
                 parentParcel={form.parentParcel}
