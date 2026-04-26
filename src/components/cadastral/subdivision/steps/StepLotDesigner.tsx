@@ -409,21 +409,27 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
     const lotsToMerge = lots.filter(l => ids.includes(l.id));
     if (lotsToMerge.length < 2) return;
 
-    // Combine all vertices into a convex hull approximation
-    const allPoints = lotsToMerge.flatMap(l => l.vertices);
-    // Simple convex hull (gift wrapping)
-    const hull = convexHull(allPoints);
+    // Real polygon union (preserves concavities). Refuses non-adjacent lots
+    // to avoid swallowing roads/spaces between them.
+    const merged = polygonUnionMany(lotsToMerge.map(l => l.vertices));
+    if (!merged) {
+      // eslint-disable-next-line no-alert
+      window.alert(
+        'Fusion impossible : les lots sélectionnés ne sont pas tous adjacents (ils ne partagent pas de bord commun).',
+      );
+      return;
+    }
 
     const keepLot = lotsToMerge[0];
-    const maxLotNum = lots.reduce((m, l) => Math.max(m, parseInt(l.lotNumber) || 0), 0);
+    const nextNum = nextLotNumber(lots);
 
     const mergedLot: SubdivisionLot = {
       ...keepLot,
-      id: `lot-${Date.now()}-merged`,
-      lotNumber: String(maxLotNum + 1),
-      vertices: hull,
-      areaSqm: computeArea(hull),
-      perimeterM: computePerim(hull),
+      id: genId('lot'),
+      lotNumber: String(nextNum),
+      vertices: merged,
+      areaSqm: computeArea(merged),
+      perimeterM: computePerim(merged),
       isParentBoundary: false,
     };
 
