@@ -24,6 +24,7 @@ import { convertZoneType, ZoneType } from '../utils/convertZoneType';
 import LotCanvas, { CanvasMode, EdgeInfo } from '../LotCanvas';
 import { buildMetricFrame, polygonAreaSqmAccurate, polygonPerimeterM, formatMeters, formatSqm } from '../utils/metrics';
 import { genId, nextLotNumber, polygonUnionMany } from '../utils/polygonOps';
+import LotVerticesEditor from './LotVerticesEditor';
 
 interface StepLotDesignerProps {
   parentParcel: ParentParcelInfo | null;
