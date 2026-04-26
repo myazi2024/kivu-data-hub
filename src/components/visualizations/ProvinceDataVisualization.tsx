@@ -6,6 +6,7 @@ import { ProvinceData } from '@/types/province';
 import { useAnalyticsTabsConfig, useTabChartsConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
 import { ProvinceFilterContext, MapProvinceContext, VilleFilterContext, CommuneFilterContext, VilleChangeContext, CommuneChangeContext, QuartierFilterContext, QuartierChangeContext, TerritoireFilterContext, TerritoireChangeContext, SectionTypeContext, SectionTypeChangeContext } from './filters/AnalyticsFilters';
 import { WatermarkContext, WatermarkConfigContext, WatermarkConfig } from './shared/ChartCard';
+import { ProjectionTabContext } from './shared/ProjectionTabContext';
 
 // Lazy-loaded block components
 const TitleRequestsBlock = React.lazy(() => import('./blocks/TitleRequestsBlock').then(m => ({ default: m.TitleRequestsBlock })));
