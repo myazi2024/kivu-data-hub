@@ -972,7 +972,7 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
                 {modeHint}
               </p>
               {lots.length > 1 && selectedLotIds.length === 0 && (
-                <p className="text-[10px] text-muted-foreground text-center py-1">
+                <p className="hidden sm:block text-[10px] text-muted-foreground text-center py-1">
                   💡 Ctrl+clic (⌘+clic sur Mac) pour sélectionner plusieurs lots et les fusionner
                 </p>
               )}
