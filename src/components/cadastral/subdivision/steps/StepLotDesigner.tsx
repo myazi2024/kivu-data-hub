@@ -9,23 +9,28 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import {
-  Plus, Trash2, Undo2, Redo2, AlertTriangle,
+  Plus, Trash2, Undo2, Redo2,
   Info, Route,
-  MousePointer, Scissors, Shield, TreePine
+  MousePointer, Scissors, Shield
 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { 
+import {
   SubdivisionLot, SubdivisionRoad, SubdivisionCommonSpace, SubdivisionServitude,
-  ParentParcelInfo, LOT_COLORS, USAGE_LABELS, ROAD_SURFACE_LABELS, 
-  COMMON_SPACE_LABELS, COMMON_SPACE_COLORS, Point2D, LotAnnotation
+  ParentParcelInfo, LOT_COLORS, USAGE_LABELS, ROAD_SURFACE_LABELS,
+  Point2D, LotAnnotation
 } from '../types';
-import { ValidationResult, mergeLotsThroughDeletedRoad, polygonArea, splitRoadsAtIntersections } from '../utils/geometry';
+import { ValidationResult, mergeLotsThroughDeletedRoad, polygonArea } from '../utils/geometry';
 import { convertZoneType, ZoneType } from '../utils/convertZoneType';
-import LotCanvas, { CanvasMode, EdgeInfo } from '../LotCanvas';
+import LotCanvas, { CanvasMode } from '../LotCanvas';
 import { buildMetricFrame, polygonAreaSqmAccurate, polygonPerimeterM, formatMeters, formatSqm } from '../utils/metrics';
 import { genId, nextLotNumber, polygonUnionMany } from '../utils/polygonOps';
 import LotVerticesEditor from './LotVerticesEditor';
-import LotsBulkActions from './LotsBulkActions';
+import LotsListPanel from './panels/LotsListPanel';
+import RoadsListPanel from './panels/RoadsListPanel';
+import CommonSpacesPanel from './panels/CommonSpacesPanel';
+import ServitudesPanel from './panels/ServitudesPanel';
+import ValidationPanel from './panels/ValidationPanel';
+import { useAdminAnalytics } from '@/lib/adminAnalytics';
 
 interface StepLotDesignerProps {
   parentParcel: ParentParcelInfo | null;
