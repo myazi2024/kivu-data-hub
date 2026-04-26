@@ -474,10 +474,15 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
       setLots(snappedLots);
     }
     
-    const result = validateSubdivision(snappedLots, parentParcel.areaSqm);
+    const result = validateSubdivisionFull(snappedLots, parentParcel.areaSqm, {
+      parentVertices,
+      roads: roads.map(r => ({ path: r.path, widthM: r.widthM })),
+      metricFrame,
+      requireRoadAccess: roads.length > 0,
+    });
     setValidation(result);
     return result;
-  }, [lots, parentParcel, parentVertices]);
+  }, [lots, parentParcel, parentVertices, roads, metricFrame]);
   
   useEffect(() => {
     if (lots.length > 0 && parentParcel) {
