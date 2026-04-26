@@ -723,11 +723,11 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
         ref={svgRef}
         viewBox={viewport.viewBox}
         className="w-full h-auto bg-white dark:bg-gray-950 rounded-lg"
-        style={{ minHeight: 280, cursor: svgCursor }}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
+        style={{ minHeight: 280, cursor: svgCursor, touchAction: 'none' }}
+        onPointerDown={handleMouseDown as unknown as React.PointerEventHandler<SVGSVGElement>}
+        onPointerMove={handleMouseMove as unknown as React.PointerEventHandler<SVGSVGElement>}
+        onPointerUp={handleMouseUp as unknown as React.PointerEventHandler<SVGSVGElement>}
+        onPointerLeave={handleMouseUp as unknown as React.PointerEventHandler<SVGSVGElement>}
         onClick={handleCanvasClick}
         onDoubleClick={handleCanvasDoubleClick}
         onContextMenu={e => e.preventDefault()}
