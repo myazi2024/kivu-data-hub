@@ -9,6 +9,8 @@
  */
 import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
 
+export type ProjectionScope = 'filtered' | 'global';
+
 export interface MapProjection {
   /** Identifiant stable du visuel (utile pour le toggle actif côté bouton) */
   id: string;
@@ -20,14 +22,22 @@ export interface MapProjection {
   unit?: string;
   /** Source de données (table SQL principale) — affichée dans le popover info */
   dataSource?: string;
-  /** Map<provinceName normalisée, valeur numérique> */
+  /** Map<provinceName normalisée, valeur numérique> — dataset filtré (post filtres bloc) */
   byProvince: Record<string, number>;
+  /** Optionnel : map<provinceName normalisée, valeur> sans filtre géographique
+   *  (province/ville/commune/quartier ignorés). Active le toggle « Étendre à
+   *  toutes les provinces » dans le bandeau Mode visuel. */
+  byProvinceGlobal?: Record<string, number>;
+  /** Indique si le bloc émetteur avait un filtre géographique actif */
+  hasGeoFilter?: boolean;
   /** Palette HSL optionnelle [light → dark] pour les 4 tiers adaptatifs */
   palette?: [string, string, string, string];
 }
 
 interface MapProjectionContextValue {
   projection: MapProjection | null;
+  scope: ProjectionScope;
+  setScope: (s: ProjectionScope) => void;
   setProjection: (p: MapProjection | null) => void;
   clearProjection: () => void;
 }
