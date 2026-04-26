@@ -20,7 +20,7 @@ interface Props { data: LandAnalyticsData; }
 const TAB_KEY = 'parcels-titled';
 
 export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
-  const { filter, setFilter, filterLabel, filtered, filteredUnscoped: filteredParcels, filterConfig, v, ct, cx, ty, ord, exportCSV  } = useBlockFilter(TAB_KEY, data.parcels);
+  const { filter, setFilter, filterLabel, filtered: filteredParcels, filteredUnscoped, filterConfig, v, ct, cx, ty, ord, exportCSV  } = useBlockFilter(TAB_KEY, data.parcels);
   const filteredContribs = useMemo(() => applyFilters(data.contributions, filter, filterConfig.dateField), [data.contributions, filter, filterConfig.dateField]);
 
   // Only built parcels (have a property_category that is not "Terrain nu")
