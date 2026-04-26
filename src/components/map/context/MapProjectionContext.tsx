@@ -46,16 +46,24 @@ const MapProjectionContext = createContext<MapProjectionContextValue | null>(nul
 
 export const MapProjectionProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [projection, setProjectionState] = useState<MapProjection | null>(null);
+  const [scope, setScopeState] = useState<ProjectionScope>('filtered');
 
   const setProjection = useCallback((p: MapProjection | null) => {
     setProjectionState(p);
+    // Au (re)changement de projection, repartir sur le scope filtré par défaut.
+    setScopeState('filtered');
   }, []);
 
-  const clearProjection = useCallback(() => setProjectionState(null), []);
+  const setScope = useCallback((s: ProjectionScope) => setScopeState(s), []);
+
+  const clearProjection = useCallback(() => {
+    setProjectionState(null);
+    setScopeState('filtered');
+  }, []);
 
   const value = useMemo(
-    () => ({ projection, setProjection, clearProjection }),
-    [projection, setProjection, clearProjection],
+    () => ({ projection, scope, setScope, setProjection, clearProjection }),
+    [projection, scope, setScope, setProjection, clearProjection],
   );
 
   return (
@@ -72,6 +80,8 @@ export function useMapProjection(): MapProjectionContextValue {
   if (!ctx) {
     return {
       projection: null,
+      scope: 'filtered',
+      setScope: () => undefined,
       setProjection: () => undefined,
       clearProjection: () => undefined,
     };
