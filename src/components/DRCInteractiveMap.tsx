@@ -158,6 +158,38 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
     return computeAdaptiveTiers(values, activeProfile.palette, activeProfile.tiers, activeProfile.adaptiveUnit || '');
   }, [activeProfile, provincesData]);
 
+  // ── Projection issue d'un visuel analytics (override doux du profil) ──
+  const { projection, clearProjection } = useMapProjection();
+
+  // Auto-reset de la projection quand l'utilisateur change d'onglet analytics
+  React.useEffect(() => {
+    if (projection && projection.sourceTab !== activeAnalyticsTab) {
+      clearProjection();
+    }
+  }, [activeAnalyticsTab, projection, clearProjection]);
+
+  /** Palette par défaut pour les tiers de projection (HSL semantic-aware) */
+  const PROJECTION_PALETTE: [string, string, string, string] = useMemo(
+    () => [
+      'hsl(var(--muted))',
+      'hsl(var(--primary) / 0.35)',
+      'hsl(var(--primary) / 0.65)',
+      'hsl(var(--primary))',
+    ],
+    [],
+  );
+
+  /** Tiers adaptatifs construits depuis la projection visuelle (si active) */
+  const projectionTiers: MapTier[] | null = useMemo(() => {
+    if (!projection) return null;
+    const values = Object.values(projection.byProvince).filter(v => Number.isFinite(v));
+    const fallback: MapTier[] = [
+      { label: '0', min: 0, max: 0, color: 'hsl(var(--muted))' },
+      { label: '1+', min: 1, max: Infinity, color: 'hsl(var(--primary))' },
+    ];
+    return computeAdaptiveTiers(values, projection.palette || PROJECTION_PALETTE, fallback, projection.unit || '');
+  }, [projection, PROJECTION_PALETTE]);
+
 
 
   /** Paliers choroplèthes — configurables depuis admin */
