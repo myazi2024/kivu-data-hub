@@ -5,6 +5,7 @@ import { ShieldCheck, AlertTriangle, GitCompare, History, FileWarning, Scale } f
 import { pct } from '@/utils/analyticsConstants';
 import { KpiGrid } from '../shared/KpiGrid';
 import { ChartCard, FilterLabelContext } from '../shared/ChartCard';
+import { BlockUnscopedRecordsProvider } from '../shared/BlockUnscopedRecordsContext';
 import { GeoCharts } from '../shared/GeoCharts';
 import { generateInsight } from '@/utils/chartInsights';
 import { useBlockFilter } from '@/hooks/useBlockFilter';
@@ -25,7 +26,7 @@ function toArray(field: any): any[] {
 }
 
 export const ConsistencyBlock: React.FC<Props> = memo(({ data }) => {
-  const { filter, setFilter, filterLabel, filtered, filterConfig, v, ct, cx, ty, ord } = useBlockFilter(TAB_KEY, data.contributions);
+  const { filter, setFilter, filterLabel, filtered, filteredUnscoped, filterConfig, v, ct, cx, ty, ord  } = useBlockFilter(TAB_KEY, data.contributions);
 
   // Index officials by parcel_number for fast lookup
   const officialTaxByParcel = useMemo(() => {
@@ -201,6 +202,7 @@ export const ConsistencyBlock: React.FC<Props> = memo(({ data }) => {
 
   return (
     <FilterLabelContext.Provider value={filterLabel}>
+      <BlockUnscopedRecordsProvider records={filteredUnscoped}>
       <div className="space-y-2">
         <AnalyticsFilters data={data.contributions} filter={filter} onChange={setFilter} hideStatus={filterConfig.hideStatus} hideTime={filterConfig.hideTime} hideLocation={filterConfig.hideLocation} dateField={filterConfig.dateField} statusField={filterConfig.statusField} />
         <KpiGrid items={kpiItems} />
@@ -208,6 +210,7 @@ export const ConsistencyBlock: React.FC<Props> = memo(({ data }) => {
           {chartDefs.map(d => <React.Fragment key={d.key}>{d.el()}</React.Fragment>)}
         </div>
       </div>
+    </BlockUnscopedRecordsProvider>
     </FilterLabelContext.Provider>
   );
 });

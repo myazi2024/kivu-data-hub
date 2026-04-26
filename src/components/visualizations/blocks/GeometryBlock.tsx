@@ -5,6 +5,7 @@ import { Ruler, Maximize, Compass, Map as MapIcon, Hexagon } from 'lucide-react'
 import { pct } from '@/utils/analyticsConstants';
 import { KpiGrid } from '../shared/KpiGrid';
 import { ChartCard, FilterLabelContext } from '../shared/ChartCard';
+import { BlockUnscopedRecordsProvider } from '../shared/BlockUnscopedRecordsContext';
 import { GeoCharts } from '../shared/GeoCharts';
 import { generateInsight } from '@/utils/chartInsights';
 import { surfaceDistribution } from '@/utils/analyticsHelpers';
@@ -45,7 +46,7 @@ function extractGpsVertices(row: any): number {
 }
 
 export const GeometryBlock: React.FC<Props> = memo(({ data }) => {
-  const { filter, setFilter, filterLabel, filtered, filterConfig, v, ct, ty, ord } = useBlockFilter(TAB_KEY, data.contributions);
+  const { filter, setFilter, filterLabel, filtered, filteredUnscoped, filterConfig, v, ct, ty, ord  } = useBlockFilter(TAB_KEY, data.contributions);
 
   const areaDist = useMemo(() => surfaceDistribution(filtered), [filtered]);
 
@@ -177,6 +178,7 @@ export const GeometryBlock: React.FC<Props> = memo(({ data }) => {
 
   return (
     <FilterLabelContext.Provider value={filterLabel}>
+    <BlockUnscopedRecordsProvider records={filteredUnscoped}>
     <div className="space-y-2">
       <AnalyticsFilters data={data.contributions} filter={filter} onChange={setFilter} hideStatus={filterConfig.hideStatus} hideTime={filterConfig.hideTime} hideLocation={filterConfig.hideLocation} dateField={filterConfig.dateField} statusField={filterConfig.statusField} />
       <KpiGrid items={kpiItems} />
@@ -184,6 +186,7 @@ export const GeometryBlock: React.FC<Props> = memo(({ data }) => {
         {chartDefs.map(d => <React.Fragment key={d.key}>{d.el()}</React.Fragment>)}
       </div>
     </div>
+    </BlockUnscopedRecordsProvider>
     </FilterLabelContext.Provider>
   );
 });

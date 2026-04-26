@@ -5,6 +5,7 @@ import { ShieldAlert, AlertTriangle, Clock, FileText } from 'lucide-react';
 import { pct } from '@/utils/analyticsConstants';
 import { KpiGrid } from '../shared/KpiGrid';
 import { ChartCard, FilterLabelContext } from '../shared/ChartCard';
+import { BlockUnscopedRecordsProvider } from '../shared/BlockUnscopedRecordsContext';
 import { GeoCharts } from '../shared/GeoCharts';
 import { generateInsight } from '@/utils/chartInsights';
 import { useBlockFilter } from '@/hooks/useBlockFilter';
@@ -25,7 +26,7 @@ function extractServitudes(row: any): any[] {
 }
 
 export const ServitudesBlock: React.FC<Props> = memo(({ data }) => {
-  const { filter, setFilter, filterLabel, filtered, filterConfig, v, ct, cx, ty, ord } = useBlockFilter(TAB_KEY, data.contributions);
+  const { filter, setFilter, filterLabel, filtered, filteredUnscoped, filterConfig, v, ct, cx, ty, ord  } = useBlockFilter(TAB_KEY, data.contributions);
 
   // Parcels with at least one servitude
   const encumbered = useMemo(() => filtered.filter(r => extractServitudes(r).length > 0), [filtered]);
@@ -119,6 +120,7 @@ export const ServitudesBlock: React.FC<Props> = memo(({ data }) => {
 
   return (
     <FilterLabelContext.Provider value={filterLabel}>
+    <BlockUnscopedRecordsProvider records={filteredUnscoped}>
     <div className="space-y-2">
       <AnalyticsFilters data={data.contributions} filter={filter} onChange={setFilter} hideStatus={filterConfig.hideStatus} hideTime={filterConfig.hideTime} hideLocation={filterConfig.hideLocation} dateField={filterConfig.dateField} statusField={filterConfig.statusField} />
       <KpiGrid items={kpiItems} />
@@ -126,6 +128,7 @@ export const ServitudesBlock: React.FC<Props> = memo(({ data }) => {
         {chartDefs.map(d => <React.Fragment key={d.key}>{d.el()}</React.Fragment>)}
       </div>
     </div>
+    </BlockUnscopedRecordsProvider>
     </FilterLabelContext.Provider>
   );
 });

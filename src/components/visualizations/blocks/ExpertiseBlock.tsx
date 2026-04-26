@@ -6,6 +6,7 @@ import { LandAnalyticsData } from '@/hooks/useLandDataAnalytics';
 import { Search, TrendingUp, DollarSign, Building, Zap, ShieldAlert, MapPin, Ruler, Clock, Trees, Layers } from 'lucide-react';
 import { KpiGrid } from '../shared/KpiGrid';
 import { ChartCard, FilterLabelContext } from '../shared/ChartCard';
+import { BlockUnscopedRecordsProvider } from '../shared/BlockUnscopedRecordsContext';
 import { GeoCharts } from '../shared/GeoCharts';
 import { generateInsight } from '@/utils/chartInsights';
 import { WALL_LABELS, ROOF_LABELS, BUILDING_POSITION_LABELS } from '@/constants/expertiseLabels';
@@ -16,7 +17,7 @@ interface Props { data: LandAnalyticsData; }
 const TAB_KEY = 'expertise';
 
 export const ExpertiseBlock: React.FC<Props> = memo(({ data }) => {
-  const { filter, setFilter, filterLabel, filtered, filterConfig, v, ct, cx, ty, ord, exportCSV } = useBlockFilter(TAB_KEY, data.expertiseRequests);
+  const { filter, setFilter, filterLabel, filtered, filteredUnscoped, filterConfig, v, ct, cx, ty, ord, exportCSV  } = useBlockFilter(TAB_KEY, data.expertiseRequests);
 
   const byStatus = useMemo(() => countBy(filtered, 'status'), [filtered]);
   const byPaymentStatus = useMemo(() => countBy(filtered, 'payment_status'), [filtered]);
@@ -185,6 +186,7 @@ export const ExpertiseBlock: React.FC<Props> = memo(({ data }) => {
 
   return (
     <FilterLabelContext.Provider value={filterLabel}>
+    <BlockUnscopedRecordsProvider records={filteredUnscoped}>
     <div className="space-y-2">
       <AnalyticsFilters data={data.expertiseRequests} filter={filter} onChange={setFilter} hideStatus={filterConfig.hideStatus} hideTime={filterConfig.hideTime} hideLocation={filterConfig.hideLocation} dateField={filterConfig.dateField} statusField={filterConfig.statusField} />
       <KpiGrid items={kpiItems} />
@@ -192,6 +194,7 @@ export const ExpertiseBlock: React.FC<Props> = memo(({ data }) => {
         {chartDefs.map(d => <React.Fragment key={d.key}>{d.el()}</React.Fragment>)}
       </div>
     </div>
+    </BlockUnscopedRecordsProvider>
     </FilterLabelContext.Provider>
   );
 });

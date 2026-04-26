@@ -160,7 +160,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
   }, [activeProfile, provincesData]);
 
   // ── Projection issue d'un visuel analytics (override doux du profil) ──
-  const { projection, clearProjection } = useMapProjection();
+  const { projection, scope, setScope, clearProjection } = useMapProjection();
 
   // Auto-reset de la projection quand l'utilisateur change d'onglet analytics
   React.useEffect(() => {
@@ -180,16 +180,24 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
     [],
   );
 
+  /** Dataset effectivement projeté selon le scope choisi (filtré ou global) */
+  const projectionData = useMemo(() => {
+    if (!projection) return null;
+    return scope === 'global' && projection.byProvinceGlobal
+      ? projection.byProvinceGlobal
+      : projection.byProvince;
+  }, [projection, scope]);
+
   /** Tiers adaptatifs construits depuis la projection visuelle (si active) */
   const projectionTiers: MapTier[] | null = useMemo(() => {
-    if (!projection) return null;
-    const values = Object.values(projection.byProvince).filter(v => Number.isFinite(v));
+    if (!projection || !projectionData) return null;
+    const values = Object.values(projectionData).filter(v => Number.isFinite(v));
     const fallback: MapTier[] = [
       { label: '0', min: 0, max: 0, color: 'hsl(var(--muted))' },
       { label: '1+', min: 1, max: Infinity, color: 'hsl(var(--primary))' },
     ];
     return computeAdaptiveTiers(values, projection.palette || PROJECTION_PALETTE, fallback, projection.unit || '');
-  }, [projection, PROJECTION_PALETTE]);
+  }, [projection, projectionData, PROJECTION_PALETTE]);
 
 
 
@@ -250,9 +258,9 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
 
   /** Choropleth color: projection > profile > default density tiers */
   const getProvinceColor = useCallback((province: ProvinceData) => {
-    if (projection && projectionTiers) {
+    if (projection && projectionTiers && projectionData) {
       const key = normalizeProvinceName(province.name);
-      const v = projection.byProvince[key] ?? 0;
+      const v = projectionData[key] ?? 0;
       if (v <= 0) return NO_DATA_COLOR;
       const tier = projectionTiers.find(t => v >= t.min && v <= t.max) || projectionTiers[0];
       return tier.color;
@@ -267,19 +275,19 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
     const count = province.parcelsCount;
     const tier = DENSITY_TIERS.find(t => count >= t.min && count <= t.max) || DENSITY_TIERS[0];
     return tier.color;
-  }, [projection, projectionTiers, activeProfile, adaptiveTiers, DENSITY_TIERS]);
+  }, [projection, projectionTiers, projectionData, activeProfile, adaptiveTiers, DENSITY_TIERS]);
 
   /** Avertir l'utilisateur si la projection n'a aucune province reconnue par la carte */
   React.useEffect(() => {
-    if (!projection || !provincesData.length) return;
-    const matched = provincesData.some(p => (projection.byProvince[normalizeProvinceName(p.name)] ?? 0) > 0);
+    if (!projection || !projectionData || !provincesData.length) return;
+    const matched = provincesData.some(p => (projectionData[normalizeProvinceName(p.name)] ?? 0) > 0);
     if (!matched) {
       toast.warning('Aucune province reconnue dans ce visuel', {
         description: 'Les noms de provinces des données ne correspondent pas à la carte.',
         duration: 3500,
       });
     }
-  }, [projection, provincesData]);
+  }, [projection, projectionData, provincesData]);
 
   /** Reset to default RDC map view */
   const resetToDefaultMap = useCallback(() => {
@@ -405,16 +413,35 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                         <Sparkles className="h-3 w-3 text-primary shrink-0" />
                         <span className="text-[10px] sm:text-[11px] text-primary font-medium truncate">
                           Mode visuel : {projection.label}
+                          {projection.byProvinceGlobal && scope === 'global' && (
+                            <span className="ml-1 text-muted-foreground font-normal">(vue globale)</span>
+                          )}
                         </span>
                       </div>
-                      <button
-                        type="button"
-                        onClick={clearProjection}
-                        className="shrink-0 h-5 w-5 inline-flex items-center justify-center rounded-full hover:bg-primary/20 text-primary transition-colors"
-                        aria-label="Quitter le mode visuel"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
+                      <div className="flex items-center gap-1 shrink-0">
+                        {/* Toggle « Étendre à toutes les provinces » — visible uniquement si un dataset global a été fourni */}
+                        {projection.byProvinceGlobal && (
+                          <button
+                            type="button"
+                            onClick={() => setScope(scope === 'global' ? 'filtered' : 'global')}
+                            className="text-[10px] px-1.5 py-0.5 rounded border border-primary/30 text-primary hover:bg-primary/15 transition-colors"
+                            aria-pressed={scope === 'global'}
+                            title={scope === 'global'
+                              ? 'Revenir à la vue filtrée par province'
+                              : 'Projeter sur toutes les provinces (ignore le filtre province)'}
+                          >
+                            {scope === 'global' ? '◀ Vue filtrée' : 'Toutes les provinces ▶'}
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={clearProjection}
+                          className="shrink-0 h-5 w-5 inline-flex items-center justify-center rounded-full hover:bg-primary/20 text-primary transition-colors"
+                          aria-label="Quitter le mode visuel"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
                     </div>
                   )}
 
@@ -538,7 +565,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                         tooltipLines: () => [],
                       } as MapTabProfile}
                       adaptiveTiers={projectionTiers}
-                      hasAnyMetricData={Object.values(projection.byProvince).some(v => v > 0)}
+                      hasAnyMetricData={Object.values(projectionData || projection.byProvince).some(v => v > 0)}
                     />
                   ) : activeProfile && (
                     <MapLegend

@@ -7,6 +7,7 @@ import { Building, TrendingUp, Clock, ShieldCheck, Maximize, ArrowUpFromLine, Vo
 import { SOUND_LABELS } from '@/constants/expertiseLabels';
 import { KpiGrid } from '../shared/KpiGrid';
 import { ChartCard, FilterLabelContext } from '../shared/ChartCard';
+import { BlockUnscopedRecordsProvider } from '../shared/BlockUnscopedRecordsContext';
 import { GeoCharts } from '../shared/GeoCharts';
 import { generateInsight } from '@/utils/chartInsights';
 import { normalizeConstructionType } from '@/utils/constructionTypeNormalizer';
@@ -19,7 +20,7 @@ interface Props { data: LandAnalyticsData; }
 const TAB_KEY = 'parcels-titled';
 
 export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
-  const { filter, setFilter, filterLabel, filtered: filteredParcels, filterConfig, v, ct, cx, ty, ord, exportCSV } = useBlockFilter(TAB_KEY, data.parcels);
+  const { filter, setFilter, filterLabel, filtered: filteredParcels, filteredUnscoped, filterConfig, v, ct, cx, ty, ord, exportCSV  } = useBlockFilter(TAB_KEY, data.parcels);
   const filteredContribs = useMemo(() => applyFilters(data.contributions, filter, filterConfig.dateField), [data.contributions, filter, filterConfig.dateField]);
 
   // Only built parcels (have a property_category that is not "Terrain nu")
@@ -258,6 +259,7 @@ export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
 
   return (
     <FilterLabelContext.Provider value={filterLabel}>
+    <BlockUnscopedRecordsProvider records={filteredUnscoped}>
     <div className="space-y-2">
       <AnalyticsFilters data={data.parcels} filter={filter} onChange={setFilter} hideStatus={filterConfig.hideStatus} hideTime={filterConfig.hideTime} hideLocation={filterConfig.hideLocation} dateField={filterConfig.dateField} statusField={filterConfig.statusField} />
       <KpiGrid items={kpiItems} />
@@ -265,6 +267,7 @@ export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
         {chartDefs.map(d => <React.Fragment key={d.key}>{d.el()}</React.Fragment>)}
       </div>
     </div>
+    </BlockUnscopedRecordsProvider>
     </FilterLabelContext.Provider>
   );
 });
