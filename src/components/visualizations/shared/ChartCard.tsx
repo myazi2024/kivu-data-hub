@@ -65,6 +65,8 @@ export const ChartCard: React.FC<ChartCardProps> = memo(({
 }) => {
   const { ref, getBlob } = useChartImageBlob();
   const filterLabel = useContext(FilterLabelContext);
+  const ctxTab = useProjectionTab();
+  const effectiveTab = projectionTab || ctxTab;
   const [crossField, setCrossField] = useState<string | null>(null);
   const [focused, setFocused] = useState(false);
   if (hidden) return null;
