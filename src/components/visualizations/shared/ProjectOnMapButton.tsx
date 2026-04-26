@@ -13,6 +13,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { toast } from 'sonner';
 import { useMapProjection, type MapProjection } from '@/components/map/context/MapProjectionContext';
 import { normalizeProvinceName } from '@/lib/provinceNameNormalize';
+import { useBlockUnscopedRecords } from './BlockUnscopedRecordsContext';
 
 interface Props {
   /** Identifiant stable du visuel (titre + bloc suffit en pratique) */
@@ -37,6 +38,24 @@ interface Props {
 
 const norm = (s: unknown): string => normalizeProvinceName(s);
 
+/** Agrège un set de records par province (clés normalisées). */
+function aggregateByProvince(
+  records: Array<Record<string, unknown>>,
+  valueAccessor?: (r: Record<string, unknown>) => number,
+): Record<string, number> | null {
+  const map: Record<string, number> = {};
+  let any = false;
+  records.forEach((r) => {
+    const prov = norm(r.province);
+    if (!prov) return;
+    const v = valueAccessor ? Number(valueAccessor(r)) || 0 : 1;
+    if (!Number.isFinite(v)) return;
+    map[prov] = (map[prov] || 0) + v;
+    any = true;
+  });
+  return any ? map : null;
+}
+
 export const ProjectOnMapButton: React.FC<Props> = ({
   projectionId,
   label,
@@ -49,12 +68,12 @@ export const ProjectOnMapButton: React.FC<Props> = ({
   onActivate,
 }) => {
   const { projection, setProjection, clearProjection } = useMapProjection();
+  const unscopedRecords = useBlockUnscopedRecords();
   const isActive = projection?.id === projectionId;
 
-  // Construire la map province → valeur (clés normalisées via normalizeProvinceName)
+  // Construire la map province → valeur (filtrée)
   const buildByProvince = (): Record<string, number> | null => {
     if (precomputedByProvince) {
-      // Re-normaliser les clés pour matcher la carte
       const out: Record<string, number> = {};
       Object.entries(precomputedByProvince).forEach(([k, v]) => {
         const nk = normalizeProvinceName(k);
@@ -63,17 +82,7 @@ export const ProjectOnMapButton: React.FC<Props> = ({
       return Object.keys(out).length > 0 ? out : null;
     }
     if (!rawRecords || rawRecords.length === 0) return null;
-    const map: Record<string, number> = {};
-    let any = false;
-    rawRecords.forEach((r) => {
-      const prov = norm(r.province);
-      if (!prov) return;
-      const v = valueAccessor ? Number(valueAccessor(r)) || 0 : 1;
-      if (!Number.isFinite(v)) return;
-      map[prov] = (map[prov] || 0) + v;
-      any = true;
-    });
-    return any ? map : null;
+    return aggregateByProvince(rawRecords, valueAccessor);
   };
 
   // Si aucun moyen d'agréger par province, on n'affiche pas le bouton
@@ -91,6 +100,17 @@ export const ProjectOnMapButton: React.FC<Props> = ({
       toast.warning('Aucune donnée géolocalisée pour ce visuel');
       return;
     }
+    // Dataset global (sans filtre géo) — uniquement si le bloc l'a fourni
+    // ET si le set unscoped diffère réellement du set filtré (sinon inutile).
+    let byProvinceGlobal: Record<string, number> | undefined;
+    let hasGeoFilter = false;
+    if (unscopedRecords && rawRecords && unscopedRecords.length > rawRecords.length) {
+      const agg = aggregateByProvince(unscopedRecords, valueAccessor);
+      if (agg && Object.keys(agg).length > Object.keys(byProvince).length) {
+        byProvinceGlobal = agg;
+        hasGeoFilter = true;
+      }
+    }
     const payload: MapProjection = {
       id: projectionId,
       sourceTab,
@@ -98,6 +118,8 @@ export const ProjectOnMapButton: React.FC<Props> = ({
       unit,
       dataSource,
       byProvince,
+      byProvinceGlobal,
+      hasGeoFilter,
     };
     setProjection(payload);
     onActivate?.();
