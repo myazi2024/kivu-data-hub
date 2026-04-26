@@ -384,7 +384,27 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                       }
                     </p>
                   </div>
-                  
+
+                  {/* Bandeau « Mode visuel » — affiché quand un graphique projette ses données */}
+                  {projection && (
+                    <div className="flex items-center justify-between gap-2 px-2 py-1 bg-primary/10 border-b border-primary/30 animate-fade-in">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <Sparkles className="h-3 w-3 text-primary shrink-0" />
+                        <span className="text-[10px] sm:text-[11px] text-primary font-medium truncate">
+                          Mode visuel : {projection.label}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={clearProjection}
+                        className="shrink-0 h-5 w-5 inline-flex items-center justify-center rounded-full hover:bg-primary/20 text-primary transition-colors"
+                        aria-label="Quitter le mode visuel"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  )}
+
                    <div className="flex-1 min-h-0 overflow-hidden flex items-center justify-center p-1">
                     {selectedSectionType === 'rurale' || (selectedTerritoire && selectedProvince) ? (
                       <div key="territoires" className="w-full h-full animate-scale-in">
