@@ -565,7 +565,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                         tooltipLines: () => [],
                       } as MapTabProfile}
                       adaptiveTiers={projectionTiers}
-                      hasAnyMetricData={Object.values(projection.byProvince).some(v => v > 0)}
+                      hasAnyMetricData={Object.values(projectionData || projection.byProvince).some(v => v > 0)}
                     />
                   ) : activeProfile && (
                     <MapLegend
