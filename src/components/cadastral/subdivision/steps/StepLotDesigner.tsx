@@ -112,11 +112,31 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
   commonSpaces, setCommonSpaces, servitudes, setServitudes, lotIds,
   onCreateInitialLot, validation, canUndo, canRedo, onUndo, onRedo
 }) => {
-  const [selectedLotId, setSelectedLotId] = useState<string | null>(null);
+  const [selectedLotId, setSelectedLotIdState] = useState<string | null>(null);
   const [selectedLotIds, setSelectedLotIds] = useState<string[]>([]);
-  const [editingRoadId, setEditingRoadId] = useState<string | null>(null);
+  const [editingRoadId, setEditingRoadIdState] = useState<string | null>(null);
   const [canvasMode, setCanvasMode] = useState<CanvasMode>('select');
   const [canvasShowGrid, setCanvasShowGrid] = useState(true);
+  const detailsPanelRef = React.useRef<HTMLDivElement>(null);
+
+  // Auto-scroll vers le panneau de détails sur mobile lors d'une sélection
+  const scrollToDetailsOnMobile = React.useCallback(() => {
+    if (typeof window === 'undefined') return;
+    if (window.matchMedia('(min-width: 1024px)').matches) return; // lg+: panneau déjà visible à droite
+    requestAnimationFrame(() => {
+      detailsPanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  }, []);
+
+  const setSelectedLotId = React.useCallback((id: string | null) => {
+    setSelectedLotIdState(id);
+    if (id) scrollToDetailsOnMobile();
+  }, [scrollToDetailsOnMobile]);
+
+  const setEditingRoadId = React.useCallback((id: string | null) => {
+    setEditingRoadIdState(id);
+    if (id) scrollToDetailsOnMobile();
+  }, [scrollToDetailsOnMobile]);
   // Measure mode state
   const [measurePoints, setMeasurePoints] = useState<Point2D[]>([]);
   // Road pre-configuration
@@ -803,17 +823,17 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
     <TooltipProvider delayDuration={250}>
     <div className="space-y-3">
       {/* Toolbar grand public — 3 zones : Outils · Actions rapides · État */}
-      <div className="flex flex-wrap items-center gap-3 rounded-lg border bg-card p-2">
+      <div className="flex flex-col gap-2 rounded-lg border bg-card p-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
         {/* Zone 1 — Outils */}
-        <div className="flex items-center gap-1.5">
-          <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mr-1">Outils</span>
+        <div className="flex items-center gap-1.5 overflow-x-auto -mx-1 px-1 sm:overflow-visible sm:mx-0 sm:px-0">
+          <span className="hidden sm:inline text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mr-1">Outils</span>
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
                 variant={canvasMode === 'select' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setCanvasMode('select')}
-                className="gap-1.5 text-xs"
+                className="gap-1.5 text-xs flex-shrink-0"
               >
                 <MousePointer className="h-3.5 w-3.5" />
                 Sélection
@@ -830,7 +850,7 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
                 variant={canvasMode === 'drawLine' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setCanvasMode(canvasMode === 'drawLine' ? 'select' : 'drawLine')}
-                className="gap-1.5 text-xs"
+                className="gap-1.5 text-xs flex-shrink-0"
                 disabled={lots.length === 0}
               >
                 <Scissors className="h-3.5 w-3.5" />
@@ -844,18 +864,18 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
 
         </div>
 
-        <Separator orientation="vertical" className="h-8" />
+        <Separator orientation="vertical" className="hidden sm:block h-8" />
 
         {/* Zone 2 — Actions rapides */}
-        <div className="flex items-center gap-1.5">
-          <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mr-1">Actions</span>
+        <div className="flex items-center gap-1.5 overflow-x-auto -mx-1 px-1 sm:overflow-visible sm:mx-0 sm:px-0">
+          <span className="hidden sm:inline text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mr-1">Actions</span>
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={handleAddEmptyLot}
-                className="gap-1.5 text-xs"
+                className="gap-1.5 text-xs flex-shrink-0"
               >
                 <Plus className="h-3.5 w-3.5" />
                 Ajouter un lot
@@ -869,7 +889,7 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
           <Tooltip>
             <TooltipTrigger asChild>
               <span>
-                <Button variant="outline" size="sm" onClick={onUndo} disabled={!canUndo} className="gap-1.5 text-xs">
+                <Button variant="outline" size="sm" onClick={onUndo} disabled={!canUndo} className="gap-1.5 text-xs flex-shrink-0">
                   <Undo2 className="h-3.5 w-3.5" /> Annuler
                 </Button>
               </span>
@@ -880,7 +900,7 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
           <Tooltip>
             <TooltipTrigger asChild>
               <span>
-                <Button variant="outline" size="sm" onClick={onRedo} disabled={!canRedo} className="gap-1.5 text-xs">
+                <Button variant="outline" size="sm" onClick={onRedo} disabled={!canRedo} className="gap-1.5 text-xs flex-shrink-0">
                   <Redo2 className="h-3.5 w-3.5" /> Rétablir
                 </Button>
               </span>
@@ -889,10 +909,10 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
           </Tooltip>
         </div>
 
-        <div className="flex-1" />
+        <div className="hidden sm:block flex-1" />
 
         {/* Zone 3 — État */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 sm:ml-auto">
           <Badge variant="outline" className="text-[10px]">
             {lots.length} lot{lots.length !== 1 ? 's' : ''}
           </Badge>
@@ -972,7 +992,7 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
                 {modeHint}
               </p>
               {lots.length > 1 && selectedLotIds.length === 0 && (
-                <p className="text-[10px] text-muted-foreground text-center py-1">
+                <p className="hidden sm:block text-[10px] text-muted-foreground text-center py-1">
                   💡 Ctrl+clic (⌘+clic sur Mac) pour sélectionner plusieurs lots et les fusionner
                 </p>
               )}
@@ -981,7 +1001,7 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
         </div>
 
         {/* Lot details panel */}
-        <div className="space-y-2">
+        <div ref={detailsPanelRef} className="space-y-2 scroll-mt-4">
           {selectedLot ? (
             <Card className="border-primary/20">
               <CardContent className="pt-3 space-y-2">

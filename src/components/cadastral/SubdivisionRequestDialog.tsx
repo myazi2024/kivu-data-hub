@@ -149,8 +149,8 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
   return (
     <>
       <Dialog open={open} onOpenChange={handleClose}>
-        <DialogContent className="max-w-3xl max-h-[92vh] p-0 gap-0 overflow-hidden rounded-2xl">
-          <DialogHeader className="px-4 pt-4 pb-2">
+        <DialogContent className="w-screen h-[100dvh] max-w-none p-0 gap-0 overflow-hidden rounded-none sm:w-auto sm:h-auto sm:max-w-3xl sm:max-h-[92vh] sm:rounded-2xl flex flex-col">
+          <DialogHeader className="px-4 pt-4 pb-2 shrink-0">
             <div className="flex items-center gap-2">
               <div className="p-1.5 bg-primary/10 rounded-lg">
                 <Grid3X3 className="h-4 w-4 text-primary" />
@@ -168,12 +168,12 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
           
           {/* Draft restored notice */}
           {form.draftRestored && !form.submitted && (
-            <div className="px-4">
+            <div className="px-4 shrink-0">
               <Alert className="py-2 border-amber-500/30 bg-amber-50/50">
                 <Info className="h-3.5 w-3.5" />
-                <AlertDescription className="text-xs flex items-center justify-between">
+                <AlertDescription className="text-xs flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                   <span>Brouillon restauré automatiquement.</span>
-                  <Button variant="ghost" size="sm" className="h-6 text-xs gap-1" onClick={form.clearDraft}>
+                  <Button variant="ghost" size="sm" className="h-6 text-xs gap-1 self-start sm:self-auto" onClick={form.clearDraft}>
                     <Trash2 className="h-3 w-3" /> Effacer
                   </Button>
                 </AlertDescription>
@@ -182,8 +182,8 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
           )}
           
           {/* Step navigation */}
-          <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b px-4 py-2">
-            <div className="flex items-center gap-1">
+          <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b px-4 py-2 shrink-0">
+            <div className="flex items-center gap-1 overflow-x-auto -mx-1 px-1 scrollbar-thin">
               {STEP_CONFIG.map((step, index) => {
                 const isActive = step.key === form.currentStep;
                 const isDone = index < currentStepIndex;
@@ -192,12 +192,12 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
                 return (
                   <React.Fragment key={step.key}>
                     {index > 0 && (
-                      <div className={`flex-shrink-0 w-4 h-px ${isDone ? 'bg-primary' : 'bg-border'}`} />
+                      <div className={`flex-shrink-0 w-2 sm:w-4 h-px ${isDone ? 'bg-primary' : 'bg-border'}`} />
                     )}
                     <button
                       onClick={() => isClickable && form.setCurrentStep(step.key)}
                       disabled={!isClickable}
-                      className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all flex-shrink-0
+                      className={`flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-[10px] sm:text-xs font-medium transition-all flex-shrink-0
                         ${isActive ? 'bg-primary text-primary-foreground shadow-sm' : ''}
                         ${isDone ? 'text-primary hover:bg-primary/10' : ''}
                         ${!isActive && !isDone ? 'text-muted-foreground' : ''}
@@ -205,7 +205,7 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
                       `}
                     >
                       {isDone ? <Check className="h-3 w-3" /> : step.icon}
-                      <span className="hidden sm:inline">{step.shortLabel}</span>
+                      <span>{step.shortLabel}</span>
                     </button>
                   </React.Fragment>
                 );
@@ -214,7 +214,7 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
           </div>
           
           {/* Step content */}
-          <div className="flex-1 overflow-y-auto px-4 py-3" style={{ maxHeight: 'calc(92vh - 180px)' }}>
+          <div className="flex-1 overflow-y-auto px-4 py-3 min-h-0">
             {form.currentStep === 'parcel' && (
               <StepParentParcel
                 parentParcel={form.parentParcel}
@@ -297,19 +297,9 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
           
           {/* Navigation footer */}
           {!form.submitted && (
-            <div className="border-t px-4 py-3 flex items-center justify-between gap-2 bg-background">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={form.goPrev}
-                disabled={currentStepIndex === 0}
-                className="gap-1"
-              >
-                <ChevronLeft className="h-3.5 w-3.5" />
-                Précédent
-              </Button>
-              
-              <div className="flex items-center gap-1.5">
+            <div className="border-t px-4 py-3 bg-background shrink-0 space-y-2">
+              {/* Dots de progression — au-dessus sur mobile */}
+              <div className="flex items-center justify-center gap-1.5">
                 {STEP_CONFIG.map((_, i) => (
                   <div
                     key={i}
@@ -319,35 +309,49 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
                   />
                 ))}
               </div>
-              
-              {currentStepIndex < STEP_CONFIG.length - 1 ? (
-                <div className="flex flex-col items-end gap-1">
+
+              {/* Hint missing fields */}
+              {currentStepIndex < STEP_CONFIG.length - 1 && missingFields.length > 0 && (
+                <p className="text-[10px] text-muted-foreground text-center px-2">
+                  Renseignez : {missingFields.join(', ')}
+                </p>
+              )}
+
+              {/* Boutons */}
+              <div className="flex items-center justify-between gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={form.goPrev}
+                  disabled={currentStepIndex === 0}
+                  className="gap-1 flex-shrink-0"
+                >
+                  <ChevronLeft className="h-3.5 w-3.5" />
+                  <span>Précédent</span>
+                </Button>
+
+                {currentStepIndex < STEP_CONFIG.length - 1 ? (
                   <Button
                     size="sm"
                     onClick={form.goNext}
                     disabled={!form.isStepValid(form.currentStep)}
-                    className="gap-1"
+                    className="gap-1 flex-1 sm:flex-none"
                   >
                     Suivant
                     <ChevronRight className="h-3.5 w-3.5" />
                   </Button>
-                  {missingFields.length > 0 && (
-                    <span className="text-[10px] text-muted-foreground">
-                      Renseignez : {missingFields.join(', ')}
-                    </span>
-                  )}
-                </div>
-              ) : (
-                <Button
-                  size="sm"
-                  onClick={handleSubmit}
-                  disabled={form.submitting || !form.isStepValid('designer') || !form.isStepValid('documents') || form.loadingFee || form.zoningCompliance.hasErrors}
-                  className="gap-1"
-                >
-                  {form.submitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
-                  Payer & soumettre ({feeLabel})
-                </Button>
-              )}
+                ) : (
+                  <Button
+                    size="sm"
+                    onClick={handleSubmit}
+                    disabled={form.submitting || !form.isStepValid('designer') || !form.isStepValid('documents') || form.loadingFee || form.zoningCompliance.hasErrors}
+                    className="gap-1 flex-1 sm:flex-none"
+                  >
+                    {form.submitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+                    <span className="truncate">Payer & soumettre ({feeLabel})</span>
+                  </Button>
+                )}
+              </div>
             </div>
           )}
           

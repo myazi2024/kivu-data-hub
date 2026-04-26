@@ -723,11 +723,11 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
         ref={svgRef}
         viewBox={viewport.viewBox}
         className="w-full h-auto bg-white dark:bg-gray-950 rounded-lg"
-        style={{ minHeight: 280, cursor: svgCursor }}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
+        style={{ minHeight: 280, cursor: svgCursor, touchAction: 'none' }}
+        onPointerDown={handleMouseDown as unknown as React.PointerEventHandler<SVGSVGElement>}
+        onPointerMove={handleMouseMove as unknown as React.PointerEventHandler<SVGSVGElement>}
+        onPointerUp={handleMouseUp as unknown as React.PointerEventHandler<SVGSVGElement>}
+        onPointerLeave={handleMouseUp as unknown as React.PointerEventHandler<SVGSVGElement>}
         onClick={handleCanvasClick}
         onDoubleClick={handleCanvasDoubleClick}
         onContextMenu={e => e.preventDefault()}
@@ -945,7 +945,7 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
                   cx={pt.x} cy={pt.y} r={5}
                   fill="white" stroke="hsl(var(--primary))" strokeWidth={2}
                   className="cursor-grab active:cursor-grabbing"
-                  onMouseDown={e => {
+                  onPointerDown={e => {
                     e.stopPropagation();
                     setRoadEndpointDrag({ roadId: road.id, pointIdx: idx });
                   }}
@@ -975,7 +975,7 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
                       width={handleSize} height={handleSize} rx={1.5}
                       fill="white" stroke="hsl(var(--primary))" strokeWidth={2}
                       className="cursor-ns-resize"
-                      onMouseDown={e => {
+                      onPointerDown={e => {
                         e.stopPropagation();
                         setRoadWidthDrag({ roadId: road.id, startX: e.clientX, startY: e.clientY, startWidth: road.widthM });
                       }}
@@ -987,7 +987,7 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
                       width={handleSize} height={handleSize} rx={1.5}
                       fill="white" stroke="hsl(var(--primary))" strokeWidth={2}
                       className="cursor-ns-resize"
-                      onMouseDown={e => {
+                      onPointerDown={e => {
                         e.stopPropagation();
                         setRoadWidthDrag({ roadId: road.id, startX: e.clientX, startY: e.clientY, startWidth: road.widthM });
                       }}
@@ -1047,7 +1047,7 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
                     <circle cx={rcx} cy={rcy} r={ringRadius}
                       fill="none" stroke="transparent" strokeWidth={14}
                       className="cursor-grab active:cursor-grabbing"
-                      onMouseDown={startRotationRoad} />
+                      onPointerDown={startRotationRoad} />
                     {/* Guide line center → handle */}
                     <line x1={rcx} y1={rcy} x2={handleX} y2={handleY}
                       stroke="hsl(var(--primary))" strokeWidth={1} strokeDasharray="3 2" opacity={0.3}
@@ -1056,7 +1056,7 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
                     <circle cx={handleX} cy={handleY} r={10}
                       fill="hsl(var(--background))" stroke="hsl(var(--primary))" strokeWidth={2.5}
                       className="cursor-grab active:cursor-grabbing"
-                      onMouseDown={startRotationRoad} />
+                      onPointerDown={startRotationRoad} />
                     <text x={handleX} y={handleY + 1} textAnchor="middle" dominantBaseline="middle"
                       fontSize={12} fill="hsl(var(--primary))" fontWeight="bold"
                       className="pointer-events-none select-none">↻</text>
@@ -1113,7 +1113,7 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
                 onClick={e => handleLotClick(lot.id, e)}
                 onDoubleClick={e => handleLotDoubleClick(lot.id, e)}
                 onContextMenu={e => handleLotContextMenu(lot.id, e)}
-                onMouseDown={e => {
+                onPointerDown={e => {
                   if (isSelected && mode === 'select' && !readOnly) {
                     handlePolygonMouseDown(lot.id, e);
                   }
@@ -1255,7 +1255,7 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
                     x1={sv.x} y1={sv.y} x2={sn.x} y2={sn.y}
                     stroke="rgba(0,0,0,0.001)" strokeWidth={14} strokeLinecap="round"
                     pointerEvents="stroke" style={{ cursor: cursorStyle }}
-                    onMouseDown={e => handleEdgeMouseDown(lot.id, i, e)}
+                    onPointerDown={e => handleEdgeMouseDown(lot.id, i, e)}
                     onContextMenu={e => {
                       e.preventDefault();
                       e.stopPropagation();
@@ -1308,10 +1308,10 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
                   </rect>
                 ) : (
                   <circle
-                    key={i} cx={sv.x} cy={sv.y} r={5}
+                    key={i} cx={sv.x} cy={sv.y} r={7}
                     fill="white" stroke="hsl(var(--primary))" strokeWidth={2}
-                    className="cursor-grab active:cursor-grabbing"
-                    onMouseDown={e => handleVertexMouseDown(lot.id, i, e)}
+                    className="cursor-grab active:cursor-grabbing touch-none"
+                    onPointerDown={e => handleVertexMouseDown(lot.id, i, e)}
                   />
                 )
               ))}
@@ -1348,7 +1348,7 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
                     <circle cx={cx} cy={cy} r={ringRadius}
                       fill="none" stroke="transparent" strokeWidth={14}
                       className="cursor-grab active:cursor-grabbing"
-                      onMouseDown={startRotationLot} />
+                      onPointerDown={startRotationLot} />
                     {/* Guide line center → handle */}
                     <line x1={cx} y1={cy} x2={handleX} y2={handleY}
                       stroke="hsl(var(--primary))" strokeWidth={1} strokeDasharray="3 2" opacity={0.3}
@@ -1357,7 +1357,7 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
                     <circle cx={handleX} cy={handleY} r={10}
                       fill="hsl(var(--background))" stroke="hsl(var(--primary))" strokeWidth={2.5}
                       className="cursor-grab active:cursor-grabbing"
-                      onMouseDown={startRotationLot} />
+                      onPointerDown={startRotationLot} />
                     <text x={handleX} y={handleY + 1} textAnchor="middle" dominantBaseline="middle"
                       fontSize={12} fill="hsl(var(--primary))" fontWeight="bold"
                       className="pointer-events-none select-none">↻</text>
