@@ -43,6 +43,13 @@ export function useBlockFilter(tabKey: string, records: any[]) {
     [records, filter, filterConfig.dateField]
   );
 
+  /** Records filtrés *sans* le filtre géographique (province/ville/commune/quartier).
+   *  Utilisé par ProjectOnMapButton pour offrir « Étendre à toutes les provinces ». */
+  const filteredUnscoped = useMemo(() => {
+    const { province, ville, commune, quartier, ...rest } = filter;
+    return applyFilters(records, rest as AnalyticsFilter, filterConfig.dateField);
+  }, [records, filter, filterConfig.dateField]);
+
   // Cross-variables with DB overrides
   const { configs } = useAnalyticsChartsConfig();
   const crossOverrides = useMemo(() => {
