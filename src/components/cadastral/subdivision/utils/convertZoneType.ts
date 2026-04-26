@@ -130,16 +130,24 @@ export function convertZoneType(
     polygon = centerlineToPolygon(centerline, (source.road.widthM / Math.max(1, ctx.sideLengthM)));
   }
 
-  const ts = Date.now();
+  // Prefer accurate (anisotropic) area/perimeter when a metric frame is provided.
+  const areaOf = (verts: Point2D[]) =>
+    ctx.metricFrame
+      ? Math.max(1, Math.round(polygonAreaSqmAccurate(verts, ctx.metricFrame)))
+      : polygonAreaSqmLegacy(verts, ctx.parentAreaSqm, ctx.parentNormArea);
+  const perimOf = (verts: Point2D[]) =>
+    ctx.metricFrame
+      ? Math.round(polygonPerimeterMFrame(verts, ctx.metricFrame))
+      : polygonPerimeterMLegacy(verts, ctx.sideLengthM);
 
   if (toType === 'lot') {
     const verts = polygon.length >= 3 ? polygon : centerlineToPolygon(centerline, widthNorm);
     const lot: SubdivisionLot = {
-      id: source.lot?.id ?? `lot-${ts}-conv`,
+      id: source.lot?.id ?? genId('lot'),
       lotNumber: source.lot?.lotNumber ?? String(ctx.nextNumber),
       vertices: verts,
-      areaSqm: polygonAreaSqm(verts, ctx.parentAreaSqm, ctx.parentNormArea),
-      perimeterM: polygonPerimeterM(verts, ctx.sideLengthM),
+      areaSqm: areaOf(verts),
+      perimeterM: perimOf(verts),
       intendedUse: source.lot?.intendedUse ?? 'residential',
       ownerName: source.lot?.ownerName,
       isBuilt: source.lot?.isBuilt ?? false,
@@ -157,7 +165,7 @@ export function convertZoneType(
   if (toType === 'road') {
     const path = centerline.length >= 2 ? centerline : polygonToCenterline(polygon);
     const road: SubdivisionRoad = {
-      id: source.road?.id ?? `road-${ts}-conv`,
+      id: source.road?.id ?? genId('road'),
       name: source.road?.name ?? `Voie ${ctx.nextNumber}`,
       widthM: source.road?.widthM ?? widthM,
       surfaceType: source.road?.surfaceType ?? 'planned',
@@ -172,11 +180,11 @@ export function convertZoneType(
   const verts = polygon.length >= 3 ? polygon : centerlineToPolygon(centerline, widthNorm);
   const type = source.commonSpace?.type ?? 'green_space';
   const commonSpace: SubdivisionCommonSpace = {
-    id: source.commonSpace?.id ?? `cs-${ts}-conv`,
+    id: source.commonSpace?.id ?? genId('cs'),
     type,
     name: source.commonSpace?.name ?? `Espace ${ctx.nextNumber}`,
     vertices: verts,
-    areaSqm: polygonAreaSqm(verts, ctx.parentAreaSqm, ctx.parentNormArea),
+    areaSqm: areaOf(verts),
     color: source.commonSpace?.color ?? COMMON_SPACE_COLORS[type],
   };
   return { commonSpace };
