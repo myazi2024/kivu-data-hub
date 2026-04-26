@@ -1308,9 +1308,9 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
                   </rect>
                 ) : (
                   <circle
-                    key={i} cx={sv.x} cy={sv.y} r={5}
+                    key={i} cx={sv.x} cy={sv.y} r={7}
                     fill="white" stroke="hsl(var(--primary))" strokeWidth={2}
-                    className="cursor-grab active:cursor-grabbing"
+                    className="cursor-grab active:cursor-grabbing touch-none"
                     onPointerDown={e => handleVertexMouseDown(lot.id, i, e)}
                   />
                 )
