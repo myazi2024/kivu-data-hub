@@ -6,6 +6,7 @@ import { LandAnalyticsData } from '@/hooks/useLandDataAnalytics';
 import { ArrowRightLeft, TrendingUp, Users, DollarSign } from 'lucide-react';
 import { KpiGrid } from '../shared/KpiGrid';
 import { ChartCard, StackedBarCard, FilterLabelContext } from '../shared/ChartCard';
+import { BlockUnscopedRecordsProvider } from '../shared/BlockUnscopedRecordsContext';
 import { GeoCharts } from '../shared/GeoCharts';
 import { generateInsight, generateStackedInsight } from '@/utils/chartInsights';
 import { useBlockFilter } from '@/hooks/useBlockFilter';
@@ -15,7 +16,7 @@ interface Props { data: LandAnalyticsData; }
 const TAB_KEY = 'mutations';
 
 export const MutationBlock: React.FC<Props> = memo(({ data }) => {
-  const { filter, setFilter, filterLabel, filtered, filterConfig, v, ct, cx, ty, ord, exportCSV } = useBlockFilter(TAB_KEY, data.mutationRequests);
+  const { filter, setFilter, filterLabel, filtered, filteredUnscoped, filterConfig, v, ct, cx, ty, ord, exportCSV  } = useBlockFilter(TAB_KEY, data.mutationRequests);
 
   const byStatus = useMemo(() => countBy(filtered, 'status'), [filtered]);
   const byType = useMemo(() => countBy(filtered, 'mutation_type'), [filtered]);
@@ -132,6 +133,7 @@ export const MutationBlock: React.FC<Props> = memo(({ data }) => {
 
   return (
     <FilterLabelContext.Provider value={filterLabel}>
+    <BlockUnscopedRecordsProvider records={filteredUnscoped}>
     <div className="space-y-2">
       <AnalyticsFilters data={data.mutationRequests} filter={filter} onChange={setFilter} hideStatus={filterConfig.hideStatus} hideTime={filterConfig.hideTime} hideLocation={filterConfig.hideLocation} dateField={filterConfig.dateField} statusField={filterConfig.statusField} />
       <KpiGrid items={kpiItems} />
@@ -139,6 +141,7 @@ export const MutationBlock: React.FC<Props> = memo(({ data }) => {
         {chartDefs.map(d => <React.Fragment key={d.key}>{d.el()}</React.Fragment>)}
       </div>
     </div>
+    </BlockUnscopedRecordsProvider>
     </FilterLabelContext.Provider>
   );
 });

@@ -6,6 +6,7 @@ import { LandAnalyticsData } from '@/hooks/useLandDataAnalytics';
 import { TrendingUp } from 'lucide-react';
 import { KpiGrid } from '../shared/KpiGrid';
 import { ChartCard, FilterLabelContext } from '../shared/ChartCard';
+import { BlockUnscopedRecordsProvider } from '../shared/BlockUnscopedRecordsContext';
 import { GeoCharts } from '../shared/GeoCharts';
 import { generateInsight } from '@/utils/chartInsights';
 import { useBlockFilter } from '@/hooks/useBlockFilter';
@@ -15,7 +16,7 @@ interface Props { data: LandAnalyticsData; }
 const TAB_KEY = 'building-permits';
 
 export const BuildingPermitsBlock: React.FC<Props> = memo(({ data }) => {
-  const { filter, setFilter, filterLabel, filtered, filterConfig, v, ct, cx, ty, ord, exportCSV } = useBlockFilter(TAB_KEY, data.buildingPermits);
+  const { filter, setFilter, filterLabel, filtered, filteredUnscoped, filterConfig, v, ct, cx, ty, ord, exportCSV  } = useBlockFilter(TAB_KEY, data.buildingPermits);
 
   const byStatus = useMemo(() => countBy(filtered, 'administrative_status'), [filtered]);
   const byService = useMemo(() => countBy(filtered, 'issuing_service'), [filtered]);
@@ -85,6 +86,7 @@ export const BuildingPermitsBlock: React.FC<Props> = memo(({ data }) => {
 
   return (
     <FilterLabelContext.Provider value={filterLabel}>
+      <BlockUnscopedRecordsProvider records={filteredUnscoped}>
       <div className="space-y-2">
         <AnalyticsFilters data={data.buildingPermits} filter={filter} onChange={setFilter} hideStatus={filterConfig.hideStatus} hideTime={filterConfig.hideTime} hideLocation={filterConfig.hideLocation} dateField={filterConfig.dateField} statusField={filterConfig.statusField} />
         <KpiGrid items={kpiItems} />
@@ -92,6 +94,7 @@ export const BuildingPermitsBlock: React.FC<Props> = memo(({ data }) => {
           {chartDefs.map(d => <React.Fragment key={d.key}>{d.el()}</React.Fragment>)}
         </div>
       </div>
+    </BlockUnscopedRecordsProvider>
     </FilterLabelContext.Provider>
   );
 });

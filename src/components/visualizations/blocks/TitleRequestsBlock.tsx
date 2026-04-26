@@ -7,6 +7,7 @@ import { LandAnalyticsData } from '@/hooks/useLandDataAnalytics';
 import { FileText, Users, Globe, Clock, KeyRound, UserCheck, Scale, ArrowRightLeft, AlertTriangle, ShieldCheck } from 'lucide-react';
 import { KpiGrid } from '../shared/KpiGrid';
 import { ChartCard, ColorMappedPieCard, FilterLabelContext } from '../shared/ChartCard';
+import { BlockUnscopedRecordsProvider } from '../shared/BlockUnscopedRecordsContext';
 import { GeoCharts } from '../shared/GeoCharts';
 import { generateInsight } from '@/utils/chartInsights';
 import { useBlockFilter } from '@/hooks/useBlockFilter';
@@ -63,7 +64,7 @@ function leaseBucket(years: number | null | undefined): string {
 
 export const TitleRequestsBlock: React.FC<Props> = memo(({ data }) => {
   // Primary filter on parcels
-  const { filter, setFilter, filterLabel, filtered, filterConfig, v, ct, cx, ty, ord, exportCSV } = useBlockFilter(TAB_KEY, data.parcels);
+  const { filter, setFilter, filterLabel, filtered, filteredUnscoped, filterConfig, v, ct, cx, ty, ord, exportCSV  } = useBlockFilter(TAB_KEY, data.parcels);
 
   // Extract parcel IDs from filtered set for joining
   const filteredParcelIds = useMemo(() => new Set(filtered.map(p => p.id)), [filtered]);
@@ -312,6 +313,7 @@ export const TitleRequestsBlock: React.FC<Props> = memo(({ data }) => {
 
   return (
     <FilterLabelContext.Provider value={filterLabel}>
+    <BlockUnscopedRecordsProvider records={filteredUnscoped}>
     <div className="space-y-2">
       <AnalyticsFilters data={data.parcels} filter={filter} onChange={setFilter} hideStatus={filterConfig.hideStatus} hideTime={filterConfig.hideTime} hideLocation={filterConfig.hideLocation} dateField={filterConfig.dateField} statusField={filterConfig.statusField} />
       <KpiGrid items={kpiItems} />
@@ -319,6 +321,7 @@ export const TitleRequestsBlock: React.FC<Props> = memo(({ data }) => {
         {chartDefs.map(d => <React.Fragment key={d.key}>{d.el()}</React.Fragment>)}
       </div>
     </div>
+    </BlockUnscopedRecordsProvider>
     </FilterLabelContext.Provider>
   );
 });
