@@ -1,142 +1,59 @@
-## Audit — Onglet "Lots" (StepLotDesigner) du formulaire de demande de lotissement
+## Problème
 
-Périmètre audité : `src/components/cadastral/subdivision/steps/StepLotDesigner.tsx` (1 495 lignes), `LotCanvas.tsx`, `types.ts`, `utils/geometry.ts` (validateSubdivision), `useZoningCompliance`, `hooks/useCanvasDrag.ts`.
+Quand l'utilisateur sélectionne une zone (un lot tracé) et la convertit en **Voie** via le bouton "Voie" du panneau latéral, la largeur résultante est forcée à `roadPresetWidth` (préréglage global de la barre d'outils, par défaut 6 m). On demande ensuite à l'utilisateur de "Réglez ci-dessous sa largeur" — alors que cette largeur est mécaniquement définie par la géométrie qu'il vient de tracer (aire ÷ longueur ≈ largeur du couloir).
 
-Cet audit ne touche à aucun fichier ; il liste constats + propositions. Aucune action n'est exécutée tant que vous ne validez pas les correctifs souhaités.
+## Comportement cible
 
----
+Lors d'une conversion **lot → voie** :
 
-### 1) Ce qui ne va pas (bugs / incohérences)
+1. Calculer la centerline du polygone (déjà fait via `polygonToCenterline` dans `convertZoneType.ts`).
+2. Calculer la **longueur réelle** de cette centerline en mètres (via `MetricFrame`).
+3. Calculer l'**aire réelle** du polygone en mètres² (déjà fait via `polygonAreaSqmAccurate`).
+4. En déduire **largeur ≈ aire / longueur**, arrondie à 0,5 m près, bornée à [2 m, 30 m] (mêmes bornes que le slider).
+5. Affecter cette largeur à la voie créée — au lieu de la valeur du préréglage.
 
-**B1 — Conversion lot ➜ voie/espace : utilise `Math.sqrt(parentAreaSqm)` au lieu du metricFrame**
-`handleConvertSelectedZone` (ligne 290) calcule `sideLengthM = √(parentAreaSqm)`, hypothèse "parcelle carrée isotrope". Or le designer dispose déjà d'un `metricFrame` GPS précis (ligne 150). Conséquence : largeur de voie déformée si la parcelle est allongée ou orientée. Mêmes approximations dans `handleFinishRoadDraw` (l. 541, 615), `handleConvertEdgeToRoad` (l. 674) et `handleUpdateRoad` (l. 751).
+Le préréglage `roadPresetWidth` reste utilisé uniquement pour les voies tracées **directement à la main** (mode "Tracer voie"), où la géométrie est une polyligne sans épaisseur déclarée.
 
-**B2 — Bouton "Lot" du sélecteur "Type de zone" est inerte mais affiché comme actif**
-Lignes 1048-1057 : `onClick={() => { /* déjà un lot */ }}`. C'est un piège visuel : l'utilisateur clique et rien ne se passe, sans feedback.
+## UI
 
-**B3 — `handleSplitLot` casse les polygones non convexes**
-Ligne 318 : on coupe en joignant les milieux de l'arête la plus longue et de l'arête "opposée" (`(idx + n/2) % n`). Pour un polygone en L ou très irrégulier, le segment passe à l'extérieur du polygone et produit deux lots qui se chevauchent ou aux surfaces aberrantes.
+Dans le panneau d'édition de voie (`StepLotDesigner.tsx` lignes 1175-1218) :
 
-**B4 — `handleMergeLots` utilise une enveloppe convexe (convex hull)**
-Ligne 414 : `convexHull(allPoints)` sur l'union des sommets. Si deux lots adjacents ne sont pas convexes ensemble, le résultat **englobe une zone qui n'appartenait à aucun des deux lots** (peut "manger" une voie ou un espace commun voisin). Il faudrait une vraie union polygonale (ex. clipper / polygon-clipping).
+- Remplacer le texte **"Réglez ci-dessous sa largeur et son revêtement…"** par : "Largeur déduite automatiquement de la géométrie tracée. Vous pouvez l'ajuster manuellement si besoin."
+- Ajouter un petit bouton **"Recalculer depuis la géométrie"** à côté du label "Largeur" qui relance le calcul à partir du polygone source (utile si l'utilisateur a édité les sommets).
+- Afficher un badge discret "auto" tant que la largeur n'a pas été modifiée à la main.
 
-**B5 — `validateSubdivision` est trop laxiste sur la couverture**
-`utils/geometry.ts` ligne 499 : tolérance de **10 %** au-dessus de la parcelle mère acceptée sans erreur. Un lotissement peut donc dépasser légalement la parcelle. La règle métier devrait au plus tolérer 1 à 2 % (erreurs d'arrondi).
+## Détails techniques
 
-**B6 — Pas de vérification "lots dans la parcelle mère"**
-La validation détecte les chevauchements entre lots mais **pas** les lots qui sortent du polygone parent. Combiné avec les drags qui clampent à `[0,1]` (`useCanvasDrag.ts` l. 89), un lot peut déborder de la forme officielle si celle-ci n'est pas un rectangle 0-1.
+**Fichier `src/components/cadastral/subdivision/utils/convertZoneType.ts`** :
 
-**B7 — Numérotation des lots fragile**
-`maxLotNum = lots.reduce((m, l) => Math.max(m, parseInt(l.lotNumber) || 0), 0)` (l. 219, 260, 374…). Si l'utilisateur renomme un lot en "A1" ou "Lot-12", `parseInt` renvoie `NaN` ou `12` et la séquence se brise. Aucune unicité forcée à la saisie (le doublon n'est repéré qu'au moment de la validation finale).
+- Ajouter une fonction `inferRoadWidthFromPolygon(vertices, frame)` :
+  ```ts
+  // largeur ≈ aire / longueur centerline, snap 0.5 m, clamp [2, 30]
+  const areaM2 = polygonAreaSqmAccurate(vertices, frame);
+  const center = polygonToCenterline(vertices);
+  const lenM = edgeLengthM(center[0], center[1], frame);
+  const w = lenM > 0 ? areaM2 / lenM : 6;
+  return Math.min(30, Math.max(2, Math.round(w * 2) / 2));
+  ```
+- Dans `convertZoneType(..., 'road', ctx)` : si `source.lot` (donc on convertit un polygone) **et** `ctx.metricFrame` est fourni, utiliser `inferRoadWidthFromPolygon(polygon, ctx.metricFrame)` au lieu de `widthM` du contexte. Sinon garder le fallback actuel (`ctx.defaultRoadWidthM ?? 6`).
 
-**B8 — `selectedLotIds` réinitialisé à chaque clic mono-sélection mais l'inverse n'est pas vrai**
-`setSelectedLotId` ne vide pas `selectedLotIds` (l. 131). Inversement `handleToggleLotSelection` met `selectedLotId` à `null` (l. 403). État incohérent possible : un lot sélectionné en single + plusieurs en multi.
+**Fichier `StepLotDesigner.tsx`** :
 
-**B9 — Annotations "clipart" obsolètes mais toujours dans le type**
-`types.ts` l. 3-11 : `LotAnnotation` est marquée "deprecated" mais reste référencée par `updateLotAnnotations` et passée au canvas. Code mort qui complique la maintenance.
+- `handleConvertSelectedZone` n'a rien à changer (la nouvelle largeur sort de `convertZoneType`).
+- Adapter le texte d'aide (ligne ~1182).
+- Ajouter le bouton "Recalculer" qui appelle `inferRoadWidthFromPolygon` sur le polygone reconstruit depuis la centerline + largeur courante (ou mémoriser le polygone source). Plus simple : exposer la fonction et la rappeler sur le polygone régénéré via `centerlineToPolygon(road.path, currentWidthNorm)` — mais ce serait circulaire. Solution propre : **stocker le polygone source** dans le champ `road.sourcePolygon?: Point2D[]` lors de la conversion, pour permettre un recalcul fiable. (Optionnel, peut être différé si l'on ne veut pas toucher au type.)
 
-**B10 — Surface du lot non recalculée après `updateSelectedLot`**
-`updateSelectedLot` (l. 244) modifie n'importe quel champ y compris (théoriquement) `vertices` sans recalcul d'aire/périmètre — heureusement ce chemin n'est utilisé que pour des champs métier, mais il n'y a aucun garde-fou.
+**Fallback minimal sans changer le type `SubdivisionRoad`** : ne pas ajouter le bouton "Recalculer" — la largeur est calculée une fois à la conversion, modifiable ensuite via slider. C'est ce que je recommande pour cette première passe.
 
----
+## Hors périmètre
 
-### 2) Ce qui est absent (fonctionnalités attendues manquantes)
+- Voies dessinées à la main (mode "Tracer voie") : conservent `roadPresetWidth` — l'utilisateur n'a pas tracé de polygone donc rien à inférer.
+- Espaces communs : pas de notion de largeur, aucun changement.
+- Édition ultérieure des sommets de la voie : la largeur reste libre (slider), pas de recalcul auto.
 
-**M1 — Aucune édition numérique d'un lot**
-Impossible de saisir directement la **surface cible** (ex. "200 m²"), la **largeur**, la **profondeur** ou les **coordonnées GPS** d'un sommet. Tout passe par drag à la souris, ce qui rend la précision millimétrique impossible — bloquant pour un dossier admin.
+## Résumé des changements
 
-**M2 — Pas d'auto-découpage en N lots équivalents**
-Cas d'usage très courant : "diviser en 6 lots de 250 m² alignés le long de la voie". Aucun outil "grille auto" / "lots équivalents N×M" n'existe.
-
-**M3 — Pas de contrainte d'accès à la voie publique**
-Aucune validation ne vérifie que **chaque lot touche au moins une voie**. Un lot enclavé est accepté sans alerte — anomalie réglementaire majeure en RDC.
-
-**M4 — Pas de contrôle des dimensions règlementaires par usage**
-Le standard RDC impose des seuils (ex. résidentiel ≥ 200 m², façade min, recul). Le hook `useZoningCompliance` existe mais ne semble pas alimenter les warnings du panneau Lots.
-
-**M5 — Pas de copier-coller de propriétés**
-Impossible d'appliquer en un clic l'usage / propriétaire / clôture d'un lot à plusieurs autres ; chaque lot doit être édité individuellement.
-
-**M6 — Pas de renommage en masse / numérotation auto**
-Aucun bouton "renuméroter 1…N" après une suite d'opérations split/merge qui crée des trous (Lot 3, 5, 7, 12…).
-
-**M7 — Pas d'undo/redo granulaire visible**
-Les boutons existent mais aucune indication de l'action qui sera annulée ; pas d'historique listé.
-
-**M8 — Pas de verrou par lot**
-Une fois un lot finalisé, impossible de le "verrouiller" pour éviter qu'il ne soit déplacé accidentellement par un drag ultérieur. Seul `isParentBoundary` est verrouillable.
-
-**M9 — Pas de calcul de "lots vendables" / synthèse fiscale**
-La barre d'état affiche `% couvert` mais pas : nb de lots résidentiels, surface vendable nette (lots − voies − espaces communs), ratio de servitude.
-
-**M10 — Pas de validation "minimum 15 % d'espaces communs"**
-Règle de lotissement courante : aucun warning si la part d'espaces communs / voirie est trop faible.
-
-**M11 — Aucune gestion d'orientation / façade par lot**
-Pas de champ "façade principale", "orientation cardinale", "n° de borne" — pourtant utiles pour le titre futur de chaque sous-parcelle.
-
-**M12 — Pas d'export du tableau des lots**
-Impossible d'exporter en CSV la liste des lots avec surfaces/usages/propriétaires depuis cet onglet (sans passer par le récapitulatif final).
-
----
-
-### 3) Ce qui est à optimiser (qualité / UX / architecture)
-
-**O1 — Le composant fait 1 495 lignes (monolithe)**
-Mélange : géométrie (convex hull, intersections), state UI, panneau de droite, listes voies/espaces/servitudes. À éclater par responsabilité (cf. `mem://architecture/complex-dialog-modularization-strategy-fr` qui impose ce pattern au-delà de 1000 l.) :
-- `LotDesignerToolbar` (zones outils/actions/état)
-- `LotDetailsPanel`, `RoadDetailsPanel`, `LotsList`, `RoadsList`, `CommonSpacesList`, `ServitudesList`, `ValidationPanel`
-- Helpers géométriques (`convexHull`, `lineSegmentIntersection`, `segmentSegmentIntersection`) → `utils/geometry.ts`
-- Logique métier (`handleSplitLot`, `handleMergeLots`, `handleCutLot`, `handleConvertSelectedZone`, `handleFinishRoadDraw`, `handleConvertEdgeToRoad`, `handleUpdateRoad`) → hook dédié `useLotOperations`.
-
-**O2 — `setLots`/`setRoads` non atomiques**
-Plusieurs handlers font deux `set*` consécutifs (ex. l. 306-313, 666-668, 736-738). Un re-render intermédiaire peut afficher un état incohérent (lot supprimé sans la voie créée). À regrouper dans un `useReducer` ou un setter atomique unique du state plan.
-
-**O3 — `Date.now()` pour générer des IDs**
-Risque de collision si deux opérations dans la même ms (rare mais possible). Utiliser `crypto.randomUUID()` (déjà standard côté CCC, cf. `mem://security/file-storage-naming-standard-fr`).
-
-**O4 — Calculs métriques redondants**
-`computeArea` / `computePerim` recréés via `useCallback`, mais `useCanvasDrag` recompute aussi (l. 31-37 du hook). Centraliser dans un service partagé ou via le contexte du metricFrame.
-
-**O5 — Tooltips sans `aria-label` / accessibilité**
-Les boutons icônes (Trash, Plus, Undo, Redo, Annotations, +Voie l. 1271-1287) n'ont pas tous d'`aria-label`; les `title` HTML sont incomplets. À harmoniser avec le standard accessibilité du projet.
-
-**O6 — Performance : `lots.find` / `lots.reduce` répétés à chaque render**
-Aucune mémoisation (`useMemo`) sur `selectedLot`, `editingRoad`, `totalArea`, `coveragePercent`, `maxLotNum`. Sur 50 lots ce reste léger, mais multiplié par les drags 60fps cela compte.
-
-**O7 — `as any` dispersés**
-Lignes 1182, 1291, 1300, 1316 (`(editingRoad as any).isExisting`), `(road as any).isExisting`. Le champ existe sur le type — à typer correctement (cf. `mem://admin/as-any-reduction-untyped-helpers`).
-
-**O8 — Pas d'analytics sur les actions critiques**
-Aucun événement `subdivision_lot_*` (split, merge, convert, cut). Les autres modules admin tracent ces gestes (cf. `mem://admin/admin-analytics-tracking-fr`).
-
-**O9 — Validation déclenchée à chaque render mais affichée uniquement si erreurs**
-Le panneau de validation (l. 1470) ne montre rien tant qu'il y a 0 erreur/warning. Or l'utilisateur veut un retour positif "✅ Plan conforme" pour avancer en confiance.
-
-**O10 — Hint contextuel (`modeHint`) n'est pas internationalisé**
-Trois textes en dur dans le composant. Le reste du projet est en français mais sans i18n centralisée — à isoler au minimum dans un dictionnaire local.
-
-**O11 — Slider largeur voie : valeurs flottantes sans formatage**
-`step=0.5` + saisie Input number : on peut entrer 6.499999. À arrondir (`toFixed(1)`).
-
-**O12 — Conversion d'edge ↔ voie fait perdre les annotations**
-`handleConvertSelectedZone` ne tente pas de migrer les annotations / propriétaire ; elles disparaissent silencieusement.
-
----
-
-### Priorisation suggérée
-
-Je vous propose ce groupement pour la suite :
-
-- **P0 (bloquants/justice métier)** : B1, B5, B6, M3, B3, B4
-- **P1 (UX et fiabilité du plan)** : B2, B7, B8, M1, M2, M4, M9, M10, O1 (modularisation), O2 (atomicité), O8 (analytics)
-- **P2 (qualité code/finition)** : B9, M5, M6, M8, M11, M12, O3-O7, O9-O12
-
-### Question
-
-Souhaitez-vous :
-1. **Tout** (P0+P1+P2) en plusieurs passes,
-2. **P0+P1 seulement** (cible utile rapide),
-3. ou **uniquement les bugs (P0)** dans un premier temps ?
-
-Je présenterai un plan d'implémentation détaillé après votre choix.
+| Fichier | Changement |
+|---|---|
+| `utils/convertZoneType.ts` | Nouvelle fonction `inferRoadWidthFromPolygon` + utilisation dans le branchement `toType === 'road'` quand un `metricFrame` est dispo |
+| `steps/StepLotDesigner.tsx` | Mise à jour du texte d'aide du panneau voie pour refléter le calcul auto |
