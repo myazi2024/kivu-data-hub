@@ -11,7 +11,7 @@ import { Separator } from '@/components/ui/separator';
 import {
   Plus, Trash2, Undo2, Redo2,
   Info, Route,
-  MousePointer, Scissors, Shield
+  MousePointer, Scissors, Shield, TreePine
 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
@@ -19,9 +19,9 @@ import {
   ParentParcelInfo, LOT_COLORS, USAGE_LABELS, ROAD_SURFACE_LABELS,
   Point2D, LotAnnotation
 } from '../types';
-import { ValidationResult, mergeLotsThroughDeletedRoad, polygonArea } from '../utils/geometry';
+import { ValidationResult, mergeLotsThroughDeletedRoad, polygonArea, splitRoadsAtIntersections } from '../utils/geometry';
 import { convertZoneType, ZoneType } from '../utils/convertZoneType';
-import LotCanvas, { CanvasMode } from '../LotCanvas';
+import LotCanvas, { CanvasMode, EdgeInfo } from '../LotCanvas';
 import { buildMetricFrame, polygonAreaSqmAccurate, polygonPerimeterM, formatMeters, formatSqm } from '../utils/metrics';
 import { genId, nextLotNumber, polygonUnionMany } from '../utils/polygonOps';
 import LotVerticesEditor from './LotVerticesEditor';
@@ -1041,10 +1041,13 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
                       type="button"
                       size="sm"
                       variant="default"
-                      className="h-7 text-[11px] gap-1"
-                      onClick={() => { /* déjà un lot */ }}
+                      className="h-7 text-[11px] gap-1 cursor-default"
+                      disabled
+                      aria-pressed="true"
+                      aria-label="Type actuel : Lot"
+                      title="Cette zone est déjà un lot"
                     >
-                      <span className="h-2 w-2 rounded-full bg-primary-foreground" />
+                      <span className="h-2 w-2 rounded-full bg-primary-foreground" aria-hidden="true" />
                       Lot
                     </Button>
                     <Tooltip>
