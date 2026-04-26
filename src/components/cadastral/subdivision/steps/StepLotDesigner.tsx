@@ -1237,260 +1237,35 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
           )}
 
           {/* Lot list */}
-          <Card>
-            <CardContent className="pt-3">
-              <div className="flex items-center justify-between mb-2 gap-2">
-                <h4 className="font-semibold text-xs">Tous les lots ({lots.length})</h4>
-                <LotsBulkActions lots={lots} setLots={setLots} />
-              </div>
-              <div className="space-y-1 max-h-[200px] overflow-y-auto">
-                {lots.map(lot => (
-                  <button
-                    key={lot.id}
-                    onClick={() => setSelectedLotId(lot.id)}
-                    className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs transition-colors text-left
-                      ${lot.id === selectedLotId ? 'bg-primary/10 ring-1 ring-primary/30' : 'hover:bg-muted/50'}
-                    `}
-                  >
-                    <span className="h-3 w-3 rounded-sm flex-shrink-0" style={{ backgroundColor: lot.color || LOT_COLORS[lot.intendedUse] }} />
-                    <span className="font-medium flex-1">Lot {lot.lotNumber}</span>
-                    <span className="text-muted-foreground">{formatSqm(lot.areaSqm)}</span>
-                  </button>
-                ))}
-                {lots.length === 0 && (
-                  <p className="text-center text-muted-foreground text-[10px] py-3">
-                    Tracez une ligne entre deux bords pour diviser le lot.
-                  </p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+          <LotsListPanel
+            lots={lots}
+            setLots={setLots}
+            selectedLotId={selectedLotId}
+            onSelectLot={setSelectedLotId}
+          />
 
           {/* Roads management */}
-          <Card>
-            <CardContent className="pt-3">
-              <div className="flex items-center justify-between mb-2">
-                <h4 className="font-semibold text-xs flex items-center gap-1">
-                  <Route className="h-3.5 w-3.5" />
-                  Voies ({roads.length})
-                </h4>
-                <div className="flex gap-1">
-                  <Button
-                    variant={canvasMode === 'selectEdge' ? 'default' : 'ghost'}
-                    size="icon"
-                    className="h-6 w-6"
-                    onClick={() => {
-                      if (lots.length >= 2) {
-                        setCanvasMode(canvasMode === 'selectEdge' ? 'select' : 'selectEdge');
-                      } else {
-                        handleAddRoad();
-                      }
-                    }}
-                    title={lots.length >= 2 ? 'Cliquer sur une limite entre lots' : 'Ajouter une voie'}
-                  >
-                    <Plus className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
-              </div>
-              <div className="space-y-1 max-h-[180px] overflow-y-auto">
-                {roads.map(road => {
-                  const isExisting = (road as any).isExisting;
-                  const isEditing = editingRoadId === road.id;
-                  return (
-                    <div key={road.id} className={`flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-xs transition-colors ${isEditing ? 'bg-primary/10 ring-1 ring-primary/30' : 'hover:bg-muted/50'}`}>
-                      <span className={`h-2.5 w-2.5 rounded-full flex-shrink-0 ${isExisting ? 'bg-amber-600' : 'bg-muted-foreground'}`} />
-                      <button className="flex-1 text-left truncate" onClick={() => setEditingRoadId(isEditing ? null : road.id)}>
-                        <span className="font-medium">{road.name}</span>
-                        <span className="text-muted-foreground ml-1">({road.widthM}m)</span>
-                      </button>
-                      {!isExisting && (
-                        <Button variant="ghost" size="icon" className="h-5 w-5 text-destructive hover:text-destructive" onClick={() => handleDeleteRoad(road.id)}>
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
-                      )}
-                    </div>
-                  );
-                })}
-                {roads.length === 0 && <p className="text-center text-muted-foreground text-[10px] py-2">Aucune voie</p>}
-              </div>
-              {editingRoad && (
-                <>
-                  <Separator className="my-2" />
-                  <div className="space-y-2">
-                    <div>
-                      <Label className="text-xs">Nom</Label>
-                      <Input value={editingRoad.name} onChange={e => updateRoad(editingRoad.id, { name: e.target.value })} className="h-7 text-xs" disabled={(editingRoad as any).isExisting} />
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <Label className="text-xs">Largeur ({editingRoad.widthM}m)</Label>
-                        <div className="flex items-center gap-2">
-                          <Slider
-                            min={2}
-                            max={30}
-                            step={0.5}
-                            value={[editingRoad.widthM]}
-                            onValueChange={([v]) => updateRoad(editingRoad.id, { widthM: v })}
-                            className="flex-1"
-                          />
-                          <Input
-                            type="number"
-                            min={2}
-                            max={30}
-                            step={0.5}
-                            value={editingRoad.widthM}
-                            onChange={e => updateRoad(editingRoad.id, { widthM: parseFloat(e.target.value) || 6 })}
-                            className="h-7 text-xs w-16"
-                          />
-                        </div>
-                      </div>
-                      <div>
-                        <Label className="text-xs">Revêtement</Label>
-                        <Select value={editingRoad.surfaceType} onValueChange={(v: any) => updateRoad(editingRoad.id, { surfaceType: v })}>
-                          <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                            {Object.entries(ROAD_SURFACE_LABELS).map(([key, label]) => (
-                              <SelectItem key={key} value={key}>{label}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                  </div>
-                </>
-              )}
-            </CardContent>
-          </Card>
+          <RoadsListPanel
+            roads={roads}
+            editingRoad={editingRoad}
+            editingRoadId={editingRoadId}
+            setEditingRoadId={setEditingRoadId}
+            onDeleteRoad={handleDeleteRoad}
+            onUpdateRoad={updateRoad}
+            onAddRoad={handleAddRoad}
+            canvasMode={canvasMode}
+            setCanvasMode={setCanvasMode}
+            hasMultipleLots={lots.length >= 2}
+          />
 
           {/* Common Spaces */}
-          <Card>
-            <CardContent className="pt-3">
-              <div className="flex items-center justify-between mb-2">
-                <h4 className="font-semibold text-xs flex items-center gap-1">
-                  <TreePine className="h-3.5 w-3.5" />
-                  Espaces communs ({commonSpaces.length})
-                </h4>
-                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => {
-                  const newSpace: SubdivisionCommonSpace = {
-                    id: genId('cs'),
-                    type: 'green_space',
-                    name: `Espace ${commonSpaces.length + 1}`,
-                    vertices: [],
-                    areaSqm: 0,
-                    color: COMMON_SPACE_COLORS.green_space,
-                  };
-                  setCommonSpaces([...commonSpaces, newSpace]);
-                }}>
-                  <Plus className="h-3.5 w-3.5" />
-                </Button>
-              </div>
-              <div className="space-y-1 max-h-[150px] overflow-y-auto">
-                {commonSpaces.map((space, idx) => (
-                  <div key={space.id} className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-xs hover:bg-muted/50">
-                    <span className="h-2.5 w-2.5 rounded-sm flex-shrink-0" style={{ backgroundColor: space.color }} />
-                    <div className="flex-1 space-y-1">
-                      <Input value={space.name} onChange={e => {
-                        setCommonSpaces(commonSpaces.map(s => s.id === space.id ? { ...s, name: e.target.value } : s));
-                      }} className="h-6 text-xs" />
-                      <div className="flex gap-1">
-                        <Select value={space.type} onValueChange={(v: any) => {
-                          setCommonSpaces(commonSpaces.map(s => s.id === space.id ? { ...s, type: v, color: COMMON_SPACE_COLORS[v as keyof typeof COMMON_SPACE_COLORS] || s.color } : s));
-                        }}>
-                          <SelectTrigger className="h-6 text-[10px] flex-1"><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                            {Object.entries(COMMON_SPACE_LABELS).map(([key, label]) => (
-                              <SelectItem key={key} value={key}>{label}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <Input type="number" placeholder="m²" value={space.areaSqm || ''} onChange={e => {
-                          setCommonSpaces(commonSpaces.map(s => s.id === space.id ? { ...s, areaSqm: parseFloat(e.target.value) || 0 } : s));
-                        }} className="h-6 text-[10px] w-16" />
-                      </div>
-                    </div>
-                    <Button variant="ghost" size="icon" className="h-5 w-5 text-destructive" onClick={() => setCommonSpaces(commonSpaces.filter(s => s.id !== space.id))}>
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
-                  </div>
-                ))}
-                {commonSpaces.length === 0 && <p className="text-center text-muted-foreground text-[10px] py-2">Aucun espace commun</p>}
-              </div>
-            </CardContent>
-          </Card>
+          <CommonSpacesPanel commonSpaces={commonSpaces} setCommonSpaces={setCommonSpaces} />
 
           {/* Servitudes */}
-          <Card>
-            <CardContent className="pt-3">
-              <div className="flex items-center justify-between mb-2">
-                <h4 className="font-semibold text-xs flex items-center gap-1">
-                  <Shield className="h-3.5 w-3.5" />
-                  Servitudes ({servitudes.length})
-                </h4>
-                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => {
-                  const newServitude: SubdivisionServitude = {
-                    id: genId('srv'),
-                    type: 'passage',
-                    description: '',
-                    affectedLots: [],
-                    widthM: 3,
-                  };
-                  setServitudes([...servitudes, newServitude]);
-                }}>
-                  <Plus className="h-3.5 w-3.5" />
-                </Button>
-              </div>
-              <div className="space-y-1.5 max-h-[150px] overflow-y-auto">
-                {servitudes.map(srv => (
-                  <div key={srv.id} className="px-2 py-1.5 rounded-lg text-xs hover:bg-muted/50 space-y-1">
-                    <div className="flex items-center gap-1">
-                      <Select value={srv.type} onValueChange={(v: any) => {
-                        setServitudes(servitudes.map(s => s.id === srv.id ? { ...s, type: v } : s));
-                      }}>
-                        <SelectTrigger className="h-6 text-[10px] flex-1"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="passage">Passage</SelectItem>
-                          <SelectItem value="drainage">Drainage</SelectItem>
-                          <SelectItem value="utility">Réseau (eau/élec)</SelectItem>
-                          <SelectItem value="view">Vue</SelectItem>
-                          <SelectItem value="other">Autre</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <Input type="number" placeholder="m" value={srv.widthM || ''} onChange={e => {
-                        setServitudes(servitudes.map(s => s.id === srv.id ? { ...s, widthM: parseFloat(e.target.value) || 0 } : s));
-                      }} className="h-6 text-[10px] w-14" />
-                      <Button variant="ghost" size="icon" className="h-5 w-5 text-destructive" onClick={() => setServitudes(servitudes.filter(s => s.id !== srv.id))}>
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    </div>
-                    <Input value={srv.description} onChange={e => {
-                      setServitudes(servitudes.map(s => s.id === srv.id ? { ...s, description: e.target.value } : s));
-                    }} className="h-6 text-[10px]" placeholder="Description de la servitude..." />
-                  </div>
-                ))}
-                {servitudes.length === 0 && <p className="text-center text-muted-foreground text-[10px] py-2">Aucune servitude</p>}
-              </div>
-            </CardContent>
-          </Card>
+          <ServitudesPanel servitudes={servitudes} setServitudes={setServitudes} />
 
           {/* Validation */}
-          {(validation.errors.length > 0 || validation.warnings.length > 0) && (
-            <Card className={validation.errors.length > 0 ? 'border-destructive/30' : 'border-amber-500/30'}>
-              <CardContent className="pt-3 space-y-1">
-                {validation.errors.map((err, i) => (
-                  <div key={i} className="flex items-start gap-1.5 text-[10px] text-destructive">
-                    <AlertTriangle className="h-3 w-3 flex-shrink-0 mt-0.5" />
-                    {err}
-                  </div>
-                ))}
-                {validation.warnings.map((warn, i) => (
-                  <div key={i} className="flex items-start gap-1.5 text-[10px] text-amber-600">
-                    <Info className="h-3 w-3 flex-shrink-0 mt-0.5" />
-                    {warn}
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          )}
+          <ValidationPanel validation={validation} />
         </div>
       </div>
     </div>
