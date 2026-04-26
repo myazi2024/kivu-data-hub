@@ -4,7 +4,7 @@ import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
 } from 'recharts';
 import { LucideIcon } from 'lucide-react';
-import ShareButton from '@/components/shared/ShareButton';
+import { ChartHeaderActions } from './ChartHeaderActions';
 import { CHART_HEIGHT as BASE_CH } from '@/utils/analyticsConstants';
 import { CHART_COLORS } from '@/utils/analyticsHelpers';
 import { ChartInsight } from '@/utils/chartInsights';
@@ -22,10 +22,19 @@ interface MultiAreaChartCardProps {
   colSpan?: number;
   series: MultiAreaSeries[];
   insight?: string | ChartInsight;
+  /** Records bruts (avec champ `province`) pour la projection sur la carte RDC */
+  rawRecords?: any[];
+  /** Identifiant stable du visuel (clé registre) */
+  projectionKey?: string;
+  /** Onglet analytics propriétaire */
+  projectionTab?: string;
+  /** Source SQL principale */
+  projectionSource?: string;
 }
 
 export const MultiAreaChartCard: React.FC<MultiAreaChartCardProps> = memo(({
   title, colSpan, series, insight,
+  rawRecords, projectionKey, projectionTab, projectionSource,
 }) => {
   const { ref, getBlob } = useChartImageBlob();
   const filterLabel = useContext(FilterLabelContext);
@@ -87,7 +96,14 @@ export const MultiAreaChartCard: React.FC<MultiAreaChartCardProps> = memo(({
             </div>
             {filterLabel && <ChartFilterSubtitle filterLabel={filterLabel} />}
           </div>
-          <ShareButton getBlob={getBlob} title={title} variant="chart" />
+          <ChartHeaderActions
+            title={title}
+            getBlob={getBlob}
+            rawRecords={rawRecords}
+            projectionKey={projectionKey}
+            projectionTab={projectionTab}
+            projectionSource={projectionSource}
+          />
         </div>
         <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1.5" onClick={(e) => e.stopPropagation()}>
           {series.map((s, i) => {
