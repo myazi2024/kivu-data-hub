@@ -149,8 +149,8 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
   return (
     <>
       <Dialog open={open} onOpenChange={handleClose}>
-        <DialogContent className="max-w-3xl max-h-[92vh] p-0 gap-0 overflow-hidden rounded-2xl">
-          <DialogHeader className="px-4 pt-4 pb-2">
+        <DialogContent className="w-screen h-[100dvh] max-w-none p-0 gap-0 overflow-hidden rounded-none sm:w-auto sm:h-auto sm:max-w-3xl sm:max-h-[92vh] sm:rounded-2xl flex flex-col">
+          <DialogHeader className="px-4 pt-4 pb-2 shrink-0">
             <div className="flex items-center gap-2">
               <div className="p-1.5 bg-primary/10 rounded-lg">
                 <Grid3X3 className="h-4 w-4 text-primary" />
