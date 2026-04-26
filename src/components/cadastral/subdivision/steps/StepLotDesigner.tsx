@@ -288,19 +288,19 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
       : [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 1, y: 1 }, { x: 0, y: 1 }];
     const parentNormArea = polygonArea(parentPoly);
     const parentAreaSqm = parentParcel?.areaSqm || 1000;
-    const sideLengthM = Math.sqrt(parentAreaSqm);
+    // Anisotropic frame from GPS bounds → accurate meters on both axes.
+    const sideLengthM = (metricFrame.sxM + metricFrame.syM) / 2;
 
-    const maxLotNum = lots.reduce((m, l) => Math.max(m, parseInt(l.lotNumber) || 0), 0);
     const nextNumber = toType === 'road'
       ? roads.length + 1
       : toType === 'commonSpace'
         ? commonSpaces.length + 1
-        : maxLotNum + 1;
+        : nextLotNumber(lots);
 
     const result = convertZoneType(
       { lot },
       toType,
-      { parentAreaSqm, parentNormArea, sideLengthM, nextNumber, defaultRoadWidthM: roadPresetWidth },
+      { parentAreaSqm, parentNormArea, sideLengthM, metricFrame, nextNumber, defaultRoadWidthM: roadPresetWidth },
     );
 
     // Remove from lots
