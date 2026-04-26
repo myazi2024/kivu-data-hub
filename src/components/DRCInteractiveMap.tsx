@@ -512,8 +512,22 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                     {brandingConfig?.logo_url && <img src={String(brandingConfig.logo_url)} alt="" className="h-3 w-3 inline-block object-contain" />}
                   </div>
 
-                  {/* Mini-légende choroplèthe par profil — visible quand un onglet métier est actif */}
-                  {activeProfile && (
+                  {/* Mini-légende choroplèthe — projection prioritaire, sinon profil */}
+                  {projection && projectionTiers ? (
+                    <MapLegend
+                      activeProfile={{
+                        tabKey: 'projection',
+                        label: projection.label,
+                        legendTitle: projection.label,
+                        tiers: projectionTiers,
+                        dataSource: projection.dataSource,
+                        metric: () => 0,
+                        tooltipLines: () => [],
+                      } as MapTabProfile}
+                      adaptiveTiers={projectionTiers}
+                      hasAnyMetricData={Object.values(projection.byProvince).some(v => v > 0)}
+                    />
+                  ) : activeProfile && (
                     <MapLegend
                       activeProfile={activeProfile}
                       adaptiveTiers={adaptiveTiers}
