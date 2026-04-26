@@ -13,6 +13,7 @@ import {
 } from 'recharts';
 import { LucideIcon } from 'lucide-react';
 import ShareButton from '@/components/shared/ShareButton';
+import { ProjectOnMapButton } from './ProjectOnMapButton';
 import { CHART_HEIGHT as BASE_CH, NoData } from '@/utils/analyticsConstants';
 import { CHART_COLORS } from '@/utils/analyticsHelpers';
 import { CrossVariable } from '@/config/crossVariables';
