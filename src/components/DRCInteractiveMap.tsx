@@ -247,8 +247,15 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
     });
   }, []);
 
-  /** Choropleth color: profile-driven when an analytics tab is active, else default tiers */
+  /** Choropleth color: projection > profile > default density tiers */
   const getProvinceColor = useCallback((province: ProvinceData) => {
+    if (projection && projectionTiers) {
+      const key = (province.name || '').trim().toLowerCase();
+      const v = projection.byProvince[key] ?? 0;
+      if (v <= 0) return NO_DATA_COLOR;
+      const tier = projectionTiers.find(t => v >= t.min && v <= t.max) || projectionTiers[0];
+      return tier.color;
+    }
     if (activeProfile) {
       if (province.noData) return NO_DATA_COLOR;
       const v = province.metricValue ?? 0;
@@ -259,7 +266,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
     const count = province.parcelsCount;
     const tier = DENSITY_TIERS.find(t => count >= t.min && count <= t.max) || DENSITY_TIERS[0];
     return tier.color;
-  }, [activeProfile, adaptiveTiers, DENSITY_TIERS]);
+  }, [projection, projectionTiers, activeProfile, adaptiveTiers, DENSITY_TIERS]);
 
   /** Reset to default RDC map view */
   const resetToDefaultMap = useCallback(() => {
