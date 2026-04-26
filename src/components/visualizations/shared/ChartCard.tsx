@@ -12,9 +12,7 @@ import {
   PieChart, Pie, Cell, AreaChart, Area, Legend,
 } from 'recharts';
 import { LucideIcon } from 'lucide-react';
-import ShareButton from '@/components/shared/ShareButton';
-import { ProjectOnMapButton } from './ProjectOnMapButton';
-import { useProjectionTab } from './ProjectionTabContext';
+import { ChartHeaderActions } from './ChartHeaderActions';
 import { CHART_HEIGHT as BASE_CH, NoData } from '@/utils/analyticsConstants';
 import { CHART_COLORS } from '@/utils/analyticsHelpers';
 import { CrossVariable } from '@/config/crossVariables';
@@ -51,6 +49,8 @@ interface ChartCardProps {
   crossVariables?: CrossVariable[];
   rawRecords?: any[];
   groupField?: string;
+  /** Identifiant stable du visuel (clé registre) — préféré au titre pour la projection */
+  projectionKey?: string;
   /** Onglet analytics propriétaire (pour la projection sur la carte RDC) */
   projectionTab?: string;
   /** Source SQL principale (pour la projection) */
@@ -61,12 +61,10 @@ export const ChartCard: React.FC<ChartCardProps> = memo(({
   title, colSpan, data, type, color, colorIndex = 0,
   labelWidth = 90, maxItems = 10, hidden = false, insight,
   crossVariables, rawRecords, groupField,
-  projectionTab, projectionSource,
+  projectionKey, projectionTab, projectionSource,
 }) => {
   const { ref, getBlob } = useChartImageBlob();
   const filterLabel = useContext(FilterLabelContext);
-  const ctxTab = useProjectionTab();
-  const effectiveTab = projectionTab || ctxTab;
   const [crossField, setCrossField] = useState<string | null>(null);
   const [focused, setFocused] = useState(false);
   if (hidden) return null;
@@ -97,25 +95,21 @@ export const ChartCard: React.FC<ChartCardProps> = memo(({
           {truncated && !isCrossMode && (
             <span className="text-[8px] text-muted-foreground shrink-0 mt-0.5">Top {maxItems}/{data.length}</span>
           )}
-          <div className="flex items-center gap-0.5 shrink-0">
-            {hasCross && (
+          <ChartHeaderActions
+            title={title}
+            getBlob={getBlob}
+            rawRecords={rawRecords}
+            projectionKey={projectionKey}
+            projectionTab={projectionTab}
+            projectionSource={projectionSource}
+            before={hasCross ? (
               <CrossVariablePicker
                 variables={crossVariables!}
                 selected={crossField}
                 onSelect={setCrossField}
               />
-            )}
-            {rawRecords && effectiveTab && (
-              <ProjectOnMapButton
-                projectionId={`${effectiveTab}::${title}`}
-                label={title}
-                rawRecords={rawRecords}
-                sourceTab={effectiveTab}
-                dataSource={projectionSource}
-              />
-            )}
-            <ShareButton getBlob={getBlob} title={title} variant="chart" />
-          </div>
+            ) : null}
+          />
         </div>
       </CardHeader>
       <CardContent className="px-2 pb-2 relative">

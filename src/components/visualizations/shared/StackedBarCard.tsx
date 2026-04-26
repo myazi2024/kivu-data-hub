@@ -4,7 +4,7 @@ import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
 } from 'recharts';
 import { LucideIcon } from 'lucide-react';
-import ShareButton from '@/components/shared/ShareButton';
+import { ChartHeaderActions } from './ChartHeaderActions';
 import { CHART_HEIGHT as BASE_CH, NoData } from '@/utils/analyticsConstants';
 import { ChartInsight } from '@/utils/chartInsights';
 import {
@@ -25,10 +25,19 @@ interface StackedBarCardProps {
   maxItems?: number;
   hidden?: boolean;
   insight?: string | ChartInsight;
+  /** Records bruts (avec champ `province`) pour la projection sur la carte RDC */
+  rawRecords?: any[];
+  /** Identifiant stable du visuel (ex: clé du registre) */
+  projectionKey?: string;
+  /** Onglet analytics propriétaire */
+  projectionTab?: string;
+  /** Source SQL principale (affichée dans le popover info) */
+  projectionSource?: string;
 }
 
 export const StackedBarCard: React.FC<StackedBarCardProps> = memo(({
   title, colSpan, data, bars, layout = 'horizontal', labelWidth = 90, maxItems = 8, hidden = false, insight,
+  rawRecords, projectionKey, projectionTab, projectionSource,
 }) => {
   const { ref, getBlob } = useChartImageBlob();
   const filterLabel = useContext(FilterLabelContext);
@@ -52,7 +61,14 @@ export const StackedBarCard: React.FC<StackedBarCardProps> = memo(({
             </div>
             {filterLabel && <ChartFilterSubtitle filterLabel={filterLabel} />}
           </div>
-          <ShareButton getBlob={getBlob} title={title} variant="chart" />
+          <ChartHeaderActions
+            title={title}
+            getBlob={getBlob}
+            rawRecords={rawRecords}
+            projectionKey={projectionKey}
+            projectionTab={projectionTab}
+            projectionSource={projectionSource}
+          />
         </div>
       </CardHeader>
       <CardContent className="px-2 pb-2 relative">
