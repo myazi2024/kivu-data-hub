@@ -46,31 +46,9 @@ interface StepLotDesignerProps {
   onRedo: () => void;
 }
 
-// Simple convex hull (gift wrapping / Jarvis march)
-function convexHull(points: Point2D[]): Point2D[] {
-  if (points.length < 3) return points;
-  const pts = [...points];
-  let leftmost = 0;
-  for (let i = 1; i < pts.length; i++) {
-    if (pts[i].x < pts[leftmost].x || (pts[i].x === pts[leftmost].x && pts[i].y < pts[leftmost].y)) {
-      leftmost = i;
-    }
-  }
-  const hull: Point2D[] = [];
-  let current = leftmost;
-  do {
-    hull.push(pts[current]);
-    let next = 0;
-    for (let i = 1; i < pts.length; i++) {
-      if (next === current) { next = i; continue; }
-      const cross = (pts[i].x - pts[current].x) * (pts[next].y - pts[current].y) -
-                    (pts[i].y - pts[current].y) * (pts[next].x - pts[current].x);
-      if (cross > 0) next = i;
-    }
-    current = next;
-  } while (current !== leftmost && hull.length < pts.length);
-  return hull;
-}
+// Note: convex-hull merging was removed in P0 — replaced by polygonUnionMany
+// (see utils/polygonOps.ts) which preserves concavities and refuses
+// non-adjacent lots instead of swallowing external area.
 
 // Line segment intersection helper
 function lineSegmentIntersection(
