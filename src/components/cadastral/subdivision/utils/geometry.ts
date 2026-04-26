@@ -487,16 +487,7 @@ export interface ValidationResult {
 
 export function validateSubdivision(
   lots: SubdivisionLot[],
-  parentAreaSqm: number,
-  options?: {
-    parentVertices?: Point2D[];
-    /** Roads in normalized space, with widths in meters. */
-    roads?: { path: Point2D[]; widthM: number }[];
-    /** Required only when checking road access — anisotropic frame. */
-    metricFrame?: import('./metrics').MetricFrame;
-    /** When true, every lot must touch a road (enclavement check). */
-    requireRoadAccess?: boolean;
-  }
+  parentAreaSqm: number
 ): ValidationResult {
   const errors: string[] = [];
   const warnings: string[] = [];
@@ -535,27 +526,6 @@ export function validateSubdivision(
 
   if (totalLotArea < parentAreaSqm * 0.5) {
     warnings.push(`La superficie totale des lots ne couvre que ${Math.round(totalLotArea / parentAreaSqm * 100)}% de la parcelle mère.`);
-  }
-
-  // Boundary check: every lot vertex must lie inside the parent parcel.
-  if (options?.parentVertices && options.parentVertices.length >= 3) {
-    // Lazy-loaded import to avoid cycles.
-    const { isPolygonInsidePolygon } = require('./polygonOps') as typeof import('./polygonOps');
-    for (const lot of lots) {
-      if (!isPolygonInsidePolygon(lot.vertices, options.parentVertices, 1e-3)) {
-        errors.push(`Le lot ${lot.lotNumber} dépasse les limites de la parcelle mère.`);
-      }
-    }
-  }
-
-  // Road access (enclavement): each lot must touch at least one road.
-  if (options?.requireRoadAccess && options.roads && options.metricFrame) {
-    const { lotTouchesRoad } = require('./polygonOps') as typeof import('./polygonOps');
-    for (const lot of lots) {
-      if (!lotTouchesRoad(lot.vertices, options.roads, options.metricFrame)) {
-        errors.push(`Le lot ${lot.lotNumber} est enclavé : il n'a pas d'accès à une voie.`);
-      }
-    }
   }
 
   return {
