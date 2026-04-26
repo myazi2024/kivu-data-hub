@@ -1234,7 +1234,10 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
           {/* Lot list */}
           <Card>
             <CardContent className="pt-3">
-              <h4 className="font-semibold text-xs mb-2">Tous les lots ({lots.length})</h4>
+              <div className="flex items-center justify-between mb-2 gap-2">
+                <h4 className="font-semibold text-xs">Tous les lots ({lots.length})</h4>
+                <LotsBulkActions lots={lots} setLots={setLots} />
+              </div>
               <div className="space-y-1 max-h-[200px] overflow-y-auto">
                 {lots.map(lot => (
                   <button
