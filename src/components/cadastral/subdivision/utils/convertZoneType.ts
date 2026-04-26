@@ -61,7 +61,9 @@ function centerlineToPolygon(path: Point2D[], widthNorm: number): Point2D[] {
   ];
 }
 
-function polygonAreaSqm(vertices: Point2D[], parentAreaSqm: number, parentNormArea: number): number {
+// Legacy isotropic helpers — kept for backwards-compat callers that don't
+// pass a MetricFrame. New code should use the MetricFrame-aware variants.
+function polygonAreaSqmLegacy(vertices: Point2D[], parentAreaSqm: number, parentNormArea: number): number {
   if (vertices.length < 3 || parentNormArea <= 0) return 0;
   let a = 0;
   for (let i = 0; i < vertices.length; i++) {
@@ -72,7 +74,7 @@ function polygonAreaSqm(vertices: Point2D[], parentAreaSqm: number, parentNormAr
   return Math.max(1, Math.round((norm / parentNormArea) * parentAreaSqm));
 }
 
-function polygonPerimeterM(vertices: Point2D[], sideLengthM: number): number {
+function polygonPerimeterMLegacy(vertices: Point2D[], sideLengthM: number): number {
   if (vertices.length < 2) return 0;
   let p = 0;
   for (let i = 0; i < vertices.length; i++) {
@@ -85,8 +87,10 @@ function polygonPerimeterM(vertices: Point2D[], sideLengthM: number): number {
 export interface ConvertContext {
   parentAreaSqm: number;
   parentNormArea: number;
-  /** sqrt(parentAreaSqm) used to convert normalized distance to meters. */
+  /** sqrt(parentAreaSqm) used to convert normalized distance to meters (legacy). */
   sideLengthM: number;
+  /** Anisotropic metric frame derived from GPS bounds — preferred when available. */
+  metricFrame?: MetricFrame;
   /** Default road width in meters (from zoning rules later, fallback 6). */
   defaultRoadWidthM?: number;
   /** Next available lot/space number suffix. */
