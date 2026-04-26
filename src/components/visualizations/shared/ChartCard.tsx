@@ -50,6 +50,10 @@ interface ChartCardProps {
   crossVariables?: CrossVariable[];
   rawRecords?: any[];
   groupField?: string;
+  /** Onglet analytics propriétaire (pour la projection sur la carte RDC) */
+  projectionTab?: string;
+  /** Source SQL principale (pour la projection) */
+  projectionSource?: string;
 }
 
 export const ChartCard: React.FC<ChartCardProps> = memo(({
