@@ -2,7 +2,7 @@ import React, { memo, useContext, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from 'recharts';
 import { LucideIcon } from 'lucide-react';
-import ShareButton from '@/components/shared/ShareButton';
+import { ChartHeaderActions } from './ChartHeaderActions';
 import { CHART_HEIGHT as BASE_CH, NoData } from '@/utils/analyticsConstants';
 import { CHART_COLORS } from '@/utils/analyticsHelpers';
 import { CrossVariable } from '@/config/crossVariables';
@@ -24,10 +24,17 @@ interface ColorMappedPieProps {
   crossVariables?: CrossVariable[];
   rawRecords?: any[];
   groupField?: string;
+  /** Identifiant stable du visuel (clé registre) */
+  projectionKey?: string;
+  /** Onglet analytics propriétaire (projection carte RDC) */
+  projectionTab?: string;
+  /** Source SQL principale */
+  projectionSource?: string;
 }
 
 export const ColorMappedPieCard: React.FC<ColorMappedPieProps> = memo(({
   title, data, colorMap = {}, insight, crossVariables, rawRecords, groupField,
+  projectionKey, projectionTab, projectionSource,
 }) => {
   const { ref, getBlob } = useChartImageBlob();
   const filterLabel = useContext(FilterLabelContext);
@@ -52,16 +59,21 @@ export const ColorMappedPieCard: React.FC<ColorMappedPieProps> = memo(({
             </div>
             {filterLabel && <ChartFilterSubtitle filterLabel={filterLabel} />}
           </div>
-          <div className="flex items-center gap-0.5 shrink-0">
-            {hasCross && (
+          <ChartHeaderActions
+            title={title}
+            getBlob={getBlob}
+            rawRecords={rawRecords}
+            projectionKey={projectionKey}
+            projectionTab={projectionTab}
+            projectionSource={projectionSource}
+            before={hasCross ? (
               <CrossVariablePicker
                 variables={crossVariables!}
                 selected={crossField}
                 onSelect={setCrossField}
               />
-            )}
-            <ShareButton getBlob={getBlob} title={title} variant="chart" />
-          </div>
+            ) : null}
+          />
         </div>
       </CardHeader>
       <CardContent className="px-2 pb-2 relative">
