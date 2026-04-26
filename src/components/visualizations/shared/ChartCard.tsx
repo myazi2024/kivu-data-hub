@@ -102,6 +102,15 @@ export const ChartCard: React.FC<ChartCardProps> = memo(({
                 onSelect={setCrossField}
               />
             )}
+            {rawRecords && projectionTab && (
+              <ProjectOnMapButton
+                projectionId={`${projectionTab}::${title}`}
+                label={title}
+                rawRecords={rawRecords}
+                sourceTab={projectionTab}
+                dataSource={projectionSource}
+              />
+            )}
             <ShareButton getBlob={getBlob} title={title} variant="chart" />
           </div>
         </div>
