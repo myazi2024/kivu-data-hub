@@ -297,19 +297,9 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
           
           {/* Navigation footer */}
           {!form.submitted && (
-            <div className="border-t px-4 py-3 flex items-center justify-between gap-2 bg-background">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={form.goPrev}
-                disabled={currentStepIndex === 0}
-                className="gap-1"
-              >
-                <ChevronLeft className="h-3.5 w-3.5" />
-                Précédent
-              </Button>
-              
-              <div className="flex items-center gap-1.5">
+            <div className="border-t px-4 py-3 bg-background shrink-0 space-y-2">
+              {/* Dots de progression — au-dessus sur mobile */}
+              <div className="flex items-center justify-center gap-1.5">
                 {STEP_CONFIG.map((_, i) => (
                   <div
                     key={i}
@@ -319,35 +309,49 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
                   />
                 ))}
               </div>
-              
-              {currentStepIndex < STEP_CONFIG.length - 1 ? (
-                <div className="flex flex-col items-end gap-1">
+
+              {/* Hint missing fields */}
+              {currentStepIndex < STEP_CONFIG.length - 1 && missingFields.length > 0 && (
+                <p className="text-[10px] text-muted-foreground text-center px-2">
+                  Renseignez : {missingFields.join(', ')}
+                </p>
+              )}
+
+              {/* Boutons */}
+              <div className="flex items-center justify-between gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={form.goPrev}
+                  disabled={currentStepIndex === 0}
+                  className="gap-1 flex-shrink-0"
+                >
+                  <ChevronLeft className="h-3.5 w-3.5" />
+                  <span>Précédent</span>
+                </Button>
+
+                {currentStepIndex < STEP_CONFIG.length - 1 ? (
                   <Button
                     size="sm"
                     onClick={form.goNext}
                     disabled={!form.isStepValid(form.currentStep)}
-                    className="gap-1"
+                    className="gap-1 flex-1 sm:flex-none"
                   >
                     Suivant
                     <ChevronRight className="h-3.5 w-3.5" />
                   </Button>
-                  {missingFields.length > 0 && (
-                    <span className="text-[10px] text-muted-foreground">
-                      Renseignez : {missingFields.join(', ')}
-                    </span>
-                  )}
-                </div>
-              ) : (
-                <Button
-                  size="sm"
-                  onClick={handleSubmit}
-                  disabled={form.submitting || !form.isStepValid('designer') || !form.isStepValid('documents') || form.loadingFee || form.zoningCompliance.hasErrors}
-                  className="gap-1"
-                >
-                  {form.submitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
-                  Payer & soumettre ({feeLabel})
-                </Button>
-              )}
+                ) : (
+                  <Button
+                    size="sm"
+                    onClick={handleSubmit}
+                    disabled={form.submitting || !form.isStepValid('designer') || !form.isStepValid('documents') || form.loadingFee || form.zoningCompliance.hasErrors}
+                    className="gap-1 flex-1 sm:flex-none"
+                  >
+                    {form.submitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+                    <span className="truncate">Payer & soumettre ({feeLabel})</span>
+                  </Button>
+                )}
+              </div>
             </div>
           )}
           
