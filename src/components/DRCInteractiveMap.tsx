@@ -160,7 +160,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
   }, [activeProfile, provincesData]);
 
   // ── Projection issue d'un visuel analytics (override doux du profil) ──
-  const { projection, clearProjection } = useMapProjection();
+  const { projection, scope, setScope, clearProjection } = useMapProjection();
 
   // Auto-reset de la projection quand l'utilisateur change d'onglet analytics
   React.useEffect(() => {
@@ -180,16 +180,24 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
     [],
   );
 
+  /** Dataset effectivement projeté selon le scope choisi (filtré ou global) */
+  const projectionData = useMemo(() => {
+    if (!projection) return null;
+    return scope === 'global' && projection.byProvinceGlobal
+      ? projection.byProvinceGlobal
+      : projection.byProvince;
+  }, [projection, scope]);
+
   /** Tiers adaptatifs construits depuis la projection visuelle (si active) */
   const projectionTiers: MapTier[] | null = useMemo(() => {
-    if (!projection) return null;
-    const values = Object.values(projection.byProvince).filter(v => Number.isFinite(v));
+    if (!projection || !projectionData) return null;
+    const values = Object.values(projectionData).filter(v => Number.isFinite(v));
     const fallback: MapTier[] = [
       { label: '0', min: 0, max: 0, color: 'hsl(var(--muted))' },
       { label: '1+', min: 1, max: Infinity, color: 'hsl(var(--primary))' },
     ];
     return computeAdaptiveTiers(values, projection.palette || PROJECTION_PALETTE, fallback, projection.unit || '');
-  }, [projection, PROJECTION_PALETTE]);
+  }, [projection, projectionData, PROJECTION_PALETTE]);
 
 
 
