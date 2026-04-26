@@ -1,4 +1,5 @@
 import { Point2D, GpsPoint, SubdivisionLot } from '../types';
+import type { MetricFrame } from './metrics';
 
 /**
  * Calculate polygon area using Shoelace formula
