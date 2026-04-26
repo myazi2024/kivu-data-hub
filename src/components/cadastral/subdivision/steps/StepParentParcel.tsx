@@ -106,7 +106,7 @@ const StepParentParcel: React.FC<StepParentParcelProps> = ({
                 <p className="font-medium">{parentParcel.location || '—'}</p>
               </div>
               {parentParcel.gpsCoordinates.length > 0 && (
-                <div className="col-span-2">
+                <div className="sm:col-span-2">
                   <Badge variant="outline" className="text-[10px] text-green-600">
                     <CheckCircle className="h-3 w-3 mr-1" />
                     {parentParcel.gpsCoordinates.length} points GPS disponibles
