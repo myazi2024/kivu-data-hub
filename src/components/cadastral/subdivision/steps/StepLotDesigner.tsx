@@ -299,7 +299,8 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
     } else if (result.commonSpace) {
       setCommonSpaces([...commonSpaces, result.commonSpace]);
     }
-  }, [selectedLotId, lots, setLots, roads, setRoads, commonSpaces, setCommonSpaces, parentParcel, parentVertices, roadPresetWidth, metricFrame]);
+    trackAdminAction({ module: 'subdivision', action: 'lot_convert', meta: { to: toType } });
+  }, [selectedLotId, lots, setLots, roads, setRoads, commonSpaces, setCommonSpaces, parentParcel, parentVertices, roadPresetWidth, metricFrame, trackAdminAction]);
 
 
   const handleSplitLot = useCallback((lotId: string) => {
@@ -381,7 +382,8 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
 
     setLots(lots.map(l => l.id === lotId ? newLot1 : l).concat(newLot2));
     setSelectedLotId(newLot1.id);
-  }, [lots, setLots, computeArea, computePerim]);
+    trackAdminAction({ module: 'subdivision', action: 'lot_split' });
+  }, [lots, setLots, computeArea, computePerim, trackAdminAction]);
 
   const handleToggleLotSelection = useCallback((lotId: string) => {
     setSelectedLotIds(prev =>
@@ -422,7 +424,8 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
     setLots([...lots.filter(l => !ids.includes(l.id)), mergedLot]);
     setSelectedLotIds([]);
     setSelectedLotId(mergedLot.id);
-  }, [lots, setLots, computeArea, computePerim]);
+    trackAdminAction({ module: 'subdivision', action: 'lot_merge', meta: { count: ids.length } });
+  }, [lots, setLots, computeArea, computePerim, trackAdminAction]);
 
   // Handle manual cut through a lot
   const handleCutLot = useCallback((lotId: string, cutStart: Point2D, cutEnd: Point2D) => {
@@ -483,7 +486,8 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
     setLots(lots.map(l => l.id === lotId ? newLot1 : l).concat(newLot2));
     setSelectedLotId(newLot1.id);
     setCanvasMode('select');
-  }, [lots, setLots, computeArea, computePerim]);
+    trackAdminAction({ module: 'subdivision', action: 'lot_cut' });
+  }, [lots, setLots, computeArea, computePerim, trackAdminAction]);
 
   // Handle finished road drawing — also split the traversed lot
   const handleFinishRoadDraw = useCallback((path: Point2D[]) => {
