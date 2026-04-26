@@ -313,7 +313,7 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
     } else if (result.commonSpace) {
       setCommonSpaces([...commonSpaces, result.commonSpace]);
     }
-  }, [selectedLotId, lots, setLots, roads, setRoads, commonSpaces, setCommonSpaces, parentParcel, parentVertices, roadPresetWidth]);
+  }, [selectedLotId, lots, setLots, roads, setRoads, commonSpaces, setCommonSpaces, parentParcel, parentVertices, roadPresetWidth, metricFrame]);
 
 
   const handleSplitLot = useCallback((lotId: string) => {
