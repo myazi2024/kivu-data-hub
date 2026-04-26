@@ -1001,7 +1001,7 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
         </div>
 
         {/* Lot details panel */}
-        <div className="space-y-2">
+        <div ref={detailsPanelRef} className="space-y-2 scroll-mt-4">
           {selectedLot ? (
             <Card className="border-primary/20">
               <CardContent className="pt-3 space-y-2">
