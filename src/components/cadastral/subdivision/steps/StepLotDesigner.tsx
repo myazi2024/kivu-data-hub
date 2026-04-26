@@ -98,6 +98,7 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
   commonSpaces, setCommonSpaces, servitudes, setServitudes, lotIds,
   onCreateInitialLot, validation, canUndo, canRedo, onUndo, onRedo
 }) => {
+  const { trackAdminAction } = useAdminAnalytics();
   const [selectedLotId, setSelectedLotIdState] = useState<string | null>(null);
   const [selectedLotIds, setSelectedLotIds] = useState<string[]>([]);
   const [editingRoadId, setEditingRoadIdState] = useState<string | null>(null);
