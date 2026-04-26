@@ -413,16 +413,35 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                         <Sparkles className="h-3 w-3 text-primary shrink-0" />
                         <span className="text-[10px] sm:text-[11px] text-primary font-medium truncate">
                           Mode visuel : {projection.label}
+                          {projection.byProvinceGlobal && scope === 'global' && (
+                            <span className="ml-1 text-muted-foreground font-normal">(vue globale)</span>
+                          )}
                         </span>
                       </div>
-                      <button
-                        type="button"
-                        onClick={clearProjection}
-                        className="shrink-0 h-5 w-5 inline-flex items-center justify-center rounded-full hover:bg-primary/20 text-primary transition-colors"
-                        aria-label="Quitter le mode visuel"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
+                      <div className="flex items-center gap-1 shrink-0">
+                        {/* Toggle « Étendre à toutes les provinces » — visible uniquement si un dataset global a été fourni */}
+                        {projection.byProvinceGlobal && (
+                          <button
+                            type="button"
+                            onClick={() => setScope(scope === 'global' ? 'filtered' : 'global')}
+                            className="text-[10px] px-1.5 py-0.5 rounded border border-primary/30 text-primary hover:bg-primary/15 transition-colors"
+                            aria-pressed={scope === 'global'}
+                            title={scope === 'global'
+                              ? 'Revenir à la vue filtrée par province'
+                              : 'Projeter sur toutes les provinces (ignore le filtre province)'}
+                          >
+                            {scope === 'global' ? '◀ Vue filtrée' : 'Toutes les provinces ▶'}
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={clearProjection}
+                          className="shrink-0 h-5 w-5 inline-flex items-center justify-center rounded-full hover:bg-primary/20 text-primary transition-colors"
+                          aria-label="Quitter le mode visuel"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
                     </div>
                   )}
 
