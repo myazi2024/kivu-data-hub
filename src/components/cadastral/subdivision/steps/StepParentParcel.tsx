@@ -92,7 +92,7 @@ const StepParentParcel: React.FC<StepParentParcelProps> = ({
           </div>
 
           {parentParcel ? (
-            <div className="grid grid-cols-2 gap-3 text-sm">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
               <div>
                 <span className="text-muted-foreground text-xs">Numéro</span>
                 <p className="font-medium">{parentParcel.parcelNumber}</p>
