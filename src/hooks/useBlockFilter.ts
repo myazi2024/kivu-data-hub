@@ -89,6 +89,8 @@ export function useBlockFilter(tabKey: string, records: any[]) {
     setFilter,
     filterLabel,
     filtered,
+    /** Records filtrés sans le filtre géographique — pour l'option « toutes les provinces » */
+    filteredUnscoped,
     filterConfig,
     isChartVisible,
     getChartConfig,
