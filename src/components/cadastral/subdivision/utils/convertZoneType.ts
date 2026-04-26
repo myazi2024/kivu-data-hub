@@ -14,10 +14,25 @@ import {
   LOT_COLORS,
   COMMON_SPACE_COLORS,
 } from '../types';
-import { MetricFrame, polygonAreaSqmAccurate, polygonPerimeterM as polygonPerimeterMFrame } from './metrics';
+import { MetricFrame, polygonAreaSqmAccurate, polygonPerimeterM as polygonPerimeterMFrame, edgeLengthM } from './metrics';
 import { genId } from './polygonOps';
 
 export type ZoneType = 'lot' | 'road' | 'commonSpace';
+
+/**
+ * Déduit la largeur (m) d'une voie à partir d'un polygone "couloir".
+ * largeur ≈ aire / longueur centerline, snap 0,5 m, borné [2, 30].
+ */
+export function inferRoadWidthFromPolygon(vertices: Point2D[], frame: MetricFrame): number | null {
+  if (vertices.length < 3) return null;
+  const areaM2 = polygonAreaSqmAccurate(vertices, frame);
+  const center = polygonToCenterline(vertices);
+  if (center.length < 2) return null;
+  const lenM = edgeLengthM(center[0], center[1], frame);
+  if (lenM <= 0 || areaM2 <= 0) return null;
+  const w = areaM2 / lenM;
+  return Math.min(30, Math.max(2, Math.round(w * 2) / 2));
+}
 
 function polygonToCenterline(vertices: Point2D[]): Point2D[] {
   if (vertices.length < 3) {
