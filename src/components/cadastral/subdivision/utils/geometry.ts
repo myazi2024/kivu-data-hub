@@ -1,4 +1,5 @@
 import { Point2D, GpsPoint, SubdivisionLot } from '../types';
+import type { MetricFrame } from './metrics';
 
 /**
  * Calculate polygon area using Shoelace formula
@@ -490,24 +491,25 @@ export function validateSubdivision(
 ): ValidationResult {
   const errors: string[] = [];
   const warnings: string[] = [];
-  
+
   if (lots.length < 2) {
     errors.push('Un lotissement doit contenir au moins 2 lots.');
   }
-  
+
   const totalLotArea = lots.reduce((sum, lot) => sum + lot.areaSqm, 0);
-  const tolerance = parentAreaSqm * 0.1;
-  
+  // Tighten tolerance from 10% to 1% — beyond that means lots overflow the parent.
+  const tolerance = Math.max(1, parentAreaSqm * 0.01);
+
   if (totalLotArea > parentAreaSqm + tolerance) {
     errors.push(`La superficie totale des lots (${totalLotArea} m²) dépasse celle de la parcelle mère (${parentAreaSqm} m²).`);
   }
-  
+
   for (const lot of lots) {
     if (lot.areaSqm < 100) {
       warnings.push(`Le lot ${lot.lotNumber} a une superficie inférieure à 100 m² (${lot.areaSqm} m²).`);
     }
   }
-  
+
   for (let i = 0; i < lots.length; i++) {
     for (let j = i + 1; j < lots.length; j++) {
       if (doPolygonsOverlap(lots[i].vertices, lots[j].vertices)) {
@@ -515,17 +517,17 @@ export function validateSubdivision(
       }
     }
   }
-  
+
   const lotNumbers = lots.map(l => l.lotNumber);
   const uniqueNumbers = new Set(lotNumbers);
   if (uniqueNumbers.size !== lotNumbers.length) {
     errors.push('Certains lots ont le même numéro.');
   }
-  
+
   if (totalLotArea < parentAreaSqm * 0.5) {
     warnings.push(`La superficie totale des lots ne couvre que ${Math.round(totalLotArea / parentAreaSqm * 100)}% de la parcelle mère.`);
   }
-  
+
   return {
     isValid: errors.length === 0,
     errors,

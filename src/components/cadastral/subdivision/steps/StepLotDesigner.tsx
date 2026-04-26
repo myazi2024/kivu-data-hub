@@ -23,6 +23,7 @@ import { ValidationResult, mergeLotsThroughDeletedRoad, polygonArea, splitRoadsA
 import { convertZoneType, ZoneType } from '../utils/convertZoneType';
 import LotCanvas, { CanvasMode, EdgeInfo } from '../LotCanvas';
 import { buildMetricFrame, polygonAreaSqmAccurate, polygonPerimeterM, formatMeters, formatSqm } from '../utils/metrics';
+import { genId, nextLotNumber, polygonUnionMany } from '../utils/polygonOps';
 
 interface StepLotDesignerProps {
   parentParcel: ParentParcelInfo | null;
@@ -45,31 +46,9 @@ interface StepLotDesignerProps {
   onRedo: () => void;
 }
 
-// Simple convex hull (gift wrapping / Jarvis march)
-function convexHull(points: Point2D[]): Point2D[] {
-  if (points.length < 3) return points;
-  const pts = [...points];
-  let leftmost = 0;
-  for (let i = 1; i < pts.length; i++) {
-    if (pts[i].x < pts[leftmost].x || (pts[i].x === pts[leftmost].x && pts[i].y < pts[leftmost].y)) {
-      leftmost = i;
-    }
-  }
-  const hull: Point2D[] = [];
-  let current = leftmost;
-  do {
-    hull.push(pts[current]);
-    let next = 0;
-    for (let i = 1; i < pts.length; i++) {
-      if (next === current) { next = i; continue; }
-      const cross = (pts[i].x - pts[current].x) * (pts[next].y - pts[current].y) -
-                    (pts[i].y - pts[current].y) * (pts[next].x - pts[current].x);
-      if (cross > 0) next = i;
-    }
-    current = next;
-  } while (current !== leftmost && hull.length < pts.length);
-  return hull;
-}
+// Note: convex-hull merging was removed in P0 — replaced by polygonUnionMany
+// (see utils/polygonOps.ts) which preserves concavities and refuses
+// non-adjacent lots instead of swallowing external area.
 
 // Line segment intersection helper
 function lineSegmentIntersection(
@@ -287,19 +266,19 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
       : [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 1, y: 1 }, { x: 0, y: 1 }];
     const parentNormArea = polygonArea(parentPoly);
     const parentAreaSqm = parentParcel?.areaSqm || 1000;
-    const sideLengthM = Math.sqrt(parentAreaSqm);
+    // Anisotropic frame from GPS bounds → accurate meters on both axes.
+    const sideLengthM = (metricFrame.sxM + metricFrame.syM) / 2;
 
-    const maxLotNum = lots.reduce((m, l) => Math.max(m, parseInt(l.lotNumber) || 0), 0);
     const nextNumber = toType === 'road'
       ? roads.length + 1
       : toType === 'commonSpace'
         ? commonSpaces.length + 1
-        : maxLotNum + 1;
+        : nextLotNumber(lots);
 
     const result = convertZoneType(
       { lot },
       toType,
-      { parentAreaSqm, parentNormArea, sideLengthM, nextNumber, defaultRoadWidthM: roadPresetWidth },
+      { parentAreaSqm, parentNormArea, sideLengthM, metricFrame, nextNumber, defaultRoadWidthM: roadPresetWidth },
     );
 
     // Remove from lots
@@ -312,7 +291,7 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
     } else if (result.commonSpace) {
       setCommonSpaces([...commonSpaces, result.commonSpace]);
     }
-  }, [selectedLotId, lots, setLots, roads, setRoads, commonSpaces, setCommonSpaces, parentParcel, parentVertices, roadPresetWidth]);
+  }, [selectedLotId, lots, setLots, roads, setRoads, commonSpaces, setCommonSpaces, parentParcel, parentVertices, roadPresetWidth, metricFrame]);
 
 
   const handleSplitLot = useCallback((lotId: string) => {
@@ -371,12 +350,12 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
       return Math.abs(a) / 2;
     };
 
-    const maxLotNum = lots.reduce((m, l) => Math.max(m, parseInt(l.lotNumber) || 0), 0);
+    const nextNum = nextLotNumber(lots);
 
     const newLot1: SubdivisionLot = {
       ...lot,
-      id: `lot-${Date.now()}-a`,
-      lotNumber: String(maxLotNum + 1),
+      id: genId('lot'),
+      lotNumber: String(nextNum),
       vertices: poly1,
       areaSqm: computeArea(poly1),
       perimeterM: computePerim(poly1),
@@ -384,8 +363,8 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
     };
     const newLot2: SubdivisionLot = {
       ...lot,
-      id: `lot-${Date.now()}-b`,
-      lotNumber: String(maxLotNum + 2),
+      id: genId('lot'),
+      lotNumber: String(nextNum + 1),
       vertices: poly2,
       areaSqm: computeArea(poly2),
       perimeterM: computePerim(poly2),
@@ -408,21 +387,27 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
     const lotsToMerge = lots.filter(l => ids.includes(l.id));
     if (lotsToMerge.length < 2) return;
 
-    // Combine all vertices into a convex hull approximation
-    const allPoints = lotsToMerge.flatMap(l => l.vertices);
-    // Simple convex hull (gift wrapping)
-    const hull = convexHull(allPoints);
+    // Real polygon union (preserves concavities). Refuses non-adjacent lots
+    // to avoid swallowing roads/spaces between them.
+    const merged = polygonUnionMany(lotsToMerge.map(l => l.vertices));
+    if (!merged) {
+      // eslint-disable-next-line no-alert
+      window.alert(
+        'Fusion impossible : les lots sélectionnés ne sont pas tous adjacents (ils ne partagent pas de bord commun).',
+      );
+      return;
+    }
 
     const keepLot = lotsToMerge[0];
-    const maxLotNum = lots.reduce((m, l) => Math.max(m, parseInt(l.lotNumber) || 0), 0);
+    const nextNum = nextLotNumber(lots);
 
     const mergedLot: SubdivisionLot = {
       ...keepLot,
-      id: `lot-${Date.now()}-merged`,
-      lotNumber: String(maxLotNum + 1),
-      vertices: hull,
-      areaSqm: computeArea(hull),
-      perimeterM: computePerim(hull),
+      id: genId('lot'),
+      lotNumber: String(nextNum),
+      vertices: merged,
+      areaSqm: computeArea(merged),
+      perimeterM: computePerim(merged),
       isParentBoundary: false,
     };
 

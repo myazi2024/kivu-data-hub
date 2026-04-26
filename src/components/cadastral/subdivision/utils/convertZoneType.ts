@@ -14,6 +14,8 @@ import {
   LOT_COLORS,
   COMMON_SPACE_COLORS,
 } from '../types';
+import { MetricFrame, polygonAreaSqmAccurate, polygonPerimeterM as polygonPerimeterMFrame } from './metrics';
+import { genId } from './polygonOps';
 
 export type ZoneType = 'lot' | 'road' | 'commonSpace';
 
@@ -59,7 +61,9 @@ function centerlineToPolygon(path: Point2D[], widthNorm: number): Point2D[] {
   ];
 }
 
-function polygonAreaSqm(vertices: Point2D[], parentAreaSqm: number, parentNormArea: number): number {
+// Legacy isotropic helpers — kept for backwards-compat callers that don't
+// pass a MetricFrame. New code should use the MetricFrame-aware variants.
+function polygonAreaSqmLegacy(vertices: Point2D[], parentAreaSqm: number, parentNormArea: number): number {
   if (vertices.length < 3 || parentNormArea <= 0) return 0;
   let a = 0;
   for (let i = 0; i < vertices.length; i++) {
@@ -70,7 +74,7 @@ function polygonAreaSqm(vertices: Point2D[], parentAreaSqm: number, parentNormAr
   return Math.max(1, Math.round((norm / parentNormArea) * parentAreaSqm));
 }
 
-function polygonPerimeterM(vertices: Point2D[], sideLengthM: number): number {
+function polygonPerimeterMLegacy(vertices: Point2D[], sideLengthM: number): number {
   if (vertices.length < 2) return 0;
   let p = 0;
   for (let i = 0; i < vertices.length; i++) {
@@ -83,8 +87,10 @@ function polygonPerimeterM(vertices: Point2D[], sideLengthM: number): number {
 export interface ConvertContext {
   parentAreaSqm: number;
   parentNormArea: number;
-  /** sqrt(parentAreaSqm) used to convert normalized distance to meters. */
+  /** sqrt(parentAreaSqm) used to convert normalized distance to meters (legacy). */
   sideLengthM: number;
+  /** Anisotropic metric frame derived from GPS bounds — preferred when available. */
+  metricFrame?: MetricFrame;
   /** Default road width in meters (from zoning rules later, fallback 6). */
   defaultRoadWidthM?: number;
   /** Next available lot/space number suffix. */
@@ -124,16 +130,24 @@ export function convertZoneType(
     polygon = centerlineToPolygon(centerline, (source.road.widthM / Math.max(1, ctx.sideLengthM)));
   }
 
-  const ts = Date.now();
+  // Prefer accurate (anisotropic) area/perimeter when a metric frame is provided.
+  const areaOf = (verts: Point2D[]) =>
+    ctx.metricFrame
+      ? Math.max(1, Math.round(polygonAreaSqmAccurate(verts, ctx.metricFrame)))
+      : polygonAreaSqmLegacy(verts, ctx.parentAreaSqm, ctx.parentNormArea);
+  const perimOf = (verts: Point2D[]) =>
+    ctx.metricFrame
+      ? Math.round(polygonPerimeterMFrame(verts, ctx.metricFrame))
+      : polygonPerimeterMLegacy(verts, ctx.sideLengthM);
 
   if (toType === 'lot') {
     const verts = polygon.length >= 3 ? polygon : centerlineToPolygon(centerline, widthNorm);
     const lot: SubdivisionLot = {
-      id: source.lot?.id ?? `lot-${ts}-conv`,
+      id: source.lot?.id ?? genId('lot'),
       lotNumber: source.lot?.lotNumber ?? String(ctx.nextNumber),
       vertices: verts,
-      areaSqm: polygonAreaSqm(verts, ctx.parentAreaSqm, ctx.parentNormArea),
-      perimeterM: polygonPerimeterM(verts, ctx.sideLengthM),
+      areaSqm: areaOf(verts),
+      perimeterM: perimOf(verts),
       intendedUse: source.lot?.intendedUse ?? 'residential',
       ownerName: source.lot?.ownerName,
       isBuilt: source.lot?.isBuilt ?? false,
@@ -151,7 +165,7 @@ export function convertZoneType(
   if (toType === 'road') {
     const path = centerline.length >= 2 ? centerline : polygonToCenterline(polygon);
     const road: SubdivisionRoad = {
-      id: source.road?.id ?? `road-${ts}-conv`,
+      id: source.road?.id ?? genId('road'),
       name: source.road?.name ?? `Voie ${ctx.nextNumber}`,
       widthM: source.road?.widthM ?? widthM,
       surfaceType: source.road?.surfaceType ?? 'planned',
@@ -166,11 +180,11 @@ export function convertZoneType(
   const verts = polygon.length >= 3 ? polygon : centerlineToPolygon(centerline, widthNorm);
   const type = source.commonSpace?.type ?? 'green_space';
   const commonSpace: SubdivisionCommonSpace = {
-    id: source.commonSpace?.id ?? `cs-${ts}-conv`,
+    id: source.commonSpace?.id ?? genId('cs'),
     type,
     name: source.commonSpace?.name ?? `Espace ${ctx.nextNumber}`,
     vertices: verts,
-    areaSqm: polygonAreaSqm(verts, ctx.parentAreaSqm, ctx.parentNormArea),
+    areaSqm: areaOf(verts),
     color: source.commonSpace?.color ?? COMMON_SPACE_COLORS[type],
   };
   return { commonSpace };
