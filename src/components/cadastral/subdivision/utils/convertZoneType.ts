@@ -14,6 +14,8 @@ import {
   LOT_COLORS,
   COMMON_SPACE_COLORS,
 } from '../types';
+import { MetricFrame, polygonAreaSqmAccurate, polygonPerimeterM as polygonPerimeterMFrame } from './metrics';
+import { genId } from './polygonOps';
 
 export type ZoneType = 'lot' | 'road' | 'commonSpace';
 
