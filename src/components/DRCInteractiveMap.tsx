@@ -33,6 +33,7 @@ import { MapScopeLegend } from './map/ui/MapScopeLegend';
 import { MapKPICards } from './map/ui/MapKPICards';
 import { MapMobilePager } from './map/ui/MapMobilePager';
 import { useMapProjection } from './map/context/MapProjectionContext';
+import { normalizeProvinceName } from '@/lib/provinceNameNormalize';
 import { Sparkles, X } from 'lucide-react';
 
 
@@ -250,7 +251,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
   /** Choropleth color: projection > profile > default density tiers */
   const getProvinceColor = useCallback((province: ProvinceData) => {
     if (projection && projectionTiers) {
-      const key = (province.name || '').trim().toLowerCase();
+      const key = normalizeProvinceName(province.name);
       const v = projection.byProvince[key] ?? 0;
       if (v <= 0) return NO_DATA_COLOR;
       const tier = projectionTiers.find(t => v >= t.min && v <= t.max) || projectionTiers[0];
@@ -267,6 +268,18 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
     const tier = DENSITY_TIERS.find(t => count >= t.min && count <= t.max) || DENSITY_TIERS[0];
     return tier.color;
   }, [projection, projectionTiers, activeProfile, adaptiveTiers, DENSITY_TIERS]);
+
+  /** Avertir l'utilisateur si la projection n'a aucune province reconnue par la carte */
+  React.useEffect(() => {
+    if (!projection || !provincesData.length) return;
+    const matched = provincesData.some(p => (projection.byProvince[normalizeProvinceName(p.name)] ?? 0) > 0);
+    if (!matched) {
+      toast.warning('Aucune province reconnue dans ce visuel', {
+        description: 'Les noms de provinces des données ne correspondent pas à la carte.',
+        duration: 3500,
+      });
+    }
+  }, [projection, provincesData]);
 
   /** Reset to default RDC map view */
   const resetToDefaultMap = useCallback(() => {
