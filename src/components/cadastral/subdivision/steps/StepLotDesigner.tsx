@@ -152,7 +152,7 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
 
     const cx = (bounds.minX + bounds.maxX) / 2;
     const newRoad: SubdivisionRoad = {
-      id: `road-new-${Date.now()}`,
+      id: genId('road'),
       name: `Voie ${roads.length + 1}`,
       widthM: 6,
       surfaceType: 'planned',
@@ -204,7 +204,7 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
       { x: cx - w / 2, y: cy + h / 2 },
     ];
     const newLot: SubdivisionLot = {
-      id: `lot-${Date.now()}-new`,
+      id: genId('lot'),
       lotNumber: String(maxLotNum + 1),
       vertices: verts,
       areaSqm: computeArea(verts),
@@ -240,7 +240,7 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
     const offset = 0.03;
     const newLot: SubdivisionLot = {
       ...lot,
-      id: `lot-${Date.now()}-dup`,
+      id: genId('lot'),
       lotNumber: String(maxLotNum + 1),
       vertices: lot.vertices.map(v => ({ x: Math.min(1, v.x + offset), y: Math.min(1, v.y + offset) })),
       annotations: [],
@@ -458,14 +458,14 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
     const maxLotNum = lots.reduce((m, l) => Math.max(m, parseInt(l.lotNumber) || 0), 0);
 
     const newLot1: SubdivisionLot = {
-      ...lot, id: `lot-${Date.now()}-a`, lotNumber: String(maxLotNum + 1),
+      ...lot, id: genId('lot'), lotNumber: String(maxLotNum + 1),
       vertices: poly1,
       areaSqm: computeArea(poly1),
       perimeterM: computePerim(poly1),
       isParentBoundary: false,
     };
     const newLot2: SubdivisionLot = {
-      ...lot, id: `lot-${Date.now()}-b`, lotNumber: String(maxLotNum + 2),
+      ...lot, id: genId('lot'), lotNumber: String(maxLotNum + 2),
       vertices: poly2,
       areaSqm: computeArea(poly2),
       perimeterM: computePerim(poly2),
@@ -485,7 +485,7 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
 
     // 1. Create the road (affectedLotIds will be set below)
     const newRoad: SubdivisionRoad = {
-      id: `road-draw-${Date.now()}`,
+      id: genId('road'),
       name: `Voie ${roads.length + 1}`,
       widthM: roadPresetWidth,
       surfaceType: roadPresetSurface,
@@ -629,14 +629,14 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
     const maxLotNum = lots.reduce((m, l) => Math.max(m, parseInt(l.lotNumber) || 0), 0);
 
     const newLot1: SubdivisionLot = {
-      ...targetLot, id: `lot-${Date.now()}-a`, lotNumber: String(maxLotNum + 1),
+      ...targetLot, id: genId('lot'), lotNumber: String(maxLotNum + 1),
       vertices: shrunk1,
       areaSqm: computeArea(shrunk1),
       perimeterM: computePerim(shrunk1),
       isParentBoundary: false,
     };
     const newLot2: SubdivisionLot = {
-      ...targetLot, id: `lot-${Date.now()}-b`, lotNumber: String(maxLotNum + 2),
+      ...targetLot, id: genId('lot'), lotNumber: String(maxLotNum + 2),
       vertices: shrunk2,
       areaSqm: computeArea(shrunk2),
       perimeterM: computePerim(shrunk2),
@@ -669,7 +669,7 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
 
     // Create road along this edge
     const newRoad: SubdivisionRoad = {
-      id: `road-edge-${Date.now()}`,
+      id: genId('road'),
       name: `Voie ${roads.length + 1}`,
       widthM,
       surfaceType: roadPresetSurface,
@@ -1351,7 +1351,7 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
                 </h4>
                 <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => {
                   const newSpace: SubdivisionCommonSpace = {
-                    id: `cs-${Date.now()}`,
+                    id: genId('cs'),
                     type: 'green_space',
                     name: `Espace ${commonSpaces.length + 1}`,
                     vertices: [],
@@ -1407,7 +1407,7 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
                 </h4>
                 <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => {
                   const newServitude: SubdivisionServitude = {
-                    id: `srv-${Date.now()}`,
+                    id: genId('srv'),
                     type: 'passage',
                     description: '',
                     affectedLots: [],
