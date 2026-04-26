@@ -105,12 +105,12 @@ export const ChartCard: React.FC<ChartCardProps> = memo(({
                 onSelect={setCrossField}
               />
             )}
-            {rawRecords && projectionTab && (
+            {rawRecords && effectiveTab && (
               <ProjectOnMapButton
-                projectionId={`${projectionTab}::${title}`}
+                projectionId={`${effectiveTab}::${title}`}
                 label={title}
                 rawRecords={rawRecords}
-                sourceTab={projectionTab}
+                sourceTab={effectiveTab}
                 dataSource={projectionSource}
               />
             )}
