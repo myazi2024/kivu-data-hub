@@ -1,130 +1,142 @@
-# Audit — Admin / Contenu / Partenaires
+## Audit — Onglet "Lots" (StepLotDesigner) du formulaire de demande de lotissement
 
-## Périmètre
-- `src/components/admin/AdminPartners.tsx` (283 lignes)
-- `src/components/PartnersSection.tsx` (rendu public sur `/`)
-- Table `public.partners` + bucket Storage `partners`
-- Sidebar entrée `partners` (Handshake), Hub `AdminContentHub` (KPI "Partenaires actifs")
+Périmètre audité : `src/components/cadastral/subdivision/steps/StepLotDesigner.tsx` (1 495 lignes), `LotCanvas.tsx`, `types.ts`, `utils/geometry.ts` (validateSubdivision), `useZoningCompliance`, `hooks/useCanvasDrag.ts`.
 
-## Constats — Forces
-- Soft-delete via `deleted_at` (préservé côté lecture publique et admin).
-- RLS conforme : lecture publique restreinte aux actifs non supprimés, écriture admin/super_admin (migration du 26/04).
-- Réordonnancement double : drag-drop + flèches ↑/↓ avec verrou `reordering` (UX mobile correcte sur 360px).
-- Upload nommé via `crypto.randomUUID()` (conforme `mem://security/file-storage-naming-standard-fr`).
-- Audit trigger `trg_audit_partners` actif (INSERT/UPDATE/DELETE).
-- KPI `active_partners` exposé dans `content_hub_stats` et lié au Hub Contenu.
+Cet audit ne touche à aucun fichier ; il liste constats + propositions. Aucune action n'est exécutée tant que vous ne validez pas les correctifs souhaités.
 
-## Constats — Problèmes & dette
+---
 
-### 1. Validation URL absente (BUG donnée réelle)
-Le partenaire « Institut National de la statistique » a `website_url = "Insrdc.cd"` — sans schéma. Dans `PartnersSection.tsx`, `<a href="Insrdc.cd">` est interprété comme chemin relatif (`/Insrdc.cd`), le clic casse la navigation. Aucune validation côté formulaire.
+### 1) Ce qui ne va pas (bugs / incohérences)
 
-### 2. Pas de validation/limite de fichier logo
-- Aucun contrôle de taille (un PNG 5 Mo passe).
-- Aucun contrôle MIME réel (juste `accept="image/*"` côté input, contournable).
-- Pas de feedback de prévisualisation avant upload.
+**B1 — Conversion lot ➜ voie/espace : utilise `Math.sqrt(parentAreaSqm)` au lieu du metricFrame**
+`handleConvertSelectedZone` (ligne 290) calcule `sideLengthM = √(parentAreaSqm)`, hypothèse "parcelle carrée isotrope". Or le designer dispose déjà d'un `metricFrame` GPS précis (ligne 150). Conséquence : largeur de voie déformée si la parcelle est allongée ou orientée. Mêmes approximations dans `handleFinishRoadDraw` (l. 541, 615), `handleConvertEdgeToRoad` (l. 674) et `handleUpdateRoad` (l. 751).
 
-### 3. Orphelins Storage à la suppression / remplacement
-- `handleDelete` fait un soft-delete mais ne touche pas au logo dans le bucket.
-- Lors d'un changement de logo (`handleSave`), l'ancien fichier reste orphelin dans `partners/`. Pas de mécanisme de purge.
+**B2 — Bouton "Lot" du sélecteur "Type de zone" est inerte mais affiché comme actif**
+Lignes 1048-1057 : `onClick={() => { /* déjà un lot */ }}`. C'est un piège visuel : l'utilisateur clique et rien ne se passe, sans feedback.
 
-### 4. Pas de restauration depuis la corbeille
-Le toast indique « supprimé (corbeille) » mais aucune UI ne liste/restaure les partenaires `deleted_at IS NOT NULL`. Le soft-delete est en pratique une suppression définitive côté UX.
+**B3 — `handleSplitLot` casse les polygones non convexes**
+Ligne 318 : on coupe en joignant les milieux de l'arête la plus longue et de l'arête "opposée" (`(idx + n/2) % n`). Pour un polygone en L ou très irrégulier, le segment passe à l'extérieur du polygone et produit deux lots qui se chevauchent ou aux surfaces aberrantes.
 
-### 5. Réordonnancement N+1
-`persistOrder` lance N `UPDATE` en parallèle (acceptable à 6 lignes, mais pas atomique : si une échoue, l'ordre est incohérent jusqu'au refetch). Pas de RPC `reorder_partners(uuid[])` comme on le voit ailleurs dans l'admin.
+**B4 — `handleMergeLots` utilise une enveloppe convexe (convex hull)**
+Ligne 414 : `convexHull(allPoints)` sur l'union des sommets. Si deux lots adjacents ne sont pas convexes ensemble, le résultat **englobe une zone qui n'appartenait à aucun des deux lots** (peut "manger" une voie ou un espace commun voisin). Il faudrait une vraie union polygonale (ex. clipper / polygon-clipping).
 
-### 6. Accessibilité & UX mineurs
-- Pas de `aria-label` sur les boutons icônes (Pencil, Trash, ↑, ↓) → lecteurs d'écran annoncent « bouton ».
-- Champ « Ordre d'affichage » exposé dans le dialogue alors que le drag-drop+flèches gère déjà l'ordre → source de confusion (deux sources de vérité).
-- `confirm()` natif pour la suppression → pas cohérent avec le reste de l'admin qui utilise `AlertDialog` shadcn.
-- Pas de recherche/filtre actif/inactif (négligeable à 6 lignes, à anticiper).
+**B5 — `validateSubdivision` est trop laxiste sur la couverture**
+`utils/geometry.ts` ligne 499 : tolérance de **10 %** au-dessus de la parcelle mère acceptée sans erreur. Un lotissement peut donc dépasser légalement la parcelle. La règle métier devrait au plus tolérer 1 à 2 % (erreurs d'arrondi).
 
-### 7. Pas de bulk activate/deactivate
-Pratique courante ailleurs dans l'admin (cf. `mem://admin/admin-component-modularization-fr`).
+**B6 — Pas de vérification "lots dans la parcelle mère"**
+La validation détecte les chevauchements entre lots mais **pas** les lots qui sortent du polygone parent. Combiné avec les drags qui clampent à `[0,1]` (`useCanvasDrag.ts` l. 89), un lot peut déborder de la forme officielle si celle-ci n'est pas un rectangle 0-1.
 
-### 8. Pas d'événement analytics admin
-`mem://admin/admin-analytics-tracking-fr` recommande `admin_action` sur create/update/delete/reorder. Non émis ici.
+**B7 — Numérotation des lots fragile**
+`maxLotNum = lots.reduce((m, l) => Math.max(m, parseInt(l.lotNumber) || 0), 0)` (l. 219, 260, 374…). Si l'utilisateur renomme un lot en "A1" ou "Lot-12", `parseInt` renvoie `NaN` ou `12` et la séquence se brise. Aucune unicité forcée à la saisie (le doublon n'est repéré qu'au moment de la validation finale).
 
-### 9. Pas d'analytics public
-`PartnersSection.tsx` track `partner_logo_click` ✅ — mais pas d'`partner_impression`. (Optionnel.)
+**B8 — `selectedLotIds` réinitialisé à chaque clic mono-sélection mais l'inverse n'est pas vrai**
+`setSelectedLotId` ne vide pas `selectedLotIds` (l. 131). Inversement `handleToggleLotSelection` met `selectedLotId` à `null` (l. 403). État incohérent possible : un lot sélectionné en single + plusieurs en multi.
 
-## Recommandations (priorisées)
+**B9 — Annotations "clipart" obsolètes mais toujours dans le type**
+`types.ts` l. 3-11 : `LotAnnotation` est marquée "deprecated" mais reste référencée par `updateLotAnnotations` et passée au canvas. Code mort qui complique la maintenance.
 
-### P0 — Correctifs immédiats
-1. **Validation `website_url`** dans `handleSave` : forcer un préfixe `https://` si absent, valider avec `URL()` ; message d'erreur clair.
-2. **Migration data** : corriger la ligne « Insrdc.cd » → `https://www.ins-rdc.org/` (à confirmer avec l'utilisateur).
-3. **Validation logo** : refuser >2 Mo, MIME `image/png|jpeg|webp|svg+xml`, prévisualisation avant upload.
+**B10 — Surface du lot non recalculée après `updateSelectedLot`**
+`updateSelectedLot` (l. 244) modifie n'importe quel champ y compris (théoriquement) `vertices` sans recalcul d'aire/périmètre — heureusement ce chemin n'est utilisé que pour des champs métier, mais il n'y a aucun garde-fou.
 
-### P1 — Hygiène stockage
-4. **Purge Storage** : 
-   - Lors d'un remplacement de logo : supprimer l'ancien fichier (parser le path depuis `logo_url`).
-   - Lors d'un soft-delete : marquer le fichier orphelin (option : conserver pour restauration, purger via cron mensuel sur `deleted_at < now() - 90 days`).
+---
 
-### P1 — UX
-5. **Onglet « Corbeille »** dans le composant : liste les `deleted_at IS NOT NULL`, bouton « Restaurer » (set `deleted_at = NULL`) et « Supprimer définitivement » (hard delete + purge logo).
-6. **Retirer le champ « Ordre d'affichage »** du dialog (laisser le drag-drop+flèches uniquement).
-7. **Remplacer `confirm()`** par `AlertDialog` shadcn (cohérence visuelle).
-8. **Ajouter `aria-label`** sur tous les boutons icônes ("Modifier {nom}", "Supprimer {nom}", "Monter", "Descendre").
+### 2) Ce qui est absent (fonctionnalités attendues manquantes)
 
-### P2 — Robustesse & analytics
-9. **RPC `reorder_partners(ids uuid[])`** : transaction atomique pour l'ordre.
-10. **`trackEvent('admin_action', { entity:'partner', action:'create|update|delete|reorder', id })`** dans chaque mutation.
-11. **Bulk actions** : sélection multiple + activer/désactiver/supprimer en lot.
+**M1 — Aucune édition numérique d'un lot**
+Impossible de saisir directement la **surface cible** (ex. "200 m²"), la **largeur**, la **profondeur** ou les **coordonnées GPS** d'un sommet. Tout passe par drag à la souris, ce qui rend la précision millimétrique impossible — bloquant pour un dossier admin.
 
-## Détails techniques
+**M2 — Pas d'auto-découpage en N lots équivalents**
+Cas d'usage très courant : "diviser en 6 lots de 250 m² alignés le long de la voie". Aucun outil "grille auto" / "lots équivalents N×M" n'existe.
 
-### Diff conceptuel — validation URL
-```ts
-const normalizeUrl = (raw: string): string | null => {
-  const v = raw.trim();
-  if (!v) return null;
-  const withScheme = /^https?:\/\//i.test(v) ? v : `https://${v}`;
-  try { new URL(withScheme); return withScheme; }
-  catch { throw new Error('URL du site web invalide'); }
-};
-```
+**M3 — Pas de contrainte d'accès à la voie publique**
+Aucune validation ne vérifie que **chaque lot touche au moins une voie**. Un lot enclavé est accepté sans alerte — anomalie réglementaire majeure en RDC.
 
-### Purge logo lors d'un remplacement
-```ts
-const extractStoragePath = (publicUrl: string): string | null => {
-  const m = publicUrl.match(/\/storage\/v1\/object\/public\/partners\/(.+)$/);
-  return m?.[1] ?? null;
-};
-// Avant l'update si logo remplacé :
-const oldPath = editing?.logo_url ? extractStoragePath(editing.logo_url) : null;
-if (oldPath) await supabase.storage.from('partners').remove([oldPath]);
-```
+**M4 — Pas de contrôle des dimensions règlementaires par usage**
+Le standard RDC impose des seuils (ex. résidentiel ≥ 200 m², façade min, recul). Le hook `useZoningCompliance` existe mais ne semble pas alimenter les warnings du panneau Lots.
 
-### Corbeille — requête
-```ts
-const { data } = await untypedTables.partners()
-  .select('*').not('deleted_at', 'is', null)
-  .order('deleted_at', { ascending: false });
-```
+**M5 — Pas de copier-coller de propriétés**
+Impossible d'appliquer en un clic l'usage / propriétaire / clôture d'un lot à plusieurs autres ; chaque lot doit être édité individuellement.
 
-### RPC réordonnancement (migration)
-```sql
-CREATE OR REPLACE FUNCTION public.reorder_partners(_ids uuid[])
-RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$
-BEGIN
-  IF NOT public.has_role(auth.uid(),'admin') AND NOT public.has_role(auth.uid(),'super_admin')
-  THEN RAISE EXCEPTION 'forbidden'; END IF;
-  UPDATE public.partners p SET display_order = ord.idx - 1
-  FROM unnest(_ids) WITH ORDINALITY AS ord(id, idx)
-  WHERE p.id = ord.id;
-END $$;
-```
+**M6 — Pas de renommage en masse / numérotation auto**
+Aucun bouton "renuméroter 1…N" après une suite d'opérations split/merge qui crée des trous (Lot 3, 5, 7, 12…).
 
-## État BD actuel (snapshot)
-- 6 partenaires, tous actifs, aucun supprimé, tous avec logo.
-- 1 ligne avec URL invalide (Insrdc.cd).
+**M7 — Pas d'undo/redo granulaire visible**
+Les boutons existent mais aucune indication de l'action qui sera annulée ; pas d'historique listé.
 
-## Fichiers impactés (implémentation)
-- `src/components/admin/AdminPartners.tsx` (refactor : validation, AlertDialog, a11y, corbeille tab, retrait champ ordre)
-- `src/lib/partnerValidation.ts` *(nouveau)* : `normalizeUrl`, `validateLogoFile`, `extractStoragePath`
-- `supabase/migrations/...` : `reorder_partners(uuid[])` RPC + UPDATE data fix Insrdc
-- `src/lib/analytics.ts` : événements `admin_action` (déjà présent, juste à appeler)
+**M8 — Pas de verrou par lot**
+Une fois un lot finalisé, impossible de le "verrouiller" pour éviter qu'il ne soit déplacé accidentellement par un drag ultérieur. Seul `isParentBoundary` est verrouillable.
 
-## Question avant implémentation
-Souhaitez-vous tout (P0+P1+P2) ou seulement P0+P1 ? Et confirmez-vous l'URL correcte pour « Institut National de la statistique » (`https://www.ins-rdc.org/` ou autre) ?
+**M9 — Pas de calcul de "lots vendables" / synthèse fiscale**
+La barre d'état affiche `% couvert` mais pas : nb de lots résidentiels, surface vendable nette (lots − voies − espaces communs), ratio de servitude.
+
+**M10 — Pas de validation "minimum 15 % d'espaces communs"**
+Règle de lotissement courante : aucun warning si la part d'espaces communs / voirie est trop faible.
+
+**M11 — Aucune gestion d'orientation / façade par lot**
+Pas de champ "façade principale", "orientation cardinale", "n° de borne" — pourtant utiles pour le titre futur de chaque sous-parcelle.
+
+**M12 — Pas d'export du tableau des lots**
+Impossible d'exporter en CSV la liste des lots avec surfaces/usages/propriétaires depuis cet onglet (sans passer par le récapitulatif final).
+
+---
+
+### 3) Ce qui est à optimiser (qualité / UX / architecture)
+
+**O1 — Le composant fait 1 495 lignes (monolithe)**
+Mélange : géométrie (convex hull, intersections), state UI, panneau de droite, listes voies/espaces/servitudes. À éclater par responsabilité (cf. `mem://architecture/complex-dialog-modularization-strategy-fr` qui impose ce pattern au-delà de 1000 l.) :
+- `LotDesignerToolbar` (zones outils/actions/état)
+- `LotDetailsPanel`, `RoadDetailsPanel`, `LotsList`, `RoadsList`, `CommonSpacesList`, `ServitudesList`, `ValidationPanel`
+- Helpers géométriques (`convexHull`, `lineSegmentIntersection`, `segmentSegmentIntersection`) → `utils/geometry.ts`
+- Logique métier (`handleSplitLot`, `handleMergeLots`, `handleCutLot`, `handleConvertSelectedZone`, `handleFinishRoadDraw`, `handleConvertEdgeToRoad`, `handleUpdateRoad`) → hook dédié `useLotOperations`.
+
+**O2 — `setLots`/`setRoads` non atomiques**
+Plusieurs handlers font deux `set*` consécutifs (ex. l. 306-313, 666-668, 736-738). Un re-render intermédiaire peut afficher un état incohérent (lot supprimé sans la voie créée). À regrouper dans un `useReducer` ou un setter atomique unique du state plan.
+
+**O3 — `Date.now()` pour générer des IDs**
+Risque de collision si deux opérations dans la même ms (rare mais possible). Utiliser `crypto.randomUUID()` (déjà standard côté CCC, cf. `mem://security/file-storage-naming-standard-fr`).
+
+**O4 — Calculs métriques redondants**
+`computeArea` / `computePerim` recréés via `useCallback`, mais `useCanvasDrag` recompute aussi (l. 31-37 du hook). Centraliser dans un service partagé ou via le contexte du metricFrame.
+
+**O5 — Tooltips sans `aria-label` / accessibilité**
+Les boutons icônes (Trash, Plus, Undo, Redo, Annotations, +Voie l. 1271-1287) n'ont pas tous d'`aria-label`; les `title` HTML sont incomplets. À harmoniser avec le standard accessibilité du projet.
+
+**O6 — Performance : `lots.find` / `lots.reduce` répétés à chaque render**
+Aucune mémoisation (`useMemo`) sur `selectedLot`, `editingRoad`, `totalArea`, `coveragePercent`, `maxLotNum`. Sur 50 lots ce reste léger, mais multiplié par les drags 60fps cela compte.
+
+**O7 — `as any` dispersés**
+Lignes 1182, 1291, 1300, 1316 (`(editingRoad as any).isExisting`), `(road as any).isExisting`. Le champ existe sur le type — à typer correctement (cf. `mem://admin/as-any-reduction-untyped-helpers`).
+
+**O8 — Pas d'analytics sur les actions critiques**
+Aucun événement `subdivision_lot_*` (split, merge, convert, cut). Les autres modules admin tracent ces gestes (cf. `mem://admin/admin-analytics-tracking-fr`).
+
+**O9 — Validation déclenchée à chaque render mais affichée uniquement si erreurs**
+Le panneau de validation (l. 1470) ne montre rien tant qu'il y a 0 erreur/warning. Or l'utilisateur veut un retour positif "✅ Plan conforme" pour avancer en confiance.
+
+**O10 — Hint contextuel (`modeHint`) n'est pas internationalisé**
+Trois textes en dur dans le composant. Le reste du projet est en français mais sans i18n centralisée — à isoler au minimum dans un dictionnaire local.
+
+**O11 — Slider largeur voie : valeurs flottantes sans formatage**
+`step=0.5` + saisie Input number : on peut entrer 6.499999. À arrondir (`toFixed(1)`).
+
+**O12 — Conversion d'edge ↔ voie fait perdre les annotations**
+`handleConvertSelectedZone` ne tente pas de migrer les annotations / propriétaire ; elles disparaissent silencieusement.
+
+---
+
+### Priorisation suggérée
+
+Je vous propose ce groupement pour la suite :
+
+- **P0 (bloquants/justice métier)** : B1, B5, B6, M3, B3, B4
+- **P1 (UX et fiabilité du plan)** : B2, B7, B8, M1, M2, M4, M9, M10, O1 (modularisation), O2 (atomicité), O8 (analytics)
+- **P2 (qualité code/finition)** : B9, M5, M6, M8, M11, M12, O3-O7, O9-O12
+
+### Question
+
+Souhaitez-vous :
+1. **Tout** (P0+P1+P2) en plusieurs passes,
+2. **P0+P1 seulement** (cible utile rapide),
+3. ou **uniquement les bugs (P0)** dans un premier temps ?
+
+Je présenterai un plan d'implémentation détaillé après votre choix.
