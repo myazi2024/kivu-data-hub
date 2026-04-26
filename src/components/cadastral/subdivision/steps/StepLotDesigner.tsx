@@ -1088,6 +1088,17 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
                   </div>
                 </div>
                 <Separator />
+                <LotVerticesEditor
+                  vertices={selectedLot.vertices}
+                  parentGps={parentParcel?.gpsCoordinates}
+                  parentVertices={parentVertices}
+                  disabled={!!selectedLot.isParentBoundary}
+                  onChange={(verts) => updateSelectedLot({
+                    vertices: verts,
+                    areaSqm: computeArea(verts),
+                    perimeterM: computePerim(verts),
+                  })}
+                />
                 <div>
                   <Label className="text-xs">Numéro du lot</Label>
                   <Input
