@@ -7,8 +7,9 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-const BATCH = 500;
-const MAX_ITERATIONS_PER_STEP = 200; // safety: 200 * 500 = 100k rows per step
+const BATCH = 1000; // safe now that FK indexes exist on cadastral_parcels children
+const MAX_ITERATIONS_PER_STEP = 200; // safety: 200 * 1000 = 200k rows per step
+const STEP_TIMEOUT_MS = 90_000; // hard ceiling per RPC call to avoid hanging
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -37,6 +38,14 @@ Deno.serve(async (req) => {
 
     const admin = createClient(supabaseUrl, serviceKey);
 
+    // Best-effort: purge any stale generation jobs (heartbeat > 3min) so a
+    // dead generation cannot wedge subsequent test-mode operations.
+    try {
+      await admin.rpc("_purge_stale_test_generation_jobs");
+    } catch (e) {
+      console.warn("stale purge failed (non-blocking):", e);
+    }
+
     // Check admin or super_admin role via user_roles
     const { data: roles, error: rolesErr } = await admin
       .from("user_roles")
@@ -59,10 +68,21 @@ Deno.serve(async (req) => {
       let stepTotal = 0;
       let stepTruncated = false;
       for (let i = 0; i < MAX_ITERATIONS_PER_STEP; i++) {
-        const { data, error } = await admin.rpc(
+        const rpcCall = admin.rpc(
           "_cleanup_test_data_chunk_internal",
           { p_step: step, p_limit: BATCH },
         );
+        const timeout = new Promise<{ data: null; error: { message: string } }>(
+          (resolve) =>
+            setTimeout(
+              () => resolve({ data: null, error: { message: `Step "${step}" client-side timeout after ${STEP_TIMEOUT_MS}ms` } }),
+              STEP_TIMEOUT_MS,
+            ),
+        );
+        const { data, error } = await Promise.race([rpcCall, timeout]) as {
+          data: number | null;
+          error: { message: string } | null;
+        };
         if (error) {
           console.error(`Step ${step} failed:`, error);
           // Return 200 with ok:false so frontend can display the failed step name
