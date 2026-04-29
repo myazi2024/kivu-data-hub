@@ -288,35 +288,111 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
    const [constructionImageUrls, setConstructionImageUrls] = useState<string[]>([]);
    const [uploadingFiles, setUploadingFiles] = useState(false);
 
-  // Pre-fill from parcelData (CCC) on first open — using ref guard per memory/ui/form-prefill-persistence-pattern
-  const prefillDoneRef = useRef(false);
-  useEffect(() => {
-    if (!open || !parcelData || prefillDoneRef.current) return;
-    prefillDoneRef.current = true;
+  // === BUILDING TARGET (multi-construction support) ===
+  const [selectedBuildingRef, setSelectedBuildingRef] = useState<string>('main');
+  const [cadastreDiscrepancies, setCadastreDiscrepancies] = useState('');
 
-    // Direct transfer of CCC values (same format)
-    if (parcelData.property_category) {
-      setPropertyCategory(parcelData.property_category);
+  // Aggregate buildings known to the cadastre for this parcel
+  const knownBuildings = useMemo<KnownBuilding[]>(() => {
+    if (!parcelData) return [];
+    const list: KnownBuilding[] = [];
+
+    // Main construction (only if we actually have construction data)
+    const hasMain = !!(parcelData.construction_type || parcelData.construction_materials || parcelData.construction_year);
+    if (hasMain) {
+      list.push({
+        ref: 'main',
+        label: 'Construction principale',
+        type: parcelData.construction_type,
+        nature: parcelData.construction_nature,
+        materials: parcelData.construction_materials,
+        year: parcelData.construction_year,
+        usage: parcelData.declared_usage,
+        surface_sqm: parcelData.area_sqm,
+        floors: parcelData.floor_number,
+        property_category: parcelData.property_category,
+      });
     }
-    if (parcelData.construction_type) {
-      setConstructionType(parcelData.construction_type);
+
+    const extras = Array.isArray(parcelData.additional_constructions) ? parcelData.additional_constructions : [];
+    extras.forEach((c, i) => {
+      if (!c) return;
+      const labelParts = [c.type || `Construction ${i + 1}`];
+      if (c.surface_sqm) labelParts.push(`${c.surface_sqm} m²`);
+      list.push({
+        ref: `extra-${i}`,
+        label: labelParts.join(' — '),
+        type: c.type,
+        nature: c.nature,
+        materials: c.materials,
+        year: c.year,
+        usage: c.usage,
+        surface_sqm: c.surface_sqm,
+        property_category: parcelData.property_category,
+      });
+    });
+
+    return list;
+  }, [parcelData]);
+
+  // Default selection on first open: first known building, or 'new' if none
+  const defaultRefDoneRef = useRef(false);
+  useEffect(() => {
+    if (!open || defaultRefDoneRef.current) return;
+    defaultRefDoneRef.current = true;
+    setSelectedBuildingRef(knownBuildings.length > 0 ? knownBuildings[0].ref : 'new');
+  }, [open, knownBuildings]);
+
+  // Helper: apply a known building's data to the form fields
+  const applyBuildingPrefill = useCallback((b: KnownBuilding | null) => {
+    if (!b) {
+      // 'new' selection: clear cadastre-locked fields, let user enter freely
+      setPropertyCategory('');
+      setConstructionType('');
+      setConstructionMaterials('');
+      setConstructionNature('');
+      setConstructionYear('');
+      setNumberOfFloors('');
+      setTotalBuiltAreaSqm('');
+      setDeclaredUsage('');
+      return;
     }
-    if (parcelData.construction_materials) {
-      setConstructionMaterials(parcelData.construction_materials);
+    if (b.property_category) setPropertyCategory(b.property_category);
+    if (b.type) setConstructionType(b.type);
+    if (b.materials) setConstructionMaterials(b.materials);
+    if (b.nature) setConstructionNature(b.nature);
+    if (b.year) setConstructionYear(b.year.toString());
+    if (b.floors) setNumberOfFloors(b.floors);
+    if (b.surface_sqm && b.surface_sqm > 0) setTotalBuiltAreaSqm(b.surface_sqm.toString());
+    if (b.usage) setDeclaredUsage(b.usage);
+  }, []);
+
+  // Apply prefill whenever the selected building changes
+  useEffect(() => {
+    if (!open) return;
+    if (selectedBuildingRef === 'new') {
+      applyBuildingPrefill(null);
+      return;
     }
-    if (parcelData.construction_nature) {
-      setConstructionNature(parcelData.construction_nature);
-    }
-    if (parcelData.construction_year) {
-      setConstructionYear(parcelData.construction_year.toString());
-    }
-    if (parcelData.floor_number) {
-      setNumberOfFloors(parcelData.floor_number);
-    }
-    if (parcelData.area_sqm && parcelData.area_sqm > 0) {
-      setTotalBuiltAreaSqm(parcelData.area_sqm.toString());
-    }
-  }, [open, parcelData]);
+    const b = knownBuildings.find((x) => x.ref === selectedBuildingRef);
+    if (b) applyBuildingPrefill(b);
+  }, [open, selectedBuildingRef, knownBuildings, applyBuildingPrefill]);
+
+  // Set of fields that came from cadastre (locked unless user explicitly overrides)
+  const lockedFromCadastre = useMemo<Set<string>>(() => {
+    if (selectedBuildingRef === 'new') return new Set();
+    const b = knownBuildings.find((x) => x.ref === selectedBuildingRef);
+    if (!b) return new Set();
+    const s = new Set<string>();
+    if (b.property_category) s.add('property_category');
+    if (b.type) s.add('construction_type');
+    if (b.materials) s.add('construction_materials');
+    if (b.year) s.add('construction_year');
+    if (b.usage) s.add('declared_usage');
+    if (b.surface_sqm) s.add('total_built_area');
+    if (b.floors) s.add('number_of_floors');
+    return s;
+  }, [selectedBuildingRef, knownBuildings]);
 
   // === CCC CONSTRUCTION CASCADE EFFECTS ===
   // Helper: build reverse mapping material -> nature
