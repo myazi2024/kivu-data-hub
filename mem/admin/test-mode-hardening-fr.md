@@ -19,7 +19,9 @@ type: feature
 - **Helpers chiffrés** : `getExpectedTestDataCounts()` dans `_shared.ts` dérive les volumes attendus de `TOTAL_PARCELS` (= Σ `BASE_PARCELS × multiplier` des 26 provinces). Le `TestModeGuide` consomme cette source — NE PAS écrire de chiffres en dur.
 - **Compteur entités** : `TestDataStatsCard` et `TestModeGuide` lisent `entities.length` depuis la registry.
 - **Bandeau test** : `TestEnvironmentBanner` (top-right, badge warning + dot pulse, z-50) doit rester visible sur `/test/*`. Pas de `text-[10px] opacity-60`.
-- **Bandeau financier** : `TestModeBanner` (admin/billing) seuils `MIN_INVOICE_VOLUME=20` et `ratio>=0.5` — TODO Passe B : externaliser dans `system_settings`.
+- **Bandeau financier** : `TestModeBanner` (admin/billing) lit `test_mode_billing_alert_pct` (défaut 0.5) et `test_mode_billing_min_volume` (défaut 20) depuis `system_settings`. Pas de seuil hardcodé.
+- **Visibilité opérationnelle** : `TestCleanupHistoryCard` lit RPC `get_test_cleanup_history(limit)` (audit purges/générations TEST). `TestCronStatusCard` lit RPC `get_cron_run_history('cleanup-test-data-daily-rpc', limit)`. Les deux RPC sont SECURITY DEFINER, admin-only (P0001), `GRANT TO authenticated` uniquement.
+- **Streaming purge** : `CleanupProgress` montre les 23 étapes serveur (loader pendant l'exécution, ✓/✗ + nb supprimés à la fin). Alimenté par le `per_step` retourné par l'edge function `cleanup-test-data-batch`.
 
 ### Pièges historiques
 - `generators/rollback.ts` a été supprimé (dead code, doublait la purge serveur sans FK-safety).
