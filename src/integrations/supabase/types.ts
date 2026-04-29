@@ -4696,7 +4696,11 @@ export type Database = {
       }
       permit_fees_config: {
         Row: {
+          amount_per_sqm_usd: number
           amount_usd: number
+          applicable_natures: string[] | null
+          applicable_usages: string[] | null
+          cap_amount_usd: number | null
           created_at: string
           description: string | null
           display_order: number
@@ -4704,11 +4708,17 @@ export type Database = {
           id: string
           is_active: boolean
           is_mandatory: boolean
+          max_area_sqm: number | null
+          min_area_sqm: number | null
           permit_type: string
           updated_at: string
         }
         Insert: {
+          amount_per_sqm_usd?: number
           amount_usd?: number
+          applicable_natures?: string[] | null
+          applicable_usages?: string[] | null
+          cap_amount_usd?: number | null
           created_at?: string
           description?: string | null
           display_order?: number
@@ -4716,11 +4726,17 @@ export type Database = {
           id?: string
           is_active?: boolean
           is_mandatory?: boolean
+          max_area_sqm?: number | null
+          min_area_sqm?: number | null
           permit_type: string
           updated_at?: string
         }
         Update: {
+          amount_per_sqm_usd?: number
           amount_usd?: number
+          applicable_natures?: string[] | null
+          applicable_usages?: string[] | null
+          cap_amount_usd?: number | null
           created_at?: string
           description?: string | null
           display_order?: number
@@ -4728,6 +4744,8 @@ export type Database = {
           id?: string
           is_active?: boolean
           is_mandatory?: boolean
+          max_area_sqm?: number | null
+          min_area_sqm?: number | null
           permit_type?: string
           updated_at?: string
         }
