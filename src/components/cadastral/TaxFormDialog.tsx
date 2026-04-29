@@ -394,6 +394,31 @@ const TaxFormDialog: React.FC<TaxFormDialogProps> = ({
             />
           </div>
 
+          {/* P1: Partial payment — remaining amount due. Only relevant when status is "Payé partiellement". */}
+          {taxRecord.paymentStatus === 'Payé partiellement' && (
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium flex items-center gap-1.5">
+                Reste à payer (USD) *
+                <SectionHelpPopover
+                  title="Paiement partiel"
+                  description="Indiquez le montant restant dû après ce paiement. Une déclaration complémentaire pourra être ajoutée plus tard pour le solde."
+                />
+              </Label>
+              <Input
+                type="number"
+                min={0}
+                step="0.01"
+                placeholder="0.00"
+                value={taxRecord.remainingAmount}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  if (v === '' || parseFloat(v) >= 0) updateTax('remainingAmount', v);
+                }}
+                className="h-10 text-sm rounded-xl"
+              />
+            </div>
+          )}
+
           {/* Pièce jointe */}
           <div className="space-y-2 pt-2 border-t border-border/50">
             <Label className="text-sm font-medium flex items-center gap-1.5">
