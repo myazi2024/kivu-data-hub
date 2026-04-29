@@ -156,12 +156,12 @@ const PropertyTaxCalculator: React.FC<PropertyTaxCalculatorProps> = ({
 
     setSubmitting(true);
     try {
-      // Duplicate check
+      // Duplicate check (scoped by constructionRef so multi-building parcels work)
       const isDuplicate = await checkDuplicateTaxSubmission(
-        supabase, parcelNumber, user.id, 'Impôt foncier annuel', input.fiscalYear
+        supabase, parcelNumber, user.id, 'Impôt foncier annuel', input.fiscalYear, constructionRef
       );
       if (isDuplicate) {
-        toast.error(`Une déclaration "Impôt foncier annuel" pour l'exercice ${input.fiscalYear} existe déjà pour cette parcelle.`);
+        toast.error(`Une déclaration "Impôt foncier annuel" pour l'exercice ${input.fiscalYear} existe déjà pour cette parcelle/bâtiment.`);
         return;
       }
 
@@ -189,6 +189,13 @@ const PropertyTaxCalculator: React.FC<PropertyTaxCalculatorProps> = ({
         exemptionDocUrl = supabase.storage.from('cadastral-documents').getPublicUrl(path).data.publicUrl;
       }
 
+      // Only set root construction_* / declared_usage when targeting the main building.
+      // For an extra-N building we keep them in tax_history metadata to avoid clobbering CCC truth.
+      const isMain = constructionRef === 'main';
+      const cccDeclaredUsage = toCccDeclaredUsage(input.usageType, parcelData?.declared_usage);
+      const cccConstructionNature = toCccConstructionNature(input.constructionType);
+      const legacyConstructionType = toLegacyConstructionType(input.constructionType);
+
       const { error } = await supabase.from('cadastral_contributions').insert({
         parcel_number: parcelNumber,
         original_parcel_id: parcelId || null,
@@ -198,16 +205,10 @@ const PropertyTaxCalculator: React.FC<PropertyTaxCalculatorProps> = ({
         province: input.province,
         ville: input.ville,
         area_sqm: input.areaSqm,
-        construction_type: input.constructionType ? (
-          input.constructionType === 'en_dur' ? 'En dur'
-          : input.constructionType === 'semi_dur' ? 'Semi-dur'
-          : 'En paille'
-        ) : null,
-        declared_usage: input.usageType === 'commercial' ? 'Commercial'
-          : input.usageType === 'industrial' ? 'Industriel'
-          : input.usageType === 'agricultural' ? 'Agricole'
-          : 'Résidentiel',
-        construction_year: input.constructionYear,
+        construction_type: isMain ? legacyConstructionType : (parcelData?.construction_type ?? null),
+        construction_nature: isMain ? cccConstructionNature : (parcelData?.construction_nature ?? null),
+        declared_usage: isMain ? cccDeclaredUsage : (parcelData?.declared_usage ?? null),
+        construction_year: isMain ? input.constructionYear : (parcelData?.construction_year ?? null),
         current_owner_name: ownerName || null,
         owner_document_url: idDocUrl,
         tax_history: [{
@@ -223,6 +224,13 @@ const PropertyTaxCalculator: React.FC<PropertyTaxCalculatorProps> = ({
           exemption_certificate_url: exemptionDocUrl,
           nif: hasNif ? nif : null,
           payment_status: 'En attente',
+          // Multi-construction linkage
+          construction_ref: constructionRef,
+          // Calculation metadata (out of CCC core schema, kept here only)
+          construction_type: input.constructionType,
+          declared_usage: input.usageType,
+          number_of_floors: input.numberOfFloors,
+          roofing_type: input.roofingType || null,
         }],
       });
 
