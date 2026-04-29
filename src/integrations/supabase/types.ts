@@ -5245,6 +5245,7 @@ export type Database = {
           building_permit_number: string | null
           building_permit_type: string | null
           building_position: string | null
+          cadastre_discrepancies: string | null
           certificate_expiry_date: string | null
           certificate_issue_date: string | null
           certificate_url: string | null
@@ -5316,6 +5317,8 @@ export type Database = {
           sound_environment: string | null
           status: string
           supporting_documents: Json | null
+          target_building_label: string | null
+          target_building_ref: string | null
           total_building_floors: number | null
           total_built_area_sqm: number | null
           updated_at: string
@@ -5335,6 +5338,7 @@ export type Database = {
           building_permit_number?: string | null
           building_permit_type?: string | null
           building_position?: string | null
+          cadastre_discrepancies?: string | null
           certificate_expiry_date?: string | null
           certificate_issue_date?: string | null
           certificate_url?: string | null
@@ -5406,6 +5410,8 @@ export type Database = {
           sound_environment?: string | null
           status?: string
           supporting_documents?: Json | null
+          target_building_label?: string | null
+          target_building_ref?: string | null
           total_building_floors?: number | null
           total_built_area_sqm?: number | null
           updated_at?: string
@@ -5425,6 +5431,7 @@ export type Database = {
           building_permit_number?: string | null
           building_permit_type?: string | null
           building_position?: string | null
+          cadastre_discrepancies?: string | null
           certificate_expiry_date?: string | null
           certificate_issue_date?: string | null
           certificate_url?: string | null
@@ -5496,6 +5503,8 @@ export type Database = {
           sound_environment?: string | null
           status?: string
           supporting_documents?: Json | null
+          target_building_label?: string | null
+          target_building_ref?: string | null
           total_building_floors?: number | null
           total_built_area_sqm?: number | null
           updated_at?: string
