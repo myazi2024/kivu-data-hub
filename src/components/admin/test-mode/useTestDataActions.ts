@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { logAuditAction } from '@/utils/supabaseConfigUtils';
 import { toast } from 'sonner';
@@ -30,50 +30,85 @@ import {
   generateSubdivisionRequests,
   generateSubdivisionLotsAndRoads,
 } from './testDataGenerators';
+import { buildGenerationSteps, type StepCtx } from './generationStepsRegistry';
 
 interface UseTestDataActionsProps {
   userId?: string;
   onComplete: () => Promise<void>;
 }
 
-const GENERATION_STEPS: GenerationStep[] = [
-  { label: 'Vérification du mode test', status: 'pending' },
-  { label: 'Parcelles cadastrales', status: 'pending' },
-  { label: 'Contributions cadastrales', status: 'pending' },
-  { label: 'Factures', status: 'pending' },
-  { label: 'Transactions de paiement', status: 'pending' },
-  { label: 'Provisioning accès services (trigger auto)', status: 'pending' },
-  { label: 'Codes contributeurs (CCC)', status: 'pending' },
-  { label: 'Demandes de titres fonciers', status: 'pending' },
-  { label: 'Demandes d\'expertise', status: 'pending' },
-  { label: 'Litiges fonciers', status: 'pending' },
-  
-  { label: 'Historique propriété & taxes', status: 'pending' },
-  { label: 'Bornages & hypothèques & autorisations', status: 'pending' },
-  { label: 'Fraudes & certificats', status: 'pending' },
-  { label: 'Mutations & lotissements', status: 'pending' },
-];
+interface CleanupResult {
+  ok?: boolean;
+  failed_step?: string;
+  error?: string;
+  total_deleted?: number;
+  partial_total?: number;
+  per_step?: Record<string, number>;
+  partial_summary?: Record<string, number>;
+}
 
-export const useTestDataActions = ({
-  userId,
-  onComplete,
-}: UseTestDataActionsProps) => {
+/**
+ * Orchestrates test data generation/cleanup using the declarative step registry
+ * (`generationStepsRegistry.ts`). Each step is rendered in `GenerationProgress`
+ * via `generationSteps` state.
+ */
+export const useTestDataActions = ({ userId, onComplete }: UseTestDataActionsProps) => {
   const [cleaningUp, setCleaningUp] = useState(false);
   const [generatingData, setGeneratingData] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
-  const [generationSteps, setGenerationSteps] = useState<GenerationStep[]>(GENERATION_STEPS);
+
+  // Stable step definitions; generators are imported at module top.
+  const stepDefs = useMemo(
+    () =>
+      buildGenerationSteps({
+        verifyTestModeEnabled,
+        generateParcels,
+        generateContributions,
+        generateInvoices,
+        generatePayments,
+        generateContributorCodes,
+        generateTitleRequests,
+        generateExpertiseRequests,
+        generateExpertisePayments,
+        generateDisputes,
+        generateOwnershipHistory,
+        generateTaxHistory,
+        generateBoundaryHistory,
+        generateMortgages,
+        generateMortgagePayments,
+        generateBuildingPermits,
+        generateBoundaryConflicts,
+        generateFraudAttempts,
+        generateCertificates,
+        generateMutationRequests,
+        generateSubdivisionRequests,
+        generateSubdivisionLotsAndRoads,
+      }),
+    [],
+  );
+
+  const initialSteps: GenerationStep[] = useMemo(
+    () => stepDefs.map((s) => ({ label: s.label, status: 'pending' as const })),
+    [stepDefs],
+  );
+
+  const [generationSteps, setGenerationSteps] = useState<GenerationStep[]>(initialSteps);
   const [currentStep, setCurrentStep] = useState(-1);
 
   const updateStep = (index: number, status: GenerationStep['status']) => {
-    setGenerationSteps((prev) =>
-      prev.map((s, i) => (i === index ? { ...s, status } : s))
-    );
+    setGenerationSteps((prev) => prev.map((s, i) => (i === index ? { ...s, status } : s)));
     setCurrentStep(index);
   };
 
   const resetSteps = () => {
-    setGenerationSteps(GENERATION_STEPS.map((s) => ({ ...s, status: 'pending' as const })));
+    setGenerationSteps(initialSteps.map((s) => ({ ...s, status: 'pending' as const })));
     setCurrentStep(-1);
+  };
+
+  const invokeCleanup = async (): Promise<CleanupResult> => {
+    const { data, error } = await supabase.functions.invoke('cleanup-test-data-batch');
+    if (error) throw new Error(error.message);
+    return (data ?? {}) as CleanupResult;
   };
 
   const cleanupTestData = useCallback(async () => {
@@ -82,37 +117,18 @@ export const useTestDataActions = ({
       toast.info('Nettoyage par lots en cours…', {
         description: 'Cela peut prendre quelques instants sur de gros volumes',
       });
-
-      const { data, error } = await supabase.functions.invoke(
-        'cleanup-test-data-batch',
-      );
-
-      if (error) throw new Error(error.message);
-      const result = (data ?? {}) as {
-        ok?: boolean;
-        failed_step?: string;
-        error?: string;
-        total_deleted?: number;
-        partial_total?: number;
-        per_step?: Record<string, number>;
-        partial_summary?: Record<string, number>;
-      };
-
-      // Step-level failure (returned as 200 with ok:false)
+      const result = await invokeCleanup();
       if (result.ok === false) {
         const partial = result.partial_total ?? 0;
         throw new Error(
           `Étape "${result.failed_step}" : ${result.error ?? 'erreur inconnue'} (${partial} déjà supprimés)`,
         );
       }
-
       const totalDeleted = result.total_deleted ?? 0;
       const stepCount = result.per_step ? Object.keys(result.per_step).length : 0;
-
       toast.success('Données de test supprimées', {
         description: `${totalDeleted} enregistrements supprimés dans ${stepCount} étapes`,
       });
-
       await onComplete();
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Veuillez réessayer';
@@ -125,13 +141,11 @@ export const useTestDataActions = ({
 
   const generateTestData = useCallback(async () => {
     if (!userId) {
-      toast.error('Erreur', {
-        description: 'Vous devez être connecté pour générer des données de test',
-      });
+      toast.error('Erreur', { description: 'Vous devez être connecté pour générer des données de test' });
       return;
     }
 
-    // Duplication guard: check if test data already exists
+    // Guard: bail if test parcels already exist
     try {
       const { count } = await supabase
         .from('cadastral_parcels')
@@ -145,190 +159,46 @@ export const useTestDataActions = ({
         return;
       }
     } catch {
-      // Non-blocking: proceed with generation if check fails
+      /* non-blocking */
     }
 
     const suffix = uniqueSuffix();
-    const parcelNumbers = generateParcelNumbers(suffix);
-    const failedSteps: string[] = [];
+    const ctx: StepCtx = {
+      userId,
+      suffix,
+      parcelNumbers: generateParcelNumbers(suffix),
+      parcels: [],
+      contributions: [],
+      invoices: [],
+      failedSteps: [],
+    };
 
     try {
       setGeneratingData(true);
       resetSteps();
 
-      // Step 0: Verify test mode on server
-      updateStep(0, 'running');
-      const isEnabled = await verifyTestModeEnabled();
-      if (!isEnabled) {
-        updateStep(0, 'error');
-        toast.error('Mode test non actif', {
-          description: 'Activez le mode test avant de générer des données.',
-        });
-        return;
-      }
-      updateStep(0, 'done');
-
-      // Step 1: Parcels (needed for FK joins in analytics)
-      updateStep(1, 'running');
-      let parcels: Array<{ id: string; parcel_number: string }>;
-      try {
-        parcels = await generateParcels(parcelNumbers);
-        updateStep(1, 'done');
-      } catch (parcelError) {
-        updateStep(1, 'error');
-        throw parcelError;
-      }
-
-      // Step 2: Contributions
-      updateStep(2, 'running');
-      let contributions: Array<{ id: string; parcel_number: string }>;
-      try {
-        contributions = await generateContributions(userId, parcelNumbers);
-        updateStep(2, 'done');
-      } catch (contribError) {
-        updateStep(2, 'error');
-        toast.warning('Génération partielle — utilisez « Nettoyer » pour supprimer les données incomplètes');
-        throw contribError;
-      }
-
-      // Step 3: Invoices
-      updateStep(3, 'running');
-      let invoices: Array<{ id: string; parcel_number: string; status: string }>;
-      try {
-        invoices = await generateInvoices(userId, parcelNumbers);
-        updateStep(3, 'done');
-      } catch (invoiceError) {
-        updateStep(3, 'error');
-        toast.warning('Génération partielle — utilisez « Nettoyer » pour supprimer les données incomplètes');
-        throw invoiceError;
-      }
-
-      // Step 4: Payment transactions
-      updateStep(4, 'running');
-      try {
-        await generatePayments(userId, invoices);
-        updateStep(4, 'done');
-      } catch (paymentError) {
-        updateStep(4, 'error');
-        toast.warning('Génération partielle — utilisez « Nettoyer » pour supprimer les données incomplètes');
-        throw paymentError;
-      }
-
-      // Step 5: Provisioning accès services — exécuté automatiquement côté DB par
-      // le trigger trg_provision_service_access_on_paid (P3) lors du marquage
-      // « payée » des factures à l'étape 4. Aucune action côté client.
-      // (Les lots & voies de lotissement sont générés à l'étape 13.)
-      updateStep(5, 'done');
-
-      // Step 6: Contributor codes
-      updateStep(6, 'running');
-      try {
-        await generateContributorCodes(userId, contributions);
-        updateStep(6, 'done');
-      } catch (cccError) {
-        updateStep(6, 'error');
-        failedSteps.push('Codes CCC');
-        console.error('Codes CCC (non-bloquant):', cccError);
-      }
-
-      // Step 7: Title requests
-      updateStep(7, 'running');
-      try {
-        await generateTitleRequests(userId, suffix);
-        updateStep(7, 'done');
-      } catch (titleError) {
-        updateStep(7, 'error');
-        failedSteps.push('Demandes titres');
-        console.error('Title requests failed (non-blocking):', titleError);
-      }
-
-      // Step 8: Expertise requests + payments
-      updateStep(8, 'running');
-      try {
-        const expertiseRequests = await generateExpertiseRequests(userId, parcels, suffix);
-        await generateExpertisePayments(userId, expertiseRequests);
-        updateStep(8, 'done');
-      } catch (expError) {
-        updateStep(8, 'error');
-        failedSteps.push('Expertises');
-        console.error('Expertise requests/payments failed (non-blocking):', expError);
-      }
-
-      // Step 9: Disputes (with lifting data)
-      updateStep(9, 'running');
-      try {
-        await generateDisputes(parcels, suffix, userId);
-        updateStep(9, 'done');
-      } catch (dispError) {
-        updateStep(9, 'error');
-        failedSteps.push('Litiges');
-        console.error('Disputes failed (non-blocking):', dispError);
-      }
-
-      // Step 10: Ownership history + tax history (non-blocking)
-      updateStep(10, 'running');
-      try {
-        await generateOwnershipHistory(parcels);
-        await generateTaxHistory(parcels);
-        updateStep(10, 'done');
-      } catch (histError) {
-        updateStep(10, 'error');
-        failedSteps.push('Historique');
-        console.error('History (non-blocking):', histError);
-      }
-
-      // Step 11: Boundary history + mortgages (+ payments) + building permits + boundary conflicts
-      // Each sub-step is independently captured to surface granular failures.
-      updateStep(11, 'running');
-      {
-        const subFailed: string[] = [];
-        try { await generateBoundaryHistory(parcels); }
-        catch (e) { subFailed.push('Bornages'); console.error('Bornages (non-bloquant):', e); }
-        let mortgages: Awaited<ReturnType<typeof generateMortgages>> = [];
-        try { mortgages = await generateMortgages(parcels); }
-        catch (e) { subFailed.push('Hypothèques'); console.error('Hypothèques (non-bloquant):', e); }
-        try { await generateMortgagePayments(mortgages); }
-        catch (e) { subFailed.push('Paiements hypothèques'); console.error('Paiements hypothèques (non-bloquant):', e); }
-        try { await generateBuildingPermits(parcels); }
-        catch (e) { subFailed.push('Autorisations de bâtir'); console.error('Autorisations (non-bloquant):', e); }
-        try { await generateBoundaryConflicts(parcelNumbers, userId); }
-        catch (e) { subFailed.push('Conflits de limites'); console.error('Conflits (non-bloquant):', e); }
-        if (subFailed.length > 0) {
-          updateStep(11, 'error');
-          failedSteps.push(...subFailed);
-        } else {
-          updateStep(11, 'done');
-        }
-      }
-
-      // Step 12: Fraud attempts + certificates (non-blocking)
-      updateStep(12, 'running');
-      try {
-        await generateFraudAttempts(userId, contributions);
-        await generateCertificates(parcelNumbers, suffix, userId);
-        updateStep(12, 'done');
-      } catch (fcError) {
-        updateStep(12, 'error');
-        failedSteps.push('Fraudes/certificats');
-        console.error('Fraud/certificates (non-blocking):', fcError);
-      }
-
-      // Step 13: Mutations & subdivisions (+ lots/voies) — granular failure tracking
-      updateStep(13, 'running');
-      {
-        const subFailed: string[] = [];
-        try { await generateMutationRequests(userId, parcels, suffix); }
-        catch (e) { subFailed.push('Mutations'); console.error('Mutations (non-bloquant):', e); }
-        let subdivisions: Array<{ id: string }> = [];
-        try { subdivisions = await generateSubdivisionRequests(userId, parcels, suffix); }
-        catch (e) { subFailed.push('Lotissements'); console.error('Lotissements (non-bloquant):', e); }
-        try { await generateSubdivisionLotsAndRoads(subdivisions); }
-        catch (e) { subFailed.push('Lots/voies de lotissement'); console.error('Lots/voies (non-bloquant):', e); }
-        if (subFailed.length > 0) {
-          updateStep(13, 'error');
-          failedSteps.push(...subFailed);
-        } else {
-          updateStep(13, 'done');
+      for (let i = 0; i < stepDefs.length; i++) {
+        const step = stepDefs[i];
+        updateStep(i, 'running');
+        try {
+          await step.run(ctx);
+          // Mark partial-error if sub-failures were collected during this step
+          const hadSubFailures = step.key === 'mortgages_permits' || step.key === 'mutations_subdivisions';
+          updateStep(i, hadSubFailures && ctx.failedSteps.length > 0 ? 'error' : 'done');
+        } catch (err) {
+          updateStep(i, 'error');
+          if (step.blocking) {
+            if (step.key === 'verify') {
+              toast.error('Mode test non actif', { description: 'Activez le mode test avant de générer des données.' });
+              return;
+            }
+            if (['contributions', 'invoices', 'payments'].includes(step.key)) {
+              toast.warning('Génération partielle — utilisez « Nettoyer » pour supprimer les données incomplètes');
+            }
+            throw err;
+          }
+          ctx.failedSteps.push(step.label);
+          console.error(`${step.label} (non-bloquant):`, err);
         }
       }
 
@@ -338,34 +208,25 @@ export const useTestDataActions = ({
         undefined,
         undefined,
         toRecord({
-          contributions: contributions.length,
-          invoices: invoices.length,
-          parcels: parcels.length,
+          contributions: ctx.contributions.length,
+          invoices: ctx.invoices.length,
+          parcels: ctx.parcels.length,
           suffix,
-          failedSteps,
-          entities: [
-            'parcels', 'contributions', 'invoices', 'payments',
-            'service_access (auto via trigger)',
-            'contributor_codes', 'title_requests', 'expertise', 'disputes',
-            'ownership_history', 'tax_history',
-            'boundary_history', 'mortgages', 'mortgage_payments', 'building_permits',
-            'fraud_attempts', 'certificates',
-            'mutation_requests', 'subdivision_requests', 'subdivision_lots', 'subdivision_roads',
-          ],
-        })
+          failedSteps: ctx.failedSteps,
+          steps: stepDefs.map((s) => s.key),
+        }),
       );
 
-      if (failedSteps.length > 0) {
+      if (ctx.failedSteps.length > 0) {
         toast.warning('Données de test générées avec des erreurs partielles', {
-          description: `${parcels.length} parcelles créées. Échecs : ${failedSteps.join(', ')}`,
+          description: `${ctx.parcels.length} parcelles créées. Échecs : ${ctx.failedSteps.join(', ')}`,
           duration: 8000,
         });
       } else {
         toast.success('Données de test générées', {
-          description: `${parcels.length} parcelles (26 provinces, densité variable), ${contributions.length} contributions, ${invoices.length} factures et 10+ entités associées`,
+          description: `${ctx.parcels.length} parcelles, ${ctx.contributions.length} contributions, ${ctx.invoices.length} factures et 10+ entités associées`,
         });
       }
-
       await onComplete();
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Veuillez réessayer';
@@ -374,7 +235,7 @@ export const useTestDataActions = ({
     } finally {
       setGeneratingData(false);
     }
-  }, [userId, onComplete]);
+  }, [userId, onComplete, stepDefs]);
 
   const regenerateTestData = useCallback(async () => {
     if (!userId) {
@@ -384,9 +245,7 @@ export const useTestDataActions = ({
     try {
       setRegenerating(true);
       toast.info('Nettoyage des données existantes (par lots)…');
-      const { data, error } = await supabase.functions.invoke('cleanup-test-data-batch');
-      if (error) throw new Error(error.message);
-      const result = (data ?? {}) as { ok?: boolean; failed_step?: string; error?: string; partial_total?: number };
+      const result = await invokeCleanup();
       if (result.ok === false) {
         throw new Error(
           `Étape "${result.failed_step}" : ${result.error ?? 'erreur inconnue'} (${result.partial_total ?? 0} déjà supprimés)`,

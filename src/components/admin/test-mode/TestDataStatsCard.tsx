@@ -15,6 +15,7 @@ import {
 import { Loader2, Info, Trash2, RefreshCw, RotateCcw, Play } from 'lucide-react';
 import type { TestDataStats } from './types';
 import TestDataExportButton from './TestDataExportButton';
+import TestDryRunButton from './TestDryRunButton';
 import { loadTestEntities, TEST_ENTITIES, type TestEntity } from '@/constants/testEntities';
 
 interface TestDataStatsCardProps {
@@ -99,6 +100,8 @@ const TestDataStatsCard: React.FC<TestDataStatsCardProps> = ({
           </Button>
 
           <TestDataExportButton disabled={total === 0 || cleaningUp || generatingData || regenerating} />
+
+          <TestDryRunButton disabled={cleaningUp || generatingData || regenerating} />
 
           {onGenerate && isTestModeActive && total === 0 && (
             <Button
