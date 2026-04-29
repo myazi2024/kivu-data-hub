@@ -6,7 +6,12 @@ const TestEnvironmentBanner = () => {
   if (!isTestRoute) return null;
 
   return (
-    <div className="fixed bottom-2 right-2 z-40 px-2 py-0.5 rounded-full bg-muted/30 text-muted-foreground/60 border border-border/30 text-[10px] select-none pointer-events-none">
+    <div
+      role="status"
+      aria-label="Environnement de test actif"
+      className="fixed top-2 right-2 z-50 px-3 py-1 rounded-full bg-warning/15 text-warning border border-warning/40 text-xs font-medium shadow-sm select-none pointer-events-none flex items-center gap-1.5"
+    >
+      <span className="h-1.5 w-1.5 rounded-full bg-warning animate-pulse" aria-hidden="true" />
       Environnement test
     </div>
   );
