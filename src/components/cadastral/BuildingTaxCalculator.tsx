@@ -31,6 +31,9 @@ interface BuildingTaxCalculatorProps {
   parcelId?: string;
   parcelData?: any;
   onOpenServiceCatalog?: () => void;
+  constructionRef?: string;
+  targetBuilding?: import('./tax-calculator/taxBuildings').TaxKnownBuilding | null;
+  taxpayer?: import('./tax-calculator/useSharedTaxpayer').SharedTaxpayer;
 }
 
 type CalcStep = 'questions' | 'summary' | 'confirmation';
@@ -48,7 +51,8 @@ const CONSTRUCTION_SELECT_LABELS: Record<string, string> = {
 };
 
 const BuildingTaxCalculator: React.FC<BuildingTaxCalculatorProps> = ({
-  parcelNumber, parcelId, parcelData, onOpenServiceCatalog
+  parcelNumber, parcelId, parcelData, onOpenServiceCatalog,
+  constructionRef = 'main', targetBuilding = null, taxpayer,
 }) => {
   const { user } = useAuth();
   const currentYear = new Date().getFullYear();
@@ -57,11 +61,19 @@ const BuildingTaxCalculator: React.FC<BuildingTaxCalculatorProps> = ({
   const [exchangeRate, setExchangeRate] = useState(2800);
   const [dbBuildingRates, setDbBuildingRates] = useState<Record<string, Record<string, number>> | null>(null);
 
-  const [nif, setNif] = useState('');
-  const [hasNif, setHasNif] = useState<boolean | null>(null);
-  const [ownerName, setOwnerName] = useState(parcelData?.current_owner_name || '');
-  // #7 fix: ID document upload support
-  const [idDocumentFile, setIdDocumentFile] = useState<File | null>(null);
+  const [localNif, setLocalNif] = useState('');
+  const [localHasNif, setLocalHasNif] = useState<boolean | null>(null);
+  const [localOwnerName, setLocalOwnerName] = useState(parcelData?.current_owner_name || '');
+  const [localIdDocumentFile, setLocalIdDocumentFile] = useState<File | null>(null);
+
+  const nif = taxpayer?.nif ?? localNif;
+  const setNif = taxpayer?.setNif ?? setLocalNif;
+  const hasNif = taxpayer?.hasNif ?? localHasNif;
+  const setHasNif = taxpayer?.setHasNif ?? setLocalHasNif;
+  const ownerName = taxpayer?.ownerName ?? localOwnerName;
+  const setOwnerName = taxpayer?.setOwnerName ?? setLocalOwnerName;
+  const idDocumentFile = taxpayer?.idDocumentFile ?? localIdDocumentFile;
+  const setIdDocumentFile = taxpayer?.setIdDocumentFile ?? setLocalIdDocumentFile;
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
