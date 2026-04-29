@@ -34,10 +34,23 @@ const IRLCalculator: React.FC<IRLCalculatorProps> = ({
   const currentYear = new Date().getFullYear();
   const [calcStep, setCalcStep] = useState<CalcStep>('questions');
   const [result, setResult] = useState<TaxCalculationResult | null>(null);
-  const [nif, setNif] = useState('');
-  const [ownerName, setOwnerName] = useState(parcelData?.current_owner_name || '');
-  const [idDocumentFile, setIdDocumentFile] = useState<File | null>(null);
-  const [hasNif, setHasNif] = useState<boolean | null>(null);
+
+  // Local fallbacks when no shared taxpayer is provided (standalone usage).
+  const [localNif, setLocalNif] = useState('');
+  const [localOwnerName, setLocalOwnerName] = useState(parcelData?.current_owner_name || '');
+  const [localIdDocumentFile, setLocalIdDocumentFile] = useState<File | null>(null);
+  const [localHasNif, setLocalHasNif] = useState<boolean | null>(null);
+
+  // Use shared taxpayer state when injected by TaxManagementDialog (P1 alignment).
+  const nif = taxpayer?.nif ?? localNif;
+  const setNif = taxpayer?.setNif ?? setLocalNif;
+  const ownerName = taxpayer?.ownerName ?? localOwnerName;
+  const setOwnerName = taxpayer?.setOwnerName ?? setLocalOwnerName;
+  const idDocumentFile = taxpayer?.idDocumentFile ?? localIdDocumentFile;
+  const setIdDocumentFile = taxpayer?.setIdDocumentFile ?? setLocalIdDocumentFile;
+  const hasNif = taxpayer?.hasNif ?? localHasNif;
+  const setHasNif = taxpayer?.setHasNif ?? setLocalHasNif;
+
   const [tenants, setTenants] = useState<TenantEntry[]>([createEmptyTenant()]);
   const [submitting, setSubmitting] = useState(false);
 
@@ -146,7 +159,7 @@ const IRLCalculator: React.FC<IRLCalculatorProps> = ({
     setSubmitting(true);
     try {
       const isDuplicate = await checkDuplicateTaxSubmission(
-        supabase, parcelNumber, user.id, 'Impôt sur le revenu locatif', input.fiscalYear
+        supabase, parcelNumber, user.id, 'Impôt sur le revenu locatif', input.fiscalYear, constructionRef
       );
       if (isDuplicate) {
         toast.error(`Une déclaration IRL pour l'exercice ${input.fiscalYear} existe déjà pour cette parcelle.`);
@@ -175,6 +188,7 @@ const IRLCalculator: React.FC<IRLCalculatorProps> = ({
           departure: t.hasDepartureDate ? t.departureDate : null,
         }));
 
+      const isMain = constructionRef === 'main';
       const { error } = await supabase.from('cadastral_contributions').insert({
         parcel_number: parcelNumber,
         original_parcel_id: parcelId || null,
@@ -183,7 +197,9 @@ const IRLCalculator: React.FC<IRLCalculatorProps> = ({
         status: 'pending',
         province: input.province,
         ville: input.ville,
-        area_sqm: input.areaSqm,
+        // Only overwrite root area when targeting the main construction.
+        area_sqm: isMain ? input.areaSqm : (parcelData?.area_sqm ?? null),
+        current_owner_name: ownerName || null,
         owner_document_url: idDocUrl,
         tax_history: [{
           tax_type: 'Impôt sur le revenu locatif',
@@ -198,6 +214,7 @@ const IRLCalculator: React.FC<IRLCalculatorProps> = ({
           tenants: tenantData,
           nif: hasNif ? nif : null,
           payment_status: 'En attente',
+          construction_ref: constructionRef,
         }],
       });
 

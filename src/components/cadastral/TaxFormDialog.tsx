@@ -22,6 +22,10 @@ interface TaxFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   embedded?: boolean;
+  /** P0+P1 alignment: tag the recorded payment with the targeted construction. */
+  constructionRef?: string;
+  /** P0+P1 alignment: shared taxpayer state (NIF / owner / ID) across sub-forms. */
+  taxpayer?: import('./tax-calculator/useSharedTaxpayer').SharedTaxpayer;
 }
 
 type Step = 'form' | 'preview' | 'confirmation';
@@ -31,6 +35,8 @@ interface TaxRecord {
   taxType: string;
   taxYear: string;
   taxAmount: string;
+  /** P1: partial payment support — remaining due after this payment (USD). */
+  remainingAmount: string;
   paymentStatus: string;
   paymentDate: string;
   receiptFile: File | null;
@@ -41,30 +47,45 @@ const TaxFormDialog: React.FC<TaxFormDialogProps> = ({
   parcelId,
   open,
   onOpenChange,
-  embedded = false
+  embedded = false,
+  constructionRef = 'main',
+  taxpayer,
 }) => {
   const isMobile = useIsMobile();
   const { user } = useAuth();
   const [showIntro, setShowIntro] = useState(!embedded);
   const [step, setStep] = useState<Step>('form');
   const [loading, setLoading] = useState(false);
-  
+
   const currentYear = new Date().getFullYear();
-  
+
   const [taxRecord, setTaxRecord] = useState<TaxRecord>({
-    nif: '',
+    nif: taxpayer?.nif || '',
     taxType: 'Impôt foncier annuel',
     taxYear: currentYear.toString(),
     taxAmount: '',
+    remainingAmount: '',
     paymentStatus: 'Payé',
     paymentDate: '',
     receiptFile: null
   });
 
+  // Keep NIF in sync with shared taxpayer state when injected.
+  useEffect(() => {
+    if (taxpayer?.nif && taxpayer.nif !== taxRecord.nif) {
+      setTaxRecord(prev => ({ ...prev, nif: taxpayer.nif }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [taxpayer?.nif]);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const updateTax = (field: keyof TaxRecord, value: string | File | null) => {
     setTaxRecord(prev => ({ ...prev, [field]: value }));
+    // Propagate NIF upward into shared taxpayer state so other sub-forms benefit.
+    if (field === 'nif' && taxpayer) {
+      taxpayer.setNif(typeof value === 'string' ? value : '');
+    }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -141,34 +162,40 @@ const TaxFormDialog: React.FC<TaxFormDialogProps> = ({
           const history = c.tax_history as any[];
           return history?.some((h: any) =>
             h.tax_type === taxRecord.taxType &&
-            String(h.tax_year) === taxRecord.taxYear
+            String(h.tax_year) === taxRecord.taxYear &&
+            // P0 alignment: scope duplicates per construction (multi-building parcels).
+            (h.construction_ref ?? 'main') === constructionRef
           );
         });
 
         if (isDuplicate) {
-          toast.error(`Une déclaration "${taxRecord.taxType}" pour l'année ${taxRecord.taxYear} existe déjà pour cette parcelle.`);
+          toast.error(`Une déclaration "${taxRecord.taxType}" pour l'année ${taxRecord.taxYear} existe déjà pour ce bâtiment.`);
           setLoading(false);
           return;
         }
       }
 
-      // Upload file if present
+      // Upload file if present (memory rule: crypto.randomUUID, never Math.random for uploads).
       let documentUrl = null;
       if (taxRecord.receiptFile) {
         const fileExt = taxRecord.receiptFile.name.split('.').pop();
-        const fileName = `tax_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
+        const fileName = `tax_${Date.now()}_${crypto.randomUUID()}.${fileExt}`;
         const filePath = `tax-documents/${user.id}/${fileName}`;
-        
+
         const { error: uploadError } = await supabase.storage
           .from('cadastral-documents')
           .upload(filePath, taxRecord.receiptFile);
-        
+
         if (uploadError) throw uploadError;
         uploadedFilePath = filePath;
-        
+
         const { data } = supabase.storage.from('cadastral-documents').getPublicUrl(filePath);
         documentUrl = data.publicUrl;
       }
+
+      const remaining = taxRecord.remainingAmount.trim() === ''
+        ? null
+        : Math.max(0, parseFloat(taxRecord.remainingAmount) || 0);
 
       // Insert contribution
       const { error } = await supabase
@@ -183,9 +210,14 @@ const TaxFormDialog: React.FC<TaxFormDialogProps> = ({
             tax_type: taxRecord.taxType,
             tax_year: parseInt(taxRecord.taxYear),
             amount_usd: parseFloat(taxRecord.taxAmount),
+            // P1: persist remaining amount for partial payments.
+            remaining_amount_usd: remaining,
             payment_status: taxRecord.paymentStatus,
             payment_date: taxRecord.paymentDate || null,
-            receipt_document_url: documentUrl
+            receipt_document_url: documentUrl,
+            // P0: tag the recorded payment with the targeted construction.
+            construction_ref: constructionRef,
+            nif: taxRecord.nif || null,
           }]
         });
 
@@ -218,10 +250,11 @@ const TaxFormDialog: React.FC<TaxFormDialogProps> = ({
   const handleClose = () => {
     setStep('form');
     setTaxRecord({
-      nif: '',
+      nif: taxpayer?.nif || '',
       taxType: 'Impôt foncier annuel',
       taxYear: currentYear.toString(),
       taxAmount: '',
+      remainingAmount: '',
       paymentStatus: 'Payé',
       paymentDate: '',
       receiptFile: null
@@ -360,6 +393,31 @@ const TaxFormDialog: React.FC<TaxFormDialogProps> = ({
               className="h-10 text-sm rounded-xl"
             />
           </div>
+
+          {/* P1: Partial payment — remaining amount due. Only relevant when status is "Payé partiellement". */}
+          {taxRecord.paymentStatus === 'Payé partiellement' && (
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium flex items-center gap-1.5">
+                Reste à payer (USD) *
+                <SectionHelpPopover
+                  title="Paiement partiel"
+                  description="Indiquez le montant restant dû après ce paiement. Une déclaration complémentaire pourra être ajoutée plus tard pour le solde."
+                />
+              </Label>
+              <Input
+                type="number"
+                min={0}
+                step="0.01"
+                placeholder="0.00"
+                value={taxRecord.remainingAmount}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  if (v === '' || parseFloat(v) >= 0) updateTax('remainingAmount', v);
+                }}
+                className="h-10 text-sm rounded-xl"
+              />
+            </div>
+          )}
 
           {/* Pièce jointe */}
           <div className="space-y-2 pt-2 border-t border-border/50">

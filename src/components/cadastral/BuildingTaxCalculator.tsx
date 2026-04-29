@@ -245,10 +245,18 @@ const BuildingTaxCalculator: React.FC<BuildingTaxCalculatorProps> = ({
           base_amount_cdf: calculation.baseTaxCDF,
           construction_type: constructionType,
           zone_type: zoneType,
+          // ─── NON-CCC metadata (kept for fiscal traceability only) ────────────
+          // The CCC form does NOT collect `building_condition`, `floors` or a
+          // dedicated `construction_year` per building. These fields are
+          // tax-specific inputs used solely to compute the bâtisse amount
+          // (condition multiplier, total surface = area × floors, age reduction).
+          // They MUST stay confined to `tax_history[]` and never overwrite root
+          // CCC columns on `cadastral_contributions` (see `isMain` guard above).
           building_condition: buildingCondition,
           total_surface: calculation.totalSurface,
           floors: numberOfFloors,
           construction_year: constructionYear,
+          // ─────────────────────────────────────────────────────────────────────
           penalty_amount_usd: calculation.totalPenaltiesUSD,
           fiscal_zone: fiscalZoneCategory,
           payment_status: 'En attente',
