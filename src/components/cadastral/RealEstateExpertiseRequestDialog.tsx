@@ -830,6 +830,12 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
       building_permit_type: hasBuildingPermit === 'yes' ? buildingPermitType : undefined,
       building_permit_issue_date: hasBuildingPermit === 'yes' && buildingPermitIssueDate ? buildingPermitIssueDate : undefined,
       building_permit_issuing_service: hasBuildingPermit === 'yes' && buildingPermitIssuingService ? buildingPermitIssuingService : undefined,
+      // Targeted building (multi-construction support)
+      target_building_ref: selectedBuildingRef,
+      target_building_label: selectedBuildingRef === 'new'
+        ? 'Autre / nouvelle construction'
+        : (knownBuildings.find((b) => b.ref === selectedBuildingRef)?.label || undefined),
+      cadastre_discrepancies: cadastreDiscrepancies.trim() || undefined,
     });
 
     setStep('payment');
