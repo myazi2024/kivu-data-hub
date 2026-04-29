@@ -45,6 +45,7 @@ interface CleanupResult {
   partial_total?: number;
   per_step?: Record<string, number>;
   partial_summary?: Record<string, number>;
+  truncated_steps?: string[];
 }
 
 /**
@@ -56,6 +57,11 @@ export const useTestDataActions = ({ userId, onComplete }: UseTestDataActionsPro
   const [cleaningUp, setCleaningUp] = useState(false);
   const [generatingData, setGeneratingData] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
+  // Cleanup progress state — surfaced for `<CleanupProgress>` on every path
+  // (manual cleanup, regenerate, and disable+cleanup).
+  const [cleanupPerStep, setCleanupPerStep] = useState<Record<string, number> | null>(null);
+  const [cleanupFailedStep, setCleanupFailedStep] = useState<string | null>(null);
+  const [cleanupTruncatedSteps, setCleanupTruncatedSteps] = useState<string[]>([]);
 
   // Stable step definitions; generators are imported at module top.
   const stepDefs = useMemo(
@@ -105,15 +111,27 @@ export const useTestDataActions = ({ userId, onComplete }: UseTestDataActionsPro
     setCurrentStep(-1);
   };
 
-  const invokeCleanup = async (): Promise<CleanupResult> => {
+  const resetCleanupState = useCallback(() => {
+    setCleanupPerStep(null);
+    setCleanupFailedStep(null);
+    setCleanupTruncatedSteps([]);
+  }, []);
+
+  const invokeCleanup = useCallback(async (): Promise<CleanupResult> => {
     const { data, error } = await supabase.functions.invoke('cleanup-test-data-batch');
     if (error) throw new Error(error.message);
-    return (data ?? {}) as CleanupResult;
-  };
+    const result = (data ?? {}) as CleanupResult;
+    // Surface progress regardless of caller (manual / regenerate / disable+purge)
+    setCleanupPerStep(result.per_step ?? result.partial_summary ?? {});
+    setCleanupFailedStep(result.failed_step ?? null);
+    setCleanupTruncatedSteps(result.truncated_steps ?? []);
+    return result;
+  }, []);
 
   const cleanupTestData = useCallback(async () => {
     try {
       setCleaningUp(true);
+      resetCleanupState();
       toast.info('Nettoyage par lots en cours…', {
         description: 'Cela peut prendre quelques instants sur de gros volumes',
       });
@@ -129,6 +147,12 @@ export const useTestDataActions = ({ userId, onComplete }: UseTestDataActionsPro
       toast.success('Données de test supprimées', {
         description: `${totalDeleted} enregistrements supprimés dans ${stepCount} étapes`,
       });
+      if ((result.truncated_steps?.length ?? 0) > 0) {
+        toast.warning('Plafond de sécurité atteint', {
+          description: `Étapes potentiellement incomplètes : ${result.truncated_steps!.join(', ')}. Relancez « Nettoyer tout » pour purger le reste.`,
+          duration: 10000,
+        });
+      }
       await onComplete();
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Veuillez réessayer';
@@ -137,7 +161,7 @@ export const useTestDataActions = ({ userId, onComplete }: UseTestDataActionsPro
     } finally {
       setCleaningUp(false);
     }
-  }, [onComplete]);
+  }, [onComplete, invokeCleanup, resetCleanupState]);
 
   const generateTestData = useCallback(async () => {
     if (!userId) {
@@ -244,12 +268,19 @@ export const useTestDataActions = ({ userId, onComplete }: UseTestDataActionsPro
     }
     try {
       setRegenerating(true);
+      resetCleanupState();
       toast.info('Nettoyage des données existantes (par lots)…');
       const result = await invokeCleanup();
       if (result.ok === false) {
         throw new Error(
           `Étape "${result.failed_step}" : ${result.error ?? 'erreur inconnue'} (${result.partial_total ?? 0} déjà supprimés)`,
         );
+      }
+      if ((result.truncated_steps?.length ?? 0) > 0) {
+        toast.warning('Plafond de sécurité atteint', {
+          description: `Étapes potentiellement incomplètes : ${result.truncated_steps!.join(', ')}.`,
+          duration: 10000,
+        });
       }
       toast.success('Données nettoyées, régénération en cours…');
       await generateTestData();
