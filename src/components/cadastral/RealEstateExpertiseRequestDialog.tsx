@@ -546,6 +546,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     if (remaining <= 0) {
       toast.error(`Maximum ${MAX_CONSTRUCTION_IMAGES} photos autorisées`);
       if (constructionImagesInputRef.current) constructionImagesInputRef.current.value = '';
+      if (constructionGalleryInputRef.current) constructionGalleryInputRef.current.value = '';
       return;
     }
     const validFiles = newFiles.slice(0, remaining).filter(file => {
