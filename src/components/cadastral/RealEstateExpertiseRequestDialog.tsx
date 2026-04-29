@@ -1128,7 +1128,9 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     setCheckingCertificateAccess(false);
     setCertificateAccessFee(0);
 
-    prefillDoneRef.current = false;
+    defaultRefDoneRef.current = false;
+    setSelectedBuildingRef('main');
+    setCadastreDiscrepancies('');
     onOpenChange(false);
   };
 
