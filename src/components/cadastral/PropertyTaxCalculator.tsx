@@ -10,12 +10,21 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { detectZoneType, isZoneAutoDetected, detectUsageType, detectConstructionType, checkDuplicateTaxSubmission } from './tax-calculator/taxSharedUtils';
 import { validateNIF, NIF_FORMAT_ERROR } from './tax-calculator/taxFormConstants'; // #18 fix: use centralized validateNIF
+import type { TaxKnownBuilding } from './tax-calculator/taxBuildings';
+import { toCccConstructionNature, toLegacyConstructionType, toCccDeclaredUsage } from './tax-calculator/taxBuildings';
+import type { SharedTaxpayer } from './tax-calculator/useSharedTaxpayer';
 
 interface PropertyTaxCalculatorProps {
   parcelNumber: string;
   parcelId?: string;
   parcelData?: any;
   onOpenServiceCatalog?: () => void;
+  /** Multi-construction: ref of the building this declaration targets */
+  constructionRef?: string;
+  /** Pre-filled data for the targeted building */
+  targetBuilding?: TaxKnownBuilding | null;
+  /** Shared taxpayer state from parent dialog (overrides local state when provided) */
+  taxpayer?: SharedTaxpayer;
 }
 
 type CalcStep = 'questions' | 'summary' | 'confirmation'; // #3 fix: add confirmation step
