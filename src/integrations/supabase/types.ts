@@ -7397,6 +7397,7 @@ export type Database = {
       }
       count_audit_logs: { Args: never; Returns: number }
       count_test_data_stats: { Args: never; Returns: Json }
+      count_test_data_to_cleanup: { Args: never; Returns: Json }
       create_cadastral_invoice_secure: {
         Args: {
           discount_code_param?: string
