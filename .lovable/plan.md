@@ -1,111 +1,61 @@
-## Contexte & diagnostic
+## Problème
 
-Dans la base, une parcelle (`cadastral_parcels`) connaît déjà ses constructions :
+Dans `TaxManagementDialog` (Carte cadastrale → Taxes foncières), 4 onglets de même niveau coexistent : **Foncier**, **Bâtisse**, **Locatif**, **Ajouter**. Cela mélange deux logiques différentes :
 
-- **Construction principale** : champs scalaires `construction_type`, `construction_nature`, `construction_materials`, `construction_year`, `floor_number`, `area_sqm`, `property_category`, `declared_usage`.
-- **Constructions additionnelles** : tableau JSONB `additional_constructions` au format `[{ type, usage, surface_sqm }, ...]` (saisi via le CCC / module cadastral).
-- **Autorisations de bâtir** liées : table `cadastral_building_permits` (jointe par `parcel_id`).
+- Les 3 premiers servent à **déclarer un nouvel impôt** (avec calcul automatique).
+- Le 4ème sert à **enregistrer manuellement un paiement déjà effectué** (historique).
 
-Le formulaire d'expertise (`RealEstateExpertiseRequestDialog.tsx`) pré-remplit aujourd'hui uniquement la construction principale (lignes 283–309), traite la parcelle comme si elle n'avait **qu'un seul bâtiment**, et n'expose jamais `additional_constructions` ni les permis existants. Résultat : si la parcelle a déjà été cadastrée (CCC), l'utilisateur doit ressaisir / reconfirmer manuellement des données que le système possède déjà, et il n'a aucun moyen propre de désigner « j'expertise la dépendance » plutôt que la maison principale.
+Sur mobile (360 px), les 4 puces sont aussi très serrées (text-[10px], px-1.5, troncature visible).
 
-## Approche recommandée — Sélecteur de construction + pré-remplissage par bâtiment
+## Réorganisation proposée
 
-Plutôt qu'un simple pré-remplissage scalaire, on transforme le bloc Construction en un **sélecteur multi-bâtiments** alimenté par les données existantes de la parcelle, avec verrouillage des champs déjà connus.
-
-### 1. Construire la liste des bâtiments connus
-
-Au montage du dialogue, agréger depuis `parcelData` :
+Hiérarchie à 2 niveaux :
 
 ```text
-buildings = [
-  { id: 'main', label: 'Construction principale',
-    source: 'CCC',
-    type, nature, materials, year, usage,
-    surface_sqm: area_sqm, floors: floor_number,
-    locked: true (champs renseignés) },
-  ...additional_constructions.map((c, i) => ({
-    id: `extra-${i}`, label: `${c.type} (${c.surface_sqm} m²)`,
-    source: 'CCC',
-    type: c.type, usage: c.usage, surface_sqm: c.surface_sqm,
-    locked: true })),
-]
+TaxManagementDialog
+├── Onglet 1 : "Déclarer un impôt"   (icône Calculator)
+│   └── Sous-onglets :
+│       ├── Foncier   (PropertyTaxCalculator)
+│       ├── Bâtisse   (BuildingTaxCalculator)
+│       └── Locatif   (IRLCalculator)
+│
+└── Onglet 2 : "Ajouter un paiement"  (icône Plus)
+    └── TaxFormDialog (embedded) — enregistrement d'un impôt déjà payé
 ```
 
-Si aucune construction n'est connue (parcelle non cadastrée ou non bâtie), on garde le formulaire en mode saisie libre comme aujourd'hui.
+### Avantages
 
-### 2. UI : choix du bâtiment à expertiser en haut du bloc Construction
+- Sépare clairement **déclaration officielle** (génère une fiche transmise à DGI/DGR) vs **enregistrement historique** (saisie d'un paiement passé pour mémoire).
+- Sur mobile, 2 onglets racine = labels lisibles en plein texte (plus de troncature).
+- Les 3 sous-onglets de déclaration restent groupés logiquement (tous = "calculer + déclarer").
 
-```text
-┌─────────────────────────────────────────────────────────┐
-│ Construction concernée par l'expertise                  │
-│ ○ Construction principale — Résidentielle, 2000, 180 m² │
-│ ● Dépendance — Habitation, 21 m²                        │
-│ ○ Garage — Stockage, 62 m²                              │
-│ ○ Autre / nouvelle construction non listée              │
-└─────────────────────────────────────────────────────────┘
-[Badge: « Données issues du cadastre — vérifiées »]
-```
+## Modifications techniques
 
-- Radio group si ≤ 4 entrées, sinon `Select`.
-- L'option **« Autre / nouvelle construction »** débloque la saisie manuelle complète (cas d'une construction non encore déclarée au cadastre — l'expertise sert alors aussi à mettre à jour la fiche).
+**`src/components/cadastral/TaxManagementDialog.tsx`** (seul fichier touché)
 
-### 3. Comportement du bloc Construction selon la sélection
+1. Remplacer le type `ActiveTab` :
+   ```ts
+   type RootTab = 'declare' | 'add';
+   type DeclareSubTab = 'foncier' | 'batisse' | 'irl';
+   ```
+2. Deux `useState` : `rootTab` (défaut `'declare'`) et `declareSubTab` (défaut `'foncier'`).
+3. `DialogHeader` : 2 gros boutons d'onglets racine (h-9, text-xs, icônes lisibles, plus de troncature).
+4. Quand `rootTab === 'declare'` : afficher une seconde rangée de 3 sous-onglets (Foncier / Bâtisse / Locatif) au-dessus du contenu, style cohérent avec l'existant (h-8, rounded-xl).
+5. Quand `rootTab === 'add'` : afficher directement `TaxFormDialog` embedded, sans sous-onglets.
+6. Conserver `key={...}` sur chaque calculator pour préserver l'isolation d'état (anti state-bleeding déjà en place).
+7. Reset des deux états à l'ouverture (`useEffect` sur `open`).
 
-Quand l'utilisateur choisit un bâtiment connu :
+**Texte d'intro `FormIntroDialog`** : inchangé (déjà cohérent : il décrit les 4 services).
 
-- Les champs déjà fournis par le cadastre (type, matériaux, nature, année, surface, usage) sont **pré-remplis et passés en lecture seule**, avec un badge discret « Issu du cadastre ».
-- Un petit lien **« Corriger »** ouvre les champs en édition (cas où l'expert constate une divergence). La modification est tracée dans `additional_notes` ou un champ dédié `cadastre_discrepancies` pour signalement à l'admin.
-- Les champs **non couverts par le CCC** (état du bien, qualité de construction, équipements détaillés, distances, risques, etc.) restent saisissables comme aujourd'hui — c'est le vrai apport de l'expertise.
+### Hors scope
 
-Quand l'utilisateur choisit **« Autre »** : tous les champs redeviennent éditables, le pré-remplissage est nettoyé.
+- Pas de modification des calculators eux-mêmes (`PropertyTaxCalculator`, `BuildingTaxCalculator`, `IRLCalculator`, `TaxFormDialog`).
+- Pas de migration DB, pas de changement de logique métier ou de RPC.
+- Pas de modification de l'analytics ou des notifications.
 
-### 4. Persistance de la sélection
+## Vérification
 
-- Ajouter `target_building_ref` (texte : `main` | `extra-0` | `new`) et `target_building_label` au payload `CreateExpertiseRequestData`, pour que l'admin/expert sache exactement quel bâtiment a été expertisé.
-- Si « Autre », après validation par l'expert, possibilité plus tard d'ajouter cette nouvelle construction à `additional_constructions` (hors scope ici, mais le champ rend l'évolution naturelle).
-
-### 5. Permis de bâtir — réutilisation similaire
-
-Le bloc « A-t-il un permis de bâtir ? » est aujourd'hui re-saisi à zéro. On pré-charge les permis existants depuis `cadastral_building_permits` :
-
-```text
-Permis de bâtir existants pour cette parcelle :
-[✓] PB-2018-00421 — Délivré le 12/03/2018 — Service Urbanisme Gombe
-[ ] Ajouter un nouveau permis
-```
-
-Sélection cochée → champs permis pré-remplis et verrouillés. Coche « Ajouter un nouveau » → formulaire vide comme aujourd'hui.
-
-## Bénéfices
-
-- **Zéro double saisie** quand la parcelle est déjà cadastrée.
-- **Cohérence des données** : pas de divergence accidentelle entre fiche cadastrale et expertise.
-- **Support natif des parcelles multi-bâtiments** (cas réel à Kinshasa : parcelle = villa + dépendance + commerce sur rue).
-- **Traçabilité** : l'expertise indique précisément quel bâtiment elle couvre, utile pour le certificat et les valorisations futures.
-- **Respect du modèle existant** : on ne crée aucune nouvelle table, on exploite `additional_constructions` (JSONB déjà en place) et `cadastral_building_permits`.
-
-## Détails techniques
-
-Fichiers à modifier :
-
-- `src/components/cadastral/RealEstateExpertiseRequestDialog.tsx`
-  - Nouveau bloc `BuildingTargetSelector` en tête de l'onglet Général.
-  - `useEffect` de pré-remplissage (lignes 283-309) refondu : il agrège `main` + `additional_constructions` et applique la sélection.
-  - États ajoutés : `selectedBuildingRef`, `lockedFields: Set<string>`, `cadastreOverrides: Record<string,string>`.
-  - Champs Construction passent en `readOnly` quand `lockedFields.has(field)` et qu'on n'est pas en mode « Corriger ».
-  - Bloc permis : nouveau sous-composant qui charge `cadastral_building_permits` via le hook existant `useParcelHistory` (déjà utilisé dans la carte cadastrale, voir `useCadastralMapData.tsx`).
-
-- `src/types/expertise.ts`
-  - Ajouter dans `ExpertiseRequest` et `CreateExpertiseRequestData` :
-    - `target_building_ref?: string` (`main` | `extra-<index>` | `new`)
-    - `target_building_label?: string`
-    - `cadastre_discrepancies?: string` (libre, optionnel)
-
-- Migration SQL (légère) : ajouter ces 3 colonnes texte nullable à `real_estate_expertise_requests` et à la vue admin si besoin. Pas de RLS à changer.
-
-- Mémoire à mettre à jour : `mem/features/expertise-request/specifications-completes-fr.md` pour documenter la règle « ne jamais redemander une donnée présente dans `cadastral_parcels` ou `additional_constructions` ».
-
-## Hors scope (suggestions futures, à ne pas implémenter ici)
-
-- Permettre à l'expert, après validation, de pousser la « nouvelle construction » dans `additional_constructions` automatiquement.
-- Étendre la même logique au formulaire de mutation et au permis de construire.
+- Charger la carte cadastrale → ouvrir une parcelle → "Taxes foncières".
+- Vérifier en 360 px que les 2 onglets racine sont lisibles sans troncature.
+- Vérifier que le passage Déclarer ↔ Ajouter conserve un état propre (re-mount via `key`).
+- Vérifier que les sous-onglets Foncier/Bâtisse/Locatif fonctionnent comme avant.
