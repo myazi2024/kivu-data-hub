@@ -309,6 +309,12 @@ const AdminTestMode: React.FC = () => {
       {/* Guide */}
       <TestModeGuide />
 
+      {/* Visibilité opérationnelle */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <TestCleanupHistoryCard />
+        <TestCronStatusCard />
+      </div>
+
       {/* Dialogue de confirmation nettoyage à la désactivation */}
       <AlertDialog open={showCleanupDialog} onOpenChange={setShowCleanupDialog}>
         <AlertDialogContent>
