@@ -24,11 +24,11 @@ const TestCronStatusCard: React.FC = () => {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const { data, error } = await (supabase as any).rpc('get_cron_run_history', {
+    const { data, error } = await supabase.rpc('get_cron_run_history', {
       p_jobname: JOB_NAME,
       p_limit: 5,
     });
-    if (!error && Array.isArray(data)) setRuns(data as CronRun[]);
+    if (!error && Array.isArray(data)) setRuns(data as unknown as CronRun[]);
     setLoading(false);
   }, []);
 

@@ -1,36 +1,11 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { CLEANUP_STEPS } from "../_shared/cleanupSteps.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
 };
-
-const STEPS = [
-  "permit_payments",
-  "permit_admin_actions",
-  "fraud_attempts",
-  "contributor_codes",
-  "service_access",
-  "payment_transactions",
-  "invoices",
-  "contributions",
-  "mutation_requests",
-  "subdivision_requests",
-  "land_disputes",
-  "expertise_payments",
-  "expertise_requests",
-  "land_title_requests",
-  "ownership_history",
-  "tax_history",
-  "boundary_history",
-  "mortgage_payments",
-  "mortgages",
-  "building_permits",
-  "parcels",
-  "generated_certificates",
-  "boundary_conflicts",
-];
 
 const BATCH = 500;
 const MAX_ITERATIONS_PER_STEP = 200; // safety: 200 * 500 = 100k rows per step
@@ -77,10 +52,12 @@ Deno.serve(async (req) => {
     }
 
     const summary: Record<string, number> = {};
+    const truncated_steps: string[] = [];
     let total = 0;
 
-    for (const step of STEPS) {
+    for (const step of CLEANUP_STEPS) {
       let stepTotal = 0;
+      let stepTruncated = false;
       for (let i = 0; i < MAX_ITERATIONS_PER_STEP; i++) {
         const { data, error } = await admin.rpc(
           "_cleanup_test_data_chunk_internal",
@@ -96,14 +73,21 @@ Deno.serve(async (req) => {
             error: error.message,
             partial_summary: summary,
             partial_total: total,
+            truncated_steps,
           });
         }
         const deleted = (data as number) ?? 0;
         stepTotal += deleted;
         if (deleted === 0) break;
+        // Hit the safety ceiling while still receiving full batches → likely
+        // more rows remained that we did NOT delete this run.
+        if (i === MAX_ITERATIONS_PER_STEP - 1 && deleted === BATCH) {
+          stepTruncated = true;
+        }
       }
       summary[step] = stepTotal;
       total += stepTotal;
+      if (stepTruncated) truncated_steps.push(step);
     }
 
     // Audit log
@@ -111,10 +95,16 @@ Deno.serve(async (req) => {
       action: "MANUAL_TEST_DATA_CLEANUP_BATCHED",
       table_name: "cadastral_parcels",
       user_id: callerId,
-      new_values: { total_deleted: total, per_step: summary },
+      new_values: { total_deleted: total, per_step: summary, truncated_steps },
     });
 
-    return json({ ok: true, success: true, total_deleted: total, per_step: summary });
+    return json({
+      ok: true,
+      success: true,
+      total_deleted: total,
+      per_step: summary,
+      truncated_steps,
+    });
   } catch (e) {
     console.error("Unhandled error:", e);
     return json({ error: e instanceof Error ? e.message : String(e) }, 500);

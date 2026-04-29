@@ -29,12 +29,9 @@ const TestDryRunButton: React.FC<{ disabled?: boolean }> = ({ disabled }) => {
   const run = async () => {
     setBusy(true);
     try {
-      // RPC not yet in generated types — cast to any to avoid TS friction.
-      const { data, error } = await (supabase as unknown as {
-        rpc: (fn: string) => Promise<{ data: unknown; error: { message: string } | null }>;
-      }).rpc('count_test_data_to_cleanup');
+      const { data, error } = await supabase.rpc('count_test_data_to_cleanup');
       if (error) throw new Error(error.message);
-      const payload = (data ?? { per_step: {}, total: 0 }) as DryRunResult;
+      const payload = (data ?? { per_step: {}, total: 0 }) as unknown as DryRunResult;
       setResult(payload);
       setOpen(true);
       if (payload.partial) {

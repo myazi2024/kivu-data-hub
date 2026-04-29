@@ -5,7 +5,7 @@ import { Loader2, TestTube, AlertTriangle, BarChart3, Map as MapIcon } from 'luc
 import { useTestMode, TestModeConfig } from '@/hooks/useTestMode';
 import { useAuth } from '@/hooks/useAuth';
 import { upsertSearchConfig, logAuditAction } from '@/utils/supabaseConfigUtils';
-import { supabase } from '@/integrations/supabase/client';
+
 import { toast } from 'sonner';
 import { toRecord } from './test-mode/types';
 import { useTestDataStats } from './test-mode/useTestDataStats';
@@ -32,8 +32,6 @@ const AdminTestMode: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [showCleanupDialog, setShowCleanupDialog] = useState(false);
   const [showDisableConfirmDialog, setShowDisableConfirmDialog] = useState(false);
-  const [cleanupRunning, setCleanupRunning] = useState(false);
-  const [cleanupResult, setCleanupResult] = useState<{ perStep: Record<string, number>; failedStep: string | null } | null>(null);
   const { testMode: savedConfig, loading, isTestModeActive, refreshConfiguration } = useTestMode();
   const { user } = useAuth();
 
@@ -58,6 +56,9 @@ const AdminTestMode: React.FC = () => {
     regenerating,
     generationSteps,
     currentStep,
+    cleanupPerStep,
+    cleanupFailedStep,
+    cleanupTruncatedSteps,
     cleanupTestData,
     generateTestData,
     regenerateTestData,
@@ -140,7 +141,6 @@ const AdminTestMode: React.FC = () => {
 
   const handleDisableWithCleanup = async () => {
     setShowCleanupDialog(false);
-    // Small delay to let state update, then save
     const validatedConfig = {
       ...config,
       auto_cleanup: false,
@@ -148,37 +148,9 @@ const AdminTestMode: React.FC = () => {
     };
     try {
       setSaving(true);
-      setCleanupRunning(true);
-      setCleanupResult(null);
-      toast.info('Suppression des données test en cours…', {
-        description: 'Purge par lots — peut prendre quelques instants',
-      });
-      const { data: cleanupData, error: cleanupError } = await supabase.functions.invoke(
-        'cleanup-test-data-batch',
-      );
-      if (cleanupError) throw new Error(cleanupError.message);
-      const result = (cleanupData ?? {}) as {
-        ok?: boolean;
-        failed_step?: string;
-        error?: string;
-        total_deleted?: number;
-        partial_total?: number;
-        per_step?: Record<string, number>;
-        partial_summary?: Record<string, number>;
-      };
-      setCleanupResult({
-        perStep: result.per_step ?? result.partial_summary ?? {},
-        failedStep: result.failed_step ?? null,
-      });
-      if (result.ok === false) {
-        const partial = result.partial_total ?? 0;
-        throw new Error(
-          `Étape "${result.failed_step}" : ${result.error ?? 'erreur inconnue'} (${partial} déjà supprimés)`,
-        );
-      }
-      toast.success('Données test supprimées', {
-        description: `${result.total_deleted ?? 0} enregistrements supprimés`,
-      });
+      // Delegate purge to the hook so progress streams via cleanupPerStep /
+      // cleanupFailedStep / cleanupTruncatedSteps + CleanupProgress.
+      await cleanupTestData();
 
       const oldConfig = { ...savedConfig };
       await upsertSearchConfig('test_mode', toRecord(validatedConfig), "Configuration du mode test global pour l'admin");
@@ -192,7 +164,6 @@ const AdminTestMode: React.FC = () => {
       toast.error("Erreur lors de l'enregistrement", { description: message });
     } finally {
       setSaving(false);
-      setCleanupRunning(false);
     }
   };
 
@@ -284,11 +255,12 @@ const AdminTestMode: React.FC = () => {
         visible={generatingData}
       />
 
-      {/* Progression de la purge serveur */}
+      {/* Progression de la purge serveur — visible sur les 3 chemins */}
       <CleanupProgress
-        visible={cleanupRunning || cleanupResult !== null}
-        perStep={cleanupResult?.perStep ?? null}
-        failedStep={cleanupResult?.failedStep ?? null}
+        visible={cleaningUp || regenerating || cleanupPerStep !== null}
+        perStep={cleanupPerStep}
+        failedStep={cleanupFailedStep}
+        truncatedSteps={cleanupTruncatedSteps}
       />
 
       {/* Statistiques */}
