@@ -29,8 +29,8 @@ const TestCleanupHistoryCard: React.FC = () => {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const { data, error } = await (supabase as any).rpc('get_test_cleanup_history', { p_limit: 10 });
-    if (!error && Array.isArray(data)) setRows(data as HistoryRow[]);
+    const { data, error } = await supabase.rpc('get_test_cleanup_history', { p_limit: 10 });
+    if (!error && Array.isArray(data)) setRows(data as unknown as HistoryRow[]);
     setLoading(false);
   }, []);
 

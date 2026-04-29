@@ -34,13 +34,15 @@ const TestDataExportButton: React.FC<{ disabled?: boolean }> = ({ disabled }) =>
         let truncated = false;
         let lastError: string | null = null;
 
-        while (from < HARD_CAP) {
-          const to = Math.min(from + PAGE_SIZE - 1, HARD_CAP - 1);
+        // Loop until natural end (short batch) or we hit HARD_CAP.
+        while (allRows.length < HARD_CAP) {
+          const remaining = HARD_CAP - allRows.length;
+          const pageSize = Math.min(PAGE_SIZE, remaining);
           const { data, error } = await untypedTables
             .generic(entity.tableName)
             .select('*')
             .ilike(entity.markerColumn, entity.markerPattern)
-            .range(from, to);
+            .range(from, from + pageSize - 1);
 
           if (error) {
             lastError = error.message;
@@ -49,11 +51,14 @@ const TestDataExportButton: React.FC<{ disabled?: boolean }> = ({ disabled }) =>
           const batch = (data ?? []) as Record<string, unknown>[];
           allRows.push(...batch);
 
-          if (batch.length < PAGE_SIZE) break;
-          from += PAGE_SIZE;
-          if (from >= HARD_CAP && batch.length === PAGE_SIZE) {
+          if (batch.length < pageSize) break; // natural end of dataset
+          from += pageSize;
+
+          if (allRows.length >= HARD_CAP) {
+            // We filled the cap with full pages → there are likely more rows.
             truncated = true;
             truncatedEntities.push(entity.label);
+            break;
           }
         }
 
