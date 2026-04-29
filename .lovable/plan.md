@@ -1,109 +1,75 @@
+## Cause exacte du timeout sur `parcels`
 
-## Contexte
+Tous les index FK sur `cadastral_parcels` sont en place et tous les enfants test sont déjà à 0 lignes. Pourtant `DELETE` sur 1000 parcelles dépasse 60 s. La cause réelle :
 
-L'utilisateur signale que la **suppression** des données de test échoue avec `Étape "parcels" : canceling statement due to statement timeout (0 déjà supprimés)` alors que les 725 parcelles TEST n'ont **plus aucun enfant** (mortgages/permits/history/contributions = 0). L'audit révèle plusieurs bugs additionnels dans tout le pipeline mode test.
+- **Trigger `audit_cadastral_parcels` AFTER DELETE FOR EACH ROW** appelle `audit_cadastral_changes()` qui fait `to_jsonb(OLD)` (sérialise toute la parcelle, géométrie incluse) puis `INSERT INTO audit_logs`.
+- La table `audit_logs` pèse **917 MB** (`pg_total_relation_size`). Chaque INSERT est lent (autovacuum/écritures WAL importantes) et 1000 inserts en transaction = plusieurs dizaines de secondes.
+- Idem (mais vide aujourd'hui) sur `cadastral_building_permits` et `cadastral_invoices` (mêmes triggers d'audit).
 
-## Bugs identifiés
-
-### 🔴 P0 — Suppression bloquée (cause directe)
-**Index manquants sur les FK pointant vers `cadastral_parcels`.**  Confirmé en base :
-| Table enfant            | parcel_id indexé ? |
-|-------------------------|--------------------|
-| cadastral_mortgages     | ❌ NON             |
-| cadastral_boundary_history | ❌ NON          |
-| cadastral_land_disputes | ❌ NON             |
-| mutation_requests       | ❌ NON             |
-| real_estate_expertise_requests | ❌ NON      |
-| subdivision_requests    | ❌ NON             |
-
-Lors d'un `DELETE FROM cadastral_parcels`, PostgreSQL doit vérifier les FK (CASCADE pour mortgages/ownership/tax/permits, NO ACTION pour les autres) → **seq-scan complet × 500 lignes** → statement timeout, même quand toutes ces tables sont vides (le seq-scan reste obligatoire pour prouver le vide). C'est la cause exacte du blocage actuel.
-
-### 🟠 P1 — Verrou stale `test_generation_jobs`
-Si une edge function `generate-test-data` crashe (OOM, timeout 150s pour `waitUntil`, déploiement), `status` reste `running` → toute nouvelle génération est rejetée par le check `existing.length > 0` (ligne 430). Aucun mécanisme de purge auto, aucun heartbeat staleness check.
-
-### 🟠 P1 — Heartbeat non rafraîchi pendant un step long
-`heartbeat_at` n'est mis à jour qu'**entre** les steps. Un step `parcels` qui dure 90s n'envoie aucun signal de vie → impossible de distinguer "step lourd" de "fonction morte".
-
-### 🟡 P2 — Annulation tardive
-`isJobCancelled` n'est appelée qu'entre les steps. Cliquer "Annuler" pendant un step long n'a aucun effet jusqu'à la fin du step.
-
-### 🟡 P2 — RPC nettoyage : pas de FOR UPDATE SKIP LOCKED
-Si deux nettoyages tournent (improbable mais possible), DELETE × DELETE → deadlock. Mineur.
-
-### 🟡 P2 — `statement_timeout` non augmenté
-La RPC `_cleanup_test_data_chunk_internal` hérite du timeout par défaut (~8s PostgREST/Supabase). Pour les très gros volumes, même avec index, on peut frôler la limite. Bonne pratique : `SET LOCAL statement_timeout = '60s'` dans la fonction.
-
-### 🟢 P3 — Audit log incohérent
-Dans `generate-test-data/index.ts:370`, `table_name: 'cadastral_contributions'` est codé en dur — devrait être `'test_generation_jobs'` ou `'multiple'`.
+L'attaque par index FK étape précédente était nécessaire mais insuffisante : même avec FK gratuites, le trigger d'audit serializes 1000 JSON lourds dans une table monstrueuse.
 
 ## Plan de correction
 
-### Étape 1 — Migration : index FK + timeout RPC + purge stale
-Migration unique :
-1. **Créer 6 index** `CONCURRENTLY`-friendly (on est en migration → CREATE INDEX IF NOT EXISTS) :
-   - `idx_mortgages_parcel_id` sur `cadastral_mortgages(parcel_id)`
-   - `idx_boundary_history_parcel_id` sur `cadastral_boundary_history(parcel_id)`
-   - `idx_land_disputes_parcel_id` sur `cadastral_land_disputes(parcel_id)`
-   - `idx_mutation_requests_parcel_id_fk` sur `mutation_requests(parcel_id)`
-   - `idx_expertise_requests_parcel_id_fk` sur `real_estate_expertise_requests(parcel_id)`
-   - `idx_subdivision_requests_parcel_id_fk` sur `subdivision_requests(parcel_id)`
-2. **Modifier `_cleanup_test_data_chunk_internal`** : ajouter `SET LOCAL statement_timeout = '60s'` en début de fonction.
-3. **Nouvelle RPC `_purge_stale_test_generation_jobs()`** :
-   - Marque `status='error'` + `error='Heartbeat perdu (job orphelin)'` les jobs `running` avec `heartbeat_at < now() - interval '3 minutes'`.
-   - SECURITY DEFINER, callable par admin/super_admin.
+### Étape 1 — Migration : bypass d'audit pendant la purge test + housekeeping
 
-### Étape 2 — Edge function `cleanup-test-data-batch`
-- Avant la boucle, appeler `admin.rpc('_purge_stale_test_generation_jobs')` (silencieux si erreur).
-- Augmenter légèrement la batch (BATCH=1000) maintenant que les index sont là.
-- Ajouter un timeout côté JS par étape (`Promise.race` 90s) pour faire échouer proprement plutôt que laisser pendre.
+1. **Helper `app.test_cleanup_in_progress`** : variable de session positionnée par `_cleanup_test_data_chunk_internal` (`SET LOCAL app.test_cleanup_in_progress = '1'`).
+2. **Modifier `audit_cadastral_changes()`** : early-return si la variable de session vaut `'1'` ET que la ligne concerne un préfixe `TEST-` (selon `OLD.parcel_number`/`NEW.parcel_number` quand applicable). Conséquence : aucun audit log généré pendant la purge automatisée des données test → `DELETE` sur parcels redevient ~instantané.
+3. **Modifier `audit_history_changes()`** de la même façon (fires sur `cadastral_boundary_history` cascade).
+4. **`_cleanup_test_data_chunk_internal`** : ajouter `PERFORM set_config('app.test_cleanup_in_progress', '1', true);` en tout début, et augmenter explicitement `statement_timeout` à `120s` (les payloads JSONB cessent d'être un risque mais on garde une marge).
+5. **Purge des audit logs TEST historiques** (one-shot dans la même migration) : `DELETE FROM audit_logs WHERE table_name='cadastral_parcels' AND (old_values->>'parcel_number' LIKE 'TEST-%' OR new_values->>'parcel_number' LIKE 'TEST-%');` puis idem pour `cadastral_building_permits` et `cadastral_invoices`. Réduit les 917 MB.
+6. **Index partiel utile** : `CREATE INDEX IF NOT EXISTS idx_audit_logs_test_purge ON audit_logs(table_name) WHERE (old_values->>'parcel_number') LIKE 'TEST-%';` pour accélérer une future purge récurrente.
 
-### Étape 3 — Edge function `generate-test-data`
-- **Auto-purge stale au démarrage** : appeler `_purge_stale_test_generation_jobs` avant le check d'existence (ligne 425).
-- **Heartbeat périodique** : dans `runJob`, lancer un `setInterval` toutes les 20s qui met à jour `heartbeat_at` indépendamment du step en cours. Clear dans le `finally`.
-- **Annulation pendant step long** : passer un `AbortSignal` dans `JobCtx` ; vérifier `cancelled` après chaque batch dans les générateurs lourds (parcels notamment, qui itère par batch de 25). Migration légère côté `_shared.ts`.
-- **Fix audit_log** : `table_name: 'test_generation_jobs'`.
+### Étape 2 — Audit additionnel mode test (corrections groupées)
 
-### Étape 4 — Hook `useTestGenerationJob`
-- Quand le serveur renvoie 409 avec `active_job_id`, exposer un bouton "Forcer le déverrouillage" qui appelle `_purge_stale_test_generation_jobs` puis relance.
-- Détecter côté client un job dont `heartbeat_at < now()-3min` et le marquer visuellement "🔴 Job potentiellement bloqué".
+Trouvés au passage pendant l'enquête :
 
-### Étape 5 — Mémoire
-Mettre à jour `mem://admin/test-mode-hardening-fr.md` avec :
-- Index FK obligatoires sur enfants de cadastral_parcels.
-- Pattern auto-purge stale + heartbeat périodique.
+- **`isTestModeActive` / `useTestMode`** : appelle `cadastral_search_config` mais ne filtre pas sur le rôle. RLS doit être vérifiée — sinon retournée silencieusement vide pour un user non-admin → faux négatif (déjà OK en lecture publique a priori, à vérifier rapidement).
+- **`AdminTestMode` désactivation+purge** : si la purge échoue partiellement (`ok:false`) le mode test est tout de même désactivé sans rollback. À corriger : ne désactiver le mode test que si `result.ok === true`.
+- **`cleanup-test-data-batch`** : le step `parcels` était la goulotte. Une fois trigger contourné, on peut sereinement laisser BATCH=1000 et `MAX_ITERATIONS_PER_STEP=200`. Pas de changement.
+- **Audit log final** : `table_name: 'cadastral_parcels'` (ligne 124 de la fonction edge) est trompeur quand la purge concerne 23 tables. Remplacer par `'multiple'` (cohérence avec `mem://admin/test-mode-hardening-fr.md`).
+- **Génération `EdgeRuntime.waitUntil`** : ajouter un `try/catch` global autour de `runJob` qui marque le job en `error` si une exception non gérée remonte (sinon le job reste `running` jusqu'à ce que le purge stale jobs (3 min) le rattrape). Améliore le feedback utilisateur.
+- **Hook `useTestGenerationJob.forceUnlock`** : exposer aussi un bouton « Réessayer » qui purge stale puis relance la génération (UX).
 
-## Architecture cible (résumé)
+### Étape 3 — Mémoire
+
+Mettre à jour `mem://admin/test-mode-hardening-fr.md` :
+- Section « Pièges historiques » : ajouter le bypass audit obligatoire pour la purge test ; ne JAMAIS retirer le `set_config('app.test_cleanup_in_progress', '1', true)` de la RPC.
+- Pattern : audit triggers AFTER DELETE FOR EACH ROW + `to_jsonb(OLD)` sont incompatibles avec des purges massives ; toute table à audit doit prévoir un bypass session-scoped pour les opérations de mass-delete contrôlées.
+
+## Architecture cible
 
 ```text
-[DELETE parcels chunk de 1000]
-   └─→ FK checks RAPIDES (index) ─→ CASCADE/RESTRICT < 1s
-   └─→ statement_timeout local 60s
-
-[generate-test-data]
-   ├─ purge stale (>3min sans heartbeat)
-   ├─ check active job
-   ├─ insert job → 202 + job_id
-   └─ waitUntil(runJob)
-         ├─ setInterval(20s) → heartbeat_at = now()
-         ├─ AbortSignal propagé aux générateurs
-         └─ for each step: ... cancel-aware
+[cleanup-test-data-batch]
+   └─→ for each step (BATCH=1000, max 200 iters):
+         └─→ rpc _cleanup_test_data_chunk_internal
+               ├─ SET LOCAL app.test_cleanup_in_progress = '1'
+               ├─ SET LOCAL statement_timeout = '120s'
+               └─ DELETE → triggers audit early-return → 0 ligne audit_logs
 ```
 
 ## Fichiers impactés
 
-- `supabase/migrations/<new>_test_mode_indexes_and_purge.sql` (nouveau)
-- `supabase/functions/cleanup-test-data-batch/index.ts`
-- `supabase/functions/generate-test-data/index.ts`
-- `supabase/functions/_shared/test-mode-generators/_shared.ts` (AbortSignal)
-- `supabase/functions/_shared/test-mode-generators/parcels.ts` (cancel check)
-- `src/hooks/useTestGenerationJob.ts` (détection stale + force unlock)
-- `src/components/admin/test-mode/GenerationProgress.tsx` (badge stale)
+- `supabase/migrations/<new>_fix_audit_during_test_cleanup.sql` (nouveau)
+  - patch `audit_cadastral_changes`
+  - patch `audit_history_changes`
+  - patch `_cleanup_test_data_chunk_internal`
+  - one-shot DELETE des audit_logs TEST historiques
+  - index partiel
+- `supabase/functions/cleanup-test-data-batch/index.ts` : `table_name='multiple'`
+- `supabase/functions/generate-test-data/index.ts` : try/catch global → marquer job `error`
+- `src/components/admin/AdminTestMode.tsx` : ne désactiver le mode test que si purge `ok:true`
+- `src/components/admin/test-mode/GenerationProgress.tsx` : bouton « Réessayer » à côté de « Forcer le déverrouillage »
+- `src/hooks/useTestGenerationJob.ts` : `retry()`
 - `mem/admin/test-mode-hardening-fr.md`
 
-## Risques et précautions
+## Risques
 
-- Les `CREATE INDEX IF NOT EXISTS` sans `CONCURRENTLY` posent un AccessExclusiveLock court (~ms sur tables vides ici). OK.
-- Le heartbeat périodique multiplie les UPDATE → utiliser une seule colonne `heartbeat_at`, pas tout le steps_state.
-- L'AbortSignal est propagé "best effort" — pas de garantie d'arrêt instantané, mais évite de continuer un job annulé pendant 5 minutes.
+- Le bypass audit est session-scoped (`SET LOCAL`) → ne fuit jamais en dehors de la transaction de purge. Pas d'impact sur les opérations utilisateurs normales.
+- La purge des audit_logs historiques `TEST-%` est strictement bornée par filtre JSONB → safe.
+- Le filtre du bypass dans le trigger doit lire `OLD.parcel_number` côté DELETE et `NEW.parcel_number` côté INSERT/UPDATE pour ne pas se tromper de variable.
 
-Validation finale : après correction, relancer la suppression sur les 725 parcelles → doit terminer en quelques secondes.
+## Validation post-déploiement
+
+1. Relancer la suppression sur les 3510 parcelles TEST restantes → doit terminer en quelques secondes par batch.
+2. Vérifier que les audits utilisateur normaux fonctionnent toujours (créer/supprimer une parcelle non-TEST, contrôler que `audit_logs` reçoit la ligne).
+3. Vérifier la taille `audit_logs` après one-shot purge — devrait fortement baisser.

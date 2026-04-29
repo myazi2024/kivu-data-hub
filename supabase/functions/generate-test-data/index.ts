@@ -471,14 +471,29 @@ Deno.serve(async (req) => {
       return json({ error: insertErr?.message ?? "Job insert failed" }, 500);
     }
 
-    // Fire and forget — keep running after responding
+    // Fire and forget — keep running after responding. Wrap in a catch so any
+    // synchronous throw in runJob startup is captured and the job row is
+    // explicitly marked as errored (otherwise the lock would only release via
+    // the 3-min stale-purge fallback).
+    const safeRun = runJob(job.id, callerId).catch(async (e) => {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error(`[generate-test-data] uncaught runJob error for ${job.id}:`, e);
+      try {
+        await admin
+          .from("test_generation_jobs")
+          .update({
+            status: "error",
+            error: `Uncaught: ${msg}`,
+            finished_at: new Date().toISOString(),
+          })
+          .eq("id", job.id);
+      } catch (updateErr) {
+        console.error("[generate-test-data] failed to mark job errored:", updateErr);
+      }
+    });
+
     if (EdgeRuntime?.waitUntil) {
-      EdgeRuntime.waitUntil(runJob(job.id, callerId));
-    } else {
-      // Fallback (dev) — still launch but the runtime may kill it
-      runJob(job.id, callerId).catch((e) =>
-        console.error("runJob error", e)
-      );
+      EdgeRuntime.waitUntil(safeRun);
     }
 
     return json({ ok: true, job_id: job.id }, 202);

@@ -38,8 +38,17 @@ type: feature
 - **Bouton « Forcer le déverrouillage »** côté UI : `useTestGenerationJob.forceUnlock()` invoque la RPC et reset le state. Bouton affiché dans `<GenerationProgress>` quand `isStale=true` (heartbeat client > 3 min).
 - **Audit log** : `table_name='test_generation_jobs'` (et non `cadastral_contributions` comme avant).
 
+### Bypass d'audit pendant la purge (avr. 2026 — passe G — CRITIQUE)
+- **Cause racine du timeout `parcels`** : trigger `audit_cadastral_parcels` AFTER DELETE FOR EACH ROW appelle `audit_cadastral_changes()` → `to_jsonb(OLD)` (parcelle entière, géométrie incluse) + INSERT dans `audit_logs` (917 MB). 1000 inserts JSONB lourds en transaction = timeout systématique, même avec FK indexées et enfants vides.
+- **Solution** : flag session-scoped `app.test_cleanup_in_progress = '1'` posé par `_cleanup_test_data_chunk_internal` via `set_config(..., true)` (LOCAL). Les fonctions `audit_cadastral_changes` et `audit_history_changes` testent ce flag en début et early-return (sans audit) UNIQUEMENT si la ligne concerne un `parcel_number LIKE 'TEST-%'` (pour `audit_cadastral_changes`) ou systématiquement pour `audit_history_changes` (les history rows sont cascadées et n'ont pas de parcel_number propre fiable).
+- **Statement timeout** porté à **120 s** dans `_cleanup_test_data_chunk_internal` (large marge maintenant que l'audit est court-circuité).
+- **NE JAMAIS** retirer `set_config('app.test_cleanup_in_progress', '1', true)` de la RPC : sans lui, la suppression repasse en timeout sur le step `parcels`.
+- **NE JAMAIS** appliquer le bypass à des opérations utilisateur (le `set_config` LOCAL ne fuit pas hors transaction — préserver ce confinement).
+- Toute future table à audit + future purge massive doit utiliser le même pattern session-flag.
+
 ### Pièges historiques
 - `generators/rollback.ts` supprimé (dead code, doublait la purge serveur sans FK-safety).
 - `useTestMode` lit `cadastral_search_config` (config_key=`test_mode`) — ne pas dupliquer ailleurs.
 - Pas de tests E2E vitest pour le mode test (pas de framework dans le projet) — les invariants tiennent via la registry serveur + la RPC dry-run.
 - Avant la passe D, `<CleanupProgress>` n'était visible QUE sur le chemin désactiver+purger ; les boutons « Nettoyer tout » et « Régénérer » n'avaient qu'un spinner. Corrigé en remontant l'état dans le hook.
+- Audit log post-purge : `table_name='multiple'` (la purge concerne 23 tables — `cadastral_parcels` était trompeur).

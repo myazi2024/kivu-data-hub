@@ -113,7 +113,7 @@ Deno.serve(async (req) => {
     // Audit log
     await admin.from("audit_logs").insert({
       action: "MANUAL_TEST_DATA_CLEANUP_BATCHED",
-      table_name: "cadastral_parcels",
+      table_name: "multiple",
       user_id: callerId,
       new_values: { total_deleted: total, per_step: summary, truncated_steps },
     });
