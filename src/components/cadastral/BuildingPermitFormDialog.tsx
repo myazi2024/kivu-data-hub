@@ -180,7 +180,7 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
       // Step 2: Upload file if present (AFTER duplicate check)
       if (permitRecord.permitFile) {
         const fileExt = permitRecord.permitFile.name.split('.').pop();
-        const fileName = `permit_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
+        const fileName = `permit_${Date.now()}_${crypto.randomUUID()}.${fileExt}`;
         uploadedFilePath = `permit-documents/${user.id}/${fileName}`;
         
         const { error: uploadError } = await supabase.storage
