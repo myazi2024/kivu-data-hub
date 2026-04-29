@@ -255,11 +255,12 @@ const AdminTestMode: React.FC = () => {
         visible={generatingData}
       />
 
-      {/* Progression de la purge serveur */}
+      {/* Progression de la purge serveur — visible sur les 3 chemins */}
       <CleanupProgress
-        visible={cleanupRunning || cleanupResult !== null}
-        perStep={cleanupResult?.perStep ?? null}
-        failedStep={cleanupResult?.failedStep ?? null}
+        visible={cleaningUp || regenerating || cleanupPerStep !== null}
+        perStep={cleanupPerStep}
+        failedStep={cleanupFailedStep}
+        truncatedSteps={cleanupTruncatedSteps}
       />
 
       {/* Statistiques */}
