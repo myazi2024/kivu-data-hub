@@ -66,12 +66,13 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
 
   const requestTypeLabel = form.requestType === 'new' ? 'Autorisation de bâtir' : 'Autorisation de régularisation';
 
-  // Check if form has meaningful data (for close confirmation - Fix #16)
+  // Check if form has meaningful data (for close confirmation)
   const hasUnsavedData = useCallback(() => {
     if (step === 'confirmation') return false;
     const fd = form.formData;
     return !!(fd.constructionType || fd.constructionNature || fd.declaredUsage ||
-      fd.plannedArea || fd.applicantName || fd.projectDescription);
+      fd.plannedArea || fd.applicantName || fd.projectDescription ||
+      fd.nif || fd.complianceIssues || fd.regularizationReason);
   }, [form.formData, step]);
 
   // ========== FILE UPLOAD ==========
