@@ -148,6 +148,8 @@ const AdminTestMode: React.FC = () => {
     };
     try {
       setSaving(true);
+      setCleanupRunning(true);
+      setCleanupResult(null);
       toast.info('Suppression des données test en cours…', {
         description: 'Purge par lots — peut prendre quelques instants',
       });
@@ -161,7 +163,13 @@ const AdminTestMode: React.FC = () => {
         error?: string;
         total_deleted?: number;
         partial_total?: number;
+        per_step?: Record<string, number>;
+        partial_summary?: Record<string, number>;
       };
+      setCleanupResult({
+        perStep: result.per_step ?? result.partial_summary ?? {},
+        failedStep: result.failed_step ?? null,
+      });
       if (result.ok === false) {
         const partial = result.partial_total ?? 0;
         throw new Error(
@@ -184,6 +192,7 @@ const AdminTestMode: React.FC = () => {
       toast.error("Erreur lors de l'enregistrement", { description: message });
     } finally {
       setSaving(false);
+      setCleanupRunning(false);
     }
   };
 
