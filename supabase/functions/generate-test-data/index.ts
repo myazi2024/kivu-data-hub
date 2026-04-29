@@ -437,6 +437,13 @@ Deno.serve(async (req) => {
       return json({ error: "Forbidden: admin role required" }, 403);
     }
 
+    // Auto-purge stale jobs (heartbeat > 3min) before checking lock
+    try {
+      await admin.rpc("_purge_stale_test_generation_jobs");
+    } catch (e) {
+      console.warn("stale purge failed (non-blocking):", e);
+    }
+
     // Reject if a job is already active
     const { data: existing } = await admin
       .from("test_generation_jobs")
