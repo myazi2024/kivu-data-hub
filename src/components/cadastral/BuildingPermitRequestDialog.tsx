@@ -81,7 +81,8 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
     for (const [key, attachment] of Object.entries(form.attachments)) {
       if (!attachment) continue;
       const fileExt = attachment.file.name.split('.').pop();
-      const fileName = `permit_req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
+      // Project standard: use crypto.randomUUID() for secure unique filenames
+      const fileName = `permit_req_${Date.now()}_${crypto.randomUUID()}.${fileExt}`;
       const filePath = `permit-requests/${user.id}/${fileName}`;
       const { error: uploadError } = await supabase.storage.from('cadastral-documents').upload(filePath, attachment.file);
       if (uploadError) throw new Error(`Échec upload ${attachment.label}: ${uploadError.message}`);
