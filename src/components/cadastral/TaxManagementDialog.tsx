@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Receipt, Calculator, Plus, DollarSign, Building2 } from 'lucide-react';
+import { Receipt, Calculator, Plus, DollarSign, Building2, FileText } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import FormIntroDialog, { FORM_INTRO_CONFIGS } from './FormIntroDialog';
 import TaxFormDialog from './TaxFormDialog';
@@ -19,19 +19,22 @@ interface TaxManagementDialogProps {
   onOpenServiceCatalog?: () => void;
 }
 
-type ActiveTab = 'foncier' | 'batisse' | 'irl' | 'add';
+type RootTab = 'declare' | 'add';
+type DeclareSubTab = 'foncier' | 'batisse' | 'irl';
 
 const TaxManagementDialog: React.FC<TaxManagementDialogProps> = ({
   parcelNumber, parcelId, parcelData, open, onOpenChange, onOpenServiceCatalog
 }) => {
   const isMobile = useIsMobile();
   const [showIntro, setShowIntro] = useState(true);
-  const [activeTab, setActiveTab] = useState<ActiveTab>('foncier');
+  const [rootTab, setRootTab] = useState<RootTab>('declare');
+  const [declareSubTab, setDeclareSubTab] = useState<DeclareSubTab>('foncier');
 
   useEffect(() => {
     if (open) {
       setShowIntro(true);
-      setActiveTab('foncier');
+      setRootTab('declare');
+      setDeclareSubTab('foncier');
     }
   }, [open]);
 
@@ -70,50 +73,64 @@ const TaxManagementDialog: React.FC<TaxManagementDialogProps> = ({
             Parcelle: {parcelNumber}
           </DialogDescription>
 
-          {/* Tab buttons */}
-          <div className="flex gap-1 mt-3">
+          {/* Niveau 1 : Onglets racine */}
+          <div className="flex gap-1.5 mt-3">
             <Button
-              variant={activeTab === 'foncier' ? 'default' : 'outline'}
+              variant={rootTab === 'declare' ? 'default' : 'outline'}
               size="sm"
-              onClick={() => setActiveTab('foncier')}
-              className={`flex-1 h-8 rounded-xl text-[10px] gap-0.5 px-1.5 ${activeTab === 'foncier' ? 'bg-primary text-primary-foreground' : ''}`}
+              onClick={() => setRootTab('declare')}
+              className={`flex-1 h-9 rounded-xl text-xs gap-1.5 ${rootTab === 'declare' ? 'bg-primary text-primary-foreground' : ''}`}
             >
-              <Calculator className="h-3 w-3 flex-shrink-0" />
-              <span className="truncate">Foncier</span>
+              <FileText className="h-3.5 w-3.5 flex-shrink-0" />
+              <span className="truncate">Déclarer un impôt</span>
             </Button>
             <Button
-              variant={activeTab === 'batisse' ? 'default' : 'outline'}
+              variant={rootTab === 'add' ? 'default' : 'outline'}
               size="sm"
-              onClick={() => setActiveTab('batisse')}
-              className={`flex-1 h-8 rounded-xl text-[10px] gap-0.5 px-1.5 ${activeTab === 'batisse' ? 'bg-amber-600 text-white hover:bg-amber-700' : ''}`}
+              onClick={() => setRootTab('add')}
+              className={`flex-1 h-9 rounded-xl text-xs gap-1.5 ${rootTab === 'add' ? 'bg-primary text-primary-foreground' : ''}`}
             >
-              <Building2 className="h-3 w-3 flex-shrink-0" />
-              <span className="truncate">Bâtisse</span>
-            </Button>
-            <Button
-              variant={activeTab === 'irl' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setActiveTab('irl')}
-              className={`flex-1 h-8 rounded-xl text-[10px] gap-0.5 px-1.5 ${activeTab === 'irl' ? 'bg-primary text-primary-foreground' : ''}`}
-            >
-              <DollarSign className="h-3 w-3 flex-shrink-0" />
-              <span className="truncate">Locatif</span>
-            </Button>
-            <Button
-              variant={activeTab === 'add' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setActiveTab('add')}
-              className={`flex-1 h-8 rounded-xl text-[10px] gap-0.5 px-1.5 ${activeTab === 'add' ? 'bg-primary text-primary-foreground' : ''}`}
-            >
-              <Plus className="h-3 w-3 flex-shrink-0" />
-              <span className="truncate">Ajouter</span>
+              <Plus className="h-3.5 w-3.5 flex-shrink-0" />
+              <span className="truncate">Ajouter un paiement</span>
             </Button>
           </div>
+
+          {/* Niveau 2 : Sous-onglets de déclaration */}
+          {rootTab === 'declare' && (
+            <div className="flex gap-1 mt-2">
+              <Button
+                variant={declareSubTab === 'foncier' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setDeclareSubTab('foncier')}
+                className={`flex-1 h-8 rounded-xl text-[11px] gap-1 px-2 ${declareSubTab === 'foncier' ? 'bg-primary text-primary-foreground' : ''}`}
+              >
+                <Calculator className="h-3 w-3 flex-shrink-0" />
+                <span className="truncate">Foncier</span>
+              </Button>
+              <Button
+                variant={declareSubTab === 'batisse' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setDeclareSubTab('batisse')}
+                className={`flex-1 h-8 rounded-xl text-[11px] gap-1 px-2 ${declareSubTab === 'batisse' ? 'bg-amber-600 text-white hover:bg-amber-700' : ''}`}
+              >
+                <Building2 className="h-3 w-3 flex-shrink-0" />
+                <span className="truncate">Bâtisse</span>
+              </Button>
+              <Button
+                variant={declareSubTab === 'irl' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setDeclareSubTab('irl')}
+                className={`flex-1 h-8 rounded-xl text-[11px] gap-1 px-2 ${declareSubTab === 'irl' ? 'bg-primary text-primary-foreground' : ''}`}
+              >
+                <DollarSign className="h-3 w-3 flex-shrink-0" />
+                <span className="truncate">Locatif</span>
+              </Button>
+            </div>
+          )}
         </DialogHeader>
 
-        <div className="overflow-y-auto flex-1 min-h-0" style={{ maxHeight: 'calc(85vh - 200px)' }}>
-          {/* key={activeTab} forces full re-mount on tab switch, preventing state bleeding */}
-          {activeTab === 'foncier' && (
+        <div className="overflow-y-auto flex-1 min-h-0" style={{ maxHeight: 'calc(85vh - 220px)' }}>
+          {rootTab === 'declare' && declareSubTab === 'foncier' && (
             <PropertyTaxCalculator
               key="foncier"
               parcelNumber={parcelNumber}
@@ -122,7 +139,7 @@ const TaxManagementDialog: React.FC<TaxManagementDialogProps> = ({
               onOpenServiceCatalog={onOpenServiceCatalog}
             />
           )}
-          {activeTab === 'batisse' && (
+          {rootTab === 'declare' && declareSubTab === 'batisse' && (
             <BuildingTaxCalculator
               key="batisse"
               parcelNumber={parcelNumber}
@@ -131,7 +148,7 @@ const TaxManagementDialog: React.FC<TaxManagementDialogProps> = ({
               onOpenServiceCatalog={onOpenServiceCatalog}
             />
           )}
-          {activeTab === 'irl' && (
+          {rootTab === 'declare' && declareSubTab === 'irl' && (
             <IRLCalculator
               key="irl"
               parcelNumber={parcelNumber}
@@ -140,7 +157,7 @@ const TaxManagementDialog: React.FC<TaxManagementDialogProps> = ({
               onOpenServiceCatalog={onOpenServiceCatalog}
             />
           )}
-          {activeTab === 'add' && (
+          {rootTab === 'add' && (
             <TaxFormDialog
               key="add"
               parcelNumber={parcelNumber}
