@@ -50,6 +50,15 @@ interface RealEstateExpertiseRequestDialogProps {
     floor_number?: string;
     property_category?: string;
     property_title_type?: string;
+    declared_usage?: string;
+    additional_constructions?: Array<{
+      type?: string;
+      usage?: string;
+      surface_sqm?: number;
+      nature?: string;
+      materials?: string;
+      year?: number;
+    }> | null;
   };
   trigger?: React.ReactNode;
   open?: boolean;
