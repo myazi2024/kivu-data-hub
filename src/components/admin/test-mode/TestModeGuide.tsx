@@ -1,16 +1,20 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ExternalLink, BarChart3, Map as MapIcon } from 'lucide-react';
 import { useTestMode } from '@/hooks/useTestMode';
+import { getExpectedTestDataCounts } from './generators/_shared';
+import { loadTestEntities, TEST_ENTITIES } from '@/constants/testEntities';
 
-const guidelines = [
+const fmt = (n: number) => n.toLocaleString('fr-FR');
+
+const buildGuidelines = (counts: ReturnType<typeof getExpectedTestDataCounts>, entityCount: number) => [
   <>Activez le <strong>mode test</strong> avant de tester les flux critiques (paiements, contributions, etc.)</>,
   <>Toutes les données créées en mode test auront le préfixe <strong>TEST-</strong> dans leur numéro de parcelle ou référence</>,
-  <>À l'activation, un <strong>jeu complet de données</strong> est généré automatiquement : ~3 510 parcelles (26 provinces × densité variable), ~3 510 contributions, ~1 170 factures, ~700 paiements, ~500 historiques propriété/taxes, ~350 autorisations, ~290 hypothèques, ~230 bornages, 52 litiges, 52 conflits, 52 certificats, 52 mutations, 26 lotissements</>,
+  <>À l'activation, un <strong>jeu complet de données</strong> est généré automatiquement : ~{fmt(counts.parcels)} parcelles ({counts.provinces} provinces × densité variable), ~{fmt(counts.contributions)} contributions, ~{fmt(counts.invoices)} factures, ~{fmt(counts.payments)} paiements, ~{fmt(counts.histories)} historiques propriété/taxes, ~{fmt(counts.permits)} autorisations, ~{fmt(counts.mortgages)} hypothèques, ~{fmt(counts.boundaries)} bornages, {counts.disputes} litiges, {counts.conflicts} conflits, {counts.certificates} certificats, {counts.mutations} mutations, {counts.subdivisions} lotissements</>,
   <>Le <strong>nettoyage manuel</strong> s'effectue via le bouton « Nettoyer tout » — purge par lots de 500 sur 23 étapes FK-safe (edge function <code>cleanup-test-data-batch</code>), évite les timeouts sur gros volumes.</>,
   <>Le <strong>nettoyage automatique</strong> est exécuté chaque jour à 03:00 UTC (cron <code>cleanup-test-data-daily-rpc</code>) lorsque l'option « Nettoyage automatique » est activée. Seules les données plus anciennes que la durée de rétention configurée sont supprimées.</>,
-  <>Utilisez <strong>"Nettoyer tout"</strong> pour purger immédiatement (respecte l'ordre FK via la RPC serveur)</>,
+  <>Utilisez <strong>"Nettoyer tout"</strong> pour purger immédiatement les <strong>{entityCount} entités suivies</strong> (respecte l'ordre FK via la RPC serveur)</>,
   <>Utilisez <strong>"Régénérer"</strong> pour supprimer et recréer un jeu de données test frais en une seule action</>,
   <><strong>Important :</strong> Les données test sont isolées dans l'environnement <code>/test/*</code> et sont exclues des analytics de production. Pour vérifier les visuels analytics, ouvrez <code>/test/map</code> (Données foncières test). La navigation reste dans l'environnement test automatiquement.</>,
 ];
