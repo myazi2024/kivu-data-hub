@@ -1,15 +1,21 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Download, Loader2 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
 import { untypedTables } from '@/integrations/supabase/untyped';
 import { loadTestEntities } from '@/constants/testEntities';
 import { toast } from 'sonner';
 
+const PAGE_SIZE = 1000;
+const HARD_CAP = 50_000; // safety net per entity
+
 /**
- * Pre-purge CSV export. Iterates over TEST_ENTITIES, dumps each table's
- * TEST- rows to a single CSV file (one section per entity) so admins keep
- * an audit trail before running "Nettoyer tout".
+ * Pre-purge CSV export — paginated.
+ *
+ * Iterates over TEST_ENTITIES and dumps each table's TEST- rows to a single
+ * CSV file (one section per entity). Pagination uses Supabase `.range()` so we
+ * never silently truncate at 1 000 rows; a hard cap of 50 000/entity protects
+ * against runaway pulls. If the cap is hit, the section header carries a
+ * warning and we surface a global toast.
  */
 const TestDataExportButton: React.FC<{ disabled?: boolean }> = ({ disabled }) => {
   const [busy, setBusy] = useState(false);
@@ -19,30 +25,55 @@ const TestDataExportButton: React.FC<{ disabled?: boolean }> = ({ disabled }) =>
     try {
       const sections: string[] = [];
       let totalRows = 0;
+      const truncatedEntities: string[] = [];
       const entities = await loadTestEntities();
 
       for (const entity of entities) {
-        const { data, error } = await untypedTables.generic(entity.tableName)
-          .select('*')
-          .ilike(entity.markerColumn, entity.markerPattern)
-          .limit(5000);
+        const allRows: Record<string, unknown>[] = [];
+        let from = 0;
+        let truncated = false;
+        let lastError: string | null = null;
 
-        if (error) {
-          sections.push(`# ${entity.label} (${entity.tableName}) — ERROR: ${error.message}\n`);
+        while (from < HARD_CAP) {
+          const to = Math.min(from + PAGE_SIZE - 1, HARD_CAP - 1);
+          const { data, error } = await untypedTables
+            .generic(entity.tableName)
+            .select('*')
+            .ilike(entity.markerColumn, entity.markerPattern)
+            .range(from, to);
+
+          if (error) {
+            lastError = error.message;
+            break;
+          }
+          const batch = (data ?? []) as Record<string, unknown>[];
+          allRows.push(...batch);
+
+          if (batch.length < PAGE_SIZE) break;
+          from += PAGE_SIZE;
+          if (from >= HARD_CAP && batch.length === PAGE_SIZE) {
+            truncated = true;
+            truncatedEntities.push(entity.label);
+          }
+        }
+
+        if (lastError) {
+          sections.push(`# ${entity.label} (${entity.tableName}) — ERROR: ${lastError}\n`);
           continue;
         }
-        const rows = (data ?? []) as Record<string, unknown>[];
-        totalRows += rows.length;
+        totalRows += allRows.length;
 
-        if (rows.length === 0) {
+        if (allRows.length === 0) {
           sections.push(`# ${entity.label} (${entity.tableName}) — 0 lignes\n`);
           continue;
         }
-        const headers = Object.keys(rows[0]);
+
+        const headers = Object.keys(allRows[0]);
+        const headerLine = `# ${entity.label} (${entity.tableName}) — ${allRows.length} lignes${truncated ? ` (TRONQUÉ à ${HARD_CAP})` : ''}`;
         const csv = [
-          `# ${entity.label} (${entity.tableName}) — ${rows.length} lignes`,
+          headerLine,
           headers.join(','),
-          ...rows.map(r => headers.map(h => csvCell(r[h])).join(',')),
+          ...allRows.map((r) => headers.map((h) => csvCell(r[h])).join(',')),
           '',
         ].join('\n');
         sections.push(csv);
@@ -56,7 +87,14 @@ const TestDataExportButton: React.FC<{ disabled?: boolean }> = ({ disabled }) =>
       a.click();
       URL.revokeObjectURL(url);
 
-      toast.success('Export CSV généré', { description: `${totalRows} lignes au total` });
+      if (truncatedEntities.length > 0) {
+        toast.warning('Export tronqué', {
+          description: `Plafond ${HARD_CAP} lignes atteint pour : ${truncatedEntities.join(', ')}`,
+          duration: 8000,
+        });
+      } else {
+        toast.success('Export CSV généré', { description: `${totalRows} lignes au total` });
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Erreur inconnue';
       toast.error("Échec de l'export CSV", { description: message });
