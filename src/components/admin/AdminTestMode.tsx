@@ -32,8 +32,6 @@ const AdminTestMode: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [showCleanupDialog, setShowCleanupDialog] = useState(false);
   const [showDisableConfirmDialog, setShowDisableConfirmDialog] = useState(false);
-  const [cleanupRunning, setCleanupRunning] = useState(false);
-  const [cleanupResult, setCleanupResult] = useState<{ perStep: Record<string, number>; failedStep: string | null } | null>(null);
   const { testMode: savedConfig, loading, isTestModeActive, refreshConfiguration } = useTestMode();
   const { user } = useAuth();
 
@@ -58,6 +56,9 @@ const AdminTestMode: React.FC = () => {
     regenerating,
     generationSteps,
     currentStep,
+    cleanupPerStep,
+    cleanupFailedStep,
+    cleanupTruncatedSteps,
     cleanupTestData,
     generateTestData,
     regenerateTestData,
