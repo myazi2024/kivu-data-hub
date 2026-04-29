@@ -63,6 +63,8 @@ const AdminTestMode: React.FC = () => {
     generateTestData,
     regenerateTestData,
     cancelGeneration,
+    isStaleJob,
+    forceUnlockJob,
   } = useTestDataActions({
     userId: user?.id,
     onComplete: refreshStats,
@@ -256,6 +258,8 @@ const AdminTestMode: React.FC = () => {
         visible={generatingData}
         onCancel={cancelGeneration}
         backgroundNotice
+        isStale={isStaleJob}
+        onForceUnlock={forceUnlockJob}
       />
 
       {/* Progression de la purge serveur — visible sur les 3 chemins */}

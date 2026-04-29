@@ -292,6 +292,20 @@ async function runJob(jobId: string, userId: string): Promise<void> {
     })
     .eq("id", jobId);
 
+  // Periodic heartbeat — proves the function is still alive even during a
+  // long-running step. Lets `_purge_stale_test_generation_jobs` distinguish
+  // a slow step from a dead worker.
+  const heartbeatInterval = setInterval(async () => {
+    try {
+      await admin
+        .from("test_generation_jobs")
+        .update({ heartbeat_at: new Date().toISOString() })
+        .eq("id", jobId);
+    } catch (e) {
+      console.warn(`[generate-test-data] heartbeat failed for ${jobId}:`, e);
+    }
+  }, 20_000);
+
   try {
     for (let i = 0; i < steps.length; i++) {
       if (await isJobCancelled(jobId)) {
@@ -367,7 +381,7 @@ async function runJob(jobId: string, userId: string): Promise<void> {
     await admin.from("audit_logs").insert({
       user_id: userId,
       action: "TEST_DATA_GENERATED",
-      table_name: "cadastral_contributions",
+      table_name: "test_generation_jobs",
       new_values: {
         contributions: ctx.contributions.length,
         invoices: ctx.invoices.length,
@@ -389,6 +403,8 @@ async function runJob(jobId: string, userId: string): Promise<void> {
         finished_at: new Date().toISOString(),
       })
       .eq("id", jobId);
+  } finally {
+    clearInterval(heartbeatInterval);
   }
 }
 
@@ -419,6 +435,13 @@ Deno.serve(async (req) => {
     if (rolesErr) return json({ error: "Role check failed" }, 500);
     if (!roles || roles.length === 0) {
       return json({ error: "Forbidden: admin role required" }, 403);
+    }
+
+    // Auto-purge stale jobs (heartbeat > 3min) before checking lock
+    try {
+      await admin.rpc("_purge_stale_test_generation_jobs");
+    } catch (e) {
+      console.warn("stale purge failed (non-blocking):", e);
     }
 
     // Reject if a job is already active

@@ -1,5 +1,5 @@
 import React from 'react';
-import { CheckCircle2, Circle, Loader2, XCircle, Ban } from 'lucide-react';
+import { CheckCircle2, Circle, Loader2, XCircle, Ban, AlertTriangle, Unlock } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import type { GenerationStep } from './types';
@@ -12,6 +12,10 @@ interface GenerationProgressProps {
   onCancel?: () => void;
   /** Optional: shown above the progress bar to clarify the run is server-side */
   backgroundNotice?: boolean;
+  /** Optional: shown when the job heartbeat is older than 3 minutes */
+  isStale?: boolean;
+  /** Optional: callback to force unlock a stale/dead job */
+  onForceUnlock?: () => void;
 }
 
 const statusIcon: Record<GenerationStep['status'], React.ReactNode> = {
@@ -27,6 +31,8 @@ const GenerationProgress: React.FC<GenerationProgressProps> = ({
   visible,
   onCancel,
   backgroundNotice,
+  isStale,
+  onForceUnlock,
 }) => {
   if (!visible) return null;
 
@@ -52,7 +58,28 @@ const GenerationProgress: React.FC<GenerationProgressProps> = ({
           )}
         </div>
       </div>
-      {backgroundNotice && (
+      {isStale && (
+        <div className="flex items-start gap-2 p-2 rounded-md bg-destructive/10 border border-destructive/30">
+          <AlertTriangle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
+          <div className="flex-1 space-y-2">
+            <p className="text-xs text-destructive font-medium">
+              Job potentiellement bloqué — aucun signal de vie depuis plus de 3 minutes.
+            </p>
+            {onForceUnlock && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 px-2 text-xs"
+                onClick={onForceUnlock}
+              >
+                <Unlock className="h-3.5 w-3.5 mr-1" />
+                Forcer le déverrouillage
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
+      {backgroundNotice && !isStale && (
         <p className="text-xs text-muted-foreground">
           La génération continue côté serveur. Vous pouvez fermer cet onglet et revenir plus tard.
         </p>

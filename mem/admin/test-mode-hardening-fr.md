@@ -27,6 +27,17 @@ type: feature
 - **Visibilité opérationnelle** : `TestCleanupHistoryCard` (RPC `get_test_cleanup_history`, typée), `TestCronStatusCard` (RPC `get_cron_run_history`, typée), `CleanupProgress` (alimenté par `per_step` + `truncated_steps` de l'edge function — affiche un bandeau warning si plafond atteint).
 - **Export CSV** : `TestDataExportButton` paginé via `.range()` par paquets de 1 000 lignes, plafond hard `HARD_CAP=50_000` par entité. Détection de troncature : `truncated=true` quand `allRows.length >= HARD_CAP` après un batch plein (le bug pré-passe-D mettait `from >= HARD_CAP` après break, marqueur jamais déclenché). Header CSV marqué `(TRONQUÉ à 50000)` et toast warning listant les entités tronquées.
 
+### Performance suppression (avr. 2026 — passe F)
+- **Index FK obligatoires** sur tous les enfants de `cadastral_parcels` : `cadastral_mortgages`, `cadastral_boundary_history`, `cadastral_land_disputes`, `mutation_requests`, `real_estate_expertise_requests`, `subdivision_requests` (`parcel_id`). Sans ces index, `DELETE FROM cadastral_parcels` force PostgreSQL à seq-scan ces enfants pour les vérifications FK (CASCADE et NO ACTION) → statement_timeout systématique au-delà de quelques centaines de lignes.
+- **`_cleanup_test_data_chunk_internal` doit setter `statement_timeout=60s`** via `set_config(..., true)` (LOCAL transaction) en début de fonction. Le défaut PostgREST (~8 s) est trop court pour les très gros lots.
+- **BATCH passé à 1000** côté `cleanup-test-data-batch` une fois les index en place. `Promise.race` avec timeout client 90 s par RPC pour ne pas pendre indéfiniment.
+
+### Heartbeat & jobs orphelins (avr. 2026 — passe F)
+- **Heartbeat périodique 20 s** : `runJob` ouvre un `setInterval` qui met à jour `heartbeat_at = now()` indépendamment des steps. Clear obligatoire dans `finally`.
+- **RPC `_purge_stale_test_generation_jobs()`** : marque en `error` les jobs `running`/`queued` dont `heartbeat_at < now() - interval '3 minutes'`. Appelée AVANT chaque vérification de verrou par `generate-test-data` ET `cleanup-test-data-batch` (best-effort, non-bloquant).
+- **Bouton « Forcer le déverrouillage »** côté UI : `useTestGenerationJob.forceUnlock()` invoque la RPC et reset le state. Bouton affiché dans `<GenerationProgress>` quand `isStale=true` (heartbeat client > 3 min).
+- **Audit log** : `table_name='test_generation_jobs'` (et non `cadastral_contributions` comme avant).
+
 ### Pièges historiques
 - `generators/rollback.ts` supprimé (dead code, doublait la purge serveur sans FK-safety).
 - `useTestMode` lit `cadastral_search_config` (config_key=`test_mode`) — ne pas dupliquer ailleurs.

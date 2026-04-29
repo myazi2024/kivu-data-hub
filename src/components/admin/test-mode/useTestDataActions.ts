@@ -38,7 +38,7 @@ export const useTestDataActions = ({ userId, onComplete }: UseTestDataActionsPro
   const [cleanupFailedStep, setCleanupFailedStep] = useState<string | null>(null);
   const [cleanupTruncatedSteps, setCleanupTruncatedSteps] = useState<string[]>([]);
 
-  const { job, isActive, startJob, cancelJob, clearJob } = useTestGenerationJob();
+  const { job, isActive, isStale, startJob, cancelJob, clearJob, forceUnlock } = useTestGenerationJob();
 
   // Map the server-side job to <GenerationProgress>'s expected shape
   const generationSteps: GenerationStep[] = useMemo(() => {
@@ -210,6 +210,17 @@ export const useTestDataActions = ({ userId, onComplete }: UseTestDataActionsPro
     }
   }, [userId, invokeCleanup, startJob, clearJob]);
 
+  const handleForceUnlock = useCallback(async () => {
+    const result = await forceUnlock();
+    if (!result.ok) {
+      toast.error('Déverrouillage impossible', { description: result.error });
+      return;
+    }
+    toast.success('Verrou levé', {
+      description: `${result.purged ?? 0} job(s) orphelin(s) marqué(s) en erreur. Vous pouvez relancer.`,
+    });
+  }, [forceUnlock]);
+
   return {
     cleaningUp,
     generatingData,
@@ -224,5 +235,7 @@ export const useTestDataActions = ({ userId, onComplete }: UseTestDataActionsPro
     regenerateTestData,
     cancelGeneration: cancelJob,
     activeJob: job,
+    isStaleJob: isStale,
+    forceUnlockJob: handleForceUnlock,
   };
 };

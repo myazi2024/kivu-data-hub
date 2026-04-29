@@ -147,6 +147,21 @@ export function useTestGenerationJob(initialJobId?: string | null) {
     setJob(null);
   }, []);
 
+  const forceUnlock = useCallback(async (): Promise<{ ok: boolean; purged?: number; error?: string }> => {
+    const { data, error } = await supabase.rpc('_purge_stale_test_generation_jobs');
+    if (error) return { ok: false, error: error.message };
+    setJobId(null);
+    setJob(null);
+    return { ok: true, purged: (data as number) ?? 0 };
+  }, []);
+
+  // Detect a stale job from the client (heartbeat older than 3 minutes)
+  const isStale = !!job && !FINISHED.has(job.status) && (() => {
+    const hb = job.heartbeat_at ?? job.started_at ?? job.created_at;
+    if (!hb) return false;
+    return Date.now() - new Date(hb).getTime() > 3 * 60 * 1000;
+  })();
+
   return {
     jobId,
     job,
@@ -154,6 +169,8 @@ export function useTestGenerationJob(initialJobId?: string | null) {
     startJob,
     cancelJob,
     clearJob,
+    forceUnlock,
     isActive: !!job && !FINISHED.has(job.status),
+    isStale,
   };
 }
