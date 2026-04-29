@@ -21,6 +21,18 @@ const buildGuidelines = (counts: ReturnType<typeof getExpectedTestDataCounts>, e
 
 const TestModeGuide: React.FC = () => {
   const { isTestModeActive } = useTestMode();
+  const counts = getExpectedTestDataCounts();
+  const [entityCount, setEntityCount] = useState<number>(TEST_ENTITIES.length);
+
+  useEffect(() => {
+    let cancelled = false;
+    loadTestEntities()
+      .then((list) => { if (!cancelled) setEntityCount(list.length); })
+      .catch(() => { /* keep static fallback */ });
+    return () => { cancelled = true; };
+  }, []);
+
+  const guidelines = buildGuidelines(counts, entityCount);
 
   return (
     <Card>
