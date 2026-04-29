@@ -1,4 +1,6 @@
 export interface PermitFormData {
+  /** Target building reference: 'main' | 'extra-N' | 'new' */
+  constructionRef: string;
   constructionType: string;
   constructionNature: string;
   declaredUsage: string;
@@ -9,6 +11,8 @@ export interface PermitFormData {
   applicantPhone: string;
   applicantEmail: string;
   applicantAddress: string;
+  /** Numéro d'identification fiscale (optionnel mais recommandé) */
+  nif: string;
   projectDescription: string;
   startDate: string;
   estimatedDuration: string;
@@ -26,13 +30,31 @@ export interface PermitFormData {
 }
 
 export const INITIAL_FORM_DATA: PermitFormData = {
+  constructionRef: 'main',
   constructionType: '', constructionNature: '', declaredUsage: '', plannedArea: '',
   numberOfFloors: '1', estimatedCost: '', applicantName: '', applicantPhone: '',
-  applicantEmail: '', applicantAddress: '', projectDescription: '', startDate: '',
+  applicantEmail: '', applicantAddress: '', nif: '', projectDescription: '', startDate: '',
   estimatedDuration: '', constructionDate: '', currentState: '', complianceIssues: '',
   regularizationReason: '', originalPermitNumber: '', architectName: '', architectLicense: '',
   roofingType: '', numberOfRooms: '', waterSupply: '', electricitySupply: '',
 };
+
+/**
+ * Fields that are SAFE to persist in localStorage as part of the draft.
+ * PII (name, phone, email, address, NIF) is intentionally excluded — it will
+ * be re-prefilled from auth / parcel / taxpayer_identity at next session.
+ * This aligns with the project PII paid-access standard.
+ */
+export const DRAFT_SAFE_FIELDS: (keyof PermitFormData)[] = [
+  'constructionRef',
+  'constructionType', 'constructionNature', 'declaredUsage',
+  'plannedArea', 'numberOfFloors', 'estimatedCost',
+  'projectDescription', 'startDate', 'estimatedDuration',
+  'constructionDate', 'currentState', 'complianceIssues',
+  'regularizationReason', 'originalPermitNumber',
+  'architectName', 'architectLicense',
+  'roofingType', 'numberOfRooms', 'waterSupply', 'electricitySupply',
+];
 
 export interface AttachmentFile {
   file: File;
@@ -45,6 +67,13 @@ export interface FeeItem {
   amount_usd: number;
   description: string | null;
   is_mandatory: boolean;
+  // Progressive pricing dimensions (optional, added by P2 migration)
+  min_area_sqm?: number | null;
+  max_area_sqm?: number | null;
+  applicable_usages?: string[] | null;
+  applicable_natures?: string[] | null;
+  amount_per_sqm_usd?: number | null;
+  cap_amount_usd?: number | null;
 }
 
 export interface PaymentProvider {
@@ -84,4 +113,14 @@ export const isValidEmail = (email: string): boolean => {
 export const isValidPhone = (phone: string): boolean => {
   const digits = phone.replace(/\D/g, '');
   return digits.length >= 9 && digits.length <= 15;
+};
+
+/**
+ * Validate Congolese NIF (Numéro d'Identification Fiscale).
+ * Optional field — empty is valid. When provided, allows alphanumeric 6-20 chars.
+ */
+export const isValidNif = (nif: string): boolean => {
+  if (!nif) return true;
+  const trimmed = nif.trim().toUpperCase();
+  return /^[A-Z0-9-]{6,20}$/.test(trimmed);
 };
