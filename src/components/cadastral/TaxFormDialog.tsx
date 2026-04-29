@@ -22,6 +22,10 @@ interface TaxFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   embedded?: boolean;
+  /** P0+P1 alignment: tag the recorded payment with the targeted construction. */
+  constructionRef?: string;
+  /** P0+P1 alignment: shared taxpayer state (NIF / owner / ID) across sub-forms. */
+  taxpayer?: import('./tax-calculator/useSharedTaxpayer').SharedTaxpayer;
 }
 
 type Step = 'form' | 'preview' | 'confirmation';
@@ -31,6 +35,8 @@ interface TaxRecord {
   taxType: string;
   taxYear: string;
   taxAmount: string;
+  /** P1: partial payment support — remaining due after this payment (USD). */
+  remainingAmount: string;
   paymentStatus: string;
   paymentDate: string;
   receiptFile: File | null;
@@ -41,30 +47,45 @@ const TaxFormDialog: React.FC<TaxFormDialogProps> = ({
   parcelId,
   open,
   onOpenChange,
-  embedded = false
+  embedded = false,
+  constructionRef = 'main',
+  taxpayer,
 }) => {
   const isMobile = useIsMobile();
   const { user } = useAuth();
   const [showIntro, setShowIntro] = useState(!embedded);
   const [step, setStep] = useState<Step>('form');
   const [loading, setLoading] = useState(false);
-  
+
   const currentYear = new Date().getFullYear();
-  
+
   const [taxRecord, setTaxRecord] = useState<TaxRecord>({
-    nif: '',
+    nif: taxpayer?.nif || '',
     taxType: 'Impôt foncier annuel',
     taxYear: currentYear.toString(),
     taxAmount: '',
+    remainingAmount: '',
     paymentStatus: 'Payé',
     paymentDate: '',
     receiptFile: null
   });
 
+  // Keep NIF in sync with shared taxpayer state when injected.
+  useEffect(() => {
+    if (taxpayer?.nif && taxpayer.nif !== taxRecord.nif) {
+      setTaxRecord(prev => ({ ...prev, nif: taxpayer.nif }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [taxpayer?.nif]);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const updateTax = (field: keyof TaxRecord, value: string | File | null) => {
     setTaxRecord(prev => ({ ...prev, [field]: value }));
+    // Propagate NIF upward into shared taxpayer state so other sub-forms benefit.
+    if (field === 'nif' && taxpayer) {
+      taxpayer.setNif(typeof value === 'string' ? value : '');
+    }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
