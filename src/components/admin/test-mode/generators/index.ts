@@ -24,4 +24,3 @@ export {
   generateCertificates, generateMutationRequests, generateSubdivisionRequests,
 } from './certificatesAndRequests';
 export { generateSubdivisionLotsAndRoads } from './subdivisionDetails';
-export { rollbackTestData } from './rollback';

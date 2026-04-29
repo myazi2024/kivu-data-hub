@@ -189,6 +189,31 @@ export const PROVINCE_OFFSETS: number[] = [];
 }
 export const TOTAL_PARCELS = PROVINCE_OFFSETS[PROVINCE_OFFSETS.length - 1] + getParcelsForProvince(PROVINCES.length - 1);
 
+/**
+ * Estimated counts produced by a full `generateTestData()` run.
+ * Derived from `TOTAL_PARCELS` + heuristics matching the generators
+ * (≈1 contribution/parcel, ≈1/3 invoiced, ≈60 % of invoices paid).
+ * Update only if the generators ratios change.
+ */
+export function getExpectedTestDataCounts() {
+  const parcels = TOTAL_PARCELS;
+  return {
+    parcels,
+    contributions: parcels,
+    invoices: Math.round(parcels / 3),
+    payments: Math.round((parcels / 3) * 0.6),
+    histories: Math.round(parcels * 0.14),
+    permits: Math.round(parcels * 0.10),
+    mortgages: Math.round(parcels * 0.08),
+    boundaries: Math.round(parcels * 0.07),
+    disputes: PROVINCES.length * 2,
+    conflicts: PROVINCES.length * 2,
+    certificates: PROVINCES.length * 2,
+    mutations: PROVINCES.length * 2,
+    subdivisions: PROVINCES.length,
+    provinces: PROVINCES.length,
+  };
+}
 export function getProvinceInfo(globalIdx: number): { pIdx: number; localIdx: number; count: number } {
   for (let p = PROVINCES.length - 1; p >= 0; p--) {
     if (globalIdx >= PROVINCE_OFFSETS[p]) {

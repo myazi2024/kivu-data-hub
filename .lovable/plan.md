@@ -1,59 +1,76 @@
-## Problème
+## Audit du Mode Test admin
 
-Quand l'utilisateur sélectionne une zone (un lot tracé) et la convertit en **Voie** via le bouton "Voie" du panneau latéral, la largeur résultante est forcée à `roadPresetWidth` (préréglage global de la barre d'outils, par défaut 6 m). On demande ensuite à l'utilisateur de "Réglez ci-dessous sa largeur" — alors que cette largeur est mécaniquement définie par la géométrie qu'il vient de tracer (aire ÷ longueur ≈ largeur du couloir).
+Périmètre audité : page `AdminTestMode`, hooks (`useTestMode`, `useTestDataActions`, `useTestDataStats`), générateurs (`/test-mode/generators/*`, 14 modules), edge function `cleanup-test-data-batch`, cron `cleanup-test-data-daily-rpc`, garde-fous DB (registry, RPC stats, trigger anti-prod), bandeaux UI (`TestEnvironmentBanner`, `TestEmptyStateBanner`, `TestModeBanner` financier), filtres analytics (`useTestEnvironment.applyTestFilter`, toggle `excludeTest` du dashboard).
 
-## Comportement cible
+### Ce qui est solide
 
-Lors d'une conversion **lot → voie** :
+- **Architecture serveur correcte** : RPC `count_test_data_stats` (évite les 20 requêtes frontend), `_cleanup_test_data_chunk_internal` (purge FK-safe par lots de 500 × 23 étapes), `cleanup_all_test_data_auto` planifiée 03:00 UTC, registry `test_entities_registry` versionné en DB.
+- **Sécurité d'accès** : edge function `cleanup-test-data-batch` valide le JWT + rôle `admin`/`super_admin`. RPC stats renvoie P0001 sur non-admin (géré côté UI).
+- **UX de désactivation** : `AdminTestMode` intercepte la désactivation, propose 3 chemins (annuler / désactiver seul / désactiver + purger) ; alerte secondaire si aucune donnée test.
+- **Anti-doublon génération** : guard `count('TEST-%')` avant `generateTestData`.
+- **Audit trail** : `TEST_MODE_ENABLED/DISABLED`, `TEST_DATA_GENERATED`, `MANUAL_TEST_DATA_CLEANUP_BATCHED` loggués dans `audit_logs`.
+- **Isolation environnement** : routes `/test/*` filtrent via `applyTestFilter`, dashboard admin a un toggle `Exclure tests`, bandeau financier alerte si >50 % de factures TEST.
+- **Cron alert** : `system-alerts-check` lève `test_mode_long` si actif > 24 h.
 
-1. Calculer la centerline du polygone (déjà fait via `polygonToCenterline` dans `convertZoneType.ts`).
-2. Calculer la **longueur réelle** de cette centerline en mètres (via `MetricFrame`).
-3. Calculer l'**aire réelle** du polygone en mètres² (déjà fait via `polygonAreaSqmAccurate`).
-4. En déduire **largeur ≈ aire / longueur**, arrondie à 0,5 m près, bornée à [2 m, 30 m] (mêmes bornes que le slider).
-5. Affecter cette largeur à la voie créée — au lieu de la valeur du préréglage.
+### Écarts & risques identifiés
 
-Le préréglage `roadPresetWidth` reste utilisé uniquement pour les voies tracées **directement à la main** (mode "Tracer voie"), où la géométrie est une polyligne sans épaisseur déclarée.
+#### P0 — incohérences fonctionnelles
 
-## UI
+1. **Étiquette « 20 entités » obsolète** dans `TestDataStatsCard` : la registry réelle compte 14 entités actives (6 désactivées en migration `20260422093055`). La phrase « 20 entités » dans le dialogue de purge induit en erreur.
+2. **Désynchro Guide ↔ générateurs** : le `TestModeGuide` annonce `~3 510 parcelles, ~1 170 factures, ~700 paiements…` — chiffres figés dans le texte alors que `BASE_PARCELS=10 × 351 multipliers = 3 510` est dérivable. Si un admin ajuste `BASE_PARCELS` ou les multipliers, le guide ment. À calculer dynamiquement (ou exposer via constante exportée).
+3. **`rollback.ts` mort-code** : importé nulle part (vérification `rg`). Le rollback réel passe désormais par l'edge function. Le fichier double la logique avec une version frontend non-FK-safe (risque si quelqu'un l'invoque par erreur). À supprimer ou marquer `@deprecated`.
 
-Dans le panneau d'édition de voie (`StepLotDesigner.tsx` lignes 1175-1218) :
+#### P1 — robustesse & visibilité
 
-- Remplacer le texte **"Réglez ci-dessous sa largeur et son revêtement…"** par : "Largeur déduite automatiquement de la géométrie tracée. Vous pouvez l'ajuster manuellement si besoin."
-- Ajouter un petit bouton **"Recalculer depuis la géométrie"** à côté du label "Largeur" qui relance le calcul à partir du polygone source (utile si l'utilisateur a édité les sommets).
-- Afficher un badge discret "auto" tant que la largeur n'a pas été modifiée à la main.
+4. **Pas de feedback de purge en cours côté `handleDisableWithCleanup`** : on déclenche la purge sans `GenerationProgress`-équivalent. Sur 23 étapes × jusqu'à 100 k lignes, l'utilisateur voit juste un toast `info` puis attend. Ajouter une barre de progression streaming (ou au minimum afficher le `summary.per_step` en fin d'opération).
+5. **Aucune visibilité sur l'historique de purge** : `audit_logs` contient `MANUAL_TEST_DATA_CLEANUP_BATCHED` mais aucune carte « Dernier nettoyage : X enregistrements, il y a 2 j » dans `AdminTestMode`. Utile pour répondre à « ai-je purgé avant la mise en prod ? ».
+6. **Cron `cleanup-test-data-daily-rpc` opaque** : pas de panneau « Prochain run / Dernier run / Résultat ». Ajouter une carte lisant `cron.job_run_details` filtrée par `jobname='cleanup-test-data-daily-rpc'`.
+7. **Bandeau financier seuil arbitraire** : `TestModeBanner` se déclenche à ≥ 50 % et ≥ 20 factures, hardcodé. À sortir dans `system_settings` (`test_mode_billing_alert_pct`, `test_mode_billing_min_volume`).
+8. **`TestEnvironmentBanner` discret au point d'être invisible** sur fond clair (10 px, opacity 60). Sur une démo en plein écran, un admin peut ne pas réaliser qu'il est sur `/test/*`. Renforcer (badge top-right, bg amber subtil).
 
-## Détails techniques
+#### P2 — qualité & dette
 
-**Fichier `src/components/cadastral/subdivision/utils/convertZoneType.ts`** :
+9. **`useTestDataActions.ts` = 416 LOC monolithique** avec 14 étapes inline. Les libellés des étapes vivent dans le hook (`GENERATION_STEPS`) au lieu de la registry. Extraire un mapping `stepId → { label, generator }` + un orchestrateur générique réduirait à ~120 LOC.
+10. **`uniqueSuffix` reste long** (timestamp+5 chars) → références TEST très verbeuses (`TEST-MUT-...-MFXY12K3-AB12C`). Acceptable mais nuit à la lecture des logs.
+11. **Pas de dry-run** : impossible de simuler une purge avant de la lancer (uniquement export CSV pré-purge). Une RPC `count_test_data_to_cleanup()` qui renverrait `per_step` sans supprimer aiderait avant la mise en prod.
+12. **`TestDataExportButton` limite à 5 000 lignes/table** — silencieusement tronqué sur les parcelles (3 510 OK aujourd'hui, mais si on monte les multipliers on perd des données dans l'export d'audit). Pagination ou warning explicite.
+13. **`useTestMode` réplique partiellement** la lecture de `cadastral_search_config` que `verifyTestModeEnabled` refait — mutualiser via une seule source.
+14. **Pas de test d'intégration E2E** vérifiant qu'un parcours « activer → générer → naviguer → désactiver+purger » termine à 0 enregistrement TEST.
 
-- Ajouter une fonction `inferRoadWidthFromPolygon(vertices, frame)` :
-  ```ts
-  // largeur ≈ aire / longueur centerline, snap 0.5 m, clamp [2, 30]
-  const areaM2 = polygonAreaSqmAccurate(vertices, frame);
-  const center = polygonToCenterline(vertices);
-  const lenM = edgeLengthM(center[0], center[1], frame);
-  const w = lenM > 0 ? areaM2 / lenM : 6;
-  return Math.min(30, Math.max(2, Math.round(w * 2) / 2));
-  ```
-- Dans `convertZoneType(..., 'road', ctx)` : si `source.lot` (donc on convertit un polygone) **et** `ctx.metricFrame` est fourni, utiliser `inferRoadWidthFromPolygon(polygon, ctx.metricFrame)` au lieu de `widthM` du contexte. Sinon garder le fallback actuel (`ctx.defaultRoadWidthM ?? 6`).
+### Plan d'action recommandé
 
-**Fichier `StepLotDesigner.tsx`** :
+Je propose d'attaquer en 2 passes (votre validation requise avant chaque):
 
-- `handleConvertSelectedZone` n'a rien à changer (la nouvelle largeur sort de `convertZoneType`).
-- Adapter le texte d'aide (ligne ~1182).
-- Ajouter le bouton "Recalculer" qui appelle `inferRoadWidthFromPolygon` sur le polygone reconstruit depuis la centerline + largeur courante (ou mémoriser le polygone source). Plus simple : exposer la fonction et la rappeler sur le polygone régénéré via `centerlineToPolygon(road.path, currentWidthNorm)` — mais ce serait circulaire. Solution propre : **stocker le polygone source** dans le champ `road.sourcePolygon?: Point2D[]` lors de la conversion, pour permettre un recalcul fiable. (Optionnel, peut être différé si l'on ne veut pas toucher au type.)
+**Passe A — corrections rapides (P0 + bandeau P1.8)**
+- Supprimer `rollback.ts` et son barrel export.
+- Calculer dynamiquement les chiffres du guide depuis `TOTAL_PARCELS` + un helper `getActiveTestEntities().length`.
+- Remplacer « 20 entités » par `${entities.length} entités` dans le dialogue de purge.
+- Renforcer `TestEnvironmentBanner` (taille + couleur amber).
 
-**Fallback minimal sans changer le type `SubdivisionRoad`** : ne pas ajouter le bouton "Recalculer" — la largeur est calculée une fois à la conversion, modifiable ensuite via slider. C'est ce que je recommande pour cette première passe.
+**Passe B — visibilité opérationnelle (P1.4 → P1.7)**
+- Carte « Historique des purges » (lecture `audit_logs` action LIKE `%TEST_DATA_CLEANUP%`, top 5).
+- Carte « Cron auto-cleanup » (lecture `cron.job_run_details` via une RPC SECURITY DEFINER).
+- Streaming des étapes durant la purge (réutiliser `GenerationProgress` paramétré avec les 23 étapes serveur, mises à jour via le `summary` final ou polling).
+- Externaliser les seuils du `TestModeBanner` financier dans `system_settings`.
 
-## Hors périmètre
+Les P2 (refactor `useTestDataActions`, dry-run, pagination export, E2E) sont à garder en réserve — pas de valeur immédiate, risque de régression sur module sensible.
 
-- Voies dessinées à la main (mode "Tracer voie") : conservent `roadPresetWidth` — l'utilisateur n'a pas tracé de polygone donc rien à inférer.
-- Espaces communs : pas de notion de largeur, aucun changement.
-- Édition ultérieure des sommets de la voie : la largeur reste libre (slider), pas de recalcul auto.
+### Détails techniques
 
-## Résumé des changements
+- **Fichiers principaux concernés** :
+  - `src/components/admin/AdminTestMode.tsx` (orchestrateur)
+  - `src/components/admin/test-mode/{TestDataStatsCard,TestModeGuide,TestModeConfigCard,GenerationProgress,TestDataExportButton}.tsx`
+  - `src/components/admin/test-mode/{useTestDataActions,useTestDataStats}.ts`
+  - `src/components/admin/test-mode/generators/{_shared,rollback,index}.ts`
+  - `src/components/{TestEnvironmentBanner,TestEmptyStateBanner}.tsx`, `src/components/admin/billing/TestModeBanner.tsx`
+  - `supabase/functions/cleanup-test-data-batch/index.ts`
+- **Migrations à créer (Passe B)** :
+  - RPC `get_test_cleanup_history(limit int)` (SECURITY DEFINER, lit `audit_logs` filtrés).
+  - RPC `get_cron_run_history(jobname text, limit int)` (SECURITY DEFINER, lit `cron.job_run_details`).
+  - Settings `system_settings`: `test_mode_billing_alert_pct` (default 0.5), `test_mode_billing_min_volume` (default 20).
 
-| Fichier | Changement |
-|---|---|
-| `utils/convertZoneType.ts` | Nouvelle fonction `inferRoadWidthFromPolygon` + utilisation dans le branchement `toType === 'road'` quand un `metricFrame` est dispo |
-| `steps/StepLotDesigner.tsx` | Mise à jour du texte d'aide du panneau voie pour refléter le calcul auto |
+### Quel mode souhaitez-vous lancer ?
+
+1. **Passe A seule** (rapide, ~15 min, zéro risque) — recommandé en priorité.
+2. **Passe A + Passe B** (visibilité opérationnelle complète, nouvelles RPC).
+3. **Tout, y compris P2** (refactor + dry-run + E2E) — plus ambitieux.
