@@ -4,10 +4,13 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import {
   PermitFormData, INITIAL_FORM_DATA, FeeItem,
-  AttachmentFile, INITIAL_ATTACHMENTS, isValidEmail, isValidPhone,
+  AttachmentFile, INITIAL_ATTACHMENTS, isValidEmail, isValidPhone, isValidNif,
+  DRAFT_SAFE_FIELDS,
 } from './types';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { buildKnownBuildingsForPermit, type PermitKnownBuilding } from './permitBuildings';
+import { computeFeeBreakdown } from './permitFeeCompute';
 
 const DRAFT_KEY = 'permit_request_draft';
 
@@ -17,6 +20,14 @@ interface UsePermitRequestFormOptions {
   parcelData?: any;
 }
 
+const sanitizeForDraft = (fd: PermitFormData): Partial<PermitFormData> => {
+  const out: Partial<PermitFormData> = {};
+  for (const k of DRAFT_SAFE_FIELDS) {
+    out[k] = fd[k] as any;
+  }
+  return out;
+};
+
 export const usePermitRequestForm = ({ parcelNumber, hasExistingConstruction, parcelData }: UsePermitRequestFormOptions) => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -25,7 +36,7 @@ export const usePermitRequestForm = ({ parcelNumber, hasExistingConstruction, pa
     hasExistingConstruction ? 'regularization' : 'new'
   );
 
-  // Fix #15: Track if draft was restored
+  // Track if draft was restored
   const draftRestoredRef = useRef(false);
   const [isDraftRestored, setIsDraftRestored] = useState(false);
 
@@ -34,17 +45,16 @@ export const usePermitRequestForm = ({ parcelNumber, hasExistingConstruction, pa
       const stored = localStorage.getItem(`${DRAFT_KEY}_${parcelNumber}`);
       if (stored) {
         draftRestoredRef.current = true;
-        return JSON.parse(stored) as PermitFormData;
+        const parsed = JSON.parse(stored) as Partial<PermitFormData>;
+        return { ...INITIAL_FORM_DATA, ...parsed };
       }
     } catch {}
     return { ...INITIAL_FORM_DATA };
   });
 
-  // Set isDraftRestored after mount
   useEffect(() => {
     if (draftRestoredRef.current) {
       setIsDraftRestored(true);
-      // Auto-dismiss after 4s
       const timer = setTimeout(() => setIsDraftRestored(false), 4000);
       return () => clearTimeout(timer);
     }
@@ -68,40 +78,82 @@ export const usePermitRequestForm = ({ parcelNumber, hasExistingConstruction, pa
     if (hasExistingConstruction) setRequestType('regularization');
   }, [hasExistingConstruction]);
 
-  // Auto-populate user info
-  useEffect(() => {
-    if (user) {
-      setFormData(prev => ({
-        ...prev,
-        applicantName: prev.applicantName || user.user_metadata?.full_name || '',
-        applicantPhone: prev.applicantPhone || user.user_metadata?.phone || '',
-        applicantEmail: prev.applicantEmail || user.email || '',
-      }));
-    }
-  }, [user]);
+  // ===== Known buildings (multi-construction support) =====
+  const knownBuildings = useMemo<PermitKnownBuilding[]>(
+    () => buildKnownBuildingsForPermit(parcelData),
+    [parcelData],
+  );
 
-  // Pre-fill from parcelData (CCC) — only once, skip if draft restored
-  const prefillDoneRef = useRef(false);
+  const selectedBuilding = useMemo<PermitKnownBuilding | null>(() => {
+    if (!formData.constructionRef || formData.constructionRef === 'new') return null;
+    return knownBuildings.find((b) => b.ref === formData.constructionRef) || null;
+  }, [formData.constructionRef, knownBuildings]);
+
+  // ===== Pre-fill applicant identity from auth + parcel + taxpayer_identity =====
+  const applicantPrefillRef = useRef(false);
   useEffect(() => {
-    if (!parcelData || prefillDoneRef.current || draftRestoredRef.current) return;
-    prefillDoneRef.current = true;
+    if (!user || applicantPrefillRef.current) return;
+    applicantPrefillRef.current = true;
+
+    const taxpayerIdentity = parcelData?.taxpayer_identity || {};
+    const ownerName = parcelData?.current_owner_name || taxpayerIdentity.full_name || '';
+    const taxpayerNif = taxpayerIdentity.nif || '';
+
     setFormData(prev => ({
       ...prev,
-      constructionType: prev.constructionType || parcelData.construction_type || '',
-      constructionNature: prev.constructionNature || parcelData.construction_nature || '',
-      declaredUsage: prev.declaredUsage || parcelData.declared_usage || '',
-      plannedArea: prev.plannedArea || (parcelData.area_sqm ? String(parcelData.area_sqm) : ''),
+      applicantName: prev.applicantName || ownerName || (user.user_metadata?.full_name as string) || '',
+      applicantPhone: prev.applicantPhone || (user.user_metadata?.phone as string) || '',
+      applicantEmail: prev.applicantEmail || user.email || '',
+      nif: prev.nif || taxpayerNif,
     }));
-  }, [parcelData]);
+  }, [user, parcelData]);
 
-  // Save draft to localStorage on form change
+  // ===== Pre-fill construction details from selected building =====
+  const buildingPrefillRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!selectedBuilding) return;
+    if (buildingPrefillRef.current === selectedBuilding.ref) return;
+    buildingPrefillRef.current = selectedBuilding.ref;
+
+    setFormData(prev => ({
+      ...prev,
+      constructionType: selectedBuilding.constructionType || prev.constructionType,
+      constructionNature: selectedBuilding.constructionNature || prev.constructionNature,
+      declaredUsage: selectedBuilding.declaredUsage || prev.declaredUsage,
+      plannedArea: selectedBuilding.areaSqm
+        ? String(selectedBuilding.areaSqm)
+        : prev.plannedArea,
+      constructionDate: selectedBuilding.constructionYear
+        ? `${selectedBuilding.constructionYear}-01-01`
+        : prev.constructionDate,
+    }));
+  }, [selectedBuilding]);
+
+  // Auto-select main building on first load if available and no constructionRef set yet
+  useEffect(() => {
+    if (knownBuildings.length === 0) {
+      // No buildings known: switch to "new" so user inputs everything manually
+      if (formData.constructionRef !== 'new') {
+        setFormData(prev => ({ ...prev, constructionRef: 'new' }));
+      }
+      return;
+    }
+    // If current ref is unknown, fall back to main (or first available)
+    const exists = knownBuildings.some(b => b.ref === formData.constructionRef);
+    if (!exists && formData.constructionRef !== 'new') {
+      setFormData(prev => ({ ...prev, constructionRef: knownBuildings[0].ref }));
+    }
+  }, [knownBuildings, formData.constructionRef]);
+
+  // ===== Save draft to localStorage on form change (PII-safe) =====
   useEffect(() => {
     try {
-      localStorage.setItem(`${DRAFT_KEY}_${parcelNumber}`, JSON.stringify(formData));
+      const safe = sanitizeForDraft(formData);
+      localStorage.setItem(`${DRAFT_KEY}_${parcelNumber}`, JSON.stringify(safe));
     } catch {}
   }, [formData, parcelNumber]);
 
-  // Load fees from permit_fees_config
+  // ===== Load fees from permit_fees_config (with new progressive columns) =====
   useEffect(() => {
     const loadFees = async () => {
       setFeesLoading(true);
@@ -117,7 +169,7 @@ export const usePermitRequestForm = ({ parcelNumber, hasExistingConstruction, pa
         if (error) throw error;
 
         if (data && data.length > 0) {
-          setDynamicFees(data as FeeItem[]);
+          setDynamicFees(data as unknown as FeeItem[]);
           setFeesSource('config');
         } else {
           setDynamicFees(fallbackFees);
@@ -133,31 +185,32 @@ export const usePermitRequestForm = ({ parcelNumber, hasExistingConstruction, pa
     loadFees();
   }, [requestType, fallbackFees]);
 
-  // Fix #6: Simplified handleInputChange — removed redundant date validation
-  // (Calendar component already handles disabled dates)
   const handleInputChange = useCallback((field: string, value: string) => {
-    // Fix #7: Clamp numeric fields to valid ranges
-    if (field === 'numberOfFloors') {
+    if (field === 'numberOfFloors' || field === 'estimatedDuration' || field === 'numberOfRooms') {
       const n = parseInt(value);
       if (value && (isNaN(n) || n < 1)) return;
     }
-    if (field === 'estimatedDuration') {
-      const n = parseInt(value);
-      if (value && (isNaN(n) || n < 1)) return;
-    }
-    if (field === 'numberOfRooms') {
-      const n = parseInt(value);
-      if (value && (isNaN(n) || n < 1)) return;
-    }
-    if (field === 'plannedArea') {
+    if (field === 'plannedArea' || field === 'estimatedCost') {
       const n = parseFloat(value);
       if (value && (isNaN(n) || n < 0)) return;
     }
-    if (field === 'estimatedCost') {
-      const n = parseFloat(value);
-      if (value && (isNaN(n) || n < 0)) return;
-    }
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData(prev => {
+      const next: PermitFormData = { ...prev, [field]: value } as PermitFormData;
+      // Cascade reset for CCC picklist consistency
+      if (field === 'constructionType') {
+        next.constructionNature = '';
+        next.declaredUsage = '';
+      } else if (field === 'constructionNature') {
+        next.declaredUsage = '';
+      }
+      return next;
+    });
+  }, []);
+
+  const setConstructionRef = useCallback((ref: string) => {
+    setFormData(prev => ({ ...prev, constructionRef: ref }));
+    // Reset prefill ref so the building data re-applies for the newly selected ref
+    if (ref === 'new') buildingPrefillRef.current = null;
   }, []);
 
   const requiresOriginalPermit = useCallback(() => {
@@ -165,15 +218,33 @@ export const usePermitRequestForm = ({ parcelNumber, hasExistingConstruction, pa
       .includes(formData.regularizationReason);
   }, [formData.regularizationReason]);
 
-  const totalFeeUSD = useMemo(() => dynamicFees.reduce((sum, fee) => sum + fee.amount_usd, 0), [dynamicFees]);
+  // ===== Progressive fee computation (P2) =====
+  const feeContext = useMemo(() => ({
+    area: parseFloat(formData.plannedArea) || 0,
+    declaredUsage: formData.declaredUsage || undefined,
+    constructionNature: formData.constructionNature || undefined,
+  }), [formData.plannedArea, formData.declaredUsage, formData.constructionNature]);
 
-  const feeBreakdown = useMemo(() => dynamicFees.map(fee => ({
-    label: fee.fee_name,
-    amount: fee.amount_usd,
-    detail: fee.description || undefined,
-  })), [dynamicFees]);
+  const { breakdown: feeBreakdown, total: totalFeeUSD } = useMemo(
+    () => computeFeeBreakdown(dynamicFees, feeContext),
+    [dynamicFees, feeContext],
+  );
 
-  // Fix #8: Added minimum length validation for name and description
+  // ===== Surface coherence vs parcel =====
+  const parcelAreaSqm = Number(parcelData?.area_sqm) || null;
+  const surfaceWarning = useMemo(() => {
+    const area = parseFloat(formData.plannedArea);
+    if (!parcelAreaSqm || !Number.isFinite(area) || area <= 0) return null;
+    if (area > parcelAreaSqm) {
+      return { kind: 'error' as const, message: `La surface (${area} m²) dépasse celle de la parcelle (${parcelAreaSqm} m²).` };
+    }
+    if (area > parcelAreaSqm * 0.8) {
+      return { kind: 'warn' as const, message: `Emprise au sol élevée (>80% de la parcelle). Vérifiez les règles de recul.` };
+    }
+    return null;
+  }, [formData.plannedArea, parcelAreaSqm]);
+
+  // ===== Form validation =====
   const isFormValid = useCallback(() => {
     const baseFields = [
       formData.constructionType, formData.constructionNature, formData.declaredUsage,
@@ -181,21 +252,17 @@ export const usePermitRequestForm = ({ parcelNumber, hasExistingConstruction, pa
       formData.projectDescription,
     ];
 
-    // Validate area is positive
     const area = parseFloat(formData.plannedArea);
     if (!area || area <= 0) return false;
+    if (parcelAreaSqm && area > parcelAreaSqm) return false; // hard block
 
-    // Fix #8: Min length checks
     if (formData.applicantName.trim().length < 3) return false;
     if (formData.projectDescription.trim().length < 10) return false;
 
-    // Validate email if provided
     if (formData.applicantEmail && !isValidEmail(formData.applicantEmail)) return false;
-
-    // Validate phone
     if (!isValidPhone(formData.applicantPhone)) return false;
+    if (formData.nif && !isValidNif(formData.nif)) return false;
 
-    // Required attachments
     if (!attachments.architectural_plans || !attachments.id_document) return false;
 
     if (requestType === 'regularization') {
@@ -205,34 +272,39 @@ export const usePermitRequestForm = ({ parcelNumber, hasExistingConstruction, pa
     }
 
     return baseFields.every(f => !!f) && !!formData.startDate;
-  }, [formData, attachments, requestType, requiresOriginalPermit]);
+  }, [formData, attachments, requestType, requiresOriginalPermit, parcelAreaSqm]);
 
-  // Duplicate detection (includes 'returned' status)
+  // ===== Duplicate detection (refined: per requestType + constructionRef) =====
   const checkDuplicateRequest = useCallback(async (): Promise<boolean> => {
     if (!user) return false;
     try {
       const { data, error } = await supabase
         .from('cadastral_contributions')
-        .select('id, created_at, status')
+        .select('id, created_at, status, permit_request_data')
         .eq('parcel_number', parcelNumber)
         .eq('user_id', user.id)
         .eq('contribution_type', 'permit_request')
-        .in('status', ['pending', 'approved', 'returned'])
-        .order('created_at', { ascending: false })
-        .limit(1);
+        .in('status', ['pending', 'returned'])
+        .order('created_at', { ascending: false });
 
       if (error) throw error;
 
-      if (data && data.length > 0) {
-        const existing = data[0];
+      const sameType = (data || []).filter((row: any) => {
+        const reqType = row.permit_request_data?.requestType;
+        const ref = row.permit_request_data?.constructionRef || 'main';
+        const wantedType = requestType === 'new' ? 'construction' : 'regularization';
+        return reqType === wantedType && ref === formData.constructionRef;
+      });
+
+      if (sameType.length > 0) {
+        const existing = sameType[0];
         const statusLabels: Record<string, string> = {
           pending: 'en attente de traitement',
-          approved: 'approuvée',
           returned: 'retournée pour correction',
         };
         toast({
           title: 'Demande déjà existante',
-          description: `Vous avez déjà une demande d'autorisation ${statusLabels[existing.status] || existing.status} pour cette parcelle (créée le ${format(new Date(existing.created_at), 'dd/MM/yyyy', { locale: fr })}). ${existing.status === 'returned' ? 'Veuillez la corriger depuis votre tableau de bord.' : 'Veuillez attendre son traitement.'}`,
+          description: `Vous avez déjà une demande ${statusLabels[existing.status] || existing.status} pour ce bâtiment (créée le ${format(new Date(existing.created_at), 'dd/MM/yyyy', { locale: fr })}). ${existing.status === 'returned' ? 'Veuillez la corriger depuis votre tableau de bord.' : 'Veuillez attendre son traitement.'}`,
           variant: 'destructive',
         });
         return true;
@@ -242,7 +314,7 @@ export const usePermitRequestForm = ({ parcelNumber, hasExistingConstruction, pa
       console.warn('Duplicate check failed (non-blocking):', err);
       return false;
     }
-  }, [user, parcelNumber, toast]);
+  }, [user, parcelNumber, requestType, formData.constructionRef, toast]);
 
   const clearDraft = useCallback(() => {
     try { localStorage.removeItem(`${DRAFT_KEY}_${parcelNumber}`); } catch {}
@@ -251,6 +323,8 @@ export const usePermitRequestForm = ({ parcelNumber, hasExistingConstruction, pa
   const resetForm = useCallback(() => {
     setFormData({ ...INITIAL_FORM_DATA });
     setAttachments({ ...INITIAL_ATTACHMENTS });
+    applicantPrefillRef.current = false;
+    buildingPrefillRef.current = null;
     clearDraft();
   }, [clearDraft]);
 
@@ -264,5 +338,10 @@ export const usePermitRequestForm = ({ parcelNumber, hasExistingConstruction, pa
     checkDuplicateRequest,
     resetForm, clearDraft,
     isDraftRestored,
+    knownBuildings,
+    selectedBuilding,
+    setConstructionRef,
+    surfaceWarning,
+    parcelAreaSqm,
   };
 };

@@ -66,12 +66,13 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
 
   const requestTypeLabel = form.requestType === 'new' ? 'Autorisation de bâtir' : 'Autorisation de régularisation';
 
-  // Check if form has meaningful data (for close confirmation - Fix #16)
+  // Check if form has meaningful data (for close confirmation)
   const hasUnsavedData = useCallback(() => {
     if (step === 'confirmation') return false;
     const fd = form.formData;
     return !!(fd.constructionType || fd.constructionNature || fd.declaredUsage ||
-      fd.plannedArea || fd.applicantName || fd.projectDescription);
+      fd.plannedArea || fd.applicantName || fd.projectDescription ||
+      fd.nif || fd.complianceIssues || fd.regularizationReason);
   }, [form.formData, step]);
 
   // ========== FILE UPLOAD ==========
@@ -81,7 +82,8 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
     for (const [key, attachment] of Object.entries(form.attachments)) {
       if (!attachment) continue;
       const fileExt = attachment.file.name.split('.').pop();
-      const fileName = `permit_req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
+      // Project standard: use crypto.randomUUID() for secure unique filenames
+      const fileName = `permit_req_${Date.now()}_${crypto.randomUUID()}.${fileExt}`;
       const filePath = `permit-requests/${user.id}/${fileName}`;
       const { error: uploadError } = await supabase.storage.from('cadastral-documents').upload(filePath, attachment.file);
       if (uploadError) throw new Error(`Échec upload ${attachment.label}: ${uploadError.message}`);
@@ -105,14 +107,21 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
     if (!user) throw new Error('Non authentifié');
     const fd = form.formData;
 
+    // Determine if user is operating on the "main" construction.
+    // Only main updates the parcel-root construction columns to avoid
+    // overwriting CCC truth on multi-building parcels.
+    const isMain = !fd.constructionRef || fd.constructionRef === 'main';
+
     const permitRequestData = {
       requestType: form.requestType === 'new' ? 'construction' : 'regularization',
+      constructionRef: fd.constructionRef || 'main',
       constructionType: fd.constructionType, constructionNature: fd.constructionNature,
       declaredUsage: fd.declaredUsage, plannedArea: parseFloat(fd.plannedArea),
       numberOfFloors: parseInt(fd.numberOfFloors) || 1,
       estimatedCost: fd.estimatedCost ? parseFloat(fd.estimatedCost) : null,
       applicantName: fd.applicantName, applicantPhone: fd.applicantPhone,
       applicantEmail: fd.applicantEmail, applicantAddress: fd.applicantAddress,
+      nif: fd.nif || null,
       projectDescription: fd.projectDescription,
       startDate: fd.startDate || null, estimatedDuration: fd.estimatedDuration || null,
       constructionDate: fd.constructionDate || null, currentState: fd.currentState || null,
@@ -120,6 +129,7 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
       regularizationReason: fd.regularizationReason || null,
       originalPermitNumber: fd.originalPermitNumber || null,
       architectName: fd.architectName || null, architectLicense: fd.architectLicense || null,
+      // Tax-specific metadata kept inside permit_request_data only (not promoted to root columns)
       roofingType: fd.roofingType || null, numberOfRooms: fd.numberOfRooms || null,
       waterSupply: fd.waterSupply || null, electricitySupply: fd.electricitySupply || null,
       attachments: uploadedUrls,
@@ -127,24 +137,32 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
       feesSource: form.feesSource, transactionId: transactionId || null,
     };
 
+    // Build root insert payload — guard root construction_* columns when not main
+    const insertPayload: any = {
+      parcel_number: parcelNumber,
+      user_id: user.id,
+      contribution_type: 'permit_request',
+      status: 'pending',
+      permit_request_data: permitRequestData,
+    };
+    if (isMain) {
+      insertPayload.construction_type = fd.constructionType;
+      insertPayload.construction_nature = fd.constructionNature;
+      insertPayload.declared_usage = fd.declaredUsage;
+      insertPayload.area_sqm = parseFloat(fd.plannedArea) || null;
+      insertPayload.construction_year = fd.constructionDate ? new Date(fd.constructionDate).getFullYear() : null;
+      insertPayload.previous_permit_number = fd.originalPermitNumber || null;
+    }
+
     const { data, error } = await supabase
       .from('cadastral_contributions')
-      .insert({
-        parcel_number: parcelNumber, user_id: user.id,
-        contribution_type: 'permit_request', status: 'pending',
-        permit_request_data: permitRequestData,
-        construction_type: fd.constructionType, construction_nature: fd.constructionNature,
-        declared_usage: fd.declaredUsage,
-        area_sqm: parseFloat(fd.plannedArea) || null,
-        construction_year: fd.constructionDate ? new Date(fd.constructionDate).getFullYear() : null,
-        previous_permit_number: fd.originalPermitNumber || null,
-      })
+      .insert(insertPayload)
       .select('id')
       .single();
 
     if (error) throw error;
 
-    // Fix #2: Also write to permit_payments for admin tracking
+    // Also write to permit_payments for admin tracking
     if (transactionId) {
       try {
         await supabase.from('permit_payments').insert({
@@ -407,6 +425,10 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
               onPreview={handlePreview}
               isDraftRestored={form.isDraftRestored}
               parcelData={parcelData}
+              knownBuildings={form.knownBuildings}
+              setConstructionRef={form.setConstructionRef}
+              surfaceWarning={form.surfaceWarning}
+              parcelAreaSqm={form.parcelAreaSqm}
             />
           )}
           {step === 'preview' && (
