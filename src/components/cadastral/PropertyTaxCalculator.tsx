@@ -30,7 +30,8 @@ interface PropertyTaxCalculatorProps {
 type CalcStep = 'questions' | 'summary' | 'confirmation'; // #3 fix: add confirmation step
 
 const PropertyTaxCalculator: React.FC<PropertyTaxCalculatorProps> = ({
-  parcelNumber, parcelId, parcelData, onOpenServiceCatalog
+  parcelNumber, parcelId, parcelData, onOpenServiceCatalog,
+  constructionRef = 'main', targetBuilding = null, taxpayer,
 }) => {
   const { user } = useAuth();
   const { calculate, loading: configLoading } = usePropertyTaxCalculator();
@@ -38,27 +39,41 @@ const PropertyTaxCalculator: React.FC<PropertyTaxCalculatorProps> = ({
   const currentYear = new Date().getFullYear();
   const [calcStep, setCalcStep] = useState<CalcStep>('questions');
   const [result, setResult] = useState<TaxCalculationResult | null>(null);
-  const [nif, setNif] = useState('');
-  const [ownerName, setOwnerName] = useState(parcelData?.current_owner_name || '');
-  const [idDocumentFile, setIdDocumentFile] = useState<File | null>(null);
-  const [hasNif, setHasNif] = useState<boolean | null>(null);
+
+  // Local fallback state when no shared taxpayer is provided
+  const [localNif, setLocalNif] = useState('');
+  const [localOwnerName, setLocalOwnerName] = useState(parcelData?.current_owner_name || '');
+  const [localIdDocumentFile, setLocalIdDocumentFile] = useState<File | null>(null);
+  const [localHasNif, setLocalHasNif] = useState<boolean | null>(null);
+
+  const nif = taxpayer?.nif ?? localNif;
+  const setNif = taxpayer?.setNif ?? setLocalNif;
+  const ownerName = taxpayer?.ownerName ?? localOwnerName;
+  const setOwnerName = taxpayer?.setOwnerName ?? setLocalOwnerName;
+  const idDocumentFile = taxpayer?.idDocumentFile ?? localIdDocumentFile;
+  const setIdDocumentFile = taxpayer?.setIdDocumentFile ?? setLocalIdDocumentFile;
+  const hasNif = taxpayer?.hasNif ?? localHasNif;
+  const setHasNif = taxpayer?.setHasNif ?? setLocalHasNif;
+
   const [exemptionCertificateFile, setExemptionCertificateFile] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   const defaultZone = detectZoneType(parcelNumber, parcelData);
   const zoneAutoDetected = isZoneAutoDetected(parcelNumber);
-  const defaultUsage = detectUsageType(parcelData);
-  const defaultConstruction = detectConstructionType(parcelData);
+  // Prefer the targeted building's data when provided
+  const defaultUsage = targetBuilding?.usageType ?? detectUsageType(parcelData);
+  const defaultConstruction = targetBuilding?.constructionType ?? detectConstructionType(parcelData);
+  const defaultConstructionYear = targetBuilding?.constructionYear ?? parcelData?.construction_year ?? null;
 
   const [input, setInput] = useState<TaxCalculationInput>({
     zoneType: defaultZone,
     usageType: defaultUsage,
     constructionType: defaultConstruction,
-    areaSqm: parcelData?.area_sqm || 0,
+    areaSqm: targetBuilding?.areaSqm || parcelData?.area_sqm || 0,
     fiscalYear: currentYear,
     province: parcelData?.province || 'Nord-Kivu',
     ville: parcelData?.ville || '',
-    constructionYear: parcelData?.construction_year || null,
+    constructionYear: defaultConstructionYear,
     numberOfFloors: 1,
     roofingType: '',
     selectedExemptions: [],
@@ -73,7 +88,8 @@ const PropertyTaxCalculator: React.FC<PropertyTaxCalculatorProps> = ({
     monthsLate: 0,
   });
 
-  const [hasNoConstruction, setHasNoConstruction] = useState(defaultConstruction === null && parcelData?.construction_type === 'Terrain nu');
+  const isTerrainNu = (targetBuilding?.propertyCategory || parcelData?.construction_type) === 'Terrain nu';
+  const [hasNoConstruction, setHasNoConstruction] = useState(defaultConstruction === null && isTerrainNu);
 
   // Sync areaSqm and ownerName when parcelData loads asynchronously
   useEffect(() => {
