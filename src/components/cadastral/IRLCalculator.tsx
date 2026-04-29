@@ -188,6 +188,7 @@ const IRLCalculator: React.FC<IRLCalculatorProps> = ({
           departure: t.hasDepartureDate ? t.departureDate : null,
         }));
 
+      const isMain = constructionRef === 'main';
       const { error } = await supabase.from('cadastral_contributions').insert({
         parcel_number: parcelNumber,
         original_parcel_id: parcelId || null,
@@ -196,7 +197,9 @@ const IRLCalculator: React.FC<IRLCalculatorProps> = ({
         status: 'pending',
         province: input.province,
         ville: input.ville,
-        area_sqm: input.areaSqm,
+        // Only overwrite root area when targeting the main construction.
+        area_sqm: isMain ? input.areaSqm : (parcelData?.area_sqm ?? null),
+        current_owner_name: ownerName || null,
         owner_document_url: idDocUrl,
         tax_history: [{
           tax_type: 'Impôt sur le revenu locatif',
@@ -211,6 +214,7 @@ const IRLCalculator: React.FC<IRLCalculatorProps> = ({
           tenants: tenantData,
           nif: hasNif ? nif : null,
           payment_status: 'En attente',
+          construction_ref: constructionRef,
         }],
       });
 
