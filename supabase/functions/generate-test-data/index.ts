@@ -292,6 +292,20 @@ async function runJob(jobId: string, userId: string): Promise<void> {
     })
     .eq("id", jobId);
 
+  // Periodic heartbeat — proves the function is still alive even during a
+  // long-running step. Lets `_purge_stale_test_generation_jobs` distinguish
+  // a slow step from a dead worker.
+  const heartbeatInterval = setInterval(async () => {
+    try {
+      await admin
+        .from("test_generation_jobs")
+        .update({ heartbeat_at: new Date().toISOString() })
+        .eq("id", jobId);
+    } catch (e) {
+      console.warn(`[generate-test-data] heartbeat failed for ${jobId}:`, e);
+    }
+  }, 20_000);
+
   try {
     for (let i = 0; i < steps.length; i++) {
       if (await isJobCancelled(jobId)) {
