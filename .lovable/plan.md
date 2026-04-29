@@ -1,129 +1,109 @@
-# Génération mode test : exécution en arrière-plan
 
-## Problème
+## Contexte
 
-Aujourd'hui, toute la génération (14 étapes, ~1 650 parcelles + dépendances) tourne **dans le navigateur de l'admin** (`useTestDataActions.generateTestData`). Si l'admin :
-- ferme l'onglet,
-- navigue vers une autre page,
-- met l'ordinateur en veille,
+L'utilisateur signale que la **suppression** des données de test échoue avec `Étape "parcels" : canceling statement due to statement timeout (0 déjà supprimés)` alors que les 725 parcelles TEST n'ont **plus aucun enfant** (mortgages/permits/history/contributions = 0). L'audit révèle plusieurs bugs additionnels dans tout le pipeline mode test.
 
-…tous les `await` Supabase en vol sont coupés et la génération s'arrête à mi-chemin (souvent en plein milieu des parcelles ou des factures), laissant des données incohérentes.
+## Bugs identifiés
 
-Le seul moyen fiable de la rendre **résiliente à la fermeture du client** est de déplacer l'orchestration côté **edge function**, qui continue jusqu'au bout indépendamment du navigateur.
+### 🔴 P0 — Suppression bloquée (cause directe)
+**Index manquants sur les FK pointant vers `cadastral_parcels`.**  Confirmé en base :
+| Table enfant            | parcel_id indexé ? |
+|-------------------------|--------------------|
+| cadastral_mortgages     | ❌ NON             |
+| cadastral_boundary_history | ❌ NON          |
+| cadastral_land_disputes | ❌ NON             |
+| mutation_requests       | ❌ NON             |
+| real_estate_expertise_requests | ❌ NON      |
+| subdivision_requests    | ❌ NON             |
 
-## Architecture cible
+Lors d'un `DELETE FROM cadastral_parcels`, PostgreSQL doit vérifier les FK (CASCADE pour mortgages/ownership/tax/permits, NO ACTION pour les autres) → **seq-scan complet × 500 lignes** → statement timeout, même quand toutes ces tables sont vides (le seq-scan reste obligatoire pour prouver le vide). C'est la cause exacte du blocage actuel.
+
+### 🟠 P1 — Verrou stale `test_generation_jobs`
+Si une edge function `generate-test-data` crashe (OOM, timeout 150s pour `waitUntil`, déploiement), `status` reste `running` → toute nouvelle génération est rejetée par le check `existing.length > 0` (ligne 430). Aucun mécanisme de purge auto, aucun heartbeat staleness check.
+
+### 🟠 P1 — Heartbeat non rafraîchi pendant un step long
+`heartbeat_at` n'est mis à jour qu'**entre** les steps. Un step `parcels` qui dure 90s n'envoie aucun signal de vie → impossible de distinguer "step lourd" de "fonction morte".
+
+### 🟡 P2 — Annulation tardive
+`isJobCancelled` n'est appelée qu'entre les steps. Cliquer "Annuler" pendant un step long n'a aucun effet jusqu'à la fin du step.
+
+### 🟡 P2 — RPC nettoyage : pas de FOR UPDATE SKIP LOCKED
+Si deux nettoyages tournent (improbable mais possible), DELETE × DELETE → deadlock. Mineur.
+
+### 🟡 P2 — `statement_timeout` non augmenté
+La RPC `_cleanup_test_data_chunk_internal` hérite du timeout par défaut (~8s PostgREST/Supabase). Pour les très gros volumes, même avec index, on peut frôler la limite. Bonne pratique : `SET LOCAL statement_timeout = '60s'` dans la fonction.
+
+### 🟢 P3 — Audit log incohérent
+Dans `generate-test-data/index.ts:370`, `table_name: 'cadastral_contributions'` est codé en dur — devrait être `'test_generation_jobs'` ou `'multiple'`.
+
+## Plan de correction
+
+### Étape 1 — Migration : index FK + timeout RPC + purge stale
+Migration unique :
+1. **Créer 6 index** `CONCURRENTLY`-friendly (on est en migration → CREATE INDEX IF NOT EXISTS) :
+   - `idx_mortgages_parcel_id` sur `cadastral_mortgages(parcel_id)`
+   - `idx_boundary_history_parcel_id` sur `cadastral_boundary_history(parcel_id)`
+   - `idx_land_disputes_parcel_id` sur `cadastral_land_disputes(parcel_id)`
+   - `idx_mutation_requests_parcel_id_fk` sur `mutation_requests(parcel_id)`
+   - `idx_expertise_requests_parcel_id_fk` sur `real_estate_expertise_requests(parcel_id)`
+   - `idx_subdivision_requests_parcel_id_fk` sur `subdivision_requests(parcel_id)`
+2. **Modifier `_cleanup_test_data_chunk_internal`** : ajouter `SET LOCAL statement_timeout = '60s'` en début de fonction.
+3. **Nouvelle RPC `_purge_stale_test_generation_jobs()`** :
+   - Marque `status='error'` + `error='Heartbeat perdu (job orphelin)'` les jobs `running` avec `heartbeat_at < now() - interval '3 minutes'`.
+   - SECURITY DEFINER, callable par admin/super_admin.
+
+### Étape 2 — Edge function `cleanup-test-data-batch`
+- Avant la boucle, appeler `admin.rpc('_purge_stale_test_generation_jobs')` (silencieux si erreur).
+- Augmenter légèrement la batch (BATCH=1000) maintenant que les index sont là.
+- Ajouter un timeout côté JS par étape (`Promise.race` 90s) pour faire échouer proprement plutôt que laisser pendre.
+
+### Étape 3 — Edge function `generate-test-data`
+- **Auto-purge stale au démarrage** : appeler `_purge_stale_test_generation_jobs` avant le check d'existence (ligne 425).
+- **Heartbeat périodique** : dans `runJob`, lancer un `setInterval` toutes les 20s qui met à jour `heartbeat_at` indépendamment du step en cours. Clear dans le `finally`.
+- **Annulation pendant step long** : passer un `AbortSignal` dans `JobCtx` ; vérifier `cancelled` après chaque batch dans les générateurs lourds (parcels notamment, qui itère par batch de 25). Migration légère côté `_shared.ts`.
+- **Fix audit_log** : `table_name: 'test_generation_jobs'`.
+
+### Étape 4 — Hook `useTestGenerationJob`
+- Quand le serveur renvoie 409 avec `active_job_id`, exposer un bouton "Forcer le déverrouillage" qui appelle `_purge_stale_test_generation_jobs` puis relance.
+- Détecter côté client un job dont `heartbeat_at < now()-3min` et le marquer visuellement "🔴 Job potentiellement bloqué".
+
+### Étape 5 — Mémoire
+Mettre à jour `mem://admin/test-mode-hardening-fr.md` avec :
+- Index FK obligatoires sur enfants de cadastral_parcels.
+- Pattern auto-purge stale + heartbeat périodique.
+
+## Architecture cible (résumé)
 
 ```text
-[Admin UI]                              [Edge Function]                  [DB]
-     │                                          │                          │
-  POST /generate-test-data ───────────────────▶ │                          │
-                                                ├─ INSERT test_generation_jobs (queued)
-                                                ├─ EdgeRuntime.waitUntil(runJob(id))
-     ◀──── 202 { job_id }                       │
-                                                │
-                                                ├─ étape 1: parcelles ──▶ INSERT batch
-                                                │                          │
-                                                ├─ UPDATE job (step 2/14) │
-                                                │                          │
-  GET /test-generation-job-status ─────▶        │                          │
-     ◀──── { status, current_step, ... }        │                          │
-                                                │
-                                                └─ UPDATE job (status=done)
+[DELETE parcels chunk de 1000]
+   └─→ FK checks RAPIDES (index) ─→ CASCADE/RESTRICT < 1s
+   └─→ statement_timeout local 60s
+
+[generate-test-data]
+   ├─ purge stale (>3min sans heartbeat)
+   ├─ check active job
+   ├─ insert job → 202 + job_id
+   └─ waitUntil(runJob)
+         ├─ setInterval(20s) → heartbeat_at = now()
+         ├─ AbortSignal propagé aux générateurs
+         └─ for each step: ... cancel-aware
 ```
 
-## Plan d'implémentation
+## Fichiers impactés
 
-### 1. Table `test_generation_jobs` (nouvelle migration)
-
-| Colonne            | Type          | Note                                       |
-|--------------------|---------------|--------------------------------------------|
-| id                 | uuid PK       | `gen_random_uuid()`                        |
-| user_id            | uuid          | demandeur (admin)                          |
-| status             | text          | `queued / running / done / error / cancelled` |
-| current_step_key   | text          | clé de l'étape en cours                    |
-| current_step_index | int           | 0..13                                      |
-| total_steps        | int           | 14                                         |
-| steps_state        | jsonb         | `[{key, label, status, error?}]`           |
-| counts             | jsonb         | `{parcels, contributions, invoices, ...}`  |
-| error              | text          | dernière erreur bloquante                  |
-| failed_substeps    | text[]        | sous-étapes non bloquantes en échec        |
-| started_at         | timestamptz   |                                            |
-| finished_at        | timestamptz   |                                            |
-| created_at         | timestamptz   | default `now()`                            |
-
-- RLS : `SELECT/INSERT` réservé aux `admin` + `super_admin` via `has_role()` (cf. baseline sécurité).
-- Realtime activé pour permettre au front d'écouter les `UPDATE` au lieu de poller (mais le polling reste un fallback).
-
-### 2. Edge function `generate-test-data` (nouvelle)
-
-- Vérifie JWT + rôle admin/super_admin (même pattern que `cleanup-test-data-batch`).
-- Vérifie que `test_mode.enabled = true`.
-- Refuse si un job `queued`/`running` existe déjà pour empêcher les doublons.
-- Crée la ligne `test_generation_jobs` (status `queued`).
-- Lance `EdgeRuntime.waitUntil(runJob(jobId, userId))` puis répond immédiatement `202 { job_id }`.
-- `runJob` :
-  - Réplique la logique de `generationStepsRegistry.ts` (parcelles → contributions → factures → … → mutations/lotissements).
-  - Réutilise les **mêmes données semées** (provinces, owners, etc.) — extraire les constantes de `_shared.ts` dans `supabase/functions/_shared/testFixtures.ts` pour éviter la duplication.
-  - Après chaque étape : `UPDATE test_generation_jobs SET current_step_index = …, steps_state = …`.
-  - En cas d'erreur bloquante : `status = 'error'`, conservation de l'erreur.
-  - En cas de succès : `status = 'done'`, `finished_at = now()`, log `audit_logs` `TEST_DATA_GENERATED` (déjà fait côté front aujourd'hui).
-- Throttling identique au front (`BATCH_DELAY_MS`, `PARCEL_BATCH = 25`, `withRetry` exponentiel).
-
-### 3. Edge function (ou RPC) `get-test-generation-job` (nouvelle, légère)
-
-- Optionnel : on peut aussi simplement utiliser `supabase.from('test_generation_jobs').select(...)` côté client, RLS suffit. **Plus simple, à privilégier.**
-
-### 4. Refactor `useTestDataActions`
-
-- `generateTestData()` ne lance plus la boucle locale. À la place :
-  1. `supabase.functions.invoke('generate-test-data')` → récupère `job_id`.
-  2. Persiste `job_id` dans `localStorage` (clé `test-mode:active-job`).
-  3. S'abonne au job via `supabase.channel('test_gen').on('postgres_changes', { table: 'test_generation_jobs', filter: 'id=eq.' + jobId })`.
-  4. Met à jour `generationSteps` / `currentStep` à partir de `steps_state`.
-- Au montage du composant `AdminTestMode` :
-  - Lire `localStorage['test-mode:active-job']`.
-  - Si présent et job encore `queued`/`running`, se réabonner et reprendre l'affichage de la progression.
-  - À la fin (`done`/`error`/`cancelled`), nettoyer la clé localStorage.
-- `regenerateTestData` : enchaîne `cleanupTestData()` puis `generateTestData()` (le cleanup reste server-side comme aujourd'hui).
-
-### 5. Bouton "Annuler la génération" (nouveau, dans `GenerationProgress`)
-
-- Optionnel mais recommandé : `UPDATE test_generation_jobs SET status = 'cancelled'` ; le `runJob` vérifie ce flag entre chaque étape et s'arrête proprement.
-
-### 6. Nettoyage des jobs anciens
-
-- Étendre `cleanup_all_test_data_auto()` (ou ajouter un cron léger) pour purger les `test_generation_jobs` `done`/`error` plus vieux que 30 jours.
-
-### 7. Documentation & mémoire
-
-- Mettre à jour `docs/TEST_MODE.md` (section génération) avec le nouveau flux asynchrone.
-- Mettre à jour `mem/admin/test-mode-hardening-fr.md` :
-  - "Génération exécutée server-side via edge function `generate-test-data` + `EdgeRuntime.waitUntil` ; client polle `test_generation_jobs` via Realtime ; reprise transparente après refresh ou fermeture d'onglet."
-
-## Points techniques
-
-- **`EdgeRuntime.waitUntil`** est supporté par Supabase Edge Runtime (Deno) : la réponse part immédiatement, mais la promesse continue jusqu'à ~150s max par invocation. Si la génération risque de dépasser ce budget (1 650 parcelles en `PARCEL_BATCH = 25` → ~66 batches × ~150ms + overhead), il faudra **chunker en réinvocations** : à la fin de chaque étape, si on approche du budget, on `UPDATE status='running'` avec un curseur, puis on auto-réinvoque l'edge function via `fetch` self-call. Architecture prévue, mais à n'activer que si les logs montrent des timeouts réels.
-- **Idempotence** : un seul job actif à la fois (contrainte applicative dans l'edge function).
-- **Sécurité** : aucun secret côté client ; le `service_role_key` ne sort jamais de l'edge function.
-- **RLS sur `test_generation_jobs`** : `has_role(auth.uid(),'admin') OR has_role(auth.uid(),'super_admin')` (conforme au baseline mémorisé).
-
-## Fichiers touchés
-
-**Nouveaux**
-- `supabase/migrations/<timestamp>_test_generation_jobs.sql`
+- `supabase/migrations/<new>_test_mode_indexes_and_purge.sql` (nouveau)
+- `supabase/functions/cleanup-test-data-batch/index.ts`
 - `supabase/functions/generate-test-data/index.ts`
-- `supabase/functions/_shared/testFixtures.ts` (constantes partagées avec le front)
-- `src/hooks/useTestGenerationJob.ts` (subscribe + état)
-
-**Modifiés**
-- `src/components/admin/test-mode/useTestDataActions.ts` (delegate à l'edge function)
-- `src/components/admin/AdminTestMode.tsx` (reprise du job au mount)
-- `src/components/admin/test-mode/GenerationProgress.tsx` (bouton annuler optionnel)
-- `docs/TEST_MODE.md`
+- `supabase/functions/_shared/test-mode-generators/_shared.ts` (AbortSignal)
+- `supabase/functions/_shared/test-mode-generators/parcels.ts` (cancel check)
+- `src/hooks/useTestGenerationJob.ts` (détection stale + force unlock)
+- `src/components/admin/test-mode/GenerationProgress.tsx` (badge stale)
 - `mem/admin/test-mode-hardening-fr.md`
 
-## Effets utilisateur
+## Risques et précautions
 
-- L'admin clique "Générer" → toast "Génération lancée en arrière-plan".
-- Il peut fermer l'onglet, naviguer ailleurs, ou rester pour suivre la progression en temps réel.
-- À son retour sur la page admin mode test, la barre de progression reprend automatiquement là où elle en est, ou affiche le résultat final si le job est terminé.
+- Les `CREATE INDEX IF NOT EXISTS` sans `CONCURRENTLY` posent un AccessExclusiveLock court (~ms sur tables vides ici). OK.
+- Le heartbeat périodique multiplie les UPDATE → utiliser une seule colonne `heartbeat_at`, pas tout le steps_state.
+- L'AbortSignal est propagé "best effort" — pas de garantie d'arrêt instantané, mais évite de continuer un job annulé pendant 5 minutes.
+
+Validation finale : après correction, relancer la suppression sur les 725 parcelles → doit terminer en quelques secondes.

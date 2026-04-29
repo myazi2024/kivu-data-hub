@@ -7404,6 +7404,7 @@ export type Database = {
         Args: { p_limit: number; p_step: string }
         Returns: number
       }
+      _purge_stale_test_generation_jobs: { Args: never; Returns: number }
       archive_stale_articles: { Args: { _months?: number }; Returns: number }
       auto_archive_stale_articles: {
         Args: never
