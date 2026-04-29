@@ -291,7 +291,7 @@ export const useTestDataActions = ({ userId, onComplete }: UseTestDataActionsPro
     } finally {
       setRegenerating(false);
     }
-  }, [userId, generateTestData]);
+  }, [userId, generateTestData, invokeCleanup, resetCleanupState]);
 
   return {
     cleaningUp,
@@ -299,6 +299,9 @@ export const useTestDataActions = ({ userId, onComplete }: UseTestDataActionsPro
     regenerating,
     generationSteps,
     currentStep,
+    cleanupPerStep,
+    cleanupFailedStep,
+    cleanupTruncatedSteps,
     cleanupTestData,
     generateTestData,
     regenerateTestData,
