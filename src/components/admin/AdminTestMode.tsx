@@ -14,6 +14,9 @@ import TestModeConfigCard from './test-mode/TestModeConfigCard';
 import TestDataStatsCard from './test-mode/TestDataStatsCard';
 import TestModeGuide from './test-mode/TestModeGuide';
 import GenerationProgress from './test-mode/GenerationProgress';
+import CleanupProgress from './test-mode/CleanupProgress';
+import TestCleanupHistoryCard from './test-mode/TestCleanupHistoryCard';
+import TestCronStatusCard from './test-mode/TestCronStatusCard';
 import {
   AlertDialog,
   AlertDialogContent,
