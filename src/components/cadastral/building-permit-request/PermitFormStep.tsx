@@ -60,16 +60,16 @@ const PermitFormStep: React.FC<PermitFormStepProps> = ({
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
   // ===== CCC picklists (cascade) =====
-  const { getPicklistOptions, getPicklistDependentOptions } = useCCCFormPicklists();
-  const constructionTypes = getPicklistOptions('picklist_construction_type');
-  const naturesByType = getPicklistDependentOptions('picklist_construction_nature');
+  const { getOptions, getDependentOptions } = useCCCFormPicklists();
+  const constructionTypes = getOptions('picklist_construction_type');
+  const naturesByType = getDependentOptions('picklist_construction_nature');
   const availableNatures = formData.constructionType
     ? (naturesByType[formData.constructionType] || [])
     : [];
   const availableUsages = resolveAvailableUsages(
     formData.constructionType,
     formData.constructionNature,
-    getPicklistDependentOptions,
+    getDependentOptions,
   );
 
   const handleFileChange = (key: string, label: string, e: React.ChangeEvent<HTMLInputElement>) => {
