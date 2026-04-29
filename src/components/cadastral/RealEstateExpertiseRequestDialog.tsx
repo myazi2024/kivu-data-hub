@@ -1196,7 +1196,32 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                 <strong>Important :</strong> Les informations que vous fournissez serviront de base à l'expert pour définir les facteurs clés de l'évaluation et organiser la visite terrain de votre construction. Veillez à leur exactitude.
               </AlertDescription>
             </Alert>
-            
+
+            {/* Building target selector — appears only if cadastre knows constructions for this parcel */}
+            {knownBuildings.length > 0 && (
+              <>
+                <BuildingTargetSelector
+                  buildings={knownBuildings}
+                  selectedRef={selectedBuildingRef}
+                  onSelect={setSelectedBuildingRef}
+                />
+                {selectedBuildingRef !== 'new' && lockedFromCadastre.size > 0 && (
+                  <div className="space-y-1.5">
+                    <Label htmlFor="cadastre-discrepancies" className="text-xs text-muted-foreground">
+                      Avez-vous constaté un écart avec les données cadastrales ? (optionnel)
+                    </Label>
+                    <Textarea
+                      id="cadastre-discrepancies"
+                      value={cadastreDiscrepancies}
+                      onChange={(e) => setCadastreDiscrepancies(e.target.value)}
+                      placeholder="Ex : surface réelle différente, matériau modifié après rénovation…"
+                      className="min-h-[50px] text-sm rounded-xl border-2"
+                    />
+                  </div>
+                )}
+              </>
+            )}
+
             {/* Construction Block (CCC-aligned) */}
             <Card className="border rounded-xl">
               <CardContent className="p-3 space-y-3">
