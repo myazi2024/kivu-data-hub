@@ -34,10 +34,23 @@ const IRLCalculator: React.FC<IRLCalculatorProps> = ({
   const currentYear = new Date().getFullYear();
   const [calcStep, setCalcStep] = useState<CalcStep>('questions');
   const [result, setResult] = useState<TaxCalculationResult | null>(null);
-  const [nif, setNif] = useState('');
-  const [ownerName, setOwnerName] = useState(parcelData?.current_owner_name || '');
-  const [idDocumentFile, setIdDocumentFile] = useState<File | null>(null);
-  const [hasNif, setHasNif] = useState<boolean | null>(null);
+
+  // Local fallbacks when no shared taxpayer is provided (standalone usage).
+  const [localNif, setLocalNif] = useState('');
+  const [localOwnerName, setLocalOwnerName] = useState(parcelData?.current_owner_name || '');
+  const [localIdDocumentFile, setLocalIdDocumentFile] = useState<File | null>(null);
+  const [localHasNif, setLocalHasNif] = useState<boolean | null>(null);
+
+  // Use shared taxpayer state when injected by TaxManagementDialog (P1 alignment).
+  const nif = taxpayer?.nif ?? localNif;
+  const setNif = taxpayer?.setNif ?? setLocalNif;
+  const ownerName = taxpayer?.ownerName ?? localOwnerName;
+  const setOwnerName = taxpayer?.setOwnerName ?? setLocalOwnerName;
+  const idDocumentFile = taxpayer?.idDocumentFile ?? localIdDocumentFile;
+  const setIdDocumentFile = taxpayer?.setIdDocumentFile ?? setLocalIdDocumentFile;
+  const hasNif = taxpayer?.hasNif ?? localHasNif;
+  const setHasNif = taxpayer?.setHasNif ?? setLocalHasNif;
+
   const [tenants, setTenants] = useState<TenantEntry[]>([createEmptyTenant()]);
   const [submitting, setSubmitting] = useState(false);
 
