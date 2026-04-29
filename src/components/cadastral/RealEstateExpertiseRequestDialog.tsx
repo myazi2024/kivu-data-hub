@@ -117,6 +117,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
   const { createExpertiseRequest, loading, checkExistingValidCertificate, checkCertificateValidity } = useRealEstateExpertise();
   const parcelDocsInputRef = useRef<HTMLInputElement>(null);
   const constructionImagesInputRef = useRef<HTMLInputElement>(null);
+  const constructionGalleryInputRef = useRef<HTMLInputElement>(null);
 
   const [showIntro, setShowIntro] = useState(true);
   const [step, setStep] = useState<'form' | 'summary' | 'payment' | 'confirmation'>('form');
@@ -545,6 +546,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     if (remaining <= 0) {
       toast.error(`Maximum ${MAX_CONSTRUCTION_IMAGES} photos autorisées`);
       if (constructionImagesInputRef.current) constructionImagesInputRef.current.value = '';
+      if (constructionGalleryInputRef.current) constructionGalleryInputRef.current.value = '';
       return;
     }
     const validFiles = newFiles.slice(0, remaining).filter(file => {
@@ -559,6 +561,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     setConstructionImages(prev => [...prev, ...validFiles]);
     setConstructionImageUrls(prev => [...prev, ...newUrls]);
     if (constructionImagesInputRef.current) constructionImagesInputRef.current.value = '';
+    if (constructionGalleryInputRef.current) constructionGalleryInputRef.current.value = '';
   };
 
   const removeParcelDoc = (index: number) => {
@@ -2041,16 +2044,35 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                   onChange={handleConstructionImageSelect}
                   className="hidden"
                 />
-                
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => constructionImagesInputRef.current?.click()}
-                  className="w-full h-10 text-sm rounded-xl border-2 border-dashed"
-                >
-                  <Image className="h-4 w-4 mr-2" />
-                  Photos de la construction
-                </Button>
+                <input
+                  ref={constructionGalleryInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleConstructionImageSelect}
+                  className="hidden"
+                />
+
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => constructionImagesInputRef.current?.click()}
+                    className="h-10 text-xs sm:text-sm rounded-xl border-2 border-dashed"
+                  >
+                    <Camera className="h-4 w-4 mr-1.5 flex-shrink-0" />
+                    Prendre photo
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => constructionGalleryInputRef.current?.click()}
+                    className="h-10 text-xs sm:text-sm rounded-xl border-2 border-dashed"
+                  >
+                    <Image className="h-4 w-4 mr-1.5 flex-shrink-0" />
+                    Galerie
+                  </Button>
+                </div>
                 
                 {constructionImages.length > 0 && (
                   <div className="grid grid-cols-3 gap-2">
