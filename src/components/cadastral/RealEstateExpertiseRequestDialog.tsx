@@ -32,6 +32,7 @@ import { useCCCFormPicklists } from '@/hooks/useCCCFormPicklists';
 import { resolveAvailableUsages } from '@/utils/constructionUsageResolver';
 import { BuildingPermitIssuingServiceSelect } from './BuildingPermitIssuingServiceSelect';
 import { cn } from '@/lib/utils';
+import BuildingTargetSelector, { type KnownBuilding } from './expertise/BuildingTargetSelector';
 
 interface RealEstateExpertiseRequestDialogProps {
   parcelNumber: string;
