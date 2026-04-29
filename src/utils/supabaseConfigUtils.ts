@@ -15,28 +15,34 @@ export const upsertSearchConfig = async (
     .eq('config_key', configKey)
     .maybeSingle();
 
-  let result;
   if (existing) {
-    result = await supabase
+    // .select() pour détecter un UPDATE 0-ligne (RLS bloque silencieusement sinon)
+    const { data, error } = await supabase
       .from('cadastral_search_config')
       .update({
         config_value: configValue as any,
         updated_at: new Date().toISOString(),
-        is_active: true
+        is_active: true,
       })
-      .eq('config_key', configKey);
+      .eq('config_key', configKey)
+      .select('id');
+    if (error) throw error;
+    if (!data || data.length === 0) {
+      throw new Error(
+        `Mise à jour de "${configKey}" bloquée — vérifiez vos permissions (RLS sur cadastral_search_config).`
+      );
+    }
   } else {
-    result = await supabase
+    const { error } = await supabase
       .from('cadastral_search_config')
       .insert({
         config_key: configKey,
         config_value: configValue as any,
         is_active: true,
-        description: description || `Configuration: ${configKey}`
+        description: description || `Configuration: ${configKey}`,
       });
+    if (error) throw error;
   }
-
-  if (result.error) throw result.error;
 };
 
 /**
