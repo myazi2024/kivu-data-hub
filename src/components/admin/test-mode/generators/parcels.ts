@@ -85,7 +85,7 @@ export const generateParcels = async (parcelNumbers: string[]) => {
     };
   });
 
-  const PARCEL_BATCH = 50;
+  const PARCEL_BATCH = 25;
   const allInserted: Array<{ id: string; parcel_number: string }> = [];
   for (let i = 0; i < records.length; i += PARCEL_BATCH) {
     const batch = records.slice(i, i + PARCEL_BATCH);

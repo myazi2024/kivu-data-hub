@@ -31,25 +31,31 @@ export function assertInserted<T>(data: T[] | null, entity: string): T[] {
   return data;
 }
 
-/** Retry wrapper for transient network failures (TypeError: Failed to fetch) */
-export async function withRetry<T>(fn: () => Promise<T>, label: string, maxRetries = 2): Promise<T> {
+/**
+ * Retry wrapper for transient network failures.
+ * Detects "Failed to fetch" / network / timeout patterns even when wrapped
+ * inside a generic Error (e.g. `new Error("Parcelles: TypeError: Failed to fetch")`).
+ */
+export async function withRetry<T>(fn: () => Promise<T>, label: string, maxRetries = 4): Promise<T> {
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
       return await fn();
     } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
       const isTransient =
-        err instanceof TypeError && /failed to fetch/i.test(err.message);
+        /failed to fetch|networkerror|network error|fetch failed|load failed|timeout|ETIMEDOUT|ECONNRESET|socket hang up|503|504/i.test(msg);
       if (!isTransient || attempt === maxRetries) throw err;
-      const delay = 500 * Math.pow(2, attempt);
-      console.warn(`${label}: tentative ${attempt + 1} échouée, retry dans ${delay}ms…`);
+      // Exponential backoff with jitter: 800ms, 1.6s, 3.2s, 6.4s
+      const delay = 800 * Math.pow(2, attempt) + Math.floor(Math.random() * 300);
+      console.warn(`${label}: tentative ${attempt + 1} échouée (${msg.slice(0, 80)}), retry dans ${delay}ms…`);
       await new Promise((r) => setTimeout(r, delay));
     }
   }
   throw new Error(`${label}: échec après ${maxRetries + 1} tentatives`);
 }
 
-/** Throttle delay between batches to avoid rate limiting */
-export const BATCH_DELAY_MS = 60;
+/** Throttle delay between batches to avoid rate limiting / network saturation */
+export const BATCH_DELAY_MS = 150;
 
 /** Pick a deterministic item from an array based on index */
 export function pick<T>(arr: T[], i: number): T {
