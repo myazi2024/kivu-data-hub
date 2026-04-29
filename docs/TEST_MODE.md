@@ -46,6 +46,19 @@ Le mode test est un système transversal contrôlé depuis l'admin (`AdminTestMo
 - **Service access** : provisionné automatiquement par le trigger
   `trg_provision_service_access_on_paid` (P3) — plus de génération manuelle.
 
+### 5.bis Génération en arrière-plan (avr. 2026)
+
+La génération est exécutée par l'edge function `generate-test-data` :
+
+1. Le client invoque `supabase.functions.invoke('generate-test-data')`.
+2. La fonction valide JWT + rôle, refuse si un job est déjà en cours, crée une ligne dans `test_generation_jobs` et lance `EdgeRuntime.waitUntil(runJob)`.
+3. Réponse `202 { job_id }` immédiate — l'admin peut fermer l'onglet, naviguer ailleurs ou éteindre son ordinateur.
+4. `runJob` exécute les 14 étapes et met à jour `test_generation_jobs` après chaque étape (Realtime activé).
+5. Le hook client `useTestGenerationJob` se réabonne au job au montage via `localStorage['test-mode:active-job']` et restitue la barre de progression. Polling 4 s en fallback.
+6. Bouton « Annuler » → `UPDATE status='cancelled'` ; `runJob` vérifie ce flag entre chaque étape.
+
+Les générateurs serveur sont la copie miroir de `src/components/admin/test-mode/generators/` dans `supabase/functions/_shared/test-mode-generators/`. Toute modification doit être appliquée aux DEUX endroits.
+
 ### 6. Nettoyage
 
 #### Manuel — Edge Function `cleanup-test-data-batch`
