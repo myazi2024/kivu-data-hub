@@ -77,14 +77,19 @@ export const detectConstructionType = (parcelData?: any): 'en_dur' | 'semi_dur' 
 /**
  * Check for duplicate tax submissions in cadastral_contributions.
  * #6 fix: Filters by contribution_type = 'update' to avoid false positives
- * from 'new' contributions that happen to contain tax_history.
+ *         from 'new' contributions that happen to contain tax_history.
+ * Multi-construction fix: Optionally scope by `constructionRef` so that the
+ *         same taxType/year can be declared for two different buildings on
+ *         the same parcel. When `constructionRef` is undefined, falls back to
+ *         legacy behaviour (parcel-wide uniqueness).
  */
 export const checkDuplicateTaxSubmission = async (
   supabase: any,
   parcelNumber: string,
   userId: string,
   taxType: string,
-  taxYear: number
+  taxYear: number,
+  constructionRef?: string,
 ): Promise<boolean> => {
   const { data } = await supabase
     .from('cadastral_contributions')
@@ -99,9 +104,14 @@ export const checkDuplicateTaxSubmission = async (
 
   return data.some((c: any) => {
     const history = c.tax_history as any[];
-    return history?.some((h: any) =>
-      h.tax_type === taxType &&
-      Number(h.tax_year) === taxYear
-    );
+    return history?.some((h: any) => {
+      if (h.tax_type !== taxType) return false;
+      if (Number(h.tax_year) !== taxYear) return false;
+      if (constructionRef !== undefined) {
+        const existingRef = h.construction_ref ?? h.constructionRef ?? 'main';
+        return existingRef === constructionRef;
+      }
+      return true;
+    });
   });
 };

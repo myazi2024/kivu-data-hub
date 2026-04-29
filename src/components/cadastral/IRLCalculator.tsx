@@ -17,12 +17,16 @@ interface IRLCalculatorProps {
   parcelId?: string;
   parcelData?: any;
   onOpenServiceCatalog?: () => void;
+  constructionRef?: string;
+  targetBuilding?: import('./tax-calculator/taxBuildings').TaxKnownBuilding | null;
+  taxpayer?: import('./tax-calculator/useSharedTaxpayer').SharedTaxpayer;
 }
 
 type CalcStep = 'questions' | 'summary' | 'confirmation';
 
 const IRLCalculator: React.FC<IRLCalculatorProps> = ({
-  parcelNumber, parcelId, parcelData, onOpenServiceCatalog
+  parcelNumber, parcelId, parcelData, onOpenServiceCatalog,
+  constructionRef = 'main', targetBuilding = null, taxpayer,
 }) => {
   const { user } = useAuth();
   const { calculate, loading: configLoading } = usePropertyTaxCalculator();

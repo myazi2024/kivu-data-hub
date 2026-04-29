@@ -31,6 +31,9 @@ interface BuildingTaxCalculatorProps {
   parcelId?: string;
   parcelData?: any;
   onOpenServiceCatalog?: () => void;
+  constructionRef?: string;
+  targetBuilding?: import('./tax-calculator/taxBuildings').TaxKnownBuilding | null;
+  taxpayer?: import('./tax-calculator/useSharedTaxpayer').SharedTaxpayer;
 }
 
 type CalcStep = 'questions' | 'summary' | 'confirmation';
@@ -48,7 +51,8 @@ const CONSTRUCTION_SELECT_LABELS: Record<string, string> = {
 };
 
 const BuildingTaxCalculator: React.FC<BuildingTaxCalculatorProps> = ({
-  parcelNumber, parcelId, parcelData, onOpenServiceCatalog
+  parcelNumber, parcelId, parcelData, onOpenServiceCatalog,
+  constructionRef = 'main', targetBuilding = null, taxpayer,
 }) => {
   const { user } = useAuth();
   const currentYear = new Date().getFullYear();
@@ -57,11 +61,19 @@ const BuildingTaxCalculator: React.FC<BuildingTaxCalculatorProps> = ({
   const [exchangeRate, setExchangeRate] = useState(2800);
   const [dbBuildingRates, setDbBuildingRates] = useState<Record<string, Record<string, number>> | null>(null);
 
-  const [nif, setNif] = useState('');
-  const [hasNif, setHasNif] = useState<boolean | null>(null);
-  const [ownerName, setOwnerName] = useState(parcelData?.current_owner_name || '');
-  // #7 fix: ID document upload support
-  const [idDocumentFile, setIdDocumentFile] = useState<File | null>(null);
+  const [localNif, setLocalNif] = useState('');
+  const [localHasNif, setLocalHasNif] = useState<boolean | null>(null);
+  const [localOwnerName, setLocalOwnerName] = useState(parcelData?.current_owner_name || '');
+  const [localIdDocumentFile, setLocalIdDocumentFile] = useState<File | null>(null);
+
+  const nif = taxpayer?.nif ?? localNif;
+  const setNif = taxpayer?.setNif ?? setLocalNif;
+  const hasNif = taxpayer?.hasNif ?? localHasNif;
+  const setHasNif = taxpayer?.setHasNif ?? setLocalHasNif;
+  const ownerName = taxpayer?.ownerName ?? localOwnerName;
+  const setOwnerName = taxpayer?.setOwnerName ?? setLocalOwnerName;
+  const idDocumentFile = taxpayer?.idDocumentFile ?? localIdDocumentFile;
+  const setIdDocumentFile = taxpayer?.setIdDocumentFile ?? setLocalIdDocumentFile;
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -102,17 +114,16 @@ const BuildingTaxCalculator: React.FC<BuildingTaxCalculatorProps> = ({
 
   const defaultZone = detectZoneType(parcelNumber, parcelData);
   // #3 fix: Use detected construction, fallback to null instead of hardcoded 'en_dur'
-  const detectedConstruction = detectConstructionType(parcelData);
+  const detectedConstruction = targetBuilding?.constructionType ?? detectConstructionType(parcelData);
 
   const [zoneType, setZoneType] = useState<'urban' | 'rural'>(defaultZone);
-  // #3 fix: Default to detected construction or 'en_dur' only if parcel actually has construction
   const [constructionType, setConstructionType] = useState<'en_dur' | 'semi_dur' | 'en_paille'>(
     detectedConstruction || 'en_dur'
   );
-  const [areaSqm, setAreaSqm] = useState(Number(parcelData?.area_sqm) || 0);
+  const [areaSqm, setAreaSqm] = useState(Number(targetBuilding?.areaSqm || parcelData?.area_sqm) || 0);
   const [fiscalYear, setFiscalYear] = useState(currentYear);
   const [numberOfFloors, setNumberOfFloors] = useState(1);
-  const [constructionYear, setConstructionYear] = useState<number | null>(parcelData?.construction_year || null);
+  const [constructionYear, setConstructionYear] = useState<number | null>(targetBuilding?.constructionYear ?? parcelData?.construction_year ?? null);
   const [buildingCondition, setBuildingCondition] = useState('bon');
 
   useEffect(() => {
@@ -187,10 +198,10 @@ const BuildingTaxCalculator: React.FC<BuildingTaxCalculatorProps> = ({
     setLoading(true);
     try {
       const isDuplicate = await checkDuplicateTaxSubmission(
-        supabase, parcelNumber, user.id, 'Taxe de bâtisse', fiscalYear
+        supabase, parcelNumber, user.id, 'Taxe de bâtisse', fiscalYear, constructionRef
       );
       if (isDuplicate) {
-        toast.error(`Une déclaration "Taxe de bâtisse" pour l'exercice ${fiscalYear} existe déjà pour cette parcelle.`);
+        toast.error(`Une déclaration "Taxe de bâtisse" pour l'exercice ${fiscalYear} existe déjà pour cette parcelle/bâtiment.`);
         setLoading(false);
         return;
       }
@@ -207,7 +218,12 @@ const BuildingTaxCalculator: React.FC<BuildingTaxCalculatorProps> = ({
         idDocUrl = supabase.storage.from('cadastral-documents').getPublicUrl(path).data.publicUrl;
       }
 
-      // #6 fix: Include province, ville, area_sqm in root fields for data completeness
+      const isMain = constructionRef === 'main';
+      const cccConstructionNature = constructionType === 'en_dur' ? 'Durable'
+        : constructionType === 'semi_dur' ? 'Semi-durable' : 'Précaire';
+      const legacyConstructionType = constructionType === 'en_dur' ? 'En dur'
+        : constructionType === 'semi_dur' ? 'Semi-dur' : 'En paille';
+
       const { error } = await supabase.from('cadastral_contributions').insert({
         parcel_number: parcelNumber,
         original_parcel_id: parcelId || null,
@@ -217,10 +233,10 @@ const BuildingTaxCalculator: React.FC<BuildingTaxCalculatorProps> = ({
         province: province || null,
         ville: ville || null,
         area_sqm: areaSqm || null,
-        construction_type: constructionType === 'en_dur' ? 'En dur'
-          : constructionType === 'semi_dur' ? 'Semi-dur'
-          : 'En paille',
-        construction_year: constructionYear,
+        construction_type: isMain ? legacyConstructionType : (parcelData?.construction_type ?? null),
+        construction_nature: isMain ? cccConstructionNature : (parcelData?.construction_nature ?? null),
+        construction_year: isMain ? constructionYear : (parcelData?.construction_year ?? null),
+        current_owner_name: ownerName || null,
         owner_document_url: idDocUrl,
         tax_history: [{
           tax_type: 'Taxe de bâtisse',
@@ -237,6 +253,7 @@ const BuildingTaxCalculator: React.FC<BuildingTaxCalculatorProps> = ({
           fiscal_zone: fiscalZoneCategory,
           payment_status: 'En attente',
           nif: hasNif ? nif : null,
+          construction_ref: constructionRef,
         }],
       });
 

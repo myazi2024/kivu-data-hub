@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Receipt, Calculator, Plus, DollarSign, Building2, FileText } from 'lucide-react';
@@ -9,6 +9,9 @@ import PropertyTaxCalculator from './PropertyTaxCalculator';
 import BuildingTaxCalculator from './BuildingTaxCalculator';
 import IRLCalculator from './IRLCalculator';
 import WhatsAppFloatingButton from './WhatsAppFloatingButton';
+import TaxBuildingTargetSelector from './tax-calculator/TaxBuildingTargetSelector';
+import { buildKnownBuildings } from './tax-calculator/taxBuildings';
+import { useSharedTaxpayer } from './tax-calculator/useSharedTaxpayer';
 
 interface TaxManagementDialogProps {
   parcelNumber: string;
@@ -30,12 +33,29 @@ const TaxManagementDialog: React.FC<TaxManagementDialogProps> = ({
   const [rootTab, setRootTab] = useState<RootTab>('declare');
   const [declareSubTab, setDeclareSubTab] = useState<DeclareSubTab>('foncier');
 
+  // Multi-construction selector (CCC alignment)
+  const buildings = useMemo(() => buildKnownBuildings(parcelData), [parcelData]);
+  const hasMultipleBuildings = buildings.length > 1;
+  const [selectedBuildingRef, setSelectedBuildingRef] = useState<string>(
+    buildings[0]?.ref || 'main',
+  );
+  const selectedBuilding = useMemo(
+    () => buildings.find(b => b.ref === selectedBuildingRef) ?? null,
+    [buildings, selectedBuildingRef],
+  );
+
+  // Shared taxpayer state across the four sub-flows
+  const taxpayer = useSharedTaxpayer(parcelData?.current_owner_name);
+
   useEffect(() => {
     if (open) {
       setShowIntro(true);
       setRootTab('declare');
       setDeclareSubTab('foncier');
+      setSelectedBuildingRef(buildings[0]?.ref || 'main');
+      taxpayer.reset();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   if (showIntro && open) {
@@ -130,41 +150,64 @@ const TaxManagementDialog: React.FC<TaxManagementDialogProps> = ({
         </DialogHeader>
 
         <div className="overflow-y-auto flex-1 min-h-0" style={{ maxHeight: 'calc(85vh - 220px)' }}>
+          {/* Building target selector — shown when parcel has >1 building */}
+          {hasMultipleBuildings && (
+            <div className="px-4 pt-3">
+              <TaxBuildingTargetSelector
+                buildings={buildings}
+                selectedRef={selectedBuildingRef}
+                onSelect={setSelectedBuildingRef}
+                allowNew={false}
+              />
+            </div>
+          )}
+
           {rootTab === 'declare' && declareSubTab === 'foncier' && (
             <PropertyTaxCalculator
-              key="foncier"
+              key={`foncier-${selectedBuildingRef}`}
               parcelNumber={parcelNumber}
               parcelId={parcelId}
               parcelData={parcelData}
               onOpenServiceCatalog={onOpenServiceCatalog}
+              constructionRef={selectedBuildingRef}
+              targetBuilding={selectedBuilding}
+              taxpayer={taxpayer}
             />
           )}
           {rootTab === 'declare' && declareSubTab === 'batisse' && (
             <BuildingTaxCalculator
-              key="batisse"
+              key={`batisse-${selectedBuildingRef}`}
               parcelNumber={parcelNumber}
               parcelId={parcelId}
               parcelData={parcelData}
               onOpenServiceCatalog={onOpenServiceCatalog}
+              constructionRef={selectedBuildingRef}
+              targetBuilding={selectedBuilding}
+              taxpayer={taxpayer}
             />
           )}
           {rootTab === 'declare' && declareSubTab === 'irl' && (
             <IRLCalculator
-              key="irl"
+              key={`irl-${selectedBuildingRef}`}
               parcelNumber={parcelNumber}
               parcelId={parcelId}
               parcelData={parcelData}
               onOpenServiceCatalog={onOpenServiceCatalog}
+              constructionRef={selectedBuildingRef}
+              targetBuilding={selectedBuilding}
+              taxpayer={taxpayer}
             />
           )}
           {rootTab === 'add' && (
             <TaxFormDialog
-              key="add"
+              key={`add-${selectedBuildingRef}`}
               parcelNumber={parcelNumber}
               parcelId={parcelId}
               open={true}
               onOpenChange={onOpenChange}
               embedded
+              constructionRef={selectedBuildingRef}
+              taxpayer={taxpayer}
             />
           )}
         </div>

@@ -10,18 +10,28 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { detectZoneType, isZoneAutoDetected, detectUsageType, detectConstructionType, checkDuplicateTaxSubmission } from './tax-calculator/taxSharedUtils';
 import { validateNIF, NIF_FORMAT_ERROR } from './tax-calculator/taxFormConstants'; // #18 fix: use centralized validateNIF
+import type { TaxKnownBuilding } from './tax-calculator/taxBuildings';
+import { toCccConstructionNature, toLegacyConstructionType, toCccDeclaredUsage } from './tax-calculator/taxBuildings';
+import type { SharedTaxpayer } from './tax-calculator/useSharedTaxpayer';
 
 interface PropertyTaxCalculatorProps {
   parcelNumber: string;
   parcelId?: string;
   parcelData?: any;
   onOpenServiceCatalog?: () => void;
+  /** Multi-construction: ref of the building this declaration targets */
+  constructionRef?: string;
+  /** Pre-filled data for the targeted building */
+  targetBuilding?: TaxKnownBuilding | null;
+  /** Shared taxpayer state from parent dialog (overrides local state when provided) */
+  taxpayer?: SharedTaxpayer;
 }
 
 type CalcStep = 'questions' | 'summary' | 'confirmation'; // #3 fix: add confirmation step
 
 const PropertyTaxCalculator: React.FC<PropertyTaxCalculatorProps> = ({
-  parcelNumber, parcelId, parcelData, onOpenServiceCatalog
+  parcelNumber, parcelId, parcelData, onOpenServiceCatalog,
+  constructionRef = 'main', targetBuilding = null, taxpayer,
 }) => {
   const { user } = useAuth();
   const { calculate, loading: configLoading } = usePropertyTaxCalculator();
@@ -29,27 +39,41 @@ const PropertyTaxCalculator: React.FC<PropertyTaxCalculatorProps> = ({
   const currentYear = new Date().getFullYear();
   const [calcStep, setCalcStep] = useState<CalcStep>('questions');
   const [result, setResult] = useState<TaxCalculationResult | null>(null);
-  const [nif, setNif] = useState('');
-  const [ownerName, setOwnerName] = useState(parcelData?.current_owner_name || '');
-  const [idDocumentFile, setIdDocumentFile] = useState<File | null>(null);
-  const [hasNif, setHasNif] = useState<boolean | null>(null);
+
+  // Local fallback state when no shared taxpayer is provided
+  const [localNif, setLocalNif] = useState('');
+  const [localOwnerName, setLocalOwnerName] = useState(parcelData?.current_owner_name || '');
+  const [localIdDocumentFile, setLocalIdDocumentFile] = useState<File | null>(null);
+  const [localHasNif, setLocalHasNif] = useState<boolean | null>(null);
+
+  const nif = taxpayer?.nif ?? localNif;
+  const setNif = taxpayer?.setNif ?? setLocalNif;
+  const ownerName = taxpayer?.ownerName ?? localOwnerName;
+  const setOwnerName = taxpayer?.setOwnerName ?? setLocalOwnerName;
+  const idDocumentFile = taxpayer?.idDocumentFile ?? localIdDocumentFile;
+  const setIdDocumentFile = taxpayer?.setIdDocumentFile ?? setLocalIdDocumentFile;
+  const hasNif = taxpayer?.hasNif ?? localHasNif;
+  const setHasNif = taxpayer?.setHasNif ?? setLocalHasNif;
+
   const [exemptionCertificateFile, setExemptionCertificateFile] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   const defaultZone = detectZoneType(parcelNumber, parcelData);
   const zoneAutoDetected = isZoneAutoDetected(parcelNumber);
-  const defaultUsage = detectUsageType(parcelData);
-  const defaultConstruction = detectConstructionType(parcelData);
+  // Prefer the targeted building's data when provided
+  const defaultUsage = targetBuilding?.usageType ?? detectUsageType(parcelData);
+  const defaultConstruction = targetBuilding?.constructionType ?? detectConstructionType(parcelData);
+  const defaultConstructionYear = targetBuilding?.constructionYear ?? parcelData?.construction_year ?? null;
 
   const [input, setInput] = useState<TaxCalculationInput>({
     zoneType: defaultZone,
     usageType: defaultUsage,
     constructionType: defaultConstruction,
-    areaSqm: parcelData?.area_sqm || 0,
+    areaSqm: targetBuilding?.areaSqm || parcelData?.area_sqm || 0,
     fiscalYear: currentYear,
     province: parcelData?.province || 'Nord-Kivu',
     ville: parcelData?.ville || '',
-    constructionYear: parcelData?.construction_year || null,
+    constructionYear: defaultConstructionYear,
     numberOfFloors: 1,
     roofingType: '',
     selectedExemptions: [],
@@ -64,7 +88,8 @@ const PropertyTaxCalculator: React.FC<PropertyTaxCalculatorProps> = ({
     monthsLate: 0,
   });
 
-  const [hasNoConstruction, setHasNoConstruction] = useState(defaultConstruction === null && parcelData?.construction_type === 'Terrain nu');
+  const isTerrainNu = (targetBuilding?.propertyCategory || parcelData?.construction_type) === 'Terrain nu';
+  const [hasNoConstruction, setHasNoConstruction] = useState(defaultConstruction === null && isTerrainNu);
 
   // Sync areaSqm and ownerName when parcelData loads asynchronously
   useEffect(() => {
@@ -131,12 +156,12 @@ const PropertyTaxCalculator: React.FC<PropertyTaxCalculatorProps> = ({
 
     setSubmitting(true);
     try {
-      // Duplicate check
+      // Duplicate check (scoped by constructionRef so multi-building parcels work)
       const isDuplicate = await checkDuplicateTaxSubmission(
-        supabase, parcelNumber, user.id, 'Impôt foncier annuel', input.fiscalYear
+        supabase, parcelNumber, user.id, 'Impôt foncier annuel', input.fiscalYear, constructionRef
       );
       if (isDuplicate) {
-        toast.error(`Une déclaration "Impôt foncier annuel" pour l'exercice ${input.fiscalYear} existe déjà pour cette parcelle.`);
+        toast.error(`Une déclaration "Impôt foncier annuel" pour l'exercice ${input.fiscalYear} existe déjà pour cette parcelle/bâtiment.`);
         return;
       }
 
@@ -164,6 +189,13 @@ const PropertyTaxCalculator: React.FC<PropertyTaxCalculatorProps> = ({
         exemptionDocUrl = supabase.storage.from('cadastral-documents').getPublicUrl(path).data.publicUrl;
       }
 
+      // Only set root construction_* / declared_usage when targeting the main building.
+      // For an extra-N building we keep them in tax_history metadata to avoid clobbering CCC truth.
+      const isMain = constructionRef === 'main';
+      const cccDeclaredUsage = toCccDeclaredUsage(input.usageType, parcelData?.declared_usage);
+      const cccConstructionNature = toCccConstructionNature(input.constructionType);
+      const legacyConstructionType = toLegacyConstructionType(input.constructionType);
+
       const { error } = await supabase.from('cadastral_contributions').insert({
         parcel_number: parcelNumber,
         original_parcel_id: parcelId || null,
@@ -173,16 +205,10 @@ const PropertyTaxCalculator: React.FC<PropertyTaxCalculatorProps> = ({
         province: input.province,
         ville: input.ville,
         area_sqm: input.areaSqm,
-        construction_type: input.constructionType ? (
-          input.constructionType === 'en_dur' ? 'En dur'
-          : input.constructionType === 'semi_dur' ? 'Semi-dur'
-          : 'En paille'
-        ) : null,
-        declared_usage: input.usageType === 'commercial' ? 'Commercial'
-          : input.usageType === 'industrial' ? 'Industriel'
-          : input.usageType === 'agricultural' ? 'Agricole'
-          : 'Résidentiel',
-        construction_year: input.constructionYear,
+        construction_type: isMain ? legacyConstructionType : (parcelData?.construction_type ?? null),
+        construction_nature: isMain ? cccConstructionNature : (parcelData?.construction_nature ?? null),
+        declared_usage: isMain ? cccDeclaredUsage : (parcelData?.declared_usage ?? null),
+        construction_year: isMain ? input.constructionYear : (parcelData?.construction_year ?? null),
         current_owner_name: ownerName || null,
         owner_document_url: idDocUrl,
         tax_history: [{
@@ -198,6 +224,13 @@ const PropertyTaxCalculator: React.FC<PropertyTaxCalculatorProps> = ({
           exemption_certificate_url: exemptionDocUrl,
           nif: hasNif ? nif : null,
           payment_status: 'En attente',
+          // Multi-construction linkage
+          construction_ref: constructionRef,
+          // Calculation metadata (out of CCC core schema, kept here only)
+          construction_type: input.constructionType,
+          declared_usage: input.usageType,
+          number_of_floors: input.numberOfFloors,
+          roofing_type: input.roofingType || null,
         }],
       });
 
