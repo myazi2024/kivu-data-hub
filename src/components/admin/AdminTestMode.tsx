@@ -62,6 +62,7 @@ const AdminTestMode: React.FC = () => {
     cleanupTestData,
     generateTestData,
     regenerateTestData,
+    cancelGeneration,
   } = useTestDataActions({
     userId: user?.id,
     onComplete: refreshStats,
@@ -248,11 +249,13 @@ const AdminTestMode: React.FC = () => {
         onSave={saveConfiguration}
       />
 
-      {/* Progression de génération automatique */}
+      {/* Progression de génération (server-side, survit à la fermeture de l'onglet) */}
       <GenerationProgress
         steps={generationSteps}
         currentStep={currentStep}
         visible={generatingData}
+        onCancel={cancelGeneration}
+        backgroundNotice
       />
 
       {/* Progression de la purge serveur — visible sur les 3 chemins */}
