@@ -117,6 +117,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
   const { createExpertiseRequest, loading, checkExistingValidCertificate, checkCertificateValidity } = useRealEstateExpertise();
   const parcelDocsInputRef = useRef<HTMLInputElement>(null);
   const constructionImagesInputRef = useRef<HTMLInputElement>(null);
+  const constructionGalleryInputRef = useRef<HTMLInputElement>(null);
 
   const [showIntro, setShowIntro] = useState(true);
   const [step, setStep] = useState<'form' | 'summary' | 'payment' | 'confirmation'>('form');
