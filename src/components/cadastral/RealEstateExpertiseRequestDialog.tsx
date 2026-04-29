@@ -2044,16 +2044,35 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                   onChange={handleConstructionImageSelect}
                   className="hidden"
                 />
-                
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => constructionImagesInputRef.current?.click()}
-                  className="w-full h-10 text-sm rounded-xl border-2 border-dashed"
-                >
-                  <Image className="h-4 w-4 mr-2" />
-                  Photos de la construction
-                </Button>
+                <input
+                  ref={constructionGalleryInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleConstructionImageSelect}
+                  className="hidden"
+                />
+
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => constructionImagesInputRef.current?.click()}
+                    className="h-10 text-xs sm:text-sm rounded-xl border-2 border-dashed"
+                  >
+                    <Camera className="h-4 w-4 mr-1.5 flex-shrink-0" />
+                    Prendre photo
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => constructionGalleryInputRef.current?.click()}
+                    className="h-10 text-xs sm:text-sm rounded-xl border-2 border-dashed"
+                  >
+                    <Image className="h-4 w-4 mr-1.5 flex-shrink-0" />
+                    Galerie
+                  </Button>
+                </div>
                 
                 {constructionImages.length > 0 && (
                   <div className="grid grid-cols-3 gap-2">
