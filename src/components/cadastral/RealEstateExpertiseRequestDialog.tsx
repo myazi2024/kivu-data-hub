@@ -560,6 +560,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     setConstructionImages(prev => [...prev, ...validFiles]);
     setConstructionImageUrls(prev => [...prev, ...newUrls]);
     if (constructionImagesInputRef.current) constructionImagesInputRef.current.value = '';
+    if (constructionGalleryInputRef.current) constructionGalleryInputRef.current.value = '';
   };
 
   const removeParcelDoc = (index: number) => {
