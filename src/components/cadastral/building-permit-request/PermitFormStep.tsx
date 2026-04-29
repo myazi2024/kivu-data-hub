@@ -17,7 +17,11 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import SectionHelpPopover from '../SectionHelpPopover';
-import { PermitFormData, AttachmentFile, FeeItem, ATTACHMENT_FIELDS, isValidEmail, isValidPhone } from './types';
+import { PermitFormData, AttachmentFile, FeeItem, ATTACHMENT_FIELDS, isValidEmail, isValidPhone, isValidNif } from './types';
+import { useCCCFormPicklists } from '@/hooks/useCCCFormPicklists';
+import { resolveAvailableUsages } from '@/utils/constructionUsageResolver';
+import PermitBuildingTargetSelector from './PermitBuildingTargetSelector';
+import type { PermitKnownBuilding } from './permitBuildings';
 
 interface PermitFormStepProps {
   parcelNumber: string;
@@ -34,10 +38,14 @@ interface PermitFormStepProps {
   isFormValid: () => boolean;
   requiresOriginalPermit: () => boolean;
   onPreview: () => void;
-  /** Fix #15: Show draft restored indicator */
   isDraftRestored?: boolean;
-  /** Pre-fill indicator */
   parcelData?: any;
+  /** Multi-construction support */
+  knownBuildings?: PermitKnownBuilding[];
+  setConstructionRef?: (ref: string) => void;
+  /** Surface vs parcel coherence */
+  surfaceWarning?: { kind: 'warn' | 'error'; message: string } | null;
+  parcelAreaSqm?: number | null;
 }
 
 const PermitFormStep: React.FC<PermitFormStepProps> = ({
@@ -45,9 +53,24 @@ const PermitFormStep: React.FC<PermitFormStepProps> = ({
   attachments, setAttachments, feesLoading, feesSource, feeBreakdown,
   totalFeeUSD, isFormValid, requiresOriginalPermit, onPreview,
   isDraftRestored = false, parcelData,
+  knownBuildings = [], setConstructionRef,
+  surfaceWarning, parcelAreaSqm,
 }) => {
   const { toast } = useToast();
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+
+  // ===== CCC picklists (cascade) =====
+  const { getPicklistOptions, getPicklistDependentOptions } = useCCCFormPicklists();
+  const constructionTypes = getPicklistOptions('picklist_construction_type');
+  const naturesByType = getPicklistDependentOptions('picklist_construction_nature');
+  const availableNatures = formData.constructionType
+    ? (naturesByType[formData.constructionType] || [])
+    : [];
+  const availableUsages = resolveAvailableUsages(
+    formData.constructionType,
+    formData.constructionNature,
+    getPicklistDependentOptions,
+  );
 
   const handleFileChange = (key: string, label: string, e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -64,15 +87,18 @@ const PermitFormStep: React.FC<PermitFormStepProps> = ({
   // Validation hints
   const emailInvalid = formData.applicantEmail && !isValidEmail(formData.applicantEmail);
   const phoneInvalid = formData.applicantPhone && !isValidPhone(formData.applicantPhone);
+  const nifInvalid = formData.nif && !isValidNif(formData.nif);
   const areaValue = parseFloat(formData.plannedArea);
   const areaInvalid = formData.plannedArea && (isNaN(areaValue) || areaValue <= 0);
   const nameInvalid = formData.applicantName && formData.applicantName.trim().length > 0 && formData.applicantName.trim().length < 3;
   const descInvalid = formData.projectDescription && formData.projectDescription.trim().length > 0 && formData.projectDescription.trim().length < 10;
 
+  const showBuildingSelector = (knownBuildings.length > 1) || (knownBuildings.length === 1 && !!setConstructionRef);
+  const isExistingBuilding = formData.constructionRef && formData.constructionRef !== 'new';
+
   return (
     <ScrollArea className="h-[65vh] sm:h-[70vh]">
       <div className="space-y-4 pr-2">
-        {/* Fix #15: Draft restored indicator */}
         {isDraftRestored && (
           <Alert className="rounded-xl bg-blue-50/80 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800">
             <RotateCcw className="h-4 w-4 text-blue-600 dark:text-blue-400" />
@@ -82,7 +108,6 @@ const PermitFormStep: React.FC<PermitFormStepProps> = ({
           </Alert>
         )}
 
-        {/* Pre-fill from CCC indicator */}
         {!isDraftRestored && parcelData && (parcelData.construction_type || parcelData.construction_nature || parcelData.declared_usage) && (
           <Alert className="rounded-xl border-primary/30 bg-primary/5">
             <Info className="h-4 w-4 text-primary" />
@@ -99,6 +124,12 @@ const PermitFormStep: React.FC<PermitFormStepProps> = ({
               <div className="flex items-center gap-2 text-sm text-muted-foreground"><MapPin className="h-4 w-4" />Parcelle</div>
               <span className="font-mono font-bold text-sm">{parcelNumber}</span>
             </div>
+            {parcelAreaSqm && (
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <span>Superficie cadastrale</span>
+                <span className="font-medium text-foreground">{parcelAreaSqm.toLocaleString('fr-FR')} m²</span>
+              </div>
+            )}
             {parcelData?.current_owner_name && (
               <div className="flex items-center justify-between text-xs text-muted-foreground">
                 <span>Propriétaire actuel</span>
@@ -137,6 +168,21 @@ const PermitFormStep: React.FC<PermitFormStepProps> = ({
           </CardContent>
         </Card>
 
+        {/* Multi-construction selector */}
+        {showBuildingSelector && setConstructionRef && (
+          <PermitBuildingTargetSelector
+            buildings={knownBuildings}
+            selectedRef={formData.constructionRef || 'main'}
+            onSelect={setConstructionRef}
+            allowNew={requestType === 'new'}
+            helpText={
+              requestType === 'regularization'
+                ? "Sélectionnez le bâtiment à régulariser. Les caractéristiques connues seront verrouillées."
+                : "Indiquez si la construction concerne un bâtiment existant ou un nouveau bâtiment."
+            }
+          />
+        )}
+
         {/* Détails de la construction */}
         <Card className="border-2 rounded-xl">
           <CardContent className="p-3 space-y-3">
@@ -149,43 +195,60 @@ const PermitFormStep: React.FC<PermitFormStepProps> = ({
               <Select value={formData.constructionType} onValueChange={(v) => handleInputChange('constructionType', v)}>
                 <SelectTrigger className="h-10 text-sm rounded-xl border-2"><SelectValue placeholder="Sélectionner le type" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Résidentielle">Résidentielle</SelectItem>
-                  <SelectItem value="Commerciale">Commerciale</SelectItem>
-                  <SelectItem value="Industrielle">Industrielle</SelectItem>
-                  <SelectItem value="Agricole">Agricole</SelectItem>
+                  {constructionTypes.map((opt) => (
+                    <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-1.5">
               <Label className="text-sm">Nature de construction *</Label>
-              <Select value={formData.constructionNature} onValueChange={(v) => handleInputChange('constructionNature', v)}>
-                <SelectTrigger className="h-10 text-sm rounded-xl border-2"><SelectValue placeholder="Sélectionner la nature" /></SelectTrigger>
+              <Select
+                value={formData.constructionNature}
+                onValueChange={(v) => handleInputChange('constructionNature', v)}
+                disabled={!formData.constructionType}
+              >
+                <SelectTrigger className="h-10 text-sm rounded-xl border-2">
+                  <SelectValue placeholder={formData.constructionType ? 'Sélectionner la nature' : 'Choisissez d\'abord le type'} />
+                </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Durable">Construction durable (béton, briques, ciment)</SelectItem>
-                  <SelectItem value="Semi-durable">Construction semi-durable (matériaux mixtes)</SelectItem>
-                  <SelectItem value="Précaire">Construction précaire (bois, tôle)</SelectItem>
+                  {availableNatures.map((opt) => (
+                    <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-1.5">
               <Label className="text-sm">Usage déclaré *</Label>
-              <Select value={formData.declaredUsage} onValueChange={(v) => handleInputChange('declaredUsage', v)}>
-                <SelectTrigger className="h-10 text-sm rounded-xl border-2"><SelectValue placeholder="Sélectionner l'usage" /></SelectTrigger>
+              <Select
+                value={formData.declaredUsage}
+                onValueChange={(v) => handleInputChange('declaredUsage', v)}
+                disabled={!formData.constructionType || !formData.constructionNature}
+              >
+                <SelectTrigger className="h-10 text-sm rounded-xl border-2">
+                  <SelectValue placeholder={availableUsages.length > 0 ? 'Sélectionner l\'usage' : 'Sélectionnez type et nature'} />
+                </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Habitation">Habitation</SelectItem>
-                  <SelectItem value="Location">Location</SelectItem>
-                  <SelectItem value="Commerce">Commerce</SelectItem>
-                  <SelectItem value="Bureau">Bureau</SelectItem>
-                  <SelectItem value="Entrepôt">Entrepôt</SelectItem>
-                  <SelectItem value="Industrie">Industrie</SelectItem>
-                  <SelectItem value="Usage mixte">Usage mixte</SelectItem>
+                  {availableUsages.map((opt) => (
+                    <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div className="space-y-1.5">
                 <Label className="text-sm">Surface (m²) *</Label>
-                <Input type="number" min="1" placeholder="150" value={formData.plannedArea} onChange={(e) => handleInputChange('plannedArea', e.target.value)} className={cn("h-10 text-sm rounded-xl border-2", areaInvalid && "border-destructive")} />
+                <Input
+                  type="number" min="1" placeholder="150"
+                  value={formData.plannedArea}
+                  onChange={(e) => handleInputChange('plannedArea', e.target.value)}
+                  readOnly={requestType === 'regularization' && isExistingBuilding}
+                  className={cn(
+                    "h-10 text-sm rounded-xl border-2",
+                    areaInvalid && "border-destructive",
+                    requestType === 'regularization' && isExistingBuilding && "bg-muted text-muted-foreground"
+                  )}
+                />
                 {areaInvalid && <p className="text-[10px] text-destructive">La surface doit être supérieure à 0</p>}
               </div>
               <div className="space-y-1.5">
@@ -193,6 +256,18 @@ const PermitFormStep: React.FC<PermitFormStepProps> = ({
                 <Input type="number" min="1" placeholder="2" value={formData.numberOfFloors} onChange={(e) => handleInputChange('numberOfFloors', e.target.value)} className="h-10 text-sm rounded-xl border-2" />
               </div>
             </div>
+            {surfaceWarning && (
+              <Alert
+                variant={surfaceWarning.kind === 'error' ? 'destructive' : 'default'}
+                className={cn(
+                  'rounded-xl',
+                  surfaceWarning.kind === 'warn' && 'border-orange-300 bg-orange-50 dark:bg-orange-950/30 dark:border-orange-800',
+                )}
+              >
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription className="text-xs">{surfaceWarning.message}</AlertDescription>
+              </Alert>
+            )}
             <div className="grid grid-cols-2 gap-2">
               <div className="space-y-1.5">
                 <Label className="text-sm">Nombre de pièces</Label>
@@ -362,6 +437,17 @@ const PermitFormStep: React.FC<PermitFormStepProps> = ({
               </div>
             </div>
             <div className="space-y-1.5">
+              <Label className="text-sm">NIF (Numéro d'identification fiscale)</Label>
+              <Input
+                type="text"
+                placeholder="Ex: A1234567B"
+                value={formData.nif}
+                onChange={(e) => handleInputChange('nif', e.target.value.toUpperCase())}
+                className={cn("h-10 text-sm rounded-xl border-2", nifInvalid && "border-destructive")}
+              />
+              {nifInvalid && <p className="text-[10px] text-destructive">Format invalide (6-20 caractères alphanumériques)</p>}
+            </div>
+            <div className="space-y-1.5">
               <Label className="text-sm">Adresse</Label>
               <Textarea placeholder="Votre adresse complète..." value={formData.applicantAddress} onChange={(e) => handleInputChange('applicantAddress', e.target.value)} rows={2} className="resize-none text-sm rounded-xl border-2" />
             </div>
@@ -412,20 +498,28 @@ const PermitFormStep: React.FC<PermitFormStepProps> = ({
               <div className="flex items-center gap-2 py-2"><Loader2 className="h-4 w-4 animate-spin" /><span className="text-sm text-muted-foreground">Chargement des frais...</span></div>
             ) : (
               <>
-                {feeBreakdown.map((fee, i) => (
-                  <div key={i} className="flex items-center justify-between text-sm">
-                    <div className="flex-1 min-w-0">
-                      <span className="text-muted-foreground text-xs">{fee.label}</span>
-                      {fee.detail && <span className="text-[10px] text-muted-foreground ml-1">({fee.detail})</span>}
+                {feeBreakdown.length === 0 ? (
+                  <p className="text-xs text-muted-foreground italic">
+                    Aucun frais applicable pour cette combinaison surface/usage. Renseignez la surface, l'usage et la nature pour afficher le tarif.
+                  </p>
+                ) : (
+                  <>
+                    {feeBreakdown.map((fee, i) => (
+                      <div key={i} className="flex items-start justify-between text-sm gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="text-xs font-medium">{fee.label}</div>
+                          {fee.detail && <div className="text-[10px] text-muted-foreground">{fee.detail}</div>}
+                        </div>
+                        <span className="font-medium ml-2 whitespace-nowrap">${fee.amount.toFixed(2)}</span>
+                      </div>
+                    ))}
+                    <Separator />
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-bold">Total</span>
+                      <span className="text-lg font-bold text-primary">${totalFeeUSD.toFixed(2)} USD</span>
                     </div>
-                    <span className="font-medium ml-2">${fee.amount.toFixed(2)}</span>
-                  </div>
-                ))}
-                <Separator />
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-bold">Total</span>
-                  <span className="text-lg font-bold text-primary">${totalFeeUSD.toFixed(2)} USD</span>
-                </div>
+                  </>
+                )}
                 {feesSource === 'fallback' && (
                   <p className="text-[10px] text-muted-foreground italic">* Tarification par défaut. Le montant final sera confirmé par l'administration.</p>
                 )}
