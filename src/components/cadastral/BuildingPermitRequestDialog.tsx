@@ -425,6 +425,10 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
               onPreview={handlePreview}
               isDraftRestored={form.isDraftRestored}
               parcelData={parcelData}
+              knownBuildings={form.knownBuildings}
+              setConstructionRef={form.setConstructionRef}
+              surfaceWarning={form.surfaceWarning}
+              parcelAreaSqm={form.parcelAreaSqm}
             />
           )}
           {step === 'preview' && (
