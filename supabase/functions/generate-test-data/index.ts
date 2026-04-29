@@ -381,7 +381,7 @@ async function runJob(jobId: string, userId: string): Promise<void> {
     await admin.from("audit_logs").insert({
       user_id: userId,
       action: "TEST_DATA_GENERATED",
-      table_name: "cadastral_contributions",
+      table_name: "test_generation_jobs",
       new_values: {
         contributions: ctx.contributions.length,
         invoices: ctx.invoices.length,
@@ -403,6 +403,8 @@ async function runJob(jobId: string, userId: string): Promise<void> {
         finished_at: new Date().toISOString(),
       })
       .eq("id", jobId);
+  } finally {
+    clearInterval(heartbeatInterval);
   }
 }
 
