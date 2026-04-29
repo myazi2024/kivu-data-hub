@@ -162,34 +162,40 @@ const TaxFormDialog: React.FC<TaxFormDialogProps> = ({
           const history = c.tax_history as any[];
           return history?.some((h: any) =>
             h.tax_type === taxRecord.taxType &&
-            String(h.tax_year) === taxRecord.taxYear
+            String(h.tax_year) === taxRecord.taxYear &&
+            // P0 alignment: scope duplicates per construction (multi-building parcels).
+            (h.construction_ref ?? 'main') === constructionRef
           );
         });
 
         if (isDuplicate) {
-          toast.error(`Une déclaration "${taxRecord.taxType}" pour l'année ${taxRecord.taxYear} existe déjà pour cette parcelle.`);
+          toast.error(`Une déclaration "${taxRecord.taxType}" pour l'année ${taxRecord.taxYear} existe déjà pour ce bâtiment.`);
           setLoading(false);
           return;
         }
       }
 
-      // Upload file if present
+      // Upload file if present (memory rule: crypto.randomUUID, never Math.random for uploads).
       let documentUrl = null;
       if (taxRecord.receiptFile) {
         const fileExt = taxRecord.receiptFile.name.split('.').pop();
-        const fileName = `tax_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
+        const fileName = `tax_${Date.now()}_${crypto.randomUUID()}.${fileExt}`;
         const filePath = `tax-documents/${user.id}/${fileName}`;
-        
+
         const { error: uploadError } = await supabase.storage
           .from('cadastral-documents')
           .upload(filePath, taxRecord.receiptFile);
-        
+
         if (uploadError) throw uploadError;
         uploadedFilePath = filePath;
-        
+
         const { data } = supabase.storage.from('cadastral-documents').getPublicUrl(filePath);
         documentUrl = data.publicUrl;
       }
+
+      const remaining = taxRecord.remainingAmount.trim() === ''
+        ? null
+        : Math.max(0, parseFloat(taxRecord.remainingAmount) || 0);
 
       // Insert contribution
       const { error } = await supabase
@@ -204,9 +210,14 @@ const TaxFormDialog: React.FC<TaxFormDialogProps> = ({
             tax_type: taxRecord.taxType,
             tax_year: parseInt(taxRecord.taxYear),
             amount_usd: parseFloat(taxRecord.taxAmount),
+            // P1: persist remaining amount for partial payments.
+            remaining_amount_usd: remaining,
             payment_status: taxRecord.paymentStatus,
             payment_date: taxRecord.paymentDate || null,
-            receipt_document_url: documentUrl
+            receipt_document_url: documentUrl,
+            // P0: tag the recorded payment with the targeted construction.
+            construction_ref: constructionRef,
+            nif: taxRecord.nif || null,
           }]
         });
 
@@ -239,10 +250,11 @@ const TaxFormDialog: React.FC<TaxFormDialogProps> = ({
   const handleClose = () => {
     setStep('form');
     setTaxRecord({
-      nif: '',
+      nif: taxpayer?.nif || '',
       taxType: 'Impôt foncier annuel',
       taxYear: currentYear.toString(),
       taxAmount: '',
+      remainingAmount: '',
       paymentStatus: 'Payé',
       paymentDate: '',
       receiptFile: null
