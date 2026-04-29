@@ -4,34 +4,58 @@ import { Card } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 
 /**
- * Shows a banner in financial dashboards when >50% of billing volume is TEST data.
- * Reads counts from cadastral_invoices (TEST-prefixed parcel) vs total.
+ * Shows a banner in financial dashboards when the share of TEST invoices
+ * exceeds a configurable threshold. Thresholds live in `system_settings`:
+ *  - `test_mode_billing_alert_pct` (number, default 0.5)
+ *  - `test_mode_billing_min_volume` (number, default 20)
  */
-/** Minimum invoice volume before the banner becomes meaningful — avoids
- *  raising a 100% TEST alert when production simply has very few rows. */
-const MIN_INVOICE_VOLUME = 20;
+const DEFAULT_PCT = 0.5;
+const DEFAULT_MIN_VOLUME = 20;
+
+const readNumber = (raw: unknown, fallback: number): number => {
+  if (typeof raw === 'number' && Number.isFinite(raw)) return raw;
+  if (typeof raw === 'string') {
+    const n = Number(raw);
+    if (Number.isFinite(n)) return n;
+  }
+  return fallback;
+};
 
 const TestModeBanner = () => {
   const [ratio, setRatio] = useState<number | null>(null);
   const [total, setTotal] = useState<number>(0);
+  const [thresholds, setThresholds] = useState({ pct: DEFAULT_PCT, minVolume: DEFAULT_MIN_VOLUME });
 
   useEffect(() => {
     const load = async () => {
-      const [{ count: totalCount }, { count: testCount }] = await Promise.all([
+      const [{ count: totalCount }, { count: testCount }, settingsRes] = await Promise.all([
         supabase.from('cadastral_invoices').select('id', { count: 'exact', head: true }),
         supabase
           .from('cadastral_invoices')
           .select('id', { count: 'exact', head: true })
           .ilike('parcel_number', 'TEST-%'),
+        (supabase as any)
+          .from('system_settings')
+          .select('setting_key, setting_value')
+          .in('setting_key', ['test_mode_billing_alert_pct', 'test_mode_billing_min_volume']),
       ]);
       const t = totalCount ?? 0;
       setTotal(t);
       if (t > 0) setRatio((testCount ?? 0) / t);
+
+      const rows = (settingsRes as any)?.data as Array<{ setting_key: string; setting_value: unknown }> | null;
+      if (rows) {
+        const map = Object.fromEntries(rows.map((r) => [r.setting_key, r.setting_value]));
+        setThresholds({
+          pct: readNumber(map['test_mode_billing_alert_pct'], DEFAULT_PCT),
+          minVolume: readNumber(map['test_mode_billing_min_volume'], DEFAULT_MIN_VOLUME),
+        });
+      }
     };
     load();
   }, []);
 
-  if (ratio === null || total < MIN_INVOICE_VOLUME || ratio < 0.5) return null;
+  if (ratio === null || total < thresholds.minVolume || ratio < thresholds.pct) return null;
 
   return (
     <Card className="w-full p-3 border-amber-500/50 bg-amber-50 dark:bg-amber-950/30">
@@ -44,7 +68,7 @@ const TestModeBanner = () => {
           <p className="text-[10px] text-amber-600/80 dark:text-amber-400/80 mt-0.5">
             Les revenus affichés incluent des transactions de test. Utilisez la purge
             (Mode Test &rarr; Nettoyer tout) pour supprimer les données fictives avant la
-            mise en production.
+            mise en production. Seuils configurables dans Paramètres système.
           </p>
         </div>
       </div>

@@ -7598,6 +7598,21 @@ export type Database = {
           ville: string
         }[]
       }
+      get_cron_run_history: {
+        Args: { p_jobname: string; p_limit?: number }
+        Returns: {
+          command: string
+          database: string
+          end_time: string
+          job_pid: number
+          jobid: number
+          return_message: string
+          runid: number
+          start_time: string
+          status: string
+          username: string
+        }[]
+      }
       get_current_user_role: { Args: never; Returns: string }
       get_eligible_passthrough_transactions: {
         Args: {
@@ -7701,6 +7716,18 @@ export type Database = {
       get_signed_document_url: {
         Args: { p_expires_in?: number; p_file_path: string }
         Returns: string
+      }
+      get_test_cleanup_history: {
+        Args: { p_limit?: number }
+        Returns: {
+          action: string
+          created_at: string
+          failed_step: string
+          id: string
+          per_step: Json
+          total_deleted: number
+          user_id: string
+        }[]
       }
       get_tva_declaration: {
         Args: { p_month: number; p_year: number }
