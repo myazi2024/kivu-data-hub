@@ -92,6 +92,11 @@ export interface ExpertiseRequest {
   building_permit_issue_date?: string;
   building_permit_issuing_service?: string;
   building_permit_document_url?: string;
+
+  // Targeted building (for parcels with multiple constructions)
+  target_building_ref?: string;
+  target_building_label?: string;
+  cadastre_discrepancies?: string;
 }
 
 export interface CreateExpertiseRequestData {
@@ -167,6 +172,11 @@ export interface CreateExpertiseRequestData {
   building_permit_issue_date?: string;
   building_permit_issuing_service?: string;
   building_permit_document_url?: string;
+
+  // Targeted building (for parcels with multiple constructions)
+  target_building_ref?: string;
+  target_building_label?: string;
+  cadastre_discrepancies?: string;
 }
 
 export interface ExpertiseFee {
