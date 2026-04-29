@@ -159,7 +159,7 @@ const IRLCalculator: React.FC<IRLCalculatorProps> = ({
     setSubmitting(true);
     try {
       const isDuplicate = await checkDuplicateTaxSubmission(
-        supabase, parcelNumber, user.id, 'Impôt sur le revenu locatif', input.fiscalYear
+        supabase, parcelNumber, user.id, 'Impôt sur le revenu locatif', input.fiscalYear, constructionRef
       );
       if (isDuplicate) {
         toast.error(`Une déclaration IRL pour l'exercice ${input.fiscalYear} existe déjà pour cette parcelle.`);
