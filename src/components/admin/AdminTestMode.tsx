@@ -5,7 +5,7 @@ import { Loader2, TestTube, AlertTriangle, BarChart3, Map as MapIcon } from 'luc
 import { useTestMode, TestModeConfig } from '@/hooks/useTestMode';
 import { useAuth } from '@/hooks/useAuth';
 import { upsertSearchConfig, logAuditAction } from '@/utils/supabaseConfigUtils';
-import { supabase } from '@/integrations/supabase/client';
+
 import { toast } from 'sonner';
 import { toRecord } from './test-mode/types';
 import { useTestDataStats } from './test-mode/useTestDataStats';
