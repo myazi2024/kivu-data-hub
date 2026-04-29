@@ -284,6 +284,13 @@ const AdminTestMode: React.FC = () => {
         visible={generatingData}
       />
 
+      {/* Progression de la purge serveur */}
+      <CleanupProgress
+        visible={cleanupRunning || cleanupResult !== null}
+        perStep={cleanupResult?.perStep ?? null}
+        failedStep={cleanupResult?.failedStep ?? null}
+      />
+
       {/* Statistiques */}
       <TestDataStatsCard
         stats={stats}
