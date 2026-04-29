@@ -6853,6 +6853,60 @@ export type Database = {
         }
         Relationships: []
       }
+      test_generation_jobs: {
+        Row: {
+          counts: Json
+          created_at: string
+          current_step_index: number
+          current_step_key: string | null
+          error: string | null
+          failed_substeps: string[]
+          finished_at: string | null
+          heartbeat_at: string | null
+          id: string
+          started_at: string | null
+          status: string
+          steps_state: Json
+          suffix: string | null
+          total_steps: number
+          user_id: string
+        }
+        Insert: {
+          counts?: Json
+          created_at?: string
+          current_step_index?: number
+          current_step_key?: string | null
+          error?: string | null
+          failed_substeps?: string[]
+          finished_at?: string | null
+          heartbeat_at?: string | null
+          id?: string
+          started_at?: string | null
+          status?: string
+          steps_state?: Json
+          suffix?: string | null
+          total_steps?: number
+          user_id: string
+        }
+        Update: {
+          counts?: Json
+          created_at?: string
+          current_step_index?: number
+          current_step_key?: string | null
+          error?: string | null
+          failed_substeps?: string[]
+          finished_at?: string | null
+          heartbeat_at?: string | null
+          id?: string
+          started_at?: string | null
+          status?: string
+          steps_state?: Json
+          suffix?: string | null
+          total_steps?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_activity_logs: {
         Row: {
           activity_details: Json | null

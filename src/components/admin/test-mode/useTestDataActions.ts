@@ -1,36 +1,8 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { logAuditAction } from '@/utils/supabaseConfigUtils';
 import { toast } from 'sonner';
 import type { GenerationStep } from './types';
-import { toRecord } from './types';
-import {
-  uniqueSuffix,
-  generateParcelNumbers,
-  verifyTestModeEnabled,
-  generateParcels,
-  generateContributions,
-  generateInvoices,
-  generatePayments,
-  generateTitleRequests,
-  generateExpertiseRequests,
-  generateExpertisePayments,
-  generateDisputes,
-  generateContributorCodes,
-  generateFraudAttempts,
-  generateBoundaryConflicts,
-  generateOwnershipHistory,
-  generateTaxHistory,
-  generateBoundaryHistory,
-  generateMortgages,
-  generateMortgagePayments,
-  generateBuildingPermits,
-  generateCertificates,
-  generateMutationRequests,
-  generateSubdivisionRequests,
-  generateSubdivisionLotsAndRoads,
-} from './testDataGenerators';
-import { buildGenerationSteps, type StepCtx } from './generationStepsRegistry';
+import { useTestGenerationJob } from '@/hooks/useTestGenerationJob';
 
 interface UseTestDataActionsProps {
   userId?: string;
@@ -49,79 +21,81 @@ interface CleanupResult {
 }
 
 /**
- * Orchestrates test data generation/cleanup using the declarative step registry
- * (`generationStepsRegistry.ts`). Each step is rendered in `GenerationProgress`
- * via `generationSteps` state.
+ * Orchestrates test data cleanup (server-side via `cleanup-test-data-batch`)
+ * and generation (server-side via `generate-test-data` + `EdgeRuntime.waitUntil`).
+ *
+ * The generation flow used to run inline in the browser, which meant closing
+ * the admin tab aborted the run mid-way. It is now delegated to an edge
+ * function that persists progress to `test_generation_jobs` and continues
+ * even after the client disconnects. The hook subscribes to that row via
+ * `useTestGenerationJob` and surfaces step-by-step state in the same shape
+ * `<GenerationProgress>` already expected.
  */
 export const useTestDataActions = ({ userId, onComplete }: UseTestDataActionsProps) => {
   const [cleaningUp, setCleaningUp] = useState(false);
-  const [generatingData, setGeneratingData] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
-  // Cleanup progress state — surfaced for `<CleanupProgress>` on every path
-  // (manual cleanup, regenerate, and disable+cleanup).
   const [cleanupPerStep, setCleanupPerStep] = useState<Record<string, number> | null>(null);
   const [cleanupFailedStep, setCleanupFailedStep] = useState<string | null>(null);
   const [cleanupTruncatedSteps, setCleanupTruncatedSteps] = useState<string[]>([]);
 
-  // Stable step definitions; generators are imported at module top.
-  const stepDefs = useMemo(
-    () =>
-      buildGenerationSteps({
-        verifyTestModeEnabled,
-        generateParcels,
-        generateContributions,
-        generateInvoices,
-        generatePayments,
-        generateContributorCodes,
-        generateTitleRequests,
-        generateExpertiseRequests,
-        generateExpertisePayments,
-        generateDisputes,
-        generateOwnershipHistory,
-        generateTaxHistory,
-        generateBoundaryHistory,
-        generateMortgages,
-        generateMortgagePayments,
-        generateBuildingPermits,
-        generateBoundaryConflicts,
-        generateFraudAttempts,
-        generateCertificates,
-        generateMutationRequests,
-        generateSubdivisionRequests,
-        generateSubdivisionLotsAndRoads,
-      }),
-    [],
-  );
+  const { job, isActive, startJob, cancelJob, clearJob } = useTestGenerationJob();
 
-  const initialSteps: GenerationStep[] = useMemo(
-    () => stepDefs.map((s) => ({ label: s.label, status: 'pending' as const })),
-    [stepDefs],
-  );
+  // Map the server-side job to <GenerationProgress>'s expected shape
+  const generationSteps: GenerationStep[] = useMemo(() => {
+    if (!job?.steps_state || job.steps_state.length === 0) {
+      // Skeleton — 14 placeholders so the UI renders consistently while waiting
+      return Array.from({ length: 14 }, (_, i) => ({
+        label: `Étape ${i + 1}`,
+        status: 'pending' as const,
+      }));
+    }
+    return job.steps_state.map((s) => ({ label: s.label, status: s.status }));
+  }, [job]);
 
-  const [generationSteps, setGenerationSteps] = useState<GenerationStep[]>(initialSteps);
-  const [currentStep, setCurrentStep] = useState(-1);
+  const currentStep = job?.current_step_index ?? -1;
+  const generatingData = isActive;
 
-  const updateStep = (index: number, status: GenerationStep['status']) => {
-    setGenerationSteps((prev) => prev.map((s, i) => (i === index ? { ...s, status } : s)));
-    setCurrentStep(index);
-  };
+  const lastTerminalStatus = job && ['done', 'error', 'cancelled'].includes(job.status)
+    ? job.status
+    : null;
 
-  const resetSteps = () => {
-    setGenerationSteps(initialSteps.map((s) => ({ ...s, status: 'pending' as const })));
-    setCurrentStep(-1);
-  };
-
-  const resetCleanupState = useCallback(() => {
-    setCleanupPerStep(null);
-    setCleanupFailedStep(null);
-    setCleanupTruncatedSteps([]);
-  }, []);
+  // Surface terminal toasts once when a previously-active job completes.
+  // We use a ref-like pattern via state to remember the last id we toasted for.
+  const [lastToastedJobId, setLastToastedJobId] = useState<string | null>(null);
+  useEffect(() => {
+    if (!job || !lastTerminalStatus) return;
+    if (lastToastedJobId === job.id) return;
+    setLastToastedJobId(job.id);
+    if (lastTerminalStatus === 'done') {
+      const counts = job.counts ?? {};
+      const failed = job.failed_substeps ?? [];
+      if (failed.length > 0) {
+        toast.warning('Données de test générées avec des erreurs partielles', {
+          description: `${counts.parcels ?? 0} parcelles. Échecs : ${failed.join(', ')}`,
+          duration: 8000,
+        });
+      } else {
+        toast.success('Données de test générées', {
+          description: `${counts.parcels ?? 0} parcelles, ${counts.contributions ?? 0} contributions, ${counts.invoices ?? 0} factures`,
+        });
+      }
+      onComplete();
+    } else if (lastTerminalStatus === 'error') {
+      toast.error('Erreur lors de la génération', {
+        description: job.error ?? 'Veuillez réessayer',
+      });
+      onComplete();
+    } else if (lastTerminalStatus === 'cancelled') {
+      toast.info('Génération annulée');
+      onComplete();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [job?.id, lastTerminalStatus]);
 
   const invokeCleanup = useCallback(async (): Promise<CleanupResult> => {
     const { data, error } = await supabase.functions.invoke('cleanup-test-data-batch');
     if (error) throw new Error(error.message);
     const result = (data ?? {}) as CleanupResult;
-    // Surface progress regardless of caller (manual / regenerate / disable+purge)
     setCleanupPerStep(result.per_step ?? result.partial_summary ?? {});
     setCleanupFailedStep(result.failed_step ?? null);
     setCleanupTruncatedSteps(result.truncated_steps ?? []);
@@ -131,7 +105,9 @@ export const useTestDataActions = ({ userId, onComplete }: UseTestDataActionsPro
   const cleanupTestData = useCallback(async () => {
     try {
       setCleaningUp(true);
-      resetCleanupState();
+      setCleanupPerStep(null);
+      setCleanupFailedStep(null);
+      setCleanupTruncatedSteps([]);
       toast.info('Nettoyage par lots en cours…', {
         description: 'Cela peut prendre quelques instants sur de gros volumes',
       });
@@ -149,7 +125,7 @@ export const useTestDataActions = ({ userId, onComplete }: UseTestDataActionsPro
       });
       if ((result.truncated_steps?.length ?? 0) > 0) {
         toast.warning('Plafond de sécurité atteint', {
-          description: `Étapes potentiellement incomplètes : ${result.truncated_steps!.join(', ')}. Relancez « Nettoyer tout » pour purger le reste.`,
+          description: `Étapes potentiellement incomplètes : ${result.truncated_steps!.join(', ')}.`,
           duration: 10000,
         });
       }
@@ -161,11 +137,15 @@ export const useTestDataActions = ({ userId, onComplete }: UseTestDataActionsPro
     } finally {
       setCleaningUp(false);
     }
-  }, [onComplete, invokeCleanup, resetCleanupState]);
+  }, [onComplete, invokeCleanup]);
 
   const generateTestData = useCallback(async () => {
     if (!userId) {
-      toast.error('Erreur', { description: 'Vous devez être connecté pour générer des données de test' });
+      toast.error('Erreur', { description: 'Vous devez être connecté' });
+      return;
+    }
+    if (isActive) {
+      toast.info('Une génération est déjà en cours');
       return;
     }
 
@@ -177,89 +157,26 @@ export const useTestDataActions = ({ userId, onComplete }: UseTestDataActionsPro
         .like('parcel_number', 'TEST-%');
       if (count && count > 0) {
         toast.warning('Données test existantes détectées', {
-          description: `${count} parcelles test existent déjà. Utilisez « Régénérer » pour remplacer les données.`,
+          description: `${count} parcelles test existent déjà. Utilisez « Régénérer » pour remplacer.`,
           duration: 6000,
         });
         return;
       }
-    } catch {
-      /* non-blocking */
+    } catch {/* non-blocking */}
+
+    // Reset any previous terminal job from view
+    clearJob();
+
+    const result = await startJob();
+    if (!result.ok) {
+      toast.error('Lancement impossible', { description: result.error });
+      return;
     }
-
-    const suffix = uniqueSuffix();
-    const ctx: StepCtx = {
-      userId,
-      suffix,
-      parcelNumbers: generateParcelNumbers(suffix),
-      parcels: [],
-      contributions: [],
-      invoices: [],
-      failedSteps: [],
-    };
-
-    try {
-      setGeneratingData(true);
-      resetSteps();
-
-      for (let i = 0; i < stepDefs.length; i++) {
-        const step = stepDefs[i];
-        updateStep(i, 'running');
-        try {
-          await step.run(ctx);
-          // Mark partial-error if sub-failures were collected during this step
-          const hadSubFailures = step.key === 'mortgages_permits' || step.key === 'mutations_subdivisions';
-          updateStep(i, hadSubFailures && ctx.failedSteps.length > 0 ? 'error' : 'done');
-        } catch (err) {
-          updateStep(i, 'error');
-          if (step.blocking) {
-            if (step.key === 'verify') {
-              toast.error('Mode test non actif', { description: 'Activez le mode test avant de générer des données.' });
-              return;
-            }
-            if (['contributions', 'invoices', 'payments'].includes(step.key)) {
-              toast.warning('Génération partielle — utilisez « Nettoyer » pour supprimer les données incomplètes');
-            }
-            throw err;
-          }
-          ctx.failedSteps.push(step.label);
-          console.error(`${step.label} (non-bloquant):`, err);
-        }
-      }
-
-      await logAuditAction(
-        'TEST_DATA_GENERATED',
-        'cadastral_contributions',
-        undefined,
-        undefined,
-        toRecord({
-          contributions: ctx.contributions.length,
-          invoices: ctx.invoices.length,
-          parcels: ctx.parcels.length,
-          suffix,
-          failedSteps: ctx.failedSteps,
-          steps: stepDefs.map((s) => s.key),
-        }),
-      );
-
-      if (ctx.failedSteps.length > 0) {
-        toast.warning('Données de test générées avec des erreurs partielles', {
-          description: `${ctx.parcels.length} parcelles créées. Échecs : ${ctx.failedSteps.join(', ')}`,
-          duration: 8000,
-        });
-      } else {
-        toast.success('Données de test générées', {
-          description: `${ctx.parcels.length} parcelles, ${ctx.contributions.length} contributions, ${ctx.invoices.length} factures et 10+ entités associées`,
-        });
-      }
-      await onComplete();
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Veuillez réessayer';
-      console.error('Erreur lors de la génération:', error);
-      toast.error('Erreur lors de la génération', { description: message });
-    } finally {
-      setGeneratingData(false);
-    }
-  }, [userId, onComplete, stepDefs]);
+    toast.success('Génération lancée en arrière-plan', {
+      description: 'Vous pouvez fermer cet onglet — la génération continuera côté serveur.',
+      duration: 6000,
+    });
+  }, [userId, isActive, startJob, clearJob]);
 
   const regenerateTestData = useCallback(async () => {
     if (!userId) {
@@ -268,7 +185,9 @@ export const useTestDataActions = ({ userId, onComplete }: UseTestDataActionsPro
     }
     try {
       setRegenerating(true);
-      resetCleanupState();
+      setCleanupPerStep(null);
+      setCleanupFailedStep(null);
+      setCleanupTruncatedSteps([]);
       toast.info('Nettoyage des données existantes (par lots)…');
       const result = await invokeCleanup();
       if (result.ok === false) {
@@ -276,14 +195,12 @@ export const useTestDataActions = ({ userId, onComplete }: UseTestDataActionsPro
           `Étape "${result.failed_step}" : ${result.error ?? 'erreur inconnue'} (${result.partial_total ?? 0} déjà supprimés)`,
         );
       }
-      if ((result.truncated_steps?.length ?? 0) > 0) {
-        toast.warning('Plafond de sécurité atteint', {
-          description: `Étapes potentiellement incomplètes : ${result.truncated_steps!.join(', ')}.`,
-          duration: 10000,
-        });
+      toast.success('Données nettoyées, démarrage de la régénération en arrière-plan…');
+      clearJob();
+      const startResult = await startJob();
+      if (!startResult.ok) {
+        toast.error('Lancement impossible', { description: startResult.error });
       }
-      toast.success('Données nettoyées, régénération en cours…');
-      await generateTestData();
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Veuillez réessayer';
       console.error('Erreur lors de la régénération:', error);
@@ -291,7 +208,7 @@ export const useTestDataActions = ({ userId, onComplete }: UseTestDataActionsPro
     } finally {
       setRegenerating(false);
     }
-  }, [userId, generateTestData, invokeCleanup, resetCleanupState]);
+  }, [userId, invokeCleanup, startJob, clearJob]);
 
   return {
     cleaningUp,
@@ -305,5 +222,7 @@ export const useTestDataActions = ({ userId, onComplete }: UseTestDataActionsPro
     cleanupTestData,
     generateTestData,
     regenerateTestData,
+    cancelGeneration: cancelJob,
+    activeJob: job,
   };
 };
