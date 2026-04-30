@@ -1,285 +1,194 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
-import { FileSearch, Loader2, Download, RefreshCw } from 'lucide-react';
+import { FileSearch, Download, RefreshCw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { exportToCSV } from '@/utils/csvExport';
-import { generateExpertiseCertificatePDF } from '@/utils/generateExpertiseCertificatePDF';
 import { STATUS_LABELS } from '@/constants/expertiseLabels';
 import type { ExpertiseRequest } from '@/types/expertise';
 import ExpertiseStatsCards from './expertise/ExpertiseStatsCards';
 import ExpertiseFilters from './expertise/ExpertiseFilters';
-import ExpertiseProcessDialog, { type ExpertiseProcessAction } from './expertise/ExpertiseProcessDialog';
+import ExpertiseProcessDialog from './expertise/ExpertiseProcessDialog';
 import ExpertiseRequestsTable from './expertise/ExpertiseRequestsTable';
 import ExpertiseDetailsDialog from './expertise/ExpertiseDetailsDialog';
-import { getExtendedData } from './expertise/expertiseHelpers';
-import { useAdminAnalytics } from '@/lib/adminAnalytics';
+import ExpertiseAssignDialog from './expertise/ExpertiseAssignDialog';
+import { useExpertiseStats } from '@/hooks/useExpertiseStats';
+import { useExpertiseProcessing, initialDraft, type ProcessDraft } from '@/hooks/useExpertiseProcessing';
+import { useDebounce } from '@/hooks/useDebounce';
+import { escapeIlike } from '@/utils/escapeIlike';
+
+const ITEMS_PER_PAGE = 10;
+
+interface PageResult {
+  rows: ExpertiseRequest[];
+  total: number;
+}
+
+const fetchExpertisePage = async (
+  page: number,
+  status: string,
+  search: string,
+): Promise<PageResult> => {
+  let query = supabase
+    .from('real_estate_expertise_requests')
+    .select('*', { count: 'exact' })
+    .order('created_at', { ascending: false });
+
+  if (status !== '_all') query = query.eq('status', status);
+
+  if (search.trim()) {
+    const safe = escapeIlike(search.trim());
+    if (safe) {
+      query = query.or(
+        `reference_number.ilike.%${safe}%,parcel_number.ilike.%${safe}%,requester_name.ilike.%${safe}%`
+      );
+    }
+  }
+
+  const from = (page - 1) * ITEMS_PER_PAGE;
+  const to = from + ITEMS_PER_PAGE - 1;
+  const { data, error, count } = await query.range(from, to);
+  if (error) throw error;
+  return { rows: (data || []) as ExpertiseRequest[], total: count || 0 };
+};
+
+const fetchExpertiseAll = async (status: string, search: string): Promise<ExpertiseRequest[]> => {
+  let query = supabase
+    .from('real_estate_expertise_requests')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(5000);
+  if (status !== '_all') query = query.eq('status', status);
+  if (search.trim()) {
+    const safe = escapeIlike(search.trim());
+    if (safe) query = query.or(`reference_number.ilike.%${safe}%,parcel_number.ilike.%${safe}%,requester_name.ilike.%${safe}%`);
+  }
+  const { data, error } = await query;
+  if (error) throw error;
+  return (data || []) as ExpertiseRequest[];
+};
 
 export const AdminExpertiseRequests: React.FC = () => {
-  const { user } = useAuth();
-  const { trackAdminAction } = useAdminAnalytics();
-  const [requests, setRequests] = useState<ExpertiseRequest[]>([]);
-  const [loading, setLoading] = useState(true);
+  const qc = useQueryClient();
+
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearch = useDebounce(searchQuery, 300);
   const [statusFilter, setStatusFilter] = useState<string>('_all');
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalCount, setTotalCount] = useState(0);
-  const itemsPerPage = 10;
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   const [selectedRequest, setSelectedRequest] = useState<ExpertiseRequest | null>(null);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [showProcessDialog, setShowProcessDialog] = useState(false);
-  const [processing, setProcessing] = useState(false);
+  const [showAssignDialog, setShowAssignDialog] = useState(false);
+  const [draft, setDraft] = useState<ProcessDraft>(initialDraft);
 
-  const [processAction, setProcessAction] = useState<'complete' | 'reject'>('complete');
-  const [marketValue, setMarketValue] = useState('');
-  const [processingNotes, setProcessingNotes] = useState('');
-  const [rejectionReason, setRejectionReason] = useState('');
-  const [expertName, setExpertName] = useState('');
-  const [expertTitle, setExpertTitle] = useState('L\'Expert Évaluateur Agréé');
-  const [stampImageUrl, setStampImageUrl] = useState('');
-  const [uploadingStamp, setUploadingStamp] = useState(false);
+  const queryKey = useMemo(
+    () => ['admin-expertise', currentPage, statusFilter, debouncedSearch] as const,
+    [currentPage, statusFilter, debouncedSearch]
+  );
 
-  const fetchRequests = useCallback(async () => {
-    setLoading(true);
-    try {
-      let query = supabase
-        .from('real_estate_expertise_requests')
-        .select('*', { count: 'exact' })
-        .order('created_at', { ascending: false });
+  const { data, isLoading, refetch } = useQuery({
+    queryKey,
+    queryFn: () => fetchExpertisePage(currentPage, statusFilter, debouncedSearch),
+    staleTime: 15_000,
+  });
+  const requests = data?.rows ?? [];
+  const totalCount = data?.total ?? 0;
 
-      if (statusFilter !== '_all') {
-        query = query.eq('status', statusFilter);
-      }
+  const refresh = useCallback(() => {
+    qc.invalidateQueries({ queryKey: ['admin-expertise'] });
+    qc.invalidateQueries({ queryKey: ['admin-expertise-stats'] });
+  }, [qc]);
 
-      if (searchQuery) {
-        query = query.or(`reference_number.ilike.%${searchQuery}%,parcel_number.ilike.%${searchQuery}%,requester_name.ilike.%${searchQuery}%`);
-      }
-
-      const from = (currentPage - 1) * itemsPerPage;
-      const to = from + itemsPerPage - 1;
-      query = query.range(from, to);
-
-      const { data, error, count } = await query;
-      if (error) throw error;
-
-      setRequests((data || []) as ExpertiseRequest[]);
-      setTotalCount(count || 0);
-    } catch (error: any) {
-      console.error('Error fetching expertise requests:', error);
-      toast.error('Erreur lors du chargement des demandes');
-    } finally {
-      setLoading(false);
-    }
-  }, [currentPage, statusFilter, searchQuery]);
-
-  useEffect(() => { fetchRequests(); }, [fetchRequests]);
+  const { data: stats } = useExpertiseStats();
+  const processing = useExpertiseProcessing(refresh);
 
   const handleViewDetails = (request: ExpertiseRequest) => {
-    setSelectedRequest(request);
-    setShowDetailsDialog(true);
+    setSelectedRequest(request); setShowDetailsDialog(true);
   };
 
   const handleOpenProcess = (request: ExpertiseRequest) => {
     setSelectedRequest(request);
-    setProcessAction('complete');
-    setMarketValue(request.market_value_usd?.toString() || '');
-    setProcessingNotes(request.processing_notes || '');
-    setRejectionReason('');
-    setExpertName('');
-    setExpertTitle('L\'Expert Évaluateur Agréé');
-    setStampImageUrl('');
+    setDraft({
+      ...initialDraft,
+      marketValue: request.market_value_usd?.toString() || '',
+      processingNotes: request.processing_notes || '',
+    });
     setShowProcessDialog(true);
   };
 
-  const handleUploadStamp = async (file: File) => {
-    setUploadingStamp(true);
-    try {
-      const ext = file.name.split('.').pop();
-      const path = `stamps/stamp_${Date.now()}.${ext}`;
-      const { error: uploadError } = await supabase.storage
-        .from('expertise-certificates')
-        .upload(path, file, { contentType: file.type, upsert: true });
-      if (uploadError) throw uploadError;
-      const { data: urlData } = supabase.storage
-        .from('expertise-certificates')
-        .getPublicUrl(path);
-      setStampImageUrl(urlData.publicUrl);
-      toast.success('Sceau uploadé avec succès');
-    } catch (err: any) {
-      toast.error(`Erreur upload: ${err.message}`);
-    } finally {
-      setUploadingStamp(false);
-    }
+  const handleAssignOpen = (request: ExpertiseRequest) => {
+    setSelectedRequest(request); setShowAssignDialog(true);
   };
 
-  const handleProcessRequest = async () => {
-    if (!selectedRequest || !user) return;
-
-    if (processAction === 'complete' && !marketValue) {
-      toast.error('Veuillez renseigner la valeur vénale');
-      return;
-    }
-    if (processAction === 'complete' && selectedRequest.payment_status !== 'paid') {
-      toast.error('Le certificat ne peut être généré que pour une demande payée');
-      return;
-    }
-    if (processAction === 'reject' && !rejectionReason) {
-      toast.error('Veuillez indiquer la raison du rejet');
-      return;
-    }
-
-    setProcessing(true);
+  const handleEscalate = async (request: ExpertiseRequest) => {
+    if (!confirm('Escalader cette demande ?')) return;
     try {
-      const updateData: Record<string, any> = {
-        processing_notes: processingNotes,
-        updated_at: new Date().toISOString(),
-      };
+      await processing.escalate(request.id, 'Escalade manuelle depuis le tableau');
+      toast.success('Demande escaladée');
+    } catch (e: any) { toast.error(e.message); }
+  };
 
-      if (processAction === 'complete') {
-        toast.info('Génération automatique du certificat en cours...');
-
-        const issueDate = new Date().toISOString();
-        const expiryDate = new Date();
-        expiryDate.setMonth(expiryDate.getMonth() + 6);
-
-        const { extendedData: extData } = getExtendedData(selectedRequest);
-
-        const pdfBlob = await generateExpertiseCertificatePDF({
-          referenceNumber: selectedRequest.reference_number,
-          parcelNumber: selectedRequest.parcel_number,
-          requesterName: selectedRequest.requester_name,
-          requesterEmail: selectedRequest.requester_email,
-          propertyDescription: selectedRequest.property_description,
-          constructionYear: selectedRequest.construction_year,
-          constructionQuality: selectedRequest.construction_quality,
-          numberOfFloors: selectedRequest.number_of_floors,
-          totalBuiltAreaSqm: selectedRequest.total_built_area_sqm,
-          propertyCondition: selectedRequest.property_condition,
-          hasWaterSupply: selectedRequest.has_water_supply,
-          hasElectricity: selectedRequest.has_electricity,
-          hasSewageSystem: selectedRequest.has_sewage_system,
-          hasInternet: selectedRequest.has_internet || false,
-          hasSecuritySystem: selectedRequest.has_security_system || false,
-          hasParking: selectedRequest.has_parking || false,
-          parkingSpaces: selectedRequest.parking_spaces,
-          hasGarden: selectedRequest.has_garden || false,
-          gardenAreaSqm: selectedRequest.garden_area_sqm,
-          roadAccessType: selectedRequest.road_access_type,
-          distanceToMainRoadM: selectedRequest.distance_to_main_road_m,
-          distanceToHospitalKm: selectedRequest.distance_to_hospital_km,
-          distanceToSchoolKm: selectedRequest.distance_to_school_km,
-          distanceToMarketKm: selectedRequest.distance_to_market_km,
-          floodRiskZone: selectedRequest.flood_risk_zone || false,
-          erosionRiskZone: selectedRequest.erosion_risk_zone || false,
-          marketValueUsd: parseFloat(marketValue),
-          expertiseDateStr: issueDate,
-          issueDate,
-          expiryDate: expiryDate.toISOString(),
-          approvedBy: expertName || 'Bureau d\'Information Cadastrale',
-          expertName: expertName || undefined,
-          expertTitle: expertTitle || undefined,
-          stampImageUrl: stampImageUrl || undefined,
-          extendedData: extData,
-        });
-
-        const fileName = `certificat_${selectedRequest.reference_number.replace(/[^a-zA-Z0-9-]/g, '_')}_${Date.now()}.pdf`;
-        const filePath = `certificates/${fileName}`;
-
-        const { error: uploadError } = await supabase.storage
-          .from('expertise-certificates')
-          .upload(filePath, pdfBlob, { contentType: 'application/pdf', upsert: true });
-        if (uploadError) throw uploadError;
-
-        const { data: urlData } = supabase.storage
-          .from('expertise-certificates')
-          .getPublicUrl(filePath);
-
-        updateData.status = 'completed';
-        updateData.market_value_usd = parseFloat(marketValue);
-        updateData.certificate_url = urlData.publicUrl;
-        updateData.certificate_issue_date = issueDate;
-        updateData.certificate_expiry_date = expiryDate.toISOString();
-        updateData.expertise_date = issueDate;
-      } else {
-        updateData.status = 'rejected';
-        updateData.rejection_reason = rejectionReason;
-      }
-
-      const { error } = await supabase
-        .from('real_estate_expertise_requests')
-        .update(updateData)
-        .eq('id', selectedRequest.id);
-      if (error) throw error;
-
-      await supabase.from('notifications').insert({
-        user_id: selectedRequest.user_id,
-        type: processAction === 'complete' ? 'success' : 'error',
-        title: processAction === 'complete'
-          ? 'Certificat d\'expertise immobilière généré'
-          : 'Demande d\'expertise rejetée',
-        message: processAction === 'complete'
-          ? `Votre certificat d'expertise pour la parcelle ${selectedRequest.parcel_number} a été généré automatiquement. Valeur vénale: $${marketValue}. Le certificat est disponible dans votre espace.`
-          : `Votre demande d'expertise pour la parcelle ${selectedRequest.parcel_number} a été rejetée. Raison: ${rejectionReason}`,
-        action_url: '/dashboard?tab=expertise',
-      });
-
-      toast.success(processAction === 'complete'
-        ? 'Certificat généré et envoyé automatiquement'
-        : 'Demande rejetée');
-
-      trackAdminAction({
-        module: 'expertise',
-        action: processAction,
-        ref: { request_id: selectedRequest.id, parcel_number: selectedRequest.parcel_number },
-      });
-
+  const handleConfirmProcess = async () => {
+    if (!selectedRequest) return;
+    try {
+      await processing.processDecision(selectedRequest, draft);
       setShowProcessDialog(false);
-      fetchRequests();
-    } catch (error: any) {
-      console.error('Error processing request:', error);
-      toast.error(`Erreur: ${error.message || 'Erreur lors du traitement'}`);
-    } finally {
-      setProcessing(false);
+    } catch { /* toast handled in hook */ }
+  };
+
+  const handleUploadStamp = async (file: File) => {
+    const url = await processing.uploadStamp(file);
+    if (url) setDraft((d) => ({ ...d, stampImageUrl: url }));
+  };
+
+  const toggleSelect = (id: string) =>
+    setSelectedIds((curr) => curr.includes(id) ? curr.filter(x => x !== id) : [...curr, id]);
+
+  const toggleSelectAll = () => {
+    if (requests.every(r => selectedIds.includes(r.id))) {
+      setSelectedIds(curr => curr.filter(id => !requests.some(r => r.id === id)));
+    } else {
+      const merged = new Set(selectedIds);
+      requests.forEach(r => merged.add(r.id));
+      setSelectedIds(Array.from(merged));
     }
   };
 
-  const getStats = useCallback(async () => {
-    try {
-      const statuses = ['pending', 'assigned', 'in_progress', 'completed'];
-      const results: Record<string, number> = {};
-
-      await Promise.all(statuses.map(async (status) => {
-        const statusList = status === 'in_progress' ? ['in_progress', 'assigned'] : [status];
-        let query = supabase
-          .from('real_estate_expertise_requests')
-          .select('*', { count: 'exact', head: true });
-
-        if (statusList.length > 1) query = query.in('status', statusList);
-        else query = query.eq('status', status);
-
-        const { count } = await query;
-        results[status] = count || 0;
-      }));
-
-      return {
-        total: totalCount,
-        pending: results['pending'] || 0,
-        inProgress: results['in_progress'] || 0,
-        completed: results['completed'] || 0,
-      };
-    } catch {
-      return { total: totalCount, pending: 0, inProgress: 0, completed: 0 };
+  const handleBulkReject = async () => {
+    if (selectedIds.length === 0) return;
+    const reason = prompt('Motif de rejet appliqué à toutes les demandes sélectionnées :');
+    if (!reason || !reason.trim()) return;
+    let ok = 0, ko = 0;
+    for (const id of selectedIds) {
+      try { await processing.reject(id, reason.trim()); ok++; } catch { ko++; }
     }
-  }, [totalCount]);
+    toast[ko === 0 ? 'success' : 'warning'](`Rejet : ${ok} ok / ${ko} échec`);
+    setSelectedIds([]);
+  };
 
-  const [stats, setStats] = useState({ total: 0, pending: 0, inProgress: 0, completed: 0 });
+  const handleExportFiltered = async () => {
+    try {
+      const all = await fetchExpertiseAll(statusFilter, debouncedSearch);
+      exportToCSV({
+        filename: `expertises_${format(new Date(), 'yyyy-MM-dd')}.csv`,
+        headers: ['Référence','Parcelle','Demandeur','Email','Statut','Paiement','Valeur USD','Date'],
+        data: all.map(r => [
+          r.reference_number, r.parcel_number, r.requester_name, r.requester_email || '',
+          STATUS_LABELS[r.status] || r.status,
+          r.payment_status || '',
+          r.market_value_usd?.toString() || '',
+          format(new Date(r.created_at), 'dd/MM/yyyy'),
+        ]),
+      });
+      toast.success(`Export : ${all.length} lignes`);
+    } catch (e: any) { toast.error(`Export impossible : ${e.message}`); }
+  };
 
-  useEffect(() => {
-    getStats().then(setStats);
-  }, [getStats, requests]);
+  const totalPages = Math.max(1, Math.ceil(totalCount / ITEMS_PER_PAGE));
 
   return (
     <div className="space-y-6">
@@ -290,76 +199,66 @@ export const AdminExpertiseRequests: React.FC = () => {
             Demandes d'expertise immobilière
           </h2>
           <p className="text-muted-foreground text-sm">
-            Gérez les demandes d'évaluation de valeur vénale
+            Gérez les évaluations de valeur vénale (assignation, audit, SLA)
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button onClick={fetchRequests} variant="outline" size="sm">
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Actualiser
+        <div className="flex gap-2 flex-wrap">
+          <Button onClick={() => refetch()} variant="outline" size="sm">
+            <RefreshCw className="h-4 w-4 mr-2" />Actualiser
           </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              exportToCSV({
-                filename: `expertises_${format(new Date(), 'yyyy-MM-dd')}.csv`,
-                headers: ['Référence', 'Parcelle', 'Demandeur', 'Email', 'Statut', 'Valeur USD', 'Date'],
-                data: requests.map(r => [
-                  r.reference_number,
-                  r.parcel_number,
-                  r.requester_name,
-                  r.requester_email || '',
-                  STATUS_LABELS[r.status] || r.status,
-                  r.market_value_usd?.toString() || '',
-                  format(new Date(r.created_at), 'dd/MM/yyyy'),
-                ])
-              });
-            }}
-          >
-            <Download className="h-4 w-4 mr-2" />
-            Exporter CSV
+          <Button variant="outline" size="sm" onClick={handleExportFiltered}>
+            <Download className="h-4 w-4 mr-2" />Exporter CSV
           </Button>
+          {selectedIds.length > 0 && (
+            <Button variant="destructive" size="sm" onClick={handleBulkReject}>
+              Rejeter ({selectedIds.length})
+            </Button>
+          )}
         </div>
       </div>
 
-      <ExpertiseStatsCards stats={stats} />
+      <ExpertiseStatsCards
+        stats={{
+          total: stats?.total ?? 0,
+          pending: stats?.pending ?? 0,
+          assigned: stats?.assigned ?? 0,
+          in_progress: stats?.in_progress ?? 0,
+          completed: stats?.completed ?? 0,
+          rejected: stats?.rejected ?? 0,
+          overdue: stats?.overdue ?? 0,
+          unpaid: stats?.unpaid ?? 0,
+        }}
+      />
 
       <ExpertiseFilters
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         statusFilter={statusFilter}
         onStatusChange={setStatusFilter}
+        onFiltersChange={() => setCurrentPage(1)}
       />
 
       <ExpertiseRequestsTable
-        loading={loading}
+        loading={isLoading}
         requests={requests}
+        selectedIds={selectedIds}
+        onToggleSelect={toggleSelect}
+        onToggleSelectAll={toggleSelectAll}
         onViewDetails={handleViewDetails}
         onProcess={handleOpenProcess}
+        onAssign={handleAssignOpen}
+        onEscalate={handleEscalate}
       />
 
-      {totalCount > itemsPerPage && (
+      {totalCount > ITEMS_PER_PAGE && (
         <div className="flex items-center justify-center gap-2 py-4">
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={currentPage === 1}
-            onClick={() => setCurrentPage(prev => prev - 1)}
-          >
-            Précédent
-          </Button>
+          <Button variant="outline" size="sm" disabled={currentPage === 1}
+            onClick={() => setCurrentPage((p) => p - 1)}>Précédent</Button>
           <span className="text-sm text-muted-foreground">
-            Page {currentPage} sur {Math.ceil(totalCount / itemsPerPage)}
+            Page {currentPage} sur {totalPages}
           </span>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={currentPage >= Math.ceil(totalCount / itemsPerPage)}
-            onClick={() => setCurrentPage(prev => prev + 1)}
-          >
-            Suivant
-          </Button>
+          <Button variant="outline" size="sm" disabled={currentPage >= totalPages}
+            onClick={() => setCurrentPage((p) => p + 1)}>Suivant</Button>
         </div>
       )}
 
@@ -369,27 +268,23 @@ export const AdminExpertiseRequests: React.FC = () => {
         request={selectedRequest}
       />
 
+      <ExpertiseAssignDialog
+        open={showAssignDialog}
+        onOpenChange={setShowAssignDialog}
+        request={selectedRequest}
+        onAssigned={refresh}
+      />
+
       <ExpertiseProcessDialog
         open={showProcessDialog}
         onOpenChange={setShowProcessDialog}
         request={selectedRequest}
-        processAction={processAction as ExpertiseProcessAction}
-        onActionChange={(a) => setProcessAction(a)}
-        marketValue={marketValue}
-        onMarketValueChange={setMarketValue}
-        expertName={expertName}
-        onExpertNameChange={setExpertName}
-        expertTitle={expertTitle}
-        onExpertTitleChange={setExpertTitle}
-        stampImageUrl={stampImageUrl}
-        uploadingStamp={uploadingStamp}
+        draft={draft}
+        onDraftChange={(patch) => setDraft((d) => ({ ...d, ...patch }))}
+        uploadingStamp={processing.uploadingStamp}
         onUploadStamp={handleUploadStamp}
-        processingNotes={processingNotes}
-        onNotesChange={setProcessingNotes}
-        rejectionReason={rejectionReason}
-        onRejectionReasonChange={setRejectionReason}
-        processing={processing}
-        onConfirm={handleProcessRequest}
+        processing={processing.processing}
+        onConfirm={handleConfirmProcess}
       />
     </div>
   );
