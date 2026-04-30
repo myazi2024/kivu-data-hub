@@ -28,6 +28,7 @@ import { supabase } from '@/integrations/supabase/client';
 import FormIntroDialog, { FORM_INTRO_CONFIGS } from './FormIntroDialog';
 import SuggestivePicklist from './SuggestivePicklist';
 import SectionHelpPopover from './SectionHelpPopover';
+import { openExpertiseCertificate } from '@/utils/expertiseCertificateUrl';
 import { useCCCFormPicklists } from '@/hooks/useCCCFormPicklists';
 import { resolveAvailableUsages } from '@/utils/constructionUsageResolver';
 import { BuildingPermitIssuingServiceSelect } from './BuildingPermitIssuingServiceSelect';
