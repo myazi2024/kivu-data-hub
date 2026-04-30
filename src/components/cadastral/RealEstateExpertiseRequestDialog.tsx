@@ -3282,10 +3282,14 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
               <>
                 <Button
                   variant="seloger"
-                  onClick={() => {
+                  onClick={async () => {
                     if (existingCertificate.certificate_url) {
-                      window.open(existingCertificate.certificate_url, '_blank', 'noopener,noreferrer');
-                      toast.success('Certificat ouvert avec succès.');
+                      try {
+                        await openExpertiseCertificate(existingCertificate.id, existingCertificate.certificate_url);
+                        toast.success('Certificat ouvert avec succès.');
+                      } catch (e: any) {
+                        toast.error(e?.message || 'Certificat indisponible');
+                      }
                     } else {
                       toast.info('Le certificat sera disponible dès sa publication.');
                     }
