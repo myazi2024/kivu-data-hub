@@ -1005,8 +1005,12 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
 
       // Open the certificate URL
       if (existingCertificate.certificate_url) {
-        window.open(existingCertificate.certificate_url, '_blank', 'noopener,noreferrer');
-        toast.success('Paiement réussi ! Vous pouvez accéder au certificat.');
+        try {
+          await openExpertiseCertificate(existingCertificate.id, existingCertificate.certificate_url);
+          toast.success('Paiement réussi ! Vous pouvez accéder au certificat.');
+        } catch (e: any) {
+          toast.error(e?.message || 'Certificat indisponible');
+        }
       } else {
         toast.success('Paiement réussi ! Le certificat sera disponible dès sa publication.');
       }
