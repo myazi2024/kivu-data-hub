@@ -7433,6 +7433,10 @@ export type Database = {
       }
       _purge_stale_test_generation_jobs: { Args: never; Returns: number }
       archive_stale_articles: { Args: { _months?: number }; Returns: number }
+      assign_expertise_request: {
+        Args: { p_expert_id: string; p_request_id: string }
+        Returns: undefined
+      }
       auto_archive_stale_articles: {
         Args: never
         Returns: {
@@ -7476,6 +7480,17 @@ export type Database = {
       close_fiscal_period: {
         Args: { p_month: number; p_year: number }
         Returns: Json
+      }
+      complete_expertise_request: {
+        Args: {
+          p_certificate_url: string
+          p_expiry_date: string
+          p_issue_date: string
+          p_market_value: number
+          p_notes?: string
+          p_request_id: string
+        }
+        Returns: undefined
       }
       count_audit_logs: { Args: never; Returns: number }
       count_test_data_stats: { Args: never; Returns: Json }
@@ -7528,6 +7543,10 @@ export type Database = {
           is_suspicious: boolean
           reasons: string[]
         }[]
+      }
+      escalate_expertise_request: {
+        Args: { p_reason?: string; p_request_id: string }
+        Returns: undefined
       }
       escalate_stale_disputes: {
         Args: { _threshold_days?: number }
@@ -7623,6 +7642,10 @@ export type Database = {
           prev_start?: string
           start_date?: string
         }
+        Returns: Json
+      }
+      get_admin_expertise_stats: {
+        Args: { p_overdue_days?: number }
         Returns: Json
       }
       get_admin_pending_counts: { Args: never; Returns: Json }
@@ -7800,6 +7823,10 @@ export type Database = {
         Args: { p_expires_in?: number; p_file_path: string }
         Returns: string
       }
+      get_signed_expertise_certificate: {
+        Args: { p_request_id: string; p_ttl_seconds?: number }
+        Returns: string
+      }
       get_test_cleanup_history: {
         Args: { p_limit?: number }
         Returns: {
@@ -7958,6 +7985,10 @@ export type Database = {
           inserted_count: number
           scanned_count: number
         }[]
+      }
+      reject_expertise_request: {
+        Args: { p_reason: string; p_request_id: string }
+        Returns: undefined
       }
       reopen_fiscal_period: {
         Args: { p_id: string; p_reason: string }
