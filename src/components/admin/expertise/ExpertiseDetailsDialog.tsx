@@ -20,6 +20,10 @@ import {
 } from '@/constants/expertiseLabels';
 import type { ExpertiseRequest } from '@/types/expertise';
 import { getExtendedData } from './expertiseHelpers';
+import { ExpertiseAuditTimeline } from './ExpertiseAuditTimeline';
+import { ExpertisePaymentSection } from './ExpertisePaymentSection';
+import { openExpertiseCertificate } from '@/utils/expertiseCertificateUrl';
+import { toast } from 'sonner';
 
 interface Props {
   open: boolean;
