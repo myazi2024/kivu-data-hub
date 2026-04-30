@@ -17,7 +17,8 @@ export const useRealEstateExpertise = () => {
     const month = String(date.getMonth() + 1).padStart(2, '0');
     let attempts = 0;
     while (attempts < 5) {
-      const random = Math.random().toString(36).substring(2, 8).toUpperCase();
+      // Crypto-strong random suffix (project rule: never Math.random for IDs)
+      const random = crypto.randomUUID().replace(/-/g, '').slice(0, 8).toUpperCase();
       const ref = `EXP-${year}${month}-${random}`;
       const { data } = await supabase
         .from('real_estate_expertise_requests')
@@ -27,8 +28,8 @@ export const useRealEstateExpertise = () => {
       if (!data) return ref;
       attempts++;
     }
-    // Fallback with timestamp for guaranteed uniqueness
-    return `EXP-${year}${month}-${Date.now().toString(36).toUpperCase()}`;
+    // Fallback (UUID is collision-resistant)
+    return `EXP-${year}${month}-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
   };
 
   const fetchUserRequests = useCallback(async () => {
