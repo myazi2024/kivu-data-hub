@@ -20,6 +20,10 @@ import {
 } from '@/constants/expertiseLabels';
 import type { ExpertiseRequest } from '@/types/expertise';
 import { getExtendedData } from './expertiseHelpers';
+import { ExpertiseAuditTimeline } from './ExpertiseAuditTimeline';
+import { ExpertisePaymentSection } from './ExpertisePaymentSection';
+import { openExpertiseCertificate } from '@/utils/expertiseCertificateUrl';
+import { toast } from 'sonner';
 
 interface Props {
   open: boolean;
@@ -308,16 +312,31 @@ const ExpertiseDetailsDialog: React.FC<Props> = ({ open, onOpenChange, request }
                       </div>
                     </div>
                     {request.certificate_url && (
-                      <Button variant="outline" size="sm" className="mt-2" asChild>
-                        <a href={request.certificate_url} target="_blank" rel="noopener noreferrer">
-                          <Download className="h-4 w-4 mr-2" />
-                          Télécharger le certificat
-                        </a>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="mt-2"
+                        onClick={async () => {
+                          try {
+                            await openExpertiseCertificate(request.id, request.certificate_url);
+                          } catch (e: any) {
+                            toast.error(e?.message || 'Impossible d\'ouvrir le certificat');
+                          }
+                        }}
+                      >
+                        <Download className="h-4 w-4 mr-2" />
+                        Télécharger le certificat
                       </Button>
                     )}
                   </div>
                 </>
               )}
+
+              <Separator />
+              <ExpertisePaymentSection requestId={request.id} />
+              <Separator />
+              <ExpertiseAuditTimeline requestId={request.id} />
+
 
               {request.status === 'rejected' && request.rejection_reason && (
                 <>

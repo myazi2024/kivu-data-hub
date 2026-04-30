@@ -28,6 +28,7 @@ import { supabase } from '@/integrations/supabase/client';
 import FormIntroDialog, { FORM_INTRO_CONFIGS } from './FormIntroDialog';
 import SuggestivePicklist from './SuggestivePicklist';
 import SectionHelpPopover from './SectionHelpPopover';
+import { openExpertiseCertificate } from '@/utils/expertiseCertificateUrl';
 import { useCCCFormPicklists } from '@/hooks/useCCCFormPicklists';
 import { resolveAvailableUsages } from '@/utils/constructionUsageResolver';
 import { BuildingPermitIssuingServiceSelect } from './BuildingPermitIssuingServiceSelect';
@@ -1004,8 +1005,12 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
 
       // Open the certificate URL
       if (existingCertificate.certificate_url) {
-        window.open(existingCertificate.certificate_url, '_blank', 'noopener,noreferrer');
-        toast.success('Paiement réussi ! Vous pouvez accéder au certificat.');
+        try {
+          await openExpertiseCertificate(existingCertificate.id, existingCertificate.certificate_url);
+          toast.success('Paiement réussi ! Vous pouvez accéder au certificat.');
+        } catch (e: any) {
+          toast.error(e?.message || 'Certificat indisponible');
+        }
       } else {
         toast.success('Paiement réussi ! Le certificat sera disponible dès sa publication.');
       }
@@ -3277,10 +3282,14 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
               <>
                 <Button
                   variant="seloger"
-                  onClick={() => {
+                  onClick={async () => {
                     if (existingCertificate.certificate_url) {
-                      window.open(existingCertificate.certificate_url, '_blank', 'noopener,noreferrer');
-                      toast.success('Certificat ouvert avec succès.');
+                      try {
+                        await openExpertiseCertificate(existingCertificate.id, existingCertificate.certificate_url);
+                        toast.success('Certificat ouvert avec succès.');
+                      } catch (e: any) {
+                        toast.error(e?.message || 'Certificat indisponible');
+                      }
                     } else {
                       toast.info('Le certificat sera disponible dès sa publication.');
                     }

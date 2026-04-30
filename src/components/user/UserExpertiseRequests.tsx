@@ -14,6 +14,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import type { ExpertiseRequest } from '@/types/expertise';
 import { STATUS_LABELS } from '@/constants/expertiseLabels';
+import { openExpertiseCertificate } from '@/utils/expertiseCertificateUrl';
 
 const STATUS_CONFIG: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline'; icon: React.ReactNode }> = {
   pending: { label: STATUS_LABELS.pending, variant: 'secondary', icon: <Clock className="h-3 w-3" /> },
@@ -164,7 +165,13 @@ export const UserExpertiseRequests: React.FC = () => {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => window.open(req.certificate_url!, '_blank', 'noopener,noreferrer')}
+                      onClick={async () => {
+                        try {
+                          await openExpertiseCertificate(req.id, req.certificate_url);
+                        } catch (e: any) {
+                          toast.error(e?.message || 'Certificat indisponible');
+                        }
+                      }}
                       className="w-full h-8 text-xs rounded-xl gap-1"
                     >
                       <ExternalLink className="h-3.5 w-3.5" />
