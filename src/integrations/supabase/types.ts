@@ -3821,6 +3821,8 @@ export type Database = {
           beneficiary_id_document_url: string | null
           beneficiary_name: string | null
           beneficiary_phone: string | null
+          certificate_issued_at: string | null
+          certificate_url: string | null
           created_at: string
           escalated: boolean
           escalated_at: string | null
@@ -3863,6 +3865,8 @@ export type Database = {
           beneficiary_id_document_url?: string | null
           beneficiary_name?: string | null
           beneficiary_phone?: string | null
+          certificate_issued_at?: string | null
+          certificate_url?: string | null
           created_at?: string
           escalated?: boolean
           escalated_at?: string | null
@@ -3905,6 +3909,8 @@ export type Database = {
           beneficiary_id_document_url?: string | null
           beneficiary_name?: string | null
           beneficiary_phone?: string | null
+          certificate_issued_at?: string | null
+          certificate_url?: string | null
           created_at?: string
           escalated?: boolean
           escalated_at?: string | null
@@ -7548,6 +7554,10 @@ export type Database = {
         Args: { p_reason?: string; p_request_id: string }
         Returns: undefined
       }
+      escalate_mutation_request: {
+        Args: { p_reason?: string; p_request_id: string }
+        Returns: undefined
+      }
       escalate_stale_disputes: {
         Args: { _threshold_days?: number }
         Returns: {
@@ -7827,6 +7837,10 @@ export type Database = {
         Args: { p_request_id: string; p_ttl_seconds?: number }
         Returns: string
       }
+      get_signed_mutation_certificate: {
+        Args: { p_request_id: string; p_ttl_seconds?: number }
+        Returns: string
+      }
       get_test_cleanup_history: {
         Args: { p_limit?: number }
         Returns: {
@@ -7951,6 +7965,16 @@ export type Database = {
         Args: { p_period_start: string }
         Returns: string
       }
+      process_mutation_decision: {
+        Args: {
+          p_action: string
+          p_certificate_url?: string
+          p_notes?: string
+          p_rejection_reason?: string
+          p_request_id: string
+        }
+        Returns: undefined
+      }
       publish_scheduled_articles: { Args: never; Returns: number }
       purge_old_audit_logs: { Args: { _days?: number }; Returns: Json }
       purge_test_billing_data: { Args: { p_reason?: string }; Returns: Json }
@@ -8000,6 +8024,10 @@ export type Database = {
       }
       swap_theme_order: {
         Args: { _theme_a: string; _theme_b: string }
+        Returns: undefined
+      }
+      take_charge_mutation_request: {
+        Args: { p_request_id: string }
         Returns: undefined
       }
       track_publication_download: {

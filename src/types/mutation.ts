@@ -49,6 +49,12 @@ export interface MutationRequest {
   bank_fee_amount: number | null;
   late_fee_amount: number | null;
   late_fee_days: number | null;
+  // Certificate (private bucket; resolve via get_signed_mutation_certificate RPC)
+  certificate_url: string | null;
+  certificate_issued_at: string | null;
+  // Workflow
+  escalated?: boolean | null;
+  escalated_at?: string | null;
   // Timestamps
   reviewed_at: string | null;
   reviewed_by: string | null;

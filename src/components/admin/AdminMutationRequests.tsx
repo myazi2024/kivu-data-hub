@@ -1,20 +1,24 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import MutationStatsCards from './mutation/MutationStatsCards';
 import MutationFilters from './mutation/MutationFilters';
 import MutationFeesConfig from './mutation/MutationFeesConfig';
 import MutationDetailsDialog from './mutation/MutationDetailsDialog';
 import MutationProcessDialog, { type MutationProcessAction } from './mutation/MutationProcessDialog';
 import MutationFeeFormDialog from './mutation/MutationFeeFormDialog';
-import { 
-  ResponsiveTable, 
-  ResponsiveTableHeader, 
-  ResponsiveTableBody, 
-  ResponsiveTableRow, 
-  ResponsiveTableCell, 
-  ResponsiveTableHead 
+import {
+  ResponsiveTable,
+  ResponsiveTableHeader,
+  ResponsiveTableBody,
+  ResponsiveTableRow,
+  ResponsiveTableCell,
+  ResponsiveTableHead
 } from '@/components/ui/responsive-table';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -22,15 +26,16 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import {
-  FileEdit, Eye, CheckCircle, RefreshCw, Download, Loader2
+  FileEdit, Eye, CheckCircle, RefreshCw, Download, Loader2, PlayCircle, AlertTriangle
 } from 'lucide-react';
-import { generateAndUploadCertificate } from '@/utils/certificateService';
 import { usePagination } from '@/hooks/usePagination';
 import { PaginationControls } from '@/components/shared/PaginationControls';
-import { StatusBadge } from '@/components/shared/StatusBadge';
 import { exportToCSV } from '@/utils/csvExport';
 import { getMutationTypeLabel, MUTATION_TYPES, MUTATION_STATUS_LABELS } from '@/components/cadastral/mutation/MutationConstants';
 import { useAdminAnalytics } from '@/lib/adminAnalytics';
+import { useMutationProcessing } from '@/hooks/useMutationProcessing';
+import { useDebounce } from '@/hooks/useDebounce';
+import { escapeIlike } from '@/utils/escapeIlike';
 
 import type { MutationFee, MutationRequest, MutationRequestWithProfile } from '@/types/mutation';
 
@@ -42,21 +47,26 @@ const AdminMutationRequests: React.FC = () => {
   const [fees, setFees] = useState<MutationFee[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearch = useDebounce(searchQuery, 300);
   const [statusFilter, setStatusFilter] = useState<string>('_all');
   const [typeFilter, setTypeFilter] = useState<string>('_all');
-  
+
   // Dialog states
   const [selectedRequest, setSelectedRequest] = useState<MutationRequest | null>(null);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [showProcessDialog, setShowProcessDialog] = useState(false);
   const [showFeeDialog, setShowFeeDialog] = useState(false);
   const [editingFee, setEditingFee] = useState<MutationFee | null>(null);
-  
+
   // Process form
-  const [processAction, setProcessAction] = useState<'approve' | 'reject' | 'hold' | 'return'>('approve');
+  const [processAction, setProcessAction] = useState<MutationProcessAction>('approve');
   const [processingNotes, setProcessingNotes] = useState('');
   const [rejectionReason, setRejectionReason] = useState('');
-  const [processing, setProcessing] = useState(false);
+
+  // Confirmation dialogs (AlertDialog replaces window.confirm)
+  const [feeToToggle, setFeeToToggle] = useState<MutationFee | null>(null);
+  const [requestToTakeCharge, setRequestToTakeCharge] = useState<MutationRequest | null>(null);
+  const [takingCharge, setTakingCharge] = useState(false);
 
   // Fee form
   const [feeName, setFeeName] = useState('');
@@ -65,16 +75,30 @@ const AdminMutationRequests: React.FC = () => {
   const [feeMandatory, setFeeMandatory] = useState(true);
 
 
-  const fetchRequests = async () => {
+  const fetchRequests = useCallback(async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      let q = supabase
         .from('mutation_requests')
         .select(`
           *,
           profiles:user_id (full_name, email)
         `)
-        .not('reference_number', 'ilike', 'TEST-%')
+        .not('reference_number', 'ilike', 'TEST-%');
+
+      // Server-side filters
+      if (statusFilter !== '_all') q = q.eq('status', statusFilter);
+      if (typeFilter !== '_all') q = q.eq('mutation_type', typeFilter);
+
+      const term = debouncedSearch.trim();
+      if (term.length > 0) {
+        const safe = escapeIlike(term);
+        q = q.or(
+          `reference_number.ilike.%${safe}%,parcel_number.ilike.%${safe}%,requester_name.ilike.%${safe}%`
+        );
+      }
+
+      const { data, error } = await q
         .order('created_at', { ascending: false })
         .limit(2000);
 
@@ -86,9 +110,9 @@ const AdminMutationRequests: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [debouncedSearch, statusFilter, typeFilter]);
 
-  const fetchFees = async () => {
+  const fetchFees = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from('mutation_fees_config')
@@ -100,29 +124,17 @@ const AdminMutationRequests: React.FC = () => {
     } catch (error) {
       console.error('Error fetching fees:', error);
     }
-  };
-
-  useEffect(() => {
-    fetchRequests();
-    fetchFees();
   }, []);
 
-  const filteredRequests = useMemo(() => {
-    return requests.filter(request => {
-      const refNum = request.reference_number || '';
-      const matchesSearch = 
-        refNum.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        request.parcel_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        request.requester_name.toLowerCase().includes(searchQuery.toLowerCase());
-      
-      const matchesStatus = statusFilter === '_all' || request.status === statusFilter;
-      const matchesType = typeFilter === '_all' || request.mutation_type === typeFilter;
-      
-      return matchesSearch && matchesStatus && matchesType;
-    });
-  }, [requests, searchQuery, statusFilter, typeFilter]);
+  useEffect(() => { fetchRequests(); }, [fetchRequests]);
+  useEffect(() => { fetchFees(); }, [fetchFees]);
 
+  // Server-side filters already applied; only pagination is local now.
+  const filteredRequests = requests;
   const pagination = usePagination(filteredRequests, { initialPageSize: 15 });
+
+  // Mutation processing hook (RPC-backed)
+  const { processing, takeCharge, processDecision } = useMutationProcessing(fetchRequests);
 
   const handleExportCSV = () => {
     exportToCSV({
@@ -142,122 +154,28 @@ const AdminMutationRequests: React.FC = () => {
   };
 
   const handleProcessRequest = async () => {
-    if (!selectedRequest || !user) return;
-
-    // Server-side validation: only process paid requests
-    if (selectedRequest.payment_status !== 'paid') {
-      toast.error('Impossible de traiter une demande non payée.');
-      return;
-    }
-
-    // FIX: Validate rejection reason is not just whitespace
-    if (processAction === 'reject' && !rejectionReason.trim()) {
-      toast.error('Veuillez indiquer un motif de rejet valide.');
-      return;
-    }
-
-    setProcessing(true);
+    if (!selectedRequest) return;
     try {
-      let newStatus: string;
-      switch (processAction) {
-        case 'approve': newStatus = 'approved'; break;
-        case 'reject': newStatus = 'rejected'; break;
-        case 'hold': newStatus = 'on_hold'; break;
-        case 'return': newStatus = 'returned'; break;
-        default: newStatus = 'pending';
-      }
-
-      const adminName = profile?.full_name || user.email || 'Admin';
-
-      const { error } = await supabase
-        .from('mutation_requests')
-        .update({
-          status: newStatus,
-          processing_notes: processingNotes.trim() || null,
-          rejection_reason: processAction === 'reject' ? rejectionReason.trim() : null,
-          reviewed_by: user.id,
-          reviewed_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', selectedRequest.id);
-
-      if (error) throw error;
-
-      // Audit log
-      await supabase.from('audit_logs').insert({
-        user_id: user.id,
-        admin_name: adminName,
-        action: `mutation_request_${processAction}`,
-        table_name: 'mutation_requests',
-        record_id: selectedRequest.id,
-        old_values: { status: selectedRequest.status },
-        new_values: { 
-          status: newStatus, 
-          processing_notes: processingNotes.trim() || null,
-          rejection_reason: processAction === 'reject' ? rejectionReason.trim() : null
-        }
-      });
-
-      // Auto-generate certificate on approval
-      if (processAction === 'approve') {
-        toast.info('Génération automatique du certificat de mutation...');
-        const certResult = await generateAndUploadCertificate(
-          'mutation_fonciere',
-          {
-            referenceNumber: selectedRequest.reference_number,
-            recipientName: selectedRequest.requester_name,
-            recipientEmail: selectedRequest.requester_email || undefined,
-            parcelNumber: selectedRequest.parcel_number,
-            issueDate: new Date().toISOString(),
-            approvedBy: 'Bureau d\'Information Cadastrale',
-            additionalData: { requestId: selectedRequest.id },
-          },
-          [
-            { label: 'Type mutation:', value: getMutationTypeLabel(selectedRequest.mutation_type) },
-            { label: 'Bénéficiaire:', value: selectedRequest.beneficiary_name || 'N/A' },
-            { label: 'Montant payé:', value: `$${Number(selectedRequest.total_amount_usd).toFixed(2)}` },
-          ],
-          user.id
-        );
-        if (certResult) {
-          toast.success('Certificat de mutation généré automatiquement');
-        }
-      }
-
-      // Create notification for user — include processing notes for on_hold
-      const notificationMessage = processAction === 'approve'
-        ? `Votre demande ${selectedRequest.reference_number} a été approuvée. Le certificat est disponible dans votre espace.`
-        : processAction === 'reject'
-          ? `Votre demande ${selectedRequest.reference_number} a été rejetée. Motif : ${rejectionReason.trim()}`
-          : processAction === 'return'
-            ? `Votre demande ${selectedRequest.reference_number} a été renvoyée pour correction.${processingNotes.trim() ? ` Motif : ${processingNotes.trim()}` : ' Veuillez vérifier et corriger votre demande.'}`
-            : `Votre demande ${selectedRequest.reference_number} a été mise en attente.${processingNotes.trim() ? ` Raison : ${processingNotes.trim()}` : ' Veuillez patienter.'}`;
-
-      await supabase.from('notifications').insert({
-        user_id: selectedRequest.user_id,
-        type: processAction === 'approve' ? 'success' : processAction === 'reject' ? 'error' : processAction === 'return' ? 'info' : 'warning',
-        title: `Demande de mutation ${processAction === 'approve' ? 'approuvée' : processAction === 'reject' ? 'rejetée' : processAction === 'return' ? 'renvoyée pour correction' : 'mise en attente'}`,
-        message: notificationMessage,
-        action_url: '/user-dashboard?tab=mutations'
-      });
-
-      toast.success('Demande traitée avec succès');
-
-      trackAdminAction({
-        module: 'mutation',
-        action: processAction,
-        ref: { request_id: selectedRequest.id, reference_number: selectedRequest.reference_number },
-      });
-
+      await processDecision(selectedRequest, processAction, processingNotes, rejectionReason);
       setShowProcessDialog(false);
       setProcessingNotes('');
       setRejectionReason('');
-      fetchRequests();
-    } catch (error) {
-      console.error('Error processing request:', error);
-      toast.error('Erreur lors du traitement');
+    } catch (e: any) {
+      toast.error(e?.message || 'Erreur lors du traitement');
+    }
+  };
+
+  const handleConfirmTakeCharge = async () => {
+    if (!requestToTakeCharge) return;
+    setTakingCharge(true);
+    try {
+      await takeCharge(requestToTakeCharge.id);
+      toast.success('Demande prise en charge');
+      setRequestToTakeCharge(null);
+    } catch (e: any) {
+      toast.error(e?.message || 'Impossible de prendre en charge la demande');
     } finally {
-      setProcessing(false);
+      setTakingCharge(false);
     }
   };
 
@@ -338,17 +256,16 @@ const AdminMutationRequests: React.FC = () => {
     }
   };
 
-  const handleToggleFeeActive = async (feeId: string, currentlyActive: boolean) => {
+  const performToggleFee = async (fee: MutationFee) => {
+    const currentlyActive = fee.is_active;
     const action = currentlyActive ? 'désactiver' : 'réactiver';
-    if (!confirm(`Êtes-vous sûr de vouloir ${action} ce frais ?`)) return;
-
     try {
       const adminName = profile?.full_name || user?.email || 'Admin';
 
       const { error } = await supabase
         .from('mutation_fees_config')
         .update({ is_active: !currentlyActive, updated_at: new Date().toISOString() })
-        .eq('id', feeId);
+        .eq('id', fee.id);
 
       if (error) throw error;
 
@@ -358,17 +275,23 @@ const AdminMutationRequests: React.FC = () => {
         admin_name: adminName,
         action: currentlyActive ? 'mutation_fee_deactivated' : 'mutation_fee_reactivated',
         table_name: 'mutation_fees_config',
-        record_id: feeId,
+        record_id: fee.id,
         old_values: { is_active: currentlyActive },
         new_values: { is_active: !currentlyActive }
       });
 
       toast.success(currentlyActive ? 'Frais désactivé' : 'Frais réactivé');
+      setFeeToToggle(null);
       fetchFees();
     } catch (error) {
       console.error('Error toggling fee:', error);
       toast.error(`Erreur lors de la ${action}`);
     }
+  };
+
+  const handleToggleFeeActive = (feeId: string, _currentlyActive: boolean) => {
+    const fee = fees.find(f => f.id === feeId);
+    if (fee) setFeeToToggle(fee);
   };
 
   const resetFeeForm = () => {
@@ -476,7 +399,13 @@ const AdminMutationRequests: React.FC = () => {
       header: 'Actions',
       priority: 1,
       render: (request: MutationRequest) => (
-        <div className="flex gap-1">
+        <div className="flex gap-1 items-center">
+          {request.escalated && (
+            <Badge variant="destructive" className="text-[9px] gap-0.5">
+              <AlertTriangle className="h-2.5 w-2.5" />
+              Escaladée
+            </Badge>
+          )}
           <Button
             variant="ghost"
             size="sm"
@@ -485,10 +414,22 @@ const AdminMutationRequests: React.FC = () => {
               setSelectedRequest(request);
               setShowDetailsDialog(true);
             }}
+            title="Détails"
           >
             <Eye className="h-3.5 w-3.5" />
           </Button>
-           {(request.payment_status === 'paid' && ['in_review', 'on_hold'].includes(request.status)) && (
+          {(request.payment_status === 'paid' && request.status === 'pending') && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 w-7 p-0 text-blue-600"
+              onClick={() => setRequestToTakeCharge(request)}
+              title="Prendre en charge"
+            >
+              <PlayCircle className="h-3.5 w-3.5" />
+            </Button>
+          )}
+          {(request.payment_status === 'paid' && ['in_review', 'on_hold'].includes(request.status)) && (
             <Button
               variant="ghost"
               size="sm"
@@ -497,6 +438,7 @@ const AdminMutationRequests: React.FC = () => {
                 setSelectedRequest(request);
                 setShowProcessDialog(true);
               }}
+              title="Traiter"
             >
               <CheckCircle className="h-3.5 w-3.5" />
             </Button>
@@ -649,6 +591,52 @@ const AdminMutationRequests: React.FC = () => {
         onMandatoryChange={setFeeMandatory}
         onSave={handleSaveFee}
       />
+
+      {/* Confirm: take charge of pending paid request */}
+      <AlertDialog open={!!requestToTakeCharge} onOpenChange={(o) => !o && setRequestToTakeCharge(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Prendre en charge la demande</AlertDialogTitle>
+            <AlertDialogDescription>
+              Cette demande passera en « En cours d'examen » et vous serez identifié comme reviewer.
+              {requestToTakeCharge && (
+                <span className="block mt-2 font-mono text-xs">
+                  {requestToTakeCharge.reference_number} — {requestToTakeCharge.parcel_number}
+                </span>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={takingCharge}>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmTakeCharge} disabled={takingCharge}>
+              {takingCharge ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Confirmer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Confirm: enable/disable a fee */}
+      <AlertDialog open={!!feeToToggle} onOpenChange={(o) => !o && setFeeToToggle(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {feeToToggle?.is_active ? 'Désactiver ce frais ?' : 'Réactiver ce frais ?'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {feeToToggle?.is_active
+                ? `Le frais « ${feeToToggle?.fee_name} » ne sera plus proposé aux nouvelles demandes.`
+                : `Le frais « ${feeToToggle?.fee_name} » redeviendra disponible pour les nouvelles demandes.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={() => feeToToggle && performToggleFee(feeToToggle)}>
+              Confirmer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
