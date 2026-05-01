@@ -75,16 +75,30 @@ const AdminMutationRequests: React.FC = () => {
   const [feeMandatory, setFeeMandatory] = useState(true);
 
 
-  const fetchRequests = async () => {
+  const fetchRequests = useCallback(async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      let q = supabase
         .from('mutation_requests')
         .select(`
           *,
           profiles:user_id (full_name, email)
         `)
-        .not('reference_number', 'ilike', 'TEST-%')
+        .not('reference_number', 'ilike', 'TEST-%');
+
+      // Server-side filters
+      if (statusFilter !== '_all') q = q.eq('status', statusFilter);
+      if (typeFilter !== '_all') q = q.eq('mutation_type', typeFilter);
+
+      const term = debouncedSearch.trim();
+      if (term.length > 0) {
+        const safe = escapeIlike(term);
+        q = q.or(
+          `reference_number.ilike.%${safe}%,parcel_number.ilike.%${safe}%,requester_name.ilike.%${safe}%`
+        );
+      }
+
+      const { data, error } = await q
         .order('created_at', { ascending: false })
         .limit(2000);
 
@@ -96,9 +110,9 @@ const AdminMutationRequests: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [debouncedSearch, statusFilter, typeFilter]);
 
-  const fetchFees = async () => {
+  const fetchFees = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from('mutation_fees_config')
@@ -110,29 +124,17 @@ const AdminMutationRequests: React.FC = () => {
     } catch (error) {
       console.error('Error fetching fees:', error);
     }
-  };
-
-  useEffect(() => {
-    fetchRequests();
-    fetchFees();
   }, []);
 
-  const filteredRequests = useMemo(() => {
-    return requests.filter(request => {
-      const refNum = request.reference_number || '';
-      const matchesSearch = 
-        refNum.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        request.parcel_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        request.requester_name.toLowerCase().includes(searchQuery.toLowerCase());
-      
-      const matchesStatus = statusFilter === '_all' || request.status === statusFilter;
-      const matchesType = typeFilter === '_all' || request.mutation_type === typeFilter;
-      
-      return matchesSearch && matchesStatus && matchesType;
-    });
-  }, [requests, searchQuery, statusFilter, typeFilter]);
+  useEffect(() => { fetchRequests(); }, [fetchRequests]);
+  useEffect(() => { fetchFees(); }, [fetchFees]);
 
+  // Server-side filters already applied; only pagination is local now.
+  const filteredRequests = requests;
   const pagination = usePagination(filteredRequests, { initialPageSize: 15 });
+
+  // Mutation processing hook (RPC-backed)
+  const { processing, takeCharge, processDecision } = useMutationProcessing(fetchRequests);
 
   const handleExportCSV = () => {
     exportToCSV({
