@@ -47,21 +47,26 @@ const AdminMutationRequests: React.FC = () => {
   const [fees, setFees] = useState<MutationFee[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearch = useDebounce(searchQuery, 300);
   const [statusFilter, setStatusFilter] = useState<string>('_all');
   const [typeFilter, setTypeFilter] = useState<string>('_all');
-  
+
   // Dialog states
   const [selectedRequest, setSelectedRequest] = useState<MutationRequest | null>(null);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [showProcessDialog, setShowProcessDialog] = useState(false);
   const [showFeeDialog, setShowFeeDialog] = useState(false);
   const [editingFee, setEditingFee] = useState<MutationFee | null>(null);
-  
+
   // Process form
-  const [processAction, setProcessAction] = useState<'approve' | 'reject' | 'hold' | 'return'>('approve');
+  const [processAction, setProcessAction] = useState<MutationProcessAction>('approve');
   const [processingNotes, setProcessingNotes] = useState('');
   const [rejectionReason, setRejectionReason] = useState('');
-  const [processing, setProcessing] = useState(false);
+
+  // Confirmation dialogs (AlertDialog replaces window.confirm)
+  const [feeToToggle, setFeeToToggle] = useState<MutationFee | null>(null);
+  const [requestToTakeCharge, setRequestToTakeCharge] = useState<MutationRequest | null>(null);
+  const [takingCharge, setTakingCharge] = useState(false);
 
   // Fee form
   const [feeName, setFeeName] = useState('');
