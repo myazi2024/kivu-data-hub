@@ -591,6 +591,52 @@ const AdminMutationRequests: React.FC = () => {
         onMandatoryChange={setFeeMandatory}
         onSave={handleSaveFee}
       />
+
+      {/* Confirm: take charge of pending paid request */}
+      <AlertDialog open={!!requestToTakeCharge} onOpenChange={(o) => !o && setRequestToTakeCharge(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Prendre en charge la demande</AlertDialogTitle>
+            <AlertDialogDescription>
+              Cette demande passera en « En cours d'examen » et vous serez identifié comme reviewer.
+              {requestToTakeCharge && (
+                <span className="block mt-2 font-mono text-xs">
+                  {requestToTakeCharge.reference_number} — {requestToTakeCharge.parcel_number}
+                </span>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={takingCharge}>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmTakeCharge} disabled={takingCharge}>
+              {takingCharge ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Confirmer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Confirm: enable/disable a fee */}
+      <AlertDialog open={!!feeToToggle} onOpenChange={(o) => !o && setFeeToToggle(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {feeToToggle?.is_active ? 'Désactiver ce frais ?' : 'Réactiver ce frais ?'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {feeToToggle?.is_active
+                ? `Le frais « ${feeToToggle?.fee_name} » ne sera plus proposé aux nouvelles demandes.`
+                : `Le frais « ${feeToToggle?.fee_name} » redeviendra disponible pour les nouvelles demandes.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={() => feeToToggle && performToggleFee(feeToToggle)}>
+              Confirmer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
