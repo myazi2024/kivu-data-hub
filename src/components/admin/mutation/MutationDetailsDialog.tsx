@@ -2,9 +2,15 @@ import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
+import { Download } from 'lucide-react';
+import { toast } from 'sonner';
 import { getMutationTypeLabel } from '@/components/cadastral/mutation/MutationConstants';
+import { openMutationCertificate } from '@/utils/mutationCertificateUrl';
+import { MutationAuditTimeline } from './MutationAuditTimeline';
+import { MutationPaymentSection } from './MutationPaymentSection';
 import type { MutationRequest } from '@/types/mutation';
 
 interface MutationDetailsDialogProps {
