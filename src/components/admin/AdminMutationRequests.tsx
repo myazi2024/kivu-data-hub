@@ -154,122 +154,28 @@ const AdminMutationRequests: React.FC = () => {
   };
 
   const handleProcessRequest = async () => {
-    if (!selectedRequest || !user) return;
-
-    // Server-side validation: only process paid requests
-    if (selectedRequest.payment_status !== 'paid') {
-      toast.error('Impossible de traiter une demande non payée.');
-      return;
-    }
-
-    // FIX: Validate rejection reason is not just whitespace
-    if (processAction === 'reject' && !rejectionReason.trim()) {
-      toast.error('Veuillez indiquer un motif de rejet valide.');
-      return;
-    }
-
-    setProcessing(true);
+    if (!selectedRequest) return;
     try {
-      let newStatus: string;
-      switch (processAction) {
-        case 'approve': newStatus = 'approved'; break;
-        case 'reject': newStatus = 'rejected'; break;
-        case 'hold': newStatus = 'on_hold'; break;
-        case 'return': newStatus = 'returned'; break;
-        default: newStatus = 'pending';
-      }
-
-      const adminName = profile?.full_name || user.email || 'Admin';
-
-      const { error } = await supabase
-        .from('mutation_requests')
-        .update({
-          status: newStatus,
-          processing_notes: processingNotes.trim() || null,
-          rejection_reason: processAction === 'reject' ? rejectionReason.trim() : null,
-          reviewed_by: user.id,
-          reviewed_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', selectedRequest.id);
-
-      if (error) throw error;
-
-      // Audit log
-      await supabase.from('audit_logs').insert({
-        user_id: user.id,
-        admin_name: adminName,
-        action: `mutation_request_${processAction}`,
-        table_name: 'mutation_requests',
-        record_id: selectedRequest.id,
-        old_values: { status: selectedRequest.status },
-        new_values: { 
-          status: newStatus, 
-          processing_notes: processingNotes.trim() || null,
-          rejection_reason: processAction === 'reject' ? rejectionReason.trim() : null
-        }
-      });
-
-      // Auto-generate certificate on approval
-      if (processAction === 'approve') {
-        toast.info('Génération automatique du certificat de mutation...');
-        const certResult = await generateAndUploadCertificate(
-          'mutation_fonciere',
-          {
-            referenceNumber: selectedRequest.reference_number,
-            recipientName: selectedRequest.requester_name,
-            recipientEmail: selectedRequest.requester_email || undefined,
-            parcelNumber: selectedRequest.parcel_number,
-            issueDate: new Date().toISOString(),
-            approvedBy: 'Bureau d\'Information Cadastrale',
-            additionalData: { requestId: selectedRequest.id },
-          },
-          [
-            { label: 'Type mutation:', value: getMutationTypeLabel(selectedRequest.mutation_type) },
-            { label: 'Bénéficiaire:', value: selectedRequest.beneficiary_name || 'N/A' },
-            { label: 'Montant payé:', value: `$${Number(selectedRequest.total_amount_usd).toFixed(2)}` },
-          ],
-          user.id
-        );
-        if (certResult) {
-          toast.success('Certificat de mutation généré automatiquement');
-        }
-      }
-
-      // Create notification for user — include processing notes for on_hold
-      const notificationMessage = processAction === 'approve'
-        ? `Votre demande ${selectedRequest.reference_number} a été approuvée. Le certificat est disponible dans votre espace.`
-        : processAction === 'reject'
-          ? `Votre demande ${selectedRequest.reference_number} a été rejetée. Motif : ${rejectionReason.trim()}`
-          : processAction === 'return'
-            ? `Votre demande ${selectedRequest.reference_number} a été renvoyée pour correction.${processingNotes.trim() ? ` Motif : ${processingNotes.trim()}` : ' Veuillez vérifier et corriger votre demande.'}`
-            : `Votre demande ${selectedRequest.reference_number} a été mise en attente.${processingNotes.trim() ? ` Raison : ${processingNotes.trim()}` : ' Veuillez patienter.'}`;
-
-      await supabase.from('notifications').insert({
-        user_id: selectedRequest.user_id,
-        type: processAction === 'approve' ? 'success' : processAction === 'reject' ? 'error' : processAction === 'return' ? 'info' : 'warning',
-        title: `Demande de mutation ${processAction === 'approve' ? 'approuvée' : processAction === 'reject' ? 'rejetée' : processAction === 'return' ? 'renvoyée pour correction' : 'mise en attente'}`,
-        message: notificationMessage,
-        action_url: '/user-dashboard?tab=mutations'
-      });
-
-      toast.success('Demande traitée avec succès');
-
-      trackAdminAction({
-        module: 'mutation',
-        action: processAction,
-        ref: { request_id: selectedRequest.id, reference_number: selectedRequest.reference_number },
-      });
-
+      await processDecision(selectedRequest, processAction, processingNotes, rejectionReason);
       setShowProcessDialog(false);
       setProcessingNotes('');
       setRejectionReason('');
-      fetchRequests();
-    } catch (error) {
-      console.error('Error processing request:', error);
-      toast.error('Erreur lors du traitement');
+    } catch (e: any) {
+      toast.error(e?.message || 'Erreur lors du traitement');
+    }
+  };
+
+  const handleConfirmTakeCharge = async () => {
+    if (!requestToTakeCharge) return;
+    setTakingCharge(true);
+    try {
+      await takeCharge(requestToTakeCharge.id);
+      toast.success('Demande prise en charge');
+      setRequestToTakeCharge(null);
+    } catch (e: any) {
+      toast.error(e?.message || 'Impossible de prendre en charge la demande');
     } finally {
-      setProcessing(false);
+      setTakingCharge(false);
     }
   };
 
