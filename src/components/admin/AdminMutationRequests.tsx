@@ -399,7 +399,13 @@ const AdminMutationRequests: React.FC = () => {
       header: 'Actions',
       priority: 1,
       render: (request: MutationRequest) => (
-        <div className="flex gap-1">
+        <div className="flex gap-1 items-center">
+          {request.escalated && (
+            <Badge variant="destructive" className="text-[9px] gap-0.5">
+              <AlertTriangle className="h-2.5 w-2.5" />
+              Escaladée
+            </Badge>
+          )}
           <Button
             variant="ghost"
             size="sm"
@@ -408,10 +414,22 @@ const AdminMutationRequests: React.FC = () => {
               setSelectedRequest(request);
               setShowDetailsDialog(true);
             }}
+            title="Détails"
           >
             <Eye className="h-3.5 w-3.5" />
           </Button>
-           {(request.payment_status === 'paid' && ['in_review', 'on_hold'].includes(request.status)) && (
+          {(request.payment_status === 'paid' && request.status === 'pending') && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 w-7 p-0 text-blue-600"
+              onClick={() => setRequestToTakeCharge(request)}
+              title="Prendre en charge"
+            >
+              <PlayCircle className="h-3.5 w-3.5" />
+            </Button>
+          )}
+          {(request.payment_status === 'paid' && ['in_review', 'on_hold'].includes(request.status)) && (
             <Button
               variant="ghost"
               size="sm"
@@ -420,6 +438,7 @@ const AdminMutationRequests: React.FC = () => {
                 setSelectedRequest(request);
                 setShowProcessDialog(true);
               }}
+              title="Traiter"
             >
               <CheckCircle className="h-3.5 w-3.5" />
             </Button>
