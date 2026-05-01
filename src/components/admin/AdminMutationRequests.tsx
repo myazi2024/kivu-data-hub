@@ -1,20 +1,24 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import MutationStatsCards from './mutation/MutationStatsCards';
 import MutationFilters from './mutation/MutationFilters';
 import MutationFeesConfig from './mutation/MutationFeesConfig';
 import MutationDetailsDialog from './mutation/MutationDetailsDialog';
 import MutationProcessDialog, { type MutationProcessAction } from './mutation/MutationProcessDialog';
 import MutationFeeFormDialog from './mutation/MutationFeeFormDialog';
-import { 
-  ResponsiveTable, 
-  ResponsiveTableHeader, 
-  ResponsiveTableBody, 
-  ResponsiveTableRow, 
-  ResponsiveTableCell, 
-  ResponsiveTableHead 
+import {
+  ResponsiveTable,
+  ResponsiveTableHeader,
+  ResponsiveTableBody,
+  ResponsiveTableRow,
+  ResponsiveTableCell,
+  ResponsiveTableHead
 } from '@/components/ui/responsive-table';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -22,15 +26,16 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import {
-  FileEdit, Eye, CheckCircle, RefreshCw, Download, Loader2
+  FileEdit, Eye, CheckCircle, RefreshCw, Download, Loader2, PlayCircle, AlertTriangle
 } from 'lucide-react';
-import { generateAndUploadCertificate } from '@/utils/certificateService';
 import { usePagination } from '@/hooks/usePagination';
 import { PaginationControls } from '@/components/shared/PaginationControls';
-import { StatusBadge } from '@/components/shared/StatusBadge';
 import { exportToCSV } from '@/utils/csvExport';
 import { getMutationTypeLabel, MUTATION_TYPES, MUTATION_STATUS_LABELS } from '@/components/cadastral/mutation/MutationConstants';
 import { useAdminAnalytics } from '@/lib/adminAnalytics';
+import { useMutationProcessing } from '@/hooks/useMutationProcessing';
+import { useDebounce } from '@/hooks/useDebounce';
+import { escapeIlike } from '@/utils/escapeIlike';
 
 import type { MutationFee, MutationRequest, MutationRequestWithProfile } from '@/types/mutation';
 
