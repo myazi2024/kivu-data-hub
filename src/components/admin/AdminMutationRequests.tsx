@@ -256,17 +256,16 @@ const AdminMutationRequests: React.FC = () => {
     }
   };
 
-  const handleToggleFeeActive = async (feeId: string, currentlyActive: boolean) => {
+  const performToggleFee = async (fee: MutationFee) => {
+    const currentlyActive = fee.is_active;
     const action = currentlyActive ? 'désactiver' : 'réactiver';
-    if (!confirm(`Êtes-vous sûr de vouloir ${action} ce frais ?`)) return;
-
     try {
       const adminName = profile?.full_name || user?.email || 'Admin';
 
       const { error } = await supabase
         .from('mutation_fees_config')
         .update({ is_active: !currentlyActive, updated_at: new Date().toISOString() })
-        .eq('id', feeId);
+        .eq('id', fee.id);
 
       if (error) throw error;
 
@@ -276,17 +275,23 @@ const AdminMutationRequests: React.FC = () => {
         admin_name: adminName,
         action: currentlyActive ? 'mutation_fee_deactivated' : 'mutation_fee_reactivated',
         table_name: 'mutation_fees_config',
-        record_id: feeId,
+        record_id: fee.id,
         old_values: { is_active: currentlyActive },
         new_values: { is_active: !currentlyActive }
       });
 
       toast.success(currentlyActive ? 'Frais désactivé' : 'Frais réactivé');
+      setFeeToToggle(null);
       fetchFees();
     } catch (error) {
       console.error('Error toggling fee:', error);
       toast.error(`Erreur lors de la ${action}`);
     }
+  };
+
+  const handleToggleFeeActive = (feeId: string, _currentlyActive: boolean) => {
+    const fee = fees.find(f => f.id === feeId);
+    if (fee) setFeeToToggle(fee);
   };
 
   const resetFeeForm = () => {
