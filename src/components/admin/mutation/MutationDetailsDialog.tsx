@@ -197,6 +197,36 @@ const MutationDetailsDialog: React.FC<MutationDetailsDialogProps> = ({
                     })()}
                   </div>
                 </div>
+
+                {request.certificate_url && (
+                  <>
+                    <Separator />
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Certificat de mutation</Label>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="mt-1 h-7 text-xs"
+                        onClick={async () => {
+                          try {
+                            await openMutationCertificate(request.id, request.certificate_url);
+                          } catch (e: any) {
+                            toast.error(e?.message || 'Impossible d\'ouvrir le certificat');
+                          }
+                        }}
+                      >
+                        <Download className="h-3.5 w-3.5 mr-1" />
+                        Télécharger le certificat
+                      </Button>
+                    </div>
+                  </>
+                )}
+
+                <Separator />
+                <MutationPaymentSection request={request} />
+
+                <Separator />
+                <MutationAuditTimeline requestId={request.id} />
               </div>
             </ScrollArea>
           );
