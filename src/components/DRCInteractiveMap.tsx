@@ -20,7 +20,7 @@ import { ProvinceData } from '@/types/province';
 import ProvinceDataVisualization from './visualizations/ProvinceDataVisualization';
 import { useLandDataAnalytics } from '@/hooks/useLandDataAnalytics';
 import { useTestEnvironment } from '@/hooks/useTestEnvironment';
-import { useTabChartsConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
+import { useTabChartsConfig, useAnalyticsTabsConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
 import { getTerritoiresForProvince, getProvinceForTerritoire } from '@/lib/geographicData';
 import { MAP_TAB_PROFILES, computeAdaptiveTiers, NO_DATA_COLOR, type MapTabProfile, type MapTier } from '@/config/mapTabProfiles';
 import { norm, buildScopePredicate, sliceAnalyticsByPredicate, type GeoScopedRecord } from './map/meta/mapMeta';
@@ -118,6 +118,13 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
     ? [...ANALYTICS_TABS_REGISTRY['_global'].kpis, ...ANALYTICS_TABS_REGISTRY['_global'].charts]
     : [];
   const { getChartConfig: getGlobalConfig } = useTabChartsConfig('_global', globalDefaults);
+
+  // Active analytics tab label — used to enrich the "Analytics" panel title
+  const { visibleTabs: analyticsVisibleTabs } = useAnalyticsTabsConfig();
+  const activeAnalyticsTabLabel = useMemo(
+    () => analyticsVisibleTabs.find(t => t.key === activeAnalyticsTab)?.label || null,
+    [analyticsVisibleTabs, activeAnalyticsTab],
+  );
 
   /** Build tooltip line configs from admin config */
   const tooltipLineConfigs = useMemo(() => {
@@ -673,7 +680,9 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-[11px] sm:text-xs font-medium text-foreground flex items-center gap-1">
                     <BarChart3 className="h-3.5 w-3.5 text-primary" />
-                    <span ref={analyticsTitleRef} tabIndex={-1} className="outline-none">Analytics</span>
+                    <span ref={analyticsTitleRef} tabIndex={-1} className="outline-none">
+                      Analytics{activeAnalyticsTabLabel ? <>: <span className="text-primary">{activeAnalyticsTabLabel}</span></> : null}
+                    </span>
                   </CardTitle>
                   {dataUpdatedAt > 0 && (
                     <Badge variant="outline" className="text-[9px] px-1.5 py-0 gap-0.5 font-normal text-muted-foreground">
