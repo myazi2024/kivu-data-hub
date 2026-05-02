@@ -20,7 +20,7 @@ import { ProvinceData } from '@/types/province';
 import ProvinceDataVisualization from './visualizations/ProvinceDataVisualization';
 import { useLandDataAnalytics } from '@/hooks/useLandDataAnalytics';
 import { useTestEnvironment } from '@/hooks/useTestEnvironment';
-import { useTabChartsConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
+import { useTabChartsConfig, useAnalyticsTabsConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
 import { getTerritoiresForProvince, getProvinceForTerritoire } from '@/lib/geographicData';
 import { MAP_TAB_PROFILES, computeAdaptiveTiers, NO_DATA_COLOR, type MapTabProfile, type MapTier } from '@/config/mapTabProfiles';
 import { norm, buildScopePredicate, sliceAnalyticsByPredicate, type GeoScopedRecord } from './map/meta/mapMeta';
