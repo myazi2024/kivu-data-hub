@@ -119,6 +119,13 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
     : [];
   const { getChartConfig: getGlobalConfig } = useTabChartsConfig('_global', globalDefaults);
 
+  // Active analytics tab label — used to enrich the "Analytics" panel title
+  const { visibleTabs: analyticsVisibleTabs } = useAnalyticsTabsConfig();
+  const activeAnalyticsTabLabel = useMemo(
+    () => analyticsVisibleTabs.find(t => t.key === activeAnalyticsTab)?.label || null,
+    [analyticsVisibleTabs, activeAnalyticsTab],
+  );
+
   /** Build tooltip line configs from admin config */
   const tooltipLineConfigs = useMemo(() => {
     const keys = [
