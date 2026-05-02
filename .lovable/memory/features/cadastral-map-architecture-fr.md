@@ -13,7 +13,7 @@ La page `/cadastral-map` (anciennement 1615 LOC monolithe) est décomposée :
 - `useLeafletMap` : init Leaflet, tuiles via `useMapProvider` (proxy Mapbox côté serveur, plus d'OSM en dur), assets marqueurs bundlés (plus de CDN cloudflare), géolocalisation **on-demand** via `requestUserLocation()`, **diff incrémental** des layers (Map<id, layerGroup>), **markerCluster** pour points sans polygone, dimensions de côté seulement si ≤50 parcelles
 
 ## Bugs corrigés
-- `has_dispute` désormais sélectionné → overlay litige fonctionnel
+- `has_dispute` **n'est plus sélectionné** côté carte ni exposé visuellement (info payante `land_disputes`, voir mémoire `dispute-existence-paid-only-fr`)
 - Limite 500 → 2000 parcelles + clustering automatique
 - Calcul `calculateAreaFromCoordinates` côté client supprimé : utilise `area_sqm` BD (règle DB > frontend)
 - Fichier orphelin `src/components/cadastral/CadastralMap.tsx` supprimé
