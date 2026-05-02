@@ -16,7 +16,6 @@ export interface ParcelData {
   commune: string;
   quartier: string;
   is_subdivided?: boolean;
-  has_dispute?: boolean;
 }
 
 const PARCELS_LIMIT = 2000;
