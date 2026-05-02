@@ -204,7 +204,6 @@ export const useLeafletMap = ({ containerRef, ready, onParcelClick }: UseLeaflet
 
       const group = L.layerGroup();
       const isSubdivided = parcel.is_subdivided === true;
-      const hasDispute = parcel.has_dispute === true;
 
       if (Array.isArray(parcel.gps_coordinates) && parcel.gps_coordinates.length >= 3) {
         polygonCount += 1;
@@ -213,33 +212,23 @@ export const useLeafletMap = ({ containerRef, ready, onParcelClick }: UseLeaflet
         let color = '#ef4444', weight = 2, fillOpacity = 0.2;
         let dashArray: string | undefined;
         if (isSubdivided) { color = '#6b7280'; weight = 1.5; fillOpacity = 0.05; dashArray = '6 4'; }
-        else if (hasDispute) { color = '#f97316'; weight = 2.5; fillOpacity = 0.15; dashArray = '8 4'; }
 
         const polygon = L.polygon(points, { color, weight, fillColor: color, fillOpacity, dashArray });
         polygon.on('click', () => onParcelClickRef.current?.(parcel));
         polygon.addTo(group);
 
-        if (isSubdivided || hasDispute) {
+        // "Lotie" label only — dispute existence is a paid information (land_disputes service),
+        // never expose it on the public map.
+        if (isSubdivided) {
           const cLat = points.reduce((s, p) => s + p[0], 0) / points.length;
           const cLng = points.reduce((s, p) => s + p[1], 0) / points.length;
-          if (isSubdivided) {
-            L.marker([cLat, cLng], {
-              icon: L.divIcon({
-                className: 'subdivided-label',
-                html: '<div style="background:hsl(var(--muted));color:hsl(var(--muted-foreground));padding:1px 6px;border-radius:4px;border:1px solid hsl(var(--border));font-size:9px;font-weight:600;white-space:nowrap;opacity:.85">Lotie</div>',
-                iconSize: [36, 16], iconAnchor: [18, 8],
-              }),
-            }).addTo(group);
-          }
-          if (hasDispute) {
-            L.marker([cLat, cLng], {
-              icon: L.divIcon({
-                className: 'dispute-label',
-                html: '<div style="background:#fff7ed;color:#c2410c;padding:1px 6px;border-radius:4px;border:1px solid #f97316;font-size:9px;font-weight:600;white-space:nowrap;opacity:.9">⚠ Litige</div>',
-                iconSize: [50, 16], iconAnchor: [25, isSubdivided ? -4 : 8],
-              }),
-            }).addTo(group);
-          }
+          L.marker([cLat, cLng], {
+            icon: L.divIcon({
+              className: 'subdivided-label',
+              html: '<div style="background:hsl(var(--muted));color:hsl(var(--muted-foreground));padding:1px 6px;border-radius:4px;border:1px solid hsl(var(--border));font-size:9px;font-weight:600;white-space:nowrap;opacity:.85">Lotie</div>',
+              iconSize: [36, 16], iconAnchor: [18, 8],
+            }),
+          }).addTo(group);
         }
 
         // Side dimensions: only for the small-result mode (avoid 3000+ markers)

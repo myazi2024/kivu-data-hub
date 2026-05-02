@@ -16,7 +16,6 @@ export interface ParcelData {
   commune: string;
   quartier: string;
   is_subdivided?: boolean;
-  has_dispute?: boolean;
 }
 
 const PARCELS_LIMIT = 2000;
@@ -24,7 +23,7 @@ const PARCELS_LIMIT = 2000;
 async function fetchParcels(isTestEnv: boolean): Promise<ParcelData[]> {
   let query = supabase
     .from('cadastral_parcels')
-    .select('id, parcel_number, gps_coordinates, parcel_sides, current_owner_name, area_sqm, province, ville, commune, quartier, latitude, longitude, is_subdivided, has_dispute')
+    .select('id, parcel_number, gps_coordinates, parcel_sides, current_owner_name, area_sqm, province, ville, commune, quartier, latitude, longitude, is_subdivided')
     .is('deleted_at', null);
   query = applyTestFilter(query, 'parcel_number', isTestEnv);
   const { data, error } = await query.limit(PARCELS_LIMIT);
