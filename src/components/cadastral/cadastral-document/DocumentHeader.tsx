@@ -1,6 +1,6 @@
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
-import { Landmark, AlertTriangle } from 'lucide-react';
+import { Landmark } from 'lucide-react';
 import { CadastralParcel } from '@/types/cadastral';
 
 interface DocumentHeaderProps {
