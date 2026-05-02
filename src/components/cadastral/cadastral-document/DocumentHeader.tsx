@@ -52,12 +52,9 @@ const DocumentHeader: React.FC<DocumentHeaderProps> = ({ parcel }) => {
               <Badge variant={parcel.parcel_type === 'SU' ? 'default' : 'secondary'} className="text-xs">
                 {parcel.parcel_type === 'SU' ? 'Section Urbaine' : 'Section Rurale'}
               </Badge>
-              {parcel.has_dispute && (
-                <Badge variant="destructive" className="text-xs flex items-center gap-1">
-                  <AlertTriangle className="h-3 w-3" />
-                  Litige
-                </Badge>
-              )}
+              {/* The dispute badge is intentionally NOT shown here: dispute existence
+                  is part of the paid `land_disputes` service. Surfacing it before
+                  payment would leak a sensitive, billable signal. */}
             </div>
           </div>
         </div>
