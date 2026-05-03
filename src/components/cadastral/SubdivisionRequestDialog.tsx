@@ -18,6 +18,7 @@ import StepPlanView from './subdivision/steps/StepPlanView';
 import StepDocuments from './subdivision/steps/StepDocuments';
 import StepInfrastructures from './subdivision/steps/StepInfrastructures';
 import StepSummary from './subdivision/steps/StepSummary';
+import StepZoningRules from './subdivision/steps/StepZoningRules';
 
 interface SubdivisionRequestDialogProps {
   parcelNumber: string;
