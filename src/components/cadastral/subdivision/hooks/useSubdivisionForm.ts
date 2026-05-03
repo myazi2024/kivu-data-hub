@@ -553,12 +553,12 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
   const goNext = useCallback(() => {
     const idx = steps.indexOf(currentStep);
     if (idx < steps.length - 1) setCurrentStep(steps[idx + 1]);
-  }, [currentStep]);
+  }, [currentStep, steps]);
 
   const goPrev = useCallback(() => {
     const idx = steps.indexOf(currentStep);
     if (idx > 0) setCurrentStep(steps[idx - 1]);
-  }, [currentStep]);
+  }, [currentStep, steps]);
 
   // Submit — calls secure edge function (server is source of truth for fee + reference)
   // Returns { id, reference_number, total_amount_usd } so the caller can trigger payment
