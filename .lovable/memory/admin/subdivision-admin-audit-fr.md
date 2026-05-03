@@ -60,3 +60,9 @@ type: feature
 - `useSubdivisionForm` : state `selectedInfrastructures` (key→qty), recompute fee debouncé incluant le surcoût infra, persistance dans le brouillon localStorage.
 - `FeeBreakdown` étendu (`infrastructures[]`, `infrastructuresTotal`, `lotsTotal`) — `StepSummary` affiche tableau infra séparé + sous-totaux + total.
 - Edge function `subdivision-request` : recalcul serveur (source de vérité) à partir de `subdivision_infrastructure_tariffs` filtrées sur `is_active`, persistance dans deux nouvelles colonnes `subdivision_requests.selected_infrastructures` (jsonb) et `infrastructure_fee_usd` (numeric).
+
+## Lot F — Onglet conditionnel « Normes de zonage » (formulaire user) ✅
+- `StepZoningRules.tsx` rendu en tête du formulaire **uniquement si** `useZoningCompliance` retourne une `rule` matchée pour la zone (cascade géo) — sinon onglet masqué et flow inchangé.
+- `SubdivisionStep` étend l'union avec `'zoning'`. `useSubdivisionForm.steps` est mémoïsé et conditionnel à `hasZoningRule`. `isStepValid('zoning') === true` (page d'information).
+- Bascule auto une fois sur `'zoning'` à l'apparition de la règle (flag `zoningSeenRef`).
+- Contenu pro : intro, liste détaillée des normes (surface min/max lot, voirie, façade, % espaces communs, max lots, notes admin) avec sévérité Bloquant/Avertissement, encadré « contrôles automatiques » + engagement de conformité.

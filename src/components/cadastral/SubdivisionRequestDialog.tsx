@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
-import { Grid3X3, MapPin, Pencil, Eye, FileText, ChevronLeft, ChevronRight, Check, Loader2, Info, Trash2, Upload, Building2 } from 'lucide-react';
+import { Grid3X3, MapPin, Pencil, Eye, FileText, ChevronLeft, ChevronRight, Check, Loader2, Info, Trash2, Upload, Building2, ShieldCheck } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import FormIntroDialog, { FORM_INTRO_CONFIGS } from './FormIntroDialog';
 import WhatsAppFloatingButton from './WhatsAppFloatingButton';
@@ -18,6 +18,7 @@ import StepPlanView from './subdivision/steps/StepPlanView';
 import StepDocuments from './subdivision/steps/StepDocuments';
 import StepInfrastructures from './subdivision/steps/StepInfrastructures';
 import StepSummary from './subdivision/steps/StepSummary';
+import StepZoningRules from './subdivision/steps/StepZoningRules';
 
 interface SubdivisionRequestDialogProps {
   parcelNumber: string;
@@ -27,7 +28,8 @@ interface SubdivisionRequestDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-const STEP_CONFIG: { key: SubdivisionStep; label: string; icon: React.ReactNode; shortLabel: string }[] = [
+const ALL_STEP_CONFIG: { key: SubdivisionStep; label: string; icon: React.ReactNode; shortLabel: string }[] = [
+  { key: 'zoning', label: 'Normes de zonage', icon: <ShieldCheck className="h-3.5 w-3.5" />, shortLabel: 'Normes' },
   { key: 'parcel', label: 'Parcelle & Demandeur', icon: <MapPin className="h-3.5 w-3.5" />, shortLabel: 'Parcelle' },
   { key: 'designer', label: 'Conception des lots', icon: <Pencil className="h-3.5 w-3.5" />, shortLabel: 'Lots' },
   { key: 'plan', label: 'Plan personnalisé', icon: <Eye className="h-3.5 w-3.5" />, shortLabel: 'Plan' },
@@ -108,7 +110,11 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
     );
   }
   
-  const currentStepIndex = form.steps.indexOf(form.currentStep);
+  const STEP_CONFIG = React.useMemo(
+    () => ALL_STEP_CONFIG.filter(s => form.steps.includes(s.key)),
+    [form.steps],
+  );
+  const currentStepIndex = STEP_CONFIG.findIndex(s => s.key === form.currentStep);
   const feeLabel = form.loadingFee || form.submissionFee == null
     ? '…'
     : `${form.submissionFee.toFixed(2)}$`;
@@ -215,6 +221,9 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
           
           {/* Step content */}
           <div className="flex-1 overflow-y-auto px-4 py-3 min-h-0">
+            {form.currentStep === 'zoning' && (
+              <StepZoningRules compliance={form.zoningCompliance} />
+            )}
             {form.currentStep === 'parcel' && (
               <StepParentParcel
                 parentParcel={form.parentParcel}
