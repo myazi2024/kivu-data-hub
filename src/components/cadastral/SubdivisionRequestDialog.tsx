@@ -221,7 +221,9 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
           
           {/* Step content */}
           <div className="flex-1 overflow-y-auto px-4 py-3 min-h-0">
-            {form.currentStep === 'parcel' && (
+            {form.currentStep === 'zoning' && (
+              <StepZoningRules compliance={form.zoningCompliance} />
+            )}
               <StepParentParcel
                 parentParcel={form.parentParcel}
                 loadingParcel={form.loadingParcel}
