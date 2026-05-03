@@ -110,7 +110,11 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
     );
   }
   
-  const currentStepIndex = form.steps.indexOf(form.currentStep);
+  const STEP_CONFIG = React.useMemo(
+    () => ALL_STEP_CONFIG.filter(s => form.steps.includes(s.key)),
+    [form.steps],
+  );
+  const currentStepIndex = STEP_CONFIG.findIndex(s => s.key === form.currentStep);
   const feeLabel = form.loadingFee || form.submissionFee == null
     ? '…'
     : `${form.submissionFee.toFixed(2)}$`;
