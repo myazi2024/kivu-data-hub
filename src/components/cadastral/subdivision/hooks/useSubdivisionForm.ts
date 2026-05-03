@@ -523,13 +523,32 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
         return !!(documents.requester_id_document_url && documents.proof_of_ownership_url);
       case 'summary':
         return !!(documents.requester_id_document_url && documents.proof_of_ownership_url);
+      case 'zoning':
+        return true; // page d'information uniquement
       default:
         return false;
     }
   }, [parentParcel, requester, lots, validation, purpose, documents, parentEligibility]);
 
-  // Navigation
-  const steps: SubdivisionStep[] = ['parcel', 'designer', 'plan', 'infrastructures', 'documents', 'summary'];
+  // Navigation — l'onglet 'zoning' n'est ajouté que si une règle s'applique à la zone
+  const hasZoningRule = !!zoningCompliance.rule && !zoningCompliance.loading;
+  const steps: SubdivisionStep[] = useMemo(
+    () => (hasZoningRule
+      ? ['zoning', 'parcel', 'designer', 'plan', 'infrastructures', 'documents', 'summary']
+      : ['parcel', 'designer', 'plan', 'infrastructures', 'documents', 'summary']),
+    [hasZoningRule],
+  );
+
+  // Si la règle apparaît après le chargement initial, basculer une seule fois sur 'zoning'
+  const zoningSeenRef = useRef(false);
+  useEffect(() => {
+    if (hasZoningRule && !zoningSeenRef.current && currentStep === 'parcel') {
+      zoningSeenRef.current = true;
+      setCurrentStep('zoning');
+    } else if (hasZoningRule) {
+      zoningSeenRef.current = true;
+    }
+  }, [hasZoningRule, currentStep]);
 
   const goNext = useCallback(() => {
     const idx = steps.indexOf(currentStep);
