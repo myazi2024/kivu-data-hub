@@ -224,6 +224,7 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
             {form.currentStep === 'zoning' && (
               <StepZoningRules compliance={form.zoningCompliance} />
             )}
+            {form.currentStep === 'parcel' && (
               <StepParentParcel
                 parentParcel={form.parentParcel}
                 loadingParcel={form.loadingParcel}
