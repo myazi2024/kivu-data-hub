@@ -324,6 +324,11 @@ const CadastralCartButton: React.FC = () => {
                       });
                       setParcelNumber(p.parcelNumber);
                       setOpen(false);
+                      // P1-4 : signaler au panneau de facturation de défiler dans la vue.
+                      window.dispatchEvent(new CustomEvent('cadastralCartFocusBilling', {
+                        detail: { parcelNumber: p.parcelNumber },
+                      }));
+                      trackEvent('cadastral_cart_focus_billing', { parcel_number: p.parcelNumber });
                     }}
                   >
                     {allOwned ? 'Tous services déjà acquis' : isActive ? 'Payer cette parcelle' : 'Sélectionner & payer'}
