@@ -149,6 +149,8 @@ export const CadastralCartProvider = ({ children }: { children: ReactNode }) => 
       if (mounted) setUserId(data.user?.id ?? null);
     });
     const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      // P0-3: à chaque changement d'utilisateur, on désarme le push pour laisser le pull gagner.
+      skipNextPush.current = true;
       setUserId(session?.user?.id ?? null);
     });
     return () => {
