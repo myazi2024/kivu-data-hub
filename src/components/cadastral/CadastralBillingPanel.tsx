@@ -302,7 +302,7 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
 
   return (
     <TooltipProvider>
-      <Card className="w-full max-w-[380px] sm:max-w-none mx-auto border-primary/20 bg-gradient-to-br from-background to-secondary/5 rounded-2xl overflow-hidden shadow-sm">
+      <Card ref={cardRef} className="w-full max-w-[380px] sm:max-w-none mx-auto border-primary/20 bg-gradient-to-br from-background to-secondary/5 rounded-2xl overflow-hidden shadow-sm scroll-mt-20">
         <BillingHeader parcel={searchResult.parcel} servicesCount={catalogServices.length} />
 
         <CardContent className="space-y-2.5 p-3">
