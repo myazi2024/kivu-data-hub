@@ -342,7 +342,7 @@ const CadastralCartButton: React.FC = () => {
         <SheetFooter className="border-t pt-3 flex-col gap-2 sm:flex-col">
           <div className="flex items-center justify-between w-full text-sm">
             <span className="font-medium">Total restant</span>
-            <span className="text-lg font-bold tabular-nums">${totalRemaining.toFixed(2)}</span>
+            <span className="text-lg font-bold tabular-nums">{fmt(totalRemaining)}</span>
           </div>
           <p className="text-[11px] text-muted-foreground text-center">
             Le paiement se fait par parcelle. Les services déjà acquis sont exclus du total.
