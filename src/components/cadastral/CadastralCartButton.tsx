@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ShoppingCart, Trash2, MapPin, Check, Plus, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetFooter } from '@/components/ui/sheet';
@@ -7,7 +7,12 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { useCadastralCart } from '@/hooks/useCadastralCart';
 import { useCartAccessCheck } from '@/hooks/useCartAccessCheck';
+import { useCartDiscounts } from '@/hooks/useCartDiscounts';
+import { useDiscountCodes } from '@/hooks/useDiscountCodes';
 import { useCadastralServices } from '@/hooks/useCadastralServices';
+import { useCurrencyConfig } from '@/hooks/useCurrencyConfig';
+import { useToast } from '@/hooks/use-toast';
+import { formatCurrency } from '@/utils/formatters';
 import { trackEvent } from '@/lib/analytics';
 import { cn } from '@/lib/utils';
 import CartParcelDiscountInput from './cart/CartParcelDiscountInput';
