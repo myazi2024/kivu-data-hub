@@ -182,7 +182,13 @@ const CadastralCartButton: React.FC = () => {
                       variant="ghost"
                       size="icon"
                       className="h-7 w-7 shrink-0"
-                      onClick={() => clearParcel(p.parcelNumber)}
+                      onClick={() => {
+                        trackEvent('cadastral_cart_clear_parcel', {
+                          parcel_number: p.parcelNumber,
+                          service_count: p.services.length,
+                        });
+                        clearParcel(p.parcelNumber);
+                      }}
                       aria-label={`Vider la parcelle ${p.parcelNumber}`}
                     >
                       <Trash2 className="h-3.5 w-3.5" />
