@@ -26,6 +26,11 @@ export type AnalyticsEvent =
   | 'cadastral_cart_pay_parcel'
   | 'cadastral_cart_complete_bundle'
   | 'cadastral_cart_promo_applied'
+  | 'cadastral_cart_promo_removed'
+  | 'cadastral_cart_promo_auto_cleared'
+  | 'cadastral_cart_remove_service'
+  | 'cadastral_cart_clear_parcel'
+  | 'cadastral_cart_focus_billing'
   | 'admin_tab_view'
   | 'admin_tab_denied'
   | 'admin_action';
