@@ -231,14 +231,14 @@ export const CadastralCartProvider = ({ children }: { children: ReactNode }) => 
       const { data: userRes } = await supabase.auth.getUser();
       const userId = userRes.user?.id;
       if (!userId) return;
-      const snapshot = Object.values(parcelsMapRef.current);
-      if (snapshot.length === 0) return;
+      const initial = Object.values(parcelsMapRef.current);
+      if (initial.length === 0) return;
       try {
         const { data, error } = await supabase
           .from('cadastral_service_access')
           .select('parcel_number, service_type, expires_at')
           .eq('user_id', userId)
-          .in('parcel_number', snapshot.map(p => p.parcelNumber));
+          .in('parcel_number', initial.map(p => p.parcelNumber));
         if (error || !data) return;
         const ownedByParcel = new Map<string, Set<string>>();
         for (const row of data) {
@@ -246,6 +246,7 @@ export const CadastralCartProvider = ({ children }: { children: ReactNode }) => 
           if (!ownedByParcel.has(row.parcel_number)) ownedByParcel.set(row.parcel_number, new Set());
           ownedByParcel.get(row.parcel_number)!.add(row.service_type);
         }
+        // P0-2: re-snapshot après la requête réseau pour ne pas purger une parcelle ajoutée entre-temps.
         setParcelsMap(prev => {
           const next: Record<string, CadastralCartParcel> = {};
           let changed = false;
