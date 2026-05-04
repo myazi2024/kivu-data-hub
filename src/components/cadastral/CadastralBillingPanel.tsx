@@ -100,6 +100,18 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
   const { currencies, selectedCurrency, setSelectedCurrency, convertFromUsd, exchangeRate } = useCurrencyConfig();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { get: getCartDiscount } = useCartDiscounts();
+  const cardRef = React.useRef<HTMLDivElement | null>(null);
+
+  // P1-4 : scroll vers le panneau quand le drawer demande le focus pour cette parcelle.
+  React.useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<{ parcelNumber?: string }>).detail;
+      if (!detail?.parcelNumber || detail.parcelNumber !== searchResult.parcel.parcel_number) return;
+      cardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
+    window.addEventListener('cadastralCartFocusBilling', handler);
+    return () => window.removeEventListener('cadastralCartFocusBilling', handler);
+  }, [searchResult.parcel.parcel_number]);
 
   // P4 — Sync code promo mémorisé ↔ état local (auto-apply + auto-clear)
   React.useEffect(() => {
