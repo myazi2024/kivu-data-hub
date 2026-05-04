@@ -79,7 +79,13 @@ const CartParcelDiscountInput: React.FC<CartParcelDiscountInputProps> = ({ parce
           variant="ghost"
           size="icon"
           className="h-5 w-5 shrink-0"
-          onClick={() => clear(parcelNumber)}
+          onClick={() => {
+            trackEvent('cadastral_cart_promo_removed', {
+              parcel_number: parcelNumber,
+              code: applied.code,
+            });
+            clear(parcelNumber);
+          }}
           aria-label="Retirer le code"
         >
           <X className="h-3 w-3" />
