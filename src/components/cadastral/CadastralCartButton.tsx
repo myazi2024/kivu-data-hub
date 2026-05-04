@@ -51,10 +51,52 @@ const CadastralCartButton: React.FC = () => {
 
   const { isOwned, allOwnedFor } = useCartAccessCheck(parcels);
   const { services: catalogServices } = useCadastralServices();
+  const { selectedCurrency, convertFromUsd } = useCurrencyConfig();
+  const { map: discountsMap, clear: clearDiscount } = useCartDiscounts();
+  const { validateDiscountCode } = useDiscountCodes();
+  const { toast } = useToast();
+
+  const fmt = (usd: number) => formatCurrency(convertFromUsd(usd), selectedCurrency);
 
   const totalServices = parcels.reduce((acc, p) => acc + p.services.length, 0);
   const total = getTotalAcrossParcels();
   const parcelCount = getParcelCount();
+
+  // P1-7: re-valider les codes promo mémorisés à chaque ouverture du drawer (auto-clear si invalides).
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    (async () => {
+      for (const p of parcels) {
+        const entry = discountsMap[p.parcelNumber];
+        if (!entry) continue;
+        const subtotal = p.services
+          .filter((s) => !isOwned(p.parcelNumber, s.id))
+          .reduce((acc, sv) => acc + sv.price, 0);
+        if (subtotal <= 0) continue;
+        try {
+          const v = await validateDiscountCode(entry.code, subtotal);
+          if (cancelled) return;
+          if (!v?.is_valid) {
+            clearDiscount(p.parcelNumber);
+            trackEvent('cadastral_cart_promo_auto_cleared', {
+              parcel_number: p.parcelNumber,
+              code: entry.code,
+            });
+            toast({
+              title: 'Code retiré',
+              description: `Le code "${entry.code}" n'est plus valide pour ${p.parcelNumber}.`,
+              variant: 'destructive',
+            });
+          }
+        } catch {
+          /* silent */
+        }
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   if (totalServices === 0) return null;
 
