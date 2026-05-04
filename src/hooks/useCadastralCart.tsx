@@ -60,6 +60,8 @@ export const CadastralCartProvider = ({ children }: { children: ReactNode }) => 
   const [activeParcelNumber, setActiveParcelNumber] = useState<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  // P0-1: garde anti-race pour éviter d'écraser le distant avant qu'un pull ait eu lieu.
+  const skipNextPush = useRef(true);
 
   // ---------- Hydratation depuis storage (avec migration silencieuse v1 → v2) ----------
   useEffect(() => {
