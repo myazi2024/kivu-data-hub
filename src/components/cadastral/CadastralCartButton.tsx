@@ -249,11 +249,16 @@ const CadastralCartButton: React.FC = () => {
                     })}
                   </ul>
 
-                  {/* P2 — Suggestion bundle : services manquants pour compléter le dossier */}
+                  {/* P2 — Suggestion bundle : services manquants pour compléter le dossier.
+                      P1-5 : on ne propose QUE les services sans contrainte de disponibilité (required_data_fields null),
+                      pour ne pas pousser un service qui sera grisé "données indisponibles" dans le panneau de facturation. */}
                   {(() => {
                     const inCartIds = new Set(p.services.map((s) => s.id));
                     const missing = catalogServices.filter(
-                      (cs) => !inCartIds.has(cs.id) && !isOwned(p.parcelNumber, cs.id)
+                      (cs) =>
+                        !inCartIds.has(cs.id) &&
+                        !isOwned(p.parcelNumber, cs.id) &&
+                        cs.required_data_fields == null
                     );
                     if (missing.length === 0 || catalogServices.length === 0) return null;
                     const missingTotal = missing.reduce((acc, m) => acc + m.price, 0);
@@ -264,7 +269,7 @@ const CadastralCartButton: React.FC = () => {
                           Compléter le dossier
                         </div>
                         <p className="text-[10px] text-muted-foreground leading-tight">
-                          {missing.length} service{missing.length > 1 ? 's' : ''} manquant{missing.length > 1 ? 's' : ''} pour ${missingTotal.toFixed(2)}.
+                          {missing.length} service{missing.length > 1 ? 's' : ''} disponible{missing.length > 1 ? 's' : ''} pour {fmt(missingTotal)}.
                         </p>
                         <Button
                           variant="outline"
@@ -290,7 +295,7 @@ const CadastralCartButton: React.FC = () => {
                           }}
                         >
                           <Plus className="h-3 w-3 mr-1" />
-                          Tout ajouter (+${missingTotal.toFixed(2)})
+                          Tout ajouter (+{fmt(missingTotal)})
                         </Button>
                       </div>
                     );
@@ -303,7 +308,7 @@ const CadastralCartButton: React.FC = () => {
 
                   <div className="flex items-center justify-between pt-1 text-xs">
                     <span className="text-muted-foreground">À payer</span>
-                    <span className="font-semibold tabular-nums">${subtotal.toFixed(2)}</span>
+                    <span className="font-semibold tabular-nums">{fmt(subtotal)}</span>
                   </div>
 
                   <Button
