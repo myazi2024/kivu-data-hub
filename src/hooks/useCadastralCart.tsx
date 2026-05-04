@@ -190,6 +190,7 @@ export const CadastralCartProvider = ({ children }: { children: ReactNode }) => 
           });
           setParcelsMap(migrated);
           if (remote.activeParcelNumber) setActiveParcelNumber(remote.activeParcelNumber);
+          skipNextPush.current = true; // P0-1: éviter rebound immédiat
         }
       } catch (e) {
         console.error('Cart remote pull failed:', e);
