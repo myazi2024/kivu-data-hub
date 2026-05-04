@@ -219,12 +219,21 @@ const CadastralCartButton: React.FC = () => {
                               )}
                             </div>
                           </div>
-                          <span className="tabular-nums text-muted-foreground">${s.price.toFixed(2)}</span>
+                          <span className="tabular-nums text-muted-foreground" aria-label={`Prix : ${fmt(s.price)}`}>
+                            {fmt(s.price)}
+                          </span>
                           <Button
                             variant="ghost"
                             size="icon"
                             className="h-6 w-6 shrink-0"
-                            onClick={() => removeServiceForParcel(p.parcelNumber, s.id)}
+                            onClick={() => {
+                              trackEvent('cadastral_cart_remove_service', {
+                                parcel_number: p.parcelNumber,
+                                service_id: s.id,
+                                price_usd: s.price,
+                              });
+                              removeServiceForParcel(p.parcelNumber, s.id);
+                            }}
                             aria-label={`Retirer ${s.name}`}
                           >
                             <Trash2 className="h-3 w-3" />
