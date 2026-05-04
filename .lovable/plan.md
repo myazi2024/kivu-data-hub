@@ -1,65 +1,73 @@
-## Objectif
+# Audit du panier cadastral (Carte cadastrale → Catalogue de services)
 
-Ajouter, **au tout début** du formulaire de demande de lotissement, un onglet **conditionnel** « Normes de zonage » qui :
+## Périmètre audité
 
-1. N'apparaît **que si** une règle `subdivision_zoning_rules` (active) correspond à l'emplacement de la parcelle-mère (cascade géo déjà implémentée dans `useZoningCompliance` → `rule !== null`).
-2. Informe l'utilisateur — de façon professionnelle — sur le rôle des normes cadastrales et l'obligation de les respecter pour que la demande puisse être validée et soumise.
-3. Détaille **chacune des règles applicables** issues de la base (surface min/max par lot, largeur de voirie min/recommandée, % d'espaces communs, façade min sur route, nombre max de lots, notes admin) avec une explication claire de **ce que signifie** chaque norme et **comment elle sera évaluée** sur le plan.
-4. Rappelle qu'à chaque modification du plan, la conformité est recalculée en direct et qu'aucune soumission ne sera possible tant que des erreurs subsistent.
+- `src/hooks/useCadastralCart.tsx` (provider multi-parcelles + sync Supabase + purge)
+- `src/hooks/useCartDiscounts.tsx` (codes promo/CCC mémorisés par parcelle)
+- `src/hooks/useCartAccessCheck.tsx` (services déjà acquis)
+- `src/components/cadastral/CadastralCartButton.tsx` (drawer flottant)
+- `src/components/cadastral/cart/CartParcelDiscountInput.tsx`
+- `src/components/cadastral/CadastralBillingPanel.tsx` (panneau paiement)
+- `src/components/cadastral/CadastralPaymentDialog.tsx`
 
-## Implémentation
+## Constats & correctifs
 
-### 1. Nouveau step `'zoning'`
-- Ajouter `'zoning'` en tête de l'union `SubdivisionStep` (`src/components/cadastral/subdivision/types.ts`).
-- Dans `useSubdivisionForm.ts` :
-  - Construire `steps` dynamiquement : `['zoning', 'parcel', 'designer', 'plan', 'infrastructures', 'documents', 'summary']` **uniquement si** `zoningCompliance.rule` est non nul ET `!zoningCompliance.loading`. Sinon `steps` commence à `'parcel'` (comportement actuel).
-  - `isStepValid('zoning')` → toujours `true` (page d'information, pas de saisie).
-  - Initialiser `currentStep` à `'zoning'` quand l'onglet est présent et que c'est le premier rendu (sinon garder `'parcel'`). Si la règle arrive après le chargement de la parcelle, glisser sur `'zoning'` une seule fois (flag `zoningSeenRef`).
+### P0 — Bugs de cohérence / fuites mémoire
 
-### 2. Nouveau composant `StepZoningRules.tsx`
-Chemin : `src/components/cadastral/subdivision/steps/StepZoningRules.tsx`.
+**1. Race condition sur la sync Supabase (`useCadastralCart` ↔ `useCartDiscounts`)**
+Les deux hooks pushent indépendamment via `upsert_cadastral_cart_draft` en debounce 800 ms. Au mount, `useCadastralCart` n'a PAS le garde `skipNextPush` que `useCartDiscounts` possède : un push avec `parcelsMap = {}` peut écraser le distant si la fenêtre de pull (~réseau) n'a pas encore résolu. Ajouter `skipNextPushRef` symétrique dans `useCadastralCart`, set à `true` au mount et après chaque pull réussi.
 
-Contenu :
-- En-tête : icône `ShieldCheck`, titre « Normes cadastrales applicables », sous-titre indiquant la zone matchée (`zoningCompliance.matchedLocation` + `sectionType` traduit en « urbain »/« rural »).
-- Bloc d'introduction (Alert) :
-  > « Les services cadastraux ont défini, pour la zone de votre parcelle, un ensemble de normes de zonage destinées à garantir la cohérence du plan cadastral, la viabilité des voiries, la salubrité des lots et la qualité des espaces communs. Avant de concevoir votre lotissement, prenez connaissance de ces normes : chaque découpage que vous proposerez sera automatiquement comparé à ces règles, et votre demande ne pourra être soumise pour traitement que si l'ensemble du plan les respecte intégralement. »
-- Liste détaillée (Cards) générée à partir de `rule` — afficher uniquement les règles dont la valeur est significative (`> 0` ou `!== null`) :
-  - **Surface minimale par lot** — `min_lot_area_sqm` m². « Aucun lot ne pourra être inférieur à cette surface. Les lots trop petits seront marqués en erreur sur l'onglet Conception. »
-  - **Surface maximale par lot** — `max_lot_area_sqm` m² (avertissement, pas blocant).
-  - **Largeur minimale de voirie** — `min_road_width_m` m (recommandé : `recommended_road_width_m` m). Explication accès véhicules / sécurité.
-  - **Façade minimale sur route** — `min_front_road_m` m. Pourquoi : accès direct, valeur foncière.
-  - **Pourcentage minimal d'espaces communs** — `min_common_space_pct` %. Espaces verts / drainage / parkings, calculé sur la surface totale de la parcelle-mère.
-  - **Nombre maximal de lots** — `max_lots_per_request` (s'il est défini).
-  - **Notes complémentaires** — `notes` brut (Markdown-like simple) si présent.
-- Encadré « Ce qui est vérifié automatiquement » (liste à puces : surface lots, voiries, façade, espaces communs, nombre de lots) avec mention du recalcul live.
-- Encadré final (Alert info) :
-  > « En cliquant sur "Suivant", vous attestez avoir pris connaissance de ces normes et vous engagez à concevoir un plan qui les respecte. Le système refusera toute soumission tant qu'une erreur de conformité subsistera. »
+**2. Purge post-paiement instable (event listener avec dépendance vide)**
+`useEffect([])` référence `parcelsMapRef` ✅, mais le handler appelle `setParcelsMap(prev => ...)` sans utiliser la ref. OK fonctionnellement, mais le check `snapshot.length === 0` lit la ref puis sort tôt — si l'utilisateur ajoute une parcelle entre `addEventListener` et le payload, le `getUser()` async + `select` peut purger des items basés sur un snapshot obsolète. Snapshot doit être pris **après** la requête `cadastral_service_access`, pas avant.
 
-### 3. Câblage `SubdivisionRequestDialog.tsx`
-- Étendre `STEP_CONFIG` avec une entrée optionnelle `{ key: 'zoning', label: 'Normes de zonage', shortLabel: 'Normes', icon: <ShieldCheck/> }` placée en tête.
-- Construire `effectiveSteps = form.steps` (déjà conditionnel) et n'afficher que les entrées de `STEP_CONFIG` dont la `key` est dans `effectiveSteps`.
-- Brancher le rendu : `{form.currentStep === 'zoning' && <StepZoningRules compliance={form.zoningCompliance} />}`.
-- `currentStepIndex` calculé sur la liste filtrée (déjà le cas via `form.steps.indexOf`).
+**3. `useCartDiscounts` : le `pull` distant n'est pas relancé sur logout/login subséquent**
+`useEffect([userId])` rePull sur changement, mais si l'utilisateur change de compte, `skipNextPush.current = true` n'est armé qu'au pull réussi avec données. Si distant vide, le local sera pushé au compte suivant → fuite cross-comptes. Toujours armer `skipNextPush = true` quand `userId` change, avant la requête.
 
-### 4. Mémoire projet
-- Mettre à jour `.lovable/memory/admin/subdivision-admin-audit-fr.md` (section « Lot E » → ajouter « Lot F : Onglet conditionnel Normes de zonage en tête de formulaire (rendu si rule matchée) »).
+### P1 — UX / cohérence métier
 
-### 5. Test de fonctionnement (post-implémentation)
-- Lancer le préview, ouvrir une parcelle dont la zone a une règle (ex. ville par défaut `*`) → vérifier :
-  - L'onglet « Normes » apparaît en premier et est sélectionné par défaut.
-  - Toutes les règles sont listées avec leurs valeurs réelles.
-  - « Suivant » mène à `parcel` sans erreur console.
-  - Les autres steps fonctionnent (parcel → designer → plan → infrastructures → documents → summary).
-- Tester un cas sans règle (en désactivant temporairement via mock console ou en utilisant une parcelle sans match) → vérifier que l'onglet est masqué et que `parcel` est l'étape initiale.
-- Vérifier `code--read_console_logs` et `code--read_runtime_errors` après navigation.
+**4. Bouton "Sélectionner & payer" du drawer ferme le drawer mais ne déclenche aucun scroll vers `CadastralBillingPanel`**
+`setOpen(false)` puis rien. Sur mobile (360 px), l'utilisateur perd le contexte. Émettre un event `cadastralCartFocusBilling` ou utiliser `scrollIntoView` sur le panneau via une ref globale.
 
-## Détail technique
+**5. Bundle "Compléter le dossier" du drawer ignore `serviceAvailability`**
+`CadastralCartButton` propose `catalogServices.filter(cs => !inCartIds.has(cs.id) && !isOwned(...))`, **sans** filtre de disponibilité de données. L'utilisateur ajoute des services qui seront grisés "pas de données" dans le `BillingPanel`. Importer/refactorer la logique d'évaluation (ou récupérer la décision via un hook partagé `useParcelServiceAvailability(parcel)`).
 
-```text
-SubdivisionStep = 'zoning' | 'parcel' | 'designer' | 'plan' | 'infrastructures' | 'documents' | 'summary'
+**6. Affichage des prix : drawer hardcodé `$` USD, le `BillingPanel` propose CDF/USD via `useCurrencyConfig`**
+Incohérence visuelle : le panier affiche toujours USD, le panneau peut basculer en CDF. Lire `selectedCurrency` + `convertFromUsd` dans `CadastralCartButton` et formater via `formatCurrency`.
 
-steps (dans useSubdivisionForm) :
-  rule ? ['zoning', ...rest] : [...rest]
-```
+**7. Aucun retour visuel quand un code promo expire/devient invalide après ajout**
+Le code est mémorisé 24 h en localStorage. Si supprimé/expiré côté admin, `BillingPanel` envoie `appliedDiscount` à `createInvoice` qui peut rejeter silencieusement. Re-valider via `validateDiscountCode(code, subtotal)` à chaque ouverture du drawer / focus de `CartParcelDiscountInput`, et auto-clear avec toast si invalide.
 
-Aucun changement DB. Aucun changement edge function. Aucune migration. Lecture seule des `subdivision_zoning_rules` déjà fait par `useZoningCompliance`.
+### P2 — Robustesse / observabilité
+
+**8. TTL fixe 24 h sans renouvellement à l'usage**
+`CART_TTL_MS` se base sur `savedAt` initial, pas sur le dernier accès. Un utilisateur actif depuis > 24 h voit son panier se vider au reload. Renouveler `savedAt` au load/sauvegarde plutôt qu'au premier remplissage (déjà partiellement le cas — vérifier que la persistance debounced rafraîchit bien `savedAt`, ce qu'elle fait, donc OK ; mais documenter et ajouter un test).
+
+**9. Analytics manquantes**
+- `cadastral_cart_remove_service` (suppression individuelle) → non tracé
+- `cadastral_cart_clear_parcel` → non tracé
+- `cadastral_cart_promo_removed` → non tracé
+- `cadastral_cart_pay_parcel` est tracé mais pas le succès vs abandon
+Ajouter ces évènements pour suivre l'entonnoir d'abandon.
+
+**10. Accessibilité**
+- Les `<Badge variant="outline">` "Déjà acheté" / "Consultation" / etc. n'ont pas de `aria-label` distinct → un lecteur d'écran lit "Déjà acheté Consultation $4.00" sans séparateur sémantique.
+- Le bouton flottant `fixed bottom-3 left-3 z-[1000]` chevauche les contrôles Leaflet sur très petits écrans (zoom -, attribution). Tester avec `bottom-16` sur `< sm`.
+
+## Plan de correction (ordre d'exécution)
+
+1. **P0-1** — `skipNextPush` symétrique dans `useCadastralCart` (anti-race sync).
+2. **P0-2** — Snapshot post-requête dans le handler `cadastralPaymentCompleted`.
+3. **P0-3** — Reset `skipNextPush` sur changement `userId`.
+4. **P1-7** — Re-validation des codes promo mémorisés (auto-clear + toast).
+5. **P1-5** — Hook partagé `useParcelServiceAvailability` consommé par `CadastralCartButton` et `CadastralBillingPanel`.
+6. **P1-6** — Devise dynamique dans le drawer.
+7. **P1-4** — Focus/scroll vers le panneau de facturation au clic "Payer cette parcelle".
+8. **P2-9** — Analytics complémentaires.
+9. **P2-10** — Améliorations a11y + offset mobile du bouton flottant.
+
+## Notes
+
+- Pas de changement de schéma DB requis.
+- Compatible avec la mémoire `payment/architecture-facturation-unifiee-fr` et `payment/pattern-soumission-securisee-fr`.
+- Les modifications sont rétro-compatibles avec le storage v3 (`parcelsMap` + `addedAt`).
+- Mémoire à mettre à jour : `features/cadastral-map-architecture-fr.md` (section panier).
