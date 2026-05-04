@@ -203,6 +203,10 @@ export const CadastralCartProvider = ({ children }: { children: ReactNode }) => 
   // Push debounced 800ms vers Supabase via RPC unifiée (évite race avec discounts)
   useEffect(() => {
     if (!hydrated || !userId) return;
+    if (skipNextPush.current) {
+      skipNextPush.current = false;
+      return;
+    }
     const timer = setTimeout(async () => {
       try {
         await supabase.rpc('upsert_cadastral_cart_draft', {
