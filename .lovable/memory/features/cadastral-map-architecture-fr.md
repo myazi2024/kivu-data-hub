@@ -32,3 +32,13 @@ La page `/cadastral-map` (anciennement 1615 LOC monolithe) est décomposée :
 
 ## Analytics
 - Events : `cadastral_map_search`, `cadastral_map_parcel_select`, `cadastral_map_geolocate`, `cadastral_map_whatsapp_click` via `trackEvent`
+
+## Panier cadastral (audit)
+- Sync Supabase symétrique : `useCadastralCart` + `useCartDiscounts` arment `skipNextPush` au mount et sur changement `userId` (anti-écrasement distant + anti-fuite cross-comptes)
+- Purge post-paiement : snapshot **après** la requête `cadastral_service_access` (pas avant) pour ne pas évincer des parcelles ajoutées entre-temps
+- Re-validation des codes promo mémorisés à chaque ouverture du drawer (auto-clear + toast si invalide)
+- Bundle "Compléter le dossier" du drawer ne propose QUE les services sans `required_data_fields` (évite ajout aveugle de services grisés)
+- Devise dynamique (`useCurrencyConfig`) dans le drawer, plus de `$` hardcodé
+- Bouton "Payer cette parcelle" émet `cadastralCartFocusBilling` → `CadastralBillingPanel` scrollIntoView via ref
+- Bouton flottant : `bottom-16` mobile / `sm:bottom-3` desktop pour ne pas masquer les contrôles Leaflet
+- Analytics : `cadastral_cart_remove_service`, `cadastral_cart_clear_parcel`, `cadastral_cart_promo_removed`, `cadastral_cart_promo_auto_cleared`, `cadastral_cart_focus_billing`

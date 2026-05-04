@@ -85,6 +85,8 @@ export const useCartDiscounts = () => {
       if (mounted) setUserId(data.user?.id ?? null);
     });
     const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      // P0-3: désarmer le push à chaque switch de compte (évite la fuite cross-comptes).
+      skipNextPush.current = true;
       setUserId(session?.user?.id ?? null);
     });
     return () => {

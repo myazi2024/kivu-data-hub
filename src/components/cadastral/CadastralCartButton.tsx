@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ShoppingCart, Trash2, MapPin, Check, Plus, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetFooter } from '@/components/ui/sheet';
@@ -7,7 +7,12 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { useCadastralCart } from '@/hooks/useCadastralCart';
 import { useCartAccessCheck } from '@/hooks/useCartAccessCheck';
+import { useCartDiscounts } from '@/hooks/useCartDiscounts';
+import { useDiscountCodes } from '@/hooks/useDiscountCodes';
 import { useCadastralServices } from '@/hooks/useCadastralServices';
+import { useCurrencyConfig } from '@/hooks/useCurrencyConfig';
+import { useToast } from '@/hooks/use-toast';
+import { formatCurrency } from '@/utils/formatters';
 import { trackEvent } from '@/lib/analytics';
 import { cn } from '@/lib/utils';
 import CartParcelDiscountInput from './cart/CartParcelDiscountInput';
@@ -46,10 +51,52 @@ const CadastralCartButton: React.FC = () => {
 
   const { isOwned, allOwnedFor } = useCartAccessCheck(parcels);
   const { services: catalogServices } = useCadastralServices();
+  const { selectedCurrency, convertFromUsd } = useCurrencyConfig();
+  const { map: discountsMap, clear: clearDiscount } = useCartDiscounts();
+  const { validateDiscountCode } = useDiscountCodes();
+  const { toast } = useToast();
+
+  const fmt = (usd: number) => formatCurrency(convertFromUsd(usd), selectedCurrency);
 
   const totalServices = parcels.reduce((acc, p) => acc + p.services.length, 0);
   const total = getTotalAcrossParcels();
   const parcelCount = getParcelCount();
+
+  // P1-7: re-valider les codes promo mémorisés à chaque ouverture du drawer (auto-clear si invalides).
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    (async () => {
+      for (const p of parcels) {
+        const entry = discountsMap[p.parcelNumber];
+        if (!entry) continue;
+        const subtotal = p.services
+          .filter((s) => !isOwned(p.parcelNumber, s.id))
+          .reduce((acc, sv) => acc + sv.price, 0);
+        if (subtotal <= 0) continue;
+        try {
+          const v = await validateDiscountCode(entry.code, subtotal);
+          if (cancelled) return;
+          if (!v?.is_valid) {
+            clearDiscount(p.parcelNumber);
+            trackEvent('cadastral_cart_promo_auto_cleared', {
+              parcel_number: p.parcelNumber,
+              code: entry.code,
+            });
+            toast({
+              title: 'Code retiré',
+              description: `Le code "${entry.code}" n'est plus valide pour ${p.parcelNumber}.`,
+              variant: 'destructive',
+            });
+          }
+        } catch {
+          /* silent */
+        }
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   if (totalServices === 0) return null;
 
@@ -75,9 +122,9 @@ const CadastralCartButton: React.FC = () => {
       <SheetTrigger asChild>
         <Button
           size="icon"
-          className="fixed bottom-3 left-3 z-[1000] shadow-lg rounded-full h-11 w-11"
-          aria-label={`Panier cadastral : ${totalServices} service${totalServices > 1 ? 's' : ''} · $${total.toFixed(2)}`}
-          title={`${totalServices} service${totalServices > 1 ? 's' : ''} · $${total.toFixed(2)}`}
+          className="fixed bottom-16 left-3 sm:bottom-3 z-[1000] shadow-lg rounded-full h-11 w-11"
+          aria-label={`Panier cadastral : ${totalServices} service${totalServices > 1 ? 's' : ''}, total ${fmt(total)}`}
+          title={`${totalServices} service${totalServices > 1 ? 's' : ''} · ${fmt(total)}`}
         >
           <ShoppingCart className="h-5 w-5" />
           <Badge
@@ -135,7 +182,13 @@ const CadastralCartButton: React.FC = () => {
                       variant="ghost"
                       size="icon"
                       className="h-7 w-7 shrink-0"
-                      onClick={() => clearParcel(p.parcelNumber)}
+                      onClick={() => {
+                        trackEvent('cadastral_cart_clear_parcel', {
+                          parcel_number: p.parcelNumber,
+                          service_count: p.services.length,
+                        });
+                        clearParcel(p.parcelNumber);
+                      }}
                       aria-label={`Vider la parcelle ${p.parcelNumber}`}
                     >
                       <Trash2 className="h-3.5 w-3.5" />
@@ -172,12 +225,21 @@ const CadastralCartButton: React.FC = () => {
                               )}
                             </div>
                           </div>
-                          <span className="tabular-nums text-muted-foreground">${s.price.toFixed(2)}</span>
+                          <span className="tabular-nums text-muted-foreground" aria-label={`Prix : ${fmt(s.price)}`}>
+                            {fmt(s.price)}
+                          </span>
                           <Button
                             variant="ghost"
                             size="icon"
                             className="h-6 w-6 shrink-0"
-                            onClick={() => removeServiceForParcel(p.parcelNumber, s.id)}
+                            onClick={() => {
+                              trackEvent('cadastral_cart_remove_service', {
+                                parcel_number: p.parcelNumber,
+                                service_id: s.id,
+                                price_usd: s.price,
+                              });
+                              removeServiceForParcel(p.parcelNumber, s.id);
+                            }}
                             aria-label={`Retirer ${s.name}`}
                           >
                             <Trash2 className="h-3 w-3" />
@@ -187,11 +249,16 @@ const CadastralCartButton: React.FC = () => {
                     })}
                   </ul>
 
-                  {/* P2 — Suggestion bundle : services manquants pour compléter le dossier */}
+                  {/* P2 — Suggestion bundle : services manquants pour compléter le dossier.
+                      P1-5 : on ne propose QUE les services sans contrainte de disponibilité (required_data_fields null),
+                      pour ne pas pousser un service qui sera grisé "données indisponibles" dans le panneau de facturation. */}
                   {(() => {
                     const inCartIds = new Set(p.services.map((s) => s.id));
                     const missing = catalogServices.filter(
-                      (cs) => !inCartIds.has(cs.id) && !isOwned(p.parcelNumber, cs.id)
+                      (cs) =>
+                        !inCartIds.has(cs.id) &&
+                        !isOwned(p.parcelNumber, cs.id) &&
+                        cs.required_data_fields == null
                     );
                     if (missing.length === 0 || catalogServices.length === 0) return null;
                     const missingTotal = missing.reduce((acc, m) => acc + m.price, 0);
@@ -202,7 +269,7 @@ const CadastralCartButton: React.FC = () => {
                           Compléter le dossier
                         </div>
                         <p className="text-[10px] text-muted-foreground leading-tight">
-                          {missing.length} service{missing.length > 1 ? 's' : ''} manquant{missing.length > 1 ? 's' : ''} pour ${missingTotal.toFixed(2)}.
+                          {missing.length} service{missing.length > 1 ? 's' : ''} disponible{missing.length > 1 ? 's' : ''} pour {fmt(missingTotal)}.
                         </p>
                         <Button
                           variant="outline"
@@ -228,7 +295,7 @@ const CadastralCartButton: React.FC = () => {
                           }}
                         >
                           <Plus className="h-3 w-3 mr-1" />
-                          Tout ajouter (+${missingTotal.toFixed(2)})
+                          Tout ajouter (+{fmt(missingTotal)})
                         </Button>
                       </div>
                     );
@@ -241,7 +308,7 @@ const CadastralCartButton: React.FC = () => {
 
                   <div className="flex items-center justify-between pt-1 text-xs">
                     <span className="text-muted-foreground">À payer</span>
-                    <span className="font-semibold tabular-nums">${subtotal.toFixed(2)}</span>
+                    <span className="font-semibold tabular-nums">{fmt(subtotal)}</span>
                   </div>
 
                   <Button
@@ -257,6 +324,11 @@ const CadastralCartButton: React.FC = () => {
                       });
                       setParcelNumber(p.parcelNumber);
                       setOpen(false);
+                      // P1-4 : signaler au panneau de facturation de défiler dans la vue.
+                      window.dispatchEvent(new CustomEvent('cadastralCartFocusBilling', {
+                        detail: { parcelNumber: p.parcelNumber },
+                      }));
+                      trackEvent('cadastral_cart_focus_billing', { parcel_number: p.parcelNumber });
                     }}
                   >
                     {allOwned ? 'Tous services déjà acquis' : isActive ? 'Payer cette parcelle' : 'Sélectionner & payer'}
@@ -270,7 +342,7 @@ const CadastralCartButton: React.FC = () => {
         <SheetFooter className="border-t pt-3 flex-col gap-2 sm:flex-col">
           <div className="flex items-center justify-between w-full text-sm">
             <span className="font-medium">Total restant</span>
-            <span className="text-lg font-bold tabular-nums">${totalRemaining.toFixed(2)}</span>
+            <span className="text-lg font-bold tabular-nums">{fmt(totalRemaining)}</span>
           </div>
           <p className="text-[11px] text-muted-foreground text-center">
             Le paiement se fait par parcelle. Les services déjà acquis sont exclus du total.
