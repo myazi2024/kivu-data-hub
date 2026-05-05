@@ -167,7 +167,7 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
             </div>
             <span className="text-[9px] text-muted-foreground font-medium bg-muted/50 px-1.5 py-0.5 rounded-full">{visibleActions.length}</span>
           </div>
-          <div className="overflow-y-auto max-h-[200px] sm:max-h-[260px] scrollbar-thin">
+          <div className="overflow-y-auto overscroll-contain max-h-[55dvh] sm:max-h-[260px] scrollbar-thin">
             <div className="px-2.5 pb-2 space-y-0.5">
               {groupedActions.map((item, index) => {
                 if (item === 'separator') return <Separator key={`sep-${index}`} className="my-1 opacity-30" />;
