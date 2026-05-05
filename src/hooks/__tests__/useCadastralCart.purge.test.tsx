@@ -16,13 +16,13 @@ type Deferred<T> = { promise: Promise<T>; resolve: (v: T) => void };
 
 const hoisted = vi.hoisted(() => {
   const state: {
-    hoisted.accessDeferred: Deferred<{ data: any; error: any }> | null;
+    accessDeferred: { promise: Promise<any>; resolve: (v: any) => void } | null;
     getUserImpl: () => Promise<{ data: { user: { id: string } | null } }>;
-    hoisted.fromSpy: any;
+    fromSpy: any;
   } = {
-    hoisted.accessDeferred: null,
+    accessDeferred: null,
     getUserImpl: () => Promise.resolve({ data: { user: { id: 'u1' } } }),
-    hoisted.fromSpy: null,
+    fromSpy: null,
   };
   return state;
 });
@@ -44,18 +44,18 @@ vi.mock('@/integrations/supabase/client', () => {
   const accessChain = {
     select: () => ({
       eq: () => ({
-        in: () => hoisted.hoisted.accessDeferred!.promise,
+        in: () => hoisted.accessDeferred!.promise,
       }),
     }),
   };
-  const hoisted.fromSpy = vi.fn((table: string) => {
+  const fromSpy = vi.fn((table: string) => {
     if (table === 'cadastral_service_access') return accessChain;
     return cartDraftChain;
   });
-  hoisted.hoisted.fromSpy = hoisted.fromSpy;
+  hoisted.fromSpy = fromSpy;
   return {
     supabase: {
-      from: (...args: any[]) => hoisted.fromSpy(...args),
+      from: (...args: any[]) => fromSpy(...args),
       rpc: vi.fn(() => Promise.resolve({ data: null, error: null })),
       auth: {
         getUser: () => hoisted.getUserImpl(),
