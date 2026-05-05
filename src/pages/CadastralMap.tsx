@@ -307,7 +307,7 @@ const CadastralMap = () => {
                     <Search className="h-full w-full" />
                   </div>
                   <Input
-                    placeholder={selectedParcel && isMobile ? searchBarConfig.placeholder.map_compact : searchBarConfig.placeholder.map_default}
+                    placeholder={searchBarConfig.placeholder.map_default}
                     value={searchQuery}
                     onChange={(e) => {
                       const inputValue = e.target.value;
