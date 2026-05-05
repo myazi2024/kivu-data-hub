@@ -55,7 +55,7 @@ vi.mock('@/integrations/supabase/client', () => {
   hoisted.fromSpy = fromSpy;
   return {
     supabase: {
-      from: (...args: any[]) => fromSpy(...args),
+      from: (table: string) => fromSpy(table),
       rpc: vi.fn(() => Promise.resolve({ data: null, error: null })),
       auth: {
         getUser: () => hoisted.getUserImpl(),
