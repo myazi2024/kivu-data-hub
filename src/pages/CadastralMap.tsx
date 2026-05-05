@@ -552,8 +552,11 @@ const CadastralMap = () => {
 
         {/* Selected parcel panel */}
         {selectedParcel && (
-          <div className={`absolute ${isMobile ? 'bottom-2 left-3 right-3 max-w-[340px] mx-auto' : 'bottom-4 right-4 w-80'} z-[1000]`}>
-            <div className="bg-background/98 backdrop-blur-xl rounded-3xl shadow-[0_8px_40px_-12px_hsl(var(--primary)/1),0_4px_16px_-4px_rgba(0,0,0,1)] border border-border/40 overflow-hidden">
+          <div
+            className={`absolute z-[1000] ${isMobile ? 'inset-x-0 bottom-0' : 'bottom-4 right-4 w-80'}`}
+            style={isMobile ? { paddingBottom: 'env(safe-area-inset-bottom)' } : undefined}
+          >
+            <div className={`bg-background/98 backdrop-blur-xl ${isMobile ? 'rounded-t-3xl border-t' : 'rounded-3xl border'} shadow-[0_8px_40px_-12px_hsl(var(--primary)/1),0_4px_16px_-4px_rgba(0,0,0,1)] border-border/40 overflow-hidden`}>
               <ParcelActionsDropdown
                 parcelNumber={selectedParcel.parcel_number}
                 parcelId={selectedParcel.id}
