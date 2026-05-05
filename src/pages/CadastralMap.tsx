@@ -719,19 +719,14 @@ const CadastralMap = () => {
                   </div>
                 </div>
               </div>
-              <div className="absolute left-3 z-[800] md:hidden" style={{
-                bottom: `${selectedParcel
-                  ? (actionsExpanded ? Math.min(viewportHeight * 0.55, 480) : Math.min(viewportHeight * 0.3, 240))
-                  : Math.min(viewportHeight * 0.25, 192)}px`,
-                transition: 'bottom 0.3s ease',
-              }}>
+              <div className="absolute right-3 z-[800] md:hidden top-[8rem]">
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Button variant="secondary" size="sm" className="h-7 w-7 rounded-lg shadow-lg p-0" aria-label="Afficher la légende">
-                      <HelpCircle className="h-3 w-3" />
+                    <Button variant="secondary" size="sm" className="h-9 w-9 rounded-xl shadow-lg p-0" aria-label="Afficher la légende">
+                      <HelpCircle className="h-4 w-4" />
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent side="top" align="start" sideOffset={8} className="w-36 rounded-lg p-1.5">
+                  <PopoverContent side="left" align="start" sideOffset={8} className="w-40 rounded-lg p-1.5">
                     <p className="text-[7px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">Légende</p>
                     <div className="space-y-0.5">
                       {legendItems.map(item => (
