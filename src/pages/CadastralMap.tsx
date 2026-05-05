@@ -279,8 +279,10 @@ const CadastralMap = () => {
               variant="secondary"
               size="sm"
               onClick={handleGeolocate}
-              className="absolute right-3 z-[800] h-9 w-9 rounded-xl shadow-lg p-0"
-              style={{ bottom: isMobile ? `${Math.min(viewportHeight * 0.4, 320)}px` : '7rem' }}
+              className={cn(
+                'absolute right-3 z-[800] h-10 w-10 rounded-xl shadow-lg p-0',
+                isMobile ? 'top-[4.5rem]' : 'bottom-28'
+              )}
               aria-label="Me localiser"
             >
               <LocateFixed className="h-4 w-4" />
