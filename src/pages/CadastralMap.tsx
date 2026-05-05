@@ -626,15 +626,15 @@ const CadastralMap = () => {
                       await cadastralSearch.searchParcel(selectedParcel.parcel_number);
                       setShowServiceCatalog(true);
                     }}
-                    className="flex-1 h-9 text-xs rounded-xl font-medium shadow-sm"
+                    className="flex-1 h-10 text-xs rounded-xl font-medium shadow-sm"
                     size="sm"
                     disabled={cadastralSearch.loading}
                   >
                     {cadastralSearch.loading ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
                       <>
-                        <Search className="h-3 w-3 mr-1.5" />
+                        <Search className="h-3.5 w-3.5 mr-1.5" />
                         {isMobile ? 'Données' : 'Plus de données'}
                       </>
                     )}
@@ -642,21 +642,21 @@ const CadastralMap = () => {
                   <Button
                     variant={actionsExpanded ? 'default' : 'secondary'}
                     size="sm"
-                    className={`flex-1 h-9 text-xs rounded-xl font-medium gap-1 transition-all ${actionsExpanded ? 'shadow-sm' : ''}`}
+                    className={`flex-1 h-10 text-xs rounded-xl font-medium gap-1 transition-all ${actionsExpanded ? 'shadow-sm' : ''}`}
                     onClick={() => setActionsExpanded(prev => !prev)}
                   >
                     {actionsExpanded ? 'Fermer' : 'Actions'}
-                    {actionsExpanded ? <X className="h-3 w-3" /> : <Settings2 className="h-3 w-3" />}
+                    {actionsExpanded ? <X className="h-3.5 w-3.5" /> : <Settings2 className="h-3.5 w-3.5" />}
                   </Button>
                   <Button
                     onClick={handleWhatsAppClick}
                     variant="outline"
                     size="sm"
-                    className="h-9 w-9 p-0 rounded-xl shrink-0"
+                    className="h-10 w-10 p-0 rounded-xl shrink-0"
                     aria-label="Aide WhatsApp"
                     title="Aide WhatsApp"
                   >
-                    <MessageCircle className="h-3.5 w-3.5" />
+                    <MessageCircle className="h-4 w-4" />
                   </Button>
                 </div>
 
