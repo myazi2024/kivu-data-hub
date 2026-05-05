@@ -16,13 +16,13 @@ type Deferred<T> = { promise: Promise<T>; resolve: (v: T) => void };
 
 const hoisted = vi.hoisted(() => {
   const state: {
-    accessDeferred: Deferred<{ data: any; error: any }> | null;
+    hoisted.accessDeferred: Deferred<{ data: any; error: any }> | null;
     getUserImpl: () => Promise<{ data: { user: { id: string } | null } }>;
-    fromSpy: any;
+    hoisted.fromSpy: any;
   } = {
-    accessDeferred: null,
+    hoisted.accessDeferred: null,
     getUserImpl: () => Promise.resolve({ data: { user: { id: 'u1' } } }),
-    fromSpy: null,
+    hoisted.fromSpy: null,
   };
   return state;
 });
@@ -44,18 +44,18 @@ vi.mock('@/integrations/supabase/client', () => {
   const accessChain = {
     select: () => ({
       eq: () => ({
-        in: () => hoisted.accessDeferred!.promise,
+        in: () => hoisted.hoisted.accessDeferred!.promise,
       }),
     }),
   };
-  const fromSpy = vi.fn((table: string) => {
+  const hoisted.fromSpy = vi.fn((table: string) => {
     if (table === 'cadastral_service_access') return accessChain;
     return cartDraftChain;
   });
-  hoisted.fromSpy = fromSpy;
+  hoisted.hoisted.fromSpy = hoisted.fromSpy;
   return {
     supabase: {
-      from: (...args: any[]) => fromSpy(...args),
+      from: (...args: any[]) => hoisted.fromSpy(...args),
       rpc: vi.fn(() => Promise.resolve({ data: null, error: null })),
       auth: {
         getUser: () => hoisted.getUserImpl(),
@@ -106,9 +106,9 @@ const fireCompleted = () => act(() => {
 const flush = () => new Promise<void>((r) => setTimeout(r, 0));
 
 beforeEach(() => {
-  accessDeferred = makeDeferred();
-  getUserMock = vi.fn(() => Promise.resolve({ data: { user: { id: 'u1' } } }));
-  fromSpy.mockClear();
+  hoisted.accessDeferred = makeDeferred();
+  hoisted.getUserImpl = () => Promise.resolve({ data: { user: { id: 'u1' } } });
+  hoisted.fromSpy.mockClear();
 });
 
 describe('useCadastralCart — purge post-paiement (snapshot après requête)', () => {
@@ -125,7 +125,7 @@ describe('useCadastralCart — purge post-paiement (snapshot après requête)', 
 
     // Resolve : svc-A acheté pour P-1
     await act(async () => {
-      accessDeferred.resolve({
+      hoisted.accessDeferred.resolve({
         data: [{ parcel_number: 'P-1', service_type: 'svc-A', expires_at: null }],
         error: null,
       });
@@ -148,7 +148,7 @@ describe('useCadastralCart — purge post-paiement (snapshot après requête)', 
     act(() => ref.current!.add('P-1', 'svc-B'));
 
     await act(async () => {
-      accessDeferred.resolve({
+      hoisted.accessDeferred.resolve({
         data: [{ parcel_number: 'P-1', service_type: 'svc-A', expires_at: null }],
         error: null,
       });
@@ -167,7 +167,7 @@ describe('useCadastralCart — purge post-paiement (snapshot après requête)', 
     fireCompleted();
     await act(async () => {
       await flush();
-      accessDeferred.resolve({ data: [], error: null });
+      hoisted.accessDeferred.resolve({ data: [], error: null });
       await flush();
     });
     const after = ref.current!.parcels();
@@ -180,7 +180,7 @@ describe('useCadastralCart — purge post-paiement (snapshot après requête)', 
     fireCompleted();
     await act(async () => {
       await flush();
-      accessDeferred.resolve({ data: null, error: { message: 'boom' } });
+      hoisted.accessDeferred.resolve({ data: null, error: { message: 'boom' } });
       await flush();
     });
     const p1 = ref.current!.parcels().find(p => p.parcelNumber === 'P-1');
@@ -194,7 +194,7 @@ describe('useCadastralCart — purge post-paiement (snapshot après requête)', 
     fireCompleted();
     await act(async () => {
       await flush();
-      accessDeferred.resolve({
+      hoisted.accessDeferred.resolve({
         data: [{
           parcel_number: 'P-1',
           service_type: 'svc-A',
@@ -209,13 +209,13 @@ describe('useCadastralCart — purge post-paiement (snapshot après requête)', 
   });
 
   it('Test 6 — utilisateur non authentifié → no-op', async () => {
-    getUserMock = vi.fn(() => Promise.resolve({ data: { user: null } }));
+    hoisted.getUserImpl = () => Promise.resolve({ data: { user: null } });
     const ref = mount();
     act(() => ref.current!.add('P-1', 'svc-A'));
-    fromSpy.mockClear();
+    hoisted.fromSpy.mockClear();
     fireCompleted();
     await act(async () => { await flush(); });
-    const accessCalls = fromSpy.mock.calls.filter((c: any[]) => c[0] === 'cadastral_service_access');
+    const accessCalls = hoisted.fromSpy.mock.calls.filter((c: any[]) => c[0] === 'cadastral_service_access');
     expect(accessCalls.length).toBe(0);
     expect(ref.current!.parcels().find(p => p.parcelNumber === 'P-1')).toBeDefined();
   });
@@ -223,10 +223,10 @@ describe('useCadastralCart — purge post-paiement (snapshot après requête)', 
   it('Test 7 — panier vide → pas de requête access', async () => {
     mount();
     await act(async () => { await flush(); });
-    fromSpy.mockClear();
+    hoisted.fromSpy.mockClear();
     fireCompleted();
     await act(async () => { await flush(); });
-    const accessCalls = fromSpy.mock.calls.filter((c: any[]) => c[0] === 'cadastral_service_access');
+    const accessCalls = hoisted.fromSpy.mock.calls.filter((c: any[]) => c[0] === 'cadastral_service_access');
     expect(accessCalls.length).toBe(0);
   });
 });
