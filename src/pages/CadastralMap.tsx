@@ -300,7 +300,7 @@ const CadastralMap = () => {
           } : undefined}
         >
           <div className="bg-background/95 backdrop-blur-md rounded-2xl shadow-[0_10px_40px_-8px_rgba(0,0,0,0.9),0_4px_16px_-4px_rgba(0,0,0,0.6)] border border-border/50 overflow-hidden">
-            <div className={`${selectedParcel && isMobile ? 'p-2' : 'p-2.5'}`}>
+            <div className="p-2.5">
               <div className="flex items-center gap-2">
                 <div className="relative flex-1">
                   <div className={`absolute left-2.5 top-1/2 -translate-y-1/2 ${selectedParcel && isMobile ? 'h-3.5 w-3.5' : 'h-4 w-4'} text-muted-foreground z-10`}>
