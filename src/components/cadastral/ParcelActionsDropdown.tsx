@@ -178,7 +178,7 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
                     onClick={() => handleActionClick(action)}
                     onFocus={() => handleMenuItemFocus(index)}
                     disabled={!action.isActive}
-                    className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-left transition-all duration-150
+                    className={`w-full flex items-center gap-2.5 px-2.5 py-2.5 min-h-11 rounded-xl text-left transition-all duration-150
                       ${action.isActive ? 'hover:bg-primary/5 hover:shadow-sm active:scale-[0.98] cursor-pointer' : 'opacity-35 cursor-not-allowed'}`}
                   >
                     <ActionIcon iconName={action.iconName} actionKey={action.key} />
