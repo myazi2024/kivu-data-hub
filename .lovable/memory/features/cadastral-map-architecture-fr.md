@@ -1,6 +1,6 @@
 ---
 name: Cadastral map architecture
-description: /cadastral-map décomposée en hooks (useCadastralMapData, useStripeReturnHandler, useLandTitleNotificationFlow, useLeafletMap), tuiles via useMapProvider (proxy Mapbox), géoloc on-demand, marker clustering, AudioContext singleton, WhatsApp depuis app_appearance_config, analytics map events
+description: /cadastral-map décomposée en hooks, tuiles via proxy Mapbox, géoloc on-demand, marker clustering, AudioContext singleton, panier optimisé, layout mobile safe-area + 100dvh + bottom-sheet
 type: feature
 ---
 La page `/cadastral-map` (anciennement 1615 LOC monolithe) est décomposée :
@@ -42,3 +42,13 @@ La page `/cadastral-map` (anciennement 1615 LOC monolithe) est décomposée :
 - Bouton "Payer cette parcelle" émet `cadastralCartFocusBilling` → `CadastralBillingPanel` scrollIntoView via ref
 - Bouton flottant : `bottom-16` mobile / `sm:bottom-3` desktop pour ne pas masquer les contrôles Leaflet
 - Analytics : `cadastral_cart_remove_service`, `cadastral_cart_clear_parcel`, `cadastral_cart_promo_removed`, `cadastral_cart_promo_auto_cleared`, `cadastral_cart_focus_billing`
+
+## Layout mobile (audit dédié)
+- `<main>` en `h-[100dvh]` + `overflow-hidden` (plus de `100vh` qui saute avec l'URL bar iOS / clavier).
+- Position de `.leaflet-control-zoom` pilotée par variable CSS `--map-zoom-offset` (plus de `<style>` recalculé via `viewportHeight` JS).
+- Search overlay : **toujours en haut** sur mobile (`top-3 left-3 right-3`), plus jamais collée au bas du viewport ; cibles tactiles ≥ 40 px (`h-10`) pour tous les boutons (search clear, settings, land title) — fin du mode "compact h-8" quand parcelle sélectionnée.
+- Geolocate : top-droite sous la barre de recherche (`top-[4.5rem]`) au lieu de 40 % du viewport.
+- Légende mobile : top-droite (`top-[8rem]`), popover side="left" — plus de position dynamique calculée en bas.
+- Panneau parcelle sélectionnée : **bottom-sheet plein largeur** (`inset-x-0 bottom-0 rounded-t-3xl`) avec `pb-[env(safe-area-inset-bottom)]` ; supprimé `max-w-[340px] mx-auto` qui créait une bande étroite. Boutons d'action `h-10` (Données / Actions / WhatsApp), favori et fermeture `h-9 w-9`.
+- ParcelActionsDropdown : `max-h-[55dvh]` mobile + `overscroll-contain` ; chaque bouton `min-h-11` pour cible tactile.
+- CadastralCartButton : ancré en `bottom-[calc(env(safe-area-inset-bottom)+5rem)] sm:bottom-3` ; SheetContent reçoit `pb-[env(safe-area-inset-bottom)]`.
