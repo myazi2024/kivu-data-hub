@@ -1,6 +1,6 @@
 ---
 name: Cadastral map architecture
-description: /cadastral-map décomposée en hooks (useCadastralMapData, useStripeReturnHandler, useLandTitleNotificationFlow, useLeafletMap), tuiles via useMapProvider (proxy Mapbox), géoloc on-demand, marker clustering, AudioContext singleton, WhatsApp depuis app_appearance_config, analytics map events
+description: /cadastral-map décomposée en hooks, tuiles via proxy Mapbox, géoloc on-demand, marker clustering, AudioContext singleton, panier optimisé, layout mobile safe-area + 100dvh + bottom-sheet
 type: feature
 ---
 La page `/cadastral-map` (anciennement 1615 LOC monolithe) est décomposée :
