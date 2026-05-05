@@ -136,7 +136,7 @@ const CadastralCartButton: React.FC = () => {
         </Button>
       </SheetTrigger>
 
-      <SheetContent side="left" className="w-3/4 max-w-[85vw] sm:max-w-sm flex flex-col rounded-r-2xl">
+      <SheetContent side="left" className="w-3/4 max-w-[85vw] sm:max-w-sm flex flex-col rounded-r-2xl pb-[env(safe-area-inset-bottom,0px)]">
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2">
             <ShoppingCart className="h-5 w-5" />
