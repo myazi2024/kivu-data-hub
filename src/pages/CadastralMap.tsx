@@ -261,7 +261,7 @@ const CadastralMap = () => {
             </div>
           </div>
         ) : (
-          <div ref={mapContainerRef} style={{ width: '100%', height: 'calc(100vh - 4rem)' }} />
+          <div ref={mapContainerRef} style={{ width: '100%', height: '100%' }} />
         )}
 
         {/* Stripe polling indicator */}
