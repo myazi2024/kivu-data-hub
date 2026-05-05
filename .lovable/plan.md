@@ -1,127 +1,95 @@
+# Optimisation mobile — Carte cadastrale (`/cadastral-map`)
 
-# Tests de régression — purge post-paiement (`useCadastralCart`)
+## Audit synthétique
+
+La page `src/pages/CadastralMap.tsx` (788 LOC) empile **7 couches flottantes absolues** sur la carte (search overlay, geolocate, légende, panneau parcelle, panier, WhatsApp via dropdown, contrôles zoom Leaflet). Sur mobile (≤ 768px, viewport observé 360×601), ces couches sont positionnées via du `style={{ bottom: viewport * 0.xx }}` calculé au JS, ce qui :
+
+- recrée un `<style>` inline à chaque render (CSS pour `.leaflet-control-zoom`),
+- dépend de `window.innerHeight` mis à jour avec un debounce 150 ms (jank au changement d'orientation / clavier virtuel),
+- ne tient pas compte des **safe-area** iOS (notch / home indicator),
+- provoque chevauchements : geolocate à 40 % du viewport, search bar à `viewport-180px`, panier `bottom-16`, panneau parcelle `bottom-2`, légende mobile entre 25 % et 55 %.
+
+Autres frictions UX mobiles relevées :
+- Cibles tactiles **< 44 px** quand une parcelle est sélectionnée (`h-8 w-8` pour search, settings, X, favori, fermeture).
+- Le land title button affiche **Tooltip + Popover imbriqués** sur mobile (focus capture, double overlay).
+- L'overlay recherche en haut + les filtres avancés `max-h-500` peuvent dépasser le viewport et sont scrollables uniquement à l'intérieur du conteneur.
+- 3 boutons d'action (`Données`, `Actions`, `WhatsApp`) compressés dans un panneau `max-w-[340px]` — labels tronqués.
+- Pas de `min-h-0` ni `overflow` strict sur `<main>` → la carte peut sauter quand le clavier mobile s'ouvre (search input).
+- Le bouton flottant du panier recouvre encore les contrôles Leaflet sur viewport très court (601 px).
+- Le suivi `viewportHeight` via `window.innerHeight` est instable iOS (URL bar) — préférer `100dvh` et CSS variables.
 
 ## Objectif
 
-Garantir, par une suite de tests automatisés rejouables, que le handler `cadastralPaymentCompleted` ne supprime jamais une parcelle/service ajouté pendant la requête réseau `cadastral_service_access`. L'invariant clé est que le snapshot du panier doit être pris **après** la résolution de la requête (via le callback `setParcelsMap(prev => ...)`), conformément au correctif P0-2 documenté dans `.lovable/plan.md`.
+Réduire le nombre de positions calculées en JS, fiabiliser les zones cliquables, respecter les safe-areas et éviter les chevauchements entre overlays sur mobile, sans régression desktop.
 
-## Périmètre
+## Changements proposés
 
-Hook ciblé : `src/hooks/useCadastralCart.tsx` (effet listener du `cadastralPaymentCompleted`, lignes ~229-269).
+### 1. `src/pages/CadastralMap.tsx` — refonte du layering mobile
 
-Aucun changement de code applicatif. Uniquement de l'outillage de test + spec.
+- Remplacer le bloc `<style>` inline qui pilote `.leaflet-control-zoom` par une **variable CSS** `--map-zoom-offset` posée sur le conteneur ; calculée une seule fois par état (selectedParcel, actionsExpanded, isMobile) sans dépendre de `viewportHeight` JS.
+- Remplacer tous les `Math.min(viewportHeight * X, Y)` par des classes Tailwind et **safe-area** :
+  - `pb-[env(safe-area-inset-bottom)]` sur les overlays bas,
+  - `top-3` au lieu de `viewport - 180px` (search bar n'est plus poussée tout en bas quand inactive — pattern moderne : barre toujours en haut sur mobile, full-width).
+- Search bar mobile : **toujours fixée en haut** (`top-2 left-2 right-2`) avec `h-10` (cible tactile 40 px conforme) ; supprimer le mode "compact" `h-8` quand parcelle sélectionnée.
+- Panneau parcelle sélectionnée : passer en **bottom-sheet plein largeur** (`left-0 right-0 rounded-t-3xl`) avec `pb-[env(safe-area-inset-bottom)]`, hauteur auto, drag-handle visuel ; supprimer `max-w-[340px] mx-auto` qui crée une bande étroite.
+- Boutons action (`Données`, `Actions`, WhatsApp) : redimensionner en `h-10 min-w-10` ; sur < 380 px, basculer le bouton WhatsApp dans le menu Actions pour libérer l'espace.
+- Land title button mobile : supprimer le `Tooltip` redondant (garder uniquement le `Popover` de notification) ; déplacer le bouton dans une rangée secondaire si la barre dépasse 360 px.
+- Geolocate floating : déplacer en haut-droite sous la barre de recherche (`top: 4rem` mobile) au lieu de 40 % du viewport, pour libérer toute la zone basse pour le panneau parcelle.
+- Légende mobile : ancrer en `top-3 right-3` (sous geolocate) avec popover `side="bottom"` au lieu de la position dynamique en bas.
+- `<main>` : utiliser `h-[100dvh]` au lieu de `calc(100vh - 4rem)` + `overflow-hidden`, et `Navigation` en `flex-shrink-0` ; évite le saut iOS quand le clavier s'ouvre.
 
-## Mise en place de l'environnement de tests
+### 2. `src/components/cadastral/CadastralCartButton.tsx`
 
-Aucun harnais Vitest n'existe aujourd'hui. À ajouter :
+- Bouton flottant mobile : ancrer en `bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] right-3` ; déjà `bottom-16` mais on enlève l'offset arbitraire et on s'aligne sur safe-area.
+- Quand un panneau parcelle est ouvert sur mobile, écouter `cadastralParcelOpen` (nouvel évènement) et **masquer** ou réduire le bouton du panier (transformé en pastille discrète) pour éviter le recouvrement du bottom-sheet.
+- `SheetContent` : sur mobile, passer en `side="bottom"` au lieu de `right` (déjà géré ?) — vérifier et forcer ; ajouter `max-h-[85dvh]` et `pb-[env(safe-area-inset-bottom)]`.
 
-1. **Dépendances dev** (`package.json`) :
-   - `vitest`, `@testing-library/react`, `@testing-library/jest-dom`, `jsdom`, `@vitejs/plugin-react-swc`
-2. **`vitest.config.ts`** avec `environment: 'jsdom'`, `setupFiles: ['./src/test/setup.ts']`, alias `@`.
-3. **`src/test/setup.ts`** : import `@testing-library/jest-dom`, polyfill `matchMedia`.
-4. **`tsconfig.app.json`** : ajouter `"vitest/globals"` aux `types`.
-5. **Mock global Supabase** dans `src/test/mocks/supabase.ts` : factory pour `from(...).select(...).eq(...).in(...)` retournant un `Promise` contrôlable, plus `auth.getUser` et `auth.onAuthStateChange`.
+### 3. `src/components/cadastral/ParcelActionsDropdown.tsx`
 
-## Scénarios de régression
+- Dropdown développé : remplacer la liste verticale dense par une **grille 2 colonnes** sur mobile (`grid grid-cols-2 gap-2`) avec touches `h-12` ; meilleure scannabilité sur 360 px.
+- Ajouter `max-h-[55dvh] overflow-y-auto overscroll-contain` pour éviter qu'il ne déborde quand 8+ actions sont affichées.
 
-Fichier : `src/hooks/__tests__/useCadastralCart.purge.test.tsx`
+### 4. `src/components/cadastral/AdvancedSearchFilters.tsx`
 
-Wrapper : composant test consommant `useCadastralCart` via `CadastralCartProvider` ; helpers `addParcel(pn, svcId)` et `firePaymentCompleted()` exposés via boutons.
+- Mode compact : passer les `Select` côte à côte (`grid grid-cols-2 gap-2`) en `grid-cols-1` < 380 px ; éviter les labels tronqués des provinces longues ("Kasaï-Oriental").
+- Boutons "Rechercher / Effacer" en `sticky bottom-0` du panneau pour rester accessibles quand la liste de filtres scrolle.
 
-### Test 1 — Parcelle ajoutée pendant la requête doit survivre (cas nominal du bug)
+### 5. `src/components/cadastral/CadastralResultsDialog.tsx`
 
-```text
-1. Monter le provider, désactiver le consent OFF (panier vide).
-2. addParcel('P-1', 'svc-A')                 → cart = { P-1: [svc-A] }
-3. Mock supabase.in(...) renvoie une Promise NON résolue.
-4. Dispatch 'cadastralPaymentCompleted'.
-5. Pendant que la Promise est en attente :
-     addParcel('P-2', 'svc-B')               → cart = { P-1, P-2 }
-6. Résoudre la Promise avec
-     [{ parcel_number:'P-1', service_type:'svc-A', expires_at:null }]
-7. Attendre flush microtâches.
-Assertions :
-  - parcels contient P-2 avec [svc-B]        ← invariant principal
-  - P-1 retirée (svc-A purgé, plus de services)
-```
+- Vérifier que le dialog passe en plein écran mobile (`max-h-[95dvh] sm:max-h-[80vh]`, `rounded-none sm:rounded-2xl`).
 
-### Test 2 — Service ajouté à une parcelle existante pendant la requête
+### 6. Mémoire
 
-```text
-1. addParcel('P-1', 'svc-A')
-2. Dispatch 'cadastralPaymentCompleted' (Promise pendante)
-3. addServiceForParcel('P-1', loc, svc-B)
-4. Resolve avec ownership svc-A uniquement
-Assertions :
-  - parcels[P-1].services contient svc-B
-  - svc-A retiré
-```
-
-### Test 3 — Aucun changement quand rien n'est acheté
-
-```text
-1. addParcel('P-1', 'svc-A')
-2. Dispatch event ; resolve avec [] (rien possédé)
-Assertions :
-  - parcelsMap inchangé (référence stable via early-return changed=false)
-```
-
-### Test 4 — Erreur réseau ne purge rien
-
-```text
-1. addParcel('P-1', 'svc-A')
-2. Dispatch event ; resolve avec { error: { message:'boom' }, data: null }
-Assertions :
-  - parcels inchangé, pas d'exception non capturée
-```
-
-### Test 5 — Service expiré ignoré (pas purgé)
-
-```text
-1. addParcel('P-1', 'svc-A')
-2. Resolve avec [{ parcel_number:'P-1', service_type:'svc-A',
-                   expires_at: <hier> }]
-Assertions :
-  - svc-A toujours présent (expires_at <= now → ignoré)
-```
-
-### Test 6 — Utilisateur non authentifié → no-op
-
-```text
-1. auth.getUser → { data: { user: null } }
-2. addParcel('P-1', 'svc-A') ; dispatch event
-Assertions :
-  - Aucune requête supabase.from émise
-  - parcels inchangé
-```
-
-### Test 7 — Panier vide au moment du dispatch → no-op
-
-```text
-1. Aucun ajout. Dispatch event.
-Assertions :
-  - Aucune requête supabase.from émise
-```
-
-## Exécution & livrable
-
-- Lancement via le runner Vitest du projet (`bunx vitest run src/hooks/__tests__/useCadastralCart.purge.test.tsx`).
-- Sortie attendue : 7 tests verts.
-- Documentation : ajouter une note dans `.lovable/memory/features/cadastral-map-architecture-fr.md` (section panier) pointant vers cette suite comme garde-fou anti-régression du snapshot post-purge.
+Mettre à jour `mem://features/cadastral-map-architecture-fr.md` :
+- Section "Mobile layout standard" : safe-area, `100dvh`, search bar fixée top, panneau parcelle en bottom-sheet, geolocate top-droite.
+- Cibles tactiles ≥ 40 px obligatoires.
 
 ## Détails techniques
 
-- Le test exploite l'observabilité du callback fonctionnel `setParcelsMap(prev => …)` : insérer un `setParcelsMap` synchronisé via `act(...)` entre `dispatchEvent` et la résolution de la Promise mockée garantit que `prev` reflète le panier élargi.
-- Le mock Supabase doit retourner un objet chainable où `.in(...)` est la dernière étape qui renvoie la Promise contrôlable (pattern `deferred = { promise, resolve }`).
-- `consent` forcé via mock de `CookieManager.getConsentStatus` pour bypass storage.
-- Aucun appel réseau réel ; `supabase` du module est mocké via `vi.mock('@/integrations/supabase/client', …)`.
+```text
+Avant (mobile 360×601)            Après
+┌──────────────────┐              ┌──────────────────┐
+│ Nav 64           │              │ Nav 64           │
+│                  │              │ ─── search bar ─ │  ← top-2, h-10
+│  geo (40% h)    ●│              │ ───── geo ──── ●│  ← top sous search
+│                  │              │                  │
+│                  │              │      MAP         │
+│ ─── search bar ─ │              │                  │
+│ ─── panel ───── │              │ ═══ parcel sheet ═│  ← bottom-sheet
+│ cart●  legend ●  │              │ ═════════════════ │     pb-safe
+└──────────────────┘              └──────────────────┘
+```
 
-## Fichiers créés / modifiés
+Composants JS supprimés :
+- `<style>` inline pour `.leaflet-control-zoom` → remplacé par `style={{ '--map-zoom-offset': ... }}` + CSS dans `index.css`.
+- 3 callsites `Math.min(viewportHeight * X, Y)` retirés.
 
-- créé `vitest.config.ts`
-- créé `src/test/setup.ts`
-- créé `src/test/mocks/supabase.ts`
-- créé `src/hooks/__tests__/useCadastralCart.purge.test.tsx`
-- modifié `package.json` (devDependencies + script `test`)
-- modifié `tsconfig.app.json` (`types: ["vitest/globals"]`)
-- modifié `.lovable/memory/features/cadastral-map-architecture-fr.md` (note suite de tests)
+Pas de modification BD, pas de nouveaux endpoints.
+
+## QA
+
+Après implémentation :
+- Naviguer en preview à 360×640, 390×844, 414×896 et 768×1024.
+- Vérifier : recherche, suggestions, sélection parcelle (carte), expansion actions (8+ items), ouverture du panier (sheet bottom), légende, geolocate, ouverture clavier sur input, paysage.
+- Vérifier desktop (≥ 1024 px) : aucune régression visuelle (search overlay gauche 24 rem, panneau parcelle bas-droite, légende top-droite).
+- Lancer `bunx vitest run src/hooks/__tests__/useCadastralCart.purge.test.tsx` pour confirmer non-régression du panier.
