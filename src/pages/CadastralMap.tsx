@@ -293,11 +293,11 @@ const CadastralMap = () => {
 
         {/* Search overlay */}
         <div
-          className={`absolute left-3 z-[900] ${isMobile ? 'right-3' : 'w-[min(24rem,calc(100vw-1.5rem))]'} transform-gpu`}
-          style={{
+          className={`absolute left-3 z-[900] ${isMobile ? 'right-3 top-3' : 'w-[min(24rem,calc(100vw-1.5rem))]'} transform-gpu`}
+          style={!isMobile ? {
             transition: 'top 0.3s ease, transform 0.3s ease',
-            top: isSearchBarActive || selectedParcel ? '0.75rem' : `${viewportHeight - 180}px`,
-          }}
+            top: isSearchBarActive || selectedParcel ? '0.75rem' : `${Math.max(viewportHeight - 180, 12)}px`,
+          } : undefined}
         >
           <div className="bg-background/95 backdrop-blur-md rounded-2xl shadow-[0_10px_40px_-8px_rgba(0,0,0,0.9),0_4px_16px_-4px_rgba(0,0,0,0.6)] border border-border/50 overflow-hidden">
             <div className={`${selectedParcel && isMobile ? 'p-2' : 'p-2.5'}`}>
