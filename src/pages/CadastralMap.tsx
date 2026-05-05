@@ -395,10 +395,10 @@ const CadastralMap = () => {
                                 setHasUserInteracted(true);
                               }}
                               disabled={!!selectedParcel}
-                              className={`${selectedParcel && isMobile ? 'h-8 w-8' : 'h-9 w-9'} shrink-0 rounded-xl transition-colors relative`}
+                              className="h-10 w-10 shrink-0 rounded-xl transition-colors relative"
                               aria-label="Demander un titre foncier"
                             >
-                              <FileCheck2 className={`${selectedParcel && isMobile ? 'h-3.5 w-3.5' : 'h-4 w-4'}`} />
+                              <FileCheck2 className="h-4 w-4" />
                               {landTitle.showNotification && (
                                 <span className="absolute -top-1 -right-1 h-3 w-3 bg-yellow-400 rounded-full animate-pulse shadow-lg border border-yellow-300" aria-hidden="true" />
                               )}
