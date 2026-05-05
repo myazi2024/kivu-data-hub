@@ -13,15 +13,25 @@ vi.mock('@/lib/cookies', () => ({
 }));
 
 type Deferred<T> = { promise: Promise<T>; resolve: (v: T) => void };
+
+const hoisted = vi.hoisted(() => {
+  const state: {
+    accessDeferred: Deferred<{ data: any; error: any }> | null;
+    getUserImpl: () => Promise<{ data: { user: { id: string } | null } }>;
+    fromSpy: any;
+  } = {
+    accessDeferred: null,
+    getUserImpl: () => Promise.resolve({ data: { user: { id: 'u1' } } }),
+    fromSpy: null,
+  };
+  return state;
+});
+
 const makeDeferred = <T,>(): Deferred<T> => {
   let resolve!: (v: T) => void;
   const promise = new Promise<T>((r) => { resolve = r; });
   return { promise, resolve };
 };
-
-let accessDeferred: Deferred<{ data: any; error: any }>;
-let getUserMock: any;
-let fromSpy: any;
 
 vi.mock('@/integrations/supabase/client', () => {
   const cartDraftChain = {
@@ -34,20 +44,21 @@ vi.mock('@/integrations/supabase/client', () => {
   const accessChain = {
     select: () => ({
       eq: () => ({
-        in: () => accessDeferred.promise,
+        in: () => hoisted.accessDeferred!.promise,
       }),
     }),
   };
-  fromSpy = vi.fn((table: string) => {
+  const fromSpy = vi.fn((table: string) => {
     if (table === 'cadastral_service_access') return accessChain;
     return cartDraftChain;
   });
+  hoisted.fromSpy = fromSpy;
   return {
     supabase: {
       from: (...args: any[]) => fromSpy(...args),
       rpc: vi.fn(() => Promise.resolve({ data: null, error: null })),
       auth: {
-        getUser: (...args: any[]) => getUserMock(...args),
+        getUser: () => hoisted.getUserImpl(),
         onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
       },
     },
