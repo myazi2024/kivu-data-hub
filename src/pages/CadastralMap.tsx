@@ -371,11 +371,11 @@ const CadastralMap = () => {
                     setHasUserInteracted(true);
                   }}
                   disabled={!!selectedParcel}
-                  className={`${selectedParcel && isMobile ? 'h-8 w-8' : 'h-9 w-9'} shrink-0 rounded-xl ${showAdvancedSearch ? 'bg-primary/10 text-primary' : 'bg-muted/50'} hover:bg-muted transition-colors`}
+                  className={`h-10 w-10 shrink-0 rounded-xl ${showAdvancedSearch ? 'bg-primary/10 text-primary' : 'bg-muted/50'} hover:bg-muted transition-colors`}
                   aria-label="Recherche avancée"
                   title="Recherche avancée"
                 >
-                  <Settings2 className={`${selectedParcel && isMobile ? 'h-3.5 w-3.5' : 'h-4 w-4'} transition-transform duration-300 ${showAdvancedSearch ? 'rotate-90' : ''}`} />
+                  <Settings2 className={`h-4 w-4 transition-transform duration-300 ${showAdvancedSearch ? 'rotate-90' : ''}`} />
                 </Button>
 
                 {/* Land title button (state-machine driven) */}
