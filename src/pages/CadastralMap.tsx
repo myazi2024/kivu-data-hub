@@ -236,19 +236,19 @@ const CadastralMap = () => {
     <div className="min-h-dvh flex flex-col bg-background">
       <Navigation />
 
-      <main className="flex-1 relative" style={{ height: 'calc(100vh - 4rem)' }}>
-        {/* Dynamic zoom control positioning */}
+      <main
+        className="flex-1 relative min-h-0 overflow-hidden"
+        style={{
+          height: 'calc(100dvh - 4rem)',
+          // CSS var consumed by the inline rule below — no JS viewport math.
+          ['--map-zoom-offset' as any]: selectedParcel
+            ? (isMobile ? (actionsExpanded ? '70dvh' : '32dvh') : (actionsExpanded ? '24rem' : '10rem'))
+            : (isMobile ? '1rem' : '1rem'),
+        }}
+      >
         <style>{`
           .leaflet-bottom.leaflet-right .leaflet-control-zoom {
-            margin-bottom: ${
-              selectedParcel
-                ? isMobile
-                  ? actionsExpanded ? `${Math.min(viewportHeight * 0.55, 416)}px` : `${Math.min(viewportHeight * 0.28, 176)}px`
-                  : actionsExpanded ? `${Math.min(viewportHeight * 0.5, 384)}px` : `${Math.min(viewportHeight * 0.22, 160)}px`
-                : isMobile
-                  ? isSearchBarActive ? '1rem' : `${Math.min(viewportHeight * 0.28, 208)}px`
-                  : '1rem'
-            } !important;
+            margin-bottom: var(--map-zoom-offset, 1rem) !important;
             transition: margin-bottom 0.3s ease !important;
           }
         `}</style>
