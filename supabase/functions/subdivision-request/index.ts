@@ -25,8 +25,17 @@ interface SubdivisionRequestBody {
     ownerName: string;
     titleReference: string;
     gpsCoordinates: { lat: number; lng: number }[];
+    // Cascade géographique (pour matching règle de zonage)
+    province?: string | null;
+    ville?: string | null;
+    commune?: string | null;
     quartier?: string | null;
+    avenue?: string | null;
+    territoire?: string | null;
+    collectivite?: string | null;
+    groupement?: string | null;
     village?: string | null;
+    propertyTitleType?: string | null;
   };
   requester: {
     firstName: string;
@@ -96,6 +105,47 @@ Deno.serve(async (req) => {
     // Prefer explicit section_type from client; fall back to quartier vs village inference.
     const sectionType: 'urban' | 'rural' = body.section_type
       ?? (body.parent_parcel?.quartier ? 'urban' : (body.parent_parcel?.village ? 'rural' : 'urban'));
+
+    // === SERVER-SIDE PARENT PARCEL ELIGIBILITY (zoning rule) ===
+    // Verrou: surface min/max parcelle-mère définis dans subdivision_zoning_rules.
+    {
+      const geo = body.parent_parcel;
+      const candidates = (sectionType === 'urban'
+        ? [geo.avenue, geo.quartier, geo.commune, geo.ville]
+        : [geo.village, geo.groupement, geo.collectivite, geo.territoire])
+        .map((v) => (v || '').trim()).filter(Boolean);
+      candidates.push('*');
+      const { data: zoningRules } = await supabase
+        .from('subdivision_zoning_rules')
+        .select('location_name,parent_min_area_sqm,parent_max_area_sqm')
+        .eq('is_active', true)
+        .eq('section_type', sectionType)
+        .in('location_name', candidates);
+      const rows = (zoningRules as any[]) || [];
+      const matchedName = candidates.find((c) => rows.some((r) => r.location_name === c));
+      const matched = matchedName ? rows.find((r) => r.location_name === matchedName) : null;
+      if (matched) {
+        const area = Number(body.parent_parcel.areaSqm) || 0;
+        const minA = Number(matched.parent_min_area_sqm) || 0;
+        const maxA = matched.parent_max_area_sqm != null ? Number(matched.parent_max_area_sqm) : null;
+        if (minA > 0 && area < minA) {
+          return new Response(JSON.stringify({
+            error: 'PARENT_AREA_OUT_OF_RANGE',
+            reason: 'too_small',
+            min: minA, max: maxA, actual: area,
+            message: `Surface parcelle-mère ${Math.round(area)} m² < minimum ${minA} m² requis pour cette zone.`,
+          }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 422 });
+        }
+        if (maxA && area > maxA) {
+          return new Response(JSON.stringify({
+            error: 'PARENT_AREA_OUT_OF_RANGE',
+            reason: 'too_large',
+            min: minA, max: maxA, actual: area,
+            message: `Surface parcelle-mère ${Math.round(area)} m² > maximum ${maxA} m² ; procédure d'aménagement requise.`,
+          }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 422 });
+        }
+      }
+    }
 
     // Fetch matching rate
     const { data: rates } = await supabase

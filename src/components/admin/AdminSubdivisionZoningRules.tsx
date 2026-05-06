@@ -397,9 +397,21 @@ const AdminSubdivisionZoningRules: React.FC = () => {
     const maxLot = form.max_lot_area_sqm ? parseFloat(form.max_lot_area_sqm) : null;
     const minRoad = parseFloat(form.min_road_width_m);
     const recRoad = parseFloat(form.recommended_road_width_m);
+    const parentMin = parseFloat(form.parent_min_area_sqm) || 0;
+    const parentMax = form.parent_max_area_sqm ? parseFloat(form.parent_max_area_sqm) : null;
     if (!(minLot > 0)) return toast.error('Surface min lot doit être > 0');
     if (maxLot !== null && maxLot < minLot) return toast.error('Surface max < min');
     if (recRoad < minRoad) return toast.error('Largeur recommandée < min');
+    // Cohérence parcelle-mère ↔ lots
+    if (parentMin > 0 && parentMin < minLot) {
+      return toast.error(`Surface min parcelle-mère (${parentMin} m²) doit être ≥ surface min d'un lot (${minLot} m²)`);
+    }
+    if (parentMax !== null && parentMax < parentMin) {
+      return toast.error('Surface max parcelle-mère < min');
+    }
+    if (parentMin > 0 && parentMin < minLot * 2) {
+      toast.warning(`Avertissement : la parcelle-mère minimale (${parentMin} m²) ne permet pas un vrai lotissement (< 2 lots de ${minLot} m²)`);
+    }
 
     setSaving(true);
     const payload = {
@@ -796,20 +808,41 @@ const AdminSubdivisionZoningRules: React.FC = () => {
                 Conditions vérifiées dès l'ouverture du formulaire de demande de lotissement. Si l'une d'elles n'est pas respectée, la demande est bloquée en amont.
               </p>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* Verrou principal — surface parcelle-mère (mis en avant) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 rounded-md border border-primary/30 bg-primary/5">
                 <div className="space-y-1.5">
-                  <Label className="text-xs flex items-center gap-1.5">
-                    Surface min parcelle-mère (m²)
+                  <Label className="text-xs flex items-center gap-1.5 font-semibold">
+                    <Ruler className="h-3.5 w-3.5 text-primary" />
+                    Surface min parcelle-mère (m²) *
                     <FieldHelp
                       title="Surface minimale de la parcelle-mère"
-                      description="Aire totale minimale (en m²) que doit avoir la parcelle pour pouvoir faire l'objet d'un lotissement. Une parcelle plus petite ne permet pas un découpage viable."
+                      description="Aire totale minimale (en m²) requise pour autoriser un lotissement. Vérifié côté serveur — toute soumission en deçà est rejetée (HTTP 422)."
                       example="1 000 m² pour autoriser un mini-lotissement résidentiel."
                     />
                   </Label>
-                  <Input type="number" step="1" inputMode="numeric" value={form.parent_min_area_sqm} onChange={e => setForm(f => ({ ...f, parent_min_area_sqm: e.target.value }))} />
+                  <Input
+                    type="number" step="1" inputMode="numeric"
+                    value={form.parent_min_area_sqm}
+                    onChange={e => setForm(f => ({ ...f, parent_min_area_sqm: e.target.value }))}
+                  />
+                  {(() => {
+                    const pMin = parseFloat(form.parent_min_area_sqm) || 0;
+                    const lMin = parseFloat(form.min_lot_area_sqm) || 0;
+                    if (!pMin || !lMin) return null;
+                    const capacity = Math.floor(pMin / lMin);
+                    const tooSmall = pMin < lMin;
+                    return (
+                      <p className={`text-[10.5px] ${tooSmall ? 'text-destructive' : 'text-muted-foreground'}`}>
+                        {tooSmall
+                          ? `⚠ Inférieur à la surface min d'un lot (${lMin} m²) — règle invalide.`
+                          : `≈ ${capacity} lot(s) de ${lMin} m² maximum tiendraient dans cette parcelle minimale.`}
+                      </p>
+                    );
+                  })()}
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs flex items-center gap-1.5">
+                  <Label className="text-xs flex items-center gap-1.5 font-semibold">
+                    <Ruler className="h-3.5 w-3.5 text-primary" />
                     Surface max parcelle-mère (m²)
                     <FieldHelp
                       title="Surface maximale de la parcelle-mère"
@@ -819,6 +852,9 @@ const AdminSubdivisionZoningRules: React.FC = () => {
                   </Label>
                   <Input type="number" step="1" inputMode="numeric" value={form.parent_max_area_sqm} onChange={e => setForm(f => ({ ...f, parent_max_area_sqm: e.target.value }))} placeholder="Optionnel" />
                 </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <Label className="text-xs flex items-center gap-1.5">
                     Âge min du titre foncier (années)
