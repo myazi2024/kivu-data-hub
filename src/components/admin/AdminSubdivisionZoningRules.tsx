@@ -397,9 +397,21 @@ const AdminSubdivisionZoningRules: React.FC = () => {
     const maxLot = form.max_lot_area_sqm ? parseFloat(form.max_lot_area_sqm) : null;
     const minRoad = parseFloat(form.min_road_width_m);
     const recRoad = parseFloat(form.recommended_road_width_m);
+    const parentMin = parseFloat(form.parent_min_area_sqm) || 0;
+    const parentMax = form.parent_max_area_sqm ? parseFloat(form.parent_max_area_sqm) : null;
     if (!(minLot > 0)) return toast.error('Surface min lot doit être > 0');
     if (maxLot !== null && maxLot < minLot) return toast.error('Surface max < min');
     if (recRoad < minRoad) return toast.error('Largeur recommandée < min');
+    // Cohérence parcelle-mère ↔ lots
+    if (parentMin > 0 && parentMin < minLot) {
+      return toast.error(`Surface min parcelle-mère (${parentMin} m²) doit être ≥ surface min d'un lot (${minLot} m²)`);
+    }
+    if (parentMax !== null && parentMax < parentMin) {
+      return toast.error('Surface max parcelle-mère < min');
+    }
+    if (parentMin > 0 && parentMin < minLot * 2) {
+      toast.warning(`Avertissement : la parcelle-mère minimale (${parentMin} m²) ne permet pas un vrai lotissement (< 2 lots de ${minLot} m²)`);
+    }
 
     setSaving(true);
     const payload = {
