@@ -25,8 +25,17 @@ interface SubdivisionRequestBody {
     ownerName: string;
     titleReference: string;
     gpsCoordinates: { lat: number; lng: number }[];
+    // Cascade géographique (pour matching règle de zonage)
+    province?: string | null;
+    ville?: string | null;
+    commune?: string | null;
     quartier?: string | null;
+    avenue?: string | null;
+    territoire?: string | null;
+    collectivite?: string | null;
+    groupement?: string | null;
     village?: string | null;
+    propertyTitleType?: string | null;
   };
   requester: {
     firstName: string;
