@@ -129,7 +129,18 @@ export const UserSubdivisionRequests: React.FC = () => {
   const handleDownloadPlan = async (req: SubdivisionRequest) => {
     setDownloadingId(req.id);
     try {
-      // Charger les données complètes nécessaires au plan
+      // Priorité : version officielle archivée (signed URL) > génération client (aperçu/fallback)
+      if (req.official_plan_path) {
+        const { data: signed, error: signErr } = await (supabase as any).rpc('get_signed_subdivision_plan', { p_request_id: req.id });
+        if (!signErr && typeof signed === 'string' && signed) {
+          window.open(signed, '_blank', 'noopener,noreferrer');
+          toast({ title: 'Plan officiel ouvert', description: `Version v${req.official_plan_version || 1}` });
+          return;
+        }
+        console.warn('Official plan signed URL failed, fallback to client gen:', signErr?.message);
+      }
+
+      // Fallback : génération client (aperçu)
       const { data: full, error } = await (supabase as any)
         .from('subdivision_requests')
         .select('id, reference_number, parcel_number, number_of_lots, purpose_of_subdivision, parent_parcel_area_sqm, parent_parcel_location, parent_parcel_owner_name, requester_first_name, requester_last_name, approved_at, reviewed_at, lots_data, subdivision_plan_data')
@@ -137,7 +148,7 @@ export const UserSubdivisionRequests: React.FC = () => {
         .single();
       if (error) throw error;
 
-      const blob = await generateSubdivisionPlanPDF(full);
+      const blob = await generateSubdivisionPlanPDF(full, { preview: true });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -146,7 +157,7 @@ export const UserSubdivisionRequests: React.FC = () => {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      toast({ title: 'Plan téléchargé', description: 'Le plan de lotissement a été généré avec succès.' });
+      toast({ title: 'Aperçu téléchargé', description: 'Plan de lotissement (version aperçu).' });
     } catch (err: any) {
       console.error('Download plan error:', err);
       toast({
