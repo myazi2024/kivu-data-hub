@@ -153,6 +153,20 @@ Deno.serve(async (req) => {
           .eq("parcel_number", request.parcel_number)
           .then(() => null)
           .catch(() => null);
+
+        // Auto-génération du plan officiel (best-effort, non bloquant)
+        try {
+          await fetch(`${supabaseUrl}/functions/v1/generate-subdivision-plan`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": authHeader,
+            },
+            body: JSON.stringify({ request_id: body.request_id }),
+          });
+        } catch (e: any) {
+          console.error("auto generate-subdivision-plan failed:", e?.message);
+        }
       }
 
 
