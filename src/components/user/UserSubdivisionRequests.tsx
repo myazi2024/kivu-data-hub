@@ -23,6 +23,8 @@ interface SubdivisionRequest {
   created_at: string;
   reviewed_at: string | null;
   approved_at?: string | null;
+  official_plan_path?: string | null;
+  official_plan_version?: number | null;
 }
 
 const statusConfig: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
