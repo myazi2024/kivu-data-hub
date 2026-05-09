@@ -128,9 +128,9 @@ const AdminTestMode: React.FC = () => {
       const wasJustEnabled = !savedConfig.enabled && validatedConfig.enabled;
 
       await refreshConfiguration();
-      const refreshed = await refreshStats();
+      await refreshStats();
 
-      if (wasJustEnabled && refreshed.total === 0) {
+      if (wasJustEnabled && total === 0) {
         generateTestData();
       }
     } catch (error: unknown) {

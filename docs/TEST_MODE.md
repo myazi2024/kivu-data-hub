@@ -57,9 +57,7 @@ La génération est exécutée par l'edge function `generate-test-data` :
 5. Le hook client `useTestGenerationJob` se réabonne au job au montage via `localStorage['test-mode:active-job']` et restitue la barre de progression. Polling 4 s en fallback.
 6. Bouton « Annuler » → `UPDATE status='cancelled'` ; `runJob` vérifie ce flag entre chaque étape.
 
-Les générateurs vivent **exclusivement côté serveur** dans `supabase/functions/_shared/test-mode-generators/` (depuis la migration `EdgeRuntime.waitUntil`). Toute modification se fait à un seul endroit. Les anciens fichiers `src/components/admin/test-mode/generators/` ont été supprimés en mai 2026 — ne pas les recréer côté front.
-
-Côté front, la liste ordonnée des étapes de purge est partagée via un re-export depuis `supabase/functions/_shared/cleanupSteps.ts` (réimporté par `src/components/admin/test-mode/cleanupSteps.ts`) — source unique, plus de mirroring manuel.
+Les générateurs serveur sont la copie miroir de `src/components/admin/test-mode/generators/` dans `supabase/functions/_shared/test-mode-generators/`. Toute modification doit être appliquée aux DEUX endroits.
 
 ### 6. Nettoyage
 
@@ -81,16 +79,10 @@ Côté front, la liste ordonnée des étapes de purge est partagée via un re-ex
 - L'admin utilise désormais exclusivement `cleanup-test-data-batch`.
 
 ### 6.bis Trigger anti-insert prod (`prevent_test_data_in_prod`)
-- BEFORE INSERT sur **10 tables principales** : parcelles, contributions, factures,
-  codes contributeurs, litiges, expertise, titres, mutations, lotissements, conflits limites.
+- BEFORE INSERT sur 10 tables (parcels, contributions, invoices, codes, disputes,
+  expertise, titres, mutations, lotissements, conflits limites).
 - Bloque toute ligne dont la colonne marqueur commence par `TEST-` quand
   `test_mode.enabled = false`. Évite que des tests ne fuient en production.
-- **Couverture partielle** : les 7 entités secondaires nettoyées par
-  `cleanup-test-data-batch` (paiements hypothèques/expertises, autorisations de bâtir,
-  lots/voies de lotissement, certificats générés, paiements/actions admin autorisations)
-  ne sont **pas** protégées au INSERT prod — elles sont des enfants des 10 tables
-  principales et donc indirectement filtrées par leur FK marqueur. Garder à l'œil
-  si une de ces tables devient adressable indépendamment.
 
 ### 6.ter Registry `test_entities_registry`
 - Table publique listant les entités test (table_name, marker_column, label_key).

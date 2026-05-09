@@ -3,33 +3,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ExternalLink, BarChart3, Map as MapIcon } from 'lucide-react';
 import { useTestMode } from '@/hooks/useTestMode';
+import { getExpectedTestDataCounts } from './generators/_shared';
 import { loadTestEntities, TEST_ENTITIES } from '@/constants/testEntities';
-
-/**
- * Indicative volumes produced by `generate-test-data` (server-side). Kept in
- * sync manually with `supabase/functions/_shared/test-mode-generators/*`.
- * If you change a generator, refresh the matching number here.
- */
-const EXPECTED_TEST_DATA_COUNTS = {
-  parcels: 80,
-  provinces: 8,
-  contributions: 80,
-  invoices: 80,
-  payments: 80,
-  histories: 240,
-  permits: 40,
-  mortgages: 40,
-  boundaries: 80,
-  disputes: 10,
-  conflicts: 10,
-  certificates: 20,
-  mutations: 20,
-  subdivisions: 10,
-} as const;
 
 const fmt = (n: number) => n.toLocaleString('fr-FR');
 
-const buildGuidelines = (counts: typeof EXPECTED_TEST_DATA_COUNTS, entityCount: number) => [
+const buildGuidelines = (counts: ReturnType<typeof getExpectedTestDataCounts>, entityCount: number) => [
   <>Activez le <strong>mode test</strong> avant de tester les flux critiques (paiements, contributions, etc.)</>,
   <>Toutes les données créées en mode test auront le préfixe <strong>TEST-</strong> dans leur numéro de parcelle ou référence</>,
   <>À l'activation, un <strong>jeu complet de données</strong> est généré automatiquement : ~{fmt(counts.parcels)} parcelles ({counts.provinces} provinces × densité variable), ~{fmt(counts.contributions)} contributions, ~{fmt(counts.invoices)} factures, ~{fmt(counts.payments)} paiements, ~{fmt(counts.histories)} historiques propriété/taxes, ~{fmt(counts.permits)} autorisations, ~{fmt(counts.mortgages)} hypothèques, ~{fmt(counts.boundaries)} bornages, {counts.disputes} litiges, {counts.conflicts} conflits, {counts.certificates} certificats, {counts.mutations} mutations, {counts.subdivisions} lotissements</>,
@@ -42,7 +21,7 @@ const buildGuidelines = (counts: typeof EXPECTED_TEST_DATA_COUNTS, entityCount: 
 
 const TestModeGuide: React.FC = () => {
   const { isTestModeActive } = useTestMode();
-  const counts = EXPECTED_TEST_DATA_COUNTS;
+  const counts = getExpectedTestDataCounts();
   const [entityCount, setEntityCount] = useState<number>(TEST_ENTITIES.length);
 
   useEffect(() => {

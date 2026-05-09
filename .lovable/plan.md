@@ -1,44 +1,127 @@
-## Audit du Mode Test (espace Admin)
 
-Périmètre audité : `AdminTestMode.tsx`, `useTestMode`, `useTestDataActions`, `useTestGenerationJob`, `useTestDataStats`, edge functions `generate-test-data` + `cleanup-test-data-batch`, registres front/edge (`cleanupSteps`, `testEntities`, `generationStepsRegistry`), composants UI (`TestModeConfigCard`, `TestDataStatsCard`, `GenerationProgress`, `CleanupProgress`, `TestDryRunButton`, `TestDataExportButton`, `TestCleanupHistoryCard`, `TestCronStatusCard`, `TestEnvironmentBanner`, `billing/TestModeBanner`), trigger anti-prod et doc `docs/TEST_MODE.md`.
+# Tests de régression — purge post-paiement (`useCadastralCart`)
 
-### Bugs confirmés
+## Objectif
 
-1. **Recovery 409 cassé dans `useTestGenerationJob.startJob`** — quand l'edge function renvoie 409 (job déjà actif), `supabase.functions.invoke` met `error` et `data=null`, donc la branche `body.active_job_id` n'est jamais atteinte. L'admin voit un message générique au lieu de récupérer le job actif. Lire `error.context?.body` (Response) pour récupérer le JSON 409 et exposer `active_job_id`.
+Garantir, par une suite de tests automatisés rejouables, que le handler `cadastralPaymentCompleted` ne supprime jamais une parcelle/service ajouté pendant la requête réseau `cadastral_service_access`. L'invariant clé est que le snapshot du panier doit être pris **après** la résolution de la requête (via le callback `setParcelsMap(prev => ...)`), conformément au correctif P0-2 documenté dans `.lovable/plan.md`.
 
-2. **Stale closure dans `AdminTestMode.saveConfiguration`** — après activation, `if (wasJustEnabled && total === 0) generateTestData()` lit `total` capturé avant `refreshStats()` (snapshot pré-refresh). Peut auto-générer alors que des données existent ou ne pas générer alors qu'il faudrait. Solution : faire retourner le total par `refreshStats()` et utiliser cette valeur, ou déplacer la décision côté hook.
+## Périmètre
 
-3. **Polling stale dans `useTestGenerationJob`** — `setInterval(() => { if (job && FINISHED.has(job.status)) return; fetchJob(); }, 4000)` capture `job` à la création de l'effet (deps = `[jobId]`), donc le garde ne déclenche jamais et on continue à puller un job déjà terminé jusqu'à démontage. Utiliser une ref ou ajouter `job?.status` aux deps.
+Hook ciblé : `src/hooks/useCadastralCart.tsx` (effet listener du `cadastralPaymentCompleted`, lignes ~229-269).
 
-4. **Channel Realtime collision dans `useTestMode`** — `supabase.channel('test-mode-changes')` est créé avec un nom statique réutilisé par 5 consommateurs (AdminTestMode, AdminPaymentMode, AdminPaymentMethods, AdminDashboardHeader, useCadastralPayment). Les channels Supabase requièrent un nom unique ; les abonnements suivants peuvent être ignorés silencieusement. Suffixer avec un id stable (ex. `test-mode-changes-${useId()}`) ou centraliser via un contexte unique.
+Aucun changement de code applicatif. Uniquement de l'outillage de test + spec.
 
-### Dette / risques de dérive
+## Mise en place de l'environnement de tests
 
-5. **Code mort à supprimer** : `src/components/admin/test-mode/generators/*`, `testDataGenerators.ts`, `generationStepsRegistry.ts` — non importés (génération désormais 100 % serveur). Garder ces fichiers entretient le mythe d'un mirroring client/serveur (cf. point 8).
+Aucun harnais Vitest n'existe aujourd'hui. À ajouter :
 
-6. **Doublon `cleanupSteps.ts`** — copie manuelle entre `src/components/admin/test-mode/cleanupSteps.ts` et `supabase/functions/_shared/cleanupSteps.ts`. Pas de test pour vérifier la sync. Réimporter directement depuis `supabase/functions/_shared/cleanupSteps.ts` côté front (chemin relatif TS, juste un `export const`) pour avoir une source unique.
+1. **Dépendances dev** (`package.json`) :
+   - `vitest`, `@testing-library/react`, `@testing-library/jest-dom`, `jsdom`, `@vitejs/plugin-react-swc`
+2. **`vitest.config.ts`** avec `environment: 'jsdom'`, `setupFiles: ['./src/test/setup.ts']`, alias `@`.
+3. **`src/test/setup.ts`** : import `@testing-library/jest-dom`, polyfill `matchMedia`.
+4. **`tsconfig.app.json`** : ajouter `"vitest/globals"` aux `types`.
+5. **Mock global Supabase** dans `src/test/mocks/supabase.ts` : factory pour `from(...).select(...).eq(...).in(...)` retournant un `Promise` contrôlable, plus `auth.getUser` et `auth.onAuthStateChange`.
 
-7. **Garde redondant + parfois trompeur dans `generateTestData`** — la requête `.like('parcel_number', 'TEST-%')` re-vérifie ce que le bouton n'expose déjà que quand `total === 0`. À supprimer (dupliqué) ou à remplacer par un appel à `count_test_data_stats` pour cohérence avec le reste de l'admin.
+## Scénarios de régression
 
-8. **Doc `docs/TEST_MODE.md` désynchronisée** :
-   - Affirme que les générateurs serveur sont « la copie miroir de `src/components/admin/test-mode/generators/` » — faux depuis la migration vers `EdgeRuntime.waitUntil`.
-   - Annonce « 10 tables » pour le trigger anti-prod alors que la liste de cleanup en couvre 23 entités (mortgage_payments, expertise_payments, building_permits, lots/roads de lotissement, certificats, etc. ne sont pas protégés au INSERT prod).
-   Mettre à jour la doc et signaler les 7 entités sans garde anti-prod (sans étendre le trigger, qui sortirait du périmètre frontend de cette tâche).
+Fichier : `src/hooks/__tests__/useCadastralCart.purge.test.tsx`
 
-### Hors-scope (à mentionner sans changer)
+Wrapper : composant test consommant `useCadastralCart` via `CadastralCartProvider` ; helpers `addParcel(pn, svcId)` et `firePaymentCompleted()` exposés via boutons.
 
-- Banner global "test mode actif" absent de l'espace admin (seules les routes `/test/*` affichent un badge). À discuter séparément si souhaité.
-- `TestDataExportButton` exporte toutes les colonnes y compris potentiellement PII — suffixe TEST mais valeurs réalistes. À confirmer si on doit redacter.
+### Test 1 — Parcelle ajoutée pendant la requête doit survivre (cas nominal du bug)
 
-### Plan d'exécution
+```text
+1. Monter le provider, désactiver le consent OFF (panier vide).
+2. addParcel('P-1', 'svc-A')                 → cart = { P-1: [svc-A] }
+3. Mock supabase.in(...) renvoie une Promise NON résolue.
+4. Dispatch 'cadastralPaymentCompleted'.
+5. Pendant que la Promise est en attente :
+     addParcel('P-2', 'svc-B')               → cart = { P-1, P-2 }
+6. Résoudre la Promise avec
+     [{ parcel_number:'P-1', service_type:'svc-A', expires_at:null }]
+7. Attendre flush microtâches.
+Assertions :
+  - parcels contient P-2 avec [svc-B]        ← invariant principal
+  - P-1 retirée (svc-A purgé, plus de services)
+```
 
-1. Fix #1 — récupérer le 409 via `error.context.body` dans `useTestGenerationJob.startJob`.
-2. Fix #2 — `useTestDataStats.refresh()` retourne `{ stats, total }` ; `AdminTestMode` lit la valeur retournée.
-3. Fix #3 — déplacer `job` dans une ref synchronisée pour le poll.
-4. Fix #4 — channel name unique par instance via `useId()`.
-5. Fix #5 — supprimer `generators/`, `testDataGenerators.ts`, `generationStepsRegistry.ts`.
-6. Fix #6 — front `cleanupSteps.ts` réexporte depuis le shared edge (`../../../supabase/functions/_shared/cleanupSteps`).
-7. Fix #7 — retirer le pré-check `.like(...)` dans `generateTestData` (déjà gardé par l'UI + l'edge function).
-8. Fix #8 — réécrire la section concernée de `docs/TEST_MODE.md` (mirroring + couverture trigger).
+### Test 2 — Service ajouté à une parcelle existante pendant la requête
 
-Aucune migration SQL. Aucun changement d'API edge function. Périmètre purement front + doc.
+```text
+1. addParcel('P-1', 'svc-A')
+2. Dispatch 'cadastralPaymentCompleted' (Promise pendante)
+3. addServiceForParcel('P-1', loc, svc-B)
+4. Resolve avec ownership svc-A uniquement
+Assertions :
+  - parcels[P-1].services contient svc-B
+  - svc-A retiré
+```
+
+### Test 3 — Aucun changement quand rien n'est acheté
+
+```text
+1. addParcel('P-1', 'svc-A')
+2. Dispatch event ; resolve avec [] (rien possédé)
+Assertions :
+  - parcelsMap inchangé (référence stable via early-return changed=false)
+```
+
+### Test 4 — Erreur réseau ne purge rien
+
+```text
+1. addParcel('P-1', 'svc-A')
+2. Dispatch event ; resolve avec { error: { message:'boom' }, data: null }
+Assertions :
+  - parcels inchangé, pas d'exception non capturée
+```
+
+### Test 5 — Service expiré ignoré (pas purgé)
+
+```text
+1. addParcel('P-1', 'svc-A')
+2. Resolve avec [{ parcel_number:'P-1', service_type:'svc-A',
+                   expires_at: <hier> }]
+Assertions :
+  - svc-A toujours présent (expires_at <= now → ignoré)
+```
+
+### Test 6 — Utilisateur non authentifié → no-op
+
+```text
+1. auth.getUser → { data: { user: null } }
+2. addParcel('P-1', 'svc-A') ; dispatch event
+Assertions :
+  - Aucune requête supabase.from émise
+  - parcels inchangé
+```
+
+### Test 7 — Panier vide au moment du dispatch → no-op
+
+```text
+1. Aucun ajout. Dispatch event.
+Assertions :
+  - Aucune requête supabase.from émise
+```
+
+## Exécution & livrable
+
+- Lancement via le runner Vitest du projet (`bunx vitest run src/hooks/__tests__/useCadastralCart.purge.test.tsx`).
+- Sortie attendue : 7 tests verts.
+- Documentation : ajouter une note dans `.lovable/memory/features/cadastral-map-architecture-fr.md` (section panier) pointant vers cette suite comme garde-fou anti-régression du snapshot post-purge.
+
+## Détails techniques
+
+- Le test exploite l'observabilité du callback fonctionnel `setParcelsMap(prev => …)` : insérer un `setParcelsMap` synchronisé via `act(...)` entre `dispatchEvent` et la résolution de la Promise mockée garantit que `prev` reflète le panier élargi.
+- Le mock Supabase doit retourner un objet chainable où `.in(...)` est la dernière étape qui renvoie la Promise contrôlable (pattern `deferred = { promise, resolve }`).
+- `consent` forcé via mock de `CookieManager.getConsentStatus` pour bypass storage.
+- Aucun appel réseau réel ; `supabase` du module est mocké via `vi.mock('@/integrations/supabase/client', …)`.
+
+## Fichiers créés / modifiés
+
+- créé `vitest.config.ts`
+- créé `src/test/setup.ts`
+- créé `src/test/mocks/supabase.ts`
+- créé `src/hooks/__tests__/useCadastralCart.purge.test.tsx`
+- modifié `package.json` (devDependencies + script `test`)
+- modifié `tsconfig.app.json` (`types: ["vitest/globals"]`)
+- modifié `.lovable/memory/features/cadastral-map-architecture-fr.md` (note suite de tests)

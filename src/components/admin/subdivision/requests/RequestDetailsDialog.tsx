@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,7 +6,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   Grid3X3, MapPin, User, Phone, Mail, Paperclip, FileText, Square,
-  Route, TreePine, Shield, AlertTriangle, Download, FileCheck2, Loader2,
+  Route, TreePine, Shield, AlertTriangle, Download,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -19,8 +18,6 @@ import {
 } from './types';
 import { getPlanCommonSpaces, getPlanRoads, getPlanServitudes } from './helpers';
 import { exportSubdivisionDossier } from './exportDossier';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/hooks/use-toast';
 
 interface Props {
   open: boolean;
@@ -30,44 +27,6 @@ interface Props {
 }
 
 export function RequestDetailsDialog({ open, onOpenChange, request, onOpenDocument }: Props) {
-  const [generating, setGenerating] = useState(false);
-  const [downloading, setDownloading] = useState(false);
-
-  const handleGenerate = async () => {
-    if (!request) return;
-    setGenerating(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('generate-subdivision-plan', {
-        body: { request_id: request.id },
-      });
-      if (error) throw error;
-      toast({ title: 'Plan officiel généré', description: `Version v${(data as any)?.version}` });
-    } catch (e: any) {
-      toast({ title: 'Échec génération', description: e?.message || 'Erreur inconnue', variant: 'destructive' });
-    } finally {
-      setGenerating(false);
-    }
-  };
-
-  const handleDownloadOfficial = async () => {
-    if (!request) return;
-    setDownloading(true);
-    try {
-      const { data, error } = await (supabase as any).rpc('get_signed_subdivision_plan', { p_request_id: request.id });
-      if (error) throw error;
-      if (typeof data === 'string' && data) window.open(data, '_blank', 'noopener,noreferrer');
-      else throw new Error('URL signée indisponible');
-    } catch (e: any) {
-      toast({ title: 'Téléchargement impossible', description: e?.message || 'Erreur', variant: 'destructive' });
-    } finally {
-      setDownloading(false);
-    }
-  };
-
-  const isApproved = request?.status === 'approved';
-  const officialPath = (request as any)?.official_plan_path as string | null | undefined;
-  const officialVersion = (request as any)?.official_plan_version as number | null | undefined;
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden">
@@ -78,25 +37,14 @@ export function RequestDetailsDialog({ open, onOpenChange, request, onOpenDocume
               <DialogDescription>{request?.reference_number}</DialogDescription>
             </div>
             {request && (
-              <div className="flex flex-wrap items-center gap-2 shrink-0">
-                {isApproved && (
-                  <>
-                    <Button variant="outline" size="sm" onClick={handleGenerate} disabled={generating} className="gap-2">
-                      {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileCheck2 className="h-4 w-4" />}
-                      {officialPath ? `Régénérer (v${(officialVersion ?? 0) + 1})` : 'Générer plan officiel'}
-                    </Button>
-                    {officialPath && (
-                      <Button variant="default" size="sm" onClick={handleDownloadOfficial} disabled={downloading} className="gap-2">
-                        {downloading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-                        Plan officiel v{officialVersion}
-                      </Button>
-                    )}
-                  </>
-                )}
-                <Button variant="outline" size="sm" onClick={() => exportSubdivisionDossier(request)} className="gap-2">
-                  <Download className="h-4 w-4" /> Dossier PDF
-                </Button>
-              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => exportSubdivisionDossier(request)}
+                className="gap-2 shrink-0"
+              >
+                <Download className="h-4 w-4" /> Dossier PDF
+              </Button>
             )}
           </div>
         </DialogHeader>

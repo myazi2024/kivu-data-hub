@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 const ACTIVE_JOB_KEY = 'test-mode:active-job';
@@ -39,9 +39,6 @@ export function useTestGenerationJob(initialJobId?: string | null) {
   );
   const [job, setJob] = useState<TestGenerationJob | null>(null);
   const [loading, setLoading] = useState(false);
-  // Mirror `job` into a ref so the polling interval can read the latest status
-  // without re-creating the effect on every update (deps are limited to jobId).
-  const jobRef = useRef<TestGenerationJob | null>(null);
 
   // Persist jobId
   useEffect(() => {
@@ -74,7 +71,6 @@ export function useTestGenerationJob(initialJobId?: string | null) {
         return;
       }
       const j = data as unknown as TestGenerationJob;
-      jobRef.current = j;
       setJob(j);
       setLoading(false);
       if (FINISHED.has(j.status)) {
@@ -93,7 +89,6 @@ export function useTestGenerationJob(initialJobId?: string | null) {
         { event: 'UPDATE', schema: 'public', table: 'test_generation_jobs', filter: `id=eq.${jobId}` },
         (payload) => {
           const j = payload.new as unknown as TestGenerationJob;
-          jobRef.current = j;
           setJob(j);
           if (FINISHED.has(j.status) && typeof window !== 'undefined') {
             localStorage.removeItem(ACTIVE_JOB_KEY);
@@ -102,11 +97,9 @@ export function useTestGenerationJob(initialJobId?: string | null) {
       )
       .subscribe();
 
-    // Polling fallback every 4s — covers cases where Realtime is delayed.
-    // Uses jobRef to avoid recreating the effect on every job state update.
+    // Polling fallback every 4s — covers cases where Realtime is delayed
     const pollId = window.setInterval(() => {
-      const current = jobRef.current;
-      if (current && FINISHED.has(current.status)) return;
+      if (job && FINISHED.has(job.status)) return;
       fetchJob();
     }, 4000);
 
@@ -121,21 +114,13 @@ export function useTestGenerationJob(initialJobId?: string | null) {
   const startJob = useCallback(async (): Promise<{ ok: boolean; jobId?: string; error?: string }> => {
     const { data, error } = await supabase.functions.invoke('generate-test-data');
     if (error) {
-      // For non-2xx responses (e.g. 409 already-running), supabase-js v2 sets
-      // `error` (FunctionsHttpError) and `data = null`. The JSON body is on
-      // `error.context` (a Response). Parse it to recover `active_job_id`.
-      let body: { error?: string; active_job_id?: string } = {};
-      try {
-        const ctx = (error as { context?: Response }).context;
-        if (ctx && typeof ctx.json === 'function') {
-          body = await ctx.clone().json();
-        }
-      } catch {/* non-JSON body — ignore */}
+      // Some 4xx (409 already-running) come back via data; surface either
+      const body = (data ?? {}) as { error?: string; active_job_id?: string };
       if (body?.active_job_id) {
         setJobId(body.active_job_id);
         return { ok: false, error: body.error ?? 'Un job est déjà en cours', jobId: body.active_job_id };
       }
-      return { ok: false, error: body.error ?? error.message };
+      return { ok: false, error: error.message };
     }
     const body = (data ?? {}) as { ok?: boolean; job_id?: string; error?: string; active_job_id?: string };
     if (body?.active_job_id && !body?.job_id) {

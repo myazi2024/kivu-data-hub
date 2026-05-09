@@ -6,7 +6,7 @@ import { useTestGenerationJob } from '@/hooks/useTestGenerationJob';
 
 interface UseTestDataActionsProps {
   userId?: string;
-  onComplete: () => Promise<unknown>;
+  onComplete: () => Promise<void>;
 }
 
 interface CleanupResult {
@@ -149,8 +149,22 @@ export const useTestDataActions = ({ userId, onComplete }: UseTestDataActionsPro
       return;
     }
 
-    // The UI only exposes "Générer" when total === 0 and the edge function
-    // re-checks the lock server-side, so no client-side parcel pre-check needed.
+    // Guard: bail if test parcels already exist
+    try {
+      const { count } = await supabase
+        .from('cadastral_parcels')
+        .select('id', { count: 'exact', head: true })
+        .like('parcel_number', 'TEST-%');
+      if (count && count > 0) {
+        toast.warning('Données test existantes détectées', {
+          description: `${count} parcelles test existent déjà. Utilisez « Régénérer » pour remplacer.`,
+          duration: 6000,
+        });
+        return;
+      }
+    } catch {/* non-blocking */}
+
+    // Reset any previous terminal job from view
     clearJob();
 
     const result = await startJob();
