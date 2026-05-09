@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 const ACTIVE_JOB_KEY = 'test-mode:active-job';
@@ -39,6 +39,9 @@ export function useTestGenerationJob(initialJobId?: string | null) {
   );
   const [job, setJob] = useState<TestGenerationJob | null>(null);
   const [loading, setLoading] = useState(false);
+  // Mirror `job` into a ref so the polling interval can read the latest status
+  // without re-creating the effect on every update (deps are limited to jobId).
+  const jobRef = useRef<TestGenerationJob | null>(null);
 
   // Persist jobId
   useEffect(() => {
