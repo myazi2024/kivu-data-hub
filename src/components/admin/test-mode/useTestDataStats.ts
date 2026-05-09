@@ -12,7 +12,7 @@ export const useTestDataStats = () => {
   const [stats, setStats] = useState<TestDataStats>(EMPTY_STATS);
   const [loading, setLoading] = useState(false);
 
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (): Promise<{ stats: TestDataStats; total: number }> => {
     setLoading(true);
     try {
       const { data, error } = await supabase.rpc('count_test_data_stats');
@@ -28,12 +28,12 @@ export const useTestDataStats = () => {
             description: error.message,
           });
         }
-        return;
+        return { stats, total: Object.values(stats).reduce((s, v) => s + v, 0) };
       }
 
       if (data) {
         const d = data as Record<string, number>;
-        setStats({
+        const next: TestDataStats = {
           parcels: d.parcels || 0,
           contributions: d.contributions || 0,
           invoices: d.invoices || 0,
@@ -54,13 +54,18 @@ export const useTestDataStats = () => {
           buildingPermits: d.buildingPermits || 0,
           mutationRequests: d.mutationRequests || 0,
           subdivisionRequests: d.subdivisionRequests || 0,
-        });
+        };
+        setStats(next);
+        return { stats: next, total: Object.values(next).reduce((s, v) => s + v, 0) };
       }
+      return { stats, total: Object.values(stats).reduce((s, v) => s + v, 0) };
     } catch (error) {
       console.error('Error loading test data stats:', error);
+      return { stats, total: Object.values(stats).reduce((s, v) => s + v, 0) };
     } finally {
       setLoading(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const total = useMemo(() => Object.values(stats).reduce((sum, v) => sum + v, 0), [stats]);
