@@ -6,7 +6,7 @@ import { useTestGenerationJob } from '@/hooks/useTestGenerationJob';
 
 interface UseTestDataActionsProps {
   userId?: string;
-  onComplete: () => Promise<void>;
+  onComplete: () => Promise<unknown>;
 }
 
 interface CleanupResult {
