@@ -74,6 +74,7 @@ export function useTestGenerationJob(initialJobId?: string | null) {
         return;
       }
       const j = data as unknown as TestGenerationJob;
+      jobRef.current = j;
       setJob(j);
       setLoading(false);
       if (FINISHED.has(j.status)) {
@@ -92,6 +93,7 @@ export function useTestGenerationJob(initialJobId?: string | null) {
         { event: 'UPDATE', schema: 'public', table: 'test_generation_jobs', filter: `id=eq.${jobId}` },
         (payload) => {
           const j = payload.new as unknown as TestGenerationJob;
+          jobRef.current = j;
           setJob(j);
           if (FINISHED.has(j.status) && typeof window !== 'undefined') {
             localStorage.removeItem(ACTIVE_JOB_KEY);
@@ -100,9 +102,11 @@ export function useTestGenerationJob(initialJobId?: string | null) {
       )
       .subscribe();
 
-    // Polling fallback every 4s — covers cases where Realtime is delayed
+    // Polling fallback every 4s — covers cases where Realtime is delayed.
+    // Uses jobRef to avoid recreating the effect on every job state update.
     const pollId = window.setInterval(() => {
-      if (job && FINISHED.has(job.status)) return;
+      const current = jobRef.current;
+      if (current && FINISHED.has(current.status)) return;
       fetchJob();
     }, 4000);
 
