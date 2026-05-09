@@ -121,13 +121,21 @@ export function useTestGenerationJob(initialJobId?: string | null) {
   const startJob = useCallback(async (): Promise<{ ok: boolean; jobId?: string; error?: string }> => {
     const { data, error } = await supabase.functions.invoke('generate-test-data');
     if (error) {
-      // Some 4xx (409 already-running) come back via data; surface either
-      const body = (data ?? {}) as { error?: string; active_job_id?: string };
+      // For non-2xx responses (e.g. 409 already-running), supabase-js v2 sets
+      // `error` (FunctionsHttpError) and `data = null`. The JSON body is on
+      // `error.context` (a Response). Parse it to recover `active_job_id`.
+      let body: { error?: string; active_job_id?: string } = {};
+      try {
+        const ctx = (error as { context?: Response }).context;
+        if (ctx && typeof ctx.json === 'function') {
+          body = await ctx.clone().json();
+        }
+      } catch {/* non-JSON body — ignore */}
       if (body?.active_job_id) {
         setJobId(body.active_job_id);
         return { ok: false, error: body.error ?? 'Un job est déjà en cours', jobId: body.active_job_id };
       }
-      return { ok: false, error: error.message };
+      return { ok: false, error: body.error ?? error.message };
     }
     const body = (data ?? {}) as { ok?: boolean; job_id?: string; error?: string; active_job_id?: string };
     if (body?.active_job_id && !body?.job_id) {
