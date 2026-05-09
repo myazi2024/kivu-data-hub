@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useId } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 export interface TestModeConfig {
@@ -21,6 +21,9 @@ export const DEFAULT_TEST_MODE_CONFIG: TestModeConfig = {
 export const useTestMode = () => {
   const [testMode, setTestMode] = useState<TestModeConfig>(DEFAULT_TEST_MODE_CONFIG);
   const [loading, setLoading] = useState(true);
+  // Unique per-instance suffix — Supabase channel names must be unique;
+  // multiple consumers sharing 'test-mode-changes' caused silent subscription drops.
+  const instanceId = useId();
 
   const loadTestModeConfig = useCallback(async () => {
     try {
