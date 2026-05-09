@@ -167,7 +167,7 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
             </div>
             <span className="text-[9px] text-muted-foreground font-medium bg-muted/50 px-1.5 py-0.5 rounded-full">{visibleActions.length}</span>
           </div>
-          <div className="overflow-y-auto max-h-[200px] sm:max-h-[260px] scrollbar-thin">
+          <div className="overflow-y-auto overscroll-contain max-h-[55dvh] sm:max-h-[260px] scrollbar-thin">
             <div className="px-2.5 pb-2 space-y-0.5">
               {groupedActions.map((item, index) => {
                 if (item === 'separator') return <Separator key={`sep-${index}`} className="my-1 opacity-30" />;
@@ -178,7 +178,7 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
                     onClick={() => handleActionClick(action)}
                     onFocus={() => handleMenuItemFocus(index)}
                     disabled={!action.isActive}
-                    className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-left transition-all duration-150
+                    className={`w-full flex items-center gap-2.5 px-2.5 py-2.5 min-h-11 rounded-xl text-left transition-all duration-150
                       ${action.isActive ? 'hover:bg-primary/5 hover:shadow-sm active:scale-[0.98] cursor-pointer' : 'opacity-35 cursor-not-allowed'}`}
                   >
                     <ActionIcon iconName={action.iconName} actionKey={action.key} />

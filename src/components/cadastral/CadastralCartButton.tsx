@@ -122,7 +122,7 @@ const CadastralCartButton: React.FC = () => {
       <SheetTrigger asChild>
         <Button
           size="icon"
-          className="fixed bottom-16 left-3 sm:bottom-3 z-[1000] shadow-lg rounded-full h-11 w-11"
+          className="fixed left-3 z-[1000] shadow-lg rounded-full h-11 w-11 bottom-[calc(env(safe-area-inset-bottom,0px)+5rem)] sm:bottom-3"
           aria-label={`Panier cadastral : ${totalServices} service${totalServices > 1 ? 's' : ''}, total ${fmt(total)}`}
           title={`${totalServices} service${totalServices > 1 ? 's' : ''} · ${fmt(total)}`}
         >
@@ -136,7 +136,7 @@ const CadastralCartButton: React.FC = () => {
         </Button>
       </SheetTrigger>
 
-      <SheetContent side="left" className="w-3/4 max-w-[85vw] sm:max-w-sm flex flex-col rounded-r-2xl">
+      <SheetContent side="left" className="w-3/4 max-w-[85vw] sm:max-w-sm flex flex-col rounded-r-2xl pb-[env(safe-area-inset-bottom,0px)]">
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2">
             <ShoppingCart className="h-5 w-5" />

@@ -6173,6 +6173,9 @@ export type Database = {
           intended_use_per_lot: Json | null
           lots_data: Json
           number_of_lots: number
+          official_plan_generated_at: string | null
+          official_plan_path: string | null
+          official_plan_version: number
           parcel_id: string | null
           parcel_number: string
           parent_parcel_area_sqm: number
@@ -6234,6 +6237,9 @@ export type Database = {
           intended_use_per_lot?: Json | null
           lots_data?: Json
           number_of_lots: number
+          official_plan_generated_at?: string | null
+          official_plan_path?: string | null
+          official_plan_version?: number
           parcel_id?: string | null
           parcel_number: string
           parent_parcel_area_sqm: number
@@ -6295,6 +6301,9 @@ export type Database = {
           intended_use_per_lot?: Json | null
           lots_data?: Json
           number_of_lots?: number
+          official_plan_generated_at?: string | null
+          official_plan_path?: string | null
+          official_plan_version?: number
           parcel_id?: string | null
           parcel_number?: string
           parent_parcel_area_sqm?: number
@@ -7443,6 +7452,10 @@ export type Database = {
         Args: { p_expert_id: string; p_request_id: string }
         Returns: undefined
       }
+      authorize_subdivision_plan_access: {
+        Args: { p_request_id: string }
+        Returns: string
+      }
       auto_archive_stale_articles: {
         Args: never
         Returns: {
@@ -7839,6 +7852,10 @@ export type Database = {
       }
       get_signed_mutation_certificate: {
         Args: { p_request_id: string; p_ttl_seconds?: number }
+        Returns: string
+      }
+      get_signed_subdivision_plan: {
+        Args: { p_request_id: string }
         Returns: string
       }
       get_test_cleanup_history: {

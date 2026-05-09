@@ -236,19 +236,19 @@ const CadastralMap = () => {
     <div className="min-h-dvh flex flex-col bg-background">
       <Navigation />
 
-      <main className="flex-1 relative" style={{ height: 'calc(100vh - 4rem)' }}>
-        {/* Dynamic zoom control positioning */}
+      <main
+        className="flex-1 relative min-h-0 overflow-hidden"
+        style={{
+          height: 'calc(100dvh - 4rem)',
+          // CSS var consumed by the inline rule below — no JS viewport math.
+          ['--map-zoom-offset' as any]: selectedParcel
+            ? (isMobile ? (actionsExpanded ? '70dvh' : '32dvh') : (actionsExpanded ? '24rem' : '10rem'))
+            : (isMobile ? '1rem' : '1rem'),
+        }}
+      >
         <style>{`
           .leaflet-bottom.leaflet-right .leaflet-control-zoom {
-            margin-bottom: ${
-              selectedParcel
-                ? isMobile
-                  ? actionsExpanded ? `${Math.min(viewportHeight * 0.55, 416)}px` : `${Math.min(viewportHeight * 0.28, 176)}px`
-                  : actionsExpanded ? `${Math.min(viewportHeight * 0.5, 384)}px` : `${Math.min(viewportHeight * 0.22, 160)}px`
-                : isMobile
-                  ? isSearchBarActive ? '1rem' : `${Math.min(viewportHeight * 0.28, 208)}px`
-                  : '1rem'
-            } !important;
+            margin-bottom: var(--map-zoom-offset, 1rem) !important;
             transition: margin-bottom 0.3s ease !important;
           }
         `}</style>
@@ -261,7 +261,7 @@ const CadastralMap = () => {
             </div>
           </div>
         ) : (
-          <div ref={mapContainerRef} style={{ width: '100%', height: 'calc(100vh - 4rem)' }} />
+          <div ref={mapContainerRef} style={{ width: '100%', height: '100%' }} />
         )}
 
         {/* Stripe polling indicator */}
@@ -279,8 +279,10 @@ const CadastralMap = () => {
               variant="secondary"
               size="sm"
               onClick={handleGeolocate}
-              className="absolute right-3 z-[800] h-9 w-9 rounded-xl shadow-lg p-0"
-              style={{ bottom: isMobile ? `${Math.min(viewportHeight * 0.4, 320)}px` : '7rem' }}
+              className={cn(
+                'absolute right-3 z-[800] h-10 w-10 rounded-xl shadow-lg p-0',
+                isMobile ? 'top-[4.5rem]' : 'bottom-28'
+              )}
               aria-label="Me localiser"
             >
               <LocateFixed className="h-4 w-4" />
@@ -291,21 +293,21 @@ const CadastralMap = () => {
 
         {/* Search overlay */}
         <div
-          className={`absolute left-3 z-[900] ${isMobile ? 'right-3' : 'w-[min(24rem,calc(100vw-1.5rem))]'} transform-gpu`}
-          style={{
+          className={`absolute left-3 z-[900] ${isMobile ? 'right-3 top-3' : 'w-[min(24rem,calc(100vw-1.5rem))]'} transform-gpu`}
+          style={!isMobile ? {
             transition: 'top 0.3s ease, transform 0.3s ease',
-            top: isSearchBarActive || selectedParcel ? '0.75rem' : `${viewportHeight - 180}px`,
-          }}
+            top: isSearchBarActive || selectedParcel ? '0.75rem' : `${Math.max(viewportHeight - 180, 12)}px`,
+          } : undefined}
         >
           <div className="bg-background/95 backdrop-blur-md rounded-2xl shadow-[0_10px_40px_-8px_rgba(0,0,0,0.9),0_4px_16px_-4px_rgba(0,0,0,0.6)] border border-border/50 overflow-hidden">
-            <div className={`${selectedParcel && isMobile ? 'p-2' : 'p-2.5'}`}>
+            <div className="p-2.5">
               <div className="flex items-center gap-2">
                 <div className="relative flex-1">
-                  <div className={`absolute left-2.5 top-1/2 -translate-y-1/2 ${selectedParcel && isMobile ? 'h-3.5 w-3.5' : 'h-4 w-4'} text-muted-foreground z-10`}>
+                  <div className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground z-10">
                     <Search className="h-full w-full" />
                   </div>
                   <Input
-                    placeholder={selectedParcel && isMobile ? searchBarConfig.placeholder.map_compact : searchBarConfig.placeholder.map_default}
+                    placeholder={searchBarConfig.placeholder.map_default}
                     value={searchQuery}
                     onChange={(e) => {
                       const inputValue = e.target.value;
@@ -343,18 +345,18 @@ const CadastralMap = () => {
                     }}
                     type="text"
                     inputMode="text"
-                    className={`${selectedParcel && isMobile ? 'h-8 text-xs pl-8' : 'h-9 text-sm pl-9'} pr-8 rounded-${searchBarConfig.appearance.border_radius} border-0 bg-muted/50 focus-visible:ring-1 focus-visible:ring-${searchBarConfig.appearance.accent_color}/50 transition-all ${isShaking ? 'animate-shake border-destructive' : ''}`}
+                    className={`h-10 text-sm pl-9 pr-8 rounded-${searchBarConfig.appearance.border_radius} border-0 bg-muted/50 focus-visible:ring-1 focus-visible:ring-${searchBarConfig.appearance.accent_color}/50 transition-all ${isShaking ? 'animate-shake border-destructive' : ''}`}
                   />
 
                   {searchQuery && (
                     <Button
                       variant="ghost"
                       size="sm"
-                      className={`absolute right-1 top-1/2 -translate-y-1/2 ${selectedParcel && isMobile ? 'h-6 w-6' : 'h-7 w-7'} p-0 rounded-full hover:bg-destructive/10`}
+                      className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 p-0 rounded-full hover:bg-destructive/10"
                       onClick={handleClearSearch}
                       aria-label="Effacer la recherche"
                     >
-                      <X className={`${selectedParcel && isMobile ? 'h-3 w-3' : 'h-3.5 w-3.5'} text-muted-foreground`} />
+                      <X className="h-3.5 w-3.5 text-muted-foreground" />
                     </Button>
                   )}
                 </div>
@@ -369,11 +371,11 @@ const CadastralMap = () => {
                     setHasUserInteracted(true);
                   }}
                   disabled={!!selectedParcel}
-                  className={`${selectedParcel && isMobile ? 'h-8 w-8' : 'h-9 w-9'} shrink-0 rounded-xl ${showAdvancedSearch ? 'bg-primary/10 text-primary' : 'bg-muted/50'} hover:bg-muted transition-colors`}
+                  className={`h-10 w-10 shrink-0 rounded-xl ${showAdvancedSearch ? 'bg-primary/10 text-primary' : 'bg-muted/50'} hover:bg-muted transition-colors`}
                   aria-label="Recherche avancée"
                   title="Recherche avancée"
                 >
-                  <Settings2 className={`${selectedParcel && isMobile ? 'h-3.5 w-3.5' : 'h-4 w-4'} transition-transform duration-300 ${showAdvancedSearch ? 'rotate-90' : ''}`} />
+                  <Settings2 className={`h-4 w-4 transition-transform duration-300 ${showAdvancedSearch ? 'rotate-90' : ''}`} />
                 </Button>
 
                 {/* Land title button (state-machine driven) */}
@@ -393,10 +395,10 @@ const CadastralMap = () => {
                                 setHasUserInteracted(true);
                               }}
                               disabled={!!selectedParcel}
-                              className={`${selectedParcel && isMobile ? 'h-8 w-8' : 'h-9 w-9'} shrink-0 rounded-xl transition-colors relative`}
+                              className="h-10 w-10 shrink-0 rounded-xl transition-colors relative"
                               aria-label="Demander un titre foncier"
                             >
-                              <FileCheck2 className={`${selectedParcel && isMobile ? 'h-3.5 w-3.5' : 'h-4 w-4'}`} />
+                              <FileCheck2 className="h-4 w-4" />
                               {landTitle.showNotification && (
                                 <span className="absolute -top-1 -right-1 h-3 w-3 bg-yellow-400 rounded-full animate-pulse shadow-lg border border-yellow-300" aria-hidden="true" />
                               )}
@@ -550,8 +552,11 @@ const CadastralMap = () => {
 
         {/* Selected parcel panel */}
         {selectedParcel && (
-          <div className={`absolute ${isMobile ? 'bottom-2 left-3 right-3 max-w-[340px] mx-auto' : 'bottom-4 right-4 w-80'} z-[1000]`}>
-            <div className="bg-background/98 backdrop-blur-xl rounded-3xl shadow-[0_8px_40px_-12px_hsl(var(--primary)/1),0_4px_16px_-4px_rgba(0,0,0,1)] border border-border/40 overflow-hidden">
+          <div
+            className={`absolute z-[1000] ${isMobile ? 'inset-x-0 bottom-0' : 'bottom-4 right-4 w-80'}`}
+            style={isMobile ? { paddingBottom: 'env(safe-area-inset-bottom)' } : undefined}
+          >
+            <div className={`bg-background/98 backdrop-blur-xl ${isMobile ? 'rounded-t-3xl border-t' : 'rounded-3xl border'} shadow-[0_8px_40px_-12px_hsl(var(--primary)/1),0_4px_16px_-4px_rgba(0,0,0,1)] border-border/40 overflow-hidden`}>
               <ParcelActionsDropdown
                 parcelNumber={selectedParcel.parcel_number}
                 parcelId={selectedParcel.id}
@@ -576,20 +581,20 @@ const CadastralMap = () => {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className={`h-7 w-7 p-0 rounded-xl transition-all ${searchHistory.isFavorite(selectedParcel.id) ? 'text-yellow-500 bg-yellow-500/10 hover:bg-yellow-500/20' : 'text-muted-foreground hover:bg-muted'}`}
+                    className={`h-9 w-9 p-0 rounded-xl transition-all ${searchHistory.isFavorite(selectedParcel.id) ? 'text-yellow-500 bg-yellow-500/10 hover:bg-yellow-500/20' : 'text-muted-foreground hover:bg-muted'}`}
                     onClick={handleAddToFavorites}
                     aria-label="Ajouter aux favoris"
                   >
-                    <Star className={`h-3.5 w-3.5 ${searchHistory.isFavorite(selectedParcel.id) ? 'fill-yellow-500' : ''}`} />
+                    <Star className={`h-4 w-4 ${searchHistory.isFavorite(selectedParcel.id) ? 'fill-yellow-500' : ''}`} />
                   </Button>
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-7 w-7 p-0 rounded-xl text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all"
+                    className="h-9 w-9 p-0 rounded-xl text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all"
                     onClick={() => { setSelectedParcel(null); setActionsExpanded(false); }}
                     aria-label="Fermer le panneau parcelle"
                   >
-                    <X className="h-3.5 w-3.5" />
+                    <X className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
@@ -621,15 +626,15 @@ const CadastralMap = () => {
                       await cadastralSearch.searchParcel(selectedParcel.parcel_number);
                       setShowServiceCatalog(true);
                     }}
-                    className="flex-1 h-9 text-xs rounded-xl font-medium shadow-sm"
+                    className="flex-1 h-10 text-xs rounded-xl font-medium shadow-sm"
                     size="sm"
                     disabled={cadastralSearch.loading}
                   >
                     {cadastralSearch.loading ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
                       <>
-                        <Search className="h-3 w-3 mr-1.5" />
+                        <Search className="h-3.5 w-3.5 mr-1.5" />
                         {isMobile ? 'Données' : 'Plus de données'}
                       </>
                     )}
@@ -637,21 +642,21 @@ const CadastralMap = () => {
                   <Button
                     variant={actionsExpanded ? 'default' : 'secondary'}
                     size="sm"
-                    className={`flex-1 h-9 text-xs rounded-xl font-medium gap-1 transition-all ${actionsExpanded ? 'shadow-sm' : ''}`}
+                    className={`flex-1 h-10 text-xs rounded-xl font-medium gap-1 transition-all ${actionsExpanded ? 'shadow-sm' : ''}`}
                     onClick={() => setActionsExpanded(prev => !prev)}
                   >
                     {actionsExpanded ? 'Fermer' : 'Actions'}
-                    {actionsExpanded ? <X className="h-3 w-3" /> : <Settings2 className="h-3 w-3" />}
+                    {actionsExpanded ? <X className="h-3.5 w-3.5" /> : <Settings2 className="h-3.5 w-3.5" />}
                   </Button>
                   <Button
                     onClick={handleWhatsAppClick}
                     variant="outline"
                     size="sm"
-                    className="h-9 w-9 p-0 rounded-xl shrink-0"
+                    className="h-10 w-10 p-0 rounded-xl shrink-0"
                     aria-label="Aide WhatsApp"
                     title="Aide WhatsApp"
                   >
-                    <MessageCircle className="h-3.5 w-3.5" />
+                    <MessageCircle className="h-4 w-4" />
                   </Button>
                 </div>
 
@@ -714,19 +719,14 @@ const CadastralMap = () => {
                   </div>
                 </div>
               </div>
-              <div className="absolute left-3 z-[800] md:hidden" style={{
-                bottom: `${selectedParcel
-                  ? (actionsExpanded ? Math.min(viewportHeight * 0.55, 480) : Math.min(viewportHeight * 0.3, 240))
-                  : Math.min(viewportHeight * 0.25, 192)}px`,
-                transition: 'bottom 0.3s ease',
-              }}>
+              <div className="absolute right-3 z-[800] md:hidden top-[8rem]">
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Button variant="secondary" size="sm" className="h-7 w-7 rounded-lg shadow-lg p-0" aria-label="Afficher la légende">
-                      <HelpCircle className="h-3 w-3" />
+                    <Button variant="secondary" size="sm" className="h-9 w-9 rounded-xl shadow-lg p-0" aria-label="Afficher la légende">
+                      <HelpCircle className="h-4 w-4" />
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent side="top" align="start" sideOffset={8} className="w-36 rounded-lg p-1.5">
+                  <PopoverContent side="left" align="start" sideOffset={8} className="w-40 rounded-lg p-1.5">
                     <p className="text-[7px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">Légende</p>
                     <div className="space-y-0.5">
                       {legendItems.map(item => (

@@ -33,7 +33,14 @@ type: feature
 
 ## Reste (low priority)
 - 2 `as any` sur `.update({ assigned_to, assigned_at })` — décalage entre types Supabase générés et schema effectif (assigned_to nullable). Toléré.
-- RLS audit complet `subdivision_requests` (admin/super_admin only sur update assigned_to) — déjà couvert par `request_admin_audit` mais à valider via `supabase--linter` à la prochaine itération.
+
+## Lot G — Eligibilité parcelle-mère verrouillée serveur ✅
+- Edge `subdivision-request` charge la règle `subdivision_zoning_rules` via cascade géo (avenue→quartier→commune→ville / village→groupement→collectivité→territoire + `*`) et rejette en HTTP 422 `PARENT_AREA_OUT_OF_RANGE` si `area_sqm` < `parent_min_area_sqm` ou > `parent_max_area_sqm`.
+- Payload `parent_parcel` enrichi (province/ville/commune/quartier/avenue + équivalents ruraux + propertyTitleType) depuis `useSubdivisionForm` pour matching précis.
+- `AdminSubdivisionZoningRules.handleSave` : refuse `parent_min < min_lot_area_sqm`, `parent_max < parent_min`, et avertit (toast.warning) si `parent_min < 2 × min_lot`.
+- UI admin : bloc « Surface parcelle-mère » mis en avant (`bg-primary/5 border-primary/30`) en tête de la section, helper live « ≈ N lots de X m² maximum tiendraient ».
+- Tests : `useParentParcelEligibility.test.tsx` (PARENT_TOO_SMALL/LARGE/OK + fallback `*`), 4/4 verts.
+
 
 ## Lot B — Documents requis configurables ✅
 - Table `subdivision_required_documents` (doc_key unique, label, help_text, is_required, requester_types[], accepted_mime_types[], max_size_mb, display_order, is_active, metadata jsonb).
