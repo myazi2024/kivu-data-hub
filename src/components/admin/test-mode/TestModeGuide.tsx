@@ -42,7 +42,7 @@ const buildGuidelines = (counts: typeof EXPECTED_TEST_DATA_COUNTS, entityCount: 
 
 const TestModeGuide: React.FC = () => {
   const { isTestModeActive } = useTestMode();
-  const counts = getExpectedTestDataCounts();
+  const counts = EXPECTED_TEST_DATA_COUNTS;
   const [entityCount, setEntityCount] = useState<number>(TEST_ENTITIES.length);
 
   useEffect(() => {
