@@ -1,114 +1,44 @@
-# Plan officiel de lotissement — version HD imprimable + authentification
+## Audit du Mode Test (espace Admin)
 
-## Objectif
-Quand une demande de lotissement est **approuvée** côté admin, produire un **plan PDF officiel** :
-- vectoriel pur, format dynamique selon le ratio de la parcelle, imprimable jusqu'à **10×10 m** sans pixellisation,
-- sécurité/authentification conformes au standard de l'app (QR code de vérification, code, mentions légales),
-- footer enrichi avec **3 cadres de signature/sceau** dont les libellés s'adaptent au contexte urbain ou rural,
-- pipeline **hybride** : aperçu rapide côté client + version officielle générée par Edge Function et archivée.
+Périmètre audité : `AdminTestMode.tsx`, `useTestMode`, `useTestDataActions`, `useTestGenerationJob`, `useTestDataStats`, edge functions `generate-test-data` + `cleanup-test-data-batch`, registres front/edge (`cleanupSteps`, `testEntities`, `generationStepsRegistry`), composants UI (`TestModeConfigCard`, `TestDataStatsCard`, `GenerationProgress`, `CleanupProgress`, `TestDryRunButton`, `TestDataExportButton`, `TestCleanupHistoryCard`, `TestCronStatusCard`, `TestEnvironmentBanner`, `billing/TestModeBanner`), trigger anti-prod et doc `docs/TEST_MODE.md`.
 
----
+### Bugs confirmés
 
-## 1. Format vectoriel dynamique selon ratio parcelle
+1. **Recovery 409 cassé dans `useTestGenerationJob.startJob`** — quand l'edge function renvoie 409 (job déjà actif), `supabase.functions.invoke` met `error` et `data=null`, donc la branche `body.active_job_id` n'est jamais atteinte. L'admin voit un message générique au lieu de récupérer le job actif. Lire `error.context?.body` (Response) pour récupérer le JSON 409 et exposer `active_job_id`.
 
-Refonte de `src/utils/generateSubdivisionPlanPDF.ts` :
-- Calcul du bbox de la parcelle-mère + lots + voies → ratio largeur/hauteur réel.
-- Choix d'une **base** (ex. base = 1000 mm) puis dimensionnement :
-  ```
-  pageW = base
-  pageH = base * (bboxH / bboxW)
-  ```
-  borné à `[600, 1400] mm` pour rester gérable, avec **ratio préservé** (zéro déformation).
-- jsPDF accepte un `format: [w, h]` arbitraire en mm → 100 % vectoriel, donc agrandissable jusqu'à 10×10 m sans perte.
-- Marges/typo recalculées en pourcentage de la page (échelle relative) pour rester lisibles à toute taille d'impression.
-- Cartouche, schéma, légende, flèche du Nord, échelle graphique, tableau des lots → repositionnés en grille relative.
-- Échelle graphique recalculée en mètres réels d'après la surface de la parcelle-mère.
+2. **Stale closure dans `AdminTestMode.saveConfiguration`** — après activation, `if (wasJustEnabled && total === 0) generateTestData()` lit `total` capturé avant `refreshStats()` (snapshot pré-refresh). Peut auto-générer alors que des données existent ou ne pas générer alors qu'il faudrait. Solution : faire retourner le total par `refreshStats()` et utiliser cette valeur, ou déplacer la décision côté hook.
 
-## 2. Mentions de signature dynamiques (urbain/rural)
+3. **Polling stale dans `useTestGenerationJob`** — `setInterval(() => { if (job && FINISHED.has(job.status)) return; fetchJob(); }, 4000)` capture `job` à la création de l'effet (deps = `[jobId]`), donc le garde ne déclenche jamais et on continue à puller un job déjà terminé jusqu'à démontage. Utiliser une ref ou ajouter `job?.status` aux deps.
 
-Détection du contexte via la parcelle-mère (`cadastral_parcels` ou champs `parent_parcel_*`/`territoire`/`commune`/`ville` joints à la demande) :
+4. **Channel Realtime collision dans `useTestMode`** — `supabase.channel('test-mode-changes')` est créé avec un nom statique réutilisé par 5 consommateurs (AdminTestMode, AdminPaymentMode, AdminPaymentMethods, AdminDashboardHeader, useCadastralPayment). Les channels Supabase requièrent un nom unique ; les abonnements suivants peuvent être ignorés silencieusement. Suffixer avec un id stable (ex. `test-mode-changes-${useId()}`) ou centraliser via un contexte unique.
 
-- **Contexte urbain** (la parcelle a une `commune` + `ville`) — 3 cadres :
-  1. « Certifié conforme au plan cadastral » — Bureau d'Information Cadastrale
-  2. « Approuvé par la ville de **{ville}** »
-  3. « Vu par le Bureau de la Commune de **{commune}** »
+### Dette / risques de dérive
 
-- **Contexte rural** (pas de commune, mais `territoire`/`chefferie`/`groupement`) — 3 cadres :
-  1. « Certifié conforme au plan cadastral » — Bureau d'Information Cadastrale
-  2. « Approuvé par le Bureau de la Chefferie **{chefferie}** » (fallback : groupement)
-  3. « Vu par le Chef du Territoire de **{territoire}** »
+5. **Code mort à supprimer** : `src/components/admin/test-mode/generators/*`, `testDataGenerators.ts`, `generationStepsRegistry.ts` — non importés (génération désormais 100 % serveur). Garder ces fichiers entretient le mythe d'un mirroring client/serveur (cf. point 8).
 
-Chaque cadre = boîte vectorielle avec libellé en gras, lignes pour **Nom**, **Fonction**, **Date**, **Signature**, et un **emplacement sceau** (cercle pointillé). Vide à signer manuellement après impression.
+6. **Doublon `cleanupSteps.ts`** — copie manuelle entre `src/components/admin/test-mode/cleanupSteps.ts` et `supabase/functions/_shared/cleanupSteps.ts`. Pas de test pour vérifier la sync. Réimporter directement depuis `supabase/functions/_shared/cleanupSteps.ts` côté front (chemin relatif TS, juste un `export const`) pour avoir une source unique.
 
-## 3. Sécurité & authentification
+7. **Garde redondant + parfois trompeur dans `generateTestData`** — la requête `.like('parcel_number', 'TEST-%')` re-vérifie ce que le bouton n'expose déjà que quand `total === 0`. À supprimer (dupliqué) ou à remplacer par un appel à `count_test_data_stats` pour cohérence avec le reste de l'admin.
 
-Réutilise le standard projet (cf. mémoire `doc-verification-privacy-fr`, `cadastral-pdf-report-fr`) :
-- `createDocumentVerification({ documentType: 'subdivision_plan', ... })` → code + URL `/verify/{code}`,
-- **QR code** vectoriel/HD dans le footer + **code lisible** à côté,
-- mentions légales déjà présentes (génération, authentification, falsification),
-- ajout d'un **filigrane diagonal** discret « PLAN OFFICIEL — {reference_number} » répété (vectoriel, opacité faible) pour résister à la copie photographique.
+8. **Doc `docs/TEST_MODE.md` désynchronisée** :
+   - Affirme que les générateurs serveur sont « la copie miroir de `src/components/admin/test-mode/generators/` » — faux depuis la migration vers `EdgeRuntime.waitUntil`.
+   - Annonce « 10 tables » pour le trigger anti-prod alors que la liste de cleanup en couvre 23 entités (mortgage_payments, expertise_payments, building_permits, lots/roads de lotissement, certificats, etc. ne sont pas protégés au INSERT prod).
+   Mettre à jour la doc et signaler les 7 entités sans garde anti-prod (sans étendre le trigger, qui sortirait du périmètre frontend de cette tâche).
 
-Le module `/verify/{code}` reconnaît déjà `subdivision_plan` (déjà supporté dans `DocumentType`) — RAS côté schéma.
+### Hors-scope (à mentionner sans changer)
 
-## 4. Pipeline hybride (aperçu client + officiel serveur)
+- Banner global "test mode actif" absent de l'espace admin (seules les routes `/test/*` affichent un badge). À discuter séparément si souhaité.
+- `TestDataExportButton` exporte toutes les colonnes y compris potentiellement PII — suffixe TEST mais valeurs réalistes. À confirmer si on doit redacter.
 
-### Côté client (aperçu — déjà existant, à conserver)
-`UserSubdivisionRequests` continue de proposer un téléchargement rapide via `generateSubdivisionPlanPDF`, mais :
-- s'il existe déjà une **version officielle archivée**, on télécharge directement le PDF signé du bucket (Signed URL),
-- sinon on génère l'aperçu côté client (cas où l'archive n'a pas encore été produite).
+### Plan d'exécution
 
-### Côté serveur (version officielle — nouveau)
-Nouvelle Edge Function `generate-subdivision-plan` :
-- Déclenchée automatiquement à l'approbation (depuis `useSubdivisionProcessing` / RPC d'approbation existante, après succès),
-- Réutilise la même logique de mise en page (port d'un module partagé `_shared/subdivisionPlanLayout.ts` côté Deno avec `jspdf` via npm: import map),
-- Charge données complètes (demande, parcelle-mère, lots, voies, géo cascade), génère le PDF, **upload** dans bucket privé `subdivision-plans` sous `{user_id}/{request_id}/plan-{reference}-v{n}.pdf`,
-- Stocke le chemin relatif dans `subdivision_requests.official_plan_path` + `official_plan_generated_at`,
-- Crée la `document_verifications` côté serveur (avec `user_id` du demandeur) → QR pointe vers code persistant,
-- RPC `get_signed_subdivision_plan(p_request_id)` (SECURITY DEFINER) pour distribuer une URL signée (admin + propriétaire).
+1. Fix #1 — récupérer le 409 via `error.context.body` dans `useTestGenerationJob.startJob`.
+2. Fix #2 — `useTestDataStats.refresh()` retourne `{ stats, total }` ; `AdminTestMode` lit la valeur retournée.
+3. Fix #3 — déplacer `job` dans une ref synchronisée pour le poll.
+4. Fix #4 — channel name unique par instance via `useId()`.
+5. Fix #5 — supprimer `generators/`, `testDataGenerators.ts`, `generationStepsRegistry.ts`.
+6. Fix #6 — front `cleanupSteps.ts` réexporte depuis le shared edge (`../../../supabase/functions/_shared/cleanupSteps`).
+7. Fix #7 — retirer le pré-check `.like(...)` dans `generateTestData` (déjà gardé par l'UI + l'edge function).
+8. Fix #8 — réécrire la section concernée de `docs/TEST_MODE.md` (mirroring + couverture trigger).
 
-### DB (migration)
-- `ALTER TABLE subdivision_requests ADD COLUMN official_plan_path text, official_plan_generated_at timestamptz, official_plan_version int default 0;`
-- Bucket privé `subdivision-plans` + policies (lecture via RPC uniquement, pas d'accès direct anon).
-- RPC `get_signed_subdivision_plan` (vérifie `auth.uid() = user_id` ou rôle admin/super_admin).
-
-## 5. Admin UI
-
-Dans le détail demande (espace admin, statut Approuvé) :
-- Bouton **« (Re)générer le plan officiel »** → invoke `generate-subdivision-plan` (incrémente `official_plan_version`),
-- Bouton **« Télécharger le plan officiel »** → ouvre la Signed URL,
-- Indicateur de version + date de génération,
-- Audit log via `request_admin_audit` (`subdivision.plan_generated`).
-
-## 6. Tests
-
-- **Unit** : `generateSubdivisionPlanPDF` — ratio respecté, cadres signature urbains vs ruraux, présence QR + filigrane.
-- **Edge Function** : `supabase/functions/generate-subdivision-plan/index.test.ts` — 401 sans auth, 403 si non-admin & non-propriétaire, 200 + path retourné, idempotence (v1 → v2).
-- **Régression** : run `useCadastralCart.purge.test.tsx` + `useParentParcelEligibility.test.tsx` (rien lié, mais sanity check).
-- **QA visuelle** : conversion du PDF en PNG via `pdftoppm` à 150 DPI puis inspection (mentions, cadres, QR, filigrane, bbox sans déformation).
-
----
-
-## Détails techniques (récapitulatif)
-
-| Aspect | Choix |
-|---|---|
-| Format | jsPDF `format: [w, h]` calculé selon ratio bbox parcelle, base 1000 mm |
-| Vectoriel | 100 % (lignes/textes/QR raster mais à 200 px source rendu net jusqu'à 10 m) |
-| Signatures | Cadres vides (Nom/Fonction/Date/Signature/Sceau) |
-| Libellés | Dynamiques urbain ({ville}/{commune}) vs rural ({territoire}/{chefferie}) |
-| Sécurité | `createDocumentVerification` + QR + code + filigrane diagonal |
-| Génération | Hybride : client (aperçu/fallback) + Edge Function (officiel archivé) |
-| Stockage | Bucket privé `subdivision-plans`, signed URL via RPC SECURITY DEFINER |
-| Versioning | `official_plan_version` incrémenté à chaque (re)génération admin |
-
-## Fichiers impactés
-- `src/utils/generateSubdivisionPlanPDF.ts` (refonte ratio + signatures + filigrane)
-- `src/utils/subdivisionPlanContext.ts` (nouveau — résolution urbain/rural)
-- `src/components/user/UserSubdivisionRequests.tsx` (priorité officiel > aperçu client)
-- `src/components/admin/subdivision/requests/...` (boutons (re)génération + DL officiel)
-- `supabase/functions/generate-subdivision-plan/index.ts` (nouveau)
-- `supabase/functions/_shared/subdivisionPlanLayout.ts` (nouveau, partagé)
-- Migration : colonnes + bucket + policies + RPC `get_signed_subdivision_plan`
-- Mémoires : maj `subdivision-admin-audit-fr.md` + nouvelle entrée `features/subdivision/plan-pdf-hd-fr.md`
-
-**Souhaitez-vous approuver ce plan ?**
+Aucune migration SQL. Aucun changement d'API edge function. Périmètre purement front + doc.
