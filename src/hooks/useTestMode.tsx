@@ -55,7 +55,7 @@ export const useTestMode = () => {
     loadTestModeConfig();
 
     const channel = supabase
-      .channel('test-mode-changes')
+      .channel(`test-mode-changes-${instanceId}`)
       .on(
         'postgres_changes',
         {
@@ -71,7 +71,7 @@ export const useTestMode = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [loadTestModeConfig]);
+  }, [loadTestModeConfig, instanceId]);
 
   return {
     testMode,
