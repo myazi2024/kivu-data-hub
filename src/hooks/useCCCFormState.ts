@@ -824,17 +824,24 @@ export const useCCCFormState = ({
 
     setUploading(true);
     resetUploadedTracker(); // reset tracker pour ce cycle
+    // Sauvegarde forcée AVANT les uploads — protège le brouillon en cas de coupure réseau
+    saveFormDataToStorage();
+    const uploadFailToast = (docLabel: string) => toast({
+      title: "Échec de l'envoi du document",
+      description: `${lastUploadErrorRef.current || `Impossible d'envoyer ${docLabel}.`} Cliquez sur Soumettre à nouveau, vos données sont conservées.`,
+      variant: "destructive",
+    });
     try {
       let ownerDocUrl = null;
       let titleDocUrls: string[] = [];
       if (ownerDocFile) {
         ownerDocUrl = await uploadFile(ownerDocFile, 'owner-documents');
-        if (!ownerDocUrl) { await rollbackUploadedFiles(); toast({ title: "Échec de l'envoi du document", description: lastUploadErrorRef.current || "Impossible d'envoyer le document du propriétaire.", variant: "destructive" }); setUploading(false); return; }
+        if (!ownerDocUrl) { await rollbackUploadedFiles(); uploadFailToast("le document du propriétaire"); setUploading(false); return; }
       }
       if (titleDocFiles.length > 0) {
         for (const file of titleDocFiles) {
           const url = await uploadFile(file, 'title-documents');
-          if (!url) { await rollbackUploadedFiles(); toast({ title: "Échec de l'envoi du document", description: lastUploadErrorRef.current || "Impossible d'envoyer un document de titre.", variant: "destructive" }); setUploading(false); return; }
+          if (!url) { await rollbackUploadedFiles(); uploadFailToast("un document de titre"); setUploading(false); return; }
           titleDocUrls.push(url);
         }
       }
