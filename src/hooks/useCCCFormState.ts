@@ -279,6 +279,11 @@ export const useCCCFormState = ({
   const lastUploadErrorRef = useRef<string | null>(null);
   const uploadFile = async (file: File, path: string): Promise<string | null> => {
     try {
+      // Pré-check : connectivité réseau
+      if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+        lastUploadErrorRef.current = "Connexion internet indisponible. Vérifiez votre réseau.";
+        return null;
+      }
       const userId = user?.id || (await supabase.auth.getSession()).data.session?.user?.id;
       if (!userId) {
         lastUploadErrorRef.current = "Session expirée — reconnectez-vous.";
@@ -288,25 +293,50 @@ export const useCCCFormState = ({
       const fileExt = (file.name.split('.').pop() || 'bin').toLowerCase();
       const fileName = `${crypto.randomUUID()}.${fileExt}`;
       const filePath = `${userId}/${path}/${fileName}`;
-      const { error: uploadError } = await supabase.storage.from('cadastral-documents').upload(filePath, file);
-      if (uploadError) {
-        console.error('Upload error:', uploadError);
-        lastUploadErrorRef.current = uploadError.message || "Upload refusé.";
+
+      // Retry réseau (2 essais max, backoff exponentiel) — uniquement sur TypeError "Failed to fetch"
+      const { withNetworkRetry, humanizeUploadError } = await import('@/utils/uploadRetry');
+
+      try {
+        const { error: uploadError } = await withNetworkRetry(
+          () => supabase.storage.from('cadastral-documents').upload(filePath, file),
+          { retries: 2, delayMs: 800 }
+        );
+        if (uploadError) {
+          console.error('Upload error:', uploadError);
+          lastUploadErrorRef.current = humanizeUploadError(uploadError.message);
+          return null;
+        }
+      } catch (netErr: any) {
+        console.error('Upload network error:', netErr);
+        lastUploadErrorRef.current = humanizeUploadError(netErr?.message);
         return null;
       }
+
       // Tracker pour rollback éventuel
       trackUploadedPath(filePath);
-      const { data: signedData, error: signedError } = await supabase.storage.from('cadastral-documents').createSignedUrl(filePath, 60 * 60 * 24 * 365 * 10);
-      if (signedError || !signedData?.signedUrl) {
-        console.error('Signed URL error:', signedError);
-        lastUploadErrorRef.current = signedError?.message || "URL signée indisponible.";
+
+      try {
+        const { data: signedData, error: signedError } = await withNetworkRetry(
+          () => supabase.storage.from('cadastral-documents').createSignedUrl(filePath, 60 * 60 * 24 * 365 * 10),
+          { retries: 2, delayMs: 600 }
+        );
+        if (signedError || !signedData?.signedUrl) {
+          console.error('Signed URL error:', signedError);
+          lastUploadErrorRef.current = humanizeUploadError(signedError?.message || "URL signée indisponible.");
+          return null;
+        }
+        lastUploadErrorRef.current = null;
+        return signedData.signedUrl;
+      } catch (netErr: any) {
+        console.error('Signed URL network error:', netErr);
+        lastUploadErrorRef.current = humanizeUploadError(netErr?.message);
         return null;
       }
-      lastUploadErrorRef.current = null;
-      return signedData.signedUrl;
     } catch (error: any) {
       console.error('Error uploading file:', error);
-      lastUploadErrorRef.current = error?.message || "Erreur inconnue.";
+      const { humanizeUploadError } = await import('@/utils/uploadRetry');
+      lastUploadErrorRef.current = humanizeUploadError(error?.message);
       return null;
     }
   };
