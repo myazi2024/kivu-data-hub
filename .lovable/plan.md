@@ -1,44 +1,57 @@
-## Audit du Mode Test (espace Admin)
+# Audit — Soumission CCC bloquée par "Erreur de téléchargement"
 
-Périmètre audité : `AdminTestMode.tsx`, `useTestMode`, `useTestDataActions`, `useTestGenerationJob`, `useTestDataStats`, edge functions `generate-test-data` + `cleanup-test-data-batch`, registres front/edge (`cleanupSteps`, `testEntities`, `generationStepsRegistry`), composants UI (`TestModeConfigCard`, `TestDataStatsCard`, `GenerationProgress`, `CleanupProgress`, `TestDryRunButton`, `TestDataExportButton`, `TestCleanupHistoryCard`, `TestCronStatusCard`, `TestEnvironmentBanner`, `billing/TestModeBanner`), trigger anti-prod et doc `docs/TEST_MODE.md`.
+## Cause racine identifiée
 
-### Bugs confirmés
+Le bucket `cadastral-documents` a été passé en **privé** avec une RLS stricte :
 
-1. **Recovery 409 cassé dans `useTestGenerationJob.startJob`** — quand l'edge function renvoie 409 (job déjà actif), `supabase.functions.invoke` met `error` et `data=null`, donc la branche `body.active_job_id` n'est jamais atteinte. L'admin voit un message générique au lieu de récupérer le job actif. Lire `error.context?.body` (Response) pour récupérer le JSON 409 et exposer `active_job_id`.
+```sql
+INSERT policy "Users can upload their own documents":
+  bucket_id = 'cadastral-documents'
+  AND auth.uid()::text = (storage.foldername(name))[1]
+```
 
-2. **Stale closure dans `AdminTestMode.saveConfiguration`** — après activation, `if (wasJustEnabled && total === 0) generateTestData()` lit `total` capturé avant `refreshStats()` (snapshot pré-refresh). Peut auto-générer alors que des données existent ou ne pas générer alors qu'il faudrait. Solution : faire retourner le total par `refreshStats()` et utiliser cette valeur, ou déplacer la décision côté hook.
+→ Le **premier segment** du chemin DOIT être l'`user.id`.
 
-3. **Polling stale dans `useTestGenerationJob`** — `setInterval(() => { if (job && FINISHED.has(job.status)) return; fetchJob(); }, 4000)` capture `job` à la création de l'effet (deps = `[jobId]`), donc le garde ne déclenche jamais et on continue à puller un job déjà terminé jusqu'à démontage. Utiliser une ref ou ajouter `job?.status` aux deps.
+Mais `src/hooks/useCCCFormState.ts` (`uploadFile`, ligne 276) écrit toujours :
 
-4. **Channel Realtime collision dans `useTestMode`** — `supabase.channel('test-mode-changes')` est créé avec un nom statique réutilisé par 5 consommateurs (AdminTestMode, AdminPaymentMode, AdminPaymentMethods, AdminDashboardHeader, useCadastralPayment). Les channels Supabase requièrent un nom unique ; les abonnements suivants peuvent être ignorés silencieusement. Suffixer avec un id stable (ex. `test-mode-changes-${useId()}`) ou centraliser via un contexte unique.
+```ts
+const filePath = `${path}/${fileName}`;
+// ex: "owner-documents/uuid.pdf"  ← refusé par RLS
+```
 
-### Dette / risques de dérive
+Conséquence : `supabase.storage.upload` retourne une erreur RLS → `uploadFile` renvoie `null` → toast **"Impossible de télécharger le document du propriétaire"** et la soumission s'arrête. Le même bug touche aussi tous les autres uploads du formulaire (titre, reçus taxes, hypothèques, autorisations, plans/photos d'autorisation), mais la première étape échoue avant qu'on les voie.
 
-5. **Code mort à supprimer** : `src/components/admin/test-mode/generators/*`, `testDataGenerators.ts`, `generationStepsRegistry.ts` — non importés (génération désormais 100 % serveur). Garder ces fichiers entretient le mythe d'un mirroring client/serveur (cf. point 8).
+C'est une régression : `StepDocuments.tsx` (subdivision) et `useCadastralPayment` utilisent déjà `${userId}/...`. Seul `useCCCFormState` n'a pas été migré.
 
-6. **Doublon `cleanupSteps.ts`** — copie manuelle entre `src/components/admin/test-mode/cleanupSteps.ts` et `supabase/functions/_shared/cleanupSteps.ts`. Pas de test pour vérifier la sync. Réimporter directement depuis `supabase/functions/_shared/cleanupSteps.ts` côté front (chemin relatif TS, juste un `export const`) pour avoir une source unique.
+## Bugs additionnels détectés pendant l'audit
 
-7. **Garde redondant + parfois trompeur dans `generateTestData`** — la requête `.like('parcel_number', 'TEST-%')` re-vérifie ce que le bouton n'expose déjà que quand `total === 0`. À supprimer (dupliqué) ou à remplacer par un appel à `count_test_data_stats` pour cohérence avec le reste de l'admin.
+1. **Toast trompeur** — le titre "Erreur de téléchargement" parle d'un upload réussi côté UX. À renommer "Erreur d'envoi" / "Échec de l'envoi du document".
+2. **Cause RLS masquée** — `uploadFile` log juste `console.error('Upload error', uploadError)` mais n'expose pas le message dans le toast. L'utilisateur ne voit jamais "row violates row-level security". Ajouter le message d'erreur Supabase dans le toast (description) pour faciliter le diagnostic futur.
+3. **Aucun garde-fou `user.id`** — si la session expire pendant l'upload (token rafraîchi mais `user` momentanément null), `uploadFile` continue avec un path invalide. Vérifier `user?.id` avant chaque cycle d'upload et redemander auth si manquant.
+4. **`fileExt` peut être undefined** quand le fichier n'a pas d'extension (ex: copie d'écran iOS) → `filePath` se termine par `.undefined`. Ajouter un fallback `'bin'`.
 
-8. **Doc `docs/TEST_MODE.md` désynchronisée** :
-   - Affirme que les générateurs serveur sont « la copie miroir de `src/components/admin/test-mode/generators/` » — faux depuis la migration vers `EdgeRuntime.waitUntil`.
-   - Annonce « 10 tables » pour le trigger anti-prod alors que la liste de cleanup en couvre 23 entités (mortgage_payments, expertise_payments, building_permits, lots/roads de lotissement, certificats, etc. ne sont pas protégés au INSERT prod).
-   Mettre à jour la doc et signaler les 7 entités sans garde anti-prod (sans étendre le trigger, qui sortirait du périmètre frontend de cette tâche).
+## Plan de correction (frontend uniquement)
 
-### Hors-scope (à mentionner sans changer)
+### 1. `src/hooks/useCCCFormState.ts`
+- Modifier `uploadFile(file, subPath)` :
+  - Récupérer `user?.id` (déjà disponible via `useAuth`) — abandonner avec un toast clair si absent.
+  - Construire `const filePath = \`${user.id}/${subPath}/${crypto.randomUUID()}.${ext || 'bin'}\``.
+  - En cas d'`uploadError`, propager le message dans le toast appelant via une `Error` personnalisée OU ajouter le `uploadError.message` à la description du toast.
+- Mettre à jour le toast titre : "Échec de l'envoi du document".
 
-- Banner global "test mode actif" absent de l'espace admin (seules les routes `/test/*` affichent un badge). À discuter séparément si souhaité.
-- `TestDataExportButton` exporte toutes les colonnes y compris potentiellement PII — suffixe TEST mais valeurs réalistes. À confirmer si on doit redacter.
+### 2. Vérifier les autres lecteurs
+Les `signedUrl` créés ne changent pas (le path absolu est stocké dans `cadastral_contributions.owner_document_url`, etc.) ; les composants admin (`CCCDetailsDialog`, `OwnerSection`) lisent l'URL signée telle quelle → aucune migration de données nécessaire.
 
-### Plan d'exécution
+### 3. (optionnel) Documenter la convention
+Ajouter un commentaire au-dessus de `uploadFile` expliquant la contrainte RLS pour éviter une future régression. Mémoire projet déjà présente (`file-storage-naming-standard-fr`) — la mettre à jour si besoin.
 
-1. Fix #1 — récupérer le 409 via `error.context.body` dans `useTestGenerationJob.startJob`.
-2. Fix #2 — `useTestDataStats.refresh()` retourne `{ stats, total }` ; `AdminTestMode` lit la valeur retournée.
-3. Fix #3 — déplacer `job` dans une ref synchronisée pour le poll.
-4. Fix #4 — channel name unique par instance via `useId()`.
-5. Fix #5 — supprimer `generators/`, `testDataGenerators.ts`, `generationStepsRegistry.ts`.
-6. Fix #6 — front `cleanupSteps.ts` réexporte depuis le shared edge (`../../../supabase/functions/_shared/cleanupSteps`).
-7. Fix #7 — retirer le pré-check `.like(...)` dans `generateTestData` (déjà gardé par l'UI + l'edge function).
-8. Fix #8 — réécrire la section concernée de `docs/TEST_MODE.md` (mirroring + couverture trigger).
+## Hors-périmètre (non corrigé)
+- Pas de migration SQL : la RLS actuelle est correcte (sécurité PII).
+- Pas de modification des autres formulaires (subdivision, mutation, expertise) — déjà conformes.
+- Pas de changement du modèle de données.
 
-Aucune migration SQL. Aucun changement d'API edge function. Périmètre purement front + doc.
+## Vérification post-fix
+1. Compléter le formulaire CCC, joindre un document propriétaire, soumettre → upload OK, contribution créée.
+2. Vérifier dans Supabase Storage que le chemin commence par `<user.id>/owner-documents/...`.
+3. Vérifier que l'admin peut toujours ouvrir le document via la signed URL stockée.
+
