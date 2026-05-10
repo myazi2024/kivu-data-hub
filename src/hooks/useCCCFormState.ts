@@ -273,19 +273,42 @@ export const useCCCFormState = ({
   };
 
   // Tracker des fichiers uploadés (extrait dans useFormPersistence — exposé via trackUploadedPath/rollbackUploadedFiles/resetUploadedTracker)
+  // IMPORTANT: La RLS du bucket privé `cadastral-documents` exige que le PREMIER segment
+  // du chemin soit l'`auth.uid()`. Toute déviation provoque un refus silencieux (RLS) et
+  // un échec de soumission CCC. Ne jamais retirer le préfixe `${userId}/`.
+  const lastUploadErrorRef = useRef<string | null>(null);
   const uploadFile = async (file: File, path: string): Promise<string | null> => {
     try {
-      const fileExt = file.name.split('.').pop();
+      const userId = user?.id || (await supabase.auth.getSession()).data.session?.user?.id;
+      if (!userId) {
+        lastUploadErrorRef.current = "Session expirée — reconnectez-vous.";
+        console.error('Upload aborted: no authenticated user');
+        return null;
+      }
+      const fileExt = (file.name.split('.').pop() || 'bin').toLowerCase();
       const fileName = `${crypto.randomUUID()}.${fileExt}`;
-      const filePath = `${path}/${fileName}`;
+      const filePath = `${userId}/${path}/${fileName}`;
       const { error: uploadError } = await supabase.storage.from('cadastral-documents').upload(filePath, file);
-      if (uploadError) { console.error('Upload error:', uploadError); return null; }
+      if (uploadError) {
+        console.error('Upload error:', uploadError);
+        lastUploadErrorRef.current = uploadError.message || "Upload refusé.";
+        return null;
+      }
       // Tracker pour rollback éventuel
       trackUploadedPath(filePath);
       const { data: signedData, error: signedError } = await supabase.storage.from('cadastral-documents').createSignedUrl(filePath, 60 * 60 * 24 * 365 * 10);
-      if (signedError || !signedData?.signedUrl) { console.error('Signed URL error:', signedError); return null; }
+      if (signedError || !signedData?.signedUrl) {
+        console.error('Signed URL error:', signedError);
+        lastUploadErrorRef.current = signedError?.message || "URL signée indisponible.";
+        return null;
+      }
+      lastUploadErrorRef.current = null;
       return signedData.signedUrl;
-    } catch (error) { console.error('Error uploading file:', error); return null; }
+    } catch (error: any) {
+      console.error('Error uploading file:', error);
+      lastUploadErrorRef.current = error?.message || "Erreur inconnue.";
+      return null;
+    }
   };
 
   // ─── CRUD: Previous owners ───
