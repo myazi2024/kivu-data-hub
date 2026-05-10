@@ -799,12 +799,12 @@ export const useCCCFormState = ({
       let titleDocUrls: string[] = [];
       if (ownerDocFile) {
         ownerDocUrl = await uploadFile(ownerDocFile, 'owner-documents');
-        if (!ownerDocUrl) { await rollbackUploadedFiles(); toast({ title: "Erreur de téléchargement", description: "Impossible de télécharger le document du propriétaire", variant: "destructive" }); setUploading(false); return; }
+        if (!ownerDocUrl) { await rollbackUploadedFiles(); toast({ title: "Échec de l'envoi du document", description: lastUploadErrorRef.current || "Impossible d'envoyer le document du propriétaire.", variant: "destructive" }); setUploading(false); return; }
       }
       if (titleDocFiles.length > 0) {
         for (const file of titleDocFiles) {
           const url = await uploadFile(file, 'title-documents');
-          if (!url) { await rollbackUploadedFiles(); toast({ title: "Erreur de téléchargement", description: "Impossible de télécharger un document de titre", variant: "destructive" }); setUploading(false); return; }
+          if (!url) { await rollbackUploadedFiles(); toast({ title: "Échec de l'envoi du document", description: lastUploadErrorRef.current || "Impossible d'envoyer un document de titre.", variant: "destructive" }); setUploading(false); return; }
           titleDocUrls.push(url);
         }
       }
