@@ -119,9 +119,10 @@ export const CCCDetailsDialog: React.FC<CCCDetailsDialogProps> = ({
             </div>
 
             <Tabs defaultValue="general" className="w-full">
-              <TabsList className="grid w-full grid-cols-3 md:grid-cols-6 h-8 md:h-10">
+              <TabsList className="grid w-full grid-cols-4 md:grid-cols-7 h-8 md:h-10">
                 <TabsTrigger value="general" className="text-xs md:text-sm px-1 md:px-3">Général</TabsTrigger>
                 <TabsTrigger value="location" className="text-xs md:text-sm px-1 md:px-3">Localisation</TabsTrigger>
+                <TabsTrigger value="environment" className="text-xs md:text-sm px-1 md:px-3">Env. & Occup.</TabsTrigger>
                 <TabsTrigger value="permits" className="text-xs md:text-sm px-1 md:px-3">Permis</TabsTrigger>
                 <TabsTrigger value="history" className="text-xs md:text-sm px-1 md:px-3">Historiques</TabsTrigger>
                 <TabsTrigger value="obligations" className="text-xs md:text-sm px-1 md:px-3">Obligations</TabsTrigger>
@@ -298,6 +299,56 @@ export const CCCDetailsDialog: React.FC<CCCDetailsDialogProps> = ({
                         </div>
                       ))}
                     </div>
+                  </div>
+                )}
+              </TabsContent>
+
+              {/* Environnement & Occupation */}
+              <TabsContent value="environment" className="space-y-2 md:space-y-3 mt-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 md:gap-3">
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Environnement sonore</Label>
+                    <p className="text-sm">{contribution.sound_environment || 'Non renseigné'}</p>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Sources de bruit à proximité</Label>
+                    <p className="text-sm">{contribution.nearby_noise_sources || 'Non renseigné'}</p>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Bien occupé ?</Label>
+                    <p className="text-sm">{contribution.is_occupied === true ? 'Oui' : contribution.is_occupied === false ? 'Non' : 'Non renseigné'}</p>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Nombre d'occupants</Label>
+                    <p className="text-sm">{contribution.occupant_count ?? 'Non renseigné'}</p>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Capacité d'accueil</Label>
+                    <p className="text-sm">{contribution.hosting_capacity ?? 'Non renseigné'}</p>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Date de début de location</Label>
+                    <p className="text-sm">{contribution.rental_start_date ? new Date(contribution.rental_start_date).toLocaleDateString('fr-FR') : 'Non applicable'}</p>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Origine du formulaire</Label>
+                    <p className="text-sm">{contribution.source_form_type || 'ccc'}</p>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Type de contribution</Label>
+                    <p className="text-sm">{contribution.contribution_type === 'update' ? 'Mise à jour' : contribution.contribution_type || 'Initiale'}</p>
+                  </div>
+                </div>
+
+                {contribution.contribution_type === 'update' && (contribution.changed_fields || contribution.change_justification) && (
+                  <div className="p-2 md:p-3 bg-secondary rounded">
+                    <Label className="text-xs text-muted-foreground">Modifications justifiées</Label>
+                    {contribution.change_justification && (
+                      <p className="text-sm mt-1">{contribution.change_justification}</p>
+                    )}
+                    {contribution.changed_fields && Array.isArray(contribution.changed_fields) && contribution.changed_fields.length > 0 && (
+                      <p className="text-xs text-muted-foreground mt-1">Champs modifiés : {contribution.changed_fields.join(', ')}</p>
+                    )}
                   </div>
                 )}
               </TabsContent>
