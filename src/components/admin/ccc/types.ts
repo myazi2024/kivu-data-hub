@@ -66,6 +66,16 @@ export interface Contribution {
   whatsapp_number: string | null;
   owner_document_url: string | null;
   property_title_document_url: string | null;
+  // Champs envoyés par le formulaire CCC mais auparavant absents du typage Admin
+  sound_environment: string | null;
+  nearby_noise_sources: string | null;
+  is_occupied: boolean | null;
+  occupant_count: number | null;
+  hosting_capacity: number | null;
+  rental_start_date: string | null;
+  source_form_type: string | null;
+  changed_fields: any;
+  change_justification: string | null;
   appeal_submitted: boolean | null;
   appeal_status: string | null;
   appeal_data: any;
