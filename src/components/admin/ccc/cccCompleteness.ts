@@ -1,10 +1,11 @@
 /**
  * CCC contribution completeness score (0-100).
- * Counts 16 key fields filled in the contribution payload.
+ * Counts 20 key fields filled in the contribution payload.
+ * Aligned with the full CCC form (incl. environment & occupancy).
  */
 export const calculateCCCCompleteness = (contribution: any): number => {
   let filled = 0;
-  const total = 16;
+  const total = 20;
 
   if (contribution.property_title_type) filled++;
   if (contribution.current_owner_name || contribution.current_owners_details) filled++;
@@ -20,8 +21,13 @@ export const calculateCCCCompleteness = (contribution: any): number => {
   if (contribution.property_title_document_url) filled++;
   if (contribution.building_shapes && Array.isArray(contribution.building_shapes) && contribution.building_shapes.length > 0) filled++;
   if (contribution.road_sides && Array.isArray(contribution.road_sides) && contribution.road_sides.length > 0) filled++;
-  if (contribution.has_dispute !== null) filled++;
+  if (contribution.has_dispute !== null && contribution.has_dispute !== undefined) filled++;
   if (contribution.whatsapp_number) filled++;
+  // Nouveaux champs (alignés au formulaire CCC complet)
+  if (contribution.sound_environment) filled++;
+  if (contribution.is_occupied !== null && contribution.is_occupied !== undefined) filled++;
+  if (contribution.declared_usage) filled++;
+  if (contribution.construction_nature || contribution.construction_materials) filled++;
 
   return Math.round((filled / total) * 100);
 };
