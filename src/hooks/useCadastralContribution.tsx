@@ -193,6 +193,19 @@ export const useCadastralContribution = () => {
   const { toast } = useToast();
   const { user } = useAuth();
 
+  // Helpers de sanitisation : éviter d'envoyer '' sur des colonnes DATE/INTEGER/NUMERIC
+  // (le cast Postgres explose et fait échouer tout l'INSERT silencieusement).
+  const blank = (v: unknown) => v === '' || v === undefined ? null : v;
+  const blankDate = (v: unknown) => {
+    const s = (v ?? '').toString().trim();
+    return s ? s : null;
+  };
+  const blankNum = (v: unknown) => {
+    if (v === '' || v === undefined || v === null) return null;
+    const n = Number(v);
+    return Number.isFinite(n) ? n : null;
+  };
+
   // Shared payload builder to avoid duplication between insert and update
   // Converts camelCase nested JSON to snake_case for DB trigger compatibility
   const buildContributionPayload = (data: CadastralContributionData) => {
