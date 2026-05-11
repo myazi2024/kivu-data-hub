@@ -82,8 +82,6 @@ export interface Contribution {
   appeal_submission_date: string | null;
   contribution_type: string;
   original_parcel_id: string | null;
-  changed_fields: any;
-  change_justification: string | null;
 }
 
 export interface ContributionStats {
