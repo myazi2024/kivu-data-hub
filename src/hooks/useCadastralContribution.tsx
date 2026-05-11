@@ -269,10 +269,10 @@ export const useCadastralContribution = () => {
       parcel_type: data.parcelType,
       property_title_type: data.propertyTitleType,
       lease_type: data.leaseType,
-      lease_years: data.leaseYears || null,
+      lease_years: blankNum(data.leaseYears),
       is_title_in_current_owner_name: data.isTitleInCurrentOwnerName ?? null,
-      title_reference_number: data.titleReferenceNumber,
-      title_issue_date: data.titleIssueDate,
+      title_reference_number: blank(data.titleReferenceNumber),
+      title_issue_date: blankDate(data.titleIssueDate),
       current_owners_details: data.currentOwners && data.currentOwners.length > 0 
         ? data.currentOwners.map(o => ({ ...o, since: blankDate(o.since) }))
         : null,
