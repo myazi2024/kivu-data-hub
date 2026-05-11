@@ -274,7 +274,7 @@ export const useCadastralContribution = () => {
       title_reference_number: data.titleReferenceNumber,
       title_issue_date: data.titleIssueDate,
       current_owners_details: data.currentOwners && data.currentOwners.length > 0 
-        ? data.currentOwners 
+        ? data.currentOwners.map(o => ({ ...o, since: blankDate(o.since) }))
         : null,
       current_owner_name: data.currentOwners && data.currentOwners.length > 0 
         ? data.currentOwners.map(o => `${o.lastName}${o.middleName ? ' ' + o.middleName : ''} ${o.firstName}`).join('; ')
@@ -283,24 +283,23 @@ export const useCadastralContribution = () => {
         ? data.currentOwners[0].legalStatus 
         : undefined,
       current_owner_since: data.currentOwners && data.currentOwners.length > 0 
-        ? data.currentOwners[0].since 
+        ? blankDate(data.currentOwners[0].since)
         : undefined,
-      area_sqm: data.areaSqm,
+      area_sqm: blankNum(data.areaSqm),
       parcel_sides: data.parcelSides,
-      // FIX: Persist propertyCategory, apartmentNumber, floorNumber to DB
-      property_category: data.propertyCategory || null,
-      apartment_number: data.apartmentNumber || null,
-      floor_number: data.floorNumber || null,
-      construction_type: data.constructionType,
-      construction_nature: data.constructionNature,
-      construction_materials: data.constructionMaterials || null,
-      construction_year: data.constructionYear || null,
+      property_category: blank(data.propertyCategory),
+      apartment_number: blank(data.apartmentNumber),
+      floor_number: blank(data.floorNumber),
+      construction_type: blank(data.constructionType),
+      construction_nature: blank(data.constructionNature),
+      construction_materials: blank(data.constructionMaterials),
+      construction_year: blankNum(data.constructionYear),
       is_occupied: data.isOccupied ?? null,
-      occupant_count: data.occupantCount || null,
-      hosting_capacity: data.hostingCapacity || null,
-      declared_usage: data.declaredUsage,
-      standing: data.standing || null,
-      rental_start_date: data.rentalStartDate || null,
+      occupant_count: blankNum(data.occupantCount),
+      hosting_capacity: blankNum(data.hostingCapacity),
+      declared_usage: blank(data.declaredUsage),
+      standing: blank(data.standing),
+      rental_start_date: blankDate(data.rentalStartDate),
       building_permits: buildingPermitsSnake,
       previous_permit_number: data.previousPermitNumber || data.permitRequest?.originalPermitNumber,
       province: data.province,
