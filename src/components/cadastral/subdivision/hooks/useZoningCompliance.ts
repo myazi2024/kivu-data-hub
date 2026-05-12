@@ -151,6 +151,70 @@ export const useZoningCompliance = (
       });
     }
 
+    // === Drainage canal (per road) ===
+    if (rule.require_drainage_canal) {
+      roads.forEach(road => {
+        const dc = road.drainageCanal;
+        const target = road.name || 'Voie';
+        if (!dc) {
+          out.push({ code: 'CANAL_MISSING', severity: 'error', target, message: `Canal d'évacuation des eaux usées requis sur ${target}.` });
+          return;
+        }
+        if (rule.drainage_canal_min_width_m && (dc.widthM || 0) < rule.drainage_canal_min_width_m) {
+          out.push({ code: 'CANAL_TOO_NARROW', severity: 'error', target, message: `Largeur canal ${dc.widthM} m < min ${rule.drainage_canal_min_width_m} m.` });
+        }
+        if (rule.drainage_canal_min_depth_m && (dc.depthM || 0) < rule.drainage_canal_min_depth_m) {
+          out.push({ code: 'CANAL_TOO_SHALLOW', severity: 'error', target, message: `Profondeur canal ${dc.depthM} m < min ${rule.drainage_canal_min_depth_m} m.` });
+        }
+        if (rule.drainage_canal_allowed_materials && rule.drainage_canal_allowed_materials.length > 0
+            && dc.material && !rule.drainage_canal_allowed_materials.includes(dc.material)) {
+          out.push({ code: 'CANAL_BAD_MATERIAL', severity: 'error', target, message: `Matériau « ${dc.material} » non autorisé.` });
+        }
+        if (rule.drainage_canal_allowed_types && rule.drainage_canal_allowed_types.length > 0
+            && dc.type && !rule.drainage_canal_allowed_types.includes(dc.type)) {
+          out.push({ code: 'CANAL_BAD_TYPE', severity: 'error', target, message: `Type « ${dc.type} » non autorisé.` });
+        }
+        if (rule.drainage_canal_min_slope_pct && (dc.slopePct || 0) < rule.drainage_canal_min_slope_pct) {
+          out.push({ code: 'CANAL_SLOPE_LOW', severity: 'error', target, message: `Pente ${dc.slopePct ?? 0}% < min ${rule.drainage_canal_min_slope_pct}%.` });
+        }
+        const reqSide = rule.drainage_canal_required_sides;
+        if (reqSide && reqSide !== 'any' && dc.side && dc.side !== reqSide && !(reqSide === 'both' && dc.side === 'both')) {
+          out.push({ code: 'CANAL_BAD_SIDE', severity: 'error', target, message: `Côté requis : ${reqSide}, fourni : ${dc.side}.` });
+        }
+      });
+    }
+
+    // === Solar lighting (per road) ===
+    if (rule.require_solar_lighting) {
+      roads.forEach(road => {
+        const sl = road.solarLighting;
+        const target = road.name || 'Voie';
+        if (!sl) {
+          out.push({ code: 'LIGHTING_MISSING', severity: 'error', target, message: `Éclairage public solaire requis sur ${target}.` });
+          return;
+        }
+        if (rule.solar_lighting_min_pole_height_m && (sl.poleHeightM || 0) < rule.solar_lighting_min_pole_height_m) {
+          out.push({ code: 'LIGHTING_POLE_LOW', severity: 'error', target, message: `Hauteur mât ${sl.poleHeightM} m < min ${rule.solar_lighting_min_pole_height_m} m.` });
+        }
+        if (rule.solar_lighting_min_lumens && (sl.lumens || 0) < rule.solar_lighting_min_lumens) {
+          out.push({ code: 'LIGHTING_LUMENS_LOW', severity: 'error', target, message: `Lumens ${sl.lumens} < min ${rule.solar_lighting_min_lumens}.` });
+        }
+        if (rule.solar_lighting_beam_angle_deg && sl.beamAngleDeg && sl.beamAngleDeg > rule.solar_lighting_beam_angle_deg) {
+          out.push({ code: 'LIGHTING_BEAM_WIDE', severity: 'error', target, message: `Faisceau ${sl.beamAngleDeg}° > max ${rule.solar_lighting_beam_angle_deg}°.` });
+        }
+        if (rule.solar_lighting_max_spacing_m && sl.spacingM && sl.spacingM > rule.solar_lighting_max_spacing_m) {
+          out.push({ code: 'LIGHTING_SPACING_HIGH', severity: 'error', target, message: `Espacement ${sl.spacingM} m > max ${rule.solar_lighting_max_spacing_m} m.` });
+        }
+        if (rule.solar_lighting_min_battery_hours && (sl.batteryHours || 0) < rule.solar_lighting_min_battery_hours) {
+          out.push({ code: 'LIGHTING_BATTERY_LOW', severity: 'error', target, message: `Autonomie ${sl.batteryHours} h < min ${rule.solar_lighting_min_battery_hours} h.` });
+        }
+        const reqSide = rule.solar_lighting_required_sides;
+        if (reqSide && reqSide !== 'any' && sl.side && sl.side !== reqSide && !(reqSide === 'both' && sl.side === 'both')) {
+          out.push({ code: 'LIGHTING_BAD_SIDE', severity: 'error', target, message: `Côté requis : ${reqSide}, fourni : ${sl.side}.` });
+        }
+      });
+    }
+
     // Espace commun minimal
     if (rule.min_common_space_pct > 0 && metrics.commonSpacePct < rule.min_common_space_pct) {
       out.push({
