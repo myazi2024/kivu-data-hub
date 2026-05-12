@@ -1265,6 +1265,7 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
             canvasMode={canvasMode}
             setCanvasMode={setCanvasMode}
             hasMultipleLots={lots.length >= 2}
+            zoningRule={zoningRule}
           />
 
           {/* Common Spaces */}
