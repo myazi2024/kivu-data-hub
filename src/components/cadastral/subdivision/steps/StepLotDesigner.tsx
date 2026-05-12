@@ -97,7 +97,7 @@ function segmentSegmentIntersection(
 const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
   parentParcel, parentVertices, parentSides, lots, setLots, roads, setRoads,
   commonSpaces, setCommonSpaces, servitudes, setServitudes, lotIds,
-  onCreateInitialLot, validation, canUndo, canRedo, onUndo, onRedo
+  onCreateInitialLot, validation, canUndo, canRedo, onUndo, onRedo, zoningRule,
 }) => {
   const { trackAdminAction } = useAdminAnalytics();
   const [selectedLotId, setSelectedLotIdState] = useState<string | null>(null);
