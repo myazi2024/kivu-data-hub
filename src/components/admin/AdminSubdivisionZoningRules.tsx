@@ -415,6 +415,20 @@ const AdminSubdivisionZoningRules: React.FC = () => {
       exclude_title_types: (r.exclude_title_types || []).join(', '),
       notes: r.notes ?? '',
       is_active: r.is_active,
+      require_drainage_canal: !!r.require_drainage_canal,
+      drainage_canal_min_width_m: r.drainage_canal_min_width_m != null ? String(r.drainage_canal_min_width_m) : '',
+      drainage_canal_min_depth_m: r.drainage_canal_min_depth_m != null ? String(r.drainage_canal_min_depth_m) : '',
+      drainage_canal_allowed_materials: r.drainage_canal_allowed_materials || [],
+      drainage_canal_allowed_types: r.drainage_canal_allowed_types || [],
+      drainage_canal_min_slope_pct: r.drainage_canal_min_slope_pct != null ? String(r.drainage_canal_min_slope_pct) : '',
+      drainage_canal_required_sides: r.drainage_canal_required_sides || 'any',
+      require_solar_lighting: !!r.require_solar_lighting,
+      solar_lighting_min_pole_height_m: r.solar_lighting_min_pole_height_m != null ? String(r.solar_lighting_min_pole_height_m) : '',
+      solar_lighting_min_lumens: r.solar_lighting_min_lumens != null ? String(r.solar_lighting_min_lumens) : '',
+      solar_lighting_beam_angle_deg: r.solar_lighting_beam_angle_deg != null ? String(r.solar_lighting_beam_angle_deg) : '',
+      solar_lighting_max_spacing_m: r.solar_lighting_max_spacing_m != null ? String(r.solar_lighting_max_spacing_m) : '',
+      solar_lighting_min_battery_hours: r.solar_lighting_min_battery_hours != null ? String(r.solar_lighting_min_battery_hours) : '',
+      solar_lighting_required_sides: r.solar_lighting_required_sides || 'any',
     });
     setDialogOpen(true);
   };
