@@ -14,6 +14,21 @@ export interface ZoningRule {
   max_lots_per_request: number | null;
   notes: string | null;
   is_active: boolean;
+  // --- Per-road infrastructure constraints ---
+  require_drainage_canal?: boolean;
+  drainage_canal_min_width_m?: number | null;
+  drainage_canal_min_depth_m?: number | null;
+  drainage_canal_allowed_materials?: string[];
+  drainage_canal_allowed_types?: string[];
+  drainage_canal_min_slope_pct?: number | null;
+  drainage_canal_required_sides?: string;
+  require_solar_lighting?: boolean;
+  solar_lighting_min_pole_height_m?: number | null;
+  solar_lighting_min_lumens?: number | null;
+  solar_lighting_beam_angle_deg?: number | null;
+  solar_lighting_max_spacing_m?: number | null;
+  solar_lighting_min_battery_hours?: number | null;
+  solar_lighting_required_sides?: string;
 }
 
 /**
