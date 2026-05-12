@@ -52,21 +52,20 @@ export const useLeafletMap = ({ containerRef, ready, onParcelClick }: UseLeaflet
   onParcelClickRef.current = onParcelClick;
   const [mapReady, setMapReady] = useState(false);
 
-  // Init map once container is ready
+  // Init map once container is ready (independent of data loading)
   useEffect(() => {
-    if (!ready || !containerRef.current || mapRef.current) return;
+    if (!containerRef.current || mapRef.current) return;
 
     let cancelled = false;
+    let resizeObs: ResizeObserver | null = null;
     (async () => {
       const L = await import('leaflet');
       await import('leaflet.markercluster');
-      // Marker cluster CSS
       await import('leaflet.markercluster/dist/MarkerCluster.css' as any).catch(() => {});
       await import('leaflet.markercluster/dist/MarkerCluster.Default.css' as any).catch(() => {});
       if (cancelled || !containerRef.current) return;
 
       LRef.current = L;
-      // Bundle-served marker icons (no CDN dependency)
       delete (L as any).Icon.Default.prototype._getIconUrl;
       L.Icon.Default.mergeOptions({
         iconRetinaUrl: markerIcon2x,
@@ -85,11 +84,21 @@ export const useLeafletMap = ({ containerRef, ready, onParcelClick }: UseLeaflet
 
       mapRef.current = map;
       setMapReady(true);
-      setTimeout(() => map.invalidateSize(), 100);
+      // Multi-pass invalidateSize: container peut grandir pendant le mount (auth, tabs, etc.)
+      [50, 200, 500, 1000].forEach(d => setTimeout(() => map.invalidateSize(), d));
+
+      // Recalcule à chaque changement de taille du conteneur
+      if (typeof ResizeObserver !== 'undefined' && containerRef.current) {
+        resizeObs = new ResizeObserver(() => {
+          try { map.invalidateSize(); } catch { /* noop */ }
+        });
+        resizeObs.observe(containerRef.current);
+      }
     })();
 
     return () => {
       cancelled = true;
+      if (resizeObs) { try { resizeObs.disconnect(); } catch { /* noop */ } }
       if (mapRef.current) {
         mapRef.current.remove();
         mapRef.current = null;
@@ -99,7 +108,7 @@ export const useLeafletMap = ({ containerRef, ready, onParcelClick }: UseLeaflet
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ready]);
+  }, []);
 
   // Apply provider tiles (re-applied if provider changes)
   useEffect(() => {

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 export interface MapProvider {
@@ -91,11 +91,9 @@ export const useMapProvider = () => {
    * - Sinon : utilise directement le template (OSM, etc.).
    * Le paramètre `apiKey` est conservé pour rétro-compatibilité mais n'est plus utilisé.
    */
-  const getTileUrl = (_apiKey?: string): string => {
+  const getTileUrl = useCallback((_apiKey?: string): string => {
     const url = provider.tile_url_template;
     if (provider.requires_api_key) {
-      // Pour Mapbox : extraire styleId et router via edge function
-      // Pattern attendu: https://api.mapbox.com/styles/v1/{user}/{style}/tiles/{z}/{x}/{y}?access_token={apiKey}
       const m = url.match(/\/styles\/v1\/([^/]+)\/([^/]+)\/tiles/);
       if (m) {
         const supabaseUrl = (import.meta as any).env?.VITE_SUPABASE_URL;
@@ -105,12 +103,12 @@ export const useMapProvider = () => {
       }
     }
     return url;
-  };
+  }, [provider]);
 
   /**
    * Retourne les options Leaflet TileLayer depuis extra_config.
    */
-  const getTileLayerOptions = (apiKey?: string) => {
+  const getTileLayerOptions = useCallback((_apiKey?: string) => {
     const opts: Record<string, any> = {
       attribution: provider.attribution,
       maxZoom: provider.max_zoom,
@@ -123,7 +121,7 @@ export const useMapProvider = () => {
     if (extra.zoomOffset !== undefined) opts.zoomOffset = extra.zoomOffset;
 
     return opts;
-  };
+  }, [provider]);
 
   return { provider, allProviders, loading, getTileUrl, getTileLayerOptions, refetch: fetchProvider };
 };

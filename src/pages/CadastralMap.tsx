@@ -253,15 +253,15 @@ const CadastralMap = () => {
           }
         `}</style>
 
-        {loading ? (
-          <div className="absolute inset-0 flex items-center justify-center bg-muted/50">
+        {/* Conteneur Leaflet TOUJOURS monté pour garantir un parent dimensionné */}
+        <div ref={mapContainerRef} className="absolute inset-0" />
+        {loading && (
+          <div className="absolute inset-0 z-[500] flex items-center justify-center bg-background/60 backdrop-blur-sm pointer-events-none">
             <div className="text-center">
               <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
               <p className="text-muted-foreground">Chargement des parcelles...</p>
             </div>
           </div>
-        ) : (
-          <div ref={mapContainerRef} style={{ width: '100%', height: '100%' }} />
         )}
 
         {/* Stripe polling indicator */}
