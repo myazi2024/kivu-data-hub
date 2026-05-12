@@ -978,6 +978,146 @@ const AdminSubdivisionZoningRules: React.FC = () => {
 
             <Separator />
 
+            {/* Section 3.5 — Infrastructures par voie : canal eaux usées + éclairage solaire */}
+            <section className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Settings2 className="h-4 w-4 text-primary" />
+                <h3 className="text-sm font-semibold">Infrastructures requises par voie</h3>
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                Imposez la présence d'un canal d'évacuation et/ou d'un éclairage public solaire le long de chaque voie créée. Les seuils min/max sont vérifiés à la soumission.
+              </p>
+
+              {/* Canal eaux usées */}
+              <div className="rounded-lg border bg-card/50 p-3 space-y-3">
+                <label className="flex items-center justify-between gap-3 cursor-pointer">
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-xs font-semibold">Canal d'évacuation des eaux usées</span>
+                    <span className="text-[10px] text-muted-foreground">Obligatoire sur chaque voie créée du lotissement.</span>
+                  </div>
+                  <Switch checked={form.require_drainage_canal} onCheckedChange={v => setForm(f => ({ ...f, require_drainage_canal: v }))} />
+                </label>
+                <fieldset disabled={!form.require_drainage_canal} className="space-y-3 disabled:opacity-50 transition-opacity">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    <div className="space-y-1">
+                      <Label className="text-[11px]">Largeur min (m)</Label>
+                      <Input type="number" step="0.05" inputMode="decimal" value={form.drainage_canal_min_width_m} onChange={e => setForm(f => ({ ...f, drainage_canal_min_width_m: e.target.value }))} className="h-8 text-xs" />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[11px]">Profondeur min (m)</Label>
+                      <Input type="number" step="0.05" inputMode="decimal" value={form.drainage_canal_min_depth_m} onChange={e => setForm(f => ({ ...f, drainage_canal_min_depth_m: e.target.value }))} className="h-8 text-xs" />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[11px]">Pente min (%)</Label>
+                      <Input type="number" step="0.1" inputMode="decimal" value={form.drainage_canal_min_slope_pct} onChange={e => setForm(f => ({ ...f, drainage_canal_min_slope_pct: e.target.value }))} className="h-8 text-xs" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <Label className="text-[11px]">Matériaux autorisés</Label>
+                      <div className="flex flex-wrap gap-1.5 p-2 rounded border bg-background">
+                        {['beton','pvc','maconnerie','pierre','metal','composite'].map(m => {
+                          const checked = form.drainage_canal_allowed_materials.includes(m);
+                          return (
+                            <label key={m} className={`text-[11px] px-2 py-0.5 rounded border cursor-pointer ${checked ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted/40'}`}>
+                              <input type="checkbox" className="sr-only" checked={checked} onChange={e => setForm(f => ({
+                                ...f,
+                                drainage_canal_allowed_materials: e.target.checked
+                                  ? [...f.drainage_canal_allowed_materials, m]
+                                  : f.drainage_canal_allowed_materials.filter(x => x !== m),
+                              }))} />
+                              {m}
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[11px]">Types autorisés</Label>
+                      <div className="flex flex-wrap gap-1.5 p-2 rounded border bg-background">
+                        {['ouvert','couvert','enterre'].map(t => {
+                          const checked = form.drainage_canal_allowed_types.includes(t);
+                          return (
+                            <label key={t} className={`text-[11px] px-2 py-0.5 rounded border cursor-pointer ${checked ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted/40'}`}>
+                              <input type="checkbox" className="sr-only" checked={checked} onChange={e => setForm(f => ({
+                                ...f,
+                                drainage_canal_allowed_types: e.target.checked
+                                  ? [...f.drainage_canal_allowed_types, t]
+                                  : f.drainage_canal_allowed_types.filter(x => x !== t),
+                              }))} />
+                              {t}
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-[11px]">Côté requis</Label>
+                    <Select value={form.drainage_canal_required_sides} onValueChange={v => setForm(f => ({ ...f, drainage_canal_required_sides: v }))}>
+                      <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="any">Au choix</SelectItem>
+                        <SelectItem value="left">Gauche</SelectItem>
+                        <SelectItem value="right">Droite</SelectItem>
+                        <SelectItem value="both">Les deux côtés</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </fieldset>
+              </div>
+
+              {/* Éclairage public solaire */}
+              <div className="rounded-lg border bg-card/50 p-3 space-y-3">
+                <label className="flex items-center justify-between gap-3 cursor-pointer">
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-xs font-semibold">Éclairage public solaire</span>
+                    <span className="text-[10px] text-muted-foreground">Obligatoire le long de chaque voie créée.</span>
+                  </div>
+                  <Switch checked={form.require_solar_lighting} onCheckedChange={v => setForm(f => ({ ...f, require_solar_lighting: v }))} />
+                </label>
+                <fieldset disabled={!form.require_solar_lighting} className="space-y-3 disabled:opacity-50 transition-opacity">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    <div className="space-y-1">
+                      <Label className="text-[11px]">Hauteur mât min (m)</Label>
+                      <Input type="number" step="0.5" inputMode="decimal" value={form.solar_lighting_min_pole_height_m} onChange={e => setForm(f => ({ ...f, solar_lighting_min_pole_height_m: e.target.value }))} className="h-8 text-xs" />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[11px]">Lumens min</Label>
+                      <Input type="number" step="100" inputMode="numeric" value={form.solar_lighting_min_lumens} onChange={e => setForm(f => ({ ...f, solar_lighting_min_lumens: e.target.value }))} className="h-8 text-xs" />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[11px]">Faisceau max (°)</Label>
+                      <Input type="number" step="5" inputMode="numeric" value={form.solar_lighting_beam_angle_deg} onChange={e => setForm(f => ({ ...f, solar_lighting_beam_angle_deg: e.target.value }))} className="h-8 text-xs" />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[11px]">Espacement max (m)</Label>
+                      <Input type="number" step="1" inputMode="numeric" value={form.solar_lighting_max_spacing_m} onChange={e => setForm(f => ({ ...f, solar_lighting_max_spacing_m: e.target.value }))} className="h-8 text-xs" />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[11px]">Autonomie min (h)</Label>
+                      <Input type="number" step="1" inputMode="numeric" value={form.solar_lighting_min_battery_hours} onChange={e => setForm(f => ({ ...f, solar_lighting_min_battery_hours: e.target.value }))} className="h-8 text-xs" />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[11px]">Côté</Label>
+                      <Select value={form.solar_lighting_required_sides} onValueChange={v => setForm(f => ({ ...f, solar_lighting_required_sides: v }))}>
+                        <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="any">Au choix</SelectItem>
+                          <SelectItem value="left">Gauche</SelectItem>
+                          <SelectItem value="right">Droite</SelectItem>
+                          <SelectItem value="both">Les deux côtés</SelectItem>
+                          <SelectItem value="alternating">Alterné</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </fieldset>
+              </div>
+            </section>
+
+            <Separator />
+
             {/* Section 4 — Notes & statut */}
             <section className="space-y-3">
               <div className="flex items-center gap-2">
