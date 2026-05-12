@@ -486,6 +486,22 @@ const AdminSubdivisionZoningRules: React.FC = () => {
         .filter(Boolean),
       notes: form.notes.trim() || null,
       is_active: form.is_active,
+      // Drainage canal
+      require_drainage_canal: form.require_drainage_canal,
+      drainage_canal_min_width_m: form.drainage_canal_min_width_m ? parseFloat(form.drainage_canal_min_width_m) : null,
+      drainage_canal_min_depth_m: form.drainage_canal_min_depth_m ? parseFloat(form.drainage_canal_min_depth_m) : null,
+      drainage_canal_allowed_materials: form.drainage_canal_allowed_materials || [],
+      drainage_canal_allowed_types: form.drainage_canal_allowed_types || [],
+      drainage_canal_min_slope_pct: form.drainage_canal_min_slope_pct ? parseFloat(form.drainage_canal_min_slope_pct) : null,
+      drainage_canal_required_sides: form.drainage_canal_required_sides || 'any',
+      // Solar lighting
+      require_solar_lighting: form.require_solar_lighting,
+      solar_lighting_min_pole_height_m: form.solar_lighting_min_pole_height_m ? parseFloat(form.solar_lighting_min_pole_height_m) : null,
+      solar_lighting_min_lumens: form.solar_lighting_min_lumens ? parseInt(form.solar_lighting_min_lumens) : null,
+      solar_lighting_beam_angle_deg: form.solar_lighting_beam_angle_deg ? parseInt(form.solar_lighting_beam_angle_deg) : null,
+      solar_lighting_max_spacing_m: form.solar_lighting_max_spacing_m ? parseFloat(form.solar_lighting_max_spacing_m) : null,
+      solar_lighting_min_battery_hours: form.solar_lighting_min_battery_hours ? parseInt(form.solar_lighting_min_battery_hours) : null,
+      solar_lighting_required_sides: form.solar_lighting_required_sides || 'any',
     };
     const q = untypedTables.subdivision_zoning_rules();
     const { error } = editing
