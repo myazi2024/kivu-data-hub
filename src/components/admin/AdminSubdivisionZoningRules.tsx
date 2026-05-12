@@ -81,6 +81,22 @@ interface ZoningRule {
   is_active: boolean;
   created_at: string;
   updated_at: string;
+  // Drainage canal (per road)
+  require_drainage_canal?: boolean;
+  drainage_canal_min_width_m?: number | null;
+  drainage_canal_min_depth_m?: number | null;
+  drainage_canal_allowed_materials?: string[];
+  drainage_canal_allowed_types?: string[];
+  drainage_canal_min_slope_pct?: number | null;
+  drainage_canal_required_sides?: string;
+  // Solar lighting (per road)
+  require_solar_lighting?: boolean;
+  solar_lighting_min_pole_height_m?: number | null;
+  solar_lighting_min_lumens?: number | null;
+  solar_lighting_beam_angle_deg?: number | null;
+  solar_lighting_max_spacing_m?: number | null;
+  solar_lighting_min_battery_hours?: number | null;
+  solar_lighting_required_sides?: string;
 }
 
 const emptyForm = {
@@ -117,6 +133,22 @@ const emptyForm = {
   exclude_title_types: '' as string,
   notes: '',
   is_active: true,
+  // Drainage canal
+  require_drainage_canal: false,
+  drainage_canal_min_width_m: '',
+  drainage_canal_min_depth_m: '',
+  drainage_canal_allowed_materials: [] as string[],
+  drainage_canal_allowed_types: [] as string[],
+  drainage_canal_min_slope_pct: '',
+  drainage_canal_required_sides: 'any',
+  // Solar lighting
+  require_solar_lighting: false,
+  solar_lighting_min_pole_height_m: '',
+  solar_lighting_min_lumens: '',
+  solar_lighting_beam_angle_deg: '',
+  solar_lighting_max_spacing_m: '',
+  solar_lighting_min_battery_hours: '',
+  solar_lighting_required_sides: 'any',
 };
 
 /**
