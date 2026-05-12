@@ -51,6 +51,7 @@ interface StepLotDesignerProps {
   canRedo: boolean;
   onUndo: () => void;
   onRedo: () => void;
+  zoningRule?: import('@/hooks/useZoningRules').ZoningRule | null;
 }
 
 // Note: convex-hull merging was removed in P0 — replaced by polygonUnionMany
