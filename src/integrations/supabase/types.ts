@@ -6414,33 +6414,39 @@ export type Database = {
       subdivision_roads: {
         Row: {
           created_at: string
+          drainage_canal_data: Json | null
           gps_coordinates: Json | null
           id: string
           is_existing: boolean | null
           plan_coordinates: Json | null
           road_name: string | null
+          solar_lighting_data: Json | null
           subdivision_request_id: string
           surface_type: string | null
           width_m: number | null
         }
         Insert: {
           created_at?: string
+          drainage_canal_data?: Json | null
           gps_coordinates?: Json | null
           id?: string
           is_existing?: boolean | null
           plan_coordinates?: Json | null
           road_name?: string | null
+          solar_lighting_data?: Json | null
           subdivision_request_id: string
           surface_type?: string | null
           width_m?: number | null
         }
         Update: {
           created_at?: string
+          drainage_canal_data?: Json | null
           gps_coordinates?: Json | null
           id?: string
           is_existing?: boolean | null
           plan_coordinates?: Json | null
           road_name?: string | null
+          solar_lighting_data?: Json | null
           subdivision_request_id?: string
           surface_type?: string | null
           width_m?: number | null
@@ -6462,6 +6468,12 @@ export type Database = {
           allow_if_pending_mutation: boolean
           allow_if_pending_subdivision: boolean
           created_at: string
+          drainage_canal_allowed_materials: string[]
+          drainage_canal_allowed_types: string[]
+          drainage_canal_min_depth_m: number | null
+          drainage_canal_min_slope_pct: number | null
+          drainage_canal_min_width_m: number | null
+          drainage_canal_required_sides: string
           exclude_title_types: string[]
           id: string
           is_active: boolean
@@ -6478,9 +6490,17 @@ export type Database = {
           parent_max_area_sqm: number | null
           parent_min_area_sqm: number
           recommended_road_width_m: number
+          require_drainage_canal: boolean
           require_gps_coordinates: boolean
           require_registered_title: boolean
+          require_solar_lighting: boolean
           section_type: string
+          solar_lighting_beam_angle_deg: number | null
+          solar_lighting_max_spacing_m: number | null
+          solar_lighting_min_battery_hours: number | null
+          solar_lighting_min_lumens: number | null
+          solar_lighting_min_pole_height_m: number | null
+          solar_lighting_required_sides: string
           updated_at: string
         }
         Insert: {
@@ -6489,6 +6509,12 @@ export type Database = {
           allow_if_pending_mutation?: boolean
           allow_if_pending_subdivision?: boolean
           created_at?: string
+          drainage_canal_allowed_materials?: string[]
+          drainage_canal_allowed_types?: string[]
+          drainage_canal_min_depth_m?: number | null
+          drainage_canal_min_slope_pct?: number | null
+          drainage_canal_min_width_m?: number | null
+          drainage_canal_required_sides?: string
           exclude_title_types?: string[]
           id?: string
           is_active?: boolean
@@ -6505,9 +6531,17 @@ export type Database = {
           parent_max_area_sqm?: number | null
           parent_min_area_sqm?: number
           recommended_road_width_m?: number
+          require_drainage_canal?: boolean
           require_gps_coordinates?: boolean
           require_registered_title?: boolean
+          require_solar_lighting?: boolean
           section_type: string
+          solar_lighting_beam_angle_deg?: number | null
+          solar_lighting_max_spacing_m?: number | null
+          solar_lighting_min_battery_hours?: number | null
+          solar_lighting_min_lumens?: number | null
+          solar_lighting_min_pole_height_m?: number | null
+          solar_lighting_required_sides?: string
           updated_at?: string
         }
         Update: {
@@ -6516,6 +6550,12 @@ export type Database = {
           allow_if_pending_mutation?: boolean
           allow_if_pending_subdivision?: boolean
           created_at?: string
+          drainage_canal_allowed_materials?: string[]
+          drainage_canal_allowed_types?: string[]
+          drainage_canal_min_depth_m?: number | null
+          drainage_canal_min_slope_pct?: number | null
+          drainage_canal_min_width_m?: number | null
+          drainage_canal_required_sides?: string
           exclude_title_types?: string[]
           id?: string
           is_active?: boolean
@@ -6532,9 +6572,17 @@ export type Database = {
           parent_max_area_sqm?: number | null
           parent_min_area_sqm?: number
           recommended_road_width_m?: number
+          require_drainage_canal?: boolean
           require_gps_coordinates?: boolean
           require_registered_title?: boolean
+          require_solar_lighting?: boolean
           section_type?: string
+          solar_lighting_beam_angle_deg?: number | null
+          solar_lighting_max_spacing_m?: number | null
+          solar_lighting_min_battery_hours?: number | null
+          solar_lighting_min_lumens?: number | null
+          solar_lighting_min_pole_height_m?: number | null
+          solar_lighting_required_sides?: string
           updated_at?: string
         }
         Relationships: []

@@ -1,71 +1,87 @@
-# Audit Carte Cadastrale — non-affichage
+## Objectif
 
-## Constats
+Permettre à l'admin d'imposer (urbain/rural différenciés) la présence d'un **canal d'évacuation des eaux usées** et d'un **éclairage public solaire** sur chaque voie créée d'un lotissement, avec seuils techniques min/max. Côté demandeur, étendre le formulaire de création de voie pour saisir ces deux blocs et bloquer la soumission si la voie ne respecte pas la règle de zonage applicable.
 
-### Front-end
+## 1. Base de données — `subdivision_zoning_rules`
 
-1. **Conteneur de carte sans hauteur garantie** (`src/pages/CadastralMap.tsx`)
-  - Le `<main>` a `flex-1 + height: calc(100dvh - 4rem)`. Le `<div ref={mapContainerRef}>` interne a `height: 100%`.
-  - Sur mobile (360×556 actuel), `100dvh - 4rem` peut tomber à ~492 px ; OK en théorie, mais le div n'est rendu que dans la branche `!loading`. Si `useCadastralMapData` reste en loading (RLS qui rejette, requête lente, erreur réseau silencieuse), on n'affiche QUE le spinner et la carte n'a jamais de conteneur — donc pas de tuiles.
-2. **Init de Leaflet conditionnée à `ready: !loading**` (`useLeafletMap.tsx`)
-  - L'effet ne s'exécute qu'après que `loading` passe à `false` ET que le ref soit attaché ; en cas d'erreur silencieuse de la query parcelles, `loading` reste `true` (en réalité React Query met `isLoading=false` sur error mais `data=undefined`, ici converti à `[]` — donc devrait débloquer). À vérifier en réel.
-3. `**useMapProvider` recrée `getTileUrl/getTileLayerOptions` à chaque render** : l'effet d'application des tuiles a ces fonctions dans ses dépendances → re-création/destruction du tileLayer en boucle, peut entraîner une carte grise tant que les tuiles ne sont pas re-téléchargées (flicker).
-4. **Listener resize sans `dvh**` : `viewportHeight` (window.innerHeight) est utilisé pour positionner la barre de recherche desktop ; sans incidence sur la carte elle-même.
-5. `**ProtectedRoute**` : si la session n'est pas chargée, on voit l'écran d'auth (capture confirme : sur la nav vers `/cadastral-map` la page renvoyée est l'écran de connexion). À confirmer côté utilisateur que la session est active.
+Ajouter les colonnes (toutes nullables avec valeurs par défaut sûres) :
 
-### Back-end
+**Canal eaux usées (par voie)**
+- `require_drainage_canal` boolean default false — obligatoire ou non
+- `drainage_canal_min_width_m` numeric — largeur min
+- `drainage_canal_min_depth_m` numeric — profondeur min
+- `drainage_canal_allowed_materials` text[] — matériaux autorisés (béton, PVC, maçonnerie, pierre…)
+- `drainage_canal_allowed_types` text[] — types autorisés (ouvert, couvert, enterré)
+- `drainage_canal_min_slope_pct` numeric — pente minimale (%)
+- `drainage_canal_required_sides` text — `left` | `right` | `both` | `any`
 
-6. `**map_providers**` : OSM est le défaut (`is_default=true, requires_api_key=false`) — les tuiles devraient charger sans le proxy. Mapbox actif mais non défaut.
-7. **Edge function `proxy-mapbox-tiles**` : l'URL construite par `useMapProvider.getTileUrl()` ne préserve pas l'extension `.png` (`.../tiles/{z}/{x}/{y}` sans `.png`). Mapbox accepte cela, mais Leaflet peut envoyer une requête sans extension qu'un proxy strict pourrait refuser. Le whitelist actuel autorise `(\.\w+)?` donc OK.
-8. **RLS sur `cadastral_parcels**` : si l'utilisateur n'a pas accès, la requête `useCadastralMapData` peut renvoyer 0 lignes sans erreur — la carte s'initialise mais reste vide (aucune fitBounds, vue par défaut Goma). À vérifier.
-9. **Realtime channel `map_providers_changes**` : abonnement créé sans cleanup conditionnel (OK ici, mais peut empiler les channels en HMR).
+**Éclairage public solaire (par voie)**
+- `require_solar_lighting` boolean default false
+- `solar_lighting_min_pole_height_m` numeric
+- `solar_lighting_min_lumens` integer
+- `solar_lighting_beam_angle_deg` integer (faisceau max)
+- `solar_lighting_max_spacing_m` numeric (espacement max entre mâts)
+- `solar_lighting_min_battery_hours` integer (autonomie min)
+- `solar_lighting_required_sides` text — `left` | `right` | `both` | `alternating`
 
-## Plan de correction
+Ces seuils (`min`/`max`) sont **bornes admin** : la voie utilisateur doit les respecter ou la soumission est bloquée. La portée urbain/rural est déjà couverte par `section_type` existant : la même règle peut donc avoir `require_drainage_canal=true` en urbain et `false` en rural simplement en créant deux règles distinctes (comportement déjà en place pour `min_road_width_m`, etc.).
 
-### 1. Front-end — sortir le conteneur de la branche conditionnelle
+## 2. Admin — `AdminSubdivisionZoningRules.tsx`
 
-Toujours rendre le `<div ref={mapContainerRef}>` ; n'afficher le spinner qu'en overlay :
+Dans la section **« Contraintes techniques »** du dialogue, ajouter deux nouvelles sous-cartes pliables après les contraintes voie/lots :
 
-```tsx
-<div ref={mapContainerRef} className="absolute inset-0" />
-{loading && (
-  <div className="absolute inset-0 z-[500] flex items-center justify-center bg-background/60 backdrop-blur-sm">
-    <Loader2 ... />
-  </div>
-)}
+- **« Canal d'évacuation des eaux usées »** : Switch obligatoire + champs min largeur, min profondeur, multi-select matériaux, multi-select types, pente min, côté.
+- **« Éclairage public solaire »** : Switch obligatoire + hauteur mât, lumens min, faisceau, espacement max, autonomie min, côté.
+
+Les champs sont désactivés tant que le Switch « obligatoire » est off. Mappés dans `emptyForm`, `openEdit`, et `payload` du `handleSave`. Aide contextuelle (`FieldHelp`) sur chaque seuil.
+
+## 3. Frontend types & hook
+
+- `useZoningRules.ts` : étendre l'interface `ZoningRule` avec les nouveaux champs.
+- `src/components/cadastral/subdivision/types.ts` :
+  - Étendre `SubdivisionRoad` avec :
+    - `drainageCanal?: { widthM, depthM, material, type, slopePct, side } | null`
+    - `solarLighting?: { poleHeightM, lumens, beamAngleDeg, spacingM, batteryHours, side } | null`
+- Constantes labels matériaux/types/côtés (FR).
+
+## 4. Demande de lotissement — UI création/édition de voie
+
+Dans `RoadsListPanel.tsx` (et le mini-formulaire d'édition de voie) :
+- Ajouter deux sections rétractables sous les attributs de la voie.
+- Les champs deviennent **obligatoires** si la règle de zonage active (`useZoningCompliance`) impose `require_drainage_canal` / `require_solar_lighting`.
+- Bornes min/max issues de la règle injectées comme `min`/`max` HTML + validation visuelle.
+- Affichage d'un badge « Requis par la zone » à côté de chaque section quand applicable.
+
+## 5. Validation & soumission
+
+- `subdivisionValidation.ts` (front) : ajouter règles
+  - Si `require_drainage_canal` : chaque road doit avoir `drainageCanal` rempli + chaque champ ≥ min admin + matériau/type/côté ∈ liste autorisée.
+  - Idem pour `require_solar_lighting`.
+- Edge function `subdivision-request/index.ts` (back) : refaire la même validation côté serveur (source de vérité), refuser la requête avec message explicite par voie non conforme.
+- Persistance : les attributs sont déjà dans le JSON `subdivision_plan_data.roads`, aucune nouvelle table requise. La table matérialisée `subdivision_roads` sera étendue avec deux colonnes JSON `drainage_canal_data` et `solar_lighting_data` pour requêtes admin.
+
+## 6. Affichage admin de la demande
+
+- `AdminSubdivisionRequests` : dans la vue détail d'une demande, lister par voie les attributs canal + éclairage avec badge conformité (✓ conforme / ✗ hors normes).
+- Plan PDF (`StepPlanView` / export) : option « Afficher canal / éclairage » dans la légende.
+
+## 7. Migrations & rétro-compatibilité
+
+- Toutes nouvelles colonnes nullables / défauts permissifs → règles existantes inchangées.
+- Demandes existantes sans ces blocs : restent valides (pas de validation rétroactive).
+
+## Détails techniques
+
+```text
+ZoningRule (admin) → useZoningCompliance → RoadsListPanel
+                                        ↓
+                              SubdivisionRoad.drainageCanal / solarLighting
+                                        ↓
+                  validateSubdivisionFull (front) + edge fn (back)
+                                        ↓
+                       subdivision_plan_data.roads (JSON)
+                                        ↓
+                       trigger sync → subdivision_roads (matérialisée)
 ```
 
-→ garantit que Leaflet a toujours un conteneur dimensionné, indépendamment de l'état query.
-
-### 2. Stabiliser `useMapProvider`
-
-Mémoïser `getTileUrl` et `getTileLayerOptions` avec `useCallback` (dépendances : `provider`). Évite la re-création du tileLayer à chaque render.
-
-### 3. Forcer `invalidateSize` après mount
-
-Dans `useLeafletMap`, après l'init et à chaque changement de `selectedParcel`/`actionsExpanded` (qui change la hauteur via CSS var), appeler `map.invalidateSize()` pour que Leaflet recalcule. Ajouter aussi un `ResizeObserver` sur le conteneur.
-
-### 4. Logguer les erreurs query
-
-Dans `useCadastralMapData`, exposer `error` et l'afficher dans une bannière non-bloquante quand la requête échoue (au lieu d'avoir une carte muette).
-
-### 5. Vérification back-end
-
-- `SELECT count(*) FROM cadastral_parcels WHERE deleted_at IS NULL` (s'assurer qu'il y a des données non-test).
-- Vérifier les policies RLS de `cadastral_parcels` : autorisent-elles un utilisateur authentifié non-admin ? (lecture publique attendue d'après l'usage).
-- Tester `proxy-mapbox-tiles` (logs récents) si l'utilisateur a basculé sur Mapbox dans Admin > Carte.
-
-### 6. Vérification de session
-
-Confirmer auprès de l'utilisateur s'il est bien connecté (notre reproduction tombe sur l'écran de login). Si non, l'écran d'auth est attendu et il n'y a pas de bug ; sinon on poursuit les fixes 1-4.
-
-## Fichiers touchés
-
-- `src/pages/CadastralMap.tsx` (overlay loader + conteneur permanent)
-- `src/hooks/useLeafletMap.tsx` (invalidateSize + ResizeObserver)
-- `src/hooks/useMapProvider.ts` (mémoïsation des helpers)
-- `src/hooks/useCadastralMapData.tsx` (exposer error)
-
-## Question préalable
-
-Lors de la reproduction (`/cadastral-map`), nous tombons sur l'écran de **connexion** — confirmez-vous que vous étiez bien authentifié au moment du bug ? Oui,  je me suis authentifié. Et la carte est-elle blanche/grise, ou affichée mais sans parcelles ? Blanche/grise et sans parcelle. 
+Choix utilisateur retenus : portée selon section urbain/rural (deux règles distinctes), admin fixe les seuils min/max, champs canal = largeur+profondeur+matériau+type+côté/pente, champs éclairage = hauteur+lumens+faisceau+espacement+autonomie+côté.
