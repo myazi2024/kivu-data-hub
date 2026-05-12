@@ -117,7 +117,7 @@ Deno.serve(async (req) => {
       candidates.push('*');
       const { data: zoningRules } = await supabase
         .from('subdivision_zoning_rules')
-        .select('location_name,parent_min_area_sqm,parent_max_area_sqm')
+        .select('*')
         .eq('is_active', true)
         .eq('section_type', sectionType)
         .in('location_name', candidates);
@@ -142,6 +142,62 @@ Deno.serve(async (req) => {
             reason: 'too_large',
             min: minA, max: maxA, actual: area,
             message: `Surface parcelle-mère ${Math.round(area)} m² > maximum ${maxA} m² ; procédure d'aménagement requise.`,
+          }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 422 });
+        }
+
+        // === Per-road infrastructure constraints ===
+        const roads = Array.isArray(body.roads) ? body.roads : [];
+        const errs: string[] = [];
+        const sideOk = (req: string | undefined, got: string | undefined) =>
+          !req || req === 'any' || !got || req === got;
+
+        if (matched.require_drainage_canal) {
+          for (const r of roads) {
+            const name = r?.name || 'Voie';
+            const dc = r?.drainageCanal;
+            if (!dc) { errs.push(`Canal d'évacuation manquant sur ${name}.`); continue; }
+            if (matched.drainage_canal_min_width_m && Number(dc.widthM || 0) < Number(matched.drainage_canal_min_width_m))
+              errs.push(`${name} : largeur canal ${dc.widthM} m < min ${matched.drainage_canal_min_width_m} m.`);
+            if (matched.drainage_canal_min_depth_m && Number(dc.depthM || 0) < Number(matched.drainage_canal_min_depth_m))
+              errs.push(`${name} : profondeur canal ${dc.depthM} m < min ${matched.drainage_canal_min_depth_m} m.`);
+            if (Array.isArray(matched.drainage_canal_allowed_materials) && matched.drainage_canal_allowed_materials.length > 0
+                && dc.material && !matched.drainage_canal_allowed_materials.includes(dc.material))
+              errs.push(`${name} : matériau canal « ${dc.material} » non autorisé.`);
+            if (Array.isArray(matched.drainage_canal_allowed_types) && matched.drainage_canal_allowed_types.length > 0
+                && dc.type && !matched.drainage_canal_allowed_types.includes(dc.type))
+              errs.push(`${name} : type canal « ${dc.type} » non autorisé.`);
+            if (matched.drainage_canal_min_slope_pct && Number(dc.slopePct || 0) < Number(matched.drainage_canal_min_slope_pct))
+              errs.push(`${name} : pente canal ${dc.slopePct ?? 0}% < min ${matched.drainage_canal_min_slope_pct}%.`);
+            if (!sideOk(matched.drainage_canal_required_sides, dc.side))
+              errs.push(`${name} : côté canal requis ${matched.drainage_canal_required_sides}, fourni ${dc.side}.`);
+          }
+        }
+
+        if (matched.require_solar_lighting) {
+          for (const r of roads) {
+            const name = r?.name || 'Voie';
+            const sl = r?.solarLighting;
+            if (!sl) { errs.push(`Éclairage public solaire manquant sur ${name}.`); continue; }
+            if (matched.solar_lighting_min_pole_height_m && Number(sl.poleHeightM || 0) < Number(matched.solar_lighting_min_pole_height_m))
+              errs.push(`${name} : hauteur mât ${sl.poleHeightM} m < min ${matched.solar_lighting_min_pole_height_m} m.`);
+            if (matched.solar_lighting_min_lumens && Number(sl.lumens || 0) < Number(matched.solar_lighting_min_lumens))
+              errs.push(`${name} : lumens ${sl.lumens} < min ${matched.solar_lighting_min_lumens}.`);
+            if (matched.solar_lighting_beam_angle_deg && sl.beamAngleDeg && Number(sl.beamAngleDeg) > Number(matched.solar_lighting_beam_angle_deg))
+              errs.push(`${name} : faisceau ${sl.beamAngleDeg}° > max ${matched.solar_lighting_beam_angle_deg}°.`);
+            if (matched.solar_lighting_max_spacing_m && sl.spacingM && Number(sl.spacingM) > Number(matched.solar_lighting_max_spacing_m))
+              errs.push(`${name} : espacement ${sl.spacingM} m > max ${matched.solar_lighting_max_spacing_m} m.`);
+            if (matched.solar_lighting_min_battery_hours && Number(sl.batteryHours || 0) < Number(matched.solar_lighting_min_battery_hours))
+              errs.push(`${name} : autonomie ${sl.batteryHours} h < min ${matched.solar_lighting_min_battery_hours} h.`);
+            if (!sideOk(matched.solar_lighting_required_sides, sl.side))
+              errs.push(`${name} : côté éclairage requis ${matched.solar_lighting_required_sides}, fourni ${sl.side}.`);
+          }
+        }
+
+        if (errs.length > 0) {
+          return new Response(JSON.stringify({
+            error: 'ROAD_INFRA_VIOLATIONS',
+            violations: errs,
+            message: errs.join(' '),
           }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 422 });
         }
       }
