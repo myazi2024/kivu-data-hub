@@ -254,6 +254,7 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
                 canRedo={form.canRedo}
                 onUndo={form.undo}
                 onRedo={form.redo}
+                zoningRule={form.zoningCompliance.rule}
               />
             )}
             {form.currentStep === 'plan' && (

@@ -51,6 +51,7 @@ interface StepLotDesignerProps {
   canRedo: boolean;
   onUndo: () => void;
   onRedo: () => void;
+  zoningRule?: import('@/hooks/useZoningRules').ZoningRule | null;
 }
 
 // Note: convex-hull merging was removed in P0 — replaced by polygonUnionMany
@@ -96,7 +97,7 @@ function segmentSegmentIntersection(
 const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
   parentParcel, parentVertices, parentSides, lots, setLots, roads, setRoads,
   commonSpaces, setCommonSpaces, servitudes, setServitudes, lotIds,
-  onCreateInitialLot, validation, canUndo, canRedo, onUndo, onRedo
+  onCreateInitialLot, validation, canUndo, canRedo, onUndo, onRedo, zoningRule,
 }) => {
   const { trackAdminAction } = useAdminAnalytics();
   const [selectedLotId, setSelectedLotIdState] = useState<string | null>(null);
@@ -1264,6 +1265,7 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
             canvasMode={canvasMode}
             setCanvasMode={setCanvasMode}
             hasMultipleLots={lots.length >= 2}
+            zoningRule={zoningRule}
           />
 
           {/* Common Spaces */}

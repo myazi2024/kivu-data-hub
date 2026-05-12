@@ -58,6 +58,10 @@ export interface SubdivisionRoad {
   path: Point2D[];
   // IDs of lots that border this road and should be adjusted when width changes
   affectedLotIds?: string[];
+  /** Drainage canal spec (sewage evacuation along the road). Required when zoning rule imposes it. */
+  drainageCanal?: import('./infrastructureConstants').DrainageCanalSpec | null;
+  /** Solar public lighting spec along the road. Required when zoning rule imposes it. */
+  solarLighting?: import('./infrastructureConstants').SolarLightingSpec | null;
 }
 
 export interface SubdivisionCommonSpace {
