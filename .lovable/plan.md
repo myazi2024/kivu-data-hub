@@ -1,87 +1,113 @@
-## Objectif
 
-Permettre à l'admin d'imposer (urbain/rural différenciés) la présence d'un **canal d'évacuation des eaux usées** et d'un **éclairage public solaire** sur chaque voie créée d'un lotissement, avec seuils techniques min/max. Côté demandeur, étendre le formulaire de création de voie pour saisir ces deux blocs et bloquer la soumission si la voie ne respecte pas la règle de zonage applicable.
+# Audit CCC (formulaire → réception Admin → traitement)
 
-## 1. Base de données — `subdivision_zoning_rules`
+> Note : tu n'as pas encore collé le message d'erreur exact. J'ai listé ci-dessous les causes les plus probables d'après l'audit du code et de la base. Une fois le texte du toast/console reçu, j'isole le coupable précis avant de toucher au reste.
 
-Ajouter les colonnes (toutes nullables avec valeurs par défaut sûres) :
+## A. Bugs bloquants identifiés
 
-**Canal eaux usées (par voie)**
-- `require_drainage_canal` boolean default false — obligatoire ou non
-- `drainage_canal_min_width_m` numeric — largeur min
-- `drainage_canal_min_depth_m` numeric — profondeur min
-- `drainage_canal_allowed_materials` text[] — matériaux autorisés (béton, PVC, maçonnerie, pierre…)
-- `drainage_canal_allowed_types` text[] — types autorisés (ouvert, couvert, enterré)
-- `drainage_canal_min_slope_pct` numeric — pente minimale (%)
-- `drainage_canal_required_sides` text — `left` | `right` | `both` | `any`
+### A1. Triplon sur l'approbation → unique_violation `cadastral_parcels.parcel_number`
+À l'approbation d'une contribution, **trois écritures concurrentes** créent la même parcelle :
+1. Trigger BEFORE UPDATE `trigger_create_parcel_on_approval` → `create_parcel_from_approved_contribution()` (INSERT parcel + histories)
+2. Trigger AFTER UPDATE `sync_contribution_to_parcel_trigger` → `sync_approved_contribution_to_parcel()` (INSERT ou UPDATE parcel)
+3. Code front `AdminCCCContributions.handleApprove` (lignes 312-360) → INSERT parcel manuel
 
-**Éclairage public solaire (par voie)**
-- `require_solar_lighting` boolean default false
-- `solar_lighting_min_pole_height_m` numeric
-- `solar_lighting_min_lumens` integer
-- `solar_lighting_beam_angle_deg` integer (faisceau max)
-- `solar_lighting_max_spacing_m` numeric (espacement max entre mâts)
-- `solar_lighting_min_battery_hours` integer (autonomie min)
-- `solar_lighting_required_sides` text — `left` | `right` | `both` | `alternating`
+Conséquence : l'INSERT côté front (#3) lève `duplicate key value violates unique constraint`, l'admin reçoit "Erreur lors de l'approbation".
 
-Ces seuils (`min`/`max`) sont **bornes admin** : la voie utilisateur doit les respecter ou la soumission est bloquée. La portée urbain/rural est déjà couverte par `section_type` existant : la même règle peut donc avoir `require_drainage_canal=true` en urbain et `false` en rural simplement en créant deux règles distinctes (comportement déjà en place pour `min_road_width_m`, etc.).
+**Fix** : Supprimer l'INSERT/UPDATE parcel côté front (laisser uniquement les triggers). Garder côté front la notification + audit log + invalidation queries.
 
-## 2. Admin — `AdminSubdivisionZoningRules.tsx`
+### A2. Trigger `normalize_contribution_empty_strings` enregistré DEUX fois
+Présent sous `normalize_contribution_empty_strings_trg` ET `trigger_normalize_contribution_empty_strings`. Idempotent mais double coût et risque sur futurs side-effects.
+**Fix** : `DROP TRIGGER IF EXISTS normalize_contribution_empty_strings_trg`.
 
-Dans la section **« Contraintes techniques »** du dialogue, ajouter deux nouvelles sous-cartes pliables après les contraintes voie/lots :
+### A3. Fonction `normalize_contribution_empty_strings` contient du code mort dangereux
+`NEW.title_issue_date::text = ''` est impossible (colonne déjà DATE) ; en revanche les colonnes texte sont OK. Pas de bug actif mais à nettoyer.
 
-- **« Canal d'évacuation des eaux usées »** : Switch obligatoire + champs min largeur, min profondeur, multi-select matériaux, multi-select types, pente min, côté.
-- **« Éclairage public solaire »** : Switch obligatoire + hauteur mât, lumens min, faisceau, espacement max, autonomie min, côté.
+### A4. Triggers de création parcel se chevauchent
+`create_parcel_from_approved_contribution` (BEFORE) crée la parcelle + histories,
+`sync_approved_contribution_to_parcel` (AFTER) recrée une parcelle si `original_parcel_id` est NULL → déjà mis par BEFORE, donc seul l'UPDATE branch tourne.
+Risque d'incohérence si `contribution_type` n'est pas dans `('new','nouveau')` (par défaut `'new'` mais champ jamais set par le hook front → cf. A6).
+**Fix** : Consolider en **une seule** RPC `approve_ccc_contribution(contribution_id)` SECURITY DEFINER qui :
+- met `status='approved' + reviewed_by/at + verified_by/at`
+- crée/maj la parcelle (INSERT … ON CONFLICT DO UPDATE sur `parcel_number`)
+- réplique les histories (ownership/boundary/tax/mortgage/permits)
+- déclenche la génération de code CCC
+Puis supprimer les 2 triggers `BEFORE/AFTER UPDATE` redondants.
+Le front Admin appelle simplement `supabase.rpc('approve_ccc_contribution', {p_id})`.
 
-Les champs sont désactivés tant que le Switch « obligatoire » est off. Mappés dans `emptyForm`, `openEdit`, et `payload` du `handleSave`. Aide contextuelle (`FieldHelp`) sur chaque seuil.
+### A5. `contribution_type` jamais défini par le hook de soumission
+`useCadastralContribution.submitContribution` n'envoie pas `contribution_type`. Il prend le DEFAULT (`'new'`). OK pour création, mais pour les contributions de mise à jour de parcelle existante (édition), il faut explicitement transmettre `'update'` + `original_parcel_id`. Vérifier `useCadastralContribution.updateContribution`.
+**Fix** : Toujours envoyer `contribution_type` (`new` ou `update`) et `original_parcel_id` quand applicable.
 
-## 3. Frontend types & hook
+### A6. Cause probable de l'erreur côté SOUMISSION utilisateur
+Hypothèses, par ordre de fréquence :
+- **a)** `RPC detect_suspicious_contribution` renvoie `is_suspicious=true, fraud_score≥80` → toast "Contribution suspecte" (silent block).
+- **b)** Conflit unique `cadastral_contributions_user_parcel_active` (déjà une `pending`/`returned` pour la même parcelle) → toast "Contribution déjà en cours".
+- **c)** Une contrainte CHECK ou trigger sur un nouveau champ (`is_occupied`, `rental_start_date`) qui rejette les valeurs vides → mais les helpers `blank()/blankDate()` semblent OK.
+- **d)** RLS : politique INSERT existe et passe (`auth.uid() = user_id`) — si l'utilisateur n'est pas authentifié réellement (session expirée) → toast "Authentification requise".
 
-- `useZoningRules.ts` : étendre l'interface `ZoningRule` avec les nouveaux champs.
-- `src/components/cadastral/subdivision/types.ts` :
-  - Étendre `SubdivisionRoad` avec :
-    - `drainageCanal?: { widthM, depthM, material, type, slopePct, side } | null`
-    - `solarLighting?: { poleHeightM, lumens, beamAngleDeg, spacingM, batteryHours, side } | null`
-- Constantes labels matériaux/types/côtés (FR).
+**Fix immédiat** : capturer `contributionError.message + .code + .details + .hint` dans le toast utilisateur (déjà partiel ; durcir + log dans `console.error` structuré + envoyer à un endpoint d'audit `client_errors`).
 
-## 4. Demande de lotissement — UI création/édition de voie
+### A7. RLS Admin UPDATE : `WITH CHECK` manquant
+La policy "Admins can update contributions" a `qual` mais `with_check IS NULL`. Postgres applique alors `qual` aussi pour `WITH CHECK`, donc fonctionnel ; mais à durcir explicitement.
 
-Dans `RoadsListPanel.tsx` (et le mini-formulaire d'édition de voie) :
-- Ajouter deux sections rétractables sous les attributs de la voie.
-- Les champs deviennent **obligatoires** si la règle de zonage active (`useZoningCompliance`) impose `require_drainage_canal` / `require_solar_lighting`.
-- Bornes min/max issues de la règle injectées comme `min`/`max` HTML + validation visuelle.
-- Affichage d'un badge « Requis par la zone » à côté de chaque section quand applicable.
+## B. Manques fonctionnels côté Admin
 
-## 5. Validation & soumission
+- **Réception** : `AdminCCCContributions` ne propose pas d'export CSV des contributions filtrées.
+- **Détails** : Aucune visualisation des `appeal_data` quand un demandeur fait appel d'un rejet.
+- **Réception des nouveaux champs infrastructure** (canal/éclairage – cf. lotissement) — sans rapport CCC mais à mettre en cohérence si jamais réutilisés.
+- **Bulk reject** ne déclenche pas la notification utilisateur (seul le single reject le fait).
+- **Bulk approve** insère parcels ligne par ligne sans cohérence avec les triggers (cf. A1).
+- **Statut `returned`** (renvoi pour correction) pas explicitement géré dans les compteurs `Stats`.
+- **Audit log** : pas d'entrée lors d'un retour pour correction `returned` côté `logContributionAudit`.
+- **`source_form_type`** colonne existe mais n'est jamais peuplée → impossible de tracer la provenance (CCC plein vs Quick).
 
-- `subdivisionValidation.ts` (front) : ajouter règles
-  - Si `require_drainage_canal` : chaque road doit avoir `drainageCanal` rempli + chaque champ ≥ min admin + matériau/type/côté ∈ liste autorisée.
-  - Idem pour `require_solar_lighting`.
-- Edge function `subdivision-request/index.ts` (back) : refaire la même validation côté serveur (source de vérité), refuser la requête avec message explicite par voie non conforme.
-- Persistance : les attributs sont déjà dans le JSON `subdivision_plan_data.roads`, aucune nouvelle table requise. La table matérialisée `subdivision_roads` sera étendue avec deux colonnes JSON `drainage_canal_data` et `solar_lighting_data` pour requêtes admin.
+## C. Optimisations / hardening
 
-## 6. Affichage admin de la demande
+- **Helper unique `useApproveCCC`** (TanStack mutation) au lieu de 200 lignes inline dans `AdminCCCContributions.handleApprove`.
+- **Idempotence approbation** : `ON CONFLICT (parcel_number) DO UPDATE` côté RPC.
+- **Réduction des `as any`** : `useCadastralContribution.buildContributionPayload` retourne `any` ; typer via `Database['public']['Tables']['cadastral_contributions']['Insert']`.
+- **Index** : ajouter `idx_cadastral_contributions_status_created` pour la pagination admin filtrée.
+- **Trigger logging** : enrober `auto_generate_ccc_code` dans EXCEPTION→`RAISE LOG` + re-raise pour ne plus avaler les erreurs de génération de code.
+- **Edge function `approve-ccc-contribution`** plutôt qu'une simple RPC : permet d'envoyer le mail/notification ET de logguer dans `admin_action` côté serveur.
+- **Cleanup `localStorage`** : la clé `cadastral_contribution_${parcel}` est nettoyée mais pas l'image base64 brouillon liée.
 
-- `AdminSubdivisionRequests` : dans la vue détail d'une demande, lister par voie les attributs canal + éclairage avec badge conformité (✓ conforme / ✗ hors normes).
-- Plan PDF (`StepPlanView` / export) : option « Afficher canal / éclairage » dans la légende.
+## D. Plan d'exécution (séquentiel)
 
-## 7. Migrations & rétro-compatibilité
+1. **Capturer l'erreur exacte** : durcir le toast (`code+message+details+hint`) + console.error structuré dans `useCadastralContribution.submitContribution`. (front)
+2. **Migration SQL #1 — nettoyage triggers** :
+   - `DROP TRIGGER normalize_contribution_empty_strings_trg`
+   - `DROP TRIGGER trigger_create_parcel_on_approval` 
+   - `DROP TRIGGER sync_contribution_to_parcel_trigger`
+   - Création RPC unique `public.approve_ccc_contribution(p_id uuid)` SECURITY DEFINER avec UPSERT parcel + replay histories + appel `generate_cadastral_contributor_code`.
+   - Création RPC `public.reject_ccc_contribution(p_id uuid, p_reason text)` SECURITY DEFINER.
+   - Renforcer policy admin UPDATE : ajouter `WITH CHECK` explicite.
+3. **Refactor `AdminCCCContributions`** :
+   - Remplacer `handleApprove`, `handleReject`, `handleBulkApprove`, `handleBulkReject` par appels RPC.
+   - Extraire un hook `useCCCAdminActions` (mutations + invalidations).
+   - Ajouter export CSV + visualisation `appeal_data` + statut `returned` dans Stats.
+4. **Hook front `useCadastralContribution`** :
+   - Toujours peupler `contribution_type` + `original_parcel_id`.
+   - Peupler `source_form_type = 'ccc_full' | 'quick'`.
+   - Typer `buildContributionPayload` via `Database` types.
+5. **Index + observabilité** : `idx_cadastral_contributions_status_created`, log structuré dans `auto_generate_ccc_code`.
+6. **Mémoires** : MAJ `mem://admin/ccc-contributions-admin-audit-fr` avec le nouveau pattern RPC + suppression des INSERT parcel front.
 
-- Toutes nouvelles colonnes nullables / défauts permissifs → règles existantes inchangées.
-- Demandes existantes sans ces blocs : restent valides (pas de validation rétroactive).
-
-## Détails techniques
+## E. Détails techniques
 
 ```text
-ZoningRule (admin) → useZoningCompliance → RoadsListPanel
-                                        ↓
-                              SubdivisionRoad.drainageCanal / solarLighting
-                                        ↓
-                  validateSubdivisionFull (front) + edge fn (back)
-                                        ↓
-                       subdivision_plan_data.roads (JSON)
-                                        ↓
-                       trigger sync → subdivision_roads (matérialisée)
+Triggers actuels (cadastral_contributions)              | Action après migration
+--------------------------------------------------------|----------------------------
+format_contribution_parcel_number_trigger    BEFORE INS | KEEP
+trg_prevent_test_data_in_prod                BEFORE INS | KEEP
+normalize_contribution_empty_strings_trg     BEFORE I/U | DROP (doublon)
+trigger_normalize_contribution_empty_strings BEFORE I/U | KEEP
+trigger_sync_owner_name                      BEFORE I/U | KEEP
+enforce_rejection_reason_trigger             BEFORE I/U | KEEP
+trg_enforce_mortgage_rejection_motive        BEFORE UPD | KEEP
+trigger_create_parcel_on_approval            BEFORE UPD | DROP (déplacé en RPC)
+sync_contribution_to_parcel_trigger          AFTER  UPD | DROP (déplacé en RPC)
+trigger_auto_generate_ccc_code               AFTER  UPD | KEEP (idempotent)
+update_cadastral_contributions_updated_at    BEFORE UPD | KEEP
 ```
 
-Choix utilisateur retenus : portée selon section urbain/rural (deux règles distinctes), admin fixe les seuils min/max, champs canal = largeur+profondeur+matériau+type+côté/pente, champs éclairage = hauteur+lumens+faisceau+espacement+autonomie+côté.
+Aucune modification destructive de données : seule la logique d'approbation est consolidée.
