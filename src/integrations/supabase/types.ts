@@ -7495,6 +7495,7 @@ export type Database = {
         Returns: number
       }
       _purge_stale_test_generation_jobs: { Args: never; Returns: number }
+      approve_ccc_contribution: { Args: { p_id: string }; Returns: string }
       archive_stale_articles: { Args: { _months?: number }; Returns: number }
       assign_expertise_request: {
         Args: { p_expert_id: string; p_request_id: string }
@@ -7664,6 +7665,10 @@ export type Database = {
       }
       find_or_create_fiscal_period: {
         Args: { p_date: string }
+        Returns: string
+      }
+      generate_cadastral_contributor_code: {
+        Args: { p_contribution_id: string }
         Returns: string
       }
       generate_ccc_code: { Args: never; Returns: string }
@@ -8074,6 +8079,10 @@ export type Database = {
           inserted_count: number
           scanned_count: number
         }[]
+      }
+      reject_ccc_contribution: {
+        Args: { p_id: string; p_reason: string }
+        Returns: string
       }
       reject_expertise_request: {
         Args: { p_reason: string; p_request_id: string }
