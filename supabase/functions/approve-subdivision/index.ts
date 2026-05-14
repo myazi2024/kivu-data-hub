@@ -263,7 +263,7 @@ Deno.serve(async (req) => {
       action: body.action,
       old_status: request.status,
       new_status: updates.status ?? null,
-      admin_id: user.id,
+      admin_id: user?.id ?? null,
       rejection_reason: body.rejection_reason || null,
       payload: {
         processing_fee_usd: body.processing_fee_usd ?? null,
