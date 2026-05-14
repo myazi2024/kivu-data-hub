@@ -323,10 +323,10 @@ Deno.serve(async (req) => {
       requester_right_type: body.requester.rightType || null,
       requester_state_exploited_by: body.requester.stateExploitedBy || null,
       requester_nationality: body.requester.nationality || null,
-      number_of_lots: body.lots.length,
-      lots_data: body.lots,
+      number_of_lots: recomputedLots.length,
+      lots_data: recomputedLots,
       subdivision_plan_data: {
-        lots: body.lots,
+        lots: recomputedLots,
         roads: body.roads,
         commonSpaces: body.commonSpaces,
         servitudes: body.servitudes,
