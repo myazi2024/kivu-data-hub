@@ -65,12 +65,115 @@ Deno.serve(async (req) => {
     if (loadErr || !request) throw new Error("Subdivision request not found");
 
     const updates: Record<string, any> = {
-      reviewed_by: user.id,
-      reviewed_at: new Date().toISOString(),
       processing_notes: body.processing_notes || null,
     };
+    // reviewed_by/reviewed_at uniquement pour les actions admin (pas pour finalize_after_payment).
+    if (!isServiceRole) {
+      updates.reviewed_by = user.id;
+      updates.reviewed_at = new Date().toISOString();
+    }
 
     let notif: { type: string; title: string; message: string } | null = null;
+
+    /**
+     * Matérialise les lots, voies et flag la parcelle-mère après approbation
+     * (action `approve` immédiate ou `finalize_after_payment` via webhook Stripe).
+     * Idempotent best-effort — n'insère pas si des lots existent déjà.
+     */
+    const materializeApprovedRequest = async () => {
+      // Évite les doublons si déjà matérialisé
+      const { count: existingLots } = await supabase
+        .from("subdivision_lots")
+        .select("id", { count: "exact", head: true })
+        .eq("subdivision_request_id", request.id);
+      if (existingLots && existingLots > 0) return;
+
+      const lotsData: any[] = Array.isArray(request.lots_data) ? request.lots_data : [];
+      const planData: any = request.subdivision_plan_data || {};
+      const roadsData: any[] = Array.isArray(planData.roads) ? planData.roads : [];
+      const parentGps: any[] = Array.isArray(request.parent_parcel_gps_coordinates)
+        ? request.parent_parcel_gps_coordinates
+        : [];
+
+      const bb = parentGps.length >= 3
+        ? {
+            minLat: Math.min(...parentGps.map((c: any) => c.lat)),
+            maxLat: Math.max(...parentGps.map((c: any) => c.lat)),
+            minLng: Math.min(...parentGps.map((c: any) => c.lng)),
+            maxLng: Math.max(...parentGps.map((c: any) => c.lng)),
+          }
+        : null;
+
+      const projectVertex = (v: any) =>
+        bb ? {
+          lat: bb.minLat + v.y * (bb.maxLat - bb.minLat),
+          lng: bb.minLng + v.x * (bb.maxLng - bb.minLng),
+        } : null;
+
+      const rows = lotsData.map((lot: any) => {
+        const gpsCoordinates = (bb && Array.isArray(lot.vertices))
+          ? lot.vertices.map(projectVertex)
+          : null;
+        return {
+          subdivision_request_id: request.id,
+          parcel_number: request.parcel_number,
+          lot_number: lot.lotNumber || lot.id,
+          lot_label: `Lot ${lot.lotNumber}`,
+          area_sqm: Number(lot.areaSqm) || 0,
+          perimeter_m: Number(lot.perimeterM) || 0,
+          intended_use: lot.intendedUse || "residential",
+          owner_name: lot.ownerName || null,
+          is_built: !!lot.isBuilt,
+          has_fence: !!lot.hasFence,
+          gps_coordinates: gpsCoordinates,
+          plan_coordinates: lot.vertices || null,
+          color: lot.color || "#22c55e",
+        };
+      });
+
+      if (rows.length > 0) {
+        const { error: lotsErr } = await supabase.from("subdivision_lots").insert(rows);
+        if (lotsErr) {
+          throw new Error(`Lot insertion failed: ${lotsErr.message}`);
+        }
+      }
+
+      if (roadsData.length > 0) {
+        const roadRows = roadsData.map((r: any) => ({
+          subdivision_request_id: request.id,
+          road_name: r.name || null,
+          width_m: Number(r.widthM) || null,
+          surface_type: r.surfaceType || null,
+          is_existing: !!r.isExisting,
+          plan_coordinates: r.path || null,
+          gps_coordinates: (bb && Array.isArray(r.path)) ? r.path.map(projectVertex) : null,
+        }));
+        await supabase.from("subdivision_roads").insert(roadRows)
+          .then(() => null)
+          .catch((e: any) => console.error("subdivision_roads insert failed:", e?.message));
+      }
+
+      await supabase
+        .from("cadastral_parcels")
+        .update({ is_subdivided: true })
+        .eq("parcel_number", request.parcel_number)
+        .then(() => null)
+        .catch(() => null);
+
+      // Auto-génération du plan officiel (best-effort, non bloquant)
+      try {
+        await fetch(`${supabaseUrl}/functions/v1/generate-subdivision-plan`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": isServiceRole ? `Bearer ${serviceKey}` : authHeader,
+          },
+          body: JSON.stringify({ request_id: body.request_id }),
+        });
+      } catch (e: any) {
+        console.error("auto generate-subdivision-plan failed:", e?.message);
+      }
+    };
 
     if (body.action === "approve") {
       const fee = Number(body.processing_fee_usd ?? 0);
@@ -78,121 +181,46 @@ Deno.serve(async (req) => {
 
       updates.status = fee > 0 ? "awaiting_payment" : "approved";
       updates.processing_fee_usd = fee;
-      // total_amount_usd reflète le coût total cumulé (soumission déjà payée + instruction).
       updates.total_amount_usd = Number(request.submission_fee_usd || 0) + fee;
-      // remaining_fee_usd = ce qui reste à payer pour passer "approved" (instruction uniquement).
-      // La soumission a déjà été réglée à l'étape de création.
       updates.remaining_fee_usd = fee;
       if (fee === 0) updates.approved_at = new Date().toISOString();
 
-      // Update status first
       const { error: updErr } = await supabase
         .from("subdivision_requests")
         .update(updates)
         .eq("id", body.request_id);
       if (updErr) throw updErr;
 
-      // If immediately approved, materialise lots + roads + flag parcel (atomic best-effort)
       if (updates.status === "approved") {
-        const lotsData: any[] = Array.isArray(request.lots_data) ? request.lots_data : [];
-        const planData: any = request.subdivision_plan_data || {};
-        const roadsData: any[] = Array.isArray(planData.roads) ? planData.roads : [];
-        const parentGps: any[] = Array.isArray(request.parent_parcel_gps_coordinates)
-          ? request.parent_parcel_gps_coordinates
-          : [];
-
-        const bb = parentGps.length >= 3
-          ? {
-              minLat: Math.min(...parentGps.map((c: any) => c.lat)),
-              maxLat: Math.max(...parentGps.map((c: any) => c.lat)),
-              minLng: Math.min(...parentGps.map((c: any) => c.lng)),
-              maxLng: Math.max(...parentGps.map((c: any) => c.lng)),
-            }
-          : null;
-
-        const projectVertex = (v: any) =>
-          bb ? {
-            lat: bb.minLat + v.y * (bb.maxLat - bb.minLat),
-            lng: bb.minLng + v.x * (bb.maxLng - bb.minLng),
-          } : null;
-
-        const rows = lotsData.map((lot: any) => {
-          const gpsCoordinates = (bb && Array.isArray(lot.vertices))
-            ? lot.vertices.map(projectVertex)
-            : null;
-          return {
-            subdivision_request_id: request.id,
-            parcel_number: request.parcel_number,
-            lot_number: lot.lotNumber || lot.id,
-            lot_label: `Lot ${lot.lotNumber}`,
-            area_sqm: Number(lot.areaSqm) || 0,
-            perimeter_m: Number(lot.perimeterM) || 0,
-            intended_use: lot.intendedUse || "residential",
-            owner_name: lot.ownerName || null,
-            is_built: !!lot.isBuilt,
-            has_fence: !!lot.hasFence,
-            gps_coordinates: gpsCoordinates,
-            plan_coordinates: lot.vertices || null,
-            color: lot.color || "#22c55e",
-          };
-        });
-
-        if (rows.length > 0) {
-          const { error: lotsErr } = await supabase.from("subdivision_lots").insert(rows);
-          if (lotsErr) {
-            // Roll back the status change to keep the workflow consistent
-            await supabase
-              .from("subdivision_requests")
-              .update({ status: request.status, reviewed_by: null, reviewed_at: null, approved_at: null })
-              .eq("id", body.request_id);
-            throw new Error(`Lot insertion failed, status reverted: ${lotsErr.message}`);
-          }
-        }
-
-        // Materialise roads (best-effort: do not roll back if this fails — non-critical for billing)
-        if (roadsData.length > 0) {
-          const roadRows = roadsData.map((r: any) => ({
-            subdivision_request_id: request.id,
-            road_name: r.name || null,
-            width_m: Number(r.widthM) || null,
-            surface_type: r.surfaceType || null,
-            is_existing: !!r.isExisting,
-            plan_coordinates: r.path || null,
-            gps_coordinates: (bb && Array.isArray(r.path)) ? r.path.map(projectVertex) : null,
-          }));
-          await supabase.from("subdivision_roads").insert(roadRows)
-            .then(() => null)
-            .catch((e: any) => console.error("subdivision_roads insert failed:", e?.message));
-        }
-
-        // Best-effort: flag the parent parcel
-        await supabase
-          .from("cadastral_parcels")
-          .update({ is_subdivided: true })
-          .eq("parcel_number", request.parcel_number)
-          .then(() => null)
-          .catch(() => null);
-
-        // Auto-génération du plan officiel (best-effort, non bloquant)
         try {
-          await fetch(`${supabaseUrl}/functions/v1/generate-subdivision-plan`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Authorization": authHeader,
-            },
-            body: JSON.stringify({ request_id: body.request_id }),
-          });
-        } catch (e: any) {
-          console.error("auto generate-subdivision-plan failed:", e?.message);
+          await materializeApprovedRequest();
+        } catch (matErr: any) {
+          await supabase
+            .from("subdivision_requests")
+            .update({ status: request.status, reviewed_by: null, reviewed_at: null, approved_at: null })
+            .eq("id", body.request_id);
+          throw new Error(`${matErr.message} — status reverted`);
         }
       }
-
 
       notif = {
         type: "success",
         title: "Lotissement approuvé",
         message: `Votre demande ${request.reference_number} a été approuvée.`,
+      };
+    } else if (body.action === "finalize_after_payment") {
+      // Appel interne (webhook Stripe) après paiement des frais d'instruction.
+      // Le statut a déjà été passé à "approved" par le webhook.
+      try {
+        await materializeApprovedRequest();
+      } catch (matErr: any) {
+        console.error("finalize_after_payment materialize failed:", matErr?.message);
+        throw matErr;
+      }
+      notif = {
+        type: "success",
+        title: "Lotissement approuvé",
+        message: `Votre demande ${request.reference_number} a été approuvée après paiement des frais d'instruction.`,
       };
     } else if (body.action === "reject") {
       if (!body.rejection_reason?.trim()) throw new Error("rejection_reason required");
