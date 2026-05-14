@@ -12,6 +12,7 @@ import { buildMetricFrame, polygonPerimeterM, polygonAreaSqmAccurate, MetricFram
 import { useZoningCompliance } from './useZoningCompliance';
 import { useParentParcelEligibility } from './useParentParcelEligibility';
 import { fetchInfrastructureTariffsAsync } from '@/hooks/useSubdivisionInfrastructureTariffs';
+import { inferSectionType } from '../utils/sectionType';
 
 const DRAFT_KEY_PREFIX = 'subdivision-draft-v2-';
 
@@ -71,8 +72,8 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
   // Load subdivision rate from config based on location
   const computeFee = useCallback(async (currentLots: SubdivisionLot[], infraSelections: Record<string, number>) => {
     try {
-      // Determine section type and location from parcelData
-      const sectionType = parcelData?.province && !parcelData?.quartier ? 'rural' : 'urban';
+      // Determine section type and location from parcelData (helper partagé front + edge)
+      const sectionType = inferSectionType(parcelData);
       const locationName = sectionType === 'urban'
         ? (parcelData?.quartier || '')
         : (parcelData?.village || '');
@@ -570,8 +571,8 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
 
     setSubmitting(true);
     try {
-      // Compute section_type client-side (urban if a quartier exists, else rural)
-      const sectionType = parcelData?.quartier ? 'urban' : (parcelData?.village ? 'rural' : 'urban');
+      // Compute section_type via shared helper (cohérent avec l'edge function)
+      const sectionType = inferSectionType(parcelData);
 
       const { data, error } = await supabase.functions.invoke('subdivision-request', {
         body: {

@@ -40,6 +40,7 @@ export const UserSubdivisionRequests: React.FC = () => {
   const [requests, setRequests] = useState<SubdivisionRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [hiddenTestCount, setHiddenTestCount] = useState(0);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -123,8 +124,6 @@ export const UserSubdivisionRequests: React.FC = () => {
       </div>
     );
   }
-
-  const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
   const handleDownloadPlan = async (req: SubdivisionRequest) => {
     setDownloadingId(req.id);

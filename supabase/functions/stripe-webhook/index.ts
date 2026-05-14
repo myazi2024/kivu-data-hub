@@ -314,6 +314,88 @@ Deno.serve(async (req) => {
               action_url: "/publications"
             });
           }
+        } else if (paymentType === "subdivision_request") {
+          const subdivisionId = (metadata.subdivision_request_id || metadata.invoice_id) as string | undefined;
+
+          await supabase
+            .from("payment_transactions")
+            .update({
+              status: "completed",
+              transaction_reference: session.payment_intent as string,
+              ...feeUpdate,
+              metadata: {
+                stripe_session_id: session.id,
+                completed_at: new Date().toISOString(),
+                payment_type: "subdivision_request",
+                subdivision_request_id: subdivisionId || null,
+              },
+            })
+            .eq("transaction_reference", session.id);
+
+          if (subdivisionId) {
+            // Charge la demande pour décider quel volet payer (soumission vs instruction).
+            const { data: sub } = await supabase
+              .from("subdivision_requests")
+              .select("id, status, submission_payment_status, reference_number")
+              .eq("id", subdivisionId)
+              .maybeSingle();
+
+            if (sub) {
+              const isSubmissionLeg = sub.submission_payment_status !== "paid";
+              if (isSubmissionLeg) {
+                // 1er volet : confirme le paiement de soumission. Le statut reste "pending"
+                // tant qu'un admin n'a pas pris en charge la demande.
+                await supabase
+                  .from("subdivision_requests")
+                  .update({
+                    submission_payment_status: "paid",
+                    submission_paid_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString(),
+                  })
+                  .eq("id", subdivisionId);
+              } else if (sub.status === "awaiting_payment") {
+                // 2e volet : paiement des frais d'instruction → finalise l'approbation.
+                await supabase
+                  .from("subdivision_requests")
+                  .update({
+                    final_payment_status: "paid",
+                    final_paid_at: new Date().toISOString(),
+                    status: "approved",
+                    approved_at: new Date().toISOString(),
+                    remaining_fee_usd: 0,
+                    updated_at: new Date().toISOString(),
+                  })
+                  .eq("id", subdivisionId);
+
+                // Déclenche la matérialisation des lots/voies via approve-subdivision (best-effort).
+                try {
+                  await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/approve-subdivision`, {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/json",
+                      "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+                    },
+                    body: JSON.stringify({
+                      request_id: subdivisionId,
+                      action: "finalize_after_payment",
+                    }),
+                  });
+                } catch (e: any) {
+                  console.error("auto finalize-subdivision after payment failed:", e?.message);
+                }
+              }
+            }
+          }
+
+          if (metadata.user_id) {
+            await supabase.from("notifications").insert({
+              user_id: metadata.user_id,
+              type: "success",
+              title: "Paiement lotissement confirmé",
+              message: `Votre paiement pour la demande de lotissement a été confirmé.`,
+              action_url: "/user-dashboard?tab=subdivisions",
+            });
+          }
         }
         break;
       }

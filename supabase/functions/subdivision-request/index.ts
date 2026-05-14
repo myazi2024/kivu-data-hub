@@ -6,7 +6,9 @@ import {
   buildMetricFrame,
   aggregateAuxiliaryMetrics,
   computeSubdivisionFee,
+  polygonAreaSqm,
 } from "../_shared/subdivisionFees.ts";
+import { inferSectionType } from "../_shared/sectionType.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -102,17 +104,16 @@ Deno.serve(async (req) => {
     if (!body.purpose) throw new Error("purpose is required");
 
     // === SERVER-SIDE FEE COMPUTATION (source of truth) ===
-    // Prefer explicit section_type from client; fall back to quartier vs village inference.
-    const sectionType: 'urban' | 'rural' = body.section_type
-      ?? (body.parent_parcel?.quartier ? 'urban' : (body.parent_parcel?.village ? 'rural' : 'urban'));
+    // Section type via shared helper (mirrored on the client).
+    const sectionType: 'urban' | 'rural' = body.section_type ?? inferSectionType(body.parent_parcel);
 
     // === SERVER-SIDE PARENT PARCEL ELIGIBILITY (zoning rule) ===
     // Verrou: surface min/max parcelle-mère définis dans subdivision_zoning_rules.
     {
       const geo = body.parent_parcel;
       const candidates = (sectionType === 'urban'
-        ? [geo.avenue, geo.quartier, geo.commune, geo.ville]
-        : [geo.village, geo.groupement, geo.collectivite, geo.territoire])
+        ? [geo.avenue, geo.quartier, geo.commune, geo.ville, geo.province]
+        : [geo.village, geo.groupement, geo.collectivite, geo.territoire, geo.province])
         .map((v) => (v || '').trim()).filter(Boolean);
       candidates.push('*');
       const { data: zoningRules } = await supabase
@@ -219,12 +220,20 @@ Deno.serve(async (req) => {
     const frame = buildMetricFrame(body.parent_parcel?.gpsCoordinates, Number(body.parent_parcel?.areaSqm) || 0);
     const aux = aggregateAuxiliaryMetrics(body.roads || [], body.commonSpaces || [], frame);
 
+    // SECURITY: recompute each lot area server-side from vertices.
+    // Clients must not be trusted with `lot.areaSqm` for billing.
+    const recomputedLots = (body.lots || []).map((l: any) => {
+      const verts = Array.isArray(l?.vertices) ? l.vertices : [];
+      const serverArea = verts.length >= 3 ? polygonAreaSqm(verts, frame) : Number(l?.areaSqm) || 0;
+      return { ...l, areaSqm: Math.round(serverArea * 100) / 100 };
+    });
+
     let totalFee = 0;
     let feeBreakdown: any = null;
     if (rate) {
       const breakdown = computeSubdivisionFee(
         {
-          lotsAreasSqm: (body.lots || []).map((l: any) => Number(l?.areaSqm) || 0),
+          lotsAreasSqm: recomputedLots.map((l: any) => Number(l?.areaSqm) || 0),
           roadLengthM: aux.roadLengthM,
           commonSpaceSqm: aux.commonSpaceSqm,
         },
@@ -241,7 +250,7 @@ Deno.serve(async (req) => {
       };
     } else {
       // Safe fallback: 10$ per lot minimum
-      totalFee = body.lots.length * 10;
+      totalFee = recomputedLots.length * 10;
     }
 
     // === Lot E — Server-side infrastructure surcharge ===
@@ -314,10 +323,10 @@ Deno.serve(async (req) => {
       requester_right_type: body.requester.rightType || null,
       requester_state_exploited_by: body.requester.stateExploitedBy || null,
       requester_nationality: body.requester.nationality || null,
-      number_of_lots: body.lots.length,
-      lots_data: body.lots,
+      number_of_lots: recomputedLots.length,
+      lots_data: recomputedLots,
       subdivision_plan_data: {
-        lots: body.lots,
+        lots: recomputedLots,
         roads: body.roads,
         commonSpaces: body.commonSpaces,
         servitudes: body.servitudes,
