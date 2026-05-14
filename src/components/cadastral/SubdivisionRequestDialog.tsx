@@ -19,6 +19,7 @@ import StepDocuments from './subdivision/steps/StepDocuments';
 import StepInfrastructures from './subdivision/steps/StepInfrastructures';
 import StepSummary from './subdivision/steps/StepSummary';
 import StepZoningRules from './subdivision/steps/StepZoningRules';
+import { inferSectionType } from './subdivision/utils/sectionType';
 
 interface SubdivisionRequestDialogProps {
   parcelNumber: string;
@@ -272,7 +273,7 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
             )}
             {form.currentStep === 'infrastructures' && (
               <StepInfrastructures
-                sectionType={parcelData?.quartier ? 'urban' : (parcelData?.village ? 'rural' : 'urban')}
+                sectionType={inferSectionType(parcelData)}
                 selections={form.selectedInfrastructures}
                 onChange={form.setSelectedInfrastructures}
                 numberOfLots={form.lots.length}
