@@ -63,7 +63,11 @@ Deno.serve(async (req) => {
 
       updates.status = fee > 0 ? "awaiting_payment" : "approved";
       updates.processing_fee_usd = fee;
+      // total_amount_usd reflète le coût total cumulé (soumission déjà payée + instruction).
       updates.total_amount_usd = Number(request.submission_fee_usd || 0) + fee;
+      // remaining_fee_usd = ce qui reste à payer pour passer "approved" (instruction uniquement).
+      // La soumission a déjà été réglée à l'étape de création.
+      updates.remaining_fee_usd = fee;
       if (fee === 0) updates.approved_at = new Date().toISOString();
 
       // Update status first
