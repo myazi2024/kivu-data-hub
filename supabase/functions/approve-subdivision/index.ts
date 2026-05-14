@@ -11,7 +11,12 @@ const corsHeaders = {
 
 interface ApproveBody {
   request_id: string;
-  action: "approve" | "reject" | "return";
+  /**
+   * - approve / reject / return : action admin standard.
+   * - finalize_after_payment    : appel interne du webhook Stripe une fois les frais
+   *   d'instruction payés. Bypass le check admin via SERVICE_ROLE.
+   */
+  action: "approve" | "reject" | "return" | "finalize_after_payment";
   processing_fee_usd?: number;
   rejection_reason?: string;
   processing_notes?: string;
@@ -25,21 +30,31 @@ Deno.serve(async (req) => {
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
 
-    // Authenticate caller and verify admin role
+    // Authenticate caller. Service-role bypass is allowed only for the internal
+    // `finalize_after_payment` action triggered by stripe-webhook.
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) throw new Error("Authentication required");
-    const { data: { user }, error: authErr } = await supabase.auth.getUser(authHeader.replace("Bearer ", ""));
-    if (authErr || !user) throw new Error("Invalid authentication token");
+    const token = authHeader.replace("Bearer ", "");
+    const isServiceRole = token === serviceKey;
 
-    const { data: roles } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", user.id);
-    const isAdmin = (roles ?? []).some((r: any) => ["admin", "super_admin"].includes(r.role));
-    if (!isAdmin) throw new Error("Forbidden: admin role required");
+    let user: any = null;
+    if (!isServiceRole) {
+      const { data: { user: u }, error: authErr } = await supabase.auth.getUser(token);
+      if (authErr || !u) throw new Error("Invalid authentication token");
+      user = u;
+      const { data: roles } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id);
+      const isAdmin = (roles ?? []).some((r: any) => ["admin", "super_admin"].includes(r.role));
+      if (!isAdmin) throw new Error("Forbidden: admin role required");
+    }
 
     const body: ApproveBody = await req.json();
     if (!body.request_id || !body.action) throw new Error("request_id and action are required");
+    if (isServiceRole && body.action !== "finalize_after_payment") {
+      throw new Error("Service-role calls are restricted to finalize_after_payment");
+    }
 
     // Load the request
     const { data: request, error: loadErr } = await supabase
