@@ -6,7 +6,9 @@ import {
   buildMetricFrame,
   aggregateAuxiliaryMetrics,
   computeSubdivisionFee,
+  polygonAreaSqm,
 } from "../_shared/subdivisionFees.ts";
+import { inferSectionType } from "../_shared/sectionType.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -102,17 +104,16 @@ Deno.serve(async (req) => {
     if (!body.purpose) throw new Error("purpose is required");
 
     // === SERVER-SIDE FEE COMPUTATION (source of truth) ===
-    // Prefer explicit section_type from client; fall back to quartier vs village inference.
-    const sectionType: 'urban' | 'rural' = body.section_type
-      ?? (body.parent_parcel?.quartier ? 'urban' : (body.parent_parcel?.village ? 'rural' : 'urban'));
+    // Section type via shared helper (mirrored on the client).
+    const sectionType: 'urban' | 'rural' = body.section_type ?? inferSectionType(body.parent_parcel);
 
     // === SERVER-SIDE PARENT PARCEL ELIGIBILITY (zoning rule) ===
     // Verrou: surface min/max parcelle-mère définis dans subdivision_zoning_rules.
     {
       const geo = body.parent_parcel;
       const candidates = (sectionType === 'urban'
-        ? [geo.avenue, geo.quartier, geo.commune, geo.ville]
-        : [geo.village, geo.groupement, geo.collectivite, geo.territoire])
+        ? [geo.avenue, geo.quartier, geo.commune, geo.ville, geo.province]
+        : [geo.village, geo.groupement, geo.collectivite, geo.territoire, geo.province])
         .map((v) => (v || '').trim()).filter(Boolean);
       candidates.push('*');
       const { data: zoningRules } = await supabase
