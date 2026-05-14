@@ -1,113 +1,83 @@
+## Audit — Demande de lotissement (carte cadastrale)
 
-# Audit CCC (formulaire → réception Admin → traitement)
+Périmètre : `SubdivisionRequestDialog`, `useSubdivisionForm`, `Step*`, edge functions `subdivision-request` / `approve-subdivision` / `generate-subdivision-plan`, table `subdivision_requests`, RLS storage.
 
-> Note : tu n'as pas encore collé le message d'erreur exact. J'ai listé ci-dessous les causes les plus probables d'après l'audit du code et de la base. Une fois le texte du toast/console reçu, j'isole le coupable précis avant de toucher au reste.
+### A. Bugs bloquants (P0)
 
-## A. Bugs bloquants identifiés
+1. **Rules of Hooks cassées (`UserSubdivisionRequests.tsx` L127)** : `useState(downloadingId)` déclaré APRÈS un `return` conditionnel. React lance « Rendered more hooks than during the previous render » dès qu'une demande approuvée apparaît. → Remonter le hook au top du composant.
 
-### A1. Triplon sur l'approbation → unique_violation `cadastral_parcels.parcel_number`
-À l'approbation d'une contribution, **trois écritures concurrentes** créent la même parcelle :
-1. Trigger BEFORE UPDATE `trigger_create_parcel_on_approval` → `create_parcel_from_approved_contribution()` (INSERT parcel + histories)
-2. Trigger AFTER UPDATE `sync_contribution_to_parcel_trigger` → `sync_approved_contribution_to_parcel()` (INSERT ou UPDATE parcel)
-3. Code front `AdminCCCContributions.handleApprove` (lignes 312-360) → INSERT parcel manuel
+2. **Inférence `sectionType` divergente** entre client et serveur :
+   - `useSubdivisionForm.computeFee` : `province && !quartier ? 'rural' : 'urban'`
+   - `submit` + `StepInfrastructures` + edge function : `quartier ? 'urban' : (village ? 'rural' : 'urban')`
+   → L'utilisateur voit un montant calculé sur un tarif rural et est facturé sur un tarif urbain (ou inverse). Centraliser dans un helper `inferSectionType(parcelData)` partagé front + edge.
 
-Conséquence : l'INSERT côté front (#3) lève `duplicate key value violates unique constraint`, l'admin reçoit "Erreur lors de l'approbation".
+3. **Surfaces des lots non revérifiées côté serveur** : l'edge function applique le tarif à `lot.areaSqm` envoyé par le client. Un utilisateur peut spoofer la surface et payer 1 $ pour un lot de 10 000 m². → Recomputer chaque `areaSqm` à partir des `vertices` + `metricFrame` server-side (`buildMetricFrame` est déjà importé).
 
-**Fix** : Supprimer l'INSERT/UPDATE parcel côté front (laisser uniquement les triggers). Garder côté front la notification + audit log + invalidation queries.
+4. **Frais d'instruction (admin) double-facturent la soumission** : `approve-subdivision` fait `total_amount_usd = submission_fee_usd + processing_fee_usd` quand `awaiting_payment`. La soumission a déjà été payée → l'invoice du paiement final inclut à nouveau les frais de soumission. → `total_amount_usd = processing_fee_usd` (ou utiliser `remaining_fee_usd` qui existe déjà en DB).
 
-### A2. Trigger `normalize_contribution_empty_strings` enregistré DEUX fois
-Présent sous `normalize_contribution_empty_strings_trg` ET `trigger_normalize_contribution_empty_strings`. Idempotent mais double coût et risque sur futurs side-effects.
-**Fix** : `DROP TRIGGER IF EXISTS normalize_contribution_empty_strings_trg`.
+5. **Lots jamais matérialisés quand `processing_fee_usd > 0`** : `approve-subdivision` n'insère `subdivision_lots` que si `status === 'approved'`. Aucun callback côté webhook Stripe / `update-payment-status` ne re-déclenche la matérialisation après paiement final. → Ajouter un déclencheur (webhook Stripe ou edge dédiée `finalize-subdivision-approval`) qui passe `awaiting_payment → approved` puis exécute la matérialisation.
 
-### A3. Fonction `normalize_contribution_empty_strings` contient du code mort dangereux
-`NEW.title_issue_date::text = ''` est impossible (colonne déjà DATE) ; en revanche les colonnes texte sont OK. Pas de bug actif mais à nettoyer.
+6. **Absence de vérification de propriété** : aucun check que `auth.uid()` est `current_owner_id` de `cadastral_parcels` ni qu'il existe un mandat (notarial / procuration). N'importe quel utilisateur authentifié peut lotir n'importe quelle parcelle. → Vérifier ownership dans l'edge function ; rejeter sinon (sauf `requester.type ∈ {mandatary, notary}` avec doc justificatif présent).
 
-### A4. Triggers de création parcel se chevauchent
-`create_parcel_from_approved_contribution` (BEFORE) crée la parcelle + histories,
-`sync_approved_contribution_to_parcel` (AFTER) recrée une parcelle si `original_parcel_id` est NULL → déjà mis par BEFORE, donc seul l'UPDATE branch tourne.
-Risque d'incohérence si `contribution_type` n'est pas dans `('new','nouveau')` (par défaut `'new'` mais champ jamais set par le hook front → cf. A6).
-**Fix** : Consolider en **une seule** RPC `approve_ccc_contribution(contribution_id)` SECURITY DEFINER qui :
-- met `status='approved' + reviewed_by/at + verified_by/at`
-- crée/maj la parcelle (INSERT … ON CONFLICT DO UPDATE sur `parcel_number`)
-- réplique les histories (ownership/boundary/tax/mortgage/permits)
-- déclenche la génération de code CCC
-Puis supprimer les 2 triggers `BEFORE/AFTER UPDATE` redondants.
-Le front Admin appelle simplement `supabase.rpc('approve_ccc_contribution', {p_id})`.
+### B. Bugs / incohérences (P1)
 
-### A5. `contribution_type` jamais défini par le hook de soumission
-`useCadastralContribution.submitContribution` n'envoie pas `contribution_type`. Il prend le DEFAULT (`'new'`). OK pour création, mais pour les contributions de mise à jour de parcelle existante (édition), il faut explicitement transmettre `'update'` + `original_parcel_id`. Vérifier `useCadastralContribution.updateContribution`.
-**Fix** : Toujours envoyer `contribution_type` (`new` ou `update`) et `original_parcel_id` quand applicable.
+7. **Documents requis hardcodés vs configurables** : l'edge exige `requester_id_document_url` + `proof_of_ownership_url` mais l'admin peut les retirer/renommer dans `subdivision_required_documents`. → Faire valider la liste contre `subdivision_required_documents WHERE is_required` filtrée par `requester_type`.
 
-### A6. Cause probable de l'erreur côté SOUMISSION utilisateur
-Hypothèses, par ordre de fréquence :
-- **a)** `RPC detect_suspicious_contribution` renvoie `is_suspicious=true, fraud_score≥80` → toast "Contribution suspecte" (silent block).
-- **b)** Conflit unique `cadastral_contributions_user_parcel_active` (déjà une `pending`/`returned` pour la même parcelle) → toast "Contribution déjà en cours".
-- **c)** Une contrainte CHECK ou trigger sur un nouveau champ (`is_occupied`, `rental_start_date`) qui rejette les valeurs vides → mais les helpers `blank()/blankDate()` semblent OK.
-- **d)** RLS : politique INSERT existe et passe (`auth.uid() = user_id`) — si l'utilisateur n'est pas authentifié réellement (session expirée) → toast "Authentification requise".
+8. **Champs identité perdus** : `entitySubTypeOther` envoyé jamais persisté ; `propertyTitleType` envoyé mais ignoré ; `title_issue_date` jamais envoyé. → Ajouter colonnes manquantes ou stocker dans `additional_documents`/jsonb.
 
-**Fix immédiat** : capturer `contributionError.message + .code + .details + .hint` dans le toast utilisateur (déjà partiel ; durcir + log dans `console.error` structuré + envoyer à un endpoint d'audit `client_errors`).
+9. **Drafts non scopés utilisateur** : clé `subdivision-draft-v2-${parcelNumber}` partagée. Sur appareil partagé, A voit le brouillon de B. → Préfixer par `userId`. Ajouter `versionSchema` pour invalider proprement.
 
-### A7. RLS Admin UPDATE : `WITH CHECK` manquant
-La policy "Admins can update contributions" a `qual` mais `with_check IS NULL`. Postgres applique alors `qual` aussi pour `WITH CHECK`, donc fonctionnel ; mais à durcir explicitement.
+10. **`lots_data` dupliqué** : stocké à la fois dans `lots_data` et dans `subdivision_plan_data.lots`. Dérive possible. → Garder `subdivision_plan_data` source unique, déprécier `lots_data` (vue calculée).
 
-## B. Manques fonctionnels côté Admin
+11. **422 ROAD_INFRA_VIOLATIONS / PARENT_AREA_OUT_OF_RANGE** affichés par un toast unique sans surligner la voie/lot fautif. → Dans le client, parser la réponse, marquer la voie concernée et naviguer vers l'onglet `designer` ou `parcel`.
 
-- **Réception** : `AdminCCCContributions` ne propose pas d'export CSV des contributions filtrées.
-- **Détails** : Aucune visualisation des `appeal_data` quand un demandeur fait appel d'un rejet.
-- **Réception des nouveaux champs infrastructure** (canal/éclairage – cf. lotissement) — sans rapport CCC mais à mettre en cohérence si jamais réutilisés.
-- **Bulk reject** ne déclenche pas la notification utilisateur (seul le single reject le fait).
-- **Bulk approve** insère parcels ligne par ligne sans cohérence avec les triggers (cf. A1).
-- **Statut `returned`** (renvoi pour correction) pas explicitement géré dans les compteurs `Stats`.
-- **Audit log** : pas d'entrée lors d'un retour pour correction `returned` côté `logContributionAudit`.
-- **`source_form_type`** colonne existe mais n'est jamais peuplée → impossible de tracer la provenance (CCC plein vs Quick).
+12. **Province/Cascade urbain vs rural** : la liste `candidates` côté edge n'inclut pas `province` pour le cas urbain. Une règle de zonage province-level ne s'applique jamais. → Ajouter `geo.province` après `geo.ville`.
 
-## C. Optimisations / hardening
+13. **Validation server-side incomplète vs zoning admin** : la règle peut imposer surface min/max par lot, densité, largeur min des voies, % d'espaces verts… Le serveur ne valide que parent + per-road infra. → Étendre les checks (`lot_min_area_sqm`, `lot_max_area_sqm`, `road_min_width_m`, `min_common_space_pct`).
 
-- **Helper unique `useApproveCCC`** (TanStack mutation) au lieu de 200 lignes inline dans `AdminCCCContributions.handleApprove`.
-- **Idempotence approbation** : `ON CONFLICT (parcel_number) DO UPDATE` côté RPC.
-- **Réduction des `as any`** : `useCadastralContribution.buildContributionPayload` retourne `any` ; typer via `Database['public']['Tables']['cadastral_contributions']['Insert']`.
-- **Index** : ajouter `idx_cadastral_contributions_status_created` pour la pagination admin filtrée.
-- **Trigger logging** : enrober `auto_generate_ccc_code` dans EXCEPTION→`RAISE LOG` + re-raise pour ne plus avaler les erreurs de génération de code.
-- **Edge function `approve-ccc-contribution`** plutôt qu'une simple RPC : permet d'envoyer le mail/notification ET de logguer dans `admin_action` côté serveur.
-- **Cleanup `localStorage`** : la clé `cadastral_contribution_${parcel}` est nettoyée mais pas l'image base64 brouillon liée.
+14. **Idempotence absente** : pas d'`Idempotency-Key` ; un double-clic réseau → 2 références créées (le `setSubmitting` couvre le cas UI mais pas un retry réseau du SDK Supabase). → Hash payload (parcel_number + user_id + plan signature) + `unique` partiel `WHERE status='pending'`.
 
-## D. Plan d'exécution (séquentiel)
+15. **Fichiers orphelins** : aucun nettoyage du bucket `cadastral-documents` quand la demande est rejetée/annulée. → Cron `cleanup-orphan-subdivision-docs` ou suppression on-reject.
 
-1. **Capturer l'erreur exacte** : durcir le toast (`code+message+details+hint`) + console.error structuré dans `useCadastralContribution.submitContribution`. (front)
-2. **Migration SQL #1 — nettoyage triggers** :
-   - `DROP TRIGGER normalize_contribution_empty_strings_trg`
-   - `DROP TRIGGER trigger_create_parcel_on_approval` 
-   - `DROP TRIGGER sync_contribution_to_parcel_trigger`
-   - Création RPC unique `public.approve_ccc_contribution(p_id uuid)` SECURITY DEFINER avec UPSERT parcel + replay histories + appel `generate_cadastral_contributor_code`.
-   - Création RPC `public.reject_ccc_contribution(p_id uuid, p_reason text)` SECURITY DEFINER.
-   - Renforcer policy admin UPDATE : ajouter `WITH CHECK` explicite.
-3. **Refactor `AdminCCCContributions`** :
-   - Remplacer `handleApprove`, `handleReject`, `handleBulkApprove`, `handleBulkReject` par appels RPC.
-   - Extraire un hook `useCCCAdminActions` (mutations + invalidations).
-   - Ajouter export CSV + visualisation `appeal_data` + statut `returned` dans Stats.
-4. **Hook front `useCadastralContribution`** :
-   - Toujours peupler `contribution_type` + `original_parcel_id`.
-   - Peupler `source_form_type = 'ccc_full' | 'quick'`.
-   - Typer `buildContributionPayload` via `Database` types.
-5. **Index + observabilité** : `idx_cadastral_contributions_status_created`, log structuré dans `auto_generate_ccc_code`.
-6. **Mémoires** : MAJ `mem://admin/ccc-contributions-admin-audit-fr` avec le nouveau pattern RPC + suppression des INSERT parcel front.
+16. **Stripe fallback** : `markSubmittedFallback` laisse la demande en `submission_payment_status='pending'` sans retry visible. → Bouton « Reprendre le paiement » dans le tableau de bord (édite `submission_payment_id` en relançant `create-payment`).
 
-## E. Détails techniques
+17. **Auto-fill nom/prénom** : `meta.full_name.split(' ')` ne gère pas les noms composés ni post-nom. → Mapper séparément `meta.first_name`, `meta.last_name`, `meta.middle_name` lorsqu'ils existent.
+
+### C. Optimisations (P2)
+
+18. **Hook ordering `SubdivisionRequestDialog`** : `React.useMemo(STEP_CONFIG)` après `if (!open) return null` et `if (showIntro) return …`. Légal (les early-returns sont avant tous les hooks de ce composant) mais à risque ; sortir tous les hooks au sommet pour cohérence.
+
+19. **Debounce fee 400 ms** OK ; ajouter `AbortController` sur les `select` Supabase pour annuler les requêtes obsolètes.
+
+20. **Suppression de la duplication d'inférence section_type** (cf. #2) : créer `src/components/cadastral/subdivision/utils/sectionType.ts` + `supabase/functions/_shared/sectionType.ts`.
+
+21. **Index manquant** : `idx_subdivision_requests_user_status_created (user_id, status, created_at desc)` — accélère `UserSubdivisionRequests`.
+
+22. **Mobile 360 px** : 7 onglets en scroll horizontal — tronquer en icônes seulement sous `sm`, ajouter `aria-label`.
+
+23. **Edge function logging** : remplacer les `.catch(()=>null)` silencieux par `console.error` structurés (déjà fait pour roads, à étendre).
+
+24. **Contrainte CHECK trop laxiste sur statut** : aucune contrainte `status IN ('pending','in_review','awaiting_payment','approved','rejected','returned','cancelled')`. À ajouter.
+
+### D. Plan d'implémentation (ordre proposé)
 
 ```text
-Triggers actuels (cadastral_contributions)              | Action après migration
---------------------------------------------------------|----------------------------
-format_contribution_parcel_number_trigger    BEFORE INS | KEEP
-trg_prevent_test_data_in_prod                BEFORE INS | KEEP
-normalize_contribution_empty_strings_trg     BEFORE I/U | DROP (doublon)
-trigger_normalize_contribution_empty_strings BEFORE I/U | KEEP
-trigger_sync_owner_name                      BEFORE I/U | KEEP
-enforce_rejection_reason_trigger             BEFORE I/U | KEEP
-trg_enforce_mortgage_rejection_motive        BEFORE UPD | KEEP
-trigger_create_parcel_on_approval            BEFORE UPD | DROP (déplacé en RPC)
-sync_contribution_to_parcel_trigger          AFTER  UPD | DROP (déplacé en RPC)
-trigger_auto_generate_ccc_code               AFTER  UPD | KEEP (idempotent)
-update_cadastral_contributions_updated_at    BEFORE UPD | KEEP
+P0 #1  Hooks order fix UserSubdivisionRequests
+P0 #2  Helper sectionType partagé
+P0 #3  Recompute server lot.areaSqm via metricFrame
+P0 #4  Fix double-facturation processing fee
+P0 #5  Webhook → finaliser approbation après awaiting_payment
+P0 #6  Vérification ownership (cadastral_parcels.current_owner_id)
+P1 #7-13 Validation, persistence, drafts scopés user, lots_data dépréciation
+P1 #14-17 Idempotence, cleanup storage, Stripe retry, auto-fill profil
+P2 #18-24 Refactors + index + UX mobile + logs structurés + CHECK enum
 ```
 
-Aucune modification destructive de données : seule la logique d'approbation est consolidée.
+### E. Détails techniques (référence)
+
+- **Tables touchées** : `subdivision_requests` (colonnes manquantes : `requester_entity_subtype_other`, `parent_parcel_title_type`, `parent_parcel_title_issue_date`, `idempotency_key`, contrainte CHECK status).
+- **Edge functions à modifier** : `subdivision-request` (ownership, recompute area, validations zoning étendues, idempotence) ; `approve-subdivision` (split submission vs processing fee, finalisation différée) ; nouvelle `finalize-subdivision-approval` appelée par `stripe-webhook`.
+- **Front** : `useSubdivisionForm.computeFee` aligné sur helper partagé ; `SubdivisionRequestDialog` — parsing erreurs typées (`ROAD_INFRA_VIOLATIONS`, `PARENT_AREA_OUT_OF_RANGE`) et rebascule onglet ; `UserSubdivisionRequests` — hook order + bouton « Reprendre paiement ».
+- **Storage** : politique RLS `cadastral-documents` doit déjà imposer `path[0]=auth.uid()` (à vérifier) ; ajouter cron de purge des chemins non référencés.
+
+Aucune modification effectuée — plan en attente d'approbation.
