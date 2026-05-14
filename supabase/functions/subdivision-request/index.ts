@@ -220,12 +220,20 @@ Deno.serve(async (req) => {
     const frame = buildMetricFrame(body.parent_parcel?.gpsCoordinates, Number(body.parent_parcel?.areaSqm) || 0);
     const aux = aggregateAuxiliaryMetrics(body.roads || [], body.commonSpaces || [], frame);
 
+    // SECURITY: recompute each lot area server-side from vertices.
+    // Clients must not be trusted with `lot.areaSqm` for billing.
+    const recomputedLots = (body.lots || []).map((l: any) => {
+      const verts = Array.isArray(l?.vertices) ? l.vertices : [];
+      const serverArea = verts.length >= 3 ? polygonAreaSqm(verts, frame) : Number(l?.areaSqm) || 0;
+      return { ...l, areaSqm: Math.round(serverArea * 100) / 100 };
+    });
+
     let totalFee = 0;
     let feeBreakdown: any = null;
     if (rate) {
       const breakdown = computeSubdivisionFee(
         {
-          lotsAreasSqm: (body.lots || []).map((l: any) => Number(l?.areaSqm) || 0),
+          lotsAreasSqm: recomputedLots.map((l: any) => Number(l?.areaSqm) || 0),
           roadLengthM: aux.roadLengthM,
           commonSpaceSqm: aux.commonSpaceSqm,
         },
@@ -242,7 +250,7 @@ Deno.serve(async (req) => {
       };
     } else {
       // Safe fallback: 10$ per lot minimum
-      totalFee = body.lots.length * 10;
+      totalFee = recomputedLots.length * 10;
     }
 
     // === Lot E — Server-side infrastructure surcharge ===
