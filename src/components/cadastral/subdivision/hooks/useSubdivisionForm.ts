@@ -200,8 +200,8 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
   const historyIndexRef = useRef(-1);
   const [historyVersion, setHistoryVersion] = useState(0);
   const skipHistoryRef = useRef(false);
-  // === Draft system ===
-  const draftKey = `${DRAFT_KEY_PREFIX}${parcelNumber}`;
+  // === Draft system === (scoped per user to avoid leaking drafts on shared devices)
+  const draftKey = `${DRAFT_KEY_PREFIX}${authUser?.id || 'anon'}-${parcelNumber}`;
   
   // Restore draft on mount
   useEffect(() => {
