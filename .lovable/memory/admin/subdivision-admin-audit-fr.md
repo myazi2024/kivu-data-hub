@@ -73,3 +73,10 @@ type: feature
 - `SubdivisionStep` étend l'union avec `'zoning'`. `useSubdivisionForm.steps` est mémoïsé et conditionnel à `hasZoningRule`. `isStepValid('zoning') === true` (page d'information).
 - Bascule auto une fois sur `'zoning'` à l'apparition de la règle (flag `zoningSeenRef`).
 - Contenu pro : intro, liste détaillée des normes (surface min/max lot, voirie, façade, % espaces communs, max lots, notes admin) avec sévérité Bloquant/Avertissement, encadré « contrôles automatiques » + engagement de conformité.
+
+## Hardening service utilisateur (mai 2026)
+- Edge `subdivision-request` : header `Idempotency-Key` (court-circuit), ownership via RPC `can_subdivide_parcel` (requester.type='owner'), validation zoning étendue (min/max lot area recalculés serveur, min_road_width_m, max_lots_per_request → code `LOT_AREA_OUT_OF_RANGE`), persistance `parent_parcel_title_type/issue_date`, `requester_entity_subtype_other`, `idempotency_key`.
+- Schéma `subdivision_requests` : CHECK status enum, index `(user_id, status, created_at desc)`, index unique partiel `(user_id, idempotency_key)`.
+- `SubdivisionRequestDialog` : parsing erreurs typées + rebascule onglet (`PARENT_AREA_OUT_OF_RANGE`/`ROAD_INFRA_VIOLATIONS`/`LOT_AREA_OUT_OF_RANGE`/`OWNERSHIP_REQUIRED`), `useMemo` STEP_CONFIG remonté avant early-returns.
+- `useSubdivisionForm` : drafts scopés `user.id+parcelNumber` (préfixe v3), auto-fill first/last/middle_name depuis `user_metadata`, `Idempotency-Key` UUID stable, `titleIssueDate` propagé.
+- `UserSubdivisionRequests` : bouton « Reprendre le paiement » pour demandes `submission_payment_status='pending'`/`status='awaiting_payment'`.
