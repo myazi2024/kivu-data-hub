@@ -81,3 +81,35 @@ P2 #18-24 Refactors + index + UX mobile + logs structurés + CHECK enum
 - **Storage** : politique RLS `cadastral-documents` doit déjà imposer `path[0]=auth.uid()` (à vérifier) ; ajouter cron de purge des chemins non référencés.
 
 Aucune modification effectuée — plan en attente d'approbation.
+
+---
+
+## Itération suivante — livré (mai 2026)
+
+### Migration DB (`20260515_subdivision_hardening`)
+- `subdivision_requests` : colonnes `requester_entity_subtype_other`, `parent_parcel_title_type`, `parent_parcel_title_issue_date`, `idempotency_key`.
+- CHECK `status IN (pending, in_review, awaiting_payment, approved, rejected, returned, cancelled)`.
+- Index `idx_subdivision_requests_user_status_created` + index unique partiel `(user_id, idempotency_key)`.
+- RPC `can_subdivide_parcel(parcel_number, user_id)` SECURITY DEFINER (vérifie qu'il existe une `cadastral_contributions` `approved` du user).
+
+### Edge `subdivision-request`
+- **Idempotence** : header `Idempotency-Key` court-circuite et renvoie la demande existante.
+- **Ownership** : si `requester.type === 'owner'`, appelle `can_subdivide_parcel`. 403 `OWNERSHIP_REQUIRED` sinon.
+- **Validation zoning étendue** : `min_lot_area_sqm`/`max_lot_area_sqm` (par lot, recalculés serveur), `min_road_width_m`, `max_lots_per_request`. Nouveau code `LOT_AREA_OUT_OF_RANGE`.
+- **Persistance** : `parent_parcel_title_type`, `parent_parcel_title_issue_date`, `requester_entity_subtype_other`, `idempotency_key`.
+
+### Front
+- `SubdivisionRequestDialog.handleSubmit` parse les codes (`PARENT_AREA_OUT_OF_RANGE`, `ROAD_INFRA_VIOLATIONS`, `LOT_AREA_OUT_OF_RANGE`, `OWNERSHIP_REQUIRED`) et rebascule sur l'onglet à corriger ; `useMemo(STEP_CONFIG)` remonté avant les early-returns.
+- `useSubdivisionForm` :
+  - Drafts scopés `user.id+parcelNumber` (préfixe `v3-`).
+  - Auto-fill `first_name`/`last_name`/`middle_name` depuis `user_metadata` (plus seulement `full_name.split(' ')`).
+  - `Idempotency-Key` UUID stable par session de formulaire envoyé en header.
+  - `titleIssueDate` propagé au backend.
+- `UserSubdivisionRequests` : bouton « Reprendre le paiement » pour les demandes `submission_payment_status='pending'` ou `status='awaiting_payment'`.
+
+### Restant (non bloquant)
+- Documents requis configurables : remplacer le check hardcodé `requester_id_document_url`+`proof_of_ownership_url` par `subdivision_required_documents WHERE is_required` filtré par `requester_type` (P1 #7).
+- Cleanup storage on-reject / cron orphelins (P1 #15).
+- Déprécier `lots_data` (vue calculée depuis `subdivision_plan_data.lots`) (P1 #10).
+- Mobile : tronquer onglets en icônes seulement < `sm` + `aria-label` (P2 #22).
+- AbortController sur les `select` Supabase obsolètes dans `computeFee` (P2 #19).
