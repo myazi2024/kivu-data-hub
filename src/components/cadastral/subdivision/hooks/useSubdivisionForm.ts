@@ -46,24 +46,24 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
   // Draft restored flag
   const [draftRestored, setDraftRestored] = useState(false);
 
-  // Auto-fill requester from authenticated user
+  // Auto-fill requester from authenticated user — supports first/last/middle metadata
   useEffect(() => {
-    if (authUser) {
-      const meta = authUser.user_metadata || {};
-      const fullName = meta.full_name || meta.name || '';
-      const nameParts = fullName.split(' ');
-      const firstName = nameParts[0] || '';
-      const lastName = nameParts.slice(1).join(' ') || '';
-
-      setRequester(prev => ({
-        ...prev,
-        legalStatus: prev.legalStatus || 'Personne physique',
-        firstName: firstName || prev.firstName,
-        lastName: lastName || prev.lastName,
-        phone: authUser.phone || meta.phone || prev.phone,
-        email: authUser.email || prev.email,
-      }));
-    }
+    if (!authUser) return;
+    const meta = (authUser.user_metadata || {}) as Record<string, any>;
+    const fullName: string = meta.full_name || meta.name || '';
+    const parts = fullName.trim().split(/\s+/).filter(Boolean);
+    const metaFirst = meta.first_name || meta.given_name || parts[0] || '';
+    const metaLast = meta.last_name || meta.family_name || (parts.length > 1 ? parts[parts.length - 1] : '');
+    const metaMiddle = meta.middle_name || (parts.length > 2 ? parts.slice(1, -1).join(' ') : '');
+    setRequester(prev => ({
+      ...prev,
+      legalStatus: prev.legalStatus || 'Personne physique',
+      firstName: prev.firstName || metaFirst,
+      lastName: prev.lastName || metaLast,
+      middleName: prev.middleName || metaMiddle,
+      phone: prev.phone || authUser.phone || meta.phone || '',
+      email: prev.email || authUser.email || '',
+    }));
   }, [authUser]);
   
   // Lot E — infrastructures sélectionnées (key -> quantité)
