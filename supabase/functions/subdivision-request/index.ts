@@ -38,6 +38,7 @@ interface SubdivisionRequestBody {
     groupement?: string | null;
     village?: string | null;
     propertyTitleType?: string | null;
+    titleIssueDate?: string | null;
   };
   requester: {
     firstName: string;
