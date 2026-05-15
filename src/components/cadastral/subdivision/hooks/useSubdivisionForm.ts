@@ -14,7 +14,7 @@ import { useParentParcelEligibility } from './useParentParcelEligibility';
 import { fetchInfrastructureTariffsAsync } from '@/hooks/useSubdivisionInfrastructureTariffs';
 import { inferSectionType } from '../utils/sectionType';
 
-const DRAFT_KEY_PREFIX = 'subdivision-draft-v2-';
+const DRAFT_KEY_PREFIX = 'subdivision-draft-v3-';
 
 export type { SubdivisionDocuments };
 
