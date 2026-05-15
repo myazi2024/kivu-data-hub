@@ -396,6 +396,7 @@ Deno.serve(async (req) => {
       requester_gender: body.requester.gender || null,
       requester_entity_type: body.requester.entityType || null,
       requester_entity_subtype: body.requester.entitySubType || null,
+      requester_entity_subtype_other: body.requester.entitySubTypeOther || null,
       requester_rccm_number: body.requester.rccmNumber || null,
       requester_right_type: body.requester.rightType || null,
       requester_state_exploited_by: body.requester.stateExploitedBy || null,
