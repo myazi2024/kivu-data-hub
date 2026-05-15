@@ -282,6 +282,27 @@ Deno.serve(async (req) => {
       return { ...l, areaSqm: Math.round(serverArea * 100) / 100 };
     });
 
+    // === Per-lot zoning area constraints (server-side recomputed areas) ===
+    if (matchedZoningRule) {
+      const minLot = Number(matchedZoningRule.min_lot_area_sqm) || 0;
+      const maxLot = matchedZoningRule.max_lot_area_sqm != null ? Number(matchedZoningRule.max_lot_area_sqm) : null;
+      const lotErrs: string[] = [];
+      for (const l of recomputedLots) {
+        if (l.isParentBoundary) continue;
+        const a = Number(l.areaSqm) || 0;
+        const label = l.lotNumber ? `Lot ${l.lotNumber}` : (l.id || 'Lot');
+        if (minLot > 0 && a < minLot) lotErrs.push(`${label} : ${Math.round(a)} m² < min ${minLot} m².`);
+        if (maxLot && a > maxLot) lotErrs.push(`${label} : ${Math.round(a)} m² > max ${maxLot} m².`);
+      }
+      if (lotErrs.length > 0) {
+        return new Response(JSON.stringify({
+          error: 'LOT_AREA_OUT_OF_RANGE',
+          violations: lotErrs,
+          message: lotErrs.join(' '),
+        }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 422 });
+      }
+    }
+
     let totalFee = 0;
     let feeBreakdown: any = null;
     if (rate) {
