@@ -146,6 +146,7 @@ Deno.serve(async (req) => {
 
     // === SERVER-SIDE PARENT PARCEL ELIGIBILITY (zoning rule) ===
     // Verrou: surface min/max parcelle-mère définis dans subdivision_zoning_rules.
+    let matchedZoningRule: any = null;
     {
       const geo = body.parent_parcel;
       const candidates = (sectionType === 'urban'
