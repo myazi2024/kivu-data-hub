@@ -103,6 +103,43 @@ Deno.serve(async (req) => {
     }
     if (!body.purpose) throw new Error("purpose is required");
 
+    // === IDEMPOTENCE — short-circuit on retry ===
+    const idempotencyKey =
+      req.headers.get("Idempotency-Key") ||
+      req.headers.get("x-idempotency-key") ||
+      null;
+    if (idempotencyKey) {
+      const { data: existing } = await supabase
+        .from("subdivision_requests")
+        .select("id, reference_number, total_amount_usd, submission_fee_usd")
+        .eq("user_id", user.id)
+        .eq("idempotency_key", idempotencyKey)
+        .maybeSingle();
+      if (existing) {
+        return new Response(JSON.stringify({
+          id: existing.id,
+          reference_number: existing.reference_number,
+          total_amount_usd: existing.total_amount_usd,
+          submission_fee_usd: existing.submission_fee_usd,
+          idempotent_replay: true,
+        }), { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 });
+      }
+    }
+
+    // === OWNERSHIP CHECK — owner-type requesters must have an approved CCC contribution ===
+    if ((body.requester.type || "").toLowerCase() === "owner") {
+      const { data: canSubdivide, error: ownErr } = await supabase
+        .rpc("can_subdivide_parcel", { p_parcel_number: body.parcel_number, p_user_id: user.id });
+      if (ownErr) console.error("ownership rpc error", ownErr);
+      if (!canSubdivide) {
+        return new Response(JSON.stringify({
+          error: "OWNERSHIP_REQUIRED",
+          message:
+            "Vous devez disposer d'une contribution cadastrale approuvée sur cette parcelle pour la lotir en tant que propriétaire. Soumettez d'abord la fiche CCC, ou choisissez une autre qualité (mandataire, notaire, etc.) avec pièce justificative.",
+        }), { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 403 });
+      }
+    }
+
     // === SERVER-SIDE FEE COMPUTATION (source of truth) ===
     // Section type via shared helper (mirrored on the client).
     const sectionType: 'urban' | 'rural' = body.section_type ?? inferSectionType(body.parent_parcel);
