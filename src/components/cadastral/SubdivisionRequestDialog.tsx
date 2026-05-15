@@ -121,8 +121,13 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
     }
   };
   
+  const STEP_CONFIG = React.useMemo(
+    () => ALL_STEP_CONFIG.filter(s => form.steps.includes(s.key)),
+    [form.steps],
+  );
+
   if (!open) return null;
-  
+
   if (showIntro) {
     return (
       <FormIntroDialog
@@ -133,11 +138,7 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
       />
     );
   }
-  
-  const STEP_CONFIG = React.useMemo(
-    () => ALL_STEP_CONFIG.filter(s => form.steps.includes(s.key)),
-    [form.steps],
-  );
+
   const currentStepIndex = STEP_CONFIG.findIndex(s => s.key === form.currentStep);
   const feeLabel = form.loadingFee || form.submissionFee == null
     ? '…'
