@@ -628,7 +628,25 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
         headers: { 'Idempotency-Key': idempotencyKeyRef.current },
       });
 
-      if (error) throw error;
+      // Edge function returned non-2xx → parse error body for typed codes
+      if (error) {
+        let payload: any = null;
+        try {
+          const ctx = (error as any)?.context;
+          if (ctx?.body && typeof ctx.body.text === 'function') {
+            const txt = await ctx.body.text();
+            payload = txt ? JSON.parse(txt) : null;
+          } else if (typeof ctx === 'object' && ctx?.error) {
+            payload = ctx;
+          }
+        } catch { /* ignore */ }
+        const code = payload?.error || null;
+        const msg = payload?.message || (error as any)?.message || 'Échec de la soumission';
+        const e: any = new Error(msg);
+        e.code = code;
+        e.violations = payload?.violations || null;
+        throw e;
+      }
       if (!data?.id || !data?.reference_number) {
         throw new Error('Réponse invalide du serveur');
       }
@@ -648,7 +666,7 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
       };
     } catch (err: any) {
       console.error('Error submitting:', err);
-      throw new Error(err?.message || 'Échec de la soumission');
+      throw err;
     } finally {
       setSubmitting(false);
     }
