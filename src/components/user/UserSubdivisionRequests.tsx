@@ -173,6 +173,31 @@ export const UserSubdivisionRequests: React.FC = () => {
     }
   };
 
+  const handleResumePayment = async (req: SubdivisionRequest) => {
+    setResumingId(req.id);
+    try {
+      const amount = Number(req.total_amount_usd ?? req.submission_fee_usd ?? 0);
+      if (!amount) throw new Error('Montant introuvable pour cette demande.');
+      const { data: payment, error } = await supabase.functions.invoke('create-payment', {
+        body: {
+          invoice_id: req.id,
+          payment_type: 'subdivision_request',
+          amount_usd: amount,
+        },
+      });
+      if (error || !payment?.url) throw new Error(payment?.error || 'Paiement indisponible.');
+      window.location.href = payment.url as string;
+    } catch (err: any) {
+      toast({
+        title: 'Reprise du paiement impossible',
+        description: err?.message || 'Réessayez plus tard.',
+        variant: 'destructive',
+      });
+    } finally {
+      setResumingId(null);
+    }
+  };
+
   return (
     <div className="space-y-3">
       {testHint}
