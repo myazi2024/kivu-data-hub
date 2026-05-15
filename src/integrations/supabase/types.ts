@@ -6168,6 +6168,7 @@ export type Database = {
           final_payment_id: string | null
           final_payment_status: string | null
           id: string
+          idempotency_key: string | null
           in_review_at: string | null
           infrastructure_fee_usd: number
           intended_use_per_lot: Json | null
@@ -6182,7 +6183,9 @@ export type Database = {
           parent_parcel_gps_coordinates: Json | null
           parent_parcel_location: string | null
           parent_parcel_owner_name: string
+          parent_parcel_title_issue_date: string | null
           parent_parcel_title_reference: string | null
+          parent_parcel_title_type: string | null
           processing_notes: string | null
           proof_of_ownership_url: string | null
           purpose_of_subdivision: string | null
@@ -6191,6 +6194,7 @@ export type Database = {
           remaining_fee_usd: number | null
           requester_email: string | null
           requester_entity_subtype: string | null
+          requester_entity_subtype_other: string | null
           requester_entity_type: string | null
           requester_first_name: string
           requester_gender: string | null
@@ -6232,6 +6236,7 @@ export type Database = {
           final_payment_id?: string | null
           final_payment_status?: string | null
           id?: string
+          idempotency_key?: string | null
           in_review_at?: string | null
           infrastructure_fee_usd?: number
           intended_use_per_lot?: Json | null
@@ -6246,7 +6251,9 @@ export type Database = {
           parent_parcel_gps_coordinates?: Json | null
           parent_parcel_location?: string | null
           parent_parcel_owner_name: string
+          parent_parcel_title_issue_date?: string | null
           parent_parcel_title_reference?: string | null
+          parent_parcel_title_type?: string | null
           processing_notes?: string | null
           proof_of_ownership_url?: string | null
           purpose_of_subdivision?: string | null
@@ -6255,6 +6262,7 @@ export type Database = {
           remaining_fee_usd?: number | null
           requester_email?: string | null
           requester_entity_subtype?: string | null
+          requester_entity_subtype_other?: string | null
           requester_entity_type?: string | null
           requester_first_name: string
           requester_gender?: string | null
@@ -6296,6 +6304,7 @@ export type Database = {
           final_payment_id?: string | null
           final_payment_status?: string | null
           id?: string
+          idempotency_key?: string | null
           in_review_at?: string | null
           infrastructure_fee_usd?: number
           intended_use_per_lot?: Json | null
@@ -6310,7 +6319,9 @@ export type Database = {
           parent_parcel_gps_coordinates?: Json | null
           parent_parcel_location?: string | null
           parent_parcel_owner_name?: string
+          parent_parcel_title_issue_date?: string | null
           parent_parcel_title_reference?: string | null
+          parent_parcel_title_type?: string | null
           processing_notes?: string | null
           proof_of_ownership_url?: string | null
           purpose_of_subdivision?: string | null
@@ -6319,6 +6330,7 @@ export type Database = {
           remaining_fee_usd?: number | null
           requester_email?: string | null
           requester_entity_subtype?: string | null
+          requester_entity_subtype_other?: string | null
           requester_entity_type?: string | null
           requester_first_name?: string
           requester_gender?: string | null
@@ -7528,6 +7540,10 @@ export type Database = {
       calculate_surface_from_coordinates: {
         Args: { coordinates: Json }
         Returns: number
+      }
+      can_subdivide_parcel: {
+        Args: { p_parcel_number: string; p_user_id: string }
+        Returns: boolean
       }
       check_contribution_abuse: {
         Args: { p_parcel_id?: string; p_user_id: string }

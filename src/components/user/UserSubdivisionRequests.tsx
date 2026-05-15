@@ -7,7 +7,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useTestEnvironment, applyTestFilter } from '@/hooks/useTestEnvironment';
-import { Loader2, LayoutGrid, MapPin, Calendar, Hash, FlaskConical, Download } from 'lucide-react';
+import { Loader2, LayoutGrid, MapPin, Calendar, Hash, FlaskConical, Download, CreditCard } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { generateSubdivisionPlanPDF } from '@/utils/generateSubdivisionPlanPDF';
@@ -25,6 +25,9 @@ interface SubdivisionRequest {
   approved_at?: string | null;
   official_plan_path?: string | null;
   official_plan_version?: number | null;
+  submission_payment_status?: string | null;
+  submission_fee_usd?: number | null;
+  total_amount_usd?: number | null;
 }
 
 const statusConfig: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
@@ -41,6 +44,7 @@ export const UserSubdivisionRequests: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [hiddenTestCount, setHiddenTestCount] = useState(0);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [resumingId, setResumingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -49,7 +53,7 @@ export const UserSubdivisionRequests: React.FC = () => {
       try {
         let query = (supabase as any)
           .from('subdivision_requests')
-          .select('id, reference_number, parcel_number, number_of_lots, purpose_of_subdivision, status, created_at, reviewed_at, approved_at, official_plan_path, official_plan_version')
+          .select('id, reference_number, parcel_number, number_of_lots, purpose_of_subdivision, status, created_at, reviewed_at, approved_at, official_plan_path, official_plan_version, submission_payment_status, submission_fee_usd, total_amount_usd')
           .eq('user_id', user.id)
           .order('created_at', { ascending: false });
         query = applyTestFilter(query, 'reference_number', isTestRoute);
@@ -169,6 +173,31 @@ export const UserSubdivisionRequests: React.FC = () => {
     }
   };
 
+  const handleResumePayment = async (req: SubdivisionRequest) => {
+    setResumingId(req.id);
+    try {
+      const amount = Number(req.total_amount_usd ?? req.submission_fee_usd ?? 0);
+      if (!amount) throw new Error('Montant introuvable pour cette demande.');
+      const { data: payment, error } = await supabase.functions.invoke('create-payment', {
+        body: {
+          invoice_id: req.id,
+          payment_type: 'subdivision_request',
+          amount_usd: amount,
+        },
+      });
+      if (error || !payment?.url) throw new Error(payment?.error || 'Paiement indisponible.');
+      window.location.href = payment.url as string;
+    } catch (err: any) {
+      toast({
+        title: 'Reprise du paiement impossible',
+        description: err?.message || 'Réessayez plus tard.',
+        variant: 'destructive',
+      });
+    } finally {
+      setResumingId(null);
+    }
+  };
+
   return (
     <div className="space-y-3">
       {testHint}
@@ -209,6 +238,28 @@ export const UserSubdivisionRequests: React.FC = () => {
                 <p className="mt-2 text-[11px] text-muted-foreground bg-muted/30 rounded-lg p-2">
                   {req.purpose_of_subdivision}
                 </p>
+              )}
+
+
+              {(req.submission_payment_status === 'pending' || req.status === 'awaiting_payment') && req.status !== 'rejected' && req.status !== 'cancelled' && (
+                <div className="mt-2 flex justify-end">
+                  <Button
+                    size="sm"
+                    className="h-7 text-[11px] gap-1.5"
+                    onClick={() => handleResumePayment(req)}
+                    disabled={resumingId === req.id}
+                  >
+                    {resumingId === req.id ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <CreditCard className="h-3.5 w-3.5" />
+                    )}
+                    Reprendre le paiement
+                    {req.total_amount_usd != null && (
+                      <span className="opacity-80">({Number(req.total_amount_usd).toFixed(2)}$)</span>
+                    )}
+                  </Button>
+                </div>
               )}
 
               {req.status === 'approved' && (

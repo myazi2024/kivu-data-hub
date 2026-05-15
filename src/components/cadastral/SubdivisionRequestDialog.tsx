@@ -94,12 +94,40 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
       }
       window.location.href = payment.url as string;
     } catch (err: any) {
+      // Typed error handling — rebascule l'utilisateur sur l'onglet à corriger
+      const code: string | null = err?.code || null;
+      const violations: string[] | null = Array.isArray(err?.violations) ? err.violations : null;
+
+      if (code === 'PARENT_AREA_OUT_OF_RANGE') {
+        form.setCurrentStep('parcel');
+        toast({ title: 'Parcelle non éligible', description: err.message, variant: 'destructive' });
+        return;
+      }
+      if (code === 'ROAD_INFRA_VIOLATIONS' || code === 'LOT_AREA_OUT_OF_RANGE') {
+        form.setCurrentStep('designer');
+        toast({
+          title: code === 'LOT_AREA_OUT_OF_RANGE' ? 'Surfaces de lots hors normes' : 'Infrastructures non conformes',
+          description: violations?.slice(0, 3).join(' ') || err.message,
+          variant: 'destructive',
+        });
+        return;
+      }
+      if (code === 'OWNERSHIP_REQUIRED') {
+        form.setCurrentStep('parcel');
+        toast({ title: 'Propriété requise', description: err.message, variant: 'destructive' });
+        return;
+      }
       toast({ title: 'Erreur', description: err.message, variant: 'destructive' });
     }
   };
   
+  const STEP_CONFIG = React.useMemo(
+    () => ALL_STEP_CONFIG.filter(s => form.steps.includes(s.key)),
+    [form.steps],
+  );
+
   if (!open) return null;
-  
+
   if (showIntro) {
     return (
       <FormIntroDialog
@@ -110,11 +138,7 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
       />
     );
   }
-  
-  const STEP_CONFIG = React.useMemo(
-    () => ALL_STEP_CONFIG.filter(s => form.steps.includes(s.key)),
-    [form.steps],
-  );
+
   const currentStepIndex = STEP_CONFIG.findIndex(s => s.key === form.currentStep);
   const feeLabel = form.loadingFee || form.submissionFee == null
     ? '…'

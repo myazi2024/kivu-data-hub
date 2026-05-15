@@ -38,6 +38,7 @@ interface SubdivisionRequestBody {
     groupement?: string | null;
     village?: string | null;
     propertyTitleType?: string | null;
+    titleIssueDate?: string | null;
   };
   requester: {
     firstName: string;
@@ -103,12 +104,50 @@ Deno.serve(async (req) => {
     }
     if (!body.purpose) throw new Error("purpose is required");
 
+    // === IDEMPOTENCE — short-circuit on retry ===
+    const idempotencyKey =
+      req.headers.get("Idempotency-Key") ||
+      req.headers.get("x-idempotency-key") ||
+      null;
+    if (idempotencyKey) {
+      const { data: existing } = await supabase
+        .from("subdivision_requests")
+        .select("id, reference_number, total_amount_usd, submission_fee_usd")
+        .eq("user_id", user.id)
+        .eq("idempotency_key", idempotencyKey)
+        .maybeSingle();
+      if (existing) {
+        return new Response(JSON.stringify({
+          id: existing.id,
+          reference_number: existing.reference_number,
+          total_amount_usd: existing.total_amount_usd,
+          submission_fee_usd: existing.submission_fee_usd,
+          idempotent_replay: true,
+        }), { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 });
+      }
+    }
+
+    // === OWNERSHIP CHECK — owner-type requesters must have an approved CCC contribution ===
+    if ((body.requester.type || "").toLowerCase() === "owner") {
+      const { data: canSubdivide, error: ownErr } = await supabase
+        .rpc("can_subdivide_parcel", { p_parcel_number: body.parcel_number, p_user_id: user.id });
+      if (ownErr) console.error("ownership rpc error", ownErr);
+      if (!canSubdivide) {
+        return new Response(JSON.stringify({
+          error: "OWNERSHIP_REQUIRED",
+          message:
+            "Vous devez disposer d'une contribution cadastrale approuvée sur cette parcelle pour la lotir en tant que propriétaire. Soumettez d'abord la fiche CCC, ou choisissez une autre qualité (mandataire, notaire, etc.) avec pièce justificative.",
+        }), { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 403 });
+      }
+    }
+
     // === SERVER-SIDE FEE COMPUTATION (source of truth) ===
     // Section type via shared helper (mirrored on the client).
     const sectionType: 'urban' | 'rural' = body.section_type ?? inferSectionType(body.parent_parcel);
 
     // === SERVER-SIDE PARENT PARCEL ELIGIBILITY (zoning rule) ===
     // Verrou: surface min/max parcelle-mère définis dans subdivision_zoning_rules.
+    let matchedZoningRule: any = null;
     {
       const geo = body.parent_parcel;
       const candidates = (sectionType === 'urban'
@@ -125,6 +164,7 @@ Deno.serve(async (req) => {
       const rows = (zoningRules as any[]) || [];
       const matchedName = candidates.find((c) => rows.some((r) => r.location_name === c));
       const matched = matchedName ? rows.find((r) => r.location_name === matchedName) : null;
+      matchedZoningRule = matched;
       if (matched) {
         const area = Number(body.parent_parcel.areaSqm) || 0;
         const minA = Number(matched.parent_min_area_sqm) || 0;
@@ -194,6 +234,21 @@ Deno.serve(async (req) => {
           }
         }
 
+        // === Per-road width constraint ===
+        if (matched.min_road_width_m) {
+          for (const r of roads) {
+            const w = Number(r?.widthM || 0);
+            if (w > 0 && w < Number(matched.min_road_width_m)) {
+              errs.push(`${r?.name || 'Voie'} : largeur ${w} m < min ${matched.min_road_width_m} m.`);
+            }
+          }
+        }
+
+        // === Max lots per request ===
+        if (matched.max_lots_per_request && Array.isArray(body.lots) && body.lots.length > Number(matched.max_lots_per_request)) {
+          errs.push(`Nombre de lots ${body.lots.length} > maximum ${matched.max_lots_per_request} pour cette zone.`);
+        }
+
         if (errs.length > 0) {
           return new Response(JSON.stringify({
             error: 'ROAD_INFRA_VIOLATIONS',
@@ -227,6 +282,27 @@ Deno.serve(async (req) => {
       const serverArea = verts.length >= 3 ? polygonAreaSqm(verts, frame) : Number(l?.areaSqm) || 0;
       return { ...l, areaSqm: Math.round(serverArea * 100) / 100 };
     });
+
+    // === Per-lot zoning area constraints (server-side recomputed areas) ===
+    if (matchedZoningRule) {
+      const minLot = Number(matchedZoningRule.min_lot_area_sqm) || 0;
+      const maxLot = matchedZoningRule.max_lot_area_sqm != null ? Number(matchedZoningRule.max_lot_area_sqm) : null;
+      const lotErrs: string[] = [];
+      for (const l of recomputedLots) {
+        if (l.isParentBoundary) continue;
+        const a = Number(l.areaSqm) || 0;
+        const label = l.lotNumber ? `Lot ${l.lotNumber}` : (l.id || 'Lot');
+        if (minLot > 0 && a < minLot) lotErrs.push(`${label} : ${Math.round(a)} m² < min ${minLot} m².`);
+        if (maxLot && a > maxLot) lotErrs.push(`${label} : ${Math.round(a)} m² > max ${maxLot} m².`);
+      }
+      if (lotErrs.length > 0) {
+        return new Response(JSON.stringify({
+          error: 'LOT_AREA_OUT_OF_RANGE',
+          violations: lotErrs,
+          message: lotErrs.join(' '),
+        }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 422 });
+      }
+    }
 
     let totalFee = 0;
     let feeBreakdown: any = null;
@@ -308,6 +384,8 @@ Deno.serve(async (req) => {
       parent_parcel_owner_name: body.parent_parcel.ownerName,
       parent_parcel_title_reference: body.parent_parcel.titleReference,
       parent_parcel_gps_coordinates: body.parent_parcel.gpsCoordinates,
+      parent_parcel_title_type: body.parent_parcel.propertyTitleType || null,
+      parent_parcel_title_issue_date: (body as any).parent_parcel?.titleIssueDate || null,
       requester_first_name: body.requester.firstName,
       requester_last_name: body.requester.lastName,
       requester_middle_name: body.requester.middleName || null,
@@ -319,6 +397,7 @@ Deno.serve(async (req) => {
       requester_gender: body.requester.gender || null,
       requester_entity_type: body.requester.entityType || null,
       requester_entity_subtype: body.requester.entitySubType || null,
+      requester_entity_subtype_other: body.requester.entitySubTypeOther || null,
       requester_rccm_number: body.requester.rccmNumber || null,
       requester_right_type: body.requester.rightType || null,
       requester_state_exploited_by: body.requester.stateExploitedBy || null,
@@ -343,6 +422,7 @@ Deno.serve(async (req) => {
       // Lot E
       selected_infrastructures: persistedInfrastructures,
       infrastructure_fee_usd: infrastructureFee,
+      idempotency_key: idempotencyKey,
     };
 
     const { data, error } = await supabase

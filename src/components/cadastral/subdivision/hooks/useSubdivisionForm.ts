@@ -14,7 +14,7 @@ import { useParentParcelEligibility } from './useParentParcelEligibility';
 import { fetchInfrastructureTariffsAsync } from '@/hooks/useSubdivisionInfrastructureTariffs';
 import { inferSectionType } from '../utils/sectionType';
 
-const DRAFT_KEY_PREFIX = 'subdivision-draft-v2-';
+const DRAFT_KEY_PREFIX = 'subdivision-draft-v3-';
 
 export type { SubdivisionDocuments };
 
@@ -46,24 +46,24 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
   // Draft restored flag
   const [draftRestored, setDraftRestored] = useState(false);
 
-  // Auto-fill requester from authenticated user
+  // Auto-fill requester from authenticated user — supports first/last/middle metadata
   useEffect(() => {
-    if (authUser) {
-      const meta = authUser.user_metadata || {};
-      const fullName = meta.full_name || meta.name || '';
-      const nameParts = fullName.split(' ');
-      const firstName = nameParts[0] || '';
-      const lastName = nameParts.slice(1).join(' ') || '';
-
-      setRequester(prev => ({
-        ...prev,
-        legalStatus: prev.legalStatus || 'Personne physique',
-        firstName: firstName || prev.firstName,
-        lastName: lastName || prev.lastName,
-        phone: authUser.phone || meta.phone || prev.phone,
-        email: authUser.email || prev.email,
-      }));
-    }
+    if (!authUser) return;
+    const meta = (authUser.user_metadata || {}) as Record<string, any>;
+    const fullName: string = meta.full_name || meta.name || '';
+    const parts = fullName.trim().split(/\s+/).filter(Boolean);
+    const metaFirst = meta.first_name || meta.given_name || parts[0] || '';
+    const metaLast = meta.last_name || meta.family_name || (parts.length > 1 ? parts[parts.length - 1] : '');
+    const metaMiddle = meta.middle_name || (parts.length > 2 ? parts.slice(1, -1).join(' ') : '');
+    setRequester(prev => ({
+      ...prev,
+      legalStatus: prev.legalStatus || 'Personne physique',
+      firstName: prev.firstName || metaFirst,
+      lastName: prev.lastName || metaLast,
+      middleName: prev.middleName || metaMiddle,
+      phone: prev.phone || authUser.phone || meta.phone || '',
+      email: prev.email || authUser.email || '',
+    }));
   }, [authUser]);
   
   // Lot E — infrastructures sélectionnées (key -> quantité)
@@ -191,6 +191,8 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
   const [submitted, setSubmitted] = useState(false);
   const [referenceNumber, setReferenceNumber] = useState('');
   const [createdRequestId, setCreatedRequestId] = useState<string | null>(null);
+  // Stable idempotency key for the lifetime of this form session
+  const idempotencyKeyRef = useRef<string>(crypto.randomUUID());
 
   // Validation
   const [validation, setValidation] = useState<ValidationResult>({ isValid: true, errors: [], warnings: [] });
@@ -200,8 +202,8 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
   const historyIndexRef = useRef(-1);
   const [historyVersion, setHistoryVersion] = useState(0);
   const skipHistoryRef = useRef(false);
-  // === Draft system ===
-  const draftKey = `${DRAFT_KEY_PREFIX}${parcelNumber}`;
+  // === Draft system === (scoped per user to avoid leaking drafts on shared devices)
+  const draftKey = `${DRAFT_KEY_PREFIX}${authUser?.id || 'anon'}-${parcelNumber}`;
   
   // Restore draft on mount
   useEffect(() => {
@@ -594,7 +596,8 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
             collectivite: parcelData?.collectivite || null,
             groupement: parcelData?.groupement || null,
             village: parcelData?.village || null,
-            propertyTitleType: parcelData?.property_title_type || null,
+            propertyTitleType: parcelData?.property_title_type || parentParcel.titleType || null,
+            titleIssueDate: parentParcel.titleIssueDate || parcelData?.title_issue_date || null,
           },
           requester: {
             legalStatus: requester.legalStatus || null,
@@ -622,9 +625,28 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
           documents,
           selected_infrastructures: selectedInfrastructures,
         },
+        headers: { 'Idempotency-Key': idempotencyKeyRef.current },
       });
 
-      if (error) throw error;
+      // Edge function returned non-2xx → parse error body for typed codes
+      if (error) {
+        let payload: any = null;
+        try {
+          const ctx = (error as any)?.context;
+          if (ctx?.body && typeof ctx.body.text === 'function') {
+            const txt = await ctx.body.text();
+            payload = txt ? JSON.parse(txt) : null;
+          } else if (typeof ctx === 'object' && ctx?.error) {
+            payload = ctx;
+          }
+        } catch { /* ignore */ }
+        const code = payload?.error || null;
+        const msg = payload?.message || (error as any)?.message || 'Échec de la soumission';
+        const e: any = new Error(msg);
+        e.code = code;
+        e.violations = payload?.violations || null;
+        throw e;
+      }
       if (!data?.id || !data?.reference_number) {
         throw new Error('Réponse invalide du serveur');
       }
@@ -644,7 +666,7 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
       };
     } catch (err: any) {
       console.error('Error submitting:', err);
-      throw new Error(err?.message || 'Échec de la soumission');
+      throw err;
     } finally {
       setSubmitting(false);
     }
