@@ -421,6 +421,7 @@ Deno.serve(async (req) => {
       // Lot E
       selected_infrastructures: persistedInfrastructures,
       infrastructure_fee_usd: infrastructureFee,
+      idempotency_key: idempotencyKey,
     };
 
     const { data, error } = await supabase
