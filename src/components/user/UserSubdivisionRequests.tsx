@@ -240,6 +240,28 @@ export const UserSubdivisionRequests: React.FC = () => {
                 </p>
               )}
 
+
+              {(req.submission_payment_status === 'pending' || req.status === 'awaiting_payment') && req.status !== 'rejected' && req.status !== 'cancelled' && (
+                <div className="mt-2 flex justify-end">
+                  <Button
+                    size="sm"
+                    className="h-7 text-[11px] gap-1.5"
+                    onClick={() => handleResumePayment(req)}
+                    disabled={resumingId === req.id}
+                  >
+                    {resumingId === req.id ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <CreditCard className="h-3.5 w-3.5" />
+                    )}
+                    Reprendre le paiement
+                    {req.total_amount_usd != null && (
+                      <span className="opacity-80">({Number(req.total_amount_usd).toFixed(2)}$)</span>
+                    )}
+                  </Button>
+                </div>
+              )}
+
               {req.status === 'approved' && (
                 <div className="mt-2 flex justify-end">
                   <Button
