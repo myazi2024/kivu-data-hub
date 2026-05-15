@@ -7,7 +7,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useTestEnvironment, applyTestFilter } from '@/hooks/useTestEnvironment';
-import { Loader2, LayoutGrid, MapPin, Calendar, Hash, FlaskConical, Download } from 'lucide-react';
+import { Loader2, LayoutGrid, MapPin, Calendar, Hash, FlaskConical, Download, CreditCard } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { generateSubdivisionPlanPDF } from '@/utils/generateSubdivisionPlanPDF';
@@ -25,6 +25,9 @@ interface SubdivisionRequest {
   approved_at?: string | null;
   official_plan_path?: string | null;
   official_plan_version?: number | null;
+  submission_payment_status?: string | null;
+  submission_fee_usd?: number | null;
+  total_amount_usd?: number | null;
 }
 
 const statusConfig: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
