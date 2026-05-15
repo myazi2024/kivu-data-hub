@@ -191,6 +191,8 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
   const [submitted, setSubmitted] = useState(false);
   const [referenceNumber, setReferenceNumber] = useState('');
   const [createdRequestId, setCreatedRequestId] = useState<string | null>(null);
+  // Stable idempotency key for the lifetime of this form session
+  const idempotencyKeyRef = useRef<string>(crypto.randomUUID());
 
   // Validation
   const [validation, setValidation] = useState<ValidationResult>({ isValid: true, errors: [], warnings: [] });
