@@ -383,6 +383,8 @@ Deno.serve(async (req) => {
       parent_parcel_owner_name: body.parent_parcel.ownerName,
       parent_parcel_title_reference: body.parent_parcel.titleReference,
       parent_parcel_gps_coordinates: body.parent_parcel.gpsCoordinates,
+      parent_parcel_title_type: body.parent_parcel.propertyTitleType || null,
+      parent_parcel_title_issue_date: (body as any).parent_parcel?.titleIssueDate || null,
       requester_first_name: body.requester.firstName,
       requester_last_name: body.requester.lastName,
       requester_middle_name: body.requester.middleName || null,
