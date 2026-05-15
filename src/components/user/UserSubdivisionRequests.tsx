@@ -44,6 +44,7 @@ export const UserSubdivisionRequests: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [hiddenTestCount, setHiddenTestCount] = useState(0);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [resumingId, setResumingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) return;
