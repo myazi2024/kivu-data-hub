@@ -596,7 +596,8 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
             collectivite: parcelData?.collectivite || null,
             groupement: parcelData?.groupement || null,
             village: parcelData?.village || null,
-            propertyTitleType: parcelData?.property_title_type || null,
+            propertyTitleType: parcelData?.property_title_type || parentParcel.titleType || null,
+            titleIssueDate: parentParcel.titleIssueDate || parcelData?.title_issue_date || null,
           },
           requester: {
             legalStatus: requester.legalStatus || null,
