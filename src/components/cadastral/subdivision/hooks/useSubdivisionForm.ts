@@ -625,6 +625,7 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
           documents,
           selected_infrastructures: selectedInfrastructures,
         },
+        headers: { 'Idempotency-Key': idempotencyKeyRef.current },
       });
 
       if (error) throw error;
