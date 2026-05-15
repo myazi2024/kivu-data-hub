@@ -231,6 +231,21 @@ Deno.serve(async (req) => {
           }
         }
 
+        // === Per-road width constraint ===
+        if (matched.min_road_width_m) {
+          for (const r of roads) {
+            const w = Number(r?.widthM || 0);
+            if (w > 0 && w < Number(matched.min_road_width_m)) {
+              errs.push(`${r?.name || 'Voie'} : largeur ${w} m < min ${matched.min_road_width_m} m.`);
+            }
+          }
+        }
+
+        // === Max lots per request ===
+        if (matched.max_lots_per_request && Array.isArray(body.lots) && body.lots.length > Number(matched.max_lots_per_request)) {
+          errs.push(`Nombre de lots ${body.lots.length} > maximum ${matched.max_lots_per_request} pour cette zone.`);
+        }
+
         if (errs.length > 0) {
           return new Response(JSON.stringify({
             error: 'ROAD_INFRA_VIOLATIONS',
