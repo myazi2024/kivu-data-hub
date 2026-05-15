@@ -163,6 +163,7 @@ Deno.serve(async (req) => {
       const rows = (zoningRules as any[]) || [];
       const matchedName = candidates.find((c) => rows.some((r) => r.location_name === c));
       const matched = matchedName ? rows.find((r) => r.location_name === matchedName) : null;
+      matchedZoningRule = matched;
       if (matched) {
         const area = Number(body.parent_parcel.areaSqm) || 0;
         const minA = Number(matched.parent_min_area_sqm) || 0;
