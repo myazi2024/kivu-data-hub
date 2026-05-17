@@ -15,6 +15,7 @@ import { toast } from 'sonner';
 import { Plus, Pencil, Trash2, Ruler, Loader2, MapPin, Building2, TreePine, Settings2, FileText, Globe2, Info } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import AdminSubdivisionRoadSurfaceMaterials, { type RoadSurfaceMaterial } from './AdminSubdivisionRoadSurfaceMaterials';
 
 /** Petit indicateur d'aide affichant un popover explicatif au clic. */
 const FieldHelp: React.FC<{ title: string; description: string; example?: string }> = ({ title, description, example }) => (
