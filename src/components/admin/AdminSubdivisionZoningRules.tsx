@@ -97,6 +97,11 @@ interface ZoningRule {
   solar_lighting_max_spacing_m?: number | null;
   solar_lighting_min_battery_hours?: number | null;
   solar_lighting_required_sides?: string;
+  // Road surface (global per request)
+  require_road_surface?: boolean;
+  road_surface_allowed_materials?: string[];
+  road_surface_min_thickness_cm?: number | null;
+  road_surface_max_thickness_cm?: number | null;
 }
 
 const emptyForm = {
