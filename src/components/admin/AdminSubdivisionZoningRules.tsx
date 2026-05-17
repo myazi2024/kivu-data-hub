@@ -154,6 +154,11 @@ const emptyForm = {
   solar_lighting_max_spacing_m: '',
   solar_lighting_min_battery_hours: '',
   solar_lighting_required_sides: 'any',
+  // Road surface
+  require_road_surface: false,
+  road_surface_allowed_materials: [] as string[],
+  road_surface_min_thickness_cm: '',
+  road_surface_max_thickness_cm: '',
 };
 
 /**
