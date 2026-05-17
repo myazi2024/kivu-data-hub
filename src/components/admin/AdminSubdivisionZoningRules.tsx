@@ -472,6 +472,18 @@ const AdminSubdivisionZoningRules: React.FC = () => {
     if (parentMin > 0 && parentMin < minLot * 2) {
       toast.warning(`Avertissement : la parcelle-mère minimale (${parentMin} m²) ne permet pas un vrai lotissement (< 2 lots de ${minLot} m²)`);
     }
+    // Cohérence revêtement de voie
+    const rsMin = form.road_surface_min_thickness_cm ? parseFloat(form.road_surface_min_thickness_cm) : null;
+    const rsMax = form.road_surface_max_thickness_cm ? parseFloat(form.road_surface_max_thickness_cm) : null;
+    if (form.require_road_surface) {
+      if (form.road_surface_allowed_materials.length === 0) {
+        return toast.error('Sélectionnez au moins un matériau de revêtement autorisé');
+      }
+      if (rsMin !== null && rsMin <= 0) return toast.error('Épaisseur min revêtement doit être > 0');
+      if (rsMin !== null && rsMax !== null && rsMax < rsMin) {
+        return toast.error('Épaisseur max revêtement < min');
+      }
+    }
 
     setSaving(true);
     const payload = {
