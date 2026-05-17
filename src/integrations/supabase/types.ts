@@ -6210,6 +6210,9 @@ export type Database = {
           requester_type: string | null
           reviewed_at: string | null
           reviewed_by: string | null
+          road_surface_fee_usd: number
+          road_surface_material: string | null
+          road_surface_thickness_cm: number | null
           selected_infrastructures: Json
           status: string | null
           subdivision_plan_data: Json | null
@@ -6278,6 +6281,9 @@ export type Database = {
           requester_type?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
+          road_surface_fee_usd?: number
+          road_surface_material?: string | null
+          road_surface_thickness_cm?: number | null
           selected_infrastructures?: Json
           status?: string | null
           subdivision_plan_data?: Json | null
@@ -6346,6 +6352,9 @@ export type Database = {
           requester_type?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
+          road_surface_fee_usd?: number
+          road_surface_material?: string | null
+          road_surface_thickness_cm?: number | null
           selected_infrastructures?: Json
           status?: string | null
           subdivision_plan_data?: Json | null
@@ -6419,6 +6428,39 @@ export type Database = {
           max_size_mb?: number
           metadata?: Json
           requester_types?: string[]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      subdivision_road_surface_materials: {
+        Row: {
+          created_at: string
+          description: string | null
+          display_order: number
+          id: string
+          is_active: boolean
+          key: string
+          label: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          key: string
+          label: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          key?: string
+          label?: string
           updated_at?: string
         }
         Relationships: []
@@ -6505,7 +6547,11 @@ export type Database = {
           require_drainage_canal: boolean
           require_gps_coordinates: boolean
           require_registered_title: boolean
+          require_road_surface: boolean
           require_solar_lighting: boolean
+          road_surface_allowed_materials: string[]
+          road_surface_max_thickness_cm: number | null
+          road_surface_min_thickness_cm: number | null
           section_type: string
           solar_lighting_beam_angle_deg: number | null
           solar_lighting_max_spacing_m: number | null
@@ -6546,7 +6592,11 @@ export type Database = {
           require_drainage_canal?: boolean
           require_gps_coordinates?: boolean
           require_registered_title?: boolean
+          require_road_surface?: boolean
           require_solar_lighting?: boolean
+          road_surface_allowed_materials?: string[]
+          road_surface_max_thickness_cm?: number | null
+          road_surface_min_thickness_cm?: number | null
           section_type: string
           solar_lighting_beam_angle_deg?: number | null
           solar_lighting_max_spacing_m?: number | null
@@ -6587,7 +6637,11 @@ export type Database = {
           require_drainage_canal?: boolean
           require_gps_coordinates?: boolean
           require_registered_title?: boolean
+          require_road_surface?: boolean
           require_solar_lighting?: boolean
+          road_surface_allowed_materials?: string[]
+          road_surface_max_thickness_cm?: number | null
+          road_surface_min_thickness_cm?: number | null
           section_type?: string
           solar_lighting_beam_angle_deg?: number | null
           solar_lighting_max_spacing_m?: number | null
