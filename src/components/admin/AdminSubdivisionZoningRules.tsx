@@ -439,6 +439,10 @@ const AdminSubdivisionZoningRules: React.FC = () => {
       solar_lighting_max_spacing_m: r.solar_lighting_max_spacing_m != null ? String(r.solar_lighting_max_spacing_m) : '',
       solar_lighting_min_battery_hours: r.solar_lighting_min_battery_hours != null ? String(r.solar_lighting_min_battery_hours) : '',
       solar_lighting_required_sides: r.solar_lighting_required_sides || 'any',
+      require_road_surface: !!r.require_road_surface,
+      road_surface_allowed_materials: r.road_surface_allowed_materials || [],
+      road_surface_min_thickness_cm: r.road_surface_min_thickness_cm != null ? String(r.road_surface_min_thickness_cm) : '',
+      road_surface_max_thickness_cm: r.road_surface_max_thickness_cm != null ? String(r.road_surface_max_thickness_cm) : '',
     });
     setDialogOpen(true);
   };
