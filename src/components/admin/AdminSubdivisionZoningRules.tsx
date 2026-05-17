@@ -15,6 +15,7 @@ import { toast } from 'sonner';
 import { Plus, Pencil, Trash2, Ruler, Loader2, MapPin, Building2, TreePine, Settings2, FileText, Globe2, Info } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import AdminSubdivisionRoadSurfaceMaterials, { type RoadSurfaceMaterial } from './AdminSubdivisionRoadSurfaceMaterials';
 
 /** Petit indicateur d'aide affichant un popover explicatif au clic. */
 const FieldHelp: React.FC<{ title: string; description: string; example?: string }> = ({ title, description, example }) => (
@@ -97,6 +98,11 @@ interface ZoningRule {
   solar_lighting_max_spacing_m?: number | null;
   solar_lighting_min_battery_hours?: number | null;
   solar_lighting_required_sides?: string;
+  // Road surface (global per request)
+  require_road_surface?: boolean;
+  road_surface_allowed_materials?: string[];
+  road_surface_min_thickness_cm?: number | null;
+  road_surface_max_thickness_cm?: number | null;
 }
 
 const emptyForm = {
@@ -149,6 +155,11 @@ const emptyForm = {
   solar_lighting_max_spacing_m: '',
   solar_lighting_min_battery_hours: '',
   solar_lighting_required_sides: 'any',
+  // Road surface
+  require_road_surface: false,
+  road_surface_allowed_materials: [] as string[],
+  road_surface_min_thickness_cm: '',
+  road_surface_max_thickness_cm: '',
 };
 
 /**
@@ -357,6 +368,16 @@ const RuralCascade: React.FC<{ form: FormState; setForm: FormSetter }> = ({ form
 
 const AdminSubdivisionZoningRules: React.FC = () => {
   const [rules, setRules] = useState<ZoningRule[]>([]);
+  const [materials, setMaterials] = useState<RoadSurfaceMaterial[]>([]);
+
+  const fetchMaterials = async () => {
+    const { data } = await untypedTables
+      .generic('subdivision_road_surface_materials')
+      .select('*')
+      .order('display_order');
+    setMaterials(((data as RoadSurfaceMaterial[]) ?? []).filter(m => m.is_active));
+  };
+  useEffect(() => { fetchMaterials(); }, []);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'urban' | 'rural'>('all');
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -429,6 +450,10 @@ const AdminSubdivisionZoningRules: React.FC = () => {
       solar_lighting_max_spacing_m: r.solar_lighting_max_spacing_m != null ? String(r.solar_lighting_max_spacing_m) : '',
       solar_lighting_min_battery_hours: r.solar_lighting_min_battery_hours != null ? String(r.solar_lighting_min_battery_hours) : '',
       solar_lighting_required_sides: r.solar_lighting_required_sides || 'any',
+      require_road_surface: !!r.require_road_surface,
+      road_surface_allowed_materials: r.road_surface_allowed_materials || [],
+      road_surface_min_thickness_cm: r.road_surface_min_thickness_cm != null ? String(r.road_surface_min_thickness_cm) : '',
+      road_surface_max_thickness_cm: r.road_surface_max_thickness_cm != null ? String(r.road_surface_max_thickness_cm) : '',
     });
     setDialogOpen(true);
   };
@@ -457,6 +482,18 @@ const AdminSubdivisionZoningRules: React.FC = () => {
     }
     if (parentMin > 0 && parentMin < minLot * 2) {
       toast.warning(`Avertissement : la parcelle-mère minimale (${parentMin} m²) ne permet pas un vrai lotissement (< 2 lots de ${minLot} m²)`);
+    }
+    // Cohérence revêtement de voie
+    const rsMin = form.road_surface_min_thickness_cm ? parseFloat(form.road_surface_min_thickness_cm) : null;
+    const rsMax = form.road_surface_max_thickness_cm ? parseFloat(form.road_surface_max_thickness_cm) : null;
+    if (form.require_road_surface) {
+      if (form.road_surface_allowed_materials.length === 0) {
+        return toast.error('Sélectionnez au moins un matériau de revêtement autorisé');
+      }
+      if (rsMin !== null && rsMin <= 0) return toast.error('Épaisseur min revêtement doit être > 0');
+      if (rsMin !== null && rsMax !== null && rsMax < rsMin) {
+        return toast.error('Épaisseur max revêtement < min');
+      }
     }
 
     setSaving(true);
@@ -502,6 +539,11 @@ const AdminSubdivisionZoningRules: React.FC = () => {
       solar_lighting_max_spacing_m: form.solar_lighting_max_spacing_m ? parseFloat(form.solar_lighting_max_spacing_m) : null,
       solar_lighting_min_battery_hours: form.solar_lighting_min_battery_hours ? parseInt(form.solar_lighting_min_battery_hours) : null,
       solar_lighting_required_sides: form.solar_lighting_required_sides || 'any',
+      // Road surface
+      require_road_surface: form.require_road_surface,
+      road_surface_allowed_materials: form.road_surface_allowed_materials || [],
+      road_surface_min_thickness_cm: rsMin,
+      road_surface_max_thickness_cm: rsMax,
     };
     const q = untypedTables.subdivision_zoning_rules();
     const { error } = editing
@@ -614,6 +656,8 @@ const AdminSubdivisionZoningRules: React.FC = () => {
           )}
         </CardContent>
       </Card>
+
+      <AdminSubdivisionRoadSurfaceMaterials onChanged={fetchMaterials} />
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-3xl p-0 gap-0 max-h-[92vh] flex flex-col overflow-hidden">
@@ -1110,6 +1154,51 @@ const AdminSubdivisionZoningRules: React.FC = () => {
                           <SelectItem value="alternating">Alterné</SelectItem>
                         </SelectContent>
                       </Select>
+                    </div>
+                  </div>
+                </fieldset>
+              </div>
+
+              {/* Revêtement de la voie */}
+              <div className="rounded-lg border bg-card/50 p-3 space-y-3">
+                <label className="flex items-center justify-between gap-3 cursor-pointer">
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-xs font-semibold">Revêtement de la voie</span>
+                    <span className="text-[10px] text-muted-foreground">Matériau et épaisseur appliqués globalement à toutes les voies du lotissement. Tarification via catégorie <code>road_surface</code> des frais.</span>
+                  </div>
+                  <Switch checked={form.require_road_surface} onCheckedChange={v => setForm(f => ({ ...f, require_road_surface: v }))} />
+                </label>
+                <fieldset disabled={!form.require_road_surface} className="space-y-3 disabled:opacity-50 transition-opacity">
+                  <div className="space-y-1">
+                    <Label className="text-[11px]">Matériaux autorisés <span className="text-muted-foreground">({materials.length} disponibles)</span></Label>
+                    <div className="flex flex-wrap gap-1.5 p-2 rounded border bg-background min-h-[40px]">
+                      {materials.length === 0 && (
+                        <span className="text-[11px] text-muted-foreground italic">Aucun matériau actif — ajoutez-en dans la section dédiée ci-dessous.</span>
+                      )}
+                      {materials.map(m => {
+                        const checked = form.road_surface_allowed_materials.includes(m.key);
+                        return (
+                          <label key={m.key} className={`text-[11px] px-2 py-0.5 rounded border cursor-pointer ${checked ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted/40'}`} title={m.description ?? ''}>
+                            <input type="checkbox" className="sr-only" checked={checked} onChange={e => setForm(f => ({
+                              ...f,
+                              road_surface_allowed_materials: e.target.checked
+                                ? [...f.road_surface_allowed_materials, m.key]
+                                : f.road_surface_allowed_materials.filter(x => x !== m.key),
+                            }))} />
+                            {m.label}
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <Label className="text-[11px]">Épaisseur min (cm)</Label>
+                      <Input type="number" step="0.5" inputMode="decimal" value={form.road_surface_min_thickness_cm} onChange={e => setForm(f => ({ ...f, road_surface_min_thickness_cm: e.target.value }))} className="h-8 text-xs" placeholder="ex: 5" />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[11px]">Épaisseur max (cm)</Label>
+                      <Input type="number" step="0.5" inputMode="decimal" value={form.road_surface_max_thickness_cm} onChange={e => setForm(f => ({ ...f, road_surface_max_thickness_cm: e.target.value }))} className="h-8 text-xs" placeholder="ex: 15" />
                     </div>
                   </div>
                 </fieldset>
