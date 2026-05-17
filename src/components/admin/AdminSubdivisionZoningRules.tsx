@@ -1156,6 +1156,51 @@ const AdminSubdivisionZoningRules: React.FC = () => {
                   </div>
                 </fieldset>
               </div>
+
+              {/* Revêtement de la voie */}
+              <div className="rounded-lg border bg-card/50 p-3 space-y-3">
+                <label className="flex items-center justify-between gap-3 cursor-pointer">
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-xs font-semibold">Revêtement de la voie</span>
+                    <span className="text-[10px] text-muted-foreground">Matériau et épaisseur appliqués globalement à toutes les voies du lotissement. Tarification via catégorie <code>road_surface</code> des frais.</span>
+                  </div>
+                  <Switch checked={form.require_road_surface} onCheckedChange={v => setForm(f => ({ ...f, require_road_surface: v }))} />
+                </label>
+                <fieldset disabled={!form.require_road_surface} className="space-y-3 disabled:opacity-50 transition-opacity">
+                  <div className="space-y-1">
+                    <Label className="text-[11px]">Matériaux autorisés <span className="text-muted-foreground">({materials.length} disponibles)</span></Label>
+                    <div className="flex flex-wrap gap-1.5 p-2 rounded border bg-background min-h-[40px]">
+                      {materials.length === 0 && (
+                        <span className="text-[11px] text-muted-foreground italic">Aucun matériau actif — ajoutez-en dans la section dédiée ci-dessous.</span>
+                      )}
+                      {materials.map(m => {
+                        const checked = form.road_surface_allowed_materials.includes(m.key);
+                        return (
+                          <label key={m.key} className={`text-[11px] px-2 py-0.5 rounded border cursor-pointer ${checked ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted/40'}`} title={m.description ?? ''}>
+                            <input type="checkbox" className="sr-only" checked={checked} onChange={e => setForm(f => ({
+                              ...f,
+                              road_surface_allowed_materials: e.target.checked
+                                ? [...f.road_surface_allowed_materials, m.key]
+                                : f.road_surface_allowed_materials.filter(x => x !== m.key),
+                            }))} />
+                            {m.label}
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <Label className="text-[11px]">Épaisseur min (cm)</Label>
+                      <Input type="number" step="0.5" inputMode="decimal" value={form.road_surface_min_thickness_cm} onChange={e => setForm(f => ({ ...f, road_surface_min_thickness_cm: e.target.value }))} className="h-8 text-xs" placeholder="ex: 5" />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[11px]">Épaisseur max (cm)</Label>
+                      <Input type="number" step="0.5" inputMode="decimal" value={form.road_surface_max_thickness_cm} onChange={e => setForm(f => ({ ...f, road_surface_max_thickness_cm: e.target.value }))} className="h-8 text-xs" placeholder="ex: 15" />
+                    </div>
+                  </div>
+                </fieldset>
+              </div>
             </section>
 
             <Separator />
