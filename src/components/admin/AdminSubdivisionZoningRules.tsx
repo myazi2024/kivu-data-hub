@@ -368,6 +368,16 @@ const RuralCascade: React.FC<{ form: FormState; setForm: FormSetter }> = ({ form
 
 const AdminSubdivisionZoningRules: React.FC = () => {
   const [rules, setRules] = useState<ZoningRule[]>([]);
+  const [materials, setMaterials] = useState<RoadSurfaceMaterial[]>([]);
+
+  const fetchMaterials = async () => {
+    const { data } = await untypedTables
+      .generic('subdivision_road_surface_materials')
+      .select('*')
+      .order('display_order');
+    setMaterials(((data as RoadSurfaceMaterial[]) ?? []).filter(m => m.is_active));
+  };
+  useEffect(() => { fetchMaterials(); }, []);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'urban' | 'rural'>('all');
   const [dialogOpen, setDialogOpen] = useState(false);
