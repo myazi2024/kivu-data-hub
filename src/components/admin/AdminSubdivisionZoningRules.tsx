@@ -1232,15 +1232,16 @@ const AdminSubdivisionZoningRules: React.FC = () => {
                       )}
                       {materials.map(m => {
                         const checked = form.road_surface_allowed_materials.includes(m.key);
+                        const hasTariff = roadSurfaceTariffKeys.has(m.key);
                         return (
-                          <label key={m.key} className={`text-[11px] px-2 py-0.5 rounded border cursor-pointer ${checked ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted/40'}`} title={m.description ?? ''}>
+                          <label key={m.key} className={`text-[11px] px-2 py-0.5 rounded border cursor-pointer ${checked ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted/40'}`} title={hasTariff ? (m.description ?? '') : `${m.description ?? ''}\n⚠ Aucun tarif road_surface_${m.key} configuré : frais = 0`}>
                             <input type="checkbox" className="sr-only" checked={checked} onChange={e => setForm(f => ({
                               ...f,
                               road_surface_allowed_materials: e.target.checked
                                 ? [...f.road_surface_allowed_materials, m.key]
                                 : f.road_surface_allowed_materials.filter(x => x !== m.key),
                             }))} />
-                            {m.label}
+                            {m.label}{!hasTariff && <span className="ml-1" aria-label="Tarif manquant">⚠</span>}
                           </label>
                         );
                       })}
