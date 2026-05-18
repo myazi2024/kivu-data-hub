@@ -641,12 +641,19 @@ const AdminSubdivisionZoningRules: React.FC = () => {
             Définit les contraintes de tracé (surface min/max des lots, largeur des voies, % d'espaces communs…). Utilisez <code>*</code> comme emplacement pour la règle par défaut. Une règle spécifique (ville, quartier) prime sur le défaut.
           </p>
 
-          <div className="flex gap-2 mb-3">
+          <div className="flex flex-wrap items-center gap-2 mb-3">
             {(['all', 'urban', 'rural'] as const).map(f => (
               <Button key={f} variant={filter === f ? 'default' : 'outline'} size="sm" onClick={() => setFilter(f)}>
                 {f === 'all' ? 'Toutes' : f === 'urban' ? 'Urbain' : 'Rural'}
               </Button>
             ))}
+            <Input
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Rechercher un emplacement…"
+              className="h-8 max-w-xs"
+              aria-label="Rechercher une règle"
+            />
           </div>
 
           {loading ? (
