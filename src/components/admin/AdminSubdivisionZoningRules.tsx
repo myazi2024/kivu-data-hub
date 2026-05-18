@@ -1125,7 +1125,7 @@ const AdminSubdivisionZoningRules: React.FC = () => {
                                   ? [...f.drainage_canal_allowed_materials, m]
                                   : f.drainage_canal_allowed_materials.filter(x => x !== m),
                               }))} />
-                              {m}
+                              {DRAINAGE_CANAL_MATERIAL_LABELS[m]}
                             </label>
                           );
                         })}
