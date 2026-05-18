@@ -376,6 +376,8 @@ const RuralCascade: React.FC<{ form: FormState; setForm: FormSetter }> = ({ form
 const AdminSubdivisionZoningRules: React.FC = () => {
   const [rules, setRules] = useState<ZoningRule[]>([]);
   const [materials, setMaterials] = useState<RoadSurfaceMaterial[]>([]);
+  const [roadSurfaceTariffKeys, setRoadSurfaceTariffKeys] = useState<Set<string>>(new Set());
+  const [search, setSearch] = useState('');
 
   const fetchMaterials = async () => {
     const { data } = await untypedTables
@@ -384,7 +386,20 @@ const AdminSubdivisionZoningRules: React.FC = () => {
       .order('display_order');
     setMaterials(((data as RoadSurfaceMaterial[]) ?? []).filter(m => m.is_active));
   };
-  useEffect(() => { fetchMaterials(); }, []);
+  const fetchRoadSurfaceTariffs = async () => {
+    const { data } = await untypedTables
+      .subdivision_infrastructure_tariffs()
+      .select('infrastructure_key')
+      .eq('is_active', true);
+    const keys = new Set<string>(
+      ((data as Array<{ infrastructure_key: string }>) ?? [])
+        .map(t => t.infrastructure_key)
+        .filter(k => k.startsWith('road_surface_'))
+        .map(k => k.replace(/^road_surface_/, '')),
+    );
+    setRoadSurfaceTariffKeys(keys);
+  };
+  useEffect(() => { fetchMaterials(); fetchRoadSurfaceTariffs(); }, []);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'urban' | 'rural'>('all');
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -392,6 +407,18 @@ const AdminSubdivisionZoningRules: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [toggleTarget, setToggleTarget] = useState<ZoningRule | null>(null);
+
+  // Cache mémo de breadcrumb pour éviter le recalcul O(provinces×...) à chaque rendu
+  const breadcrumbCache = useMemo(() => new Map<string, string>(), [rules]);
+  const memoFormatBreadcrumb = (r: ZoningRule): string => {
+    const key = `${r.section_type}|${r.location_name}`;
+    const cached = breadcrumbCache.get(key);
+    if (cached !== undefined) return cached;
+    const v = formatBreadcrumb(r);
+    breadcrumbCache.set(key, v);
+    return v;
+  };
 
   const fetchRules = async () => {
     setLoading(true);
