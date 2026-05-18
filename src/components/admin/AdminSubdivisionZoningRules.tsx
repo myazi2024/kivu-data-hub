@@ -16,6 +16,13 @@ import { Plus, Pencil, Trash2, Ruler, Loader2, MapPin, Building2, TreePine, Sett
 import { Separator } from '@/components/ui/separator';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import AdminSubdivisionRoadSurfaceMaterials, { type RoadSurfaceMaterial } from './AdminSubdivisionRoadSurfaceMaterials';
+import { validateZoningRuleForm } from './subdivision/zoningValidation';
+import {
+  DRAINAGE_CANAL_MATERIALS,
+  DRAINAGE_CANAL_MATERIAL_LABELS,
+  DRAINAGE_CANAL_TYPES,
+  DRAINAGE_CANAL_TYPE_LABELS,
+} from '@/components/cadastral/subdivision/infrastructureConstants';
 
 /** Petit indicateur d'aide affichant un popover explicatif au clic. */
 const FieldHelp: React.FC<{ title: string; description: string; example?: string }> = ({ title, description, example }) => (
@@ -369,6 +376,8 @@ const RuralCascade: React.FC<{ form: FormState; setForm: FormSetter }> = ({ form
 const AdminSubdivisionZoningRules: React.FC = () => {
   const [rules, setRules] = useState<ZoningRule[]>([]);
   const [materials, setMaterials] = useState<RoadSurfaceMaterial[]>([]);
+  const [roadSurfaceTariffKeys, setRoadSurfaceTariffKeys] = useState<Set<string>>(new Set());
+  const [search, setSearch] = useState('');
 
   const fetchMaterials = async () => {
     const { data } = await untypedTables
@@ -377,7 +386,20 @@ const AdminSubdivisionZoningRules: React.FC = () => {
       .order('display_order');
     setMaterials(((data as RoadSurfaceMaterial[]) ?? []).filter(m => m.is_active));
   };
-  useEffect(() => { fetchMaterials(); }, []);
+  const fetchRoadSurfaceTariffs = async () => {
+    const { data } = await untypedTables
+      .subdivision_infrastructure_tariffs()
+      .select('infrastructure_key')
+      .eq('is_active', true);
+    const keys = new Set<string>(
+      ((data as Array<{ infrastructure_key: string }>) ?? [])
+        .map(t => t.infrastructure_key)
+        .filter(k => k.startsWith('road_surface_'))
+        .map(k => k.replace(/^road_surface_/, '')),
+    );
+    setRoadSurfaceTariffKeys(keys);
+  };
+  useEffect(() => { fetchMaterials(); fetchRoadSurfaceTariffs(); }, []);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'urban' | 'rural'>('all');
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -385,6 +407,18 @@ const AdminSubdivisionZoningRules: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [toggleTarget, setToggleTarget] = useState<ZoningRule | null>(null);
+
+  // Cache mémo de breadcrumb pour éviter le recalcul O(provinces×...) à chaque rendu
+  const breadcrumbCache = useMemo(() => new Map<string, string>(), [rules]);
+  const memoFormatBreadcrumb = (r: ZoningRule): string => {
+    const key = `${r.section_type}|${r.location_name}`;
+    const cached = breadcrumbCache.get(key);
+    if (cached !== undefined) return cached;
+    const v = formatBreadcrumb(r);
+    breadcrumbCache.set(key, v);
+    return v;
+  };
 
   const fetchRules = async () => {
     setLoading(true);
@@ -407,6 +441,14 @@ const AdminSubdivisionZoningRules: React.FC = () => {
     setEditing(null);
     setForm(emptyForm);
     setDialogOpen(true);
+  };
+
+  /** Cloner une règle existante (création d'une nouvelle entrée avec les mêmes paramètres). */
+  const openClone = (r: ZoningRule) => {
+    openEdit(r);
+    // Repasse en mode création juste après le préchargement du form
+    setTimeout(() => setEditing(null), 0);
+    toast.info("Clonage : adaptez l'emplacement avant d'enregistrer");
   };
 
   const openEdit = (r: ZoningRule) => {
@@ -460,46 +502,36 @@ const AdminSubdivisionZoningRules: React.FC = () => {
 
   const handleSave = async () => {
     const locationName = computeLocationName(form);
-    if (!locationName) {
-      toast.error("Sélectionnez au moins un niveau géographique ou cochez « Règle par défaut »");
+    // province_path : chemin géo complet (résout les homonymes)
+    const provincePath: string[] = form.apply_to_default
+      ? []
+      : (form.section_type === 'urban'
+          ? [form.province, form.ville, form.commune, form.quartier, form.avenue]
+          : [form.province, form.territoire, form.collectivite, form.groupement, form.village]
+        ).filter(Boolean);
+
+    const { errors, warnings } = validateZoningRuleForm(
+      { ...form, location_name: locationName },
+      { knownRoadSurfaceTariffKeys: roadSurfaceTariffKeys },
+    );
+    if (errors.length > 0) {
+      errors.slice(0, 3).forEach(e => toast.error(e));
       return;
     }
+    warnings.forEach(w => toast.warning(w));
+
     const minLot = parseFloat(form.min_lot_area_sqm);
     const maxLot = form.max_lot_area_sqm ? parseFloat(form.max_lot_area_sqm) : null;
     const minRoad = parseFloat(form.min_road_width_m);
     const recRoad = parseFloat(form.recommended_road_width_m);
-    const parentMin = parseFloat(form.parent_min_area_sqm) || 0;
-    const parentMax = form.parent_max_area_sqm ? parseFloat(form.parent_max_area_sqm) : null;
-    if (!(minLot > 0)) return toast.error('Surface min lot doit être > 0');
-    if (maxLot !== null && maxLot < minLot) return toast.error('Surface max < min');
-    if (recRoad < minRoad) return toast.error('Largeur recommandée < min');
-    // Cohérence parcelle-mère ↔ lots
-    if (parentMin > 0 && parentMin < minLot) {
-      return toast.error(`Surface min parcelle-mère (${parentMin} m²) doit être ≥ surface min d'un lot (${minLot} m²)`);
-    }
-    if (parentMax !== null && parentMax < parentMin) {
-      return toast.error('Surface max parcelle-mère < min');
-    }
-    if (parentMin > 0 && parentMin < minLot * 2) {
-      toast.warning(`Avertissement : la parcelle-mère minimale (${parentMin} m²) ne permet pas un vrai lotissement (< 2 lots de ${minLot} m²)`);
-    }
-    // Cohérence revêtement de voie
     const rsMin = form.road_surface_min_thickness_cm ? parseFloat(form.road_surface_min_thickness_cm) : null;
     const rsMax = form.road_surface_max_thickness_cm ? parseFloat(form.road_surface_max_thickness_cm) : null;
-    if (form.require_road_surface) {
-      if (form.road_surface_allowed_materials.length === 0) {
-        return toast.error('Sélectionnez au moins un matériau de revêtement autorisé');
-      }
-      if (rsMin !== null && rsMin <= 0) return toast.error('Épaisseur min revêtement doit être > 0');
-      if (rsMin !== null && rsMax !== null && rsMax < rsMin) {
-        return toast.error('Épaisseur max revêtement < min');
-      }
-    }
 
     setSaving(true);
     const payload = {
       section_type: form.section_type,
       location_name: locationName,
+      province_path: provincePath,
       min_lot_area_sqm: minLot,
       max_lot_area_sqm: maxLot,
       min_road_width_m: minRoad,
@@ -570,14 +602,29 @@ const AdminSubdivisionZoningRules: React.FC = () => {
     setDeleteId(null);
   };
 
-  const toggleActive = async (r: ZoningRule) => {
+  const requestToggleActive = (r: ZoningRule) => setToggleTarget(r);
+
+  const confirmToggleActive = async () => {
+    if (!toggleTarget) return;
+    const r = toggleTarget;
     const { error } = await untypedTables.subdivision_zoning_rules()
       .update({ is_active: !r.is_active })
       .eq('id', r.id);
-    if (!error) fetchRules();
+    if (error) toast.error('Erreur lors du changement de statut');
+    else { toast.success(r.is_active ? 'Règle désactivée' : 'Règle activée'); fetchRules(); }
+    setToggleTarget(null);
   };
 
-  const filtered = filter === 'all' ? rules : rules.filter(r => r.section_type === filter);
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return rules
+      .filter(r => filter === 'all' || r.section_type === filter)
+      .filter(r => !q
+        || r.location_name.toLowerCase().includes(q)
+        || memoFormatBreadcrumb(r).toLowerCase().includes(q),
+      );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rules, filter, search]);
 
   return (
     <div className="space-y-4">
@@ -594,12 +641,19 @@ const AdminSubdivisionZoningRules: React.FC = () => {
             Définit les contraintes de tracé (surface min/max des lots, largeur des voies, % d'espaces communs…). Utilisez <code>*</code> comme emplacement pour la règle par défaut. Une règle spécifique (ville, quartier) prime sur le défaut.
           </p>
 
-          <div className="flex gap-2 mb-3">
+          <div className="flex flex-wrap items-center gap-2 mb-3">
             {(['all', 'urban', 'rural'] as const).map(f => (
               <Button key={f} variant={filter === f ? 'default' : 'outline'} size="sm" onClick={() => setFilter(f)}>
                 {f === 'all' ? 'Toutes' : f === 'urban' ? 'Urbain' : 'Rural'}
               </Button>
             ))}
+            <Input
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Rechercher un emplacement…"
+              className="h-8 max-w-xs"
+              aria-label="Rechercher une règle"
+            />
           </div>
 
           {loading ? (
@@ -631,18 +685,19 @@ const AdminSubdivisionZoningRules: React.FC = () => {
                       <TableCell className="font-medium">
                         {r.location_name === '*'
                           ? <span className="italic text-muted-foreground">Par défaut (toute la RDC)</span>
-                          : <span title={r.location_name}>{formatBreadcrumb(r)}</span>}
+                          : <span title={r.location_name}>{memoFormatBreadcrumb(r)}</span>}
                       </TableCell>
                       <TableCell className="text-right font-mono">{r.min_lot_area_sqm} / {r.max_lot_area_sqm ?? '∞'}</TableCell>
                       <TableCell className="text-right font-mono">{r.min_road_width_m} / {r.recommended_road_width_m}</TableCell>
                       <TableCell className="text-right font-mono">{r.min_common_space_pct}%</TableCell>
                       <TableCell className="text-right font-mono">{r.min_front_road_m}</TableCell>
                       <TableCell className="text-right font-mono">{r.max_lots_per_request ?? '∞'}</TableCell>
-                      <TableCell><Switch checked={r.is_active} onCheckedChange={() => toggleActive(r)} /></TableCell>
+                      <TableCell><Switch checked={r.is_active} onCheckedChange={() => requestToggleActive(r)} aria-label={r.is_active ? 'Désactiver la règle' : 'Activer la règle'} /></TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-1">
-                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(r)}><Pencil className="h-3 w-3" /></Button>
-                          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDelete(r.id)}><Trash2 className="h-3 w-3" /></Button>
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(r)} title="Modifier"><Pencil className="h-3 w-3" /></Button>
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openClone(r)} title="Cloner"><Plus className="h-3 w-3" /></Button>
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDelete(r.id)} title="Supprimer"><Trash2 className="h-3 w-3" /></Button>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -1060,7 +1115,7 @@ const AdminSubdivisionZoningRules: React.FC = () => {
                     <div className="space-y-1">
                       <Label className="text-[11px]">Matériaux autorisés</Label>
                       <div className="flex flex-wrap gap-1.5 p-2 rounded border bg-background">
-                        {['beton','pvc','maconnerie','pierre','metal','composite'].map(m => {
+                        {DRAINAGE_CANAL_MATERIALS.map(m => {
                           const checked = form.drainage_canal_allowed_materials.includes(m);
                           return (
                             <label key={m} className={`text-[11px] px-2 py-0.5 rounded border cursor-pointer ${checked ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted/40'}`}>
@@ -1070,7 +1125,7 @@ const AdminSubdivisionZoningRules: React.FC = () => {
                                   ? [...f.drainage_canal_allowed_materials, m]
                                   : f.drainage_canal_allowed_materials.filter(x => x !== m),
                               }))} />
-                              {m}
+                              {DRAINAGE_CANAL_MATERIAL_LABELS[m]}
                             </label>
                           );
                         })}
@@ -1079,7 +1134,7 @@ const AdminSubdivisionZoningRules: React.FC = () => {
                     <div className="space-y-1">
                       <Label className="text-[11px]">Types autorisés</Label>
                       <div className="flex flex-wrap gap-1.5 p-2 rounded border bg-background">
-                        {['ouvert','couvert','enterre'].map(t => {
+                        {DRAINAGE_CANAL_TYPES.map(t => {
                           const checked = form.drainage_canal_allowed_types.includes(t);
                           return (
                             <label key={t} className={`text-[11px] px-2 py-0.5 rounded border cursor-pointer ${checked ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted/40'}`}>
@@ -1089,7 +1144,7 @@ const AdminSubdivisionZoningRules: React.FC = () => {
                                   ? [...f.drainage_canal_allowed_types, t]
                                   : f.drainage_canal_allowed_types.filter(x => x !== t),
                               }))} />
-                              {t}
+                              {DRAINAGE_CANAL_TYPE_LABELS[t]}
                             </label>
                           );
                         })}
@@ -1177,15 +1232,16 @@ const AdminSubdivisionZoningRules: React.FC = () => {
                       )}
                       {materials.map(m => {
                         const checked = form.road_surface_allowed_materials.includes(m.key);
+                        const hasTariff = roadSurfaceTariffKeys.has(m.key);
                         return (
-                          <label key={m.key} className={`text-[11px] px-2 py-0.5 rounded border cursor-pointer ${checked ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted/40'}`} title={m.description ?? ''}>
+                          <label key={m.key} className={`text-[11px] px-2 py-0.5 rounded border cursor-pointer ${checked ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted/40'}`} title={hasTariff ? (m.description ?? '') : `${m.description ?? ''}\n⚠ Aucun tarif road_surface_${m.key} configuré : frais = 0`}>
                             <input type="checkbox" className="sr-only" checked={checked} onChange={e => setForm(f => ({
                               ...f,
                               road_surface_allowed_materials: e.target.checked
                                 ? [...f.road_surface_allowed_materials, m.key]
                                 : f.road_surface_allowed_materials.filter(x => x !== m.key),
                             }))} />
-                            {m.label}
+                            {m.label}{!hasTariff && <span className="ml-1" aria-label="Tarif manquant">⚠</span>}
                           </label>
                         );
                       })}
@@ -1253,6 +1309,25 @@ const AdminSubdivisionZoningRules: React.FC = () => {
             <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
               Supprimer
             </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!toggleTarget} onOpenChange={(o) => !o && setToggleTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {toggleTarget?.is_active ? 'Désactiver cette règle ?' : 'Activer cette règle ?'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {toggleTarget?.is_active
+                ? 'Les nouvelles demandes de lotissement sur cette zone ne seront plus validées par cette règle.'
+                : 'Cette règle redeviendra applicable à toutes les nouvelles demandes de lotissement sur cette zone.'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmToggleActive}>Confirmer</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

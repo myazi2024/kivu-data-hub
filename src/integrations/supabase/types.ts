@@ -6543,6 +6543,7 @@ export type Database = {
           notes: string | null
           parent_max_area_sqm: number | null
           parent_min_area_sqm: number
+          province_path: string[] | null
           recommended_road_width_m: number
           require_drainage_canal: boolean
           require_gps_coordinates: boolean
@@ -6560,6 +6561,7 @@ export type Database = {
           solar_lighting_min_pole_height_m: number | null
           solar_lighting_required_sides: string
           updated_at: string
+          version: number
         }
         Insert: {
           allow_if_active_dispute?: boolean
@@ -6588,6 +6590,7 @@ export type Database = {
           notes?: string | null
           parent_max_area_sqm?: number | null
           parent_min_area_sqm?: number
+          province_path?: string[] | null
           recommended_road_width_m?: number
           require_drainage_canal?: boolean
           require_gps_coordinates?: boolean
@@ -6605,6 +6608,7 @@ export type Database = {
           solar_lighting_min_pole_height_m?: number | null
           solar_lighting_required_sides?: string
           updated_at?: string
+          version?: number
         }
         Update: {
           allow_if_active_dispute?: boolean
@@ -6633,6 +6637,7 @@ export type Database = {
           notes?: string | null
           parent_max_area_sqm?: number | null
           parent_min_area_sqm?: number
+          province_path?: string[] | null
           recommended_road_width_m?: number
           require_drainage_canal?: boolean
           require_gps_coordinates?: boolean
@@ -6650,6 +6655,7 @@ export type Database = {
           solar_lighting_min_pole_height_m?: number | null
           solar_lighting_required_sides?: string
           updated_at?: string
+          version?: number
         }
         Relationships: []
       }

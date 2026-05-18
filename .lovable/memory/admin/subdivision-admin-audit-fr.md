@@ -80,3 +80,8 @@ type: feature
 - `SubdivisionRequestDialog` : parsing erreurs typées + rebascule onglet (`PARENT_AREA_OUT_OF_RANGE`/`ROAD_INFRA_VIOLATIONS`/`LOT_AREA_OUT_OF_RANGE`/`OWNERSHIP_REQUIRED`), `useMemo` STEP_CONFIG remonté avant early-returns.
 - `useSubdivisionForm` : drafts scopés `user.id+parcelNumber` (préfixe v3), auto-fill first/last/middle_name depuis `user_metadata`, `Idempotency-Key` UUID stable, `titleIssueDate` propagé.
 - `UserSubdivisionRequests` : bouton « Reprendre le paiement » pour demandes `submission_payment_status='pending'`/`status='awaiting_payment'`.
+
+## Lot H — Hardening « Ajouter une règle de zonage » (mai 2026)
+- Migration : `subdivision_zoning_rules` + `province_path text[]`, `version int`, index unique `(section_type, location_name, province_path)`, trigger audit → `system_config_audit`, trigger bump `version` + `updated_at`.
+- Validation centralisée : `src/components/admin/subdivision/zoningValidation.ts` (pure, 9 tests Vitest verts) — bornes (% espaces 0-100, gps≥3, road_width>0), drainage/solar exigent au moins matériau+type+dimension, revêtement matériau orphelin = warning via `knownRoadSurfaceTariffKeys`.
+- `AdminSubdivisionZoningRules` : `province_path` persisté, search input, mémo `formatBreadcrumb` (Map cache), bouton **Cloner**, confirmation AlertDialog sur toggle `is_active`, drainage materials/types importés depuis `infrastructureConstants.ts`, chip ⚠ sur matériau revêtement sans tarif `road_surface_*`.
