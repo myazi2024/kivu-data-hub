@@ -1312,6 +1312,25 @@ const AdminSubdivisionZoningRules: React.FC = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <AlertDialog open={!!toggleTarget} onOpenChange={(o) => !o && setToggleTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {toggleTarget?.is_active ? 'Désactiver cette règle ?' : 'Activer cette règle ?'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {toggleTarget?.is_active
+                ? 'Les nouvelles demandes de lotissement sur cette zone ne seront plus validées par cette règle.'
+                : 'Cette règle redeviendra applicable à toutes les nouvelles demandes de lotissement sur cette zone.'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmToggleActive}>Confirmer</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
