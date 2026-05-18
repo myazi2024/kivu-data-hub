@@ -602,14 +602,29 @@ const AdminSubdivisionZoningRules: React.FC = () => {
     setDeleteId(null);
   };
 
-  const toggleActive = async (r: ZoningRule) => {
+  const requestToggleActive = (r: ZoningRule) => setToggleTarget(r);
+
+  const confirmToggleActive = async () => {
+    if (!toggleTarget) return;
+    const r = toggleTarget;
     const { error } = await untypedTables.subdivision_zoning_rules()
       .update({ is_active: !r.is_active })
       .eq('id', r.id);
-    if (!error) fetchRules();
+    if (error) toast.error('Erreur lors du changement de statut');
+    else { toast.success(r.is_active ? 'Règle désactivée' : 'Règle activée'); fetchRules(); }
+    setToggleTarget(null);
   };
 
-  const filtered = filter === 'all' ? rules : rules.filter(r => r.section_type === filter);
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return rules
+      .filter(r => filter === 'all' || r.section_type === filter)
+      .filter(r => !q
+        || r.location_name.toLowerCase().includes(q)
+        || memoFormatBreadcrumb(r).toLowerCase().includes(q),
+      );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rules, filter, search]);
 
   return (
     <div className="space-y-4">
