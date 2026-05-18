@@ -685,11 +685,12 @@ const AdminSubdivisionZoningRules: React.FC = () => {
                       <TableCell className="text-right font-mono">{r.min_common_space_pct}%</TableCell>
                       <TableCell className="text-right font-mono">{r.min_front_road_m}</TableCell>
                       <TableCell className="text-right font-mono">{r.max_lots_per_request ?? '∞'}</TableCell>
-                      <TableCell><Switch checked={r.is_active} onCheckedChange={() => toggleActive(r)} /></TableCell>
+                      <TableCell><Switch checked={r.is_active} onCheckedChange={() => requestToggleActive(r)} aria-label={r.is_active ? 'Désactiver la règle' : 'Activer la règle'} /></TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-1">
-                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(r)}><Pencil className="h-3 w-3" /></Button>
-                          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDelete(r.id)}><Trash2 className="h-3 w-3" /></Button>
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(r)} title="Modifier"><Pencil className="h-3 w-3" /></Button>
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openClone(r)} title="Cloner"><Plus className="h-3 w-3" /></Button>
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDelete(r.id)} title="Supprimer"><Trash2 className="h-3 w-3" /></Button>
                         </div>
                       </TableCell>
                     </TableRow>
