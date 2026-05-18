@@ -443,6 +443,14 @@ const AdminSubdivisionZoningRules: React.FC = () => {
     setDialogOpen(true);
   };
 
+  /** Cloner une règle existante (création d'une nouvelle entrée avec les mêmes paramètres). */
+  const openClone = (r: ZoningRule) => {
+    setEditing(null); // mode création
+    openEdit(r);      // précharge le form
+    setEditing(null); // re-force création
+    toast.info('Clonage : adaptez l\'emplacement avant d\'enregistrer');
+  };
+
   const openEdit = (r: ZoningRule) => {
     setEditing(r);
     const reversed = reverseGeographicLookup(r.section_type, r.location_name);
