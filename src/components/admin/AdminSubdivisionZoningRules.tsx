@@ -445,10 +445,10 @@ const AdminSubdivisionZoningRules: React.FC = () => {
 
   /** Cloner une règle existante (création d'une nouvelle entrée avec les mêmes paramètres). */
   const openClone = (r: ZoningRule) => {
-    setEditing(null); // mode création
-    openEdit(r);      // précharge le form
-    setEditing(null); // re-force création
-    toast.info('Clonage : adaptez l\'emplacement avant d\'enregistrer');
+    openEdit(r);
+    // Repasse en mode création juste après le préchargement du form
+    setTimeout(() => setEditing(null), 0);
+    toast.info("Clonage : adaptez l'emplacement avant d'enregistrer");
   };
 
   const openEdit = (r: ZoningRule) => {
