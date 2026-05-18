@@ -678,7 +678,7 @@ const AdminSubdivisionZoningRules: React.FC = () => {
                       <TableCell className="font-medium">
                         {r.location_name === '*'
                           ? <span className="italic text-muted-foreground">Par défaut (toute la RDC)</span>
-                          : <span title={r.location_name}>{formatBreadcrumb(r)}</span>}
+                          : <span title={r.location_name}>{memoFormatBreadcrumb(r)}</span>}
                       </TableCell>
                       <TableCell className="text-right font-mono">{r.min_lot_area_sqm} / {r.max_lot_area_sqm ?? '∞'}</TableCell>
                       <TableCell className="text-right font-mono">{r.min_road_width_m} / {r.recommended_road_width_m}</TableCell>
