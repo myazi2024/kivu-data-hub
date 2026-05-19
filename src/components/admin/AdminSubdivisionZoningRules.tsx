@@ -1141,12 +1141,15 @@ const AdminSubdivisionZoningRules: React.FC = () => {
                           const checked = form.drainage_canal_allowed_types.includes(t);
                           return (
                             <label key={t} className={`text-[11px] px-2 py-0.5 rounded border cursor-pointer ${checked ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted/40'}`}>
-                              <input type="checkbox" className="sr-only" checked={checked} onChange={e => setForm(f => ({
-                                ...f,
-                                drainage_canal_allowed_types: e.target.checked
-                                  ? [...f.drainage_canal_allowed_types, t]
-                                  : f.drainage_canal_allowed_types.filter(x => x !== t),
-                              }))} />
+                              <input type="checkbox" className="sr-only" checked={checked} onChange={e => setForm(f => {
+                                const prev = f.drainage_canal_allowed_types ?? [];
+                                return {
+                                  ...f,
+                                  drainage_canal_allowed_types: e.target.checked
+                                    ? (prev.includes(t) ? prev : [...prev, t])
+                                    : prev.filter(x => x !== t),
+                                };
+                              })} />
                               {DRAINAGE_CANAL_TYPE_LABELS[t]}
                             </label>
                           );
