@@ -1216,13 +1216,13 @@ const AdminSubdivisionZoningRules: React.FC = () => {
 
               {/* Revêtement de la voie */}
               <div className="rounded-lg border bg-card/50 p-3 space-y-3">
-                <label className="flex items-center justify-between gap-3 cursor-pointer">
+                <div className="flex items-center justify-between gap-3">
                   <div className="flex flex-col min-w-0">
-                    <span className="text-xs font-semibold">Revêtement de la voie</span>
+                    <span id="zoning-lbl-roadsurface" className="text-xs font-semibold">Revêtement de la voie</span>
                     <span className="text-[10px] text-muted-foreground">Matériau et épaisseur appliqués globalement à toutes les voies du lotissement. Tarification via catégorie <code>road_surface</code> des frais.</span>
                   </div>
-                  <Switch checked={form.require_road_surface} onCheckedChange={v => setForm(f => ({ ...f, require_road_surface: v }))} />
-                </label>
+                  <Switch aria-labelledby="zoning-lbl-roadsurface" checked={form.require_road_surface} onCheckedChange={v => setForm(f => ({ ...f, require_road_surface: v }))} />
+                </div>
                 <fieldset disabled={!form.require_road_surface} className="space-y-3 disabled:opacity-50 transition-opacity">
                   <div className="space-y-1">
                     <Label className="text-[11px]">Matériaux autorisés <span className="text-muted-foreground">({materials.length} disponibles)</span></Label>
