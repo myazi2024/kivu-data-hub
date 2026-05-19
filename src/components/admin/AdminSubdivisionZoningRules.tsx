@@ -409,15 +409,17 @@ const AdminSubdivisionZoningRules: React.FC = () => {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [toggleTarget, setToggleTarget] = useState<ZoningRule | null>(null);
 
-  // Cache mémo de breadcrumb pour éviter le recalcul O(provinces×...) à chaque rendu
-  const breadcrumbCache = useMemo(() => new Map<string, string>(), [rules]);
+  // Cache mémo de breadcrumb pré-calculé (pas de mutation pendant render)
+  const breadcrumbCache = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const r of rules) {
+      const key = `${r.section_type}|${r.location_name}`;
+      if (!map.has(key)) map.set(key, formatBreadcrumb(r));
+    }
+    return map;
+  }, [rules]);
   const memoFormatBreadcrumb = (r: ZoningRule): string => {
-    const key = `${r.section_type}|${r.location_name}`;
-    const cached = breadcrumbCache.get(key);
-    if (cached !== undefined) return cached;
-    const v = formatBreadcrumb(r);
-    breadcrumbCache.set(key, v);
-    return v;
+    return breadcrumbCache.get(`${r.section_type}|${r.location_name}`) ?? formatBreadcrumb(r);
   };
 
   const fetchRules = async () => {
@@ -1089,13 +1091,13 @@ const AdminSubdivisionZoningRules: React.FC = () => {
 
               {/* Canal eaux usées */}
               <div className="rounded-lg border bg-card/50 p-3 space-y-3">
-                <label className="flex items-center justify-between gap-3 cursor-pointer">
+                <div className="flex items-center justify-between gap-3">
                   <div className="flex flex-col min-w-0">
-                    <span className="text-xs font-semibold">Canal d'évacuation des eaux usées</span>
+                    <span id="zoning-lbl-drainage" className="text-xs font-semibold">Canal d'évacuation des eaux usées</span>
                     <span className="text-[10px] text-muted-foreground">Obligatoire sur chaque voie créée du lotissement.</span>
                   </div>
-                  <Switch checked={form.require_drainage_canal} onCheckedChange={v => setForm(f => ({ ...f, require_drainage_canal: v }))} />
-                </label>
+                  <Switch aria-labelledby="zoning-lbl-drainage" checked={form.require_drainage_canal} onCheckedChange={v => setForm(f => ({ ...f, require_drainage_canal: v }))} />
+                </div>
                 <fieldset disabled={!form.require_drainage_canal} className="space-y-3 disabled:opacity-50 transition-opacity">
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                     <div className="space-y-1">
@@ -1119,12 +1121,15 @@ const AdminSubdivisionZoningRules: React.FC = () => {
                           const checked = form.drainage_canal_allowed_materials.includes(m);
                           return (
                             <label key={m} className={`text-[11px] px-2 py-0.5 rounded border cursor-pointer ${checked ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted/40'}`}>
-                              <input type="checkbox" className="sr-only" checked={checked} onChange={e => setForm(f => ({
-                                ...f,
-                                drainage_canal_allowed_materials: e.target.checked
-                                  ? [...f.drainage_canal_allowed_materials, m]
-                                  : f.drainage_canal_allowed_materials.filter(x => x !== m),
-                              }))} />
+                              <input type="checkbox" className="sr-only" checked={checked} onChange={e => setForm(f => {
+                                const prev = f.drainage_canal_allowed_materials ?? [];
+                                return {
+                                  ...f,
+                                  drainage_canal_allowed_materials: e.target.checked
+                                    ? (prev.includes(m) ? prev : [...prev, m])
+                                    : prev.filter(x => x !== m),
+                                };
+                              })} />
                               {DRAINAGE_CANAL_MATERIAL_LABELS[m]}
                             </label>
                           );
@@ -1138,12 +1143,15 @@ const AdminSubdivisionZoningRules: React.FC = () => {
                           const checked = form.drainage_canal_allowed_types.includes(t);
                           return (
                             <label key={t} className={`text-[11px] px-2 py-0.5 rounded border cursor-pointer ${checked ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted/40'}`}>
-                              <input type="checkbox" className="sr-only" checked={checked} onChange={e => setForm(f => ({
-                                ...f,
-                                drainage_canal_allowed_types: e.target.checked
-                                  ? [...f.drainage_canal_allowed_types, t]
-                                  : f.drainage_canal_allowed_types.filter(x => x !== t),
-                              }))} />
+                              <input type="checkbox" className="sr-only" checked={checked} onChange={e => setForm(f => {
+                                const prev = f.drainage_canal_allowed_types ?? [];
+                                return {
+                                  ...f,
+                                  drainage_canal_allowed_types: e.target.checked
+                                    ? (prev.includes(t) ? prev : [...prev, t])
+                                    : prev.filter(x => x !== t),
+                                };
+                              })} />
                               {DRAINAGE_CANAL_TYPE_LABELS[t]}
                             </label>
                           );
@@ -1168,13 +1176,13 @@ const AdminSubdivisionZoningRules: React.FC = () => {
 
               {/* Éclairage public solaire */}
               <div className="rounded-lg border bg-card/50 p-3 space-y-3">
-                <label className="flex items-center justify-between gap-3 cursor-pointer">
+                <div className="flex items-center justify-between gap-3">
                   <div className="flex flex-col min-w-0">
-                    <span className="text-xs font-semibold">Éclairage public solaire</span>
+                    <span id="zoning-lbl-solar" className="text-xs font-semibold">Éclairage public solaire</span>
                     <span className="text-[10px] text-muted-foreground">Obligatoire le long de chaque voie créée.</span>
                   </div>
-                  <Switch checked={form.require_solar_lighting} onCheckedChange={v => setForm(f => ({ ...f, require_solar_lighting: v }))} />
-                </label>
+                  <Switch aria-labelledby="zoning-lbl-solar" checked={form.require_solar_lighting} onCheckedChange={v => setForm(f => ({ ...f, require_solar_lighting: v }))} />
+                </div>
                 <fieldset disabled={!form.require_solar_lighting} className="space-y-3 disabled:opacity-50 transition-opacity">
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                     <div className="space-y-1">
@@ -1216,13 +1224,13 @@ const AdminSubdivisionZoningRules: React.FC = () => {
 
               {/* Revêtement de la voie */}
               <div className="rounded-lg border bg-card/50 p-3 space-y-3">
-                <label className="flex items-center justify-between gap-3 cursor-pointer">
+                <div className="flex items-center justify-between gap-3">
                   <div className="flex flex-col min-w-0">
-                    <span className="text-xs font-semibold">Revêtement de la voie</span>
+                    <span id="zoning-lbl-roadsurface" className="text-xs font-semibold">Revêtement de la voie</span>
                     <span className="text-[10px] text-muted-foreground">Matériau et épaisseur appliqués globalement à toutes les voies du lotissement. Tarification via catégorie <code>road_surface</code> des frais.</span>
                   </div>
-                  <Switch checked={form.require_road_surface} onCheckedChange={v => setForm(f => ({ ...f, require_road_surface: v }))} />
-                </label>
+                  <Switch aria-labelledby="zoning-lbl-roadsurface" checked={form.require_road_surface} onCheckedChange={v => setForm(f => ({ ...f, require_road_surface: v }))} />
+                </div>
                 <fieldset disabled={!form.require_road_surface} className="space-y-3 disabled:opacity-50 transition-opacity">
                   <div className="space-y-1">
                     <Label className="text-[11px]">Matériaux autorisés <span className="text-muted-foreground">({materials.length} disponibles)</span></Label>
@@ -1231,16 +1239,19 @@ const AdminSubdivisionZoningRules: React.FC = () => {
                         <span className="text-[11px] text-muted-foreground italic">Aucun matériau actif — ajoutez-en dans la section dédiée ci-dessous.</span>
                       )}
                       {materials.map(m => {
-                        const checked = form.road_surface_allowed_materials.includes(m.key);
+                        const checked = (form.road_surface_allowed_materials ?? []).includes(m.key);
                         const hasTariff = roadSurfaceTariffKeys.has(m.key);
                         return (
                           <label key={m.key} className={`text-[11px] px-2 py-0.5 rounded border cursor-pointer ${checked ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted/40'}`} title={hasTariff ? (m.description ?? '') : `${m.description ?? ''}\n⚠ Aucun tarif road_surface_${m.key} configuré : frais = 0`}>
-                            <input type="checkbox" className="sr-only" checked={checked} onChange={e => setForm(f => ({
-                              ...f,
-                              road_surface_allowed_materials: e.target.checked
-                                ? [...f.road_surface_allowed_materials, m.key]
-                                : f.road_surface_allowed_materials.filter(x => x !== m.key),
-                            }))} />
+                            <input type="checkbox" className="sr-only" checked={checked} onChange={e => setForm(f => {
+                              const prev = f.road_surface_allowed_materials ?? [];
+                              return {
+                                ...f,
+                                road_surface_allowed_materials: e.target.checked
+                                  ? (prev.includes(m.key) ? prev : [...prev, m.key])
+                                  : prev.filter(x => x !== m.key),
+                              };
+                            })} />
                             {m.label}{!hasTariff && <span className="ml-1" aria-label="Tarif manquant">⚠</span>}
                           </label>
                         );
