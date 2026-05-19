@@ -409,15 +409,17 @@ const AdminSubdivisionZoningRules: React.FC = () => {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [toggleTarget, setToggleTarget] = useState<ZoningRule | null>(null);
 
-  // Cache mémo de breadcrumb pour éviter le recalcul O(provinces×...) à chaque rendu
-  const breadcrumbCache = useMemo(() => new Map<string, string>(), [rules]);
+  // Cache mémo de breadcrumb pré-calculé (pas de mutation pendant render)
+  const breadcrumbCache = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const r of rules) {
+      const key = `${r.section_type}|${r.location_name}`;
+      if (!map.has(key)) map.set(key, formatBreadcrumb(r));
+    }
+    return map;
+  }, [rules]);
   const memoFormatBreadcrumb = (r: ZoningRule): string => {
-    const key = `${r.section_type}|${r.location_name}`;
-    const cached = breadcrumbCache.get(key);
-    if (cached !== undefined) return cached;
-    const v = formatBreadcrumb(r);
-    breadcrumbCache.set(key, v);
-    return v;
+    return breadcrumbCache.get(`${r.section_type}|${r.location_name}`) ?? formatBreadcrumb(r);
   };
 
   const fetchRules = async () => {
