@@ -1089,13 +1089,13 @@ const AdminSubdivisionZoningRules: React.FC = () => {
 
               {/* Canal eaux usées */}
               <div className="rounded-lg border bg-card/50 p-3 space-y-3">
-                <label className="flex items-center justify-between gap-3 cursor-pointer">
+                <div className="flex items-center justify-between gap-3">
                   <div className="flex flex-col min-w-0">
-                    <span className="text-xs font-semibold">Canal d'évacuation des eaux usées</span>
+                    <span id="zoning-lbl-drainage" className="text-xs font-semibold">Canal d'évacuation des eaux usées</span>
                     <span className="text-[10px] text-muted-foreground">Obligatoire sur chaque voie créée du lotissement.</span>
                   </div>
-                  <Switch checked={form.require_drainage_canal} onCheckedChange={v => setForm(f => ({ ...f, require_drainage_canal: v }))} />
-                </label>
+                  <Switch aria-labelledby="zoning-lbl-drainage" checked={form.require_drainage_canal} onCheckedChange={v => setForm(f => ({ ...f, require_drainage_canal: v }))} />
+                </div>
                 <fieldset disabled={!form.require_drainage_canal} className="space-y-3 disabled:opacity-50 transition-opacity">
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                     <div className="space-y-1">
