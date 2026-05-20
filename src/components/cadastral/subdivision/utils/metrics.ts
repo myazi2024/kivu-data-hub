@@ -61,6 +61,16 @@ export function polygonPerimeterM(poly: Point2D[], frame: MetricFrame): number {
   return p;
 }
 
+/** Total length in meters of a polyline path in normalized coords. */
+export function pathLengthM(path: Point2D[] | undefined, frame: MetricFrame): number {
+  if (!path || path.length < 2) return 0;
+  let total = 0;
+  for (let i = 1; i < path.length; i++) {
+    total += edgeLengthM(path[i - 1], path[i], frame);
+  }
+  return total;
+}
+
 /**
  * Accurate polygon area in square meters.
  * normalized polygon area × (sxM × syM) — independent of any "parent area" assumption.

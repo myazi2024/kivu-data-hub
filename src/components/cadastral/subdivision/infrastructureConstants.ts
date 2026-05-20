@@ -59,3 +59,17 @@ export interface SolarLightingSpec {
   batteryHours: number;
   side: LightingSide | string;
 }
+
+/**
+ * Revêtement de voie — piloté par les règles admin de zonage
+ * (`require_road_surface`, `road_surface_allowed_materials`,
+ * `road_surface_min/max_thickness_cm`) et le catalogue
+ * `subdivision_road_surface_materials`.
+ */
+export interface RoadSurfaceSpec {
+  /** Clé matériau alignée sur `subdivision_road_surface_materials.key`. */
+  material: string;
+  /** Épaisseur en centimètres, bornée par la règle de zonage. */
+  thicknessCm: number;
+}
+

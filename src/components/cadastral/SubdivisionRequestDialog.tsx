@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
-import { Grid3X3, MapPin, Pencil, Eye, FileText, ChevronLeft, ChevronRight, Check, Loader2, Info, Trash2, Upload, Building2, ShieldCheck } from 'lucide-react';
+import { Grid3X3, MapPin, Pencil, Eye, FileText, ChevronLeft, ChevronRight, Check, Loader2, Info, Trash2, Upload, ShieldCheck } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import FormIntroDialog, { FORM_INTRO_CONFIGS } from './FormIntroDialog';
 import WhatsAppFloatingButton from './WhatsAppFloatingButton';
@@ -34,9 +34,8 @@ const ALL_STEP_CONFIG: { key: SubdivisionStep; label: string; icon: React.ReactN
   { key: 'parcel', label: 'Parcelle & Demandeur', icon: <MapPin className="h-3.5 w-3.5" />, shortLabel: 'Parcelle' },
   { key: 'designer', label: 'Conception des lots', icon: <Pencil className="h-3.5 w-3.5" />, shortLabel: 'Lots' },
   { key: 'plan', label: 'Plan personnalisé', icon: <Eye className="h-3.5 w-3.5" />, shortLabel: 'Plan' },
-  { key: 'infrastructures', label: 'Infrastructures', icon: <Building2 className="h-3.5 w-3.5" />, shortLabel: 'Infra' },
   { key: 'documents', label: 'Pièces justificatives', icon: <Upload className="h-3.5 w-3.5" />, shortLabel: 'Docs' },
-  { key: 'summary', label: 'Récapitulatif & paiement', icon: <FileText className="h-3.5 w-3.5" />, shortLabel: 'Envoi' },
+  { key: 'summary', label: 'Récapitulatif', icon: <FileText className="h-3.5 w-3.5" />, shortLabel: 'Récap' },
 ];
 
 const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
@@ -295,14 +294,8 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
                 onPlanElementsChange={form.setPlanElements}
               />
             )}
-            {form.currentStep === 'infrastructures' && (
-              <StepInfrastructures
-                sectionType={inferSectionType(parcelData)}
-                selections={form.selectedInfrastructures}
-                onChange={form.setSelectedInfrastructures}
-                numberOfLots={form.lots.length}
-              />
-            )}
+            {/* L'onglet « Infrastructures » a été supprimé : ses données sont désormais
+                dérivées automatiquement des voies (onglet Lots) et récapitulées dans Récap. */}
             {form.currentStep === 'documents' && (
               <StepDocuments
                 documents={form.documents}
