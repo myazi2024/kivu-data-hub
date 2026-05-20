@@ -504,8 +504,6 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
         return lots.length >= 2 && validation.isValid;
       case 'plan':
         return true;
-      case 'infrastructures':
-        return true; // toutes optionnelles côté UX (les obligatoires sont auto-cochées)
       case 'documents':
         return !!(documents.requester_id_document_url && documents.proof_of_ownership_url);
       case 'summary':
@@ -521,10 +519,11 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
   const hasZoningRule = !!zoningCompliance.rule && !zoningCompliance.loading;
   const steps: SubdivisionStep[] = useMemo(
     () => (hasZoningRule
-      ? ['zoning', 'parcel', 'designer', 'plan', 'infrastructures', 'documents', 'summary']
-      : ['parcel', 'designer', 'plan', 'infrastructures', 'documents', 'summary']),
+      ? ['zoning', 'parcel', 'designer', 'plan', 'documents', 'summary']
+      : ['parcel', 'designer', 'plan', 'documents', 'summary']),
     [hasZoningRule],
   );
+
 
   // Si la règle apparaît après le chargement initial, basculer une seule fois sur 'zoning'
   const zoningSeenRef = useRef(false);
