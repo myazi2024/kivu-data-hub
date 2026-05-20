@@ -202,7 +202,7 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
           setServitudes(draft.servitudes || []);
           setPurpose(draft.purpose || '');
           if (draft.planElements) setPlanElements(draft.planElements);
-          if (draft.selectedInfrastructures) setSelectedInfrastructures(draft.selectedInfrastructures);
+          // NOTE: legacy `selectedInfrastructures` field ignored — désormais dérivé des voies.
           setDraftRestored(true);
         }
       }
@@ -217,13 +217,13 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
     try {
       localStorage.setItem(draftKey, JSON.stringify({
         lots, roads, commonSpaces, servitudes, purpose, planElements,
-        selectedInfrastructures,
         savedAt: new Date().toISOString(),
       }));
     } catch {
       // storage full — ignore
     }
-  }, [lots, roads, commonSpaces, servitudes, purpose, planElements, selectedInfrastructures, draftKey]);
+  }, [lots, roads, commonSpaces, servitudes, purpose, planElements, draftKey]);
+
   
   const clearDraft = useCallback(() => {
     localStorage.removeItem(draftKey);
