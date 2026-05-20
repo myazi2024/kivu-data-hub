@@ -12,6 +12,7 @@ import { buildMetricFrame, polygonPerimeterM, polygonAreaSqmAccurate, MetricFram
 import { useZoningCompliance } from './useZoningCompliance';
 import { useParentParcelEligibility } from './useParentParcelEligibility';
 import { fetchInfrastructureTariffsAsync } from '@/hooks/useSubdivisionInfrastructureTariffs';
+import { buildInfraItemsFromRoads } from '../utils/infrastructureFromRoads';
 import { inferSectionType } from '../utils/sectionType';
 
 const DRAFT_KEY_PREFIX = 'subdivision-draft-v3-';
