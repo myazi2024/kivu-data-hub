@@ -62,6 +62,8 @@ export interface SubdivisionRoad {
   drainageCanal?: import('./infrastructureConstants').DrainageCanalSpec | null;
   /** Solar public lighting spec along the road. Required when zoning rule imposes it. */
   solarLighting?: import('./infrastructureConstants').SolarLightingSpec | null;
+  /** Road surface spec (material + thickness). Driven by admin zoning rule + tariffs. */
+  roadSurface?: import('./infrastructureConstants').RoadSurfaceSpec | null;
 }
 
 export interface SubdivisionCommonSpace {
