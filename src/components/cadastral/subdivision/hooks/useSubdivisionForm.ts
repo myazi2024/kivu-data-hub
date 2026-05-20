@@ -606,7 +606,7 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
           planElements,
           purpose,
           documents,
-          selected_infrastructures: selectedInfrastructures,
+
         },
         headers: { 'Idempotency-Key': idempotencyKeyRef.current },
       });
@@ -653,7 +653,7 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
     } finally {
       setSubmitting(false);
     }
-  }, [parentParcel, parcelData, requester, lots, roads, commonSpaces, servitudes, planElements, purpose, parcelNumber, parcelId, documents, selectedInfrastructures, clearDraft]);
+  }, [parentParcel, parcelData, requester, lots, roads, commonSpaces, servitudes, planElements, purpose, parcelNumber, parcelId, documents, clearDraft]);
 
   const markSubmittedFallback = useCallback(() => setSubmitted(true), []);
 
@@ -686,9 +686,8 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
     purpose, setPurpose,
     // Documents
     documents, setDocuments,
-    // Lot E — infrastructures sélectionnées
-    selectedInfrastructures, setSelectedInfrastructures,
     // Submission
+
     submitting, submitted, referenceNumber, createdRequestId, submit, markSubmittedFallback,
     // Pricing
     submissionFee, loadingFee, feeBreakdown,
