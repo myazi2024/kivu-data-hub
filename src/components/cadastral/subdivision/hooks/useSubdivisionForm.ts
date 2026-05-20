@@ -67,11 +67,14 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
     }));
   }, [authUser]);
   
-  // Lot E — infrastructures sélectionnées (key -> quantité)
-  const [selectedInfrastructures, setSelectedInfrastructures] = useState<Record<string, number>>({});
+  // Plan data (lots/roads/...) — déclarés en amont, computeFee s'appuie sur eux.
 
-  // Load subdivision rate from config based on location
-  const computeFee = useCallback(async (currentLots: SubdivisionLot[], infraSelections: Record<string, number>) => {
+  // Compute fee from current lots + roads (infrastructures dérivées des voies)
+  const computeFee = useCallback(async (
+    currentLots: SubdivisionLot[],
+    currentRoads: SubdivisionRoad[],
+    frame: MetricFrame,
+  ) => {
     try {
       // Determine section type and location from parcelData (helper partagé front + edge)
       const sectionType = inferSectionType(parcelData);
@@ -93,24 +96,17 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
       const fallbackRate = ratesData.find(r => r.location_name === '*');
       const rate = specificRate || fallbackRate;
 
-      // Lot E — compute infra surcharge from admin tariffs
+      // Lot E — infrastructures dérivées des voies (auto)
       const tariffs = await fetchInfrastructureTariffsAsync();
-      const infraItems = Object.entries(infraSelections)
-        .filter(([, qty]) => qty > 0)
-        .map(([key, qty]) => {
-          const t = tariffs.find(x => x.infrastructure_key === key);
-          if (!t) return null;
-          const subtotal = Math.round(qty * t.rate_usd * 100) / 100;
-          return {
-            infrastructure_key: key,
-            label: t.label,
-            unit: t.unit as string,
-            quantity: qty,
-            rate_usd: t.rate_usd,
-            subtotal_usd: subtotal,
-          };
-        })
-        .filter(Boolean) as NonNullable<FeeBreakdown['infrastructures']>;
+      const derived = buildInfraItemsFromRoads(currentRoads, tariffs, frame, { sectionType });
+      const infraItems = derived.map(d => ({
+        infrastructure_key: d.infrastructure_key,
+        label: d.label,
+        unit: d.unit,
+        quantity: d.quantity,
+        rate_usd: d.rate_usd,
+        subtotal_usd: d.subtotal_usd,
+      })) as NonNullable<FeeBreakdown['infrastructures']>;
       const infrastructuresTotal = Math.round(infraItems.reduce((s, i) => s + i.subtotal_usd, 0) * 100) / 100;
 
       if (!rate) {
@@ -158,21 +154,8 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
 
   // Plan data
   const [lots, setLots] = useState<SubdivisionLot[]>([]);
-
-  // Debounced fee recompute (400ms) — avoids hammering Supabase on every drag
-  const feeDebounceRef = useRef<number | null>(null);
-  useEffect(() => {
-    if (lots.length === 0 && Object.keys(selectedInfrastructures).length === 0) return;
-    if (feeDebounceRef.current) window.clearTimeout(feeDebounceRef.current);
-    feeDebounceRef.current = window.setTimeout(() => {
-      computeFee(lots, selectedInfrastructures);
-    }, 400);
-    return () => {
-      if (feeDebounceRef.current) window.clearTimeout(feeDebounceRef.current);
-    };
-  }, [lots, selectedInfrastructures, computeFee]);
-
   const [roads, setRoads] = useState<SubdivisionRoad[]>([]);
+
   const [commonSpaces, setCommonSpaces] = useState<SubdivisionCommonSpace[]>([]);
   const [servitudes, setServitudes] = useState<SubdivisionServitude[]>([]);
   const [planElements, setPlanElements] = useState<PlanElements>(DEFAULT_PLAN_ELEMENTS);
