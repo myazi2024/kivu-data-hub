@@ -238,13 +238,10 @@ export const USAGE_LABELS: Record<SubdivisionLot['intendedUse'], string> = {
   mixed: 'Mixte',
 };
 
-export const ROAD_SURFACE_LABELS: Record<SubdivisionRoad['surfaceType'], string> = {
-  asphalt: 'Asphalte',
-  gravel: 'Gravier',
-  earth: 'Terre',
-  paved: 'Pavé',
-  planned: 'Planifié',
-};
+// ROAD_SURFACE_LABELS removed: road surface is now driven by the admin
+// zoning rule (`road_surface_allowed_materials`) + the
+// `subdivision_road_surface_materials` catalogue. Labels are resolved via
+// `useSubdivisionReferences('road_surface')` in the UI.
 
 export const COMMON_SPACE_LABELS: Record<SubdivisionCommonSpace['type'], string> = {
   green_space: 'Espace vert',
