@@ -215,6 +215,28 @@ export const useZoningCompliance = (
       });
     }
 
+    // === Road surface (per road) ===
+    if (rule.require_road_surface) {
+      roads.forEach(road => {
+        const rs = road.roadSurface;
+        const target = road.name || 'Voie';
+        if (!rs || !rs.material) {
+          out.push({ code: 'ROAD_SURFACE_MISSING', severity: 'error', target, message: `Revêtement requis sur ${target}.` });
+          return;
+        }
+        if (rule.road_surface_allowed_materials?.length
+            && !rule.road_surface_allowed_materials.includes(rs.material)) {
+          out.push({ code: 'ROAD_SURFACE_BAD_MATERIAL', severity: 'error', target, message: `Matériau « ${rs.material} » non autorisé.` });
+        }
+        if (rule.road_surface_min_thickness_cm && (rs.thicknessCm || 0) < rule.road_surface_min_thickness_cm) {
+          out.push({ code: 'ROAD_SURFACE_TOO_THIN', severity: 'error', target, message: `Épaisseur ${rs.thicknessCm} cm < min ${rule.road_surface_min_thickness_cm} cm.` });
+        }
+        if (rule.road_surface_max_thickness_cm && (rs.thicknessCm || 0) > rule.road_surface_max_thickness_cm) {
+          out.push({ code: 'ROAD_SURFACE_TOO_THICK', severity: 'error', target, message: `Épaisseur ${rs.thicknessCm} cm > max ${rule.road_surface_max_thickness_cm} cm.` });
+        }
+      });
+    }
+
     // Espace commun minimal
     if (rule.min_common_space_pct > 0 && metrics.commonSpacePct < rule.min_common_space_pct) {
       out.push({
