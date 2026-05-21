@@ -106,6 +106,8 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
         quantity: d.quantity,
         rate_usd: d.rate_usd,
         subtotal_usd: d.subtotal_usd,
+        roadId: d.roadId,
+        roadName: d.roadName,
       })) as NonNullable<FeeBreakdown['infrastructures']>;
       const infrastructuresTotal = Math.round(infraItems.reduce((s, i) => s + i.subtotal_usd, 0) * 100) / 100;
 

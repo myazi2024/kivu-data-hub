@@ -7,6 +7,7 @@ import {
   aggregateAuxiliaryMetrics,
   computeSubdivisionFee,
   polygonAreaSqm,
+  pathLengthM,
 } from "../_shared/subdivisionFees.ts";
 import { inferSectionType } from "../_shared/sectionType.ts";
 
@@ -71,8 +72,7 @@ interface SubdivisionRequestBody {
     subdivision_sketch_url?: string | null;
     [k: string]: string | null | undefined;
   };
-  /** Lot E — infrastructures sélectionnées par l'utilisateur (key -> quantité). */
-  selected_infrastructures?: Record<string, number>;
+  // Note: `selected_infrastructures` (manuel) supprimé — désormais dérivé des voies serveur-side.
 }
 
 Deno.serve(async (req) => {
@@ -329,7 +329,10 @@ Deno.serve(async (req) => {
       totalFee = recomputedLots.length * 10;
     }
 
-    // === Lot E — Server-side infrastructure surcharge ===
+    // === Lot E — Server-side infrastructure surcharge (derived from roads) ===
+    // Source unique : voies tracées + tarifs admin. Le champ legacy
+    // `selected_infrastructures` est ignoré (les contributions manuelles
+    // sont remplacées par la dérivation auto via les voies).
     let infrastructureFee = 0;
     const persistedInfrastructures: Array<{
       infrastructure_key: string;
@@ -338,28 +341,63 @@ Deno.serve(async (req) => {
       quantity: number;
       rate_usd: number;
       subtotal_usd: number;
+      road_id?: string;
+      road_name?: string;
     }> = [];
-    const selectedInfra = body.selected_infrastructures || {};
-    const selectedKeys = Object.keys(selectedInfra).filter((k) => Number(selectedInfra[k]) > 0);
-    if (selectedKeys.length > 0) {
+    const sidesFactor = (side?: string) =>
+      side === "both" || side === "alternating" ? 2 : 1;
+    const derivedKeys = new Set<string>();
+    for (const road of (body.roads as any[]) ?? []) {
+      if (road?.roadSurface?.material) derivedKeys.add(`road_surface_${road.roadSurface.material}`);
+      if (road?.drainageCanal) derivedKeys.add("drainage");
+      if (road?.solarLighting && (road.solarLighting.spacingM ?? 0) > 0) derivedKeys.add("street_lighting");
+    }
+    if (derivedKeys.size > 0) {
       const { data: infraTariffs } = await supabase
         .from("subdivision_infrastructure_tariffs")
-        .select("infrastructure_key,label,unit,rate_usd,is_active")
-        .in("infrastructure_key", selectedKeys)
+        .select("infrastructure_key,label,unit,rate_usd,section_type,is_active")
+        .in("infrastructure_key", Array.from(derivedKeys))
         .eq("is_active", true);
-      for (const t of (infraTariffs as any[]) || []) {
-        const qty = Math.max(0, Number(selectedInfra[t.infrastructure_key]) || 0);
-        const subtotal = Math.round(qty * Number(t.rate_usd) * 100) / 100;
-        if (subtotal <= 0) continue;
-        infrastructureFee += subtotal;
-        persistedInfrastructures.push({
-          infrastructure_key: t.infrastructure_key,
-          label: t.label,
-          unit: t.unit,
-          quantity: qty,
-          rate_usd: Number(t.rate_usd),
-          subtotal_usd: subtotal,
-        });
+      const tariffs = (infraTariffs as any[]) || [];
+      const pickTariff = (key: string) => {
+        const cands = tariffs.filter((t) => t.infrastructure_key === key);
+        return cands.find((t) => t.section_type === sectionType)
+          ?? cands.find((t) => t.section_type == null)
+          ?? cands[0]
+          ?? null;
+      };
+      for (const road of (body.roads as any[]) ?? []) {
+        const lengthM = Array.isArray(road?.path) ? pathLengthM(road.path, frame) : 0;
+        if (lengthM <= 0) continue;
+        const pushItem = (key: string, qty: number) => {
+          const t = pickTariff(key);
+          if (!t || qty <= 0) return;
+          const subtotal = Math.round(qty * Number(t.rate_usd) * 100) / 100;
+          if (subtotal <= 0) return;
+          infrastructureFee += subtotal;
+          persistedInfrastructures.push({
+            infrastructure_key: t.infrastructure_key,
+            label: t.label,
+            unit: t.unit,
+            quantity: Math.round(qty * 100) / 100,
+            rate_usd: Number(t.rate_usd),
+            subtotal_usd: subtotal,
+            road_id: road.id,
+            road_name: road.name,
+          });
+        };
+        if (road.roadSurface?.material) {
+          pushItem(`road_surface_${road.roadSurface.material}`, lengthM * (road.widthM || 0));
+        }
+        if (road.drainageCanal) {
+          pushItem("drainage", lengthM * sidesFactor(road.drainageCanal.side));
+        }
+        if (road.solarLighting && road.solarLighting.spacingM > 0) {
+          pushItem(
+            "street_lighting",
+            Math.ceil(lengthM / Number(road.solarLighting.spacingM)) * sidesFactor(road.solarLighting.side),
+          );
+        }
       }
       infrastructureFee = Math.round(infrastructureFee * 100) / 100;
       totalFee = Math.round((totalFee + infrastructureFee) * 100) / 100;

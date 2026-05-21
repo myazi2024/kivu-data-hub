@@ -7,14 +7,16 @@ import { Slider } from '@/components/ui/slider';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Trash2, Route, Droplets, Sun } from 'lucide-react';
-import { SubdivisionRoad, ROAD_SURFACE_LABELS } from '../../types';
+import { Plus, Trash2, Route, Droplets, Sun, Construction } from 'lucide-react';
+import { SubdivisionRoad } from '../../types';
 import {
   DRAINAGE_CANAL_MATERIAL_LABELS,
   DRAINAGE_CANAL_TYPE_LABELS,
   type DrainageCanalSpec,
   type SolarLightingSpec,
+  type RoadSurfaceSpec,
 } from '../../infrastructureConstants';
+import { useSubdivisionReferences } from '@/hooks/useSubdivisionReferences';
 import type { CanvasMode } from '../../LotCanvas';
 import type { ZoningRule } from '@/hooks/useZoningRules';
 
@@ -55,6 +57,11 @@ const defaultLighting = (rule?: ZoningRule | null): SolarLightingSpec => ({
     ? rule.solar_lighting_required_sides : 'both',
 });
 
+const defaultRoadSurface = (rule?: ZoningRule | null): RoadSurfaceSpec => ({
+  material: rule?.road_surface_allowed_materials?.[0] ?? 'asphalt',
+  thicknessCm: rule?.road_surface_min_thickness_cm ?? 5,
+});
+
 const RoadsListPanel: React.FC<Props> = ({
   roads, editingRoad, editingRoadId, setEditingRoadId,
   onDeleteRoad, onUpdateRoad, onAddRoad,
@@ -62,6 +69,8 @@ const RoadsListPanel: React.FC<Props> = ({
 }) => {
   const requireCanal = !!zoningRule?.require_drainage_canal;
   const requireLighting = !!zoningRule?.require_solar_lighting;
+  const requireRoadSurface = !!zoningRule?.require_road_surface;
+  const { labels: roadSurfaceLabels } = useSubdivisionReferences('road_surface');
 
   const updateCanal = (road: SubdivisionRoad, patch: Partial<DrainageCanalSpec>) => {
     const current = road.drainageCanal ?? defaultDrainage(zoningRule);
@@ -70,6 +79,10 @@ const RoadsListPanel: React.FC<Props> = ({
   const updateLighting = (road: SubdivisionRoad, patch: Partial<SolarLightingSpec>) => {
     const current = road.solarLighting ?? defaultLighting(zoningRule);
     onUpdateRoad(road.id, { solarLighting: { ...current, ...patch } });
+  };
+  const updateRoadSurface = (road: SubdivisionRoad, patch: Partial<RoadSurfaceSpec>) => {
+    const current = road.roadSurface ?? defaultRoadSurface(zoningRule);
+    onUpdateRoad(road.id, { roadSurface: { ...current, ...patch } });
   };
 
   return (
@@ -127,6 +140,9 @@ const RoadsListPanel: React.FC<Props> = ({
                 {requireLighting && !road.solarLighting && (
                   <Badge variant="destructive" className="ml-1 h-4 text-[9px]">Éclairage manquant</Badge>
                 )}
+                {requireRoadSurface && !road.roadSurface?.material && (
+                  <Badge variant="destructive" className="ml-1 h-4 text-[9px]">Revêtement manquant</Badge>
+                )}
               </button>
               {!isExisting && (
                 <Button
@@ -159,7 +175,7 @@ const RoadsListPanel: React.FC<Props> = ({
                 disabled={editingRoad.isExisting}
               />
             </div>
-            <div className="grid grid-cols-2 gap-2">
+            <div>
               <div>
                 <Label className="text-xs">Largeur ({formatWidth(editingRoad.widthM)}m)</Label>
                 <div className="flex items-center gap-2">
@@ -184,21 +200,45 @@ const RoadsListPanel: React.FC<Props> = ({
                   />
                 </div>
               </div>
-              <div>
-                <Label htmlFor={`road-surface-${editingRoad.id}`} className="text-xs">Revêtement</Label>
-                <Select
-                  value={editingRoad.surfaceType}
-                  onValueChange={(v: SubdivisionRoad['surfaceType']) => onUpdateRoad(editingRoad.id, { surfaceType: v })}
-                >
-                  <SelectTrigger id={`road-surface-${editingRoad.id}`} className="h-7 text-xs"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(ROAD_SURFACE_LABELS).map(([key, label]) => (
-                      <SelectItem key={key} value={key}>{label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
             </div>
+
+            {/* Revêtement de la voie — piloté par la règle de zonage */}
+            {requireRoadSurface && (
+              <div className="rounded-md border bg-card/50 p-2 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-semibold flex items-center gap-1">
+                    <Construction className="h-3 w-3 text-stone-500" />
+                    Revêtement
+                  </span>
+                  <Badge variant="secondary" className="h-4 text-[9px]">Requis</Badge>
+                </div>
+                <div className="grid grid-cols-2 gap-1.5">
+                  <div>
+                    <Label className="text-[10px]">Matériau</Label>
+                    <Select
+                      value={editingRoad.roadSurface?.material ?? ''}
+                      onValueChange={v => updateRoadSurface(editingRoad, { material: v })}
+                    >
+                      <SelectTrigger className="h-7 text-xs"><SelectValue placeholder="—" /></SelectTrigger>
+                      <SelectContent>
+                        {(zoningRule?.road_surface_allowed_materials ?? []).map(m => (
+                          <SelectItem key={m} value={m}>{roadSurfaceLabels[m] ?? m}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-[10px]">Épaisseur (cm)</Label>
+                    <Input type="number" step="0.5"
+                      min={zoningRule?.road_surface_min_thickness_cm ?? undefined}
+                      max={zoningRule?.road_surface_max_thickness_cm ?? undefined}
+                      value={editingRoad.roadSurface?.thicknessCm ?? ''}
+                      onChange={e => updateRoadSurface(editingRoad, { thicknessCm: parseFloat(e.target.value) || 0 })}
+                      className="h-7 text-xs" />
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Canal d'évacuation des eaux usées */}
             {requireCanal && (

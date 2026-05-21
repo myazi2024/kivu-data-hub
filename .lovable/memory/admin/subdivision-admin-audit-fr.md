@@ -62,11 +62,15 @@ type: feature
 - Hook `useSubdivisionInfrastructureTariffs({sectionType})` + `fetchInfrastructureTariffsAsync` (cache 5 min, fallback).
 - `AdminSubdivisionInfrastructureTariffs` intégré dans l'onglet « Tarifs » via `AdminSubdivisionFeesConfig`.
 
-## Lot E — Intégration infrastructures dans le formulaire ✅
-- Nouveau step **Infrastructures** (`StepInfrastructures.tsx`) après Plan, avant Documents — checkbox + quantité + sous-total live, groupé par catégorie, badges « Obligatoire ».
-- `useSubdivisionForm` : state `selectedInfrastructures` (key→qty), recompute fee debouncé incluant le surcoût infra, persistance dans le brouillon localStorage.
-- `FeeBreakdown` étendu (`infrastructures[]`, `infrastructuresTotal`, `lotsTotal`) — `StepSummary` affiche tableau infra séparé + sous-totaux + total.
-- Edge function `subdivision-request` : recalcul serveur (source de vérité) à partir de `subdivision_infrastructure_tariffs` filtrées sur `is_active`, persistance dans deux nouvelles colonnes `subdivision_requests.selected_infrastructures` (jsonb) et `infrastructure_fee_usd` (numeric).
+## Lot E — Infrastructures dérivées des voies (refonte mai 2026) ✅
+- L'onglet manuel `StepInfrastructures` **supprimé** : redondant avec la spec par voie (revêtement/canal/éclairage) qui est désormais la **source unique**.
+- `RoadsListPanel` étendu : bloc « Revêtement » (matériau parmi `road_surface_allowed_materials` + épaisseur bornée `road_surface_min/max_thickness_cm`) rendu conditionnellement à `require_road_surface`. Badge « Revêtement manquant » dans la liste.
+- `useZoningRules` expose les champs `require_road_surface`, `road_surface_allowed_materials`, `road_surface_min/max_thickness_cm`. `useZoningCompliance` valide matériau+épaisseur (codes `ROAD_SURFACE_MISSING/BAD_MATERIAL/TOO_THIN/TOO_THICK`).
+- Helper partagé `infrastructureFromRoads.ts` : dérive `road_surface_<material>` (sqm = length×width), `drainage` (linear_m × sidesFactor), `street_lighting` (poles = ⌈length/spacing⌉ × sidesFactor) à partir des voies + tarifs admin.
+- `useSubdivisionForm.computeFee` n'utilise plus `selectedInfrastructures` (state retiré) — recompute auto via `buildInfraItemsFromRoads`. `FeeBreakdown.infrastructures[]` enrichi de `roadId/roadName` pour traçabilité.
+- L'onglet final est renommé **« Récapitulatif »** (ex « Envoi ») dans `ALL_STEP_CONFIG`. `StepSummary` affiche un tableau infra avec colonne « Voie » source.
+- Edge `subdivision-request` : recalcul **server-side** des items infra à partir de `body.roads` + `subdivision_infrastructure_tariffs` (préfère section_type matchant, fallback générique). Champ `selected_infrastructures` body ignoré ; colonne DB conservée pour audit. `pathLengthM` exporté depuis `_shared/subdivisionFees.ts`.
+- Type `SubdivisionRoad.surfaceType` conservé (legacy, pour drafts localStorage) mais sans UI active ; `ROAD_SURFACE_LABELS` supprimé.
 
 ## Lot F — Onglet conditionnel « Normes de zonage » (formulaire user) ✅
 - `StepZoningRules.tsx` rendu en tête du formulaire **uniquement si** `useZoningCompliance` retourne une `rule` matchée pour la zone (cascade géo) — sinon onglet masqué et flow inchangé.
