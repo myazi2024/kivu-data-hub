@@ -16,7 +16,7 @@ import {
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   SubdivisionLot, SubdivisionRoad, SubdivisionCommonSpace, SubdivisionServitude,
-  ParentParcelInfo, LOT_COLORS, USAGE_LABELS, ROAD_SURFACE_LABELS,
+  ParentParcelInfo, LOT_COLORS, USAGE_LABELS,
   Point2D, LotAnnotation
 } from '../types';
 import { ValidationResult, mergeLotsThroughDeletedRoad, polygonArea, splitRoadsAtIntersections } from '../utils/geometry';
