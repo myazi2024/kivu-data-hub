@@ -367,7 +367,7 @@ Deno.serve(async (req) => {
           ?? null;
       };
       for (const road of (body.roads as any[]) ?? []) {
-        const lengthM = Array.isArray(road?.path) ? pathLengthM(road.path, metricFrame) : 0;
+        const lengthM = Array.isArray(road?.path) ? pathLengthM(road.path, frame) : 0;
         if (lengthM <= 0) continue;
         const pushItem = (key: string, qty: number) => {
           const t = pickTariff(key);
