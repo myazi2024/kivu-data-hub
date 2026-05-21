@@ -72,8 +72,7 @@ interface SubdivisionRequestBody {
     subdivision_sketch_url?: string | null;
     [k: string]: string | null | undefined;
   };
-  /** Lot E — infrastructures sélectionnées par l'utilisateur (key -> quantité). */
-  selected_infrastructures?: Record<string, number>;
+  // Note: `selected_infrastructures` (manuel) supprimé — désormais dérivé des voies serveur-side.
 }
 
 Deno.serve(async (req) => {
