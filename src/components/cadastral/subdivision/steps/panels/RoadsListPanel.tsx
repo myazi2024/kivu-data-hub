@@ -57,6 +57,11 @@ const defaultLighting = (rule?: ZoningRule | null): SolarLightingSpec => ({
     ? rule.solar_lighting_required_sides : 'both',
 });
 
+const defaultRoadSurface = (rule?: ZoningRule | null): RoadSurfaceSpec => ({
+  material: rule?.road_surface_allowed_materials?.[0] ?? 'asphalt',
+  thicknessCm: rule?.road_surface_min_thickness_cm ?? 5,
+});
+
 const RoadsListPanel: React.FC<Props> = ({
   roads, editingRoad, editingRoadId, setEditingRoadId,
   onDeleteRoad, onUpdateRoad, onAddRoad,
@@ -64,6 +69,8 @@ const RoadsListPanel: React.FC<Props> = ({
 }) => {
   const requireCanal = !!zoningRule?.require_drainage_canal;
   const requireLighting = !!zoningRule?.require_solar_lighting;
+  const requireRoadSurface = !!zoningRule?.require_road_surface;
+  const { labels: roadSurfaceLabels } = useSubdivisionReferences('road_surface');
 
   const updateCanal = (road: SubdivisionRoad, patch: Partial<DrainageCanalSpec>) => {
     const current = road.drainageCanal ?? defaultDrainage(zoningRule);
@@ -72,6 +79,10 @@ const RoadsListPanel: React.FC<Props> = ({
   const updateLighting = (road: SubdivisionRoad, patch: Partial<SolarLightingSpec>) => {
     const current = road.solarLighting ?? defaultLighting(zoningRule);
     onUpdateRoad(road.id, { solarLighting: { ...current, ...patch } });
+  };
+  const updateRoadSurface = (road: SubdivisionRoad, patch: Partial<RoadSurfaceSpec>) => {
+    const current = road.roadSurface ?? defaultRoadSurface(zoningRule);
+    onUpdateRoad(road.id, { roadSurface: { ...current, ...patch } });
   };
 
   return (
