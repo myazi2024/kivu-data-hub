@@ -271,19 +271,21 @@ const StepSummary: React.FC<StepSummaryProps> = ({
 
               {feeBreakdown.infrastructures && feeBreakdown.infrastructures.length > 0 && (
                 <div className="mt-2 overflow-x-auto">
-                  <div className="text-xs font-semibold mb-1 text-muted-foreground">Infrastructures sélectionnées</div>
+                  <div className="text-xs font-semibold mb-1 text-muted-foreground">Infrastructures (dérivées des voies)</div>
                   <table className="w-full text-xs">
                     <thead>
                       <tr className="border-b">
                         <th className="text-left py-1 px-2 font-medium">Infrastructure</th>
+                        <th className="text-left py-1 px-2 font-medium">Voie</th>
                         <th className="text-right py-1 px-2 font-medium">Quantité</th>
                         <th className="text-right py-1 px-2 font-medium">Sous-total</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {feeBreakdown.infrastructures.map(it => (
-                        <tr key={it.infrastructure_key} className="border-b border-dashed last:border-0">
+                      {feeBreakdown.infrastructures.map((it, idx) => (
+                        <tr key={`${it.infrastructure_key}-${it.roadId ?? idx}`} className="border-b border-dashed last:border-0">
                           <td className="py-1 px-2">{it.label}</td>
+                          <td className="py-1 px-2 text-muted-foreground">{it.roadName ?? '—'}</td>
                           <td className="py-1 px-2 text-right font-mono">{it.quantity} {it.unit}</td>
                           <td className="py-1 px-2 text-right font-mono">{it.subtotal_usd.toFixed(2)} USD</td>
                         </tr>
@@ -291,7 +293,7 @@ const StepSummary: React.FC<StepSummaryProps> = ({
                     </tbody>
                     <tfoot>
                       <tr className="border-t">
-                        <td className="py-1 px-2 font-semibold" colSpan={2}>Sous-total infrastructures</td>
+                        <td className="py-1 px-2 font-semibold" colSpan={3}>Sous-total infrastructures</td>
                         <td className="py-1 px-2 text-right font-mono font-semibold">
                           {(feeBreakdown.infrastructuresTotal ?? 0).toFixed(2)} USD
                         </td>
