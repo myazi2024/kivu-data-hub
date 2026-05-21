@@ -175,7 +175,7 @@ const RoadsListPanel: React.FC<Props> = ({
                 disabled={editingRoad.isExisting}
               />
             </div>
-            <div className="grid grid-cols-2 gap-2">
+            <div>
               <div>
                 <Label className="text-xs">Largeur ({formatWidth(editingRoad.widthM)}m)</Label>
                 <div className="flex items-center gap-2">
