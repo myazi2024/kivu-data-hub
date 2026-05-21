@@ -7,14 +7,16 @@ import { Slider } from '@/components/ui/slider';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Trash2, Route, Droplets, Sun } from 'lucide-react';
-import { SubdivisionRoad, ROAD_SURFACE_LABELS } from '../../types';
+import { Plus, Trash2, Route, Droplets, Sun, Construction } from 'lucide-react';
+import { SubdivisionRoad } from '../../types';
 import {
   DRAINAGE_CANAL_MATERIAL_LABELS,
   DRAINAGE_CANAL_TYPE_LABELS,
   type DrainageCanalSpec,
   type SolarLightingSpec,
+  type RoadSurfaceSpec,
 } from '../../infrastructureConstants';
+import { useSubdivisionReferences } from '@/hooks/useSubdivisionReferences';
 import type { CanvasMode } from '../../LotCanvas';
 import type { ZoningRule } from '@/hooks/useZoningRules';
 
