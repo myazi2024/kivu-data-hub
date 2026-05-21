@@ -7,6 +7,7 @@ import {
   aggregateAuxiliaryMetrics,
   computeSubdivisionFee,
   polygonAreaSqm,
+  pathLengthM,
 } from "../_shared/subdivisionFees.ts";
 import { inferSectionType } from "../_shared/sectionType.ts";
 
