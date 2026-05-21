@@ -148,6 +148,9 @@ export interface InfrastructureFeeItem {
   quantity: number;
   rate_usd: number;
   subtotal_usd: number;
+  /** Source road (derived items). */
+  roadId?: string;
+  roadName?: string;
 }
 
 export interface FeeBreakdown {
