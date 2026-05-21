@@ -16,7 +16,7 @@ import StepParentParcel from './subdivision/steps/StepParentParcel';
 import StepLotDesigner from './subdivision/steps/StepLotDesigner';
 import StepPlanView from './subdivision/steps/StepPlanView';
 import StepDocuments from './subdivision/steps/StepDocuments';
-import StepInfrastructures from './subdivision/steps/StepInfrastructures';
+
 import StepSummary from './subdivision/steps/StepSummary';
 import StepZoningRules from './subdivision/steps/StepZoningRules';
 import { inferSectionType } from './subdivision/utils/sectionType';
