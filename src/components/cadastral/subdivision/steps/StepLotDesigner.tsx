@@ -1218,20 +1218,7 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
                   </div>
                 </div>
 
-                <div>
-                  <Label className="text-xs">Type de surface</Label>
-                  <Select
-                    value={editingRoad.surfaceType}
-                    onValueChange={(v: any) => updateRoad(editingRoad.id, { surfaceType: v })}
-                  >
-                    <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {Object.entries(ROAD_SURFACE_LABELS).map(([key, label]) => (
-                        <SelectItem key={key} value={key}>{label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                {/* Le revêtement est géré dans le panneau « Voies » (piloté par la règle de zonage). */}
               </CardContent>
             </Card>
           ) : (
