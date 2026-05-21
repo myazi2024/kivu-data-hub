@@ -140,6 +140,9 @@ const RoadsListPanel: React.FC<Props> = ({
                 {requireLighting && !road.solarLighting && (
                   <Badge variant="destructive" className="ml-1 h-4 text-[9px]">Éclairage manquant</Badge>
                 )}
+                {requireRoadSurface && !road.roadSurface?.material && (
+                  <Badge variant="destructive" className="ml-1 h-4 text-[9px]">Revêtement manquant</Badge>
+                )}
               </button>
               {!isExisting && (
                 <Button
