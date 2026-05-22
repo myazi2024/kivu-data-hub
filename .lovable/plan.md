@@ -1,101 +1,64 @@
-## Objectif
+## Constat de l'audit
 
-Rendre les infrastructures par voie (canal d'évacuation, éclairage solaire, revêtement) entièrement dépendantes des règles admin de zonage et des tarifs admin, supprimer la sélection manuelle des infrastructures (onglet « Infrastructures du lotissement ») et la remplacer par un récapitulatif automatique dans l'onglet renommé « Récapitulatif ».
+L'onglet **Tarifs par type d'infrastructure** (admin > Lotissement) est désaligné avec **« Infrastructures requises par voie »** (formulaire) et avec les règles de zonage admin.
 
-## Constat actuel (incohérences)
+### Clés réellement consommées (voirie/voie)
+Côté front (`infrastructureFromRoads.ts`) et serveur (`subdivision-request/index.ts`) :
 
-1. **Onglet « Lots » (`RoadsListPanel`)** : capture déjà `drainageCanal` et `solarLighting` quand `require_drainage_canal` / `require_solar_lighting` sont activés sur la règle de zonage admin. Mais le **revêtement** utilise une liste héritée (`asphalt/gravel/earth/paved/planned`) totalement déconnectée de `road_surface_allowed_materials` (admin) et n'expose ni l'épaisseur (`road_surface_min/max_thickness_cm`) ni la longueur.
-2. **Onglet « Infrastructures du lotissement » (`StepInfrastructures`)** : sélection manuelle libre (checkbox + quantité) sur `subdivision_infrastructure_tariffs`. Double saisie incohérente avec les voies + risque d'oubli ou de doublon. Pas de lien avec ce qui a été tracé.
-3. **`StepSummary`** affiche les infrastructures sélectionnées manuellement et non celles déduites des voies.
-4. **Edge `subdivision-request`** valide bien les contraintes par voie côté serveur, mais le calcul de surcoût lit `selected_infrastructures` (saisie manuelle), pas les specs des voies.
+| Source (voie) | Clé tarif lue | Quantité |
+|---|---|---|
+| `road.roadSurface.material` | `road_surface_<material>` | longueur × largeur (m²) |
+| `road.drainageCanal` | `drainage` (générique) | longueur × côtés |
+| `road.solarLighting` | `street_lighting` (générique) | nb mâts × côtés |
 
-## Refonte proposée
+### Problèmes constatés
+1. **Aucune entrée seed pour `road_surface_*`** alors que le catalogue `subdivision_road_surface_materials` est la source de vérité des matériaux. → Frais = 0 pour tout revêtement.
+2. **Drainage** : un seul tarif `drainage` au lieu d'un tarif **par matériau** (béton, PVC, maçonnerie, pierre, métal, composite) et/ou **par type** (ouvert/couvert/enterré). L'utilisateur ne trouve donc pas « tuyau PVC ».
+3. **Éclairage** : un seul `street_lighting` au lieu de différencier **solaire** vs raccordé. L'utilisateur ne trouve pas « éclairage public solaire ».
+4. **Code mort dans le seed** : `road_primary`, `road_secondary`, `sidewalk`, `water_station` ne sont lus nulle part. `green_space`, `playground`, `community_center` ne sont pas utilisés non plus (les espaces communs passent par `common_space_fee_per_sqm_usd`).
+5. **UI admin non structurée** : table à plat sans regroupement par catégorie, sans filtre, sans bouton de synchronisation avec le catalogue revêtements, sans badge « lié à voie », sans avertissement « clé orpheline ».
+6. **Fallback `useSubdivisionInfrastructureTariffs.ts`** : contient encore les clés `road_primary`/`road_secondary` (code mort).
 
-### 1. Onglet « Lots » — Revêtement piloté par l'admin
-Dans `RoadsListPanel` :
-- Ajouter un bloc « Revêtement » conditionné par `zoningRule.require_road_surface` (sur le même modèle que canal/éclairage).
-- Champs : matériau (Select alimenté par `road_surface_allowed_materials` ∪ catalogue `subdivision_road_surface_materials`), épaisseur cm (Input borné par `road_surface_min/max_thickness_cm`), longueur m (auto‑calculée depuis `road.path` + `metricFrame`, lecture seule).
-- Quand la règle n'impose rien : conserver le Select simple actuel mais limité aux matériaux actifs de `subdivision_road_surface_materials` (suppression de l'enum legacy).
-- Badge « Revêtement manquant » si requis et absent, comme pour canal/éclairage.
+## Plan d'alignement
 
-Étendre `SubdivisionRoad` (`types.ts`) :
-```ts
-roadSurface?: {
-  material: string;       // clef admin
-  thicknessCm: number;
-  lengthM: number;        // dérivé du path
-} | null;
-```
-Conserver `surfaceType` legacy uniquement pour rétro‑compat des brouillons localStorage (mapping silencieux lors de la restauration), puis le supprimer.
+### 1. Migration (DB)
+- **Supprimer** les seeds inutilisés : `road_primary`, `road_secondary`, `sidewalk`, `water_station`, `green_space`, `playground`, `community_center`.
+- **Ajouter** les clés alignées sur le modèle « par voie » :
+  - `road_surface_<material>` (sqm) pour chaque matériau actif de `subdivision_road_surface_materials` (rate 0 par défaut, `is_active=true`).
+  - `drainage_beton`, `drainage_pvc`, `drainage_maconnerie`, `drainage_pierre`, `drainage_metal`, `drainage_composite` (linear_m).
+  - Conservation de `drainage` comme **fallback** générique (utile si matériau non listé).
+  - `street_lighting_solar` (unit) + conservation de `street_lighting` comme fallback.
+- Ajouter une colonne `linked_to TEXT` (valeurs : `road_surface` | `drainage` | `street_lighting` | null) pour catégoriser l'usage dans la voie et piloter le regroupement UI.
 
-### 2. Suppression de l'onglet « Infrastructures du lotissement »
-- Supprimer `steps/StepInfrastructures.tsx`.
-- Retirer `'infrastructures'` de `SubdivisionStep` (`types.ts`), de `steps[]` dans `useSubdivisionForm`, du `ALL_STEP_CONFIG` du dialog, du switch de rendu, et de `isStepValid`.
-- Retirer le state `selectedInfrastructures` + persistance brouillon + payload edge.
-- Mettre à jour `mem://features/subdivision/specifications-completes-fr` et la note de modularisation.
+### 2. Dérivation (front + edge function)
+Mettre à jour `infrastructureFromRoads.ts` et `subdivision-request/index.ts` pour préférer la clé spécifique, avec fallback générique :
+- Revêtement → `road_surface_<material>` (déjà OK).
+- Drainage → `drainage_<material>` puis `drainage`.
+- Éclairage → si `solarLighting` présent : `street_lighting_solar` puis `street_lighting`.
 
-### 3. Onglet « Envoi » → « Récapitulatif »
-Renommer `summary` (label + shortLabel) en « Récapitulatif » dans `ALL_STEP_CONFIG`.
-Dans `StepSummary`, ajouter une carte « Infrastructures (auto)** » qui :
-- Liste pour chaque voie ses infrastructures spécifiées (canal, éclairage, revêtement) avec leurs mesures (longueur, largeur, profondeur, hauteur mât, espacement, épaisseur…).
-- Calcule automatiquement chaque coût via le tarif admin (`subdivision_infrastructure_tariffs.infrastructure_key`) en mappant par clés conventionnelles : `drainage_canal_<material>`, `solar_lighting`, `road_surface_<material>` (fallback générique si la clef spécifique n'existe pas).
-- Quantités calculées : `road.lengthM` (canal/revêtement), `floor(lengthM / spacingM)` (mâts), `lengthM × widthM` (m² revêtement), etc.
-- Affiche un sous‑total par voie et un total infrastructures, déjà additionné au `total` final.
+### 3. Refonte UI admin (`AdminSubdivisionInfrastructureTariffs.tsx`)
+- **Regroupement par catégorie** (`voirie` / `reseau` / `amenagement` / `equipement`) avec sections collapsibles.
+- **Filtres** : recherche (clé/libellé), catégorie, statut actif/inactif, type de section.
+- **Badge « Lié à voie »** sur les clés `road_surface_*`, `drainage*`, `street_lighting*` indiquant la propriété de la voie qui les déclenche.
+- **Bouton « Synchroniser avec catalogue revêtements »** : crée les `road_surface_<material>` manquantes (rate 0, inactif par défaut) pour chaque matériau actif du catalogue, sans toucher aux existantes.
+- **Avertissement** : ligne en rouge si une clé `road_surface_*` ne correspond plus à un matériau actif du catalogue (orpheline).
+- **Aide contextuelle** dans le header listant les conventions de clés.
 
-### 4. Calcul des frais déplacé
-- `useSubdivisionForm.computeFee` : ne lit plus `selectedInfrastructures`. À la place, dérive un dictionnaire d'items depuis `roads` et la table tarifs (helper `buildInfraItemsFromRoads(roads, tariffs, metricFrame)` à créer dans `subdivision/utils/`).
-- `FeeBreakdown.infrastructures` conserve sa forme actuelle (key/label/qty/unit/subtotal) → `StepSummary` reste compatible.
-- Suppression de l'effet `selectedInfrastructures` dans le debounce.
+### 4. Code mort à supprimer
+- Fallback hardcodé `useSubdivisionInfrastructureTariffs.ts` : retirer entrées `road_primary` / `road_secondary` (remplacer par tableau vide, on s'appuie sur la DB seedée).
+- Seed obsolète du fichier migration (cf. §1).
+- Aucune autre référence trouvée dans le front.
 
-### 5. Edge `subdivision-request` aligné
-- Recalcul serveur des items infra à partir de `body.roads` (même helper porté en TS Deno sous `_shared/subdivisionInfrastructures.ts`) au lieu de `body.selected_infrastructures`.
-- Conserver `selected_infrastructures` JSONB en colonne pour rétro‑compat (audit), mais le serveur l'**ignore** en lecture et l'**écrit** avec la liste dérivée des voies.
-- Garde‑fou : si une voie spécifie un matériau hors `road_surface_allowed_materials`, retourne `ROAD_INFRA_VIOLATIONS`.
+### 5. Validation
+- Vérifier visuellement la table groupée (catégories, filtres, sync).
+- Soumettre un brouillon de lotissement avec revêtement bitume + drainage PVC + éclairage solaire et confirmer dans le récap : 3 lignes avec tarifs > 0 référençant les bonnes clés.
 
-### 6. Code mort supprimé
-- `steps/StepInfrastructures.tsx` (fichier entier).
-- Enum legacy `ROAD_SURFACE_LABELS` dans `types.ts` (si plus référencé après refonte) → remplacé par lecture dynamique.
-- Champs `SubdivisionStep['infrastructures']`, state `selectedInfrastructures`, props/keys `selected_infrastructures` côté front (conservés côté DB).
-- `StepInfrastructures` dans `SubdivisionRequestDialog` (imports + bloc render).
-- Vérifier `subdivisionDetails.ts` (générateur test) : aligne `surface_type` sur clefs admin si nécessaire.
+## Fichiers touchés
+- **Migration SQL** : nouveau fichier (delete + insert + colonne `linked_to`).
+- `src/components/admin/AdminSubdivisionInfrastructureTariffs.tsx` — refonte UI.
+- `src/hooks/useSubdivisionInfrastructureTariffs.ts` — purge fallback mort, ajout champ `linked_to`.
+- `src/components/cadastral/subdivision/utils/infrastructureFromRoads.ts` — clés spécifiques + fallback.
+- `supabase/functions/subdivision-request/index.ts` — symétrie côté serveur.
+- `.lovable/memory/admin/subdivision-admin-audit-fr.md` — note d'alignement.
 
-### 7. Validation côté front
-- Étendre `useZoningCompliance` pour signaler revêtement manquant / matériau interdit / épaisseur hors bornes (cohérent avec les violations serveur).
-- Mettre à jour `validateSubdivisionFull` si nécessaire pour bloquer `isStepValid('designer')` quand une infra par voie obligatoire est absente.
-
-### 8. Mémoire projet
-- Mettre à jour `mem://admin/subdivision-admin-audit-fr.md` et `mem://features/subdivision/specifications-completes-fr.md` : retrait de l'étape, nouveau pipeline tarifaire dérivé des voies.
-
-## Détails techniques
-
-### Migration base
-Aucune migration SQL nouvelle obligatoire — toutes les colonnes existent. Ajout d'un index optionnel `subdivision_infrastructure_tariffs(infrastructure_key)` si pas déjà unique.
-
-### Helper partagé
-`src/components/cadastral/subdivision/utils/infrastructureFromRoads.ts` (et copie Deno `supabase/functions/_shared/subdivisionInfrastructures.ts`) :
-```ts
-buildInfraItemsFromRoads(roads, tariffs, metricFrame): InfraItem[]
-// Convention de clés :
-//   road_surface_<material>     unit: sqm   qty = lengthM * widthM
-//   drainage_canal_<material>   unit: linear_m  qty = lengthM * sidesFactor
-//   solar_lighting              unit: unit  qty = ceil(lengthM / spacingM) * sidesFactor
-```
-`sidesFactor` = 1 (left|right|any) ou 2 (both|alternating).
-
-### Fichiers impactés
-- `src/components/cadastral/subdivision/types.ts`
-- `src/components/cadastral/subdivision/hooks/useSubdivisionForm.ts`
-- `src/components/cadastral/subdivision/hooks/useZoningCompliance.ts`
-- `src/components/cadastral/subdivision/steps/panels/RoadsListPanel.tsx`
-- `src/components/cadastral/subdivision/steps/StepSummary.tsx`
-- `src/components/cadastral/SubdivisionRequestDialog.tsx`
-- `src/components/cadastral/subdivision/utils/infrastructureFromRoads.ts` (nouveau)
-- `supabase/functions/_shared/subdivisionInfrastructures.ts` (nouveau)
-- `supabase/functions/subdivision-request/index.ts`
-- Suppression : `src/components/cadastral/subdivision/steps/StepInfrastructures.tsx`
-- Tests : `src/components/cadastral/subdivision/utils/__tests__/infrastructureFromRoads.test.ts`
-
-### Hors périmètre
-- Pas de changement de design system.
-- Pas de modification des règles admin elles‑mêmes (déjà OK).
-- Brouillons localStorage v3 existants : seront migrés silencieusement (ignore `selectedInfrastructures`, mappe `surfaceType` legacy → `roadSurface.material` si possible).
+Aucun changement à `RoadsListPanel`, `StepSummary` ou aux types : ils s'appuient déjà sur les champs `roadSurface.material`, `drainageCanal.material`, `solarLighting.*`.
