@@ -97,14 +97,17 @@ export function buildInfraItemsFromRoads(
       }
     }
 
-    // --- Canal d'évacuation ---
+    // --- Canal d'évacuation : préfère drainage_<material>, fallback drainage ---
     if (road.drainageCanal) {
-      const tariff = findTariff(tariffs, 'drainage', opts.sectionType);
+      const material = road.drainageCanal.material;
+      const tariff =
+        (material ? findTariff(tariffs, `drainage_${material}`, opts.sectionType) : null) ??
+        findTariff(tariffs, 'drainage', opts.sectionType);
       if (tariff) {
         const qty = round2(lengthM * sidesFactor(road.drainageCanal.side));
         if (qty > 0) {
           out.push({
-            infrastructure_key: 'drainage',
+            infrastructure_key: tariff.infrastructure_key,
             label: tariff.label,
             unit: tariff.unit,
             quantity: qty,
@@ -117,14 +120,16 @@ export function buildInfraItemsFromRoads(
       }
     }
 
-    // --- Éclairage solaire ---
+    // --- Éclairage solaire : préfère street_lighting_solar, fallback street_lighting ---
     if (road.solarLighting && road.solarLighting.spacingM > 0) {
-      const tariff = findTariff(tariffs, 'street_lighting', opts.sectionType);
+      const tariff =
+        findTariff(tariffs, 'street_lighting_solar', opts.sectionType) ??
+        findTariff(tariffs, 'street_lighting', opts.sectionType);
       if (tariff) {
         const poles = Math.ceil(lengthM / road.solarLighting.spacingM) * sidesFactor(road.solarLighting.side);
         if (poles > 0) {
           out.push({
-            infrastructure_key: 'street_lighting',
+            infrastructure_key: tariff.infrastructure_key,
             label: tariff.label,
             unit: tariff.unit,
             quantity: poles,
@@ -136,6 +141,7 @@ export function buildInfraItemsFromRoads(
         }
       }
     }
+
   }
   return out;
 }
