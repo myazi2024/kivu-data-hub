@@ -5845,6 +5845,7 @@ export type Database = {
           is_active: boolean
           is_required: boolean
           label: string
+          linked_to: string | null
           max_total_usd: number | null
           metadata: Json
           min_total_usd: number | null
@@ -5863,6 +5864,7 @@ export type Database = {
           is_active?: boolean
           is_required?: boolean
           label: string
+          linked_to?: string | null
           max_total_usd?: number | null
           metadata?: Json
           min_total_usd?: number | null
@@ -5881,6 +5883,7 @@ export type Database = {
           is_active?: boolean
           is_required?: boolean
           label?: string
+          linked_to?: string | null
           max_total_usd?: number | null
           metadata?: Json
           min_total_usd?: number | null
