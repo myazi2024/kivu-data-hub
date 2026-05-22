@@ -227,7 +227,7 @@ const AdminSubdivisionInfrastructureTariffs: React.FC = () => {
       description: m.description ?? 'Revêtement de voie (m²)',
       linked_to: 'road_surface',
     }));
-    const { error } = await untypedTables.subdivision_infrastructure_tariffs().insert(asUntypedPayload(rows));
+    const { error } = await untypedTables.subdivision_infrastructure_tariffs().insert(rows as any);
     if (error) {
       toast.error('Échec de la synchronisation');
       console.error(error);
