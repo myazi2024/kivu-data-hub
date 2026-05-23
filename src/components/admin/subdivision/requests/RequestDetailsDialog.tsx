@@ -33,6 +33,26 @@ interface Props {
 export function RequestDetailsDialog({ open, onOpenChange, request, onOpenDocument }: Props) {
   const [generating, setGenerating] = useState(false);
   const [downloading, setDownloading] = useState(false);
+  const [downloadingCert, setDownloadingCert] = useState(false);
+
+  const handleOpenCertificate = async () => {
+    if (!request) return;
+    setDownloadingCert(true);
+    try {
+      await openSubdivisionCertificate(request.id);
+    } catch (e: any) {
+      const msg = e?.message || '';
+      toast({
+        title: 'Certificat indisponible',
+        description: /CERT_NOT_GENERATED/.test(msg)
+          ? "Aucun certificat n'a été généré pour cette demande."
+          : msg || 'Erreur',
+        variant: 'destructive',
+      });
+    } finally {
+      setDownloadingCert(false);
+    }
+  };
 
   const handleGenerate = async () => {
     if (!request) return;
