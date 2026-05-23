@@ -263,14 +263,25 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
     setLoadingParcel(true);
     
     try {
+      const computeEffectiveArea = (gpsCoords: { lat: number; lng: number }[], dbAreaSqm: number): number => {
+        if (gpsCoords.length >= 3) {
+          const frame = buildMetricFrame(gpsCoords as any, dbAreaSqm || 1);
+          const normVerts = gpsCoords.map((g) => gpsToNormalized(g as any, gpsCoords as any));
+          const geomArea = polygonAreaSqmAccurate(normVerts, frame);
+          if (isFinite(geomArea) && geomArea > 0) return Math.round(geomArea);
+        }
+        return dbAreaSqm || 0;
+      };
+
       if (parcelData?.area_sqm) {
         const gpsCoords = Array.isArray(parcelData.gps_coordinates) 
           ? parcelData.gps_coordinates.map((c: any) => ({ lat: c.lat, lng: c.lng }))
           : [];
+        const effectiveAreaSqm = computeEffectiveArea(gpsCoords, parcelData.area_sqm || 0);
         
         setParentParcel({
           parcelNumber,
-          areaSqm: parcelData.area_sqm || 0,
+          areaSqm: effectiveAreaSqm,
           location: [parcelData.commune, parcelData.quartier, parcelData.avenue].filter(Boolean).join(', '),
           ownerName: parcelData.current_owner_name || '',
           titleReference: parcelData.title_reference_number || '',
@@ -293,10 +304,11 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
         const gpsCoords = Array.isArray(parcel.gps_coordinates) 
           ? (parcel.gps_coordinates as any[]).map((c: any) => ({ lat: c.lat, lng: c.lng }))
           : [];
+        const effectiveAreaSqm = computeEffectiveArea(gpsCoords, parcel.area_sqm || 0);
         
         setParentParcel({
           parcelNumber,
-          areaSqm: parcel.area_sqm || 0,
+          areaSqm: effectiveAreaSqm,
           location: [parcel.commune, parcel.quartier, parcel.avenue].filter(Boolean).join(', ') || parcel.location,
           ownerName: parcel.current_owner_name || '',
           titleReference: parcel.title_reference_number || '',
@@ -306,6 +318,7 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
           parcelSides: parcel.parcel_sides,
         });
       }
+
     } catch (err) {
       console.error('Error loading parcel data:', err);
     } finally {
