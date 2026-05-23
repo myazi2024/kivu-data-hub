@@ -234,7 +234,7 @@ export function useFormValidation(params: UseFormValidationParams) {
     }
 
     // PERMIT MODE MANDATORY
-    if (!isTerrainNu && !isAppartement && formData.constructionType !== 'Terrain nu' && permitMode === null) {
+    if (!isTerrainNu && !isAppartement && permitMode === null) {
       missing.push({ field: 'permitMode', label: "Avez-vous obtenu une autorisation de bâtir ?", tab: 'general' });
     }
 
