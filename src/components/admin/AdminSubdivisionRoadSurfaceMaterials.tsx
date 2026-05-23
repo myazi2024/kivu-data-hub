@@ -197,6 +197,18 @@ const AdminSubdivisionRoadSurfaceMaterials: React.FC<Props> = ({ onChanged }) =>
               <Label className="text-xs">Description (optionnel)</Label>
               <Textarea rows={2} value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="Caractéristiques, usage typique…" />
             </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Multiplicateur de prix <span className="text-muted-foreground">(1.00 = tarif de base)</span></Label>
+              <Input
+                type="number" step="0.05" min="0"
+                value={form.price_multiplier}
+                onChange={e => setForm(f => ({ ...f, price_multiplier: e.target.value }))}
+                placeholder="1.00"
+              />
+              <p className="text-[10px] text-muted-foreground">
+                Appliqué au tarif <code>road_surface</code> de l'onglet Frais. Ex. bitume × 1.20, gravier × 0.40.
+              </p>
+            </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label className="text-xs">Ordre d'affichage</Label>
