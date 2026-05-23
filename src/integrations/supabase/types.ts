@@ -6081,33 +6081,48 @@ export type Database = {
       }
       subdivision_plan_versions: {
         Row: {
+          config_snapshot: Json | null
           created_at: string
           created_by: string | null
           id: string
+          is_current: boolean
           lots_data: Json | null
+          official_version: number | null
+          pdf_path: string | null
           plan_data: Json
           reason: string | null
           subdivision_request_id: string
+          verification_code: string | null
           version_number: number
         }
         Insert: {
+          config_snapshot?: Json | null
           created_at?: string
           created_by?: string | null
           id?: string
+          is_current?: boolean
           lots_data?: Json | null
+          official_version?: number | null
+          pdf_path?: string | null
           plan_data: Json
           reason?: string | null
           subdivision_request_id: string
+          verification_code?: string | null
           version_number: number
         }
         Update: {
+          config_snapshot?: Json | null
           created_at?: string
           created_by?: string | null
           id?: string
+          is_current?: boolean
           lots_data?: Json | null
+          official_version?: number | null
+          pdf_path?: string | null
           plan_data?: Json
           reason?: string | null
           subdivision_request_id?: string
+          verification_code?: string | null
           version_number?: number
         }
         Relationships: [
