@@ -89,3 +89,9 @@ type: feature
 - Migration : `subdivision_zoning_rules` + `province_path text[]`, `version int`, index unique `(section_type, location_name, province_path)`, trigger audit → `system_config_audit`, trigger bump `version` + `updated_at`.
 - Validation centralisée : `src/components/admin/subdivision/zoningValidation.ts` (pure, 9 tests Vitest verts) — bornes (% espaces 0-100, gps≥3, road_width>0), drainage/solar exigent au moins matériau+type+dimension, revêtement matériau orphelin = warning via `knownRoadSurfaceTariffKeys`.
 - `AdminSubdivisionZoningRules` : `province_path` persisté, search input, mémo `formatBreadcrumb` (Map cache), bouton **Cloner**, confirmation AlertDialog sur toggle `is_active`, drainage materials/types importés depuis `infrastructureConstants.ts`, chip ⚠ sur matériau revêtement sans tarif `road_surface_*`.
+
+## Lot I — Anti-double-facturation voirie (mai 2026, P0)
+- `subdivision-request/index.ts` : dérivation infra **avant** `computeSubdivisionFee`. Pour chaque voie produisant un `road_surface_<material>` valide, sa longueur est accumulée dans `roadLengthCoveredM`. Le tarif legacy `rate.road_fee_per_linear_m_usd` n'est appliqué qu'à `aux.roadLengthM - roadLengthCoveredM` (jamais négatif).
+- `feeBreakdown` enrichi : `road_length_billable_m`, `road_length_covered_by_infra_m`, `infrastructure_total` toujours présent (même sans rate).
+- Matching tarif rate_config : priorité `commune > ville > province > '*' > premier`. Avant : `'*' || ratesData[0]` ignorait les tarifs spécifiques sans `*` configuré.
+- `common_space_fee_per_sqm_usd` non encore couvert par infra → reste appliqué tel quel (doublon latent à surveiller quand une catégorie `common_space_*` sera introduite).
