@@ -2,9 +2,13 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, BarChart3, Clock, CheckCircle2, XCircle, RotateCcw, Layers, MapPin, TrendingUp } from 'lucide-react';
+import { Loader2, BarChart3, Clock, CheckCircle2, XCircle, RotateCcw, Layers, MapPin, TrendingUp, AlertTriangle } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
+/**
+ * Trends / top zones still need row-level data — capped at 5000 (was 1000).
+ * KPIs eux viennent désormais du RPC `get_subdivision_admin_stats` (sans plafond).
+ */
 interface Row {
   id: string;
   status: string;
@@ -13,9 +17,14 @@ interface Row {
   total_amount_usd: number | null;
   number_of_lots: number | null;
   parent_parcel_area_sqm: number | null;
-  province: string | null;
-  ville: string | null;
-  commune: string | null;
+  parent_parcel_location: string | null;
+}
+
+interface ServerStats {
+  total: number; pending: number; in_review: number; approved: number;
+  rejected: number; returned: number; awaiting_payment: number; completed: number;
+  escalated: number; submission_paid: number; final_paid: number;
+  revenue_usd: number; lots_total: number; last_7d: number; last_30d: number;
 }
 
 const fmt = (n: number) => new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 1 }).format(n);
@@ -23,37 +32,28 @@ const pct = (a: number, b: number) => (b === 0 ? '0%' : `${Math.round((a / b) * 
 
 const AdminSubdivisionAnalytics: React.FC = () => {
   const [rows, setRows] = useState<Row[]>([]);
+  const [serverStats, setServerStats] = useState<ServerStats | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     (async () => {
-      const { data, error } = await supabase
-        .from('subdivision_requests')
-        .select('id,status,created_at,reviewed_at,total_amount_usd,number_of_lots,parent_parcel_area_sqm,province,ville,commune')
-        .order('created_at', { ascending: false })
-        .limit(1000);
-      if (error) {
-        console.error(error);
-      } else {
-        setRows((data as unknown as Row[]) || []);
-      }
+      const [statsRes, rowsRes] = await Promise.all([
+        (supabase as any).rpc('get_subdivision_admin_stats'),
+        supabase
+          .from('subdivision_requests')
+          .select('id,status,created_at,reviewed_at,total_amount_usd,number_of_lots,parent_parcel_area_sqm,parent_parcel_location')
+          .order('created_at', { ascending: false })
+          .limit(5000),
+      ]);
+      if (statsRes.error) console.error('stats RPC error:', statsRes.error);
+      else setServerStats(statsRes.data as ServerStats);
+      if (rowsRes.error) console.error('rows error:', rowsRes.error);
+      else setRows((rowsRes.data as unknown as Row[]) || []);
       setLoading(false);
     })();
   }, []);
 
-  const stats = useMemo(() => {
-    const total = rows.length;
-    const approved = rows.filter(r => r.status === 'approved' || r.status === 'completed').length;
-    const rejected = rows.filter(r => r.status === 'rejected').length;
-    const returned = rows.filter(r => r.status === 'returned').length;
-    const pending = rows.filter(r => ['pending', 'in_review', 'awaiting_payment'].includes(r.status)).length;
-
-    const totalLots = rows.reduce((s, r) => s + (r.number_of_lots || 0), 0);
-    const totalSurface = rows.reduce((s, r) => s + (r.parent_parcel_area_sqm || 0), 0);
-    const totalRevenue = rows
-      .filter(r => r.status === 'approved' || r.status === 'completed')
-      .reduce((s, r) => s + (r.total_amount_usd || 0), 0);
-
+  const derived = useMemo(() => {
     const reviewed = rows.filter(r => r.reviewed_at);
     const avgDelayDays = reviewed.length === 0 ? 0 :
       reviewed.reduce((s, r) => {
@@ -61,37 +61,40 @@ const AdminSubdivisionAnalytics: React.FC = () => {
         return s + d;
       }, 0) / reviewed.length;
 
-    // Monthly volume (last 12 months)
+    const totalSurface = rows.reduce((s, r) => s + (r.parent_parcel_area_sqm || 0), 0);
+
     const monthly: Record<string, number> = {};
     rows.forEach(r => {
       const d = new Date(r.created_at);
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
       monthly[key] = (monthly[key] || 0) + 1;
     });
-    const monthlyArr = Object.entries(monthly)
-      .sort((a, b) => a[0].localeCompare(b[0]))
-      .slice(-12);
+    const monthlyArr = Object.entries(monthly).sort((a, b) => a[0].localeCompare(b[0])).slice(-12);
 
-    // Top zones
     const zoneCount: Record<string, { count: number; surface: number }> = {};
     rows.forEach(r => {
-      const z = r.commune || r.ville || r.province || 'Inconnu';
+      const z = (r.parent_parcel_location && r.parent_parcel_location.trim()) || 'Inconnu';
       if (!zoneCount[z]) zoneCount[z] = { count: 0, surface: 0 };
       zoneCount[z].count += 1;
       zoneCount[z].surface += r.parent_parcel_area_sqm || 0;
     });
-    const topZones = Object.entries(zoneCount)
-      .sort((a, b) => b[1].count - a[1].count)
-      .slice(0, 8);
+    const topZones = Object.entries(zoneCount).sort((a, b) => b[1].count - a[1].count).slice(0, 8);
 
-    return { total, approved, rejected, returned, pending, totalLots, totalSurface, totalRevenue, avgDelayDays, monthlyArr, topZones };
+    return { avgDelayDays, totalSurface, monthlyArr, topZones };
   }, [rows]);
 
   if (loading) {
     return <div className="flex items-center justify-center py-12"><Loader2 className="h-6 w-6 animate-spin" /></div>;
   }
 
-  const maxMonthly = Math.max(1, ...stats.monthlyArr.map(([, v]) => v));
+  const s = serverStats ?? {
+    total: 0, pending: 0, in_review: 0, approved: 0, rejected: 0, returned: 0,
+    awaiting_payment: 0, completed: 0, escalated: 0, submission_paid: 0, final_paid: 0,
+    revenue_usd: 0, lots_total: 0, last_7d: 0, last_30d: 0,
+  };
+  const pendingTotal = s.pending + s.in_review + s.awaiting_payment;
+  const maxMonthly = Math.max(1, ...derived.monthlyArr.map(([, v]) => v));
+  const truncated = rows.length >= 5000;
 
   return (
     <div className="space-y-4">
@@ -104,15 +107,24 @@ const AdminSubdivisionAnalytics: React.FC = () => {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <KpiCard icon={<Layers className="h-4 w-4" />} label="Total demandes" value={fmt(stats.total)} />
-            <KpiCard icon={<CheckCircle2 className="h-4 w-4 text-primary" />} label="Approuvées" value={`${fmt(stats.approved)} (${pct(stats.approved, stats.total)})`} />
-            <KpiCard icon={<XCircle className="h-4 w-4 text-destructive" />} label="Rejetées" value={`${fmt(stats.rejected)} (${pct(stats.rejected, stats.total)})`} />
-            <KpiCard icon={<RotateCcw className="h-4 w-4 text-muted-foreground" />} label="Renvoyées" value={`${fmt(stats.returned)} (${pct(stats.returned, stats.total)})`} />
-            <KpiCard icon={<Clock className="h-4 w-4" />} label="En attente" value={fmt(stats.pending)} />
-            <KpiCard icon={<Clock className="h-4 w-4" />} label="Délai moyen" value={`${stats.avgDelayDays.toFixed(1)} j`} />
-            <KpiCard icon={<MapPin className="h-4 w-4" />} label="Surface lotie" value={`${fmt(stats.totalSurface)} m²`} />
-            <KpiCard icon={<TrendingUp className="h-4 w-4" />} label="Revenus approuvés" value={`$${fmt(stats.totalRevenue)}`} />
+            <KpiCard icon={<Layers className="h-4 w-4" />} label="Total demandes" value={fmt(s.total)} />
+            <KpiCard icon={<CheckCircle2 className="h-4 w-4 text-primary" />} label="Approuvées" value={`${fmt(s.approved)} (${pct(s.approved, s.total)})`} />
+            <KpiCard icon={<CheckCircle2 className="h-4 w-4 text-emerald-600" />} label="Payées (final)" value={`${fmt(s.final_paid)} (${pct(s.final_paid, s.total)})`} />
+            <KpiCard icon={<XCircle className="h-4 w-4 text-destructive" />} label="Rejetées" value={`${fmt(s.rejected)} (${pct(s.rejected, s.total)})`} />
+            <KpiCard icon={<RotateCcw className="h-4 w-4 text-muted-foreground" />} label="Renvoyées" value={`${fmt(s.returned)} (${pct(s.returned, s.total)})`} />
+            <KpiCard icon={<Clock className="h-4 w-4" />} label="En attente" value={fmt(pendingTotal)} />
+            <KpiCard icon={<AlertTriangle className="h-4 w-4 text-amber-600" />} label="Escaladées" value={fmt(s.escalated)} />
+            <KpiCard icon={<Clock className="h-4 w-4" />} label="Délai moyen" value={`${derived.avgDelayDays.toFixed(1)} j`} />
+            <KpiCard icon={<Layers className="h-4 w-4" />} label="Lots cumulés" value={fmt(s.lots_total)} />
+            <KpiCard icon={<MapPin className="h-4 w-4" />} label="Surface analysée" value={`${fmt(derived.totalSurface)} m²`} />
+            <KpiCard icon={<TrendingUp className="h-4 w-4" />} label="Revenus encaissés" value={`$${fmt(s.revenue_usd)}`} />
+            <KpiCard icon={<TrendingUp className="h-4 w-4" />} label="7 j / 30 j" value={`${fmt(s.last_7d)} / ${fmt(s.last_30d)}`} />
           </div>
+          {truncated && (
+            <p className="mt-3 text-[11px] text-amber-600 flex items-center gap-1">
+              <AlertTriangle className="h-3 w-3" /> Tendances & zones limitées aux 5000 plus récentes. KPI globaux issus du serveur.
+            </p>
+          )}
         </CardContent>
       </Card>
 
@@ -122,9 +134,9 @@ const AdminSubdivisionAnalytics: React.FC = () => {
         </CardHeader>
         <CardContent>
           <div className="flex items-end gap-1 h-32">
-            {stats.monthlyArr.length === 0 ? (
+            {derived.monthlyArr.length === 0 ? (
               <p className="text-xs text-muted-foreground">Aucune donnée</p>
-            ) : stats.monthlyArr.map(([key, val]) => (
+            ) : derived.monthlyArr.map(([key, val]) => (
               <div key={key} className="flex-1 flex flex-col items-center gap-1">
                 <div
                   className="w-full bg-primary/70 rounded-t transition-all"
@@ -141,27 +153,27 @@ const AdminSubdivisionAnalytics: React.FC = () => {
 
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm">Top zones (par volume)</CardTitle>
+          <CardTitle className="text-sm">Top localisations (par volume)</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Zone</TableHead>
+                <TableHead>Localisation</TableHead>
                 <TableHead className="text-right">Demandes</TableHead>
                 <TableHead className="text-right">Surface (m²)</TableHead>
                 <TableHead className="text-right">Part</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {stats.topZones.length === 0 ? (
+              {derived.topZones.length === 0 ? (
                 <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-4">Aucune donnée</TableCell></TableRow>
-              ) : stats.topZones.map(([zone, v]) => (
+              ) : derived.topZones.map(([zone, v]) => (
                 <TableRow key={zone}>
                   <TableCell className="font-medium">{zone}</TableCell>
                   <TableCell className="text-right font-mono">{v.count}</TableCell>
                   <TableCell className="text-right font-mono">{fmt(v.surface)}</TableCell>
-                  <TableCell className="text-right"><Badge variant="secondary">{pct(v.count, stats.total)}</Badge></TableCell>
+                  <TableCell className="text-right"><Badge variant="secondary">{pct(v.count, rows.length)}</Badge></TableCell>
                 </TableRow>
               ))}
             </TableBody>
