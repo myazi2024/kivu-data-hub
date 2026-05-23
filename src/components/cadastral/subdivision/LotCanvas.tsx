@@ -1527,7 +1527,7 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
 
         {/* Invisible hit-areas for roads — always on top for clickability */}
         {showRoads && mode === 'select' && !readOnly && roads.map(road => {
-          if (road.path.length < 2) return null;
+          if (road.path.length < 2 || road.isExternal) return null;
           const pathPoints = road.path.map(p => toScreen(p));
           const polylineStr = pathPoints.map(p => `${p.x},${p.y}`).join(' ');
           const roadWidthPx = Math.max(4, (road.widthM / sideLength) * (CANVAS_W - 2 * PADDING));
