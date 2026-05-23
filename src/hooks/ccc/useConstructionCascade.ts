@@ -114,6 +114,10 @@ export function useConstructionCascade({
     if (formData.constructionNature && !natures.includes(formData.constructionNature)) {
       handleInputChange('constructionNature', undefined);
     }
+    // Auto-select when only one nature is available (e.g. Terrain nu → Non bâti)
+    if (natures.length === 1 && formData.constructionNature !== natures[0]) {
+      handleInputChange('constructionNature', natures[0]);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData.constructionType, getPicklistDependentOptions]);
 
@@ -153,6 +157,10 @@ export function useConstructionCascade({
     setAvailableDeclaredUsages(usages);
     if (formData.declaredUsage && !usages.includes(formData.declaredUsage)) {
       handleInputChange('declaredUsage', undefined);
+    }
+    // Auto-select when only one usage is available
+    if (usages.length === 1 && formData.declaredUsage !== usages[0]) {
+      handleInputChange('declaredUsage', usages[0]);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData.constructionType, formData.constructionNature, getPicklistDependentOptions]);

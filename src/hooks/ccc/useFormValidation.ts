@@ -46,7 +46,9 @@ export function useFormValidation(params: UseFormValidationParams) {
 
   const missingFieldsList = useMemo<MissingField[]>(() => {
     const missing: MissingField[] = [];
-    const isTerrainNu = formData.constructionType === 'Terrain nu';
+    const isTerrainNu =
+      formData.constructionType === 'Terrain nu' ||
+      formData.propertyCategory === 'Terrain nu';
     const isAppartement = formData.propertyCategory === 'Appartement';
 
     // GENERAL
@@ -83,8 +85,8 @@ export function useFormValidation(params: UseFormValidationParams) {
 
     if (!formData.propertyCategory) missing.push({ field: 'propertyCategory', label: 'Catégorie de bien', tab: 'general' });
     if (!formData.constructionType) missing.push({ field: 'constructionType', label: 'Type de construction', tab: 'general' });
-    if (!formData.constructionNature) missing.push({ field: 'constructionNature', label: 'Nature de construction', tab: 'general' });
-    if (!formData.declaredUsage) missing.push({ field: 'declaredUsage', label: 'Usage déclaré', tab: 'general' });
+    if (!isTerrainNu && !formData.constructionNature) missing.push({ field: 'constructionNature', label: 'Nature de construction', tab: 'general' });
+    if (!isTerrainNu && !formData.declaredUsage) missing.push({ field: 'declaredUsage', label: 'Usage déclaré', tab: 'general' });
     if (formData.declaredUsage === 'Location') {
       if (!formData.rentalStartDate) {
         missing.push({ field: 'rentalStartDate', label: 'En location depuis quand ? (construction principale)', tab: 'general' });
@@ -111,7 +113,7 @@ export function useFormValidation(params: UseFormValidationParams) {
     const isPrecaireOrUnbuilt = normalizedNature === 'Précaire' || normalizedNature === 'Non bâti';
     if (!isTerrainNu && formData.constructionNature && !isPrecaireOrUnbuilt && !formData.constructionMaterials) missing.push({ field: 'constructionMaterials', label: 'Matériaux de construction', tab: 'general' });
     if (!isTerrainNu && formData.constructionNature && !isPrecaireOrUnbuilt && !formData.standing) missing.push({ field: 'standing', label: 'Standing', tab: 'general' });
-    if (!isTerrainNu && formData.propertyCategory && formData.propertyCategory !== 'Terrain nu' && !formData.constructionYear) missing.push({ field: 'constructionYear', label: 'Année de construction', tab: 'general' });
+    if (!isTerrainNu && formData.propertyCategory && !formData.constructionYear) missing.push({ field: 'constructionYear', label: 'Année de construction', tab: 'general' });
     if (isAppartement) {
       if (!formData.apartmentNumber) missing.push({ field: 'apartmentNumber', label: "Numéro de l'appartement", tab: 'general' });
       if (!formData.floorNumber) missing.push({ field: 'floorNumber', label: "Numéro de l'étage", tab: 'general' });
@@ -232,7 +234,7 @@ export function useFormValidation(params: UseFormValidationParams) {
     }
 
     // PERMIT MODE MANDATORY
-    if (!isTerrainNu && !isAppartement && formData.constructionType !== 'Terrain nu' && permitMode === null) {
+    if (!isTerrainNu && !isAppartement && permitMode === null) {
       missing.push({ field: 'permitMode', label: "Avez-vous obtenu une autorisation de bâtir ?", tab: 'general' });
     }
 
@@ -245,7 +247,7 @@ export function useFormValidation(params: UseFormValidationParams) {
     }
 
     // BUILDING PERMITS
-    if (!isTerrainNu && !isAppartement && formData.constructionType !== 'Terrain nu' && permitMode === 'existing') {
+    if (!isTerrainNu && !isAppartement && permitMode === 'existing') {
       const hasValidExistingPermit = buildingPermits.some(permit => permit.permitNumber && permit.permitNumber.trim() !== '' && permit.issueDate && permit.issueDate.trim() !== '');
       if (!hasValidExistingPermit) missing.push({ field: 'buildingPermit', label: 'Informations du permis existant', tab: 'general' });
       buildingPermits.forEach((permit, idx) => {
