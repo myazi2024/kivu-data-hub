@@ -377,18 +377,32 @@ export async function generateSubdivisionPlanPDF(
     yTable += mm(5.5);
   });
 
-  // === Cadres de signature dynamiques urbain/rural ===
+  // === Cadres de signature dynamiques (depuis DB, fallback statique) ===
   const ctx = await resolveSubdivisionPlanContext(req.parcel_number, req.parent_parcel_location);
+  const dynamicFrames = await loadDynamicFrames({ isUrban: ctx.isUrban, province: ctx.province });
+  const frames: SignatureFrame[] = dynamicFrames.length ? dynamicFrames : ctx.frames;
   const sigY = pageH - mm(72);
   const sigH = mm(45);
   const sigGap = mm(4);
-  const sigW = (pageW - mm(24) - sigGap * 2) / 3;
-  ctx.frames.forEach((frame, idx) => {
+  const sigCount = Math.max(1, Math.min(frames.length, 5));
+  const sigW = (pageW - mm(24) - sigGap * (sigCount - 1)) / sigCount;
+  frames.slice(0, sigCount).forEach((frame, idx) => {
     const x = mm(12) + idx * (sigW + sigGap);
     drawSignatureFrame(doc, x, sigY, sigW, sigH, frame, S);
   });
 
-  // === Footer : QR + mentions légales + version ===
+  // === Légende auto (sous les cadres signature, bas-droit) ===
+  try {
+    const allSymbols = await fetchLegendSymbols();
+    const presentTypes: string[] = [];
+    if (has('north_arrow')) presentTypes.push('north_arrow');
+    if (has('echelle_graphique')) presentTypes.push('echelle_graphique');
+    if (roads.length) presentTypes.push('road');
+    const legend = deriveLegend(allSymbols, presentTypes).slice(0, 6);
+    if (legend.length) drawLegendBox(doc, pageW - mm(80), sigY - mm(22), mm(68), mm(20), legend, S);
+  } catch { /* ignore legend errors */ }
+
+  // === Footer : QR + mentions légales + version + signalement ===
   let verifyUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/verify`;
   try {
     const v = await createDocumentVerification({
@@ -400,6 +414,7 @@ export async function generateSubdivisionPlanPDF(
         reference_number: req.reference_number,
         number_of_lots: req.number_of_lots,
         official_version: opts.officialVersion ?? null,
+        state,
       },
     });
     if (v?.verifyUrl) verifyUrl = v.verifyUrl;
@@ -420,17 +435,44 @@ export async function generateSubdivisionPlanPDF(
   doc.setFontSize(6 * S);
   doc.text(verifyUrl, qrX + qrSize / 2, qrY + qrSize + mm(6), { align: 'center' });
 
+  // Programme signalement (au-dessus du QR)
+  const rp = config.report_program || {};
+  if (rp.active && rp.whatsapp_number) {
+    const reportText = (rp.report_text_template
+      || "Si vous n'avez pas de résultat positif, signalez-le au {whatsapp_number}. Vous pouvez gagner une récompense financière jusqu'à {reward_amount} {currency}.")
+      .replace('{whatsapp_number}', rp.whatsapp_number)
+      .replace('{reward_amount}', String(rp.reward_amount ?? ''))
+      .replace('{currency}', rp.reward_currency || 'USD');
+    doc.setFontSize(7 * S);
+    doc.setTextColor(120, 30, 30);
+    doc.setFont('helvetica', 'italic');
+    const wrapped = doc.splitTextToSize(reportText, qrSize + mm(50));
+    doc.text(wrapped, qrX, qrY - mm(2), { align: 'left' });
+  }
+
+  // Échelle normalisée pour le footer
+  let scaleLabel = '';
+  if (allPts.length >= 3 && req.parent_parcel_area_sqm) {
+    const maxDim = Math.sqrt(req.parent_parcel_area_sqm) * 1.2;
+    const tiers = Array.isArray(config.scale_tiers?.tiers) ? config.scale_tiers.tiers : undefined;
+    const { tier } = computeNormalizedScale(maxDim, Math.min(pageW, pageH) - 40, tiers);
+    scaleLabel = formatScale(tier);
+  }
+
   doc.setFontSize(7 * S);
   doc.setTextColor(100, 100, 100);
   doc.setFont('helvetica', 'italic');
   const versionLine = opts.officialVersion
     ? `Version officielle v${opts.officialVersion} — `
-    : opts.preview ? 'APERÇU NON OFFICIEL — ' : '';
+    : state === 'sample' ? 'APERÇU NON OFFICIEL — '
+    : state === 'draft' ? 'BROUILLON — '
+    : state === 'test' ? 'DONNÉES DE TEST — ' : '';
+  const footerCustom = (config.footer_text?.text as string) || 'Reproduction interdite — toute falsification est passible de poursuites judiciaires.';
   const footerText = [
     `${versionLine}Document généré le ${new Date().toLocaleString('fr-FR')}.`,
     'Ce plan de lotissement est authentifiable via le QR code ci-contre.',
-    'Toute reproduction ou falsification est passible de poursuites judiciaires.',
-    `Format : ${pageW.toFixed(0)} × ${pageH.toFixed(0)} mm — vectoriel HD imprimable jusqu'à 10 m.`,
+    footerCustom,
+    `Format : ${pageW.toFixed(0)} × ${pageH.toFixed(0)} mm${scaleLabel ? ` — Échelle ${scaleLabel}` : ''} — vectoriel HD.`,
   ];
   footerText.forEach((t, i) => doc.text(t, mm(12), pageH - mm(20) + i * mm(3)));
 
