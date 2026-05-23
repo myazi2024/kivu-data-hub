@@ -965,7 +965,7 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
             <CardContent className="p-0">
               <LotCanvas
                 lots={lots}
-                roads={roads.filter(r => !r.isExternal)}
+                roads={roads}
                 commonSpaces={commonSpaces}
                 parentAreaSqm={parentArea}
                 parentVertices={parentVertices}
