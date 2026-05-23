@@ -1117,15 +1117,9 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2 text-xs">
-                  <div>
-                    <span className="text-muted-foreground">Surface</span>
-                    <p className="font-bold text-sm">{formatSqm(selectedLot.areaSqm)}</p>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">Périmètre</span>
-                    <p className="font-bold text-sm">{formatMeters(selectedLot.perimeterM)}</p>
-                  </div>
+                <div className="text-xs">
+                  <span className="text-muted-foreground">Surface</span>
+                  <p className="font-bold text-sm">{formatSqm(selectedLot.areaSqm)}</p>
                 </div>
                 <Separator />
                 <LotVerticesEditor
