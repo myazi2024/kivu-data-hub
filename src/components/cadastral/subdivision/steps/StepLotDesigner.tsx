@@ -826,7 +826,14 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
       }
     }
 
-    setRoads(roads.map(r => r.id === roadId ? { ...r, ...updates } : r));
+    // Any manual edit to path or widthM invalidates the polygon footprint (revert to rectangle band)
+    const invalidatesFootprint =
+      updates.footprint === undefined &&
+      (updates.path !== undefined || (updates.widthM !== undefined && updates.widthM !== oldWidthM));
+    const finalUpdates = invalidatesFootprint && road.footprint
+      ? { ...updates, footprint: undefined }
+      : updates;
+    setRoads(roads.map(r => r.id === roadId ? { ...r, ...finalUpdates } : r));
   }, [roads, setRoads, lots, setLots, parentParcel, parentVertices, computeArea, computePerim]);
 
   const totalArea = lots.reduce((s, l) => s + l.areaSqm, 0);

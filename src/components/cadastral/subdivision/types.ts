@@ -72,6 +72,10 @@ export interface SubdivisionRoad {
   borderingParcelSideIndex?: number;
   /** Road type label for external roads (avenue, rue, nationale, etc.). */
   roadType?: string;
+  /** Emprise polygonale d'origine quand la voie a été créée par conversion d'une zone dessinée.
+   *  Si présent (≥3 points, normalisé), prime sur le rectangle dérivé de `path` + `widthM` pour l'affichage.
+   *  Effacé dès que l'utilisateur édite manuellement `path` ou `widthM`. */
+  footprint?: Point2D[];
 }
 
 export interface SubdivisionCommonSpace {

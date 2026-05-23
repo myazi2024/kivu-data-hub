@@ -237,6 +237,9 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
         if (road) {
           onUpdateRoad(selectedRoadId, {
             path: road.path.map(v => ({ x: v.x + ndx, y: v.y + ndy })),
+            ...(road.footprint
+              ? { footprint: road.footprint.map(v => ({ x: v.x + ndx, y: v.y + ndy })) }
+              : {}),
           });
         }
       }
@@ -256,7 +259,10 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
         if (lot && !lot.isParentBoundary) onUpdateLot(selectedLotId, rotateVertices(lot.vertices));
       } else if (selectedRoadId && onUpdateRoad) {
         const road = roads.find(r => r.id === selectedRoadId);
-        if (road) onUpdateRoad(selectedRoadId, { path: rotateVertices(road.path) });
+        if (road) onUpdateRoad(selectedRoadId, {
+          path: rotateVertices(road.path),
+          ...(road.footprint ? { footprint: rotateVertices(road.footprint) } : {}),
+        });
       }
     },
   }, !readOnly);
@@ -495,7 +501,7 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
       if (road) {
         const newPath = [...road.path];
         newPath[roadEndpointDrag.pointIdx] = snapped;
-        onUpdateRoad(roadEndpointDrag.roadId, { path: newPath });
+        onUpdateRoad(roadEndpointDrag.roadId, { path: newPath, footprint: undefined });
       }
       return;
     }
@@ -526,7 +532,7 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
           const deltaM = deltaNorm * sideLength;
           const sign = projectedPx > 0 ? 1 : -1;
           const newWidth = Math.max(2, Math.min(30, roadWidthDrag.startWidth + sign * deltaM * 2));
-          onUpdateRoad(roadWidthDrag.roadId, { widthM: Math.round(newWidth * 2) / 2 });
+          onUpdateRoad(roadWidthDrag.roadId, { widthM: Math.round(newWidth * 2) / 2, footprint: undefined });
         }
       }
       return;
@@ -909,7 +915,12 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
           const BR = { x: pN.x - nx * halfW, y: pN.y - ny * halfW };
           const BL = { x: p0.x - nx * halfW, y: p0.y - ny * halfW };
 
-          const polygonStr = `${TL.x},${TL.y} ${TR.x},${TR.y} ${BR.x},${BR.y} ${BL.x},${BL.y}`;
+          const rectStr = `${TL.x},${TL.y} ${TR.x},${TR.y} ${BR.x},${BR.y} ${BL.x},${BL.y}`;
+          const useFootprint = Array.isArray(road.footprint) && road.footprint.length >= 3;
+          const footprintPts = useFootprint ? road.footprint!.map(p => toScreen(p)) : null;
+          const polygonStr = footprintPts
+            ? footprintPts.map(p => `${p.x},${p.y}`).join(' ')
+            : rectStr;
           const borderColorBase = isRoadSelected ? 'hsl(var(--primary))' : isExisting ? '#92400e' : '#6b7280';
           const fillColor = isRoadSelected ? 'hsl(var(--primary))' : isExisting ? '#d4a574' : '#e5e7eb';
           
@@ -932,24 +943,38 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
                 className={readOnly || mode !== 'select' ? 'pointer-events-none' : 'cursor-pointer'}
                 onClick={e => !readOnly && handleRoadClick(road.id, e)}
               />
-              {/* Left border line (TL → TR) */}
-              <line
-                x1={TL.x} y1={TL.y} x2={TR.x} y2={TR.y}
-                stroke={borderColorBase}
-                strokeWidth={isRoadSelected ? 2 : 1.5}
-                strokeDasharray={isExisting ? 'none' : '6 3'}
-                opacity={isRoadSelected ? 0.9 : isExisting ? 0.7 : 0.6}
-                className="pointer-events-none"
-              />
-              {/* Right border line (BL → BR) */}
-              <line
-                x1={BL.x} y1={BL.y} x2={BR.x} y2={BR.y}
-                stroke={borderColorBase}
-                strokeWidth={isRoadSelected ? 2 : 1.5}
-                strokeDasharray={isExisting ? 'none' : '6 3'}
-                opacity={isRoadSelected ? 0.9 : isExisting ? 0.7 : 0.6}
-                className="pointer-events-none"
-              />
+              {useFootprint ? (
+                <polygon
+                  points={polygonStr}
+                  fill="none"
+                  stroke={borderColorBase}
+                  strokeWidth={isRoadSelected ? 2 : 1.5}
+                  strokeDasharray={isExisting ? 'none' : '6 3'}
+                  opacity={isRoadSelected ? 0.9 : isExisting ? 0.7 : 0.6}
+                  className="pointer-events-none"
+                />
+              ) : (
+                <>
+                  {/* Left border line (TL → TR) */}
+                  <line
+                    x1={TL.x} y1={TL.y} x2={TR.x} y2={TR.y}
+                    stroke={borderColorBase}
+                    strokeWidth={isRoadSelected ? 2 : 1.5}
+                    strokeDasharray={isExisting ? 'none' : '6 3'}
+                    opacity={isRoadSelected ? 0.9 : isExisting ? 0.7 : 0.6}
+                    className="pointer-events-none"
+                  />
+                  {/* Right border line (BL → BR) */}
+                  <line
+                    x1={BL.x} y1={BL.y} x2={BR.x} y2={BR.y}
+                    stroke={borderColorBase}
+                    strokeWidth={isRoadSelected ? 2 : 1.5}
+                    strokeDasharray={isExisting ? 'none' : '6 3'}
+                    opacity={isRoadSelected ? 0.9 : isExisting ? 0.7 : 0.6}
+                    className="pointer-events-none"
+                  />
+                </>
+              )}
               {/* Selection glow */}
               {isRoadSelected && (
                 <polygon
