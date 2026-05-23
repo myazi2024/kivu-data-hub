@@ -109,9 +109,9 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
         });
         return;
       }
-      if (code === 'OWNERSHIP_REQUIRED') {
+      if (code === 'OWNERSHIP_REQUIRED' || code === 'REQUESTER_INVALID') {
         form.setCurrentStep('parcel');
-        toast({ title: 'Propriété requise', description: err.message, variant: 'destructive' });
+        toast({ title: code === 'REQUESTER_INVALID' ? 'Identité incomplète' : 'Propriété requise', description: err.message, variant: 'destructive' });
         return;
       }
       toast({ title: 'Erreur', description: err.message, variant: 'destructive' });
