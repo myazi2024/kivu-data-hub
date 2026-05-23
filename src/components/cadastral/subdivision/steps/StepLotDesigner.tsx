@@ -27,6 +27,7 @@ import { genId, nextLotNumber, polygonUnionMany } from '../utils/polygonOps';
 import LotVerticesEditor from './LotVerticesEditor';
 import LotsListPanel from './panels/LotsListPanel';
 import RoadsListPanel from './panels/RoadsListPanel';
+import BorderingRoadsPanel from './panels/BorderingRoadsPanel';
 import CommonSpacesPanel from './panels/CommonSpacesPanel';
 import ServitudesPanel from './panels/ServitudesPanel';
 import ValidationPanel from './panels/ValidationPanel';
@@ -941,7 +942,7 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
             <CardContent className="p-0">
               <LotCanvas
                 lots={lots}
-                roads={roads}
+                roads={roads.filter(r => !r.isExternal)}
                 commonSpaces={commonSpaces}
                 parentAreaSqm={parentArea}
                 parentVertices={parentVertices}
@@ -1240,10 +1241,10 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
             onSelectLot={setSelectedLotId}
           />
 
-          {/* Roads management */}
+          {/* Roads management (internal roads built within the subdivision) */}
           <RoadsListPanel
-            roads={roads}
-            editingRoad={editingRoad}
+            roads={roads.filter(r => !r.isExternal)}
+            editingRoad={editingRoad && !editingRoad.isExternal ? editingRoad : null}
             editingRoadId={editingRoadId}
             setEditingRoadId={setEditingRoadId}
             onDeleteRoad={handleDeleteRoad}
@@ -1254,6 +1255,15 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
             hasMultipleLots={lots.length >= 2}
             zoningRule={zoningRule}
           />
+
+          {/* External public roads bordering the parent parcel */}
+          <BorderingRoadsPanel
+            roads={roads}
+            setRoads={setRoads}
+            parentVertices={parentVertices}
+            metricFrame={metricFrame}
+          />
+
 
           {/* Common Spaces */}
           <CommonSpacesPanel commonSpaces={commonSpaces} setCommonSpaces={setCommonSpaces} />

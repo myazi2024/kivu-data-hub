@@ -64,6 +64,14 @@ export interface SubdivisionRoad {
   solarLighting?: import('./infrastructureConstants').SolarLightingSpec | null;
   /** Road surface spec (material + thickness). Driven by admin zoning rule + tariffs. */
   roadSurface?: import('./infrastructureConstants').RoadSurfaceSpec | null;
+  /** True for an existing public road bordering the parent parcel (declared by the requester,
+   *  not built within the subdivision). Excluded from infrastructure fees and lot geometry
+   *  edits — used solely to lift the enclavement check for lots along the parent boundary. */
+  isExternal?: boolean;
+  /** Index of the parent parcel side this external road borders (path = [v[i], v[i+1]]). */
+  borderingParcelSideIndex?: number;
+  /** Road type label for external roads (avenue, rue, nationale, etc.). */
+  roadType?: string;
 }
 
 export interface SubdivisionCommonSpace {
