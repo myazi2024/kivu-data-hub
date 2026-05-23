@@ -101,27 +101,38 @@ export function RequestDetailsDialog({ open, onOpenChange, request, onOpenDocume
             </div>
             {request && (
               <div className="flex flex-wrap items-center gap-2 shrink-0">
-                {isApproved && (
-                  <>
-                    <Button variant="outline" size="sm" onClick={handleGenerate} disabled={generating} className="gap-2">
-                      {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileCheck2 className="h-4 w-4" />}
-                      {officialPath ? `Régénérer (v${(officialVersion ?? 0) + 1})` : 'Générer plan officiel'}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="gap-2">
+                      <FileText className="h-4 w-4" /> Documents <ChevronDown className="h-4 w-4" />
                     </Button>
-                    {officialPath && (
-                      <Button variant="default" size="sm" onClick={handleDownloadOfficial} disabled={downloading} className="gap-2">
-                        {downloading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-                        Plan officiel v{officialVersion}
-                      </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-64 bg-popover">
+                    <DropdownMenuLabel>Documents disponibles</DropdownMenuLabel>
+                    <DropdownMenuItem onClick={() => exportSubdivisionDossier(request)} className="gap-2">
+                      <Download className="h-4 w-4" /> Dossier complet (PDF)
+                    </DropdownMenuItem>
+                    {isApproved && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={handleGenerate} disabled={generating} className="gap-2">
+                          {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileCheck2 className="h-4 w-4" />}
+                          {officialPath ? `Régénérer plan officiel (v${(officialVersion ?? 0) + 1})` : 'Générer plan officiel'}
+                        </DropdownMenuItem>
+                        {officialPath && (
+                          <DropdownMenuItem onClick={handleDownloadOfficial} disabled={downloading} className="gap-2">
+                            {downloading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                            Télécharger plan officiel v{officialVersion}
+                          </DropdownMenuItem>
+                        )}
+                        <DropdownMenuItem onClick={handleOpenCertificate} disabled={downloadingCert} className="gap-2">
+                          {downloadingCert ? <Loader2 className="h-4 w-4 animate-spin" /> : <Award className="h-4 w-4" />}
+                          Certificat d'approbation
+                        </DropdownMenuItem>
+                      </>
                     )}
-                    <Button variant="outline" size="sm" onClick={handleOpenCertificate} disabled={downloadingCert} className="gap-2">
-                      {downloadingCert ? <Loader2 className="h-4 w-4 animate-spin" /> : <Award className="h-4 w-4" />}
-                      Certificat
-                    </Button>
-                  </>
-                )}
-                <Button variant="outline" size="sm" onClick={() => exportSubdivisionDossier(request)} className="gap-2">
-                  <Download className="h-4 w-4" /> Dossier PDF
-                </Button>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             )}
           </div>
