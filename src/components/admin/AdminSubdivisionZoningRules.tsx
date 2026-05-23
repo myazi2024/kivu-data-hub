@@ -565,8 +565,8 @@ const AdminSubdivisionZoningRules: React.FC = () => {
       require_drainage_canal: form.require_drainage_canal,
       drainage_canal_min_width_m: form.drainage_canal_min_width_m ? parseFloat(form.drainage_canal_min_width_m) : null,
       drainage_canal_min_depth_m: form.drainage_canal_min_depth_m ? parseFloat(form.drainage_canal_min_depth_m) : null,
-      drainage_canal_allowed_materials: form.drainage_canal_allowed_materials || [],
-      drainage_canal_allowed_types: form.drainage_canal_allowed_types || [],
+      drainage_canal_allowed_materials: toStringArray(form.drainage_canal_allowed_materials),
+      drainage_canal_allowed_types: toStringArray(form.drainage_canal_allowed_types),
       drainage_canal_min_slope_pct: form.drainage_canal_min_slope_pct ? parseFloat(form.drainage_canal_min_slope_pct) : null,
       drainage_canal_required_sides: form.drainage_canal_required_sides || 'any',
       // Solar lighting
