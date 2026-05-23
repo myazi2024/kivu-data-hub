@@ -5,6 +5,8 @@ import { createDocumentVerification } from '@/lib/documentVerification';
 import { supabase } from '@/integrations/supabase/client';
 import { getSubdivisionPlanElementsAsync } from '@/hooks/useSubdivisionPlanElements';
 import { resolveSubdivisionPlanContext, type SignatureFrame } from '@/utils/subdivisionPlanContext';
+import { computeNormalizedScale, formatScale } from '@/utils/subdivisionPlanScale';
+import { fetchLegendSymbols, deriveLegend, type LegendItem } from '@/utils/subdivisionPlanLegend';
 
 interface SubdivisionPlanData {
   id: string;
@@ -23,11 +25,60 @@ interface SubdivisionPlanData {
   subdivision_plan_data?: any | null;
 }
 
+export type PlanLifecycleState = 'draft' | 'test' | 'sample' | 'final';
+
 interface GenerateOptions {
-  /** Marque le document comme aperçu (filigrane « APERÇU »). */
+  /** Marque le document comme aperçu (filigrane « APERÇU »). @deprecated utiliser `state`. */
   preview?: boolean;
   /** Marque la version officielle (numéro de version dans le footer). */
   officialVersion?: number | null;
+  /** État du document : draft (BROUILLON), test (TEST), sample (SAMPLE), final (sans filigrane). */
+  state?: PlanLifecycleState;
+}
+
+interface PlanConfigBundle {
+  header: any;
+  watermarks: any;
+  paper_format: any;
+  scale_tiers: any;
+  report_program: any;
+  footer_text: any;
+}
+
+async function loadPlanConfig(): Promise<PlanConfigBundle> {
+  try {
+    const { data } = await (supabase as any)
+      .from('app_subdivision_plan_config')
+      .select('config_key, config_value');
+    const map: any = {};
+    (data || []).forEach((r: any) => { map[r.config_key] = r.config_value; });
+    return map as PlanConfigBundle;
+  } catch {
+    return {} as PlanConfigBundle;
+  }
+}
+
+async function loadDynamicFrames(
+  parcelCtx: { isUrban: boolean; province?: string | null },
+): Promise<SignatureFrame[]> {
+  try {
+    const { data } = await (supabase as any)
+      .from('subdivision_signature_frames')
+      .select('*')
+      .eq('active', true)
+      .order('display_order', { ascending: true });
+    const rows = (data || []) as any[];
+    const applies = parcelCtx.isUrban ? 'urban' : 'rural';
+    const filtered = rows.filter(r => {
+      if (r.applies_to !== 'both' && r.applies_to !== applies) return false;
+      const pf: string[] = r.province_filter || [];
+      if (pf.length && parcelCtx.province && !pf.includes(parcelCtx.province)) return false;
+      return true;
+    });
+    return filtered.map(r => ({ title: r.title_template || r.name, authority: r.authority }));
+  } catch {
+    return [];
+  }
 }
 
 /**
