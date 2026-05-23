@@ -1,51 +1,33 @@
-# Surface parcelle-mère cohérente dès le chargement (onglet Parcelle)
+## Objectif
+Appliquer la même correction de calcul de surface (basée sur la géométrie GPS) à l'affichage de la parcelle sélectionnée sur la Carte Cadastrale, juste au-dessus des boutons "Données" et "Actions".
 
 ## Problème
-
-Dans `StepParentParcel.tsx`, le champ « Superficie » du bloc *Parcelle mère (chargée automatiquement)* affiche `parentParcel.areaSqm`, qui provient directement de `cadastral_parcels.area_sqm` (DB). Or cette valeur DB est incohérente avec les côtés GPS affichés ailleurs (cas du triangle 788/387/802 → DB ≈ 2 887 m², géométrie réelle ≈ 149 000 m²).
-
-La correction précédente avait été appliquée dans `StepLotDesigner.tsx` et dans `createInitialLot` (lot parent-boundary), mais **pas à la source** chargée dans `useSubdivisionForm.loadParcelData()`. Résultat : l'onglet *Parcelle* affiche encore la valeur DB brute.
-
-## Correctif (source unique)
-
-Dans `src/components/cadastral/subdivision/hooks/useSubdivisionForm.ts` → `loadParcelData()` (lignes 261-308), calculer la superficie géométrique à partir des coordonnées GPS dès la construction de l'objet `ParentParcelInfo`, puis utiliser cette valeur comme `areaSqm`. Fallback DB conservé si moins de 3 points GPS exploitables.
-
-### Helper local
-
-Ajouter, juste avant `setParentParcel(...)` dans chacune des deux branches (lignes 266-282 et 285-308) :
-
-```ts
-const dbAreaSqm = (parcelData?.area_sqm /* ou parcel.area_sqm */) || 0;
-let effectiveAreaSqm = dbAreaSqm;
-if (gpsCoords.length >= 3) {
-  const frame = buildMetricFrame(gpsCoords, dbAreaSqm || 1);
-  const normVerts = gpsCoords.map((g) => gpsToNormalized(g, gpsCoords));
-  const geomArea = polygonAreaSqmAccurate(normVerts, frame);
-  if (isFinite(geomArea) && geomArea > 0) {
-    effectiveAreaSqm = Math.round(geomArea);
-  }
-}
-// ...
-areaSqm: effectiveAreaSqm,
+Dans `src/pages/CadastralMap.tsx` ligne 607, le panneau de parcelle sélectionnée affiche :
+```tsx
+{selectedParcel.area_sqm?.toLocaleString()} m²
 ```
+Cette valeur vient directement de `cadastral_parcels.area_sqm` (BD), incohérente avec la géométrie GPS (ex. triangle 788/387/802 → BD ≈ 2 887 m², géométrie ≈ 149 000 m²).
 
-`buildMetricFrame`, `polygonAreaSqmAccurate` sont déjà importés (ligne 11). `gpsToNormalized` est déjà importé (ligne 9).
+## Solution
 
-### Effets de bord (souhaités)
+### 1. Extraire un helper partagé
+Créer `src/utils/parcelGeometricArea.ts` exportant :
+```ts
+export function computeEffectiveAreaSqm(
+  gpsCoords: { lat: number; lng: number }[] | null | undefined,
+  dbAreaSqm: number,
+): number
+```
+Réutilise `buildMetricFrame`, `gpsToNormalized`, `polygonAreaSqmAccurate` de `subdivision/utils/metrics.ts` / `geometry.ts`. Si ≥3 points GPS et aire calculée > 0 → renvoie l'aire géométrique arrondie. Sinon → `dbAreaSqm`.
 
-- L'onglet *Parcelle* (bloc Parcelle-mère) affiche désormais la superficie géométrique, cohérente avec les côtés GPS.
-- Le designer de lots, la validation et le snapshot consomment la même valeur → fin de toute incohérence visuelle.
-- `createInitialLot` peut conserver son recalcul actuel (idempotent : même formule, même valeur), ou être simplifié dans une étape ultérieure.
+### 2. Refactor `useSubdivisionForm.ts`
+Remplacer le `computeEffectiveArea` local par l'import du helper partagé (pas de changement de comportement).
 
-### Hors-scope
+### 3. Patcher `src/pages/CadastralMap.tsx`
+- Calculer `selectedParcelEffectiveArea` via `useMemo` à partir de `selectedParcel.gps_coordinates` et `selectedParcel.area_sqm`.
+- Ligne 607 : afficher `selectedParcelEffectiveArea.toLocaleString()` au lieu de `selectedParcel.area_sqm`.
 
-- **Aucune écriture en base** : `cadastral_parcels.area_sqm` reste inchangé.
-- Les frais serveur (`_shared/subdivisionFees.ts`) qui relisent la DB ne sont pas modifiés.
-- Pas de migration ni de recalcul rétroactif.
-- Si la parcelle n'a pas de GPS exploitable, comportement actuel conservé (valeur DB).
-
-## Vérification
-
-1. Ouvrir la parcelle triangulaire 788/387/802 m → onglet *Parcelle* doit afficher ≈ 14,9 ha (149 000 m²) au lieu de 2 887 m².
-2. Étape *Designer* : la même valeur apparaît (plus de doubles sources).
-3. Une parcelle sans coordonnées GPS continue d'afficher la valeur DB sans erreur.
+## Hors scope
+- Pas de modification BD (`cadastral_parcels.area_sqm` reste tel quel).
+- Pas de modification des autres écrans qui affichent `area_sqm` (à traiter à la demande).
+- Pas de logique métier serveur (frais, calculs admin) impactée.

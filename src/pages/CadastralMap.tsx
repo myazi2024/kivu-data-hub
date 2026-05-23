@@ -33,6 +33,7 @@ import { useLandTitleNotificationFlow } from '@/hooks/useLandTitleNotificationFl
 import { useLeafletMap } from '@/hooks/useLeafletMap';
 import { playFeedbackBeep } from '@/lib/feedbackAudio';
 import { trackEvent } from '@/lib/analytics';
+import { computeEffectiveAreaSqm } from '@/utils/parcelGeometricArea';
 
 import 'leaflet/dist/leaflet.css';
 
@@ -49,6 +50,15 @@ const CadastralMap = () => {
   // Selection
   const [selectedParcel, setSelectedParcel] = useState<ParcelData | null>(null);
   const { data: selectedParcelHistory, isLoading: loadingHistory } = useParcelHistory(selectedParcel?.id ?? null);
+  const selectedParcelEffectiveArea = useMemo(() => {
+    if (!selectedParcel) return 0;
+    const gps = Array.isArray(selectedParcel.gps_coordinates)
+      ? (selectedParcel.gps_coordinates as any[])
+          .map((c: any) => ({ lat: Number(c?.lat), lng: Number(c?.lng) }))
+          .filter((p) => isFinite(p.lat) && isFinite(p.lng))
+      : [];
+    return computeEffectiveAreaSqm(gps, selectedParcel.area_sqm || 0);
+  }, [selectedParcel]);
   const hasIncompleteData = useMemo(() => {
     if (!selectedParcel || !selectedParcelHistory) return false;
     const hasLocation = !!(selectedParcel.province && selectedParcel.ville);
@@ -604,7 +614,7 @@ const CadastralMap = () => {
                   <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary/5 border border-primary/10 text-[10px]">
                     <span className="text-muted-foreground">Surface</span>
                     <span className="font-semibold text-foreground">
-                      {selectedParcel.area_sqm?.toLocaleString()} m²
+                      {selectedParcelEffectiveArea.toLocaleString()} m²
                     </span>
                   </div>
                   {selectedParcel.commune && (

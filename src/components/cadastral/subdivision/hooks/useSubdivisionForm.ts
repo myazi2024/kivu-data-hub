@@ -15,6 +15,7 @@ import { fetchInfrastructureTariffsAsync } from '@/hooks/useSubdivisionInfrastru
 import { buildInfraItemsFromRoads } from '../utils/infrastructureFromRoads';
 import { inferSectionType } from '../utils/sectionType';
 import { useSubdivisionRequiredDocuments } from '@/hooks/useSubdivisionRequiredDocuments';
+import { computeEffectiveAreaSqm } from '@/utils/parcelGeometricArea';
 
 const DRAFT_KEY_PREFIX = 'subdivision-draft-v3-';
 const IDEMPOTENCY_KEY_PREFIX = 'subdivision-idem-v1-';
@@ -263,15 +264,8 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
     setLoadingParcel(true);
     
     try {
-      const computeEffectiveArea = (gpsCoords: { lat: number; lng: number }[], dbAreaSqm: number): number => {
-        if (gpsCoords.length >= 3) {
-          const frame = buildMetricFrame(gpsCoords as any, dbAreaSqm || 1);
-          const normVerts = gpsCoords.map((g) => gpsToNormalized(g as any, gpsCoords as any));
-          const geomArea = polygonAreaSqmAccurate(normVerts, frame);
-          if (isFinite(geomArea) && geomArea > 0) return Math.round(geomArea);
-        }
-        return dbAreaSqm || 0;
-      };
+      const computeEffectiveArea = (gpsCoords: { lat: number; lng: number }[], dbAreaSqm: number): number =>
+        computeEffectiveAreaSqm(gpsCoords, dbAreaSqm);
 
       if (parcelData?.area_sqm) {
         const gpsCoords = Array.isArray(parcelData.gps_coordinates) 
