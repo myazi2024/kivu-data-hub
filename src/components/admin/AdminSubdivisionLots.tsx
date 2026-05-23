@@ -53,13 +53,13 @@ const AdminSubdivisionLots: React.FC = () => {
     setLoading(true);
     const { data, error } = await supabase
       .from('subdivision_lots')
-      .select('*')
+      .select('*, subdivision_requests:subdivision_request_id(reference_number,status)')
       .order('created_at', { ascending: false })
       .limit(1000);
     if (error) {
       toast({ title: 'Erreur de chargement', description: error.message, variant: 'destructive' });
     } else {
-      setLots((data || []) as LotRow[]);
+      setLots((data || []) as unknown as LotRow[]);
     }
     setLoading(false);
   };
