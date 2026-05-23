@@ -29,25 +29,25 @@ export function RequestsToolbar({
 }: Props) {
   return (
     <>
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold flex items-center gap-2">
-            <Grid3X3 className="h-6 w-6 text-primary" />
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h2 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
+            <Grid3X3 className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
             Demandes de Lotissement
           </h2>
-          <p className="text-muted-foreground">Gérez les demandes de subdivision de parcelles</p>
+          <p className="text-muted-foreground text-sm hidden sm:block">Gérez les demandes de subdivision de parcelles</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           {pendingCount > 0 && (
             <Badge variant="destructive" className="gap-1">
               <Clock className="h-3 w-3" /> {pendingCount} en attente
             </Badge>
           )}
-          <Button variant="outline" size="sm" onClick={onExport} className="gap-1">
-            <Download className="h-4 w-4" /> CSV
+          <Button variant="outline" size="sm" onClick={onExport} className="gap-1" aria-label="Exporter CSV">
+            <Download className="h-4 w-4" /> <span className="hidden sm:inline">CSV</span>
           </Button>
-          <Button variant="outline" size="sm" onClick={onRefresh} className="gap-1">
-            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} /> Actualiser
+          <Button variant="outline" size="sm" onClick={onRefresh} className="gap-1" aria-label="Actualiser">
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} /> <span className="hidden sm:inline">Actualiser</span>
           </Button>
         </div>
       </div>
@@ -59,27 +59,30 @@ export function RequestsToolbar({
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input placeholder="Rechercher..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="pl-9" />
             </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full lg:w-[160px]"><SelectValue placeholder="Statut" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="_all">Tous</SelectItem>
-                {Object.entries(STATUS_LABELS).map(([v, label]) => (
-                  <SelectItem key={v} value={v}>{label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="lg:w-[160px]" />
-            <Input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="lg:w-[160px]" />
-            <Select value={sortBy} onValueChange={(v) => setSortBy(v as 'recent' | 'oldest')}>
-              <SelectTrigger className="w-full lg:w-[160px]"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="recent">Plus récentes</SelectItem>
-                <SelectItem value="oldest">Plus anciennes</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="grid grid-cols-2 sm:flex gap-3 lg:contents">
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-full lg:w-[160px]"><SelectValue placeholder="Statut" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="_all">Tous</SelectItem>
+                  {Object.entries(STATUS_LABELS).map(([v, label]) => (
+                    <SelectItem key={v} value={v}>{label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={sortBy} onValueChange={(v) => setSortBy(v as 'recent' | 'oldest')}>
+                <SelectTrigger className="w-full lg:w-[160px]"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="recent">Plus récentes</SelectItem>
+                  <SelectItem value="oldest">Plus anciennes</SelectItem>
+                </SelectContent>
+              </Select>
+              <Input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="lg:w-[160px]" aria-label="Date de début" />
+              <Input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="lg:w-[160px]" aria-label="Date de fin" />
+            </div>
           </div>
         </CardContent>
       </Card>
     </>
   );
 }
+
