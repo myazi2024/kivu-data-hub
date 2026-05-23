@@ -537,19 +537,81 @@ function drawSignatureFrame(
   doc.line(x + mm(16), y + h - mm(2.7), x + w - sealR * 2 - mm(8), y + h - mm(2.7));
 }
 
-/** Filigrane diagonal vectoriel (texte rouge clair, opacité réduite). */
-async function drawWatermark(doc: jsPDF, pageW: number, pageH: number, text: string, S: number) {
+/** Filigrane d'état (BROUILLON/TEST/SAMPLE) — config admin override. */
+async function drawStateWatermark(
+  doc: jsPDF,
+  pageW: number,
+  pageH: number,
+  state: PlanLifecycleState,
+  watermarksCfg: any,
+  refNumber: string,
+  S: number,
+) {
+  if (state === 'final') return; // pas de filigrane sur version finale
+  const key = state === 'draft' ? 'draft' : state === 'test' ? 'test' : 'sample';
+  const defaults: Record<string, { text: string; color: [number, number, number]; opacity: number }> = {
+    draft: { text: 'BROUILLON', color: [120, 120, 120], opacity: 0.10 },
+    test: { text: 'TEST', color: [200, 120, 0], opacity: 0.12 },
+    sample: { text: 'SAMPLE', color: [180, 0, 0], opacity: 0.10 },
+  };
+  const cfg = (watermarksCfg && watermarksCfg[key]) || {};
+  const text: string = cfg.text || defaults[key].text;
+  const color: [number, number, number] = Array.isArray(cfg.color) && cfg.color.length === 3
+    ? cfg.color : defaults[key].color;
+  const opacity: number = typeof cfg.opacity === 'number' ? cfg.opacity : defaults[key].opacity;
+
   doc.saveGraphicsState();
   // @ts-expect-error : GState accepté par jspdf en runtime
-  doc.setGState(new doc.GState({ opacity: 0.07 }));
+  doc.setGState(new doc.GState({ opacity }));
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(48 * S);
-  doc.setTextColor(180, 0, 0);
-  const step = 80 * S;
+  doc.setFontSize(72 * S);
+  doc.setTextColor(color[0], color[1], color[2]);
+  const step = 100 * S;
   for (let y = -step; y < pageH + step; y += step) {
     for (let x = -step; x < pageW + step; x += step * 2) {
       doc.text(text, x, y, { angle: -30 });
     }
   }
+  // Référence en petite taille
+  doc.setFontSize(10 * S);
+  doc.text(`Réf. ${refNumber}`, pageW - 60, pageH - 4);
   doc.restoreGraphicsState();
+}
+
+/** Cartouche légende (bas-droit) : liste de symboles présents. */
+function drawLegendBox(
+  doc: jsPDF,
+  x: number, y: number, w: number, h: number,
+  items: LegendItem[], S: number,
+) {
+  const mm = (v: number) => v * S;
+  doc.setDrawColor(120, 120, 120);
+  doc.setLineWidth(mm(0.3));
+  doc.rect(x, y, w, h);
+  doc.setFillColor(245, 245, 250);
+  doc.rect(x, y, w, mm(5), 'F');
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8 * S);
+  doc.setTextColor(0, 50, 100);
+  doc.text('Légende', x + w / 2, y + mm(3.5), { align: 'center' });
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(7 * S);
+  doc.setTextColor(40, 40, 40);
+  const rowH = mm(3.2);
+  items.forEach((it, i) => {
+    const ry = y + mm(6) + i * rowH;
+    // pastille couleur
+    const [r, g, b] = hexToRgbSafe(it.color);
+    doc.setFillColor(r, g, b);
+    doc.rect(x + mm(2), ry - mm(2), mm(3), mm(2), 'F');
+    doc.text(it.label, x + mm(7), ry - mm(0.5));
+  });
+}
+
+function hexToRgbSafe(hex: string): [number, number, number] {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex || '');
+  if (!m) return [100, 100, 100];
+  const n = parseInt(m[1], 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
 }
