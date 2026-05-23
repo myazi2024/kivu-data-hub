@@ -112,6 +112,10 @@ export function RequestDetailsDialog({ open, onOpenChange, request, onOpenDocume
                         Plan officiel v{officialVersion}
                       </Button>
                     )}
+                    <Button variant="outline" size="sm" onClick={handleOpenCertificate} disabled={downloadingCert} className="gap-2">
+                      {downloadingCert ? <Loader2 className="h-4 w-4 animate-spin" /> : <Award className="h-4 w-4" />}
+                      Certificat
+                    </Button>
                   </>
                 )}
                 <Button variant="outline" size="sm" onClick={() => exportSubdivisionDossier(request)} className="gap-2">
