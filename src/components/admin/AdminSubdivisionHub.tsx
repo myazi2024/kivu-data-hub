@@ -100,6 +100,9 @@ export default function AdminSubdivisionHub() {
         <TabsContent value="plan-elements" className="mt-4">
           <Suspense fallback={<Fallback />}><AdminSubdivisionPlanElements /></Suspense>
         </TabsContent>
+        <TabsContent value="plan-config" className="mt-4">
+          <Suspense fallback={<Fallback />}><AdminSubdivisionPlanConfig /></Suspense>
+        </TabsContent>
         <TabsContent value="lots" className="mt-4">
           <Suspense fallback={<Fallback />}><AdminSubdivisionLots /></Suspense>
         </TabsContent>
