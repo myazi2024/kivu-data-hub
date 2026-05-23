@@ -193,8 +193,8 @@ const AdminSubdivisionFeesConfig: React.FC = () => {
                     <TableHead className="text-right">Palier dégressif</TableHead>
                     <TableHead className="text-right">Min/lot</TableHead>
                     <TableHead className="text-right">Max/lot</TableHead>
-                    <TableHead className="text-right">Voirie ($/ml)</TableHead>
-                    <TableHead className="text-right">Esp. communs ($/m²)</TableHead>
+                    <TableHead className="text-right" title="Champ legacy — remplacé par les tarifs d'infrastructure (voirie / drainage / éclairage)">Voirie ($/ml) <Badge variant="outline" className="ml-1 text-[9px]">deprecated</Badge></TableHead>
+                    <TableHead className="text-right" title="Champ legacy — remplacé par les tarifs d'infrastructure (espaces communs)">Esp. communs ($/m²) <Badge variant="outline" className="ml-1 text-[9px]">deprecated</Badge></TableHead>
                     <TableHead>Actif</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
