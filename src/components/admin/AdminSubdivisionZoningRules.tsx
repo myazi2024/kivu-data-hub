@@ -1118,20 +1118,26 @@ const AdminSubdivisionZoningRules: React.FC = () => {
                       <Label className="text-[11px]">Matériaux autorisés</Label>
                       <div className="flex flex-wrap gap-1.5 p-2 rounded border bg-background">
                         {DRAINAGE_CANAL_MATERIALS.map(m => {
-                          const checked = form.drainage_canal_allowed_materials.includes(m);
+                          const checked = (form.drainage_canal_allowed_materials ?? []).includes(m);
                           return (
-                            <label key={m} className={`text-[11px] px-2 py-0.5 rounded border cursor-pointer ${checked ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted/40'}`}>
-                              <input type="checkbox" className="sr-only" checked={checked} onChange={e => setForm(f => {
+                            <button
+                              key={m}
+                              type="button"
+                              role="checkbox"
+                              aria-checked={checked}
+                              onClick={() => setForm(f => {
                                 const prev = f.drainage_canal_allowed_materials ?? [];
                                 return {
                                   ...f,
-                                  drainage_canal_allowed_materials: e.target.checked
-                                    ? (prev.includes(m) ? prev : [...prev, m])
-                                    : prev.filter(x => x !== m),
+                                  drainage_canal_allowed_materials: prev.includes(m)
+                                    ? prev.filter(x => x !== m)
+                                    : [...prev, m],
                                 };
-                              })} />
+                              })}
+                              className={`text-[11px] px-2 py-0.5 rounded border cursor-pointer transition-colors ${checked ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted/40 hover:bg-muted'}`}
+                            >
                               {DRAINAGE_CANAL_MATERIAL_LABELS[m]}
-                            </label>
+                            </button>
                           );
                         })}
                       </div>
@@ -1140,25 +1146,32 @@ const AdminSubdivisionZoningRules: React.FC = () => {
                       <Label className="text-[11px]">Types autorisés</Label>
                       <div className="flex flex-wrap gap-1.5 p-2 rounded border bg-background">
                         {DRAINAGE_CANAL_TYPES.map(t => {
-                          const checked = form.drainage_canal_allowed_types.includes(t);
+                          const checked = (form.drainage_canal_allowed_types ?? []).includes(t);
                           return (
-                            <label key={t} className={`text-[11px] px-2 py-0.5 rounded border cursor-pointer ${checked ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted/40'}`}>
-                              <input type="checkbox" className="sr-only" checked={checked} onChange={e => setForm(f => {
+                            <button
+                              key={t}
+                              type="button"
+                              role="checkbox"
+                              aria-checked={checked}
+                              onClick={() => setForm(f => {
                                 const prev = f.drainage_canal_allowed_types ?? [];
                                 return {
                                   ...f,
-                                  drainage_canal_allowed_types: e.target.checked
-                                    ? (prev.includes(t) ? prev : [...prev, t])
-                                    : prev.filter(x => x !== t),
+                                  drainage_canal_allowed_types: prev.includes(t)
+                                    ? prev.filter(x => x !== t)
+                                    : [...prev, t],
                                 };
-                              })} />
+                              })}
+                              className={`text-[11px] px-2 py-0.5 rounded border cursor-pointer transition-colors ${checked ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted/40 hover:bg-muted'}`}
+                            >
                               {DRAINAGE_CANAL_TYPE_LABELS[t]}
-                            </label>
+                            </button>
                           );
                         })}
                       </div>
                     </div>
                   </div>
+
                   <div className="space-y-1">
                     <Label className="text-[11px]">Côté requis</Label>
                     <Select value={form.drainage_canal_required_sides} onValueChange={v => setForm(f => ({ ...f, drainage_canal_required_sides: v }))}>
