@@ -1148,7 +1148,7 @@ const AdminSubdivisionZoningRules: React.FC = () => {
                           return (
                             <label key={t} className={`text-[11px] px-2 py-0.5 rounded border cursor-pointer ${checked ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted/40'}`}>
                               <input type="checkbox" className="sr-only" checked={checked} onChange={e => setForm(f => {
-                                const prev = f.drainage_canal_allowed_types ?? [];
+                                const prev = toStringArray(f.drainage_canal_allowed_types);
                                 return {
                                   ...f,
                                   drainage_canal_allowed_types: e.target.checked
