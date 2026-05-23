@@ -247,7 +247,7 @@ export function useFormValidation(params: UseFormValidationParams) {
     }
 
     // BUILDING PERMITS
-    if (!isTerrainNu && !isAppartement && formData.constructionType !== 'Terrain nu' && permitMode === 'existing') {
+    if (!isTerrainNu && !isAppartement && permitMode === 'existing') {
       const hasValidExistingPermit = buildingPermits.some(permit => permit.permitNumber && permit.permitNumber.trim() !== '' && permit.issueDate && permit.issueDate.trim() !== '');
       if (!hasValidExistingPermit) missing.push({ field: 'buildingPermit', label: 'Informations du permis existant', tab: 'general' });
       buildingPermits.forEach((permit, idx) => {
