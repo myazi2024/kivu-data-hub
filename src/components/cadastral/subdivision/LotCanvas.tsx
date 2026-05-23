@@ -909,7 +909,12 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
           const BR = { x: pN.x - nx * halfW, y: pN.y - ny * halfW };
           const BL = { x: p0.x - nx * halfW, y: p0.y - ny * halfW };
 
-          const polygonStr = `${TL.x},${TL.y} ${TR.x},${TR.y} ${BR.x},${BR.y} ${BL.x},${BL.y}`;
+          const rectStr = `${TL.x},${TL.y} ${TR.x},${TR.y} ${BR.x},${BR.y} ${BL.x},${BL.y}`;
+          const useFootprint = Array.isArray(road.footprint) && road.footprint.length >= 3;
+          const footprintPts = useFootprint ? road.footprint!.map(p => toScreen(p)) : null;
+          const polygonStr = footprintPts
+            ? footprintPts.map(p => `${p.x},${p.y}`).join(' ')
+            : rectStr;
           const borderColorBase = isRoadSelected ? 'hsl(var(--primary))' : isExisting ? '#92400e' : '#6b7280';
           const fillColor = isRoadSelected ? 'hsl(var(--primary))' : isExisting ? '#d4a574' : '#e5e7eb';
           
@@ -932,24 +937,38 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
                 className={readOnly || mode !== 'select' ? 'pointer-events-none' : 'cursor-pointer'}
                 onClick={e => !readOnly && handleRoadClick(road.id, e)}
               />
-              {/* Left border line (TL → TR) */}
-              <line
-                x1={TL.x} y1={TL.y} x2={TR.x} y2={TR.y}
-                stroke={borderColorBase}
-                strokeWidth={isRoadSelected ? 2 : 1.5}
-                strokeDasharray={isExisting ? 'none' : '6 3'}
-                opacity={isRoadSelected ? 0.9 : isExisting ? 0.7 : 0.6}
-                className="pointer-events-none"
-              />
-              {/* Right border line (BL → BR) */}
-              <line
-                x1={BL.x} y1={BL.y} x2={BR.x} y2={BR.y}
-                stroke={borderColorBase}
-                strokeWidth={isRoadSelected ? 2 : 1.5}
-                strokeDasharray={isExisting ? 'none' : '6 3'}
-                opacity={isRoadSelected ? 0.9 : isExisting ? 0.7 : 0.6}
-                className="pointer-events-none"
-              />
+              {useFootprint ? (
+                <polygon
+                  points={polygonStr}
+                  fill="none"
+                  stroke={borderColorBase}
+                  strokeWidth={isRoadSelected ? 2 : 1.5}
+                  strokeDasharray={isExisting ? 'none' : '6 3'}
+                  opacity={isRoadSelected ? 0.9 : isExisting ? 0.7 : 0.6}
+                  className="pointer-events-none"
+                />
+              ) : (
+                <>
+                  {/* Left border line (TL → TR) */}
+                  <line
+                    x1={TL.x} y1={TL.y} x2={TR.x} y2={TR.y}
+                    stroke={borderColorBase}
+                    strokeWidth={isRoadSelected ? 2 : 1.5}
+                    strokeDasharray={isExisting ? 'none' : '6 3'}
+                    opacity={isRoadSelected ? 0.9 : isExisting ? 0.7 : 0.6}
+                    className="pointer-events-none"
+                  />
+                  {/* Right border line (BL → BR) */}
+                  <line
+                    x1={BL.x} y1={BL.y} x2={BR.x} y2={BR.y}
+                    stroke={borderColorBase}
+                    strokeWidth={isRoadSelected ? 2 : 1.5}
+                    strokeDasharray={isExisting ? 'none' : '6 3'}
+                    opacity={isRoadSelected ? 0.9 : isExisting ? 0.7 : 0.6}
+                    className="pointer-events-none"
+                  />
+                </>
+              )}
               {/* Selection glow */}
               {isRoadSelected && (
                 <polygon
