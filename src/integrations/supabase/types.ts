@@ -7697,6 +7697,10 @@ export type Database = {
       }
       _purge_stale_test_generation_jobs: { Args: never; Returns: number }
       approve_ccc_contribution: { Args: { p_id: string }; Returns: string }
+      approve_subdivision_atomic: {
+        Args: { _admin_id: string; _request_id: string }
+        Returns: Json
+      }
       archive_stale_articles: { Args: { _months?: number }; Returns: number }
       assign_expertise_request: {
         Args: { p_expert_id: string; p_request_id: string }
