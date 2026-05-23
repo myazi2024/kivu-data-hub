@@ -95,3 +95,11 @@ type: feature
 - `feeBreakdown` enrichi : `road_length_billable_m`, `road_length_covered_by_infra_m`, `infrastructure_total` toujours présent (même sans rate).
 - Matching tarif rate_config : priorité `commune > ville > province > '*' > premier`. Avant : `'*' || ratesData[0]` ignorait les tarifs spécifiques sans `*` configuré.
 - `common_space_fee_per_sqm_usd` non encore couvert par infra → reste appliqué tel quel (doublon latent à surveiller quand une catégorie `common_space_*` sera introduite).
+
+## Lot J — P1 admin (mai 2026)
+- RPC `get_signed_subdivision_certificate(p_request_id, p_ttl_seconds)` : lit `generated_certificates` (type=`lotissement`), extrait le path via regex (`/expertise-certificates/...`), retourne URL signée (bucket privé, TTL 10 min). Garde: propriétaire OU admin/super_admin.
+- Helper `src/utils/subdivisionCertificateUrl.ts` (`openSubdivisionCertificate`).
+- RPC `get_subdivision_admin_stats()` : compteurs serveur (statuts/paiements/escalades/revenu/lots/7j/30j) sans plafond 1000 lignes. Réservée admin.
+- `AdminSubdivisionRequests` : `useAdminPendingCounts` (pendingCount.subdivisions) remplace requête locale, `escapeIlike` sur search (liste + export), bulk via `Promise.allSettled` chunké 5×, CSV des échecs auto-téléchargé.
+- `RequestDetailsDialog` : bouton **Certificat** (signed URL), carte **Frais & détail** affichant `processing_fee_usd`, `infrastructure_fee_usd`, `road_surface_fee_usd`, décomposition serveur (`road_length_billable_m`/`road_length_covered_by_infra_m`/`infrastructure_total`/`lotsTotal`/`roadTotal`/`commonTotal`) depuis `fee_items.breakdown`.
+- `AdminSubdivisionFeesConfig` : badges **deprecated** sur colonnes/labels `road_fee_per_linear_m_usd` + `common_space_fee_per_sqm_usd`, opacité réduite dans le formulaire, note guidant vers la section *Tarifs par type d'infrastructure*.
