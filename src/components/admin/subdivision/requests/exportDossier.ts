@@ -93,9 +93,11 @@ export const exportSubdivisionDossier = (req: SubdivisionRequest): void => {
   if (Array.isArray(req.lots_data) && req.lots_data.length > 0) {
     section('Détail des lots');
     req.lots_data.slice(0, 30).forEach((lot: any, i: number) => {
-      const area = lot.area_sqm || lot.surface || '—';
-      const usage = lot.usage || lot.purpose || '—';
-      addLine(`Lot ${i + 1}`, `${area} m² — ${usage}`);
+      // Aligné sur le designer (camelCase). Fallback snake_case pour compat anciens brouillons.
+      const area = lot.areaSqm ?? lot.area_sqm ?? lot.surface ?? '—';
+      const usage = lot.intendedUse ?? lot.usage ?? lot.purpose ?? '—';
+      const num = lot.lotNumber ?? lot.lot_number ?? (i + 1);
+      addLine(`Lot ${num}`, `${area} m² — ${usage}`);
     });
     if (req.lots_data.length > 30) {
       addLine('…', `+${req.lots_data.length - 30} lots non listés`);

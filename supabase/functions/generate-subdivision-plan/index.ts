@@ -75,13 +75,14 @@ Deno.serve(async (req) => {
 
     const ctx = buildContext(parcelGeo || {});
 
-    // --- Version & verification code ---
+    // --- Version & verification code (UUID anti-collision, jamais Math.random) ---
     const newVersion = (Number(request.official_plan_version) || 0) + 1;
-    const verifCode = `SP-${request.reference_number}-V${newVersion}-${Math.floor(Math.random() * 10000).toString().padStart(4, "0")}`;
-    const verifyUrl = `${url.replace("//", "//").replace(/\/$/, "")}/verify/${verifCode}`;
-    // Best path: use frontend origin if FRONTEND_URL set, else fall back to api URL.
-    const frontendBase = Deno.env.get("FRONTEND_URL") || "";
-    const finalVerifyUrl = frontendBase ? `${frontendBase.replace(/\/$/, "")}/verify/${verifCode}` : verifyUrl;
+    const randSuffix = crypto.randomUUID().slice(0, 8).toUpperCase();
+    const verifCode = `SP-${request.reference_number}-V${newVersion}-${randSuffix}`;
+    // FRONTEND_URL doit pointer vers l'origine front (ex: https://app.bic.cd) ;
+    // fallback : Origin de la requête, puis projet supabase en dernier recours.
+    const frontendBase = (Deno.env.get("FRONTEND_URL") || req.headers.get("origin") || url).replace(/\/$/, "");
+    const finalVerifyUrl = `${frontendBase}/verify/${verifCode}`;
 
     await supabase.from("document_verifications").insert({
       verification_code: verifCode,
@@ -117,6 +118,7 @@ Deno.serve(async (req) => {
 
     // --- Générer PDF ---
     const pdfBlob = await buildPdf({ request, lots, roads, ctx, verifyUrl: finalVerifyUrl, version: newVersion });
+    void configSnapshot; // P1 (TODO): passer configSnapshot à buildPdf via shared module Deno
     const pdfBytes = new Uint8Array(await pdfBlob.arrayBuffer());
 
     // --- Upload bucket privé : {user_id}/{request_id}/plan-{ref}-v{n}.pdf ---

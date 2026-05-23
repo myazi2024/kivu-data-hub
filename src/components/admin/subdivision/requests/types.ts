@@ -32,8 +32,15 @@ export interface SubdivisionRequest {
   purpose_of_subdivision?: string;
   submission_fee_usd: number;
   processing_fee_usd?: number;
+  infrastructure_fee_usd?: number;
+  road_surface_fee_usd?: number;
+  remaining_fee_usd?: number;
   total_amount_usd: number;
   submission_payment_status?: string;
+  official_plan_path?: string | null;
+  official_plan_version?: number | null;
+  official_plan_generated_at?: string | null;
+  approved_at?: string | null;
   status: string;
   rejection_reason?: string;
   processing_notes?: string;

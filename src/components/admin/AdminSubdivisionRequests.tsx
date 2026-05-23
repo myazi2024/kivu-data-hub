@@ -100,15 +100,18 @@ export function AdminSubdivisionRequests() {
     }
   };
 
-  // Refetch on pagination/filter/sort changes (debounced for search)
+  // Reset page sur changement de filtres (sans déclencher de double fetch)
+  useEffect(() => {
+    if (page !== 1) setPage(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [statusFilter, dateFrom, dateTo, sortBy, searchQuery]);
+
+  // Refetch unique : page OU filtres (debouncé sur la recherche)
   useEffect(() => {
     const t = setTimeout(() => { fetchRequests(); }, searchQuery ? 300 : 0);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, statusFilter, dateFrom, dateTo, sortBy, searchQuery]);
-
-  // Reset page when filters change
-  useEffect(() => { setPage(1); }, [statusFilter, dateFrom, dateTo, sortBy, searchQuery]);
 
   const paginatedRequests = requests; // already paginated server-side
   const totalPages = Math.max(1, Math.ceil(totalCount / ITEMS_PER_PAGE));
