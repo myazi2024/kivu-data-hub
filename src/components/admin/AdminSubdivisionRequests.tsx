@@ -67,7 +67,8 @@ export function AdminSubdivisionRequests() {
   };
 
   const [totalCount, setTotalCount] = useState(0);
-  const [pendingCount, setPendingCount] = useState(0);
+  const { counts } = useAdminPendingCounts(true);
+  const pendingCount = counts.subdivisions;
 
   const fetchRequests = async () => {
     setLoading(true);
@@ -84,7 +85,7 @@ export function AdminSubdivisionRequests() {
       if (dateFrom) q = q.gte('created_at', new Date(dateFrom).toISOString());
       if (dateTo) q = q.lte('created_at', new Date(new Date(dateTo).getTime() + 86400000).toISOString());
       if (searchQuery.trim()) {
-        const s = searchQuery.trim();
+        const s = escapeIlike(searchQuery.trim());
         q = q.or(`reference_number.ilike.%${s}%,parcel_number.ilike.%${s}%,requester_last_name.ilike.%${s}%`);
       }
 
@@ -92,13 +93,6 @@ export function AdminSubdivisionRequests() {
       if (error) throw error;
       setRequests((data || []) as SubdivisionRequest[]);
       setTotalCount(count || 0);
-
-      // Compteur pending global (indépendant des filtres)
-      const { count: pCount } = await supabase
-        .from('subdivision_requests')
-        .select('id', { count: 'exact', head: true })
-        .eq('status', 'pending');
-      setPendingCount(pCount || 0);
     } catch {
       toast({ title: 'Erreur', description: 'Impossible de charger les demandes.', variant: 'destructive' });
     } finally {
