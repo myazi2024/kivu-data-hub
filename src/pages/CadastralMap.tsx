@@ -50,6 +50,15 @@ const CadastralMap = () => {
   // Selection
   const [selectedParcel, setSelectedParcel] = useState<ParcelData | null>(null);
   const { data: selectedParcelHistory, isLoading: loadingHistory } = useParcelHistory(selectedParcel?.id ?? null);
+  const selectedParcelEffectiveArea = useMemo(() => {
+    if (!selectedParcel) return 0;
+    const gps = Array.isArray(selectedParcel.gps_coordinates)
+      ? (selectedParcel.gps_coordinates as any[])
+          .map((c: any) => ({ lat: Number(c?.lat), lng: Number(c?.lng) }))
+          .filter((p) => isFinite(p.lat) && isFinite(p.lng))
+      : [];
+    return computeEffectiveAreaSqm(gps, selectedParcel.area_sqm || 0);
+  }, [selectedParcel]);
   const hasIncompleteData = useMemo(() => {
     if (!selectedParcel || !selectedParcelHistory) return false;
     const hasLocation = !!(selectedParcel.province && selectedParcel.ville);
