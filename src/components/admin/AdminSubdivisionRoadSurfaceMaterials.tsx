@@ -72,6 +72,7 @@ const AdminSubdivisionRoadSurfaceMaterials: React.FC<Props> = ({ onChanged }) =>
       description: m.description ?? '',
       display_order: String(m.display_order ?? 0),
       is_active: m.is_active,
+      price_multiplier: (m.price_multiplier ?? 1).toFixed(2),
     });
     setDialogOpen(true);
   };
