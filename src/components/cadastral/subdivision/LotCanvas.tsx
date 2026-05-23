@@ -1570,7 +1570,7 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
 
         {/* Road intersection markers */}
         {showRoads && roads.length >= 2 && (() => {
-          const intersectionPts = getAllRoadIntersectionPoints(roads);
+          const intersectionPts = getAllRoadIntersectionPoints(roads.filter(r => !r.isExternal));
           return intersectionPts.map((pt, i) => {
             const sp = toScreen(pt);
             return (
