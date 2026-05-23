@@ -148,15 +148,26 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
     [parentVertices],
   );
 
+  // Surface géométrique de la parcelle mère, calculée sur la même frame GPS que
+  // les longueurs des côtés (edgeLengthM). Garantit la cohérence visuelle :
+  // Σ(lots) ≤ surface mère affichée, qui correspond aux côtés affichés.
+  // Fallback vers area_sqm DB si pas de GPS.
+  const parentAreaGeomSqm = React.useMemo(() => {
+    if (metricFrame.hasGps && parentVertices && parentVertices.length >= 3) {
+      return Math.max(1, Math.round(polygonAreaSqmAccurate(parentVertices, metricFrame)));
+    }
+    return parentParcel?.areaSqm || 0;
+  }, [metricFrame, parentVertices, parentParcel?.areaSqm]);
+
   // Helpers — proportional area against the parent (fallback: bbox-accurate)
   // and perimeter via the anisotropic metric frame.
   const computeArea = useCallback(
     (poly: Point2D[]) => Math.max(1, Math.round(
-      parentNormArea > 0 && parentParcel?.areaSqm
-        ? polygonAreaSqmRelative(poly, parentNormArea, parentParcel.areaSqm)
+      parentNormArea > 0 && parentAreaGeomSqm
+        ? polygonAreaSqmRelative(poly, parentNormArea, parentAreaGeomSqm)
         : polygonAreaSqmAccurate(poly, metricFrame)
     )),
-    [metricFrame, parentNormArea, parentParcel?.areaSqm],
+    [metricFrame, parentNormArea, parentAreaGeomSqm],
   );
   const computePerim = useCallback(
     (poly: Point2D[]) => Math.round(polygonPerimeterM(poly, metricFrame)),
