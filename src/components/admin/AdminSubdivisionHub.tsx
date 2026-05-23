@@ -52,7 +52,7 @@ export default function AdminSubdivisionHub() {
 
       <Tabs value={active} onValueChange={handleChange} className="w-full">
         <Card className="p-2">
-          <TabsList className="flex sm:grid sm:grid-cols-5 lg:grid-cols-10 w-full overflow-x-auto sm:overflow-visible no-scrollbar gap-1 sm:gap-0 h-auto justify-start sm:justify-stretch">
+          <TabsList className="flex sm:grid sm:grid-cols-5 lg:grid-cols-10 w-full overflow-x-auto sm:overflow-visible gap-1 sm:gap-0 h-auto justify-start sm:justify-stretch">
             <TabsTrigger value="requests" className="gap-1.5 shrink-0 sm:shrink">
               <Grid3X3 className="h-4 w-4" /> <span>Demandes</span>
             </TabsTrigger>
