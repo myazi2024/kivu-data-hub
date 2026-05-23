@@ -16,13 +16,12 @@ import { Plus, Pencil, Trash2, Ruler, Loader2, MapPin, Building2, TreePine, Sett
 import { Separator } from '@/components/ui/separator';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import AdminSubdivisionRoadSurfaceMaterials, { type RoadSurfaceMaterial } from './AdminSubdivisionRoadSurfaceMaterials';
+import AdminSubdivisionDrainageCatalog from './AdminSubdivisionDrainageCatalog';
 import { validateZoningRuleForm } from './subdivision/zoningValidation';
 import {
-  DRAINAGE_CANAL_MATERIALS,
-  DRAINAGE_CANAL_MATERIAL_LABELS,
-  DRAINAGE_CANAL_TYPES,
-  DRAINAGE_CANAL_TYPE_LABELS,
-} from '@/components/cadastral/subdivision/infrastructureConstants';
+  useDrainageMaterialsCatalog,
+  useDrainageTypesCatalog,
+} from '@/hooks/useSubdivisionDrainageCatalog';
 
 /** Petit indicateur d'aide affichant un popover explicatif au clic. */
 const FieldHelp: React.FC<{ title: string; description: string; example?: string }> = ({ title, description, example }) => (
@@ -379,6 +378,8 @@ const AdminSubdivisionZoningRules: React.FC = () => {
   const [roadSurfaceTariffKeys, setRoadSurfaceTariffKeys] = useState<Set<string>>(new Set());
   const [hasRoadSurfaceBase, setHasRoadSurfaceBase] = useState(true);
   const [search, setSearch] = useState('');
+  const { items: drainageMaterials } = useDrainageMaterialsCatalog(true);
+  const { items: drainageTypes } = useDrainageTypesCatalog(true);
 
   const fetchMaterials = async () => {
     const { data } = await untypedTables
@@ -733,6 +734,9 @@ const AdminSubdivisionZoningRules: React.FC = () => {
       </Card>
 
       <AdminSubdivisionRoadSurfaceMaterials onChanged={fetchMaterials} />
+
+      <AdminSubdivisionDrainageCatalog />
+
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-3xl p-0 gap-0 max-h-[92vh] flex flex-col overflow-hidden">
@@ -1135,11 +1139,11 @@ const AdminSubdivisionZoningRules: React.FC = () => {
                     <div className="space-y-1">
                       <Label className="text-[11px]">Matériaux autorisés</Label>
                       <div className="flex flex-wrap gap-1.5 p-2 rounded border bg-background">
-                        {DRAINAGE_CANAL_MATERIALS.map(m => {
-                          const checked = (form.drainage_canal_allowed_materials ?? []).includes(m);
+                        {drainageMaterials.map(m => {
+                          const checked = (form.drainage_canal_allowed_materials ?? []).includes(m.key);
                           return (
                             <button
-                              key={m}
+                              key={m.id}
                               type="button"
                               role="checkbox"
                               aria-checked={checked}
@@ -1147,27 +1151,31 @@ const AdminSubdivisionZoningRules: React.FC = () => {
                                 const prev = f.drainage_canal_allowed_materials ?? [];
                                 return {
                                   ...f,
-                                  drainage_canal_allowed_materials: prev.includes(m)
-                                    ? prev.filter(x => x !== m)
-                                    : [...prev, m],
+                                  drainage_canal_allowed_materials: prev.includes(m.key)
+                                    ? prev.filter(x => x !== m.key)
+                                    : [...prev, m.key],
                                 };
                               })}
                               className={`text-[11px] px-2 py-0.5 rounded border cursor-pointer transition-colors ${checked ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted/40 hover:bg-muted'}`}
+                              title={`Multiplicateur ×${(m.price_multiplier ?? 1).toFixed(2)}`}
                             >
-                              {DRAINAGE_CANAL_MATERIAL_LABELS[m]}
+                              {m.label} <span className="opacity-60 ml-0.5">×{(m.price_multiplier ?? 1).toFixed(2)}</span>
                             </button>
                           );
                         })}
+                        {drainageMaterials.length === 0 && (
+                          <span className="text-[11px] text-muted-foreground italic">Aucun matériau actif — configurez-en dans le catalogue ci-dessous.</span>
+                        )}
                       </div>
                     </div>
                     <div className="space-y-1">
                       <Label className="text-[11px]">Types autorisés</Label>
                       <div className="flex flex-wrap gap-1.5 p-2 rounded border bg-background">
-                        {DRAINAGE_CANAL_TYPES.map(t => {
-                          const checked = (form.drainage_canal_allowed_types ?? []).includes(t);
+                        {drainageTypes.map(t => {
+                          const checked = (form.drainage_canal_allowed_types ?? []).includes(t.key);
                           return (
                             <button
-                              key={t}
+                              key={t.id}
                               type="button"
                               role="checkbox"
                               aria-checked={checked}
@@ -1175,17 +1183,21 @@ const AdminSubdivisionZoningRules: React.FC = () => {
                                 const prev = f.drainage_canal_allowed_types ?? [];
                                 return {
                                   ...f,
-                                  drainage_canal_allowed_types: prev.includes(t)
-                                    ? prev.filter(x => x !== t)
-                                    : [...prev, t],
+                                  drainage_canal_allowed_types: prev.includes(t.key)
+                                    ? prev.filter(x => x !== t.key)
+                                    : [...prev, t.key],
                                 };
                               })}
                               className={`text-[11px] px-2 py-0.5 rounded border cursor-pointer transition-colors ${checked ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted/40 hover:bg-muted'}`}
+                              title={`Multiplicateur ×${(t.price_multiplier ?? 1).toFixed(2)}`}
                             >
-                              {DRAINAGE_CANAL_TYPE_LABELS[t]}
+                              {t.label} <span className="opacity-60 ml-0.5">×{(t.price_multiplier ?? 1).toFixed(2)}</span>
                             </button>
                           );
                         })}
+                        {drainageTypes.length === 0 && (
+                          <span className="text-[11px] text-muted-foreground italic">Aucun type actif — configurez-en dans le catalogue ci-dessous.</span>
+                        )}
                       </div>
                     </div>
                   </div>

@@ -145,3 +145,204 @@ export function aggregateAuxiliaryMetrics(
   }
   return { roadLengthM, commonSpaceSqm };
 }
+
+// =====================================================================
+// Infrastructure base × multiplier model
+// =====================================================================
+// Tarif de base par catégorie (`drainage`, `road_surface`, `street_lighting`)
+// dans `subdivision_infrastructure_tariffs`, multiplié par les
+// `price_multiplier` du catalogue (matériau de revêtement, matériau drainage,
+// type drainage). Aucune clé composée n'est utilisée.
+
+export interface CatalogEntry {
+  key: string;
+  label?: string | null;
+  price_multiplier?: number | null;
+  is_active?: boolean | null;
+}
+
+export interface InfraBaseTariff {
+  infrastructure_key: string;
+  label: string;
+  unit: string;
+  rate_usd: number;
+  is_active?: boolean;
+}
+
+export interface InfraCatalogs {
+  baseTariffs: Record<string, InfraBaseTariff | undefined>;
+  roadSurfaceMaterials: Record<string, CatalogEntry>;
+  drainageMaterials: Record<string, CatalogEntry>;
+  drainageTypes: Record<string, CatalogEntry>;
+}
+
+const indexBy = <T extends { key: string }>(rows: T[]): Record<string, T> => {
+  const out: Record<string, T> = {};
+  for (const r of rows) if (r && r.key) out[r.key] = r;
+  return out;
+};
+
+/** Charge les 3 tarifs base + 3 catalogues actifs en une seule passe. */
+export async function loadInfraCatalogs(supabase: any): Promise<InfraCatalogs> {
+  const [tariffsRes, roadRes, drainMatRes, drainTypeRes] = await Promise.all([
+    supabase
+      .from('subdivision_infrastructure_tariffs')
+      .select('infrastructure_key,label,unit,rate_usd,is_active')
+      .in('infrastructure_key', ['drainage', 'road_surface', 'street_lighting'])
+      .eq('is_active', true),
+    supabase
+      .from('subdivision_road_surface_materials')
+      .select('key,label,price_multiplier,is_active')
+      .eq('is_active', true),
+    supabase
+      .from('subdivision_drainage_materials')
+      .select('key,label,price_multiplier,is_active')
+      .eq('is_active', true),
+    supabase
+      .from('subdivision_drainage_types')
+      .select('key,label,price_multiplier,is_active')
+      .eq('is_active', true),
+  ]);
+  const baseTariffs: Record<string, InfraBaseTariff | undefined> = {};
+  for (const t of (tariffsRes.data as InfraBaseTariff[]) ?? []) {
+    baseTariffs[t.infrastructure_key] = { ...t, rate_usd: Number(t.rate_usd) || 0 };
+  }
+  return {
+    baseTariffs,
+    roadSurfaceMaterials: indexBy(((roadRes.data as CatalogEntry[]) ?? [])),
+    drainageMaterials: indexBy(((drainMatRes.data as CatalogEntry[]) ?? [])),
+    drainageTypes: indexBy(((drainTypeRes.data as CatalogEntry[]) ?? [])),
+  };
+}
+
+const mult = (e?: CatalogEntry) => {
+  const v = e?.price_multiplier;
+  return v == null || isNaN(Number(v)) ? 1 : Math.max(0, Number(v));
+};
+const sidesFactor = (side?: string) =>
+  side === 'both' || side === 'alternating' ? 2 : 1;
+
+export interface InfraLineItem {
+  infrastructure_key: string;
+  label: string;
+  unit: string;
+  quantity: number;
+  rate_usd: number;
+  subtotal_usd: number;
+  road_id?: string;
+  road_name?: string;
+  base_rate_usd?: number;
+  material_key?: string;
+  material_multiplier?: number;
+  type_key?: string;
+  type_multiplier?: number;
+}
+
+export interface InfraComputation {
+  items: InfraLineItem[];
+  total: number;
+  /** Longueur (m) de voie déjà facturée via road_surface — à déduire du fee générique. */
+  roadLengthCoveredM: number;
+}
+
+/** Calcule les surcharges infrastructure par voie selon le modèle base × multiplicateurs. */
+export function computeRoadInfrastructures(
+  roads: any[],
+  frame: MetricFrame,
+  catalogs: InfraCatalogs,
+): InfraComputation {
+  const items: InfraLineItem[] = [];
+  let total = 0;
+  let roadLengthCoveredM = 0;
+  const base = catalogs.baseTariffs;
+
+  for (const road of roads ?? []) {
+    const lengthM = Array.isArray(road?.path) ? pathLengthM(road.path, frame) : 0;
+    if (lengthM <= 0) continue;
+    const widthM = Number(road?.widthM) || 0;
+
+    // Revêtement de voie : sqm × base.road_surface × material_mult
+    const surfaceMatKey: string | undefined = road?.roadSurface?.material;
+    const surfaceBase = base.road_surface;
+    if (surfaceMatKey && surfaceBase && widthM > 0) {
+      const mat = catalogs.roadSurfaceMaterials[surfaceMatKey];
+      const m = mult(mat);
+      const rate = Math.round(surfaceBase.rate_usd * m * 1000) / 1000;
+      const qty = Math.round(lengthM * widthM * 100) / 100;
+      const subtotal = Math.round(rate * qty * 100) / 100;
+      if (subtotal > 0) {
+        items.push({
+          infrastructure_key: 'road_surface',
+          label: `${surfaceBase.label} — ${mat?.label ?? surfaceMatKey}`,
+          unit: surfaceBase.unit,
+          quantity: qty,
+          rate_usd: rate,
+          subtotal_usd: subtotal,
+          road_id: road.id,
+          road_name: road.name,
+          base_rate_usd: surfaceBase.rate_usd,
+          material_key: surfaceMatKey,
+          material_multiplier: m,
+        });
+        total += subtotal;
+        roadLengthCoveredM += lengthM;
+      }
+    }
+
+    // Drainage : linear_m × sides × base.drainage × material_mult × type_mult
+    const dc = road?.drainageCanal;
+    const drainageBase = base.drainage;
+    if (dc && drainageBase) {
+      const mat = dc.material ? catalogs.drainageMaterials[dc.material] : undefined;
+      const typ = dc.type ? catalogs.drainageTypes[dc.type] : undefined;
+      const mMat = mult(mat);
+      const mTyp = mult(typ);
+      const rate = Math.round(drainageBase.rate_usd * mMat * mTyp * 1000) / 1000;
+      const qty = Math.round(lengthM * sidesFactor(dc.side) * 100) / 100;
+      const subtotal = Math.round(rate * qty * 100) / 100;
+      if (subtotal > 0) {
+        items.push({
+          infrastructure_key: 'drainage',
+          label: `${drainageBase.label}${mat ? ` — ${mat.label}` : ''}${typ ? ` (${typ.label})` : ''}`,
+          unit: drainageBase.unit,
+          quantity: qty,
+          rate_usd: rate,
+          subtotal_usd: subtotal,
+          road_id: road.id,
+          road_name: road.name,
+          base_rate_usd: drainageBase.rate_usd,
+          material_key: dc.material,
+          material_multiplier: mMat,
+          type_key: dc.type,
+          type_multiplier: mTyp,
+        });
+        total += subtotal;
+      }
+    }
+
+    // Éclairage public : unit × base.street_lighting
+    const lighting = road?.solarLighting;
+    const lightingBase = base.street_lighting;
+    if (lighting && lighting.spacingM > 0 && lightingBase) {
+      const qty = Math.ceil(lengthM / Number(lighting.spacingM)) * sidesFactor(lighting.side);
+      const rate = lightingBase.rate_usd;
+      const subtotal = Math.round(rate * qty * 100) / 100;
+      if (subtotal > 0) {
+        items.push({
+          infrastructure_key: 'street_lighting',
+          label: lightingBase.label,
+          unit: lightingBase.unit,
+          quantity: qty,
+          rate_usd: rate,
+          subtotal_usd: subtotal,
+          road_id: road.id,
+          road_name: road.name,
+          base_rate_usd: lightingBase.rate_usd,
+        });
+        total += subtotal;
+      }
+    }
+  }
+
+  return { items, total: Math.round(total * 100) / 100, roadLengthCoveredM };
+}
