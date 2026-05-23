@@ -29,6 +29,7 @@ interface LotRow {
   notes: string | null;
   color: string | null;
   created_at: string;
+  subdivision_requests?: { reference_number: string | null; status: string | null } | null;
 }
 
 const USE_FILTERS = ['_all', 'residential', 'commercial', 'industrial', 'agricultural', 'mixed'] as const;
