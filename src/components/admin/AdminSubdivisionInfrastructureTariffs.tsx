@@ -205,46 +205,22 @@ const AdminSubdivisionInfrastructureTariffs: React.FC = () => {
     }
   };
 
-  const syncRoadSurfaces = async () => {
-    setSyncing(true);
-    const existingKeys = new Set(items.map(i => i.infrastructure_key));
-    const missing = materials.filter(m => m.is_active && !existingKeys.has(`road_surface_${m.key}`));
-    if (missing.length === 0) {
-      toast.info('Tous les matériaux du catalogue ont déjà un tarif.');
-      setSyncing(false);
-      return;
-    }
-    const rows = missing.map(m => ({
-      infrastructure_key: `road_surface_${m.key}`,
-      label: `Revêtement : ${m.label}`,
-      category: 'voirie',
-      unit: 'sqm',
-      rate_usd: 0,
-      section_type: null,
-      is_required: false,
-      is_active: true,
-      display_order: 100 + (m.display_order ?? 0),
-      description: m.description ?? 'Revêtement de voie (m²)',
-      linked_to: 'road_surface',
-    }));
-    const { error } = await untypedTables.subdivision_infrastructure_tariffs().insert(rows as any);
-    if (error) {
-      toast.error('Échec de la synchronisation');
-      console.error(error);
-    } else {
-      toast.success(`${missing.length} tarif(s) revêtement créé(s) — à tarifer.`);
-      invalidateInfrastructureTariffsCache();
-      fetchAll();
-    }
-    setSyncing(false);
-  };
+  // NOTE: depuis l'harmonisation (catalogues + multiplicateurs), il n'existe
+  // plus de tarif `road_surface_<materiau>` ni `drainage_<materiau>` distinct.
+  // Le calcul se fait via :
+  //   tarif de base (road_surface | drainage | street_lighting)  ×  price_multiplier
+  //   du matériau et/ou du type choisi dans le catalogue dédié.
+  // Les fonctions de sync/orphan d'avant sont devenues sans objet ; on
+  // expose seulement un compteur pour signaler les éventuels résidus.
+  const legacyMaterialTariffs = useMemo(
+    () => items.filter(i => /^(road_surface|drainage)_./.test(i.infrastructure_key)),
+    [items],
+  );
 
   const unitLabel = (u: InfrastructureUnit) => UNITS.find(x => x.value === u)?.label ?? u;
   const catLabel = (c: InfrastructureCategory) => CATEGORIES.find(x => x.value === c)?.label ?? c;
 
   // Filtering + grouping
-  const activeMatKeys = useMemo(() => new Set(materials.filter(m => m.is_active).map(m => m.key)), [materials]);
-
   const filteredItems = useMemo(() => {
     const q = search.trim().toLowerCase();
     return items.filter(it => {
@@ -267,18 +243,14 @@ const AdminSubdivisionInfrastructureTariffs: React.FC = () => {
     return Array.from(map.entries()).filter(([, arr]) => arr.length > 0);
   }, [filteredItems]);
 
-  // Orphan detection : a road_surface_<material> tariff that no longer maps to an active material
+  // Une clé legacy par matériau est désormais traitée comme un résidu à supprimer.
   const isOrphan = (it: InfrastructureTariff): string | null => {
-    if (!it.infrastructure_key.startsWith('road_surface_')) return null;
-    const key = it.infrastructure_key.replace(/^road_surface_/, '');
-    if (!activeMatKeys.has(key)) return `Matériau "${key}" introuvable ou inactif dans le catalogue revêtements`;
+    if (/^(road_surface|drainage)_./.test(it.infrastructure_key)) {
+      return 'Clé obsolète : le tarif est désormais calculé via le multiplicateur du catalogue. À supprimer.';
+    }
     return null;
   };
 
-  const missingMatCount = useMemo(
-    () => materials.filter(m => m.is_active && !items.some(i => i.infrastructure_key === `road_surface_${m.key}`)).length,
-    [materials, items],
-  );
 
   return (
     <div className="space-y-4">
