@@ -237,6 +237,9 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
         if (road) {
           onUpdateRoad(selectedRoadId, {
             path: road.path.map(v => ({ x: v.x + ndx, y: v.y + ndy })),
+            ...(road.footprint
+              ? { footprint: road.footprint.map(v => ({ x: v.x + ndx, y: v.y + ndy })) }
+              : {}),
           });
         }
       }
