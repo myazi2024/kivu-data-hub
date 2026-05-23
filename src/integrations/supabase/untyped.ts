@@ -33,6 +33,10 @@ export const untypedTables = {
   subdivision_required_documents: () => cast.from('subdivision_required_documents'),
   subdivision_plan_elements: () => cast.from('subdivision_plan_elements'),
   subdivision_infrastructure_tariffs: () => cast.from('subdivision_infrastructure_tariffs'),
+  subdivision_drainage_materials: () => cast.from('subdivision_drainage_materials'),
+  subdivision_drainage_types: () => cast.from('subdivision_drainage_types'),
+  subdivision_road_surface_materials: () => cast.from('subdivision_road_surface_materials'),
+
   reseller_commissions_summary: () => cast.from('reseller_commissions_summary'),
   revenue_net_by_period: () => cast.from('revenue_net_by_period'),
   payment_transactions: () => cast.from('payment_transactions'),
