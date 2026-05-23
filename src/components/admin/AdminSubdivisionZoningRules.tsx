@@ -24,6 +24,10 @@ import {
   DRAINAGE_CANAL_TYPE_LABELS,
 } from '@/components/cadastral/subdivision/infrastructureConstants';
 
+/** Normalise toute valeur en tableau de strings (défense contre null/undefined/objet/JSON corrompu). */
+const toStringArray = (v: unknown): string[] =>
+  Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : [];
+
 /** Petit indicateur d'aide affichant un popover explicatif au clic. */
 const FieldHelp: React.FC<{ title: string; description: string; example?: string }> = ({ title, description, example }) => (
   <Popover>
@@ -483,8 +487,8 @@ const AdminSubdivisionZoningRules: React.FC = () => {
       require_drainage_canal: !!r.require_drainage_canal,
       drainage_canal_min_width_m: r.drainage_canal_min_width_m != null ? String(r.drainage_canal_min_width_m) : '',
       drainage_canal_min_depth_m: r.drainage_canal_min_depth_m != null ? String(r.drainage_canal_min_depth_m) : '',
-      drainage_canal_allowed_materials: r.drainage_canal_allowed_materials || [],
-      drainage_canal_allowed_types: r.drainage_canal_allowed_types || [],
+      drainage_canal_allowed_materials: toStringArray(r.drainage_canal_allowed_materials),
+      drainage_canal_allowed_types: toStringArray(r.drainage_canal_allowed_types),
       drainage_canal_min_slope_pct: r.drainage_canal_min_slope_pct != null ? String(r.drainage_canal_min_slope_pct) : '',
       drainage_canal_required_sides: r.drainage_canal_required_sides || 'any',
       require_solar_lighting: !!r.require_solar_lighting,
@@ -495,7 +499,7 @@ const AdminSubdivisionZoningRules: React.FC = () => {
       solar_lighting_min_battery_hours: r.solar_lighting_min_battery_hours != null ? String(r.solar_lighting_min_battery_hours) : '',
       solar_lighting_required_sides: r.solar_lighting_required_sides || 'any',
       require_road_surface: !!r.require_road_surface,
-      road_surface_allowed_materials: r.road_surface_allowed_materials || [],
+      road_surface_allowed_materials: toStringArray(r.road_surface_allowed_materials),
       road_surface_min_thickness_cm: r.road_surface_min_thickness_cm != null ? String(r.road_surface_min_thickness_cm) : '',
       road_surface_max_thickness_cm: r.road_surface_max_thickness_cm != null ? String(r.road_surface_max_thickness_cm) : '',
     });
@@ -561,8 +565,8 @@ const AdminSubdivisionZoningRules: React.FC = () => {
       require_drainage_canal: form.require_drainage_canal,
       drainage_canal_min_width_m: form.drainage_canal_min_width_m ? parseFloat(form.drainage_canal_min_width_m) : null,
       drainage_canal_min_depth_m: form.drainage_canal_min_depth_m ? parseFloat(form.drainage_canal_min_depth_m) : null,
-      drainage_canal_allowed_materials: form.drainage_canal_allowed_materials || [],
-      drainage_canal_allowed_types: form.drainage_canal_allowed_types || [],
+      drainage_canal_allowed_materials: toStringArray(form.drainage_canal_allowed_materials),
+      drainage_canal_allowed_types: toStringArray(form.drainage_canal_allowed_types),
       drainage_canal_min_slope_pct: form.drainage_canal_min_slope_pct ? parseFloat(form.drainage_canal_min_slope_pct) : null,
       drainage_canal_required_sides: form.drainage_canal_required_sides || 'any',
       // Solar lighting
@@ -575,7 +579,7 @@ const AdminSubdivisionZoningRules: React.FC = () => {
       solar_lighting_required_sides: form.solar_lighting_required_sides || 'any',
       // Road surface
       require_road_surface: form.require_road_surface,
-      road_surface_allowed_materials: form.road_surface_allowed_materials || [],
+      road_surface_allowed_materials: toStringArray(form.road_surface_allowed_materials),
       road_surface_min_thickness_cm: rsMin,
       road_surface_max_thickness_cm: rsMax,
     };
@@ -1118,11 +1122,11 @@ const AdminSubdivisionZoningRules: React.FC = () => {
                       <Label className="text-[11px]">Matériaux autorisés</Label>
                       <div className="flex flex-wrap gap-1.5 p-2 rounded border bg-background">
                         {DRAINAGE_CANAL_MATERIALS.map(m => {
-                          const checked = form.drainage_canal_allowed_materials.includes(m);
+                          const checked = toStringArray(form.drainage_canal_allowed_materials).includes(m);
                           return (
                             <label key={m} className={`text-[11px] px-2 py-0.5 rounded border cursor-pointer ${checked ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted/40'}`}>
                               <input type="checkbox" className="sr-only" checked={checked} onChange={e => setForm(f => {
-                                const prev = f.drainage_canal_allowed_materials ?? [];
+                                const prev = toStringArray(f.drainage_canal_allowed_materials);
                                 return {
                                   ...f,
                                   drainage_canal_allowed_materials: e.target.checked
@@ -1140,11 +1144,11 @@ const AdminSubdivisionZoningRules: React.FC = () => {
                       <Label className="text-[11px]">Types autorisés</Label>
                       <div className="flex flex-wrap gap-1.5 p-2 rounded border bg-background">
                         {DRAINAGE_CANAL_TYPES.map(t => {
-                          const checked = form.drainage_canal_allowed_types.includes(t);
+                          const checked = toStringArray(form.drainage_canal_allowed_types).includes(t);
                           return (
                             <label key={t} className={`text-[11px] px-2 py-0.5 rounded border cursor-pointer ${checked ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted/40'}`}>
                               <input type="checkbox" className="sr-only" checked={checked} onChange={e => setForm(f => {
-                                const prev = f.drainage_canal_allowed_types ?? [];
+                                const prev = toStringArray(f.drainage_canal_allowed_types);
                                 return {
                                   ...f,
                                   drainage_canal_allowed_types: e.target.checked
@@ -1239,12 +1243,12 @@ const AdminSubdivisionZoningRules: React.FC = () => {
                         <span className="text-[11px] text-muted-foreground italic">Aucun matériau actif — ajoutez-en dans la section dédiée ci-dessous.</span>
                       )}
                       {materials.map(m => {
-                        const checked = (form.road_surface_allowed_materials ?? []).includes(m.key);
+                        const checked = toStringArray(form.road_surface_allowed_materials).includes(m.key);
                         const hasTariff = roadSurfaceTariffKeys.has(m.key);
                         return (
                           <label key={m.key} className={`text-[11px] px-2 py-0.5 rounded border cursor-pointer ${checked ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted/40'}`} title={hasTariff ? (m.description ?? '') : `${m.description ?? ''}\n⚠ Aucun tarif road_surface_${m.key} configuré : frais = 0`}>
                             <input type="checkbox" className="sr-only" checked={checked} onChange={e => setForm(f => {
-                              const prev = f.road_surface_allowed_materials ?? [];
+                              const prev = toStringArray(f.road_surface_allowed_materials);
                               return {
                                 ...f,
                                 road_surface_allowed_materials: e.target.checked
