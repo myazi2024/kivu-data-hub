@@ -20,10 +20,21 @@ import { RequestDetailsDialog } from './subdivision/requests/RequestDetailsDialo
 import { RequestActionDialog } from './subdivision/requests/RequestActionDialog';
 import { BulkActionsBar } from './subdivision/requests/BulkActionsBar';
 import { BulkReasonDialog } from './subdivision/requests/BulkReasonDialog';
-import {
-  getCachedValidation, setCachedValidation, invalidateValidation,
-} from './subdivision/requests/validationCache';
 import { useAdminAnalytics } from '@/lib/adminAnalytics';
+
+// In-memory TTL cache (remplace sessionStorage validationCache, scoped au runtime onglet admin)
+const VALIDATION_TTL_MS = 5 * 60 * 1000;
+const validationMemCache = new Map<string, { result: ValidationResult; ts: number }>();
+const getCachedValidation = (id: string): ValidationResult | null => {
+  const e = validationMemCache.get(id);
+  if (!e) return null;
+  if (Date.now() - e.ts > VALIDATION_TTL_MS) { validationMemCache.delete(id); return null; }
+  return e.result;
+};
+const setCachedValidation = (id: string, result: ValidationResult) => {
+  validationMemCache.set(id, { result, ts: Date.now() });
+};
+const invalidateValidation = (id: string) => { validationMemCache.delete(id); };
 
 const ITEMS_PER_PAGE = 10;
 
