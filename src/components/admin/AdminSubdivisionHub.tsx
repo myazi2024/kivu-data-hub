@@ -52,39 +52,40 @@ export default function AdminSubdivisionHub() {
 
       <Tabs value={active} onValueChange={handleChange} className="w-full">
         <Card className="p-2">
-          <TabsList className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-10 w-full">
-            <TabsTrigger value="requests" className="gap-1.5">
-              <Grid3X3 className="h-4 w-4" /> <span className="hidden sm:inline">Demandes</span>
+          <TabsList className="flex sm:grid sm:grid-cols-5 lg:grid-cols-10 w-full overflow-x-auto sm:overflow-visible gap-1 sm:gap-0 h-auto justify-start sm:justify-stretch">
+            <TabsTrigger value="requests" className="gap-1.5 shrink-0 sm:shrink">
+              <Grid3X3 className="h-4 w-4" /> <span>Demandes</span>
             </TabsTrigger>
-            <TabsTrigger value="fees" className="gap-1.5">
-              <DollarSign className="h-4 w-4" /> <span className="hidden sm:inline">Frais</span>
+            <TabsTrigger value="fees" className="gap-1.5 shrink-0 sm:shrink">
+              <DollarSign className="h-4 w-4" /> <span>Frais</span>
             </TabsTrigger>
-            <TabsTrigger value="zoning" className="gap-1.5">
-              <Ruler className="h-4 w-4" /> <span className="hidden sm:inline">Zonage</span>
+            <TabsTrigger value="zoning" className="gap-1.5 shrink-0 sm:shrink">
+              <Ruler className="h-4 w-4" /> <span>Zonage</span>
             </TabsTrigger>
-            <TabsTrigger value="references" className="gap-1.5">
-              <ListTree className="h-4 w-4" /> <span className="hidden sm:inline">Référentiels</span>
+            <TabsTrigger value="references" className="gap-1.5 shrink-0 sm:shrink">
+              <ListTree className="h-4 w-4" /> <span>Référentiels</span>
             </TabsTrigger>
-            <TabsTrigger value="documents" className="gap-1.5">
-              <FileText className="h-4 w-4" /> <span className="hidden sm:inline">Documents</span>
+            <TabsTrigger value="documents" className="gap-1.5 shrink-0 sm:shrink">
+              <FileText className="h-4 w-4" /> <span>Documents</span>
             </TabsTrigger>
-            <TabsTrigger value="plan-elements" className="gap-1.5">
-              <Compass className="h-4 w-4" /> <span className="hidden sm:inline">Plan</span>
+            <TabsTrigger value="plan-elements" className="gap-1.5 shrink-0 sm:shrink">
+              <Compass className="h-4 w-4" /> <span>Plan</span>
             </TabsTrigger>
-            <TabsTrigger value="plan-config" className="gap-1.5">
-              <FileCog className="h-4 w-4" /> <span className="hidden sm:inline">Config plan</span>
+            <TabsTrigger value="plan-config" className="gap-1.5 shrink-0 sm:shrink">
+              <FileCog className="h-4 w-4" /> <span>Config plan</span>
             </TabsTrigger>
-            <TabsTrigger value="versions" className="gap-1.5">
-              <History className="h-4 w-4" /> <span className="hidden sm:inline">Versions</span>
+            <TabsTrigger value="versions" className="gap-1.5 shrink-0 sm:shrink">
+              <History className="h-4 w-4" /> <span>Versions</span>
             </TabsTrigger>
-            <TabsTrigger value="lots" className="gap-1.5">
-              <Layers className="h-4 w-4" /> <span className="hidden sm:inline">Lots & voies</span>
+            <TabsTrigger value="lots" className="gap-1.5 shrink-0 sm:shrink">
+              <Layers className="h-4 w-4" /> <span>Lots &amp; voies</span>
             </TabsTrigger>
-            <TabsTrigger value="analytics" className="gap-1.5">
-              <BarChart3 className="h-4 w-4" /> <span className="hidden sm:inline">Analytics</span>
+            <TabsTrigger value="analytics" className="gap-1.5 shrink-0 sm:shrink">
+              <BarChart3 className="h-4 w-4" /> <span>Analytics</span>
             </TabsTrigger>
           </TabsList>
         </Card>
+
 
         <TabsContent value="requests" className="mt-4">
           <Suspense fallback={<Fallback />}><AdminSubdivisionRequests /></Suspense>

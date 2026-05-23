@@ -3,12 +3,13 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
-  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator,
+  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent,
 } from '@/components/ui/dropdown-menu';
 import {
   Grid3X3, Eye, Check, X, User, MapPin, Clock, Loader2, ChevronLeft, ChevronRight,
-  RotateCcw, Eye as EyeIcon, Flame, ShieldCheck, ShieldAlert, UserCog,
+  RotateCcw, Eye as EyeIcon, Flame, ShieldCheck, ShieldAlert, UserCog, MoreVertical,
 } from 'lucide-react';
+
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { StatusBadge } from '@/components/shared/StatusBadge';
@@ -121,7 +122,8 @@ export function RequestsList({
                           <div className="flex items-center gap-1 text-muted-foreground"><Clock className="h-3.5 w-3.5" /><span>{format(new Date(request.created_at), 'dd/MM/yyyy', { locale: fr })}</span></div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2 flex-wrap">
+                      {/* Actions desktop (sm+) */}
+                      <div className="hidden sm:flex items-center gap-2 flex-wrap">
                         <Button variant="outline" size="sm" onClick={() => onOpenDetails(request)} className="gap-1">
                           <Eye className="h-4 w-4" /> Détails
                         </Button>
@@ -158,6 +160,57 @@ export function RequestsList({
                           </>
                         )}
                       </div>
+
+                      {/* Actions mobile : kebab + barre décision pleine largeur */}
+                      <div className="sm:hidden flex flex-col gap-2">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="outline" size="sm" className="w-full justify-center gap-1">
+                              <MoreVertical className="h-4 w-4" /> Actions
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-56">
+                            <DropdownMenuItem onClick={() => onOpenDetails(request)}>
+                              <Eye className="h-4 w-4 mr-2" /> Détails
+                            </DropdownMenuItem>
+                            {request.status === 'pending' && (
+                              <DropdownMenuItem onClick={() => onStartReview(request)}>
+                                <EyeIcon className="h-4 w-4 mr-2" /> Mettre en examen
+                              </DropdownMenuItem>
+                            )}
+                            {OPEN_STATUSES.includes(request.status) && (
+                              <DropdownMenuSub>
+                                <DropdownMenuSubTrigger>
+                                  <UserCog className="h-4 w-4 mr-2" /> Réassigner
+                                </DropdownMenuSubTrigger>
+                                <DropdownMenuSubContent className="w-56">
+                                  {admins.length === 0 ? (
+                                    <DropdownMenuItem disabled>Aucun admin disponible</DropdownMenuItem>
+                                  ) : admins.map(a => (
+                                    <DropdownMenuItem key={a.user_id} onClick={() => onReassignOne(request, a.user_id)}>
+                                      {a.full_name || a.email || a.user_id.slice(0, 8)}
+                                    </DropdownMenuItem>
+                                  ))}
+                                </DropdownMenuSubContent>
+                              </DropdownMenuSub>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                        {OPEN_STATUSES.includes(request.status) && (
+                          <div className="grid grid-cols-3 gap-2">
+                            <Button size="sm" onClick={() => onAction(request, 'approve')} className="gap-1 px-2">
+                              <Check className="h-4 w-4" /> <span className="truncate">Approuver</span>
+                            </Button>
+                            <Button variant="outline" size="sm" onClick={() => onAction(request, 'return')} className="gap-1 px-2 text-amber-600 border-amber-300 hover:bg-amber-50">
+                              <RotateCcw className="h-4 w-4" /> <span className="truncate">Renvoyer</span>
+                            </Button>
+                            <Button variant="destructive" size="sm" onClick={() => onAction(request, 'reject')} className="gap-1 px-2">
+                              <X className="h-4 w-4" /> <span className="truncate">Rejeter</span>
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+
                     </div>
                   </div>
                 </div>

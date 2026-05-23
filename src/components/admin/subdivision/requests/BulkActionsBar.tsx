@@ -17,15 +17,15 @@ export function BulkActionsBar({ selectedCount, processing, onClear, onBulk, onR
 
   return (
     <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 p-3 border rounded-xl bg-muted/40">
-      <div className="flex items-center gap-2 text-sm">
+      <div className="flex items-center justify-between md:justify-start gap-2 text-sm">
         <span className="font-medium">{selectedCount} demande(s) sélectionnée(s)</span>
         <Button variant="ghost" size="sm" onClick={onClear} disabled={processing}>
           Effacer
         </Button>
       </div>
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2">
         <Select disabled={processing || loading} onValueChange={onReassign}>
-          <SelectTrigger className="h-9 w-[220px] gap-1">
+          <SelectTrigger className="h-9 w-full sm:w-[220px] gap-1">
             <UserCog className="h-4 w-4" />
             <SelectValue placeholder="Réassigner à…" />
           </SelectTrigger>
@@ -39,16 +39,19 @@ export function BulkActionsBar({ selectedCount, processing, onClear, onBulk, onR
             ))}
           </SelectContent>
         </Select>
-        <Button size="sm" onClick={() => onBulk('approve')} disabled={processing} className="gap-1">
-          {processing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />} Approuver
-        </Button>
-        <Button size="sm" variant="outline" onClick={() => onBulk('return')} disabled={processing} className="gap-1 text-amber-600 border-amber-300 hover:bg-amber-50">
-          <RotateCcw className="h-4 w-4" /> Renvoyer
-        </Button>
-        <Button size="sm" variant="destructive" onClick={() => onBulk('reject')} disabled={processing} className="gap-1">
-          <X className="h-4 w-4" /> Rejeter
-        </Button>
+        <div className="grid grid-cols-3 sm:flex gap-2">
+          <Button size="sm" onClick={() => onBulk('approve')} disabled={processing} className="gap-1">
+            {processing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />} Approuver
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => onBulk('return')} disabled={processing} className="gap-1 text-amber-600 border-amber-300 hover:bg-amber-50">
+            <RotateCcw className="h-4 w-4" /> Renvoyer
+          </Button>
+          <Button size="sm" variant="destructive" onClick={() => onBulk('reject')} disabled={processing} className="gap-1">
+            <X className="h-4 w-4" /> Rejeter
+          </Button>
+        </div>
       </div>
     </div>
   );
 }
+
