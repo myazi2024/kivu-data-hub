@@ -558,15 +558,19 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
       case 'plan':
         return true;
       case 'documents':
-        return !!(documents.requester_id_document_url && documents.proof_of_ownership_url);
-      case 'summary':
-        return !!(documents.requester_id_document_url && documents.proof_of_ownership_url);
+      case 'summary': {
+        // Si la liste admin n'est pas encore chargée, garde le legacy minimum
+        const keys = requiredDocKeys.length > 0
+          ? requiredDocKeys
+          : ['requester_id_document', 'proof_of_ownership'];
+        return keys.every(k => !!(documents as Record<string, string | null | undefined>)[`${k}_url`]);
+      }
       case 'zoning':
         return true; // page d'information uniquement
       default:
         return false;
     }
-  }, [parentParcel, requester, lots, validation, purpose, documents, parentEligibility]);
+  }, [parentParcel, requester, lots, validation, purpose, documents, parentEligibility, requiredDocKeys]);
 
   // Navigation — l'onglet 'zoning' n'est ajouté que si une règle s'applique à la zone
   const hasZoningRule = !!zoningCompliance.rule && !zoningCompliance.loading;
