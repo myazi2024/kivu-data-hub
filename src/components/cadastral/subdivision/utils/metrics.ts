@@ -80,6 +80,26 @@ export function polygonAreaSqmAccurate(poly: Point2D[], frame: MetricFrame): num
   return polygonArea(poly) * frame.sxM * frame.syM;
 }
 
+/**
+ * Area in m² scaled proportionally to the parent parcel.
+ *
+ * Why: `polygonAreaSqmAccurate` multiplies normalized area by the GPS bounding-box
+ * area in m². For oblique / non-rectangular parents, that bbox area can be much
+ * larger than the parent's official `area_sqm`, making the sum of lots overshoot
+ * the parent (false "totale dépasse parcelle mère" alert).
+ *
+ * This variant guarantees `polygonAreaSqmRelative(parent) === parentAreaSqm` and
+ * keeps every lot expressed in the same unit as the DB area.
+ */
+export function polygonAreaSqmRelative(
+  poly: Point2D[],
+  parentNormArea: number,
+  parentAreaSqm: number,
+): number {
+  if (poly.length < 3 || parentNormArea <= 0 || parentAreaSqm <= 0) return 0;
+  return (polygonArea(poly) / parentNormArea) * parentAreaSqm;
+}
+
 /** Format meters in a uniform French style: 12,4 m  /  124 m  /  1,2 km. */
 export function formatMeters(m: number): string {
   if (!isFinite(m) || m <= 0) return '0 m';
