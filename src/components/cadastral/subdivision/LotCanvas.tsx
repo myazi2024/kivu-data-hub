@@ -259,7 +259,10 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
         if (lot && !lot.isParentBoundary) onUpdateLot(selectedLotId, rotateVertices(lot.vertices));
       } else if (selectedRoadId && onUpdateRoad) {
         const road = roads.find(r => r.id === selectedRoadId);
-        if (road) onUpdateRoad(selectedRoadId, { path: rotateVertices(road.path) });
+        if (road) onUpdateRoad(selectedRoadId, {
+          path: rotateVertices(road.path),
+          ...(road.footprint ? { footprint: rotateVertices(road.footprint) } : {}),
+        });
       }
     },
   }, !readOnly);
