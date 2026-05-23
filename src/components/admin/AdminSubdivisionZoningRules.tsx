@@ -1144,7 +1144,7 @@ const AdminSubdivisionZoningRules: React.FC = () => {
                       <Label className="text-[11px]">Types autorisés</Label>
                       <div className="flex flex-wrap gap-1.5 p-2 rounded border bg-background">
                         {DRAINAGE_CANAL_TYPES.map(t => {
-                          const checked = form.drainage_canal_allowed_types.includes(t);
+                          const checked = toStringArray(form.drainage_canal_allowed_types).includes(t);
                           return (
                             <label key={t} className={`text-[11px] px-2 py-0.5 rounded border cursor-pointer ${checked ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted/40'}`}>
                               <input type="checkbox" className="sr-only" checked={checked} onChange={e => setForm(f => {
