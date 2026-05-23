@@ -127,8 +127,13 @@ const HUB_SUBTAB_LABELS: Record<string, Record<string, string>> = {
     requests: 'Demandes',
     fees: 'Frais',
     zoning: 'Zonage',
+    references: 'Référentiels',
+    documents: 'Documents requis',
+    'plan-elements': 'Éléments de plan',
+    'plan-config': 'Config plan',
     lots: 'Lots & voies',
     analytics: 'Analytics',
+    versions: 'Versions du plan',
   },
   'requests-hub': {
     overview: "Vue d'ensemble",
