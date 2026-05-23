@@ -1,6 +1,6 @@
 ---
-name: Subdivision requests & procedures audit (P0+P2)
-description: Approbation atomique via RPC, breadcrumb hub 9 sous-onglets, exportDossier camelCase, QR verifyUrl propre
+name: Subdivision requests & procedures audit (P0+P1+P2)
+description: Approbation atomique via RPC, edge plan PDF pilotée par configSnapshot (header, watermarks, paper, scale, report_program, footer, cadres dynamiques, légende auto)
 type: feature
 ---
 
