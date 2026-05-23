@@ -344,91 +344,19 @@ Deno.serve(async (req) => {
       }
     }
 
-    // === Lot E — Server-side infrastructure surcharge (derived from roads) ===
-    // Derived FIRST so we can deduct covered road length from the generic
-    // `road_fee_per_linear_m_usd` charge below and avoid double-billing voirie
-    // when a road already produces a `road_surface_<material>` tariff item.
-    let infrastructureFee = 0;
-    let roadLengthCoveredM = 0;
-    const persistedInfrastructures: Array<{
-      infrastructure_key: string;
-      label: string;
-      unit: string;
-      quantity: number;
-      rate_usd: number;
-      subtotal_usd: number;
-      road_id?: string;
-      road_name?: string;
-    }> = [];
-    const sidesFactor = (side?: string) =>
-      side === "both" || side === "alternating" ? 2 : 1;
-    const derivedKeys = new Set<string>();
-    for (const road of (body.roads as any[]) ?? []) {
-      if (road?.roadSurface?.material) derivedKeys.add(`road_surface_${road.roadSurface.material}`);
-      if (road?.drainageCanal) {
-        if (road.drainageCanal.material) derivedKeys.add(`drainage_${road.drainageCanal.material}`);
-        derivedKeys.add("drainage"); // fallback
-      }
-      if (road?.solarLighting && (road.solarLighting.spacingM ?? 0) > 0) {
-        derivedKeys.add("street_lighting_solar");
-        derivedKeys.add("street_lighting"); // fallback
-      }
-    }
-    if (derivedKeys.size > 0) {
-      const { data: infraTariffs } = await supabase
-        .from("subdivision_infrastructure_tariffs")
-        .select("infrastructure_key,label,unit,rate_usd,section_type,is_active")
-        .in("infrastructure_key", Array.from(derivedKeys))
-        .eq("is_active", true);
-      const tariffs = (infraTariffs as any[]) || [];
-      const pickTariff = (key: string) => {
-        const cands = tariffs.filter((t) => t.infrastructure_key === key);
-        return cands.find((t) => t.section_type === sectionType)
-          ?? cands.find((t) => t.section_type == null)
-          ?? cands[0]
-          ?? null;
-      };
-      const pickWithFallback = (preferred: string, fallback: string) =>
-        pickTariff(preferred) ?? pickTariff(fallback);
-      for (const road of (body.roads as any[]) ?? []) {
-        const lengthM = Array.isArray(road?.path) ? pathLengthM(road.path, frame) : 0;
-        if (lengthM <= 0) continue;
-        const pushItem = (t: any, qty: number) => {
-          if (!t || qty <= 0) return;
-          const subtotal = Math.round(qty * Number(t.rate_usd) * 100) / 100;
-          if (subtotal <= 0) return;
-          infrastructureFee += subtotal;
-          persistedInfrastructures.push({
-            infrastructure_key: t.infrastructure_key,
-            label: t.label,
-            unit: t.unit,
-            quantity: Math.round(qty * 100) / 100,
-            rate_usd: Number(t.rate_usd),
-            subtotal_usd: subtotal,
-            road_id: road.id,
-            road_name: road.name,
-          });
-        };
-        if (road.roadSurface?.material) {
-          const surfaceTariff = pickTariff(`road_surface_${road.roadSurface.material}`);
-          if (surfaceTariff) {
-            roadLengthCoveredM += lengthM;
-            pushItem(surfaceTariff, lengthM * (road.widthM || 0));
-          }
-        }
-        if (road.drainageCanal) {
-          const key = road.drainageCanal.material ? `drainage_${road.drainageCanal.material}` : "drainage";
-          pushItem(pickWithFallback(key, "drainage"), lengthM * sidesFactor(road.drainageCanal.side));
-        }
-        if (road.solarLighting && road.solarLighting.spacingM > 0) {
-          pushItem(
-            pickWithFallback("street_lighting_solar", "street_lighting"),
-            Math.ceil(lengthM / Number(road.solarLighting.spacingM)) * sidesFactor(road.solarLighting.side),
-          );
-        }
-      }
-      infrastructureFee = Math.round(infrastructureFee * 100) / 100;
-    }
+    // === Lot E — Server-side infrastructure surcharge (base × multipliers) ===
+    // Modèle unifié : tarif de base par catégorie × multiplicateurs catalogue
+    // (matériau revêtement, matériau drainage, type drainage). Voir
+    // `_shared/subdivisionFees.ts > computeRoadInfrastructures`.
+    const catalogs = await loadInfraCatalogs(supabase);
+    const infraResult = computeRoadInfrastructures(
+      (body.roads as any[]) ?? [],
+      frame,
+      catalogs,
+    );
+    const infrastructureFee = infraResult.total;
+    const roadLengthCoveredM = infraResult.roadLengthCoveredM;
+    const persistedInfrastructures = infraResult.items;
 
     // Generic legacy fee (rate_config.road_fee_per_linear_m_usd) only applies
     // to roads NOT already billed via a road_surface_* infrastructure tariff.
