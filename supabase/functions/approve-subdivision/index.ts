@@ -87,7 +87,7 @@ Deno.serve(async (req) => {
     const materializeApprovedRequest = async () => {
       const { data: matRes, error: matErr } = await supabase.rpc(
         "approve_subdivision_atomic",
-        { _request_id: request.id, _admin_id: user?.id ?? request.user_id },
+        { _request_id: request.id, _admin_id: isServiceRole ? null : (user?.id ?? null) },
       );
       if (matErr) throw new Error(`Atomic approval failed: ${matErr.message}`);
 
