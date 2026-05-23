@@ -14,8 +14,10 @@ import { useParentParcelEligibility } from './useParentParcelEligibility';
 import { fetchInfrastructureTariffsAsync } from '@/hooks/useSubdivisionInfrastructureTariffs';
 import { buildInfraItemsFromRoads } from '../utils/infrastructureFromRoads';
 import { inferSectionType } from '../utils/sectionType';
+import { useSubdivisionRequiredDocuments } from '@/hooks/useSubdivisionRequiredDocuments';
 
 const DRAFT_KEY_PREFIX = 'subdivision-draft-v3-';
+const IDEMPOTENCY_KEY_PREFIX = 'subdivision-idem-v1-';
 
 export type { SubdivisionDocuments };
 
