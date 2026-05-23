@@ -434,11 +434,18 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
     if (!parentParcel || !parentVertices || parentVertices.length < 3) return;
     if (lots.length > 0) return;
 
+    // Surface géométrique cohérente avec les côtés GPS affichés (edgeLengthM).
+    // Évite l'incohérence "triangle 788/387/802 m → 2887 m² DB" en utilisant
+    // la même metricFrame que les longueurs des côtés. Fallback DB sans GPS.
+    const geomAreaSqm =
+      metricFrame.hasGps && parentVertices.length >= 3
+        ? Math.max(1, Math.round(polygonAreaSqmAccurate(parentVertices, metricFrame)))
+        : Math.round(parentParcel.areaSqm);
     const fullLot: SubdivisionLot = {
       id: `lot-1`,
       lotNumber: '1',
       vertices: [...parentVertices],
-      areaSqm: Math.round(parentParcel.areaSqm),
+      areaSqm: geomAreaSqm,
       perimeterM: Math.round(polygonPerimeterM(parentVertices, metricFrame)),
       intendedUse: 'residential',
       isBuilt: false,
