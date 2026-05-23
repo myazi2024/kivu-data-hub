@@ -148,15 +148,26 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
     [parentVertices],
   );
 
+  // Surface géométrique de la parcelle mère, calculée sur la même frame GPS que
+  // les longueurs des côtés (edgeLengthM). Garantit la cohérence visuelle :
+  // Σ(lots) ≤ surface mère affichée, qui correspond aux côtés affichés.
+  // Fallback vers area_sqm DB si pas de GPS.
+  const parentAreaGeomSqm = React.useMemo(() => {
+    if (metricFrame.hasGps && parentVertices && parentVertices.length >= 3) {
+      return Math.max(1, Math.round(polygonAreaSqmAccurate(parentVertices, metricFrame)));
+    }
+    return parentParcel?.areaSqm || 0;
+  }, [metricFrame, parentVertices, parentParcel?.areaSqm]);
+
   // Helpers — proportional area against the parent (fallback: bbox-accurate)
   // and perimeter via the anisotropic metric frame.
   const computeArea = useCallback(
     (poly: Point2D[]) => Math.max(1, Math.round(
-      parentNormArea > 0 && parentParcel?.areaSqm
-        ? polygonAreaSqmRelative(poly, parentNormArea, parentParcel.areaSqm)
+      parentNormArea > 0 && parentAreaGeomSqm
+        ? polygonAreaSqmRelative(poly, parentNormArea, parentAreaGeomSqm)
         : polygonAreaSqmAccurate(poly, metricFrame)
     )),
-    [metricFrame, parentNormArea, parentParcel?.areaSqm],
+    [metricFrame, parentNormArea, parentAreaGeomSqm],
   );
   const computePerim = useCallback(
     (poly: Point2D[]) => Math.round(polygonPerimeterM(poly, metricFrame)),
@@ -819,7 +830,7 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
   }, [roads, setRoads, lots, setLots, parentParcel, parentVertices, computeArea, computePerim]);
 
   const totalArea = lots.reduce((s, l) => s + l.areaSqm, 0);
-  const parentArea = parentParcel?.areaSqm || 0;
+  const parentArea = parentAreaGeomSqm || parentParcel?.areaSqm || 0;
   const coveragePercent = parentArea > 0 ? Math.round(totalArea / parentArea * 100) : 0;
 
   // Contextual hint shown under the canvas, depends on active tool
@@ -1106,15 +1117,9 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2 text-xs">
-                  <div>
-                    <span className="text-muted-foreground">Surface</span>
-                    <p className="font-bold text-sm">{formatSqm(selectedLot.areaSqm)}</p>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">Périmètre</span>
-                    <p className="font-bold text-sm">{formatMeters(selectedLot.perimeterM)}</p>
-                  </div>
+                <div className="text-xs">
+                  <span className="text-muted-foreground">Surface</span>
+                  <p className="font-bold text-sm">{formatSqm(selectedLot.areaSqm)}</p>
                 </div>
                 <Separator />
                 <LotVerticesEditor
