@@ -7986,10 +7986,15 @@ export type Database = {
         Args: { p_request_id: string; p_ttl_seconds?: number }
         Returns: string
       }
+      get_signed_subdivision_certificate: {
+        Args: { p_request_id: string; p_ttl_seconds?: number }
+        Returns: string
+      }
       get_signed_subdivision_plan: {
         Args: { p_request_id: string }
         Returns: string
       }
+      get_subdivision_admin_stats: { Args: never; Returns: Json }
       get_test_cleanup_history: {
         Args: { p_limit?: number }
         Returns: {
