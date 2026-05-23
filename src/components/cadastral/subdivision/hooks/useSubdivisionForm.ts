@@ -328,6 +328,32 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
     return buildMetricFrame(parentParcel?.gpsCoordinates, parentParcel?.areaSqm || 0);
   }, [parentParcel]);
 
+  // Recompute submission fee whenever lots / roads / parent change. Debounced 300ms.
+  useEffect(() => {
+    if (!parentParcel) {
+      setLoadingFee(false);
+      return;
+    }
+    if (lots.length === 0) {
+      setSubmissionFee(null);
+      setFeeBreakdown(null);
+      setLoadingFee(false);
+      return;
+    }
+    setLoadingFee(true);
+    const t = setTimeout(() => {
+      computeFee(lots, roads, metricFrame);
+    }, 300);
+    return () => clearTimeout(t);
+  }, [lots, roads, metricFrame, parentParcel, computeFee]);
+
+  // Required documents driven by admin config — selects which docs gate the form
+  const { documents: requiredDocs } = useSubdivisionRequiredDocuments(requester.type);
+  const requiredDocKeys = useMemo<string[]>(
+    () => requiredDocs.filter(d => d.is_required && d.is_active).map(d => d.doc_key),
+    [requiredDocs],
+  );
+
   // Conformité aux règles de zonage admin (live, basée sur le plan en cours d'édition)
   const zoningCompliance = useZoningCompliance(
     parcelData
