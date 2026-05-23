@@ -26,5 +26,10 @@ type: feature
 - `config_snapshot` archivé tel quel dans `subdivision_plan_versions` (reproductibilité).
 - Note : `src/utils/generateSubdivisionPlanPDF.ts` reste pour aperçu user (preview/brouillon) mais n'est plus la source du plan officiel.
 
-## Reste à faire
-- **P3** : onglet "Versions du plan" dans hub, handler `/verify/:code` type `subdivision_plan`, menu `Documents ▾` regroupant les 3 PDF, suppression `validationCache` sessionStorage, déduplication `useAdminPendingCounts` vs `usePendingCount`.
+## UX & nettoyage (P3)
+- Hub : nouvel onglet **Versions du plan** (`?sub=versions`) — composant `AdminSubdivisionPlanVersions` listant `subdivision_plan_versions` (200 dernières), filtre client (réf/parcelle/code), téléchargement signé (RPC `get_signed_subdivision_plan` pour `is_current`, sinon `storage.createSignedUrl('subdivision-plans', pdf_path)`), action "Définir courante" (trigger flippe les autres).
+- `RequestDetailsDialog` : 4 boutons header → menu unique **Documents ▾** (Dossier complet + Régénérer/Télécharger plan officiel + Certificat) ; PDF approbation visibles uniquement si `status === 'approved'`.
+- `VerifyDocument` : ajoute bloc dédié `subdivision_plan` (badges `version`, `Courante`, `state`) en plus du flow générique.
+- **Supprimé** : `src/hooks/usePendingCount.tsx` (zéro consommateur, doublon de `useAdminPendingCounts`), `src/components/admin/subdivision/requests/validationCache.ts` (sessionStorage remplacé par Map TTL in-memory locale au module `AdminSubdivisionRequests`).
+- `RequestsToolbar` : pas de doublon avéré (instance unique), conservé.
+
