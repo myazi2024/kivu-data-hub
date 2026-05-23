@@ -377,6 +377,7 @@ const AdminSubdivisionZoningRules: React.FC = () => {
   const [rules, setRules] = useState<ZoningRule[]>([]);
   const [materials, setMaterials] = useState<RoadSurfaceMaterial[]>([]);
   const [roadSurfaceTariffKeys, setRoadSurfaceTariffKeys] = useState<Set<string>>(new Set());
+  const [hasRoadSurfaceBase, setHasRoadSurfaceBase] = useState(true);
   const [search, setSearch] = useState('');
 
   const fetchMaterials = async () => {
@@ -384,22 +385,39 @@ const AdminSubdivisionZoningRules: React.FC = () => {
       .generic('subdivision_road_surface_materials')
       .select('*')
       .order('display_order');
-    setMaterials(((data as RoadSurfaceMaterial[]) ?? []).filter(m => m.is_active));
+    // Dédoublonnage défensif par clé pour éviter collision de keys React.
+    const list = ((data as RoadSurfaceMaterial[]) ?? []).filter(m => m.is_active);
+    const dedup = Array.from(new Map(list.map(m => [m.key, m])).values());
+    setMaterials(dedup);
   };
+
+  // Nouveau modèle : un seul tarif de base `road_surface`, multiplié par
+  // `price_multiplier` du matériau. Un matériau est « tarifé » dès que son
+  // multiplicateur > 0 ET que le tarif de base existe.
   const fetchRoadSurfaceTariffs = async () => {
     const { data } = await untypedTables
       .subdivision_infrastructure_tariffs()
-      .select('infrastructure_key')
-      .eq('is_active', true);
-    const keys = new Set<string>(
-      ((data as Array<{ infrastructure_key: string }>) ?? [])
-        .map(t => t.infrastructure_key)
-        .filter(k => k.startsWith('road_surface_'))
-        .map(k => k.replace(/^road_surface_/, '')),
-    );
-    setRoadSurfaceTariffKeys(keys);
+      .select('infrastructure_key, rate_usd, is_active')
+      .eq('infrastructure_key', 'road_surface');
+    const baseTariff = (data ?? [])[0] as { rate_usd?: number; is_active?: boolean } | undefined;
+    const baseOk = !!baseTariff && baseTariff.is_active !== false && Number(baseTariff.rate_usd ?? 0) > 0;
+    setHasRoadSurfaceBase(baseOk);
   };
+
   useEffect(() => { fetchMaterials(); fetchRoadSurfaceTariffs(); }, []);
+
+  // Recalcule l'ensemble des matériaux "tarifés" dès qu'on connaît à la fois
+  // le tarif de base et la liste des matériaux (avec leurs multiplicateurs).
+  useEffect(() => {
+    const ok = new Set<string>();
+    if (hasRoadSurfaceBase) {
+      for (const m of materials) {
+        if ((m.price_multiplier ?? 1) > 0) ok.add(m.key);
+      }
+    }
+    setRoadSurfaceTariffKeys(ok);
+  }, [hasRoadSurfaceBase, materials]);
+
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'urban' | 'rural'>('all');
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -1118,20 +1136,26 @@ const AdminSubdivisionZoningRules: React.FC = () => {
                       <Label className="text-[11px]">Matériaux autorisés</Label>
                       <div className="flex flex-wrap gap-1.5 p-2 rounded border bg-background">
                         {DRAINAGE_CANAL_MATERIALS.map(m => {
-                          const checked = form.drainage_canal_allowed_materials.includes(m);
+                          const checked = (form.drainage_canal_allowed_materials ?? []).includes(m);
                           return (
-                            <label key={m} className={`text-[11px] px-2 py-0.5 rounded border cursor-pointer ${checked ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted/40'}`}>
-                              <input type="checkbox" className="sr-only" checked={checked} onChange={e => setForm(f => {
+                            <button
+                              key={m}
+                              type="button"
+                              role="checkbox"
+                              aria-checked={checked}
+                              onClick={() => setForm(f => {
                                 const prev = f.drainage_canal_allowed_materials ?? [];
                                 return {
                                   ...f,
-                                  drainage_canal_allowed_materials: e.target.checked
-                                    ? (prev.includes(m) ? prev : [...prev, m])
-                                    : prev.filter(x => x !== m),
+                                  drainage_canal_allowed_materials: prev.includes(m)
+                                    ? prev.filter(x => x !== m)
+                                    : [...prev, m],
                                 };
-                              })} />
+                              })}
+                              className={`text-[11px] px-2 py-0.5 rounded border cursor-pointer transition-colors ${checked ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted/40 hover:bg-muted'}`}
+                            >
                               {DRAINAGE_CANAL_MATERIAL_LABELS[m]}
-                            </label>
+                            </button>
                           );
                         })}
                       </div>
@@ -1140,25 +1164,32 @@ const AdminSubdivisionZoningRules: React.FC = () => {
                       <Label className="text-[11px]">Types autorisés</Label>
                       <div className="flex flex-wrap gap-1.5 p-2 rounded border bg-background">
                         {DRAINAGE_CANAL_TYPES.map(t => {
-                          const checked = form.drainage_canal_allowed_types.includes(t);
+                          const checked = (form.drainage_canal_allowed_types ?? []).includes(t);
                           return (
-                            <label key={t} className={`text-[11px] px-2 py-0.5 rounded border cursor-pointer ${checked ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted/40'}`}>
-                              <input type="checkbox" className="sr-only" checked={checked} onChange={e => setForm(f => {
+                            <button
+                              key={t}
+                              type="button"
+                              role="checkbox"
+                              aria-checked={checked}
+                              onClick={() => setForm(f => {
                                 const prev = f.drainage_canal_allowed_types ?? [];
                                 return {
                                   ...f,
-                                  drainage_canal_allowed_types: e.target.checked
-                                    ? (prev.includes(t) ? prev : [...prev, t])
-                                    : prev.filter(x => x !== t),
+                                  drainage_canal_allowed_types: prev.includes(t)
+                                    ? prev.filter(x => x !== t)
+                                    : [...prev, t],
                                 };
-                              })} />
+                              })}
+                              className={`text-[11px] px-2 py-0.5 rounded border cursor-pointer transition-colors ${checked ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted/40 hover:bg-muted'}`}
+                            >
                               {DRAINAGE_CANAL_TYPE_LABELS[t]}
-                            </label>
+                            </button>
                           );
                         })}
                       </div>
                     </div>
                   </div>
+
                   <div className="space-y-1">
                     <Label className="text-[11px]">Côté requis</Label>
                     <Select value={form.drainage_canal_required_sides} onValueChange={v => setForm(f => ({ ...f, drainage_canal_required_sides: v }))}>
@@ -1227,7 +1258,7 @@ const AdminSubdivisionZoningRules: React.FC = () => {
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex flex-col min-w-0">
                     <span id="zoning-lbl-roadsurface" className="text-xs font-semibold">Revêtement de la voie</span>
-                    <span className="text-[10px] text-muted-foreground">Matériau et épaisseur appliqués globalement à toutes les voies du lotissement. Tarification via catégorie <code>road_surface</code> des frais.</span>
+                    <span className="text-[10px] text-muted-foreground">Matériau et épaisseur appliqués globalement à toutes les voies. Tarification : tarif de base <code>road_surface</code> × <code>price_multiplier</code> du matériau (catalogue revêtements).</span>
                   </div>
                   <Switch aria-labelledby="zoning-lbl-roadsurface" checked={form.require_road_surface} onCheckedChange={v => setForm(f => ({ ...f, require_road_surface: v }))} />
                 </div>
@@ -1242,20 +1273,28 @@ const AdminSubdivisionZoningRules: React.FC = () => {
                         const checked = (form.road_surface_allowed_materials ?? []).includes(m.key);
                         const hasTariff = roadSurfaceTariffKeys.has(m.key);
                         return (
-                          <label key={m.key} className={`text-[11px] px-2 py-0.5 rounded border cursor-pointer ${checked ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted/40'}`} title={hasTariff ? (m.description ?? '') : `${m.description ?? ''}\n⚠ Aucun tarif road_surface_${m.key} configuré : frais = 0`}>
-                            <input type="checkbox" className="sr-only" checked={checked} onChange={e => setForm(f => {
+                          <button
+                            key={m.key}
+                            type="button"
+                            role="checkbox"
+                            aria-checked={checked}
+                            title={hasTariff ? (m.description ?? '') : `${m.description ?? ''}\n⚠ Tarif de base "road_surface" manquant ou multiplicateur du matériau = 0 → frais = 0`}
+                            onClick={() => setForm(f => {
                               const prev = f.road_surface_allowed_materials ?? [];
                               return {
                                 ...f,
-                                road_surface_allowed_materials: e.target.checked
-                                  ? (prev.includes(m.key) ? prev : [...prev, m.key])
-                                  : prev.filter(x => x !== m.key),
+                                road_surface_allowed_materials: prev.includes(m.key)
+                                  ? prev.filter(x => x !== m.key)
+                                  : [...prev, m.key],
                               };
-                            })} />
+                            })}
+                            className={`text-[11px] px-2 py-0.5 rounded border cursor-pointer transition-colors ${checked ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted/40 hover:bg-muted'}`}
+                          >
                             {m.label}{!hasTariff && <span className="ml-1" aria-label="Tarif manquant">⚠</span>}
-                          </label>
+                          </button>
                         );
                       })}
+
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
