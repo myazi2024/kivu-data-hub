@@ -128,8 +128,15 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
     [parentGpsCoordinates, parentAreaSqm],
   );
 
+  // Normalized parent area — lets drag computations stay proportional to the
+  // parent's official `area_sqm` instead of the (often larger) GPS bbox area.
+  const parentNormArea = useMemo(
+    () => (parentVertices && parentVertices.length >= 3 ? polygonArea(parentVertices) : 0),
+    [parentVertices],
+  );
+
   // Drag system (recomputes area + perimeter via metric frame on every move)
-  const drag = useCanvasDrag(lots, onUpdateLot, snapEnabled, showGrid, metricFrame);
+  const drag = useCanvasDrag(lots, onUpdateLot, snapEnabled, showGrid, metricFrame, parentNormArea, parentAreaSqm);
 
   // Detect shared edges between lots
   const sharedEdges = useMemo(() => {
