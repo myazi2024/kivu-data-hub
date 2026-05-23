@@ -35,24 +35,36 @@ export const MfaEnrollDialog: React.FC<Props> = ({ open, onOpenChange, onEnrolle
   const enrollAbortedRef = useRef<string | null>(null);
 
   // Cleanup unverified factor on close (skip if it has been verified meanwhile)
+  const cleanupOrphan = async (id: string) => {
+    try {
+      const { data } = await supabase.auth.mfa.listFactors();
+      const factor = data?.all?.find((f) => f.id === id);
+      if (factor && factor.status !== 'verified') {
+        await supabase.auth.mfa.unenroll({ factorId: id });
+      }
+    } catch {
+      // ignore
+    }
+  };
+
   useEffect(() => {
     if (!open && enrollAbortedRef.current) {
       const id = enrollAbortedRef.current;
       enrollAbortedRef.current = null;
-      (async () => {
-        try {
-          const { data } = await supabase.auth.mfa.listFactors();
-          const factor = data?.all?.find((f) => f.id === id);
-          // Only delete if still unverified (otherwise another flow confirmed it)
-          if (factor && factor.status !== 'verified') {
-            await supabase.auth.mfa.unenroll({ factorId: id });
-          }
-        } catch {
-          // ignore
-        }
-      })();
+      cleanupOrphan(id);
     }
   }, [open]);
+
+  // Cleanup at unmount too (route change, etc.)
+  useEffect(() => {
+    return () => {
+      const id = enrollAbortedRef.current;
+      if (id) {
+        enrollAbortedRef.current = null;
+        cleanupOrphan(id);
+      }
+    };
+  }, []);
 
   // Reset state when reopened
   useEffect(() => {

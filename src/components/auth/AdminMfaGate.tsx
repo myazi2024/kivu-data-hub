@@ -3,6 +3,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useMfaStatus } from '@/hooks/useMfaStatus';
 import { isAdminRole } from '@/components/auth/mfaConstants';
 import { MfaChallengeDialog } from '@/components/auth/MfaChallengeDialog';
+import { MfaEnrollDialog } from '@/components/auth/MfaEnrollDialog';
 import { Loader2, ShieldAlert } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,25 +13,32 @@ interface Props { children: ReactNode }
 
 /**
  * Guard placed inside admin routes: ensures admins/super_admins are at AAL2.
- * - Sans facteur : oblige l'enrôlement (dialog non-fermable).
+ * - Sans facteur : ouvre directement le dialogue d'enrôlement (non-fermable).
  * - Avec facteur, session aal1 : force le challenge avant rendu.
  * Pour les autres rôles, agit comme passthrough.
  */
 const AdminMfaGate: React.FC<Props> = ({ children }) => {
-  const { profile, loading: authLoading } = useAuth();
+  const { profile, loading: authLoading, signOut } = useAuth();
   const mfa = useMfaStatus();
   const navigate = useNavigate();
   const [challengeOpen, setChallengeOpen] = useState(false);
+  const [enrollOpen, setEnrollOpen] = useState(false);
 
   const mustGuard = !!profile && isAdminRole(profile.role);
   const needEnroll = mustGuard && !mfa.loading && !mfa.hasVerifiedFactor;
   const needChallenge = mustGuard && !mfa.loading && mfa.hasVerifiedFactor && mfa.currentLevel !== 'aal2';
+  // Verrou stable : tant qu'on n'est pas en aal2, le dialogue ne peut pas être fermé.
+  const mfaIncomplete = mustGuard && mfa.currentLevel !== 'aal2';
 
   useEffect(() => {
     setChallengeOpen(needChallenge);
   }, [needChallenge]);
 
-  if (authLoading || mfa.loading) {
+  useEffect(() => {
+    setEnrollOpen(needEnroll);
+  }, [needEnroll]);
+
+  if (authLoading || (mustGuard && mfa.loading)) {
     return (
       <div className="min-h-dvh flex items-center justify-center">
         <Loader2 className="h-6 w-6 animate-spin text-primary" />
@@ -49,18 +57,31 @@ const AdminMfaGate: React.FC<Props> = ({ children }) => {
               <h2 className="text-lg font-semibold">Vérification à deux facteurs requise</h2>
               <p className="text-sm text-muted-foreground">
                 {needEnroll
-                  ? 'Votre rôle d\'administrateur impose l\'activation de la 2FA. Suivez les étapes pour configurer votre application d\'authentification.'
-                  : 'Veuillez saisir votre code à 6 chiffres pour accéder à la console d\'administration.'}
+                  ? "Votre rôle d'administrateur impose l'activation de la 2FA. Suivez les étapes ci-dessous pour configurer votre application d'authentification."
+                  : "Veuillez saisir votre code à 6 chiffres pour accéder à la console d'administration."}
               </p>
-              <Button variant="outline" onClick={() => navigate('/')}>Retour à l'accueil</Button>
+              <div className="flex gap-2 justify-center pt-2">
+                <Button variant="outline" onClick={() => navigate('/')}>Accueil</Button>
+                <Button variant="ghost" onClick={() => signOut()}>Se déconnecter</Button>
+              </div>
             </CardContent>
           </Card>
         </div>
 
+        <MfaEnrollDialog
+          open={enrollOpen}
+          onOpenChange={(o) => {
+            // Admins ne peuvent pas annuler l'enrôlement
+            if (needEnroll && !o) return;
+            setEnrollOpen(o);
+          }}
+          onEnrolled={() => mfa.refresh()}
+        />
+
         <MfaChallengeDialog
           open={challengeOpen}
           onOpenChange={(o) => {
-            if (needChallenge && !o) return;
+            if (mfaIncomplete && !o) return;
             setChallengeOpen(o);
           }}
           onSuccess={() => mfa.refresh()}
