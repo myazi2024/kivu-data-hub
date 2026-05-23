@@ -5,6 +5,8 @@ import { createDocumentVerification } from '@/lib/documentVerification';
 import { supabase } from '@/integrations/supabase/client';
 import { getSubdivisionPlanElementsAsync } from '@/hooks/useSubdivisionPlanElements';
 import { resolveSubdivisionPlanContext, type SignatureFrame } from '@/utils/subdivisionPlanContext';
+import { computeNormalizedScale, formatScale } from '@/utils/subdivisionPlanScale';
+import { fetchLegendSymbols, deriveLegend, type LegendItem } from '@/utils/subdivisionPlanLegend';
 
 interface SubdivisionPlanData {
   id: string;
@@ -23,11 +25,60 @@ interface SubdivisionPlanData {
   subdivision_plan_data?: any | null;
 }
 
+export type PlanLifecycleState = 'draft' | 'test' | 'sample' | 'final';
+
 interface GenerateOptions {
-  /** Marque le document comme aperçu (filigrane « APERÇU »). */
+  /** Marque le document comme aperçu (filigrane « APERÇU »). @deprecated utiliser `state`. */
   preview?: boolean;
   /** Marque la version officielle (numéro de version dans le footer). */
   officialVersion?: number | null;
+  /** État du document : draft (BROUILLON), test (TEST), sample (SAMPLE), final (sans filigrane). */
+  state?: PlanLifecycleState;
+}
+
+interface PlanConfigBundle {
+  header: any;
+  watermarks: any;
+  paper_format: any;
+  scale_tiers: any;
+  report_program: any;
+  footer_text: any;
+}
+
+async function loadPlanConfig(): Promise<PlanConfigBundle> {
+  try {
+    const { data } = await (supabase as any)
+      .from('app_subdivision_plan_config')
+      .select('config_key, config_value');
+    const map: any = {};
+    (data || []).forEach((r: any) => { map[r.config_key] = r.config_value; });
+    return map as PlanConfigBundle;
+  } catch {
+    return {} as PlanConfigBundle;
+  }
+}
+
+async function loadDynamicFrames(
+  parcelCtx: { isUrban: boolean; province?: string | null },
+): Promise<SignatureFrame[]> {
+  try {
+    const { data } = await (supabase as any)
+      .from('subdivision_signature_frames')
+      .select('*')
+      .eq('active', true)
+      .order('display_order', { ascending: true });
+    const rows = (data || []) as any[];
+    const applies = parcelCtx.isUrban ? 'urban' : 'rural';
+    const filtered = rows.filter(r => {
+      if (r.applies_to !== 'both' && r.applies_to !== applies) return false;
+      const pf: string[] = r.province_filter || [];
+      if (pf.length && parcelCtx.province && !pf.includes(parcelCtx.province)) return false;
+      return true;
+    });
+    return filtered.map(r => ({ title: r.title_template || r.name, authority: r.authority }));
+  } catch {
+    return [];
+  }
 }
 
 /**
@@ -104,38 +155,49 @@ export async function generateSubdivisionPlanPDF(
   const S = Math.min(pageW, pageH) / 600; // facteur d'échelle global (typo, lignes)
   const mm = (v: number) => v * S;
 
+  // Charge config + état
+  const config = await loadPlanConfig();
+  const state: PlanLifecycleState = opts.state
+    ?? (opts.preview ? 'sample' : (opts.officialVersion ? 'final' : 'draft'));
+
   // Bordure
   doc.setLineWidth(mm(1));
   doc.setDrawColor(0, 100, 200);
   doc.rect(mm(8), mm(8), pageW - mm(16), pageH - mm(16));
 
-  // === Filigrane diagonal vectoriel ===
-  await drawWatermark(doc, pageW, pageH, `PLAN OFFICIEL — ${req.reference_number}`, S);
+  // === Filigrane d'état (BROUILLON/TEST/SAMPLE — rien pour final) ===
+  await drawStateWatermark(doc, pageW, pageH, state, config.watermarks, req.reference_number, S);
 
   // === En-tête ===
   const logo = await fetchAppLogo();
   if (logo) {
     try { doc.addImage(logo, 'PNG', mm(12), mm(11), mm(14), mm(14)); } catch { /* ignore */ }
   }
+  const hdr = config.header || {};
+  const orgLine1 = hdr.org_line1 || 'RÉPUBLIQUE DÉMOCRATIQUE DU CONGO';
+  const orgLine2 = hdr.org_line2 || "BUREAU D'INFORMATION CADASTRALE";
+  const orgLine3 = hdr.org_line3 || "Direction de l'Aménagement et de l'Urbanisme";
+  const titleText = hdr.title || `PLAN DE LOTISSEMENT DE LA PARCELLE N° ${req.parcel_number}`;
+
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(0, 50, 100);
   doc.setFontSize(16 * S);
-  doc.text('RÉPUBLIQUE DÉMOCRATIQUE DU CONGO', pageW / 2, mm(16), { align: 'center' });
+  doc.text(orgLine1, pageW / 2, mm(16), { align: 'center' });
   doc.setFontSize(11 * S);
-  doc.text("BUREAU D'INFORMATION CADASTRALE", pageW / 2, mm(22), { align: 'center' });
+  doc.text(orgLine2, pageW / 2, mm(22), { align: 'center' });
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9 * S);
   doc.setTextColor(80, 80, 80);
-  doc.text("Direction de l'Aménagement et de l'Urbanisme", pageW / 2, mm(27), { align: 'center' });
+  doc.text(orgLine3, pageW / 2, mm(27), { align: 'center' });
 
   doc.setLineWidth(mm(0.4));
   doc.setDrawColor(0, 100, 200);
   doc.line(mm(12), mm(31), pageW - mm(12), mm(31));
 
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(15 * S);
+  doc.setFontSize(14 * S);
   doc.setTextColor(180, 0, 0);
-  doc.text('PLAN OFFICIEL DE LOTISSEMENT', pageW / 2, mm(39), { align: 'center' });
+  doc.text(titleText, pageW / 2, mm(39), { align: 'center' });
 
   doc.setTextColor(0, 0, 0);
   doc.setFontSize(10 * S);
@@ -315,18 +377,32 @@ export async function generateSubdivisionPlanPDF(
     yTable += mm(5.5);
   });
 
-  // === Cadres de signature dynamiques urbain/rural ===
+  // === Cadres de signature dynamiques (depuis DB, fallback statique) ===
   const ctx = await resolveSubdivisionPlanContext(req.parcel_number, req.parent_parcel_location);
+  const dynamicFrames = await loadDynamicFrames({ isUrban: ctx.isUrban, province: ctx.province });
+  const frames: SignatureFrame[] = dynamicFrames.length ? dynamicFrames : ctx.frames;
   const sigY = pageH - mm(72);
   const sigH = mm(45);
   const sigGap = mm(4);
-  const sigW = (pageW - mm(24) - sigGap * 2) / 3;
-  ctx.frames.forEach((frame, idx) => {
+  const sigCount = Math.max(1, Math.min(frames.length, 5));
+  const sigW = (pageW - mm(24) - sigGap * (sigCount - 1)) / sigCount;
+  frames.slice(0, sigCount).forEach((frame, idx) => {
     const x = mm(12) + idx * (sigW + sigGap);
     drawSignatureFrame(doc, x, sigY, sigW, sigH, frame, S);
   });
 
-  // === Footer : QR + mentions légales + version ===
+  // === Légende auto (sous les cadres signature, bas-droit) ===
+  try {
+    const allSymbols = await fetchLegendSymbols();
+    const presentTypes: string[] = [];
+    if (has('north_arrow')) presentTypes.push('north_arrow');
+    if (has('echelle_graphique')) presentTypes.push('echelle_graphique');
+    if (roads.length) presentTypes.push('road');
+    const legend = deriveLegend(allSymbols, presentTypes).slice(0, 6);
+    if (legend.length) drawLegendBox(doc, pageW - mm(80), sigY - mm(22), mm(68), mm(20), legend, S);
+  } catch { /* ignore legend errors */ }
+
+  // === Footer : QR + mentions légales + version + signalement ===
   let verifyUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/verify`;
   try {
     const v = await createDocumentVerification({
@@ -338,6 +414,7 @@ export async function generateSubdivisionPlanPDF(
         reference_number: req.reference_number,
         number_of_lots: req.number_of_lots,
         official_version: opts.officialVersion ?? null,
+        state,
       },
     });
     if (v?.verifyUrl) verifyUrl = v.verifyUrl;
@@ -358,17 +435,44 @@ export async function generateSubdivisionPlanPDF(
   doc.setFontSize(6 * S);
   doc.text(verifyUrl, qrX + qrSize / 2, qrY + qrSize + mm(6), { align: 'center' });
 
+  // Programme signalement (au-dessus du QR)
+  const rp = config.report_program || {};
+  if (rp.active && rp.whatsapp_number) {
+    const reportText = (rp.report_text_template
+      || "Si vous n'avez pas de résultat positif, signalez-le au {whatsapp_number}. Vous pouvez gagner une récompense financière jusqu'à {reward_amount} {currency}.")
+      .replace('{whatsapp_number}', rp.whatsapp_number)
+      .replace('{reward_amount}', String(rp.reward_amount ?? ''))
+      .replace('{currency}', rp.reward_currency || 'USD');
+    doc.setFontSize(7 * S);
+    doc.setTextColor(120, 30, 30);
+    doc.setFont('helvetica', 'italic');
+    const wrapped = doc.splitTextToSize(reportText, qrSize + mm(50));
+    doc.text(wrapped, qrX, qrY - mm(2), { align: 'left' });
+  }
+
+  // Échelle normalisée pour le footer
+  let scaleLabel = '';
+  if (allPts.length >= 3 && req.parent_parcel_area_sqm) {
+    const maxDim = Math.sqrt(req.parent_parcel_area_sqm) * 1.2;
+    const tiers = Array.isArray(config.scale_tiers?.tiers) ? config.scale_tiers.tiers : undefined;
+    const { tier } = computeNormalizedScale(maxDim, Math.min(pageW, pageH) - 40, tiers);
+    scaleLabel = formatScale(tier);
+  }
+
   doc.setFontSize(7 * S);
   doc.setTextColor(100, 100, 100);
   doc.setFont('helvetica', 'italic');
   const versionLine = opts.officialVersion
     ? `Version officielle v${opts.officialVersion} — `
-    : opts.preview ? 'APERÇU NON OFFICIEL — ' : '';
+    : state === 'sample' ? 'APERÇU NON OFFICIEL — '
+    : state === 'draft' ? 'BROUILLON — '
+    : state === 'test' ? 'DONNÉES DE TEST — ' : '';
+  const footerCustom = (config.footer_text?.text as string) || 'Reproduction interdite — toute falsification est passible de poursuites judiciaires.';
   const footerText = [
     `${versionLine}Document généré le ${new Date().toLocaleString('fr-FR')}.`,
     'Ce plan de lotissement est authentifiable via le QR code ci-contre.',
-    'Toute reproduction ou falsification est passible de poursuites judiciaires.',
-    `Format : ${pageW.toFixed(0)} × ${pageH.toFixed(0)} mm — vectoriel HD imprimable jusqu'à 10 m.`,
+    footerCustom,
+    `Format : ${pageW.toFixed(0)} × ${pageH.toFixed(0)} mm${scaleLabel ? ` — Échelle ${scaleLabel}` : ''} — vectoriel HD.`,
   ];
   footerText.forEach((t, i) => doc.text(t, mm(12), pageH - mm(20) + i * mm(3)));
 
@@ -433,19 +537,81 @@ function drawSignatureFrame(
   doc.line(x + mm(16), y + h - mm(2.7), x + w - sealR * 2 - mm(8), y + h - mm(2.7));
 }
 
-/** Filigrane diagonal vectoriel (texte rouge clair, opacité réduite). */
-async function drawWatermark(doc: jsPDF, pageW: number, pageH: number, text: string, S: number) {
+/** Filigrane d'état (BROUILLON/TEST/SAMPLE) — config admin override. */
+async function drawStateWatermark(
+  doc: jsPDF,
+  pageW: number,
+  pageH: number,
+  state: PlanLifecycleState,
+  watermarksCfg: any,
+  refNumber: string,
+  S: number,
+) {
+  if (state === 'final') return; // pas de filigrane sur version finale
+  const key = state === 'draft' ? 'draft' : state === 'test' ? 'test' : 'sample';
+  const defaults: Record<string, { text: string; color: [number, number, number]; opacity: number }> = {
+    draft: { text: 'BROUILLON', color: [120, 120, 120], opacity: 0.10 },
+    test: { text: 'TEST', color: [200, 120, 0], opacity: 0.12 },
+    sample: { text: 'SAMPLE', color: [180, 0, 0], opacity: 0.10 },
+  };
+  const cfg = (watermarksCfg && watermarksCfg[key]) || {};
+  const text: string = cfg.text || defaults[key].text;
+  const color: [number, number, number] = Array.isArray(cfg.color) && cfg.color.length === 3
+    ? cfg.color : defaults[key].color;
+  const opacity: number = typeof cfg.opacity === 'number' ? cfg.opacity : defaults[key].opacity;
+
   doc.saveGraphicsState();
   // @ts-expect-error : GState accepté par jspdf en runtime
-  doc.setGState(new doc.GState({ opacity: 0.07 }));
+  doc.setGState(new doc.GState({ opacity }));
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(48 * S);
-  doc.setTextColor(180, 0, 0);
-  const step = 80 * S;
+  doc.setFontSize(72 * S);
+  doc.setTextColor(color[0], color[1], color[2]);
+  const step = 100 * S;
   for (let y = -step; y < pageH + step; y += step) {
     for (let x = -step; x < pageW + step; x += step * 2) {
       doc.text(text, x, y, { angle: -30 });
     }
   }
+  // Référence en petite taille
+  doc.setFontSize(10 * S);
+  doc.text(`Réf. ${refNumber}`, pageW - 60, pageH - 4);
   doc.restoreGraphicsState();
+}
+
+/** Cartouche légende (bas-droit) : liste de symboles présents. */
+function drawLegendBox(
+  doc: jsPDF,
+  x: number, y: number, w: number, h: number,
+  items: LegendItem[], S: number,
+) {
+  const mm = (v: number) => v * S;
+  doc.setDrawColor(120, 120, 120);
+  doc.setLineWidth(mm(0.3));
+  doc.rect(x, y, w, h);
+  doc.setFillColor(245, 245, 250);
+  doc.rect(x, y, w, mm(5), 'F');
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8 * S);
+  doc.setTextColor(0, 50, 100);
+  doc.text('Légende', x + w / 2, y + mm(3.5), { align: 'center' });
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(7 * S);
+  doc.setTextColor(40, 40, 40);
+  const rowH = mm(3.2);
+  items.forEach((it, i) => {
+    const ry = y + mm(6) + i * rowH;
+    // pastille couleur
+    const [r, g, b] = hexToRgbSafe(it.color);
+    doc.setFillColor(r, g, b);
+    doc.rect(x + mm(2), ry - mm(2), mm(3), mm(2), 'F');
+    doc.text(it.label, x + mm(7), ry - mm(0.5));
+  });
+}
+
+function hexToRgbSafe(hex: string): [number, number, number] {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex || '');
+  if (!m) return [100, 100, 100];
+  const n = parseInt(m[1], 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
 }
