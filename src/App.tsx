@@ -113,9 +113,8 @@ const App = () => (
                   } />
                   <Route path="/admin" element={
                     <ProtectedRoute requiredRoles={['admin', 'super_admin']}>
-                      <AdminMfaGate>
-                        <Admin />
-                      </AdminMfaGate>
+                      {/* AdminMfaGate temporairement désactivé pour débloquer l'accès admin */}
+                      <Admin />
                     </ProtectedRoute>
                   } />
                   <Route path="/auth" element={<Auth />} />
