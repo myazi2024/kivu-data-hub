@@ -257,6 +257,10 @@ export function computeRoadInfrastructures(
   const base = catalogs.baseTariffs;
 
   for (const road of roads ?? []) {
+    // External public roads bordering the parent parcel are declared by the
+    // requester only to satisfy the road-access (enclavement) check. They are
+    // not built within the subdivision → zero infrastructure cost.
+    if (road?.isExternal === true) continue;
     const lengthM = Array.isArray(road?.path) ? pathLengthM(road.path, frame) : 0;
     if (lengthM <= 0) continue;
     const widthM = Number(road?.widthM) || 0;
