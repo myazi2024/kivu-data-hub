@@ -173,25 +173,31 @@ export async function generateSubdivisionPlanPDF(
   if (logo) {
     try { doc.addImage(logo, 'PNG', mm(12), mm(11), mm(14), mm(14)); } catch { /* ignore */ }
   }
+  const hdr = config.header || {};
+  const orgLine1 = hdr.org_line1 || 'RÉPUBLIQUE DÉMOCRATIQUE DU CONGO';
+  const orgLine2 = hdr.org_line2 || "BUREAU D'INFORMATION CADASTRALE";
+  const orgLine3 = hdr.org_line3 || "Direction de l'Aménagement et de l'Urbanisme";
+  const titleText = hdr.title || `PLAN DE LOTISSEMENT DE LA PARCELLE N° ${req.parcel_number}`;
+
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(0, 50, 100);
   doc.setFontSize(16 * S);
-  doc.text('RÉPUBLIQUE DÉMOCRATIQUE DU CONGO', pageW / 2, mm(16), { align: 'center' });
+  doc.text(orgLine1, pageW / 2, mm(16), { align: 'center' });
   doc.setFontSize(11 * S);
-  doc.text("BUREAU D'INFORMATION CADASTRALE", pageW / 2, mm(22), { align: 'center' });
+  doc.text(orgLine2, pageW / 2, mm(22), { align: 'center' });
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9 * S);
   doc.setTextColor(80, 80, 80);
-  doc.text("Direction de l'Aménagement et de l'Urbanisme", pageW / 2, mm(27), { align: 'center' });
+  doc.text(orgLine3, pageW / 2, mm(27), { align: 'center' });
 
   doc.setLineWidth(mm(0.4));
   doc.setDrawColor(0, 100, 200);
   doc.line(mm(12), mm(31), pageW - mm(12), mm(31));
 
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(15 * S);
+  doc.setFontSize(14 * S);
   doc.setTextColor(180, 0, 0);
-  doc.text('PLAN OFFICIEL DE LOTISSEMENT', pageW / 2, mm(39), { align: 'center' });
+  doc.text(titleText, pageW / 2, mm(39), { align: 'center' });
 
   doc.setTextColor(0, 0, 0);
   doc.setFontSize(10 * S);
