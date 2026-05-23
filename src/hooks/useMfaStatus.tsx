@@ -55,8 +55,9 @@ export function useMfaStatus(): MfaStatus {
 
   useEffect(() => {
     refresh();
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
-      refresh();
+    const RELEVANT = new Set(['SIGNED_IN', 'SIGNED_OUT', 'MFA_CHALLENGE_VERIFIED', 'USER_UPDATED']);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (RELEVANT.has(event)) refresh();
     });
     return () => subscription.unsubscribe();
   }, [refresh]);
