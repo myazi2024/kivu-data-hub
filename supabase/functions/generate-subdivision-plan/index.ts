@@ -97,6 +97,24 @@ Deno.serve(async (req) => {
       },
     });
 
+    // --- Snapshot config (reproductibilité) ---
+    const { data: cfgRows } = await supabase
+      .from("app_subdivision_plan_config")
+      .select("config_key, config_value");
+    const { data: framesRows } = await supabase
+      .from("subdivision_signature_frames")
+      .select("*").eq("active", true).order("display_order", { ascending: true });
+    const { data: symbolsRows } = await supabase
+      .from("subdivision_legend_symbols")
+      .select("*").eq("active", true).order("display_order", { ascending: true });
+    const configSnapshot = {
+      config: (cfgRows || []).reduce((acc: any, r: any) => { acc[r.config_key] = r.config_value; return acc; }, {}),
+      signature_frames: framesRows || [],
+      legend_symbols: symbolsRows || [],
+      generator: "generate-subdivision-plan@p3",
+      snapshot_at: new Date().toISOString(),
+    };
+
     // --- Générer PDF ---
     const pdfBlob = await buildPdf({ request, lots, roads, ctx, verifyUrl: finalVerifyUrl, version: newVersion });
     const pdfBytes = new Uint8Array(await pdfBlob.arrayBuffer());
@@ -107,12 +125,27 @@ Deno.serve(async (req) => {
       .upload(path, pdfBytes, { contentType: "application/pdf", upsert: true });
     if (upErr) throw new Error(`Upload failed: ${upErr.message}`);
 
-    // --- Persister chemin + version ---
+    // --- Persister chemin + version sur la demande ---
     await supabase.from("subdivision_requests").update({
       official_plan_path: path,
       official_plan_generated_at: new Date().toISOString(),
       official_plan_version: newVersion,
     }).eq("id", request.id);
+
+    // --- Versioning : ligne immuable dans subdivision_plan_versions ---
+    await supabase.from("subdivision_plan_versions").insert({
+      subdivision_request_id: request.id,
+      version_number: newVersion,
+      official_version: newVersion,
+      pdf_path: path,
+      plan_data: planData,
+      lots_data: lots,
+      verification_code: verifCode,
+      config_snapshot: configSnapshot,
+      is_current: true,
+      reason: "official_plan_generated",
+      created_by: user.id,
+    }).then(() => null).catch((e: any) => console.warn("plan_versions insert failed:", e?.message));
 
     // --- Audit ---
     await supabase.from("request_admin_audit").insert({
