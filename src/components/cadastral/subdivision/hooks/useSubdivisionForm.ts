@@ -50,8 +50,12 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
   const [draftRestored, setDraftRestored] = useState(false);
 
   // Auto-fill requester from authenticated user — supports first/last/middle metadata
+  // Guarded to run once per user.id so a Personne morale who cleared firstName is not re-overwritten.
+  const lastAutoFillUserIdRef = useRef<string | null>(null);
   useEffect(() => {
     if (!authUser) return;
+    if (lastAutoFillUserIdRef.current === authUser.id) return;
+    lastAutoFillUserIdRef.current = authUser.id;
     const meta = (authUser.user_metadata || {}) as Record<string, any>;
     const fullName: string = meta.full_name || meta.name || '';
     const parts = fullName.trim().split(/\s+/).filter(Boolean);
