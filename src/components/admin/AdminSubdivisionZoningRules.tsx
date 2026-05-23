@@ -579,7 +579,7 @@ const AdminSubdivisionZoningRules: React.FC = () => {
       solar_lighting_required_sides: form.solar_lighting_required_sides || 'any',
       // Road surface
       require_road_surface: form.require_road_surface,
-      road_surface_allowed_materials: form.road_surface_allowed_materials || [],
+      road_surface_allowed_materials: toStringArray(form.road_surface_allowed_materials),
       road_surface_min_thickness_cm: rsMin,
       road_surface_max_thickness_cm: rsMax,
     };
