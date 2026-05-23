@@ -1258,7 +1258,7 @@ const AdminSubdivisionZoningRules: React.FC = () => {
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex flex-col min-w-0">
                     <span id="zoning-lbl-roadsurface" className="text-xs font-semibold">Revêtement de la voie</span>
-                    <span className="text-[10px] text-muted-foreground">Matériau et épaisseur appliqués globalement à toutes les voies du lotissement. Tarification via catégorie <code>road_surface</code> des frais.</span>
+                    <span className="text-[10px] text-muted-foreground">Matériau et épaisseur appliqués globalement à toutes les voies. Tarification : tarif de base <code>road_surface</code> × <code>price_multiplier</code> du matériau (catalogue revêtements).</span>
                   </div>
                   <Switch aria-labelledby="zoning-lbl-roadsurface" checked={form.require_road_surface} onCheckedChange={v => setForm(f => ({ ...f, require_road_surface: v }))} />
                 </div>
