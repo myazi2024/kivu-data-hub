@@ -17,6 +17,10 @@ import {
   type RoadSurfaceSpec,
 } from '../../infrastructureConstants';
 import { useSubdivisionReferences } from '@/hooks/useSubdivisionReferences';
+import {
+  useDrainageMaterialsCatalog,
+  useDrainageTypesCatalog,
+} from '@/hooks/useSubdivisionDrainageCatalog';
 import type { CanvasMode } from '../../LotCanvas';
 import type { ZoningRule } from '@/hooks/useZoningRules';
 
