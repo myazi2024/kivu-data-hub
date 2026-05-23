@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
-import { Plus, Trash2, MapPinned, Check, Info } from 'lucide-react';
+import { Trash2, MapPinned, Check, Info } from 'lucide-react';
 import { SubdivisionRoad, Point2D } from '../../types';
 import { genId } from '../../utils/polygonOps';
 import { buildMetricFrame, edgeLengthM, type MetricFrame } from '../../utils/metrics';
