@@ -723,7 +723,7 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
     // Steps
     currentStep, setCurrentStep, steps, goNext, goPrev, isStepValid,
     // Parent parcel
-    parentParcel, loadingParcel, setParentParcel,
+    parentParcel, loadingParcel,
     // Parent vertices (normalized shape)
     parentVertices,
     // Anisotropic metric frame for accurate measurements
@@ -731,14 +731,14 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
     // Requester
     requester, setRequester,
     // Plan data
-    lots, setLots: setLotsWithHistory, setLotsRaw: setLots, setSkipHistory,
+    lots, setLots: setLotsWithHistory,
     roads, setRoads, commonSpaces, setCommonSpaces,
     servitudes, setServitudes, planElements, setPlanElements,
     // Operations
-    handleAutoSubdivide: createInitialLot, updateLot, deleteLot,
-    undo, redo, canUndo: historyIndexRef.current > 0, canRedo: historyIndexRef.current < historyRef.current.length - 1, historyVersion,
+    deleteLot,
+    undo, redo, canUndo: historyIndexRef.current > 0, canRedo: historyIndexRef.current < historyRef.current.length - 1,
     // Validation
-    validation, runValidation,
+    validation,
     // Conformité zonage admin
     zoningCompliance,
     // Éligibilité de la parcelle-mère (vérifiée en amont)
@@ -748,7 +748,6 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
     // Documents
     documents, setDocuments,
     // Submission
-
     submitting, submitted, referenceNumber, createdRequestId, submit, markSubmittedFallback,
     // Pricing
     submissionFee, loadingFee, feeBreakdown,
