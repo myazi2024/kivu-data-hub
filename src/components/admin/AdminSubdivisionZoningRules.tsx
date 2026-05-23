@@ -735,6 +735,9 @@ const AdminSubdivisionZoningRules: React.FC = () => {
 
       <AdminSubdivisionRoadSurfaceMaterials onChanged={fetchMaterials} />
 
+      <AdminSubdivisionDrainageCatalog />
+
+
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-3xl p-0 gap-0 max-h-[92vh] flex flex-col overflow-hidden">
           {/* Header sticky avec dégradé */}
