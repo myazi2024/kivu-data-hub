@@ -33,6 +33,7 @@ import { useLandTitleNotificationFlow } from '@/hooks/useLandTitleNotificationFl
 import { useLeafletMap } from '@/hooks/useLeafletMap';
 import { playFeedbackBeep } from '@/lib/feedbackAudio';
 import { trackEvent } from '@/lib/analytics';
+import { computeEffectiveAreaSqm } from '@/utils/parcelGeometricArea';
 
 import 'leaflet/dist/leaflet.css';
 
