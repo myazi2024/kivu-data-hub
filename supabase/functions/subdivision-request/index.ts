@@ -259,7 +259,9 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Fetch matching rate
+    // Fetch matching rate. Priority: exact location (commune > ville > province)
+    // > generic '*' > first available. Avoids ignoring an admin-configured
+    // location-specific rate just because no '*' row exists.
     const { data: rates } = await supabase
       .from("subdivision_rate_config")
       .select("*")
@@ -267,8 +269,18 @@ Deno.serve(async (req) => {
       .eq("is_active", true);
 
     const ratesData = (rates as any[]) || [];
-    const fallbackRate = ratesData.find((r) => r.location_name === "*");
-    const rate = fallbackRate || ratesData[0];
+    const locCandidates = [
+      body.parent_parcel?.commune,
+      body.parent_parcel?.ville,
+      body.parent_parcel?.province,
+    ].filter((v): v is string => typeof v === 'string' && v.trim().length > 0)
+     .map(v => v.trim().toLowerCase());
+    const matchLocation = (name?: string | null) =>
+      typeof name === 'string' && locCandidates.includes(name.trim().toLowerCase());
+    const rate =
+      ratesData.find((r) => matchLocation(r.location_name)) ??
+      ratesData.find((r) => r.location_name === "*") ??
+      ratesData[0];
 
     // Aggregate roads + common spaces in meters using anisotropic GPS frame
     // (mirrors the client `metricFrame` so areas/lengths match user-facing values).
@@ -304,36 +316,12 @@ Deno.serve(async (req) => {
       }
     }
 
-    let totalFee = 0;
-    let feeBreakdown: any = null;
-    if (rate) {
-      const breakdown = computeSubdivisionFee(
-        {
-          lotsAreasSqm: recomputedLots.map((l: any) => Number(l?.areaSqm) || 0),
-          roadLengthM: aux.roadLengthM,
-          commonSpaceSqm: aux.commonSpaceSqm,
-        },
-        rate as any,
-      );
-      totalFee = breakdown.total;
-      feeBreakdown = {
-        lots_total: Math.round(breakdown.lotsTotal * 100) / 100,
-        road_total: Math.round(breakdown.roadTotal * 100) / 100,
-        common_total: Math.round(breakdown.commonTotal * 100) / 100,
-        road_length_m: Math.round(aux.roadLengthM * 100) / 100,
-        common_space_sqm: Math.round(aux.commonSpaceSqm * 100) / 100,
-        rate_id: rate.id,
-      };
-    } else {
-      // Safe fallback: 10$ per lot minimum
-      totalFee = recomputedLots.length * 10;
-    }
-
     // === Lot E — Server-side infrastructure surcharge (derived from roads) ===
-    // Source unique : voies tracées + tarifs admin. Le champ legacy
-    // `selected_infrastructures` est ignoré (les contributions manuelles
-    // sont remplacées par la dérivation auto via les voies).
+    // Derived FIRST so we can deduct covered road length from the generic
+    // `road_fee_per_linear_m_usd` charge below and avoid double-billing voirie
+    // when a road already produces a `road_surface_<material>` tariff item.
     let infrastructureFee = 0;
+    let roadLengthCoveredM = 0;
     const persistedInfrastructures: Array<{
       infrastructure_key: string;
       label: string;
@@ -394,7 +382,11 @@ Deno.serve(async (req) => {
           });
         };
         if (road.roadSurface?.material) {
-          pushItem(pickTariff(`road_surface_${road.roadSurface.material}`), lengthM * (road.widthM || 0));
+          const surfaceTariff = pickTariff(`road_surface_${road.roadSurface.material}`);
+          if (surfaceTariff) {
+            roadLengthCoveredM += lengthM;
+            pushItem(surfaceTariff, lengthM * (road.widthM || 0));
+          }
         }
         if (road.drainageCanal) {
           const key = road.drainageCanal.material ? `drainage_${road.drainageCanal.material}` : "drainage";
@@ -408,9 +400,41 @@ Deno.serve(async (req) => {
         }
       }
       infrastructureFee = Math.round(infrastructureFee * 100) / 100;
-      totalFee = Math.round((totalFee + infrastructureFee) * 100) / 100;
-      if (feeBreakdown) feeBreakdown.infrastructure_total = infrastructureFee;
     }
+
+    // Generic legacy fee (rate_config.road_fee_per_linear_m_usd) only applies
+    // to roads NOT already billed via a road_surface_* infrastructure tariff.
+    const billableRoadLengthM = Math.max(0, aux.roadLengthM - roadLengthCoveredM);
+
+    let totalFee = 0;
+    let feeBreakdown: any = null;
+    if (rate) {
+      const breakdown = computeSubdivisionFee(
+        {
+          lotsAreasSqm: recomputedLots.map((l: any) => Number(l?.areaSqm) || 0),
+          roadLengthM: billableRoadLengthM,
+          commonSpaceSqm: aux.commonSpaceSqm,
+        },
+        rate as any,
+      );
+      totalFee = Math.round((breakdown.total + infrastructureFee) * 100) / 100;
+      feeBreakdown = {
+        lots_total: Math.round(breakdown.lotsTotal * 100) / 100,
+        road_total: Math.round(breakdown.roadTotal * 100) / 100,
+        common_total: Math.round(breakdown.commonTotal * 100) / 100,
+        road_length_m: Math.round(aux.roadLengthM * 100) / 100,
+        road_length_billable_m: Math.round(billableRoadLengthM * 100) / 100,
+        road_length_covered_by_infra_m: Math.round(roadLengthCoveredM * 100) / 100,
+        common_space_sqm: Math.round(aux.commonSpaceSqm * 100) / 100,
+        infrastructure_total: infrastructureFee,
+        rate_id: rate.id,
+      };
+    } else {
+      // Safe fallback: 10$ per lot minimum + infra fee if any
+      totalFee = Math.round((recomputedLots.length * 10 + infrastructureFee) * 100) / 100;
+      feeBreakdown = { infrastructure_total: infrastructureFee };
+    }
+
 
 
     if (totalFee <= 0) throw new Error("Computed fee must be positive");
