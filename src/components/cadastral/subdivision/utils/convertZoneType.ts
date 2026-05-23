@@ -180,10 +180,18 @@ export function convertZoneType(
   if (toType === 'road') {
     const path = centerline.length >= 2 ? centerline : polygonToCenterline(polygon);
     // Si on convertit un polygone (lot ou espace commun) et qu'on dispose d'un metric frame,
-    // on déduit la largeur réelle de la géométrie tracée plutôt que d'imposer le préréglage.
+    // on déduit la largeur réelle de la géométrie tracée pour que largeur × longueur ≈ aire,
+    // sans plafond bas (la zone dessinée prime sur le préréglage).
     let inferredWidth: number | null = null;
+    let footprint: Point2D[] | undefined;
     if (!source.road && polygon.length >= 3 && ctx.metricFrame) {
-      inferredWidth = inferRoadWidthFromPolygon(polygon, ctx.metricFrame);
+      const areaM2 = polygonAreaSqmAccurate(polygon, ctx.metricFrame);
+      const lenM = edgeLengthM(path[0], path[path.length - 1], ctx.metricFrame);
+      if (areaM2 > 0 && lenM > 0) {
+        const raw = areaM2 / lenM;
+        inferredWidth = Math.min(200, Math.max(2, Math.round(raw * 2) / 2));
+      }
+      footprint = polygon;
     }
     const road: SubdivisionRoad = {
       id: source.road?.id ?? genId('road'),
@@ -193,6 +201,7 @@ export function convertZoneType(
       isExisting: false,
       path,
       affectedLotIds: [],
+      ...(footprint ? { footprint } : {}),
     };
     return { road };
   }
