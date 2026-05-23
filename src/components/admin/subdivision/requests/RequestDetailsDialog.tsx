@@ -7,7 +7,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   Grid3X3, MapPin, User, Phone, Mail, Paperclip, FileText, Square,
-  Route, TreePine, Shield, AlertTriangle, Download, FileCheck2, Loader2,
+  Route, TreePine, Shield, AlertTriangle, Download, FileCheck2, Loader2, Award, DollarSign,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -21,6 +21,7 @@ import { getPlanCommonSpaces, getPlanRoads, getPlanServitudes } from './helpers'
 import { exportSubdivisionDossier } from './exportDossier';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { openSubdivisionCertificate } from '@/utils/subdivisionCertificateUrl';
 
 interface Props {
   open: boolean;
