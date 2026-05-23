@@ -1282,7 +1282,7 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
               })}
 
               {/* Dimensions on edges */}
-              {showDimensions && lot.vertices.map((v, i) => {
+              {showDimensions && !lot.isParentBoundary && lot.vertices.map((v, i) => {
                 const next = lot.vertices[(i + 1) % lot.vertices.length];
                 const sv = toScreen(v);
                 const sn = toScreen(next);
