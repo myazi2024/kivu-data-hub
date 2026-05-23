@@ -224,12 +224,48 @@ export function RequestDetailsDialog({ open, onOpenChange, request, onOpenDocume
               )}
 
               <Card>
-                <CardContent className="pt-4 grid grid-cols-2 gap-3 text-sm">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm flex items-center gap-2"><DollarSign className="h-4 w-4" /> Frais &amp; détail</CardTitle>
+                </CardHeader>
+                <CardContent className="grid grid-cols-2 gap-3 text-sm">
                   {request.purpose_of_subdivision && (
                     <div className="col-span-2"><span className="text-muted-foreground">Motif:</span> <span className="ml-1">{PURPOSE_LABELS[request.purpose_of_subdivision] || request.purpose_of_subdivision}</span></div>
                   )}
-                  <div><span className="text-muted-foreground">Frais soumission:</span> <span className="ml-1">${request.submission_fee_usd}</span></div>
-                  <div><span className="text-muted-foreground">Total:</span> <span className="ml-1 font-bold">${request.total_amount_usd}</span></div>
+                  <div><span className="text-muted-foreground">Frais soumission:</span> <span className="ml-1 font-mono">${Number(request.submission_fee_usd || 0).toFixed(2)}</span></div>
+                  <div><span className="text-muted-foreground">Frais instruction:</span> <span className="ml-1 font-mono">${Number(request.processing_fee_usd || 0).toFixed(2)}</span></div>
+                  {(request as any).infrastructure_fee_usd != null && (
+                    <div><span className="text-muted-foreground">Frais infrastructure:</span> <span className="ml-1 font-mono">${Number((request as any).infrastructure_fee_usd).toFixed(2)}</span></div>
+                  )}
+                  {(request as any).road_surface_fee_usd != null && Number((request as any).road_surface_fee_usd) > 0 && (
+                    <div><span className="text-muted-foreground">Revêtement voirie:</span> <span className="ml-1 font-mono">${Number((request as any).road_surface_fee_usd).toFixed(2)}</span></div>
+                  )}
+                  <div className="col-span-2 border-t pt-2"><span className="text-muted-foreground">Total:</span> <span className="ml-1 font-bold text-primary">${Number(request.total_amount_usd || 0).toFixed(2)}</span></div>
+
+                  {(() => {
+                    const fi: any = (request as any).fee_items;
+                    const bd = fi && typeof fi === 'object' ? (fi.breakdown || fi) : null;
+                    if (!bd) return null;
+                    const rows: Array<[string, any]> = [
+                      ['Lots × tarif', bd.lotsTotal],
+                      ['Voirie facturée (ml)', bd.road_length_billable_m],
+                      ['Voirie couverte par infrastructure (ml)', bd.road_length_covered_by_infra_m],
+                      ['Voirie (linéaire) $', bd.roadTotal],
+                      ['Espaces communs $', bd.commonTotal],
+                      ['Infrastructures total $', bd.infrastructure_total],
+                    ].filter(([, v]) => v !== undefined && v !== null);
+                    if (rows.length === 0) return null;
+                    return (
+                      <div className="col-span-2 mt-2 rounded-md bg-muted/30 p-2 space-y-1">
+                        <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Décomposition serveur</div>
+                        {rows.map(([k, v]) => (
+                          <div key={k} className="flex justify-between text-xs">
+                            <span className="text-muted-foreground">{k}</span>
+                            <span className="font-mono">{typeof v === 'number' ? v.toFixed(2) : String(v)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })()}
                 </CardContent>
               </Card>
 
