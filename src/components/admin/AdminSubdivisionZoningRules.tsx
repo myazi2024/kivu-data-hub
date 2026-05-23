@@ -1243,7 +1243,7 @@ const AdminSubdivisionZoningRules: React.FC = () => {
                         <span className="text-[11px] text-muted-foreground italic">Aucun matériau actif — ajoutez-en dans la section dédiée ci-dessous.</span>
                       )}
                       {materials.map(m => {
-                        const checked = (form.road_surface_allowed_materials ?? []).includes(m.key);
+                        const checked = toStringArray(form.road_surface_allowed_materials).includes(m.key);
                         const hasTariff = roadSurfaceTariffKeys.has(m.key);
                         return (
                           <label key={m.key} className={`text-[11px] px-2 py-0.5 rounded border cursor-pointer ${checked ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted/40'}`} title={hasTariff ? (m.description ?? '') : `${m.description ?? ''}\n⚠ Aucun tarif road_surface_${m.key} configuré : frais = 0`}>
