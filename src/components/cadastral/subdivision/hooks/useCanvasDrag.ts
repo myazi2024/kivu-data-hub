@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef } from 'react';
 import { SubdivisionLot, Point2D } from '../types';
-import { MetricFrame, polygonAreaSqmAccurate, polygonPerimeterM } from '../utils/metrics';
+import { MetricFrame, polygonAreaSqmAccurate, polygonAreaSqmRelative, polygonPerimeterM } from '../utils/metrics';
 
 type DragType = 'vertex' | 'edge' | 'polygon' | null;
 
@@ -21,18 +21,25 @@ export function useCanvasDrag(
   snapEnabled: boolean,
   showGrid: boolean,
   metricFrame?: MetricFrame,
+  parentNormArea?: number,
+  parentAreaSqm?: number,
 ) {
   const [dragState, setDragState] = useState<DragState | null>(null);
   const lastNorm = useRef<Point2D | null>(null);
 
-  // Compute area + perimeter via the metric frame (single source of truth).
+  // Compute area + perimeter. Prefer scaling relative to the parent parcel so
+  // the sum of lots stays consistent with the official `area_sqm`; fall back
+  // to the bbox-accurate metric only if no parent context is provided.
   const computeMetrics = useCallback((vertices: Point2D[]): { areaSqm?: number; perimeterM?: number } => {
     if (!metricFrame) return {};
+    const areaSqm = parentNormArea && parentNormArea > 0 && parentAreaSqm && parentAreaSqm > 0
+      ? Math.max(1, Math.round(polygonAreaSqmRelative(vertices, parentNormArea, parentAreaSqm)))
+      : Math.max(1, Math.round(polygonAreaSqmAccurate(vertices, metricFrame)));
     return {
-      areaSqm: Math.max(1, Math.round(polygonAreaSqmAccurate(vertices, metricFrame))),
+      areaSqm,
       perimeterM: Math.round(polygonPerimeterM(vertices, metricFrame)),
     };
-  }, [metricFrame]);
+  }, [metricFrame, parentNormArea, parentAreaSqm]);
 
   const snapToGrid = useCallback((p: Point2D): Point2D => {
     if (!snapEnabled) return p;
