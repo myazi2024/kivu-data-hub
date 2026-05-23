@@ -89,6 +89,7 @@ const AdminSubdivisionRoadSurfaceMaterials: React.FC<Props> = ({ onChanged }) =>
       description: form.description.trim() || null,
       display_order: parseInt(form.display_order) || 0,
       is_active: form.is_active,
+      price_multiplier: Math.max(0, parseFloat(form.price_multiplier) || 1),
     };
     const q = untypedTables.generic('subdivision_road_surface_materials');
     const { error } = editing
