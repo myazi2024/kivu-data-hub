@@ -4,15 +4,9 @@
 // l'archive dans le bucket privé `subdivision-plans` et persiste son chemin
 // dans `subdivision_requests.official_plan_path`.
 //
-// - Réservé à un admin/super_admin.
-// - Incrémente `official_plan_version` à chaque (re)génération.
-// - Crée une `document_verifications` (type `subdivision_plan`) côté serveur,
-//   avec QR pointant vers `/verify/{code}`.
-// - Format vectoriel pur dimensionné selon le ratio bbox (lots + voies),
-//   base 1000 mm bornée à [600, 1400] mm → imprimable jusqu'à 10×10 m.
-// - 3 cadres de signature dynamiques urbain (ville/commune) ou rural
-//   (territoire/groupement).
-// - Filigrane diagonal opacité ~7 %.
+// P1 — Consomme intégralement `configSnapshot` (app_subdivision_plan_config,
+// subdivision_signature_frames, subdivision_legend_symbols) ; rien d'autre
+// n'est codé en dur.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import jsPDF from "npm:jspdf@2.5.1";
@@ -25,6 +19,14 @@ const corsHeaders = {
 };
 
 interface Body { request_id: string }
+
+type Frame = { title: string; authority: string };
+type LegendSymbolRow = { symbol_type: string; label: string; color?: string | null; active?: boolean };
+type ConfigSnapshot = {
+  config: Record<string, any>;
+  signature_frames: any[];
+  legend_symbols: LegendSymbolRow[];
+};
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -46,7 +48,6 @@ Deno.serve(async (req) => {
     const body: Body = await req.json();
     if (!body.request_id) throw new Error("request_id required");
 
-    // --- Charger demande + lots + parcelle géo ---
     const { data: request, error: rErr } = await supabase
       .from("subdivision_requests").select("*").eq("id", body.request_id).single();
     if (rErr || !request) throw new Error("Subdivision request not found");
@@ -68,19 +69,17 @@ Deno.serve(async (req) => {
     const planData: any = request.subdivision_plan_data || {};
     const roads: any[] = Array.isArray(planData.roads) ? planData.roads : [];
 
-    // --- Contexte urbain/rural ---
+    // Contexte urbain/rural pour filtrer les cadres
     const { data: parcelGeo } = await supabase.from("cadastral_parcels")
       .select("commune, ville, territoire, groupement, province")
       .eq("parcel_number", request.parcel_number).maybeSingle();
+    const province = (parcelGeo?.province || "").trim() || null;
+    const isUrban = !!((parcelGeo?.commune || "").trim() && (parcelGeo?.ville || "").trim());
 
-    const ctx = buildContext(parcelGeo || {});
-
-    // --- Version & verification code (UUID anti-collision, jamais Math.random) ---
+    // Version & verification code
     const newVersion = (Number(request.official_plan_version) || 0) + 1;
     const randSuffix = crypto.randomUUID().slice(0, 8).toUpperCase();
     const verifCode = `SP-${request.reference_number}-V${newVersion}-${randSuffix}`;
-    // FRONTEND_URL doit pointer vers l'origine front (ex: https://app.bic.cd) ;
-    // fallback : Origin de la requête, puis projet supabase en dernier recours.
     const frontendBase = (Deno.env.get("FRONTEND_URL") || req.headers.get("origin") || url).replace(/\/$/, "");
     const finalVerifyUrl = `${frontendBase}/verify/${verifCode}`;
 
@@ -98,43 +97,42 @@ Deno.serve(async (req) => {
       },
     });
 
-    // --- Snapshot config (reproductibilité) ---
+    // Snapshot config complet
     const { data: cfgRows } = await supabase
-      .from("app_subdivision_plan_config")
-      .select("config_key, config_value");
+      .from("app_subdivision_plan_config").select("config_key, config_value");
     const { data: framesRows } = await supabase
       .from("subdivision_signature_frames")
       .select("*").eq("active", true).order("display_order", { ascending: true });
     const { data: symbolsRows } = await supabase
       .from("subdivision_legend_symbols")
       .select("*").eq("active", true).order("display_order", { ascending: true });
-    const configSnapshot = {
+
+    const configSnapshot: ConfigSnapshot = {
       config: (cfgRows || []).reduce((acc: any, r: any) => { acc[r.config_key] = r.config_value; return acc; }, {}),
       signature_frames: framesRows || [],
-      legend_symbols: symbolsRows || [],
-      generator: "generate-subdivision-plan@p3",
-      snapshot_at: new Date().toISOString(),
+      legend_symbols: (symbolsRows || []) as LegendSymbolRow[],
     };
 
-    // --- Générer PDF ---
-    const pdfBlob = await buildPdf({ request, lots, roads, ctx, verifyUrl: finalVerifyUrl, version: newVersion });
-    void configSnapshot; // P1 (TODO): passer configSnapshot à buildPdf via shared module Deno
+    // Cadres dynamiques (filtre urbain/rural + province)
+    const frames = resolveFrames(configSnapshot.signature_frames, { isUrban, province });
+
+    const pdfBlob = await buildPdf({
+      request, lots, roads, frames, verifyUrl: finalVerifyUrl, version: newVersion,
+      snapshot: configSnapshot,
+    });
     const pdfBytes = new Uint8Array(await pdfBlob.arrayBuffer());
 
-    // --- Upload bucket privé : {user_id}/{request_id}/plan-{ref}-v{n}.pdf ---
     const path = `${request.user_id}/${request.id}/plan-${request.reference_number}-v${newVersion}.pdf`;
     const { error: upErr } = await supabase.storage.from("subdivision-plans")
       .upload(path, pdfBytes, { contentType: "application/pdf", upsert: true });
     if (upErr) throw new Error(`Upload failed: ${upErr.message}`);
 
-    // --- Persister chemin + version sur la demande ---
     await supabase.from("subdivision_requests").update({
       official_plan_path: path,
       official_plan_generated_at: new Date().toISOString(),
       official_plan_version: newVersion,
     }).eq("id", request.id);
 
-    // --- Versioning : ligne immuable dans subdivision_plan_versions ---
     await supabase.from("subdivision_plan_versions").insert({
       subdivision_request_id: request.id,
       version_number: newVersion,
@@ -143,13 +141,12 @@ Deno.serve(async (req) => {
       plan_data: planData,
       lots_data: lots,
       verification_code: verifCode,
-      config_snapshot: configSnapshot,
+      config_snapshot: { ...configSnapshot, generator: "generate-subdivision-plan@p1", snapshot_at: new Date().toISOString() },
       is_current: true,
       reason: "official_plan_generated",
       created_by: user.id,
     }).then(() => null).catch((e: any) => console.warn("plan_versions insert failed:", e?.message));
 
-    // --- Audit ---
     await supabase.from("request_admin_audit").insert({
       request_table: "subdivision_requests",
       request_id: request.id,
@@ -160,7 +157,6 @@ Deno.serve(async (req) => {
       payload: { version: newVersion, path },
     }).then(() => null).catch(() => null);
 
-    // --- Notif user ---
     await supabase.from("notifications").insert({
       user_id: request.user_id,
       type: "success",
@@ -182,27 +178,56 @@ Deno.serve(async (req) => {
 
 // ---------- Helpers ----------
 
-interface Frame { title: string; authority: string }
-function buildContext(p: any): { isUrban: boolean; frames: Frame[] } {
-  const t = (v: any) => (typeof v === "string" ? v.trim() : "") || "";
-  const commune = t(p.commune), ville = t(p.ville), territoire = t(p.territoire), groupement = t(p.groupement);
-  const isUrban = !!(commune && ville);
-  const f1: Frame = { title: "Certifié conforme au plan cadastral", authority: "Bureau d'Information Cadastrale" };
-  const f2: Frame = isUrban
-    ? { title: `Approuvé par la ville de ${ville}`, authority: "Hôtel de Ville" }
-    : { title: `Approuvé par le Bureau de la Chefferie${groupement ? " " + groupement : ""}`, authority: "Chefferie" };
-  const f3: Frame = isUrban
-    ? { title: `Vu par le Bureau de la Commune${commune ? " de " + commune : ""}`, authority: "Bureau Communal" }
-    : { title: `Vu par le Chef du Territoire${territoire ? " de " + territoire : ""}`, authority: "Administration du Territoire" };
-  return { isUrban, frames: [f1, f2, f3] };
+function resolveFrames(rows: any[], ctx: { isUrban: boolean; province: string | null }): Frame[] {
+  const applies = ctx.isUrban ? "urban" : "rural";
+  const filtered = (rows || []).filter((r: any) => {
+    if (r.applies_to && r.applies_to !== "both" && r.applies_to !== applies) return false;
+    const pf: string[] = r.province_filter || [];
+    if (pf.length && ctx.province && !pf.includes(ctx.province)) return false;
+    return true;
+  });
+  if (filtered.length) {
+    return filtered.map((r: any) => ({ title: r.title_template || r.name, authority: r.authority || "" }));
+  }
+  // Fallback minimal si aucun cadre configuré
+  return [
+    { title: "Certifié conforme au plan cadastral", authority: "Bureau d'Information Cadastrale" },
+    { title: ctx.isUrban ? "Approuvé par la Ville" : "Approuvé par la Chefferie", authority: ctx.isUrban ? "Hôtel de Ville" : "Chefferie" },
+    { title: ctx.isUrban ? "Vu par le Bureau Communal" : "Vu par le Chef du Territoire", authority: ctx.isUrban ? "Bureau Communal" : "Administration du Territoire" },
+  ];
+}
+
+// Échelle normalisée à partir des tiers de configuration
+function normalizedScaleLabel(maxDimM: number, paperMm: number, tiers?: number[]): string {
+  if (!maxDimM || !paperMm) return "";
+  const defaultTiers = [200, 500, 1000, 2000, 5000, 10000];
+  const t = (Array.isArray(tiers) && tiers.length ? tiers : defaultTiers).slice().sort((a, b) => a - b);
+  const rawDenominator = (maxDimM * 1000) / paperMm;
+  const tier = t.find((x) => x >= rawDenominator) || t[t.length - 1];
+  return `1:${tier.toLocaleString("fr-FR")}`;
+}
+
+function deriveLegendItems(symbols: LegendSymbolRow[], presentTypes: string[]): { label: string; color: string }[] {
+  const set = new Set(presentTypes);
+  return (symbols || [])
+    .filter((s) => s.active !== false && set.has(s.symbol_type))
+    .map((s) => ({ label: s.label, color: s.color || "#666" }));
 }
 
 async function buildPdf(args: {
-  request: any; lots: any[]; roads: any[]; ctx: { frames: Frame[] }; verifyUrl: string; version: number;
+  request: any; lots: any[]; roads: any[]; frames: Frame[]; verifyUrl: string; version: number;
+  snapshot: ConfigSnapshot;
 }): Promise<Blob> {
-  const { request, lots, roads, ctx, verifyUrl, version } = args;
+  const { request, lots, roads, frames, verifyUrl, version, snapshot } = args;
+  const cfg = snapshot.config || {};
+  const hdr = cfg.header || {};
+  const wmCfg = cfg.watermarks || {};
+  const paper = cfg.paper_format || {};
+  const scaleCfg = cfg.scale_tiers || {};
+  const rp = cfg.report_program || {};
+  const footerCustom = (cfg.footer_text?.text as string) || "Reproduction interdite — toute falsification est passible de poursuites judiciaires.";
 
-  // BBox pour ratio
+  // BBox
   const allPts: { x: number; y: number }[] = [];
   lots.forEach((l: any) => Array.isArray(l.vertices) && l.vertices.forEach((p: any) => {
     if (typeof p?.x === "number" && typeof p?.y === "number") allPts.push(p);
@@ -217,12 +242,14 @@ async function buildPdf(args: {
     const minY = Math.min(...allPts.map(p => p.y)), maxY = Math.max(...allPts.map(p => p.y));
     ratio = Math.max(0.0001, maxX - minX) / Math.max(0.0001, maxY - minY);
   }
-  const BASE = 1000;
+  const BASE = Number(paper.base_mm) || 1000;
+  const MIN = Number(paper.min_mm) || 600;
+  const MAX = Number(paper.max_mm) || 1400;
   let pageW = BASE, pageH = BASE / ratio;
-  if (pageH < 600) { pageH = 600; pageW = pageH * ratio; }
-  if (pageH > 1400) { pageH = 1400; pageW = pageH * ratio; }
-  if (pageW < 600) { pageW = 600; pageH = pageW / ratio; }
-  if (pageW > 1400) { pageW = 1400; pageH = pageW / ratio; }
+  if (pageH < MIN) { pageH = MIN; pageW = pageH * ratio; }
+  if (pageH > MAX) { pageH = MAX; pageW = pageH * ratio; }
+  if (pageW < MIN) { pageW = MIN; pageH = pageW / ratio; }
+  if (pageW > MAX) { pageW = MAX; pageH = pageW / ratio; }
 
   const doc = new jsPDF({ orientation: pageW >= pageH ? "landscape" : "portrait", unit: "mm", format: [pageW, pageH] });
   const S = Math.min(pageW, pageH) / 600;
@@ -232,19 +259,25 @@ async function buildPdf(args: {
   doc.setLineWidth(mm(1)); doc.setDrawColor(0, 100, 200);
   doc.rect(mm(8), mm(8), pageW - mm(16), pageH - mm(16));
 
-  // Filigrane
-  drawWatermark(doc, pageW, pageH, `PLAN OFFICIEL — ${request.reference_number}`, S);
+  // Filigrane d'état (final = sample éphémère ? non, final = pas de filigrane,
+  // mais "PLAN OFFICIEL — ref" reste apposé en filigrane léger)
+  drawOfficialWatermark(doc, pageW, pageH, `PLAN OFFICIEL — ${request.reference_number}`, S, wmCfg.final);
 
-  // Header
+  // Header (config-driven)
+  const orgLine1 = hdr.org_line1 || "RÉPUBLIQUE DÉMOCRATIQUE DU CONGO";
+  const orgLine2 = hdr.org_line2 || "BUREAU D'INFORMATION CADASTRALE";
+  const orgLine3 = hdr.org_line3 || "Direction de l'Aménagement et de l'Urbanisme";
+  const titleText = hdr.title || "PLAN OFFICIEL DE LOTISSEMENT";
+
   doc.setFont("helvetica", "bold"); doc.setTextColor(0, 50, 100);
-  doc.setFontSize(16 * S); doc.text("RÉPUBLIQUE DÉMOCRATIQUE DU CONGO", pageW / 2, mm(16), { align: "center" });
-  doc.setFontSize(11 * S); doc.text("BUREAU D'INFORMATION CADASTRALE", pageW / 2, mm(22), { align: "center" });
+  doc.setFontSize(16 * S); doc.text(orgLine1, pageW / 2, mm(16), { align: "center" });
+  doc.setFontSize(11 * S); doc.text(orgLine2, pageW / 2, mm(22), { align: "center" });
   doc.setFont("helvetica", "normal"); doc.setFontSize(9 * S); doc.setTextColor(80, 80, 80);
-  doc.text("Direction de l'Aménagement et de l'Urbanisme", pageW / 2, mm(27), { align: "center" });
+  doc.text(orgLine3, pageW / 2, mm(27), { align: "center" });
   doc.setLineWidth(mm(0.4)); doc.setDrawColor(0, 100, 200);
   doc.line(mm(12), mm(31), pageW - mm(12), mm(31));
   doc.setFont("helvetica", "bold"); doc.setFontSize(15 * S); doc.setTextColor(180, 0, 0);
-  doc.text("PLAN OFFICIEL DE LOTISSEMENT", pageW / 2, mm(39), { align: "center" });
+  doc.text(titleText, pageW / 2, mm(39), { align: "center" });
   doc.setTextColor(0, 0, 0); doc.setFontSize(10 * S);
   doc.text(`Référence : ${request.reference_number}  —  Version officielle v${version}`, pageW / 2, mm(45), { align: "center" });
 
@@ -311,6 +344,15 @@ async function buildPdf(args: {
       const proj = path.map(project);
       for (let i = 1; i < proj.length; i++) doc.line(proj[i - 1].X, proj[i - 1].Y, proj[i].X, proj[i].Y);
     });
+
+    // Flèche du nord
+    const nx = planX + planW - mm(8), ny = planY + mm(8);
+    doc.setDrawColor(40, 40, 40); doc.setFillColor(40, 40, 40);
+    doc.setLineWidth(mm(0.4));
+    doc.triangle(nx, ny - mm(5), nx - mm(2.5), ny + mm(2), nx + mm(2.5), ny + mm(2), "F");
+    doc.line(nx, ny + mm(2), nx, ny + mm(6));
+    doc.setFontSize(7 * S); doc.setFont("helvetica", "bold"); doc.setTextColor(40, 40, 40);
+    doc.text("N", nx, ny - mm(6), { align: "center" });
   }
 
   // Tableau lots
@@ -326,7 +368,7 @@ async function buildPdf(args: {
   yT += mm(6);
   doc.setTextColor(0, 0, 0); doc.setFont("helvetica", "normal");
   lots.forEach((lot: any, i: number) => {
-    if (yT > tableMaxY) return; // tronqué pour rester sur la page
+    if (yT > tableMaxY) return;
     if (i % 2 === 0) { doc.setFillColor(245, 245, 245); doc.rect(mm(12), yT, pageW - mm(24), mm(5.5), "F"); }
     doc.text(String(lot.lotNumber || i + 1), colXs[0] + mm(1), yT + mm(4));
     doc.text(String(Number(lot.areaSqm || 0).toFixed(2)), colXs[1] + mm(1), yT + mm(4));
@@ -336,12 +378,22 @@ async function buildPdf(args: {
     yT += mm(5.5);
   });
 
-  // 3 cadres signature
+  // Cadres signature (dynamiques)
   const sigY = pageH - mm(72), sigH = mm(45), sigGap = mm(4);
-  const sigW = (pageW - mm(24) - sigGap * 2) / 3;
-  ctx.frames.forEach((frame, idx) => drawSignatureFrame(doc, mm(12) + idx * (sigW + sigGap), sigY, sigW, sigH, frame, S));
+  const sigCount = Math.max(1, Math.min(frames.length, 5));
+  const sigW = (pageW - mm(24) - sigGap * (sigCount - 1)) / sigCount;
+  frames.slice(0, sigCount).forEach((frame, idx) =>
+    drawSignatureFrame(doc, mm(12) + idx * (sigW + sigGap), sigY, sigW, sigH, frame, S),
+  );
 
-  // QR + footer
+  // Légende auto (depuis subdivision_legend_symbols)
+  const presentTypes: string[] = ["north_arrow", "echelle_graphique"];
+  if (roads.length) presentTypes.push("road");
+  if (lots.length) presentTypes.push("lot");
+  const legend = deriveLegendItems(snapshot.legend_symbols, presentTypes).slice(0, 6);
+  if (legend.length) drawLegendBox(doc, pageW - mm(80), sigY - mm(22), mm(68), mm(20), legend, S);
+
+  // QR
   const qrPng = await QRCode.toDataURL(verifyUrl, { width: 400, margin: 1 });
   const qrSize = mm(22);
   const qrX = pageW - qrSize - mm(12), qrY = pageH - qrSize - mm(12);
@@ -350,12 +402,32 @@ async function buildPdf(args: {
   doc.text("Scannez pour vérifier", qrX + qrSize / 2, qrY + qrSize + mm(3), { align: "center" });
   doc.setFontSize(6 * S); doc.text(verifyUrl, qrX + qrSize / 2, qrY + qrSize + mm(6), { align: "center" });
 
+  // Programme signalement (récompense) — config-driven
+  if (rp?.active && rp?.whatsapp_number) {
+    const reportText = (rp.report_text_template
+      || "Si vous n'avez pas de résultat positif, signalez-le au {whatsapp_number}. Vous pouvez gagner une récompense financière jusqu'à {reward_amount} {currency}.")
+      .replace("{whatsapp_number}", rp.whatsapp_number)
+      .replace("{reward_amount}", String(rp.reward_amount ?? ""))
+      .replace("{currency}", rp.reward_currency || "USD");
+    doc.setFontSize(7 * S); doc.setTextColor(120, 30, 30); doc.setFont("helvetica", "italic");
+    const wrapped = doc.splitTextToSize(reportText, qrSize + mm(50));
+    doc.text(wrapped, qrX, qrY - mm(2), { align: "left" });
+  }
+
+  // Échelle normalisée
+  let scaleLabel = "";
+  if (allPts.length >= 3 && request.parent_parcel_area_sqm) {
+    const maxDim = Math.sqrt(request.parent_parcel_area_sqm) * 1.2;
+    const tiers = Array.isArray(scaleCfg.tiers) ? scaleCfg.tiers : undefined;
+    scaleLabel = normalizedScaleLabel(maxDim, Math.min(pageW, pageH) - 40, tiers);
+  }
+
   doc.setFontSize(7 * S); doc.setTextColor(100, 100, 100); doc.setFont("helvetica", "italic");
   const lines = [
     `Version officielle v${version} — Document généré le ${new Date().toLocaleString("fr-FR")}.`,
     "Ce plan de lotissement est authentifiable via le QR code ci-contre.",
-    "Toute reproduction ou falsification est passible de poursuites judiciaires.",
-    `Format : ${pageW.toFixed(0)} × ${pageH.toFixed(0)} mm — vectoriel HD imprimable jusqu'à 10 m.`,
+    footerCustom,
+    `Format : ${pageW.toFixed(0)} × ${pageH.toFixed(0)} mm${scaleLabel ? ` — Échelle ${scaleLabel}` : ""} — vectoriel HD.`,
   ];
   lines.forEach((t, i) => doc.text(t, mm(12), pageH - mm(20) + i * mm(3)));
 
@@ -370,7 +442,7 @@ function drawSignatureFrame(doc: any, x: number, y: number, w: number, h: number
   const tlines = doc.splitTextToSize(frame.title, w - mm(2));
   doc.text(tlines[0] || frame.title, x + w / 2, y + mm(4.5), { align: "center" });
   doc.setFont("helvetica", "normal"); doc.setFontSize(7 * S); doc.setTextColor(80, 80, 80);
-  doc.text(frame.authority, x + w / 2, y + mm(10), { align: "center" });
+  doc.text(frame.authority || "", x + w / 2, y + mm(10), { align: "center" });
   let fy = y + mm(15);
   doc.setFontSize(7 * S); doc.setTextColor(40, 40, 40);
   for (const f of ["Nom :", "Fonction :", "Date :"]) {
@@ -391,14 +463,37 @@ function drawSignatureFrame(doc: any, x: number, y: number, w: number, h: number
   doc.line(x + mm(16), y + h - mm(2.7), x + w - sealR * 2 - mm(8), y + h - mm(2.7));
 }
 
-function drawWatermark(doc: any, pageW: number, pageH: number, text: string, S: number) {
+function drawLegendBox(doc: any, x: number, y: number, w: number, h: number, items: { label: string; color: string }[], S: number) {
+  const mm = (v: number) => v * S;
+  doc.setDrawColor(120, 120, 120); doc.setLineWidth(mm(0.3)); doc.rect(x, y, w, h);
+  doc.setFillColor(245, 245, 250); doc.rect(x, y, w, mm(5), "F");
+  doc.setFont("helvetica", "bold"); doc.setFontSize(8 * S); doc.setTextColor(0, 50, 100);
+  doc.text("Légende", x + w / 2, y + mm(3.5), { align: "center" });
+  doc.setFont("helvetica", "normal"); doc.setFontSize(7 * S); doc.setTextColor(40, 40, 40);
+  const rowH = mm(3.2);
+  items.forEach((it, i) => {
+    const ry = y + mm(6) + i * rowH;
+    const m = /^#?([0-9a-f]{6})$/i.exec(it.color || "");
+    const n = m ? parseInt(m[1], 16) : 0x666666;
+    doc.setFillColor((n >> 16) & 255, (n >> 8) & 255, n & 255);
+    doc.rect(x + mm(2), ry - mm(2), mm(3), mm(2), "F");
+    doc.text(it.label, x + mm(7), ry - mm(0.5));
+  });
+}
+
+function drawOfficialWatermark(doc: any, pageW: number, pageH: number, text: string, S: number, override?: any) {
+  const opacity = typeof override?.opacity === "number" ? override.opacity : 0.07;
+  const color: [number, number, number] = Array.isArray(override?.color) && override.color.length === 3
+    ? override.color : [180, 0, 0];
+  const customText = typeof override?.text === "string" && override.text ? override.text : text;
+
   doc.saveGraphicsState();
-  doc.setGState(new doc.GState({ opacity: 0.07 }));
-  doc.setFont("helvetica", "bold"); doc.setFontSize(48 * S); doc.setTextColor(180, 0, 0);
+  doc.setGState(new doc.GState({ opacity }));
+  doc.setFont("helvetica", "bold"); doc.setFontSize(48 * S); doc.setTextColor(color[0], color[1], color[2]);
   const step = 80 * S;
   for (let y = -step; y < pageH + step; y += step) {
     for (let x = -step; x < pageW + step; x += step * 2) {
-      doc.text(text, x, y, { angle: -30 });
+      doc.text(customText, x, y, { angle: -30 });
     }
   }
   doc.restoreGraphicsState();
