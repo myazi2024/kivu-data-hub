@@ -16,13 +16,12 @@ import { Plus, Pencil, Trash2, Ruler, Loader2, MapPin, Building2, TreePine, Sett
 import { Separator } from '@/components/ui/separator';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import AdminSubdivisionRoadSurfaceMaterials, { type RoadSurfaceMaterial } from './AdminSubdivisionRoadSurfaceMaterials';
+import AdminSubdivisionDrainageCatalog from './AdminSubdivisionDrainageCatalog';
 import { validateZoningRuleForm } from './subdivision/zoningValidation';
 import {
-  DRAINAGE_CANAL_MATERIALS,
-  DRAINAGE_CANAL_MATERIAL_LABELS,
-  DRAINAGE_CANAL_TYPES,
-  DRAINAGE_CANAL_TYPE_LABELS,
-} from '@/components/cadastral/subdivision/infrastructureConstants';
+  useDrainageMaterialsCatalog,
+  useDrainageTypesCatalog,
+} from '@/hooks/useSubdivisionDrainageCatalog';
 
 /** Petit indicateur d'aide affichant un popover explicatif au clic. */
 const FieldHelp: React.FC<{ title: string; description: string; example?: string }> = ({ title, description, example }) => (
