@@ -251,4 +251,3 @@ const BorderingRoadsPanel: React.FC<Props> = ({ roads, setRoads, parentVertices,
 
 export default BorderingRoadsPanel;
 
-<Plus className="hidden" />
