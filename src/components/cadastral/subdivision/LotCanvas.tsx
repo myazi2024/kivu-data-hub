@@ -825,6 +825,68 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
         {/* Roads — polygon rendering with clear borders */}
         {showRoads && [...roads].sort((a, b) => (a.id === selectedRoadId ? 1 : 0) - (b.id === selectedRoadId ? 1 : 0)).map(road => {
           if (road.path.length < 2) return null;
+
+          // External (bordering) roads: draw a parallel band on the OUTSIDE of the
+          // selected parent-parcel side. Inner edge of the band coincides with the side.
+          if (road.isExternal && road.borderingParcelSideIndex != null && parentVertices && parentVertices.length >= 3) {
+            const sideIdx = road.borderingParcelSideIndex;
+            const aN = parentVertices[sideIdx];
+            const bN = parentVertices[(sideIdx + 1) % parentVertices.length];
+            if (!aN || !bN) return null;
+            const A = toScreen(aN);
+            const B = toScreen(bN);
+            const dx = B.x - A.x;
+            const dy = B.y - A.y;
+            const len = Math.sqrt(dx * dx + dy * dy) || 1;
+            // Two candidate normals
+            let nx = -dy / len;
+            let ny = dx / len;
+            // Choose outward direction: opposite to parent centroid
+            const cN = polygonCentroid(parentVertices);
+            const C = toScreen(cN);
+            const midX = (A.x + B.x) / 2;
+            const midY = (A.y + B.y) / 2;
+            const toCentroidX = C.x - midX;
+            const toCentroidY = C.y - midY;
+            if (nx * toCentroidX + ny * toCentroidY > 0) { nx = -nx; ny = -ny; }
+            const widthPx = Math.max(4, (road.widthM / sideLength) * (CANVAS_W - 2 * PADDING));
+            const TL = { x: A.x, y: A.y };
+            const TR = { x: B.x, y: B.y };
+            const BR = { x: B.x + nx * widthPx, y: B.y + ny * widthPx };
+            const BL = { x: A.x + nx * widthPx, y: A.y + ny * widthPx };
+            const polyStr = `${TL.x},${TL.y} ${TR.x},${TR.y} ${BR.x},${BR.y} ${BL.x},${BL.y}`;
+            // Label angle along the side
+            let angleDeg = Math.atan2(dy, dx) * (180 / Math.PI);
+            if (angleDeg > 90) angleDeg -= 180;
+            if (angleDeg < -90) angleDeg += 180;
+            const lcx = (TL.x + TR.x + BR.x + BL.x) / 4;
+            const lcy = (TL.y + TR.y + BR.y + BL.y) / 4;
+            const widthLabel = `${Math.round(road.widthM * 10) / 10}m`;
+            return (
+              <g key={road.id} className="pointer-events-none">
+                <polygon
+                  points={polyStr}
+                  fill="#d4a574"
+                  fillOpacity={0.25}
+                  stroke="#92400e"
+                  strokeWidth={1.5}
+                />
+                <text
+                  x={lcx}
+                  y={lcy}
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                  fontSize={10}
+                  fill="#78350f"
+                  fontWeight={600}
+                  transform={`rotate(${angleDeg} ${lcx} ${lcy})`}
+                >
+                  {road.name} ({widthLabel})
+                </text>
+              </g>
+            );
+          }
+
           const pathPoints = road.path.map(p => toScreen(p));
           const polylineStr = pathPoints.map(p => `${p.x},${p.y}`).join(' ');
           const roadWidthPx = Math.max(4, (road.widthM / sideLength) * (CANVAS_W - 2 * PADDING));
