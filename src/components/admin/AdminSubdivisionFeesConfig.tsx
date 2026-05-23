@@ -193,8 +193,8 @@ const AdminSubdivisionFeesConfig: React.FC = () => {
                     <TableHead className="text-right">Palier dégressif</TableHead>
                     <TableHead className="text-right">Min/lot</TableHead>
                     <TableHead className="text-right">Max/lot</TableHead>
-                    <TableHead className="text-right">Voirie ($/ml)</TableHead>
-                    <TableHead className="text-right">Esp. communs ($/m²)</TableHead>
+                    <TableHead className="text-right" title="Champ legacy — remplacé par les tarifs d'infrastructure (voirie / drainage / éclairage)">Voirie ($/ml) <Badge variant="outline" className="ml-1 text-[9px]">deprecated</Badge></TableHead>
+                    <TableHead className="text-right" title="Champ legacy — remplacé par les tarifs d'infrastructure (espaces communs)">Esp. communs ($/m²) <Badge variant="outline" className="ml-1 text-[9px]">deprecated</Badge></TableHead>
                     <TableHead>Actif</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
@@ -357,16 +357,19 @@ const AdminSubdivisionFeesConfig: React.FC = () => {
                 <Input type="number" step="0.01" value={form.tier_rate_per_sqm_usd} onChange={e => setForm(f => ({ ...f, tier_rate_per_sqm_usd: e.target.value }))} placeholder="Ex: 0.30" />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-2 opacity-70">
               <div>
-                <Label>Voirie ($ / m linéaire)</Label>
-                <Input type="number" step="0.01" value={form.road_fee_per_linear_m_usd} onChange={e => setForm(f => ({ ...f, road_fee_per_linear_m_usd: e.target.value }))} placeholder="Optionnel" />
+                <Label>Voirie ($ / m linéaire) <span className="text-[10px] text-amber-600">(legacy)</span></Label>
+                <Input type="number" step="0.01" value={form.road_fee_per_linear_m_usd} onChange={e => setForm(f => ({ ...f, road_fee_per_linear_m_usd: e.target.value }))} placeholder="Optionnel — remplacé par tarifs infrastructure" />
               </div>
               <div>
-                <Label>Espaces communs ($/m²)</Label>
-                <Input type="number" step="0.01" value={form.common_space_fee_per_sqm_usd} onChange={e => setForm(f => ({ ...f, common_space_fee_per_sqm_usd: e.target.value }))} placeholder="Optionnel" />
+                <Label>Espaces communs ($/m²) <span className="text-[10px] text-amber-600">(legacy)</span></Label>
+                <Input type="number" step="0.01" value={form.common_space_fee_per_sqm_usd} onChange={e => setForm(f => ({ ...f, common_space_fee_per_sqm_usd: e.target.value }))} placeholder="Optionnel — remplacé par tarifs infrastructure" />
               </div>
             </div>
+            <p className="text-[11px] text-muted-foreground -mt-2">
+              Les frais détaillés (revêtement par matériau, drainage, éclairage, etc.) sont configurés dans la section <strong>Tarifs par type d'infrastructure</strong> ci-dessous. Les champs legacy ne s'appliquent qu'à la voirie non couverte par un tarif d'infrastructure.
+            </p>
             <div className="flex items-center gap-2">
               <Switch checked={form.is_active} onCheckedChange={v => setForm(f => ({ ...f, is_active: v }))} />
               <Label>Actif</Label>

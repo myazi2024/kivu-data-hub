@@ -6,6 +6,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { format } from 'date-fns';
 import { generateAndUploadCertificate } from '@/utils/certificateService';
 import { downloadCsv } from '@/utils/adminQueueUtils';
+import { escapeIlike } from '@/utils/escapeIlike';
+import { useAdminPendingCounts } from '@/hooks/useAdminPendingCounts';
 import { validateSubdivisionAgainstRules, type ValidationResult } from '@/hooks/useZoningRules';
 import {
   type SubdivisionRequest, type ActionType,
@@ -65,7 +67,8 @@ export function AdminSubdivisionRequests() {
   };
 
   const [totalCount, setTotalCount] = useState(0);
-  const [pendingCount, setPendingCount] = useState(0);
+  const { counts } = useAdminPendingCounts(true);
+  const pendingCount = counts.subdivisions;
 
   const fetchRequests = async () => {
     setLoading(true);
@@ -82,7 +85,7 @@ export function AdminSubdivisionRequests() {
       if (dateFrom) q = q.gte('created_at', new Date(dateFrom).toISOString());
       if (dateTo) q = q.lte('created_at', new Date(new Date(dateTo).getTime() + 86400000).toISOString());
       if (searchQuery.trim()) {
-        const s = searchQuery.trim();
+        const s = escapeIlike(searchQuery.trim());
         q = q.or(`reference_number.ilike.%${s}%,parcel_number.ilike.%${s}%,requester_last_name.ilike.%${s}%`);
       }
 
@@ -90,13 +93,6 @@ export function AdminSubdivisionRequests() {
       if (error) throw error;
       setRequests((data || []) as SubdivisionRequest[]);
       setTotalCount(count || 0);
-
-      // Compteur pending global (indépendant des filtres)
-      const { count: pCount } = await supabase
-        .from('subdivision_requests')
-        .select('id', { count: 'exact', head: true })
-        .eq('status', 'pending');
-      setPendingCount(pCount || 0);
     } catch {
       toast({ title: 'Erreur', description: 'Impossible de charger les demandes.', variant: 'destructive' });
     } finally {
@@ -170,7 +166,7 @@ export function AdminSubdivisionRequests() {
     if (dateFrom) q = q.gte('created_at', new Date(dateFrom).toISOString());
     if (dateTo) q = q.lte('created_at', new Date(new Date(dateTo).getTime() + 86400000).toISOString());
     if (searchQuery.trim()) {
-      const s = searchQuery.trim();
+      const s = escapeIlike(searchQuery.trim());
       q = q.or(`reference_number.ilike.%${s}%,parcel_number.ilike.%${s}%,requester_last_name.ilike.%${s}%`);
     }
     const { data, error } = await q;
@@ -341,31 +337,38 @@ export function AdminSubdivisionRequests() {
     if (!bulkAction || selectedIds.length === 0 || !user) return;
     setBulkProcessing(true);
     const idsSnapshot = [...selectedIds];
+    const failures: Array<{ id: string; error: string }> = [];
     let success = 0;
-    let failed = 0;
-    for (const id of idsSnapshot) {
-      try {
-        const { error } = await supabase.functions.invoke('approve-subdivision', {
-          body: {
-            request_id: id,
-            action: bulkAction,
-            processing_fee_usd: bulkAction === 'approve' ? payload.processingFee : undefined,
-            rejection_reason: bulkAction !== 'approve' ? payload.reason : undefined,
-            processing_notes: payload.notes,
-          },
-        });
-        if (error) throw error;
-        success += 1;
-      } catch (e) {
-        console.warn('bulk action failed for', id, e);
-        failed += 1;
-      }
+
+    // Chunked parallel execution (5 at a time) — replaces sequential await loop.
+    const CHUNK = 5;
+    for (let i = 0; i < idsSnapshot.length; i += CHUNK) {
+      const chunk = idsSnapshot.slice(i, i + CHUNK);
+      const results = await Promise.allSettled(
+        chunk.map(id =>
+          supabase.functions.invoke('approve-subdivision', {
+            body: {
+              request_id: id,
+              action: bulkAction,
+              processing_fee_usd: bulkAction === 'approve' ? payload.processingFee : undefined,
+              rejection_reason: bulkAction !== 'approve' ? payload.reason : undefined,
+              processing_notes: payload.notes,
+            },
+          }).then(({ error }) => {
+            if (error) throw new Error(error.message);
+            return id;
+          }),
+        ),
+      );
+      results.forEach((res, idx) => {
+        if (res.status === 'fulfilled') success += 1;
+        else failures.push({ id: chunk[idx], error: (res.reason as Error)?.message || 'unknown' });
+      });
     }
+
     setBulkProcessing(false);
     setBulkAction(null);
-    idsSnapshot.forEach(id => {
-      invalidateValidation(id);
-    });
+    idsSnapshot.forEach(id => invalidateValidation(id));
     setValidations(prev => {
       const n = { ...prev };
       idsSnapshot.forEach(id => { delete n[id]; });
@@ -376,12 +379,21 @@ export function AdminSubdivisionRequests() {
     trackAdminAction({
       module: 'subdivision',
       action: `bulk_${bulkAction}`,
-      meta: { count: idsSnapshot.length, success, failed },
+      meta: { count: idsSnapshot.length, success, failed: failures.length },
     });
+
+    if (failures.length > 0) {
+      // Téléchargement CSV des échecs pour analyse
+      downloadCsv(
+        `bulk-lotissement-echecs-${format(new Date(), 'yyyyMMdd-HHmm')}.csv`,
+        failures.map(f => ({ request_id: f.id, error: f.error })),
+      );
+    }
+
     toast({
       title: 'Action groupée terminée',
-      description: `${success} succès, ${failed} échec(s).`,
-      variant: failed > 0 ? 'destructive' : 'default',
+      description: `${success} succès, ${failures.length} échec(s)${failures.length > 0 ? ' — CSV exporté' : ''}.`,
+      variant: failures.length > 0 ? 'destructive' : 'default',
     });
   };
 
