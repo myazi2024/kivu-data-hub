@@ -783,13 +783,11 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
               const mx = (sv.x + sn.x) / 2;
               const my = (sv.y + sn.y) / 2;
 
-              let label = '';
-              if (parentSides && parentSides[i] && parentSides[i].length) {
-                const len = parseFloat(String(parentSides[i].length));
-                label = formatMeters(len);
-              } else {
-                label = formatMeters(edgeLengthM(v, next, metricFrame));
-              }
+              // Toujours utiliser la longueur géométrique GPS (edgeLengthM) pour
+              // rester cohérent avec la surface, le périmètre et les arêtes des lots.
+              // parentSides[i].length (saisie manuelle) peut diverger et causerait
+              // un double étiquetage incohérent.
+              const label = formatMeters(edgeLengthM(v, next, metricFrame));
 
               const orientationLabel = parentSides?.[i]?.orientation || '';
               const edgeDx = sn.y - sv.y;
