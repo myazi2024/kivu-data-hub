@@ -830,7 +830,7 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
   }, [roads, setRoads, lots, setLots, parentParcel, parentVertices, computeArea, computePerim]);
 
   const totalArea = lots.reduce((s, l) => s + l.areaSqm, 0);
-  const parentArea = parentParcel?.areaSqm || 0;
+  const parentArea = parentAreaGeomSqm || parentParcel?.areaSqm || 0;
   const coveragePercent = parentArea > 0 ? Math.round(totalArea / parentArea * 100) : 0;
 
   // Contextual hint shown under the canvas, depends on active tool
