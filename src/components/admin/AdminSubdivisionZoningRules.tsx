@@ -1278,7 +1278,7 @@ const AdminSubdivisionZoningRules: React.FC = () => {
                             type="button"
                             role="checkbox"
                             aria-checked={checked}
-                            title={hasTariff ? (m.description ?? '') : `${m.description ?? ''}\n⚠ Aucun tarif road_surface_${m.key} configuré : frais = 0`}
+                            title={hasTariff ? (m.description ?? '') : `${m.description ?? ''}\n⚠ Tarif de base "road_surface" manquant ou multiplicateur du matériau = 0 → frais = 0`}
                             onClick={() => setForm(f => {
                               const prev = f.road_surface_allowed_materials ?? [];
                               return {
