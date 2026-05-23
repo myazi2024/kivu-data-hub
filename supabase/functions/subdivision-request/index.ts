@@ -96,8 +96,34 @@ Deno.serve(async (req) => {
     if (!body.parcel_number) throw new Error("parcel_number is required");
     if (!body.parent_parcel?.areaSqm) throw new Error("parent_parcel.areaSqm is required");
     if (!Array.isArray(body.lots) || body.lots.length < 2) throw new Error("At least 2 lots are required");
-    if (!body.requester?.firstName || !body.requester?.lastName || !body.requester?.phone) {
-      throw new Error("Requester name and phone are required");
+    // Requester validation per legal status (Personne physique / Personne morale / État)
+    {
+      const r = body.requester || ({} as any);
+      if (!r.phone) {
+        const e: any = new Error("Numéro de téléphone du demandeur requis");
+        e.code = "REQUESTER_INVALID";
+        throw e;
+      }
+      const status = r.legalStatus || "Personne physique";
+      if (status === "Personne morale") {
+        if (!r.lastName || !r.rccmNumber) {
+          const e: any = new Error("Dénomination (raison sociale) et numéro RCCM/Arrêté requis pour une personne morale");
+          e.code = "REQUESTER_INVALID";
+          throw e;
+        }
+      } else if (status === "État") {
+        if (!r.rightType || !r.stateExploitedBy) {
+          const e: any = new Error("Type de droit et entité exploitante requis pour une parcelle d'État");
+          e.code = "REQUESTER_INVALID";
+          throw e;
+        }
+      } else {
+        if (!r.firstName || !r.lastName) {
+          const e: any = new Error("Nom et prénom requis pour une personne physique");
+          e.code = "REQUESTER_INVALID";
+          throw e;
+        }
+      }
     }
     if (!body.documents?.requester_id_document_url || !body.documents?.proof_of_ownership_url) {
       throw new Error("CNI demandeur et preuve de propriété sont obligatoires");
