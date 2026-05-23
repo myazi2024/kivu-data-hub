@@ -377,6 +377,7 @@ const AdminSubdivisionZoningRules: React.FC = () => {
   const [rules, setRules] = useState<ZoningRule[]>([]);
   const [materials, setMaterials] = useState<RoadSurfaceMaterial[]>([]);
   const [roadSurfaceTariffKeys, setRoadSurfaceTariffKeys] = useState<Set<string>>(new Set());
+  const [hasRoadSurfaceBase, setHasRoadSurfaceBase] = useState(true);
   const [search, setSearch] = useState('');
 
   const fetchMaterials = async () => {
@@ -384,11 +385,15 @@ const AdminSubdivisionZoningRules: React.FC = () => {
       .generic('subdivision_road_surface_materials')
       .select('*')
       .order('display_order');
-    setMaterials(((data as RoadSurfaceMaterial[]) ?? []).filter(m => m.is_active));
+    // Dédoublonnage défensif par clé pour éviter collision de keys React.
+    const list = ((data as RoadSurfaceMaterial[]) ?? []).filter(m => m.is_active);
+    const dedup = Array.from(new Map(list.map(m => [m.key, m])).values());
+    setMaterials(dedup);
   };
-  // Nouveau modèle : un seul tarif de base `road_surface`, multiplié par price_multiplier
-  // du matériau choisi. Un matériau est « tarifé » dès que sa multiplicateur > 0
-  // ET que le tarif de base existe.
+
+  // Nouveau modèle : un seul tarif de base `road_surface`, multiplié par
+  // `price_multiplier` du matériau. Un matériau est « tarifé » dès que son
+  // multiplicateur > 0 ET que le tarif de base existe.
   const fetchRoadSurfaceTariffs = async () => {
     const { data } = await untypedTables
       .subdivision_infrastructure_tariffs()
@@ -396,18 +401,23 @@ const AdminSubdivisionZoningRules: React.FC = () => {
       .eq('infrastructure_key', 'road_surface');
     const baseTariff = (data ?? [])[0] as { rate_usd?: number; is_active?: boolean } | undefined;
     const baseOk = !!baseTariff && baseTariff.is_active !== false && Number(baseTariff.rate_usd ?? 0) > 0;
-    // L'ensemble contient les clés des matériaux qui auront un prix > 0
-    // (utilisé pour l'avertissement « ⚠ »).
-    const okKeys = new Set<string>();
-    if (baseOk) {
-      // Renseigné dynamiquement après fetchMaterials via un effet (cf. ci-dessous).
-      // On le laisse vide ici, l'effet d'harmonisation s'en occupe.
-    }
-    setRoadSurfaceTariffKeys(okKeys);
     setHasRoadSurfaceBase(baseOk);
   };
 
   useEffect(() => { fetchMaterials(); fetchRoadSurfaceTariffs(); }, []);
+
+  // Recalcule l'ensemble des matériaux "tarifés" dès qu'on connaît à la fois
+  // le tarif de base et la liste des matériaux (avec leurs multiplicateurs).
+  useEffect(() => {
+    const ok = new Set<string>();
+    if (hasRoadSurfaceBase) {
+      for (const m of materials) {
+        if ((m.price_multiplier ?? 1) > 0) ok.add(m.key);
+      }
+    }
+    setRoadSurfaceTariffKeys(ok);
+  }, [hasRoadSurfaceBase, materials]);
+
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'urban' | 'rural'>('all');
   const [dialogOpen, setDialogOpen] = useState(false);
