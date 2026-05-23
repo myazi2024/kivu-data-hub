@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef } from 'react';
 import { SubdivisionLot, Point2D } from '../types';
-import { MetricFrame, polygonAreaSqmAccurate, polygonPerimeterM } from '../utils/metrics';
+import { MetricFrame, polygonAreaSqmAccurate, polygonAreaSqmRelative, polygonPerimeterM } from '../utils/metrics';
 
 type DragType = 'vertex' | 'edge' | 'polygon' | null;
 
