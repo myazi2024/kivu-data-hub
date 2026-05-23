@@ -8,6 +8,8 @@ import {
   computeSubdivisionFee,
   polygonAreaSqm,
   pathLengthM,
+  loadInfraCatalogs,
+  computeRoadInfrastructures,
 } from "../_shared/subdivisionFees.ts";
 import { inferSectionType } from "../_shared/sectionType.ts";
 
