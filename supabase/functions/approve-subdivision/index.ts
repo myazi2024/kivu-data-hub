@@ -76,89 +76,20 @@ Deno.serve(async (req) => {
     let notif: { type: string; title: string; message: string } | null = null;
 
     /**
-     * Matérialise les lots, voies et flag la parcelle-mère après approbation
-     * (action `approve` immédiate ou `finalize_after_payment` via webhook Stripe).
-     * Idempotent best-effort — n'insère pas si des lots existent déjà.
+     * Matérialise la demande de manière ATOMIQUE via RPC SQL (P2).
+     * - vérifie remaining_fee_usd = 0
+     * - insère lots (ON CONFLICT request_id+lot_number DO NOTHING)
+     * - insère roads (skip si déjà présentes)
+     * - flag parcelle mère
+     * Tout dans une seule transaction. `_admin_id` peut être null pour le webhook Stripe ;
+     * dans ce cas on contourne via SERVICE_ROLE (le RPC vérifie le rôle uniquement si _admin_id renseigné).
      */
     const materializeApprovedRequest = async () => {
-      // Évite les doublons si déjà matérialisé
-      const { count: existingLots } = await supabase
-        .from("subdivision_lots")
-        .select("id", { count: "exact", head: true })
-        .eq("subdivision_request_id", request.id);
-      if (existingLots && existingLots > 0) return;
-
-      const lotsData: any[] = Array.isArray(request.lots_data) ? request.lots_data : [];
-      const planData: any = request.subdivision_plan_data || {};
-      const roadsData: any[] = Array.isArray(planData.roads) ? planData.roads : [];
-      const parentGps: any[] = Array.isArray(request.parent_parcel_gps_coordinates)
-        ? request.parent_parcel_gps_coordinates
-        : [];
-
-      const bb = parentGps.length >= 3
-        ? {
-            minLat: Math.min(...parentGps.map((c: any) => c.lat)),
-            maxLat: Math.max(...parentGps.map((c: any) => c.lat)),
-            minLng: Math.min(...parentGps.map((c: any) => c.lng)),
-            maxLng: Math.max(...parentGps.map((c: any) => c.lng)),
-          }
-        : null;
-
-      const projectVertex = (v: any) =>
-        bb ? {
-          lat: bb.minLat + v.y * (bb.maxLat - bb.minLat),
-          lng: bb.minLng + v.x * (bb.maxLng - bb.minLng),
-        } : null;
-
-      const rows = lotsData.map((lot: any) => {
-        const gpsCoordinates = (bb && Array.isArray(lot.vertices))
-          ? lot.vertices.map(projectVertex)
-          : null;
-        return {
-          subdivision_request_id: request.id,
-          parcel_number: request.parcel_number,
-          lot_number: lot.lotNumber || lot.id,
-          lot_label: `Lot ${lot.lotNumber}`,
-          area_sqm: Number(lot.areaSqm) || 0,
-          perimeter_m: Number(lot.perimeterM) || 0,
-          intended_use: lot.intendedUse || "residential",
-          owner_name: lot.ownerName || null,
-          is_built: !!lot.isBuilt,
-          has_fence: !!lot.hasFence,
-          gps_coordinates: gpsCoordinates,
-          plan_coordinates: lot.vertices || null,
-          color: lot.color || "#22c55e",
-        };
-      });
-
-      if (rows.length > 0) {
-        const { error: lotsErr } = await supabase.from("subdivision_lots").insert(rows);
-        if (lotsErr) {
-          throw new Error(`Lot insertion failed: ${lotsErr.message}`);
-        }
-      }
-
-      if (roadsData.length > 0) {
-        const roadRows = roadsData.map((r: any) => ({
-          subdivision_request_id: request.id,
-          road_name: r.name || null,
-          width_m: Number(r.widthM) || null,
-          surface_type: r.surfaceType || null,
-          is_existing: !!r.isExisting,
-          plan_coordinates: r.path || null,
-          gps_coordinates: (bb && Array.isArray(r.path)) ? r.path.map(projectVertex) : null,
-        }));
-        await supabase.from("subdivision_roads").insert(roadRows)
-          .then(() => null)
-          .catch((e: any) => console.error("subdivision_roads insert failed:", e?.message));
-      }
-
-      await supabase
-        .from("cadastral_parcels")
-        .update({ is_subdivided: true })
-        .eq("parcel_number", request.parcel_number)
-        .then(() => null)
-        .catch(() => null);
+      const { data: matRes, error: matErr } = await supabase.rpc(
+        "approve_subdivision_atomic",
+        { _request_id: request.id, _admin_id: user?.id ?? request.user_id },
+      );
+      if (matErr) throw new Error(`Atomic approval failed: ${matErr.message}`);
 
       // Auto-génération du plan officiel (best-effort, non bloquant)
       try {
@@ -173,6 +104,7 @@ Deno.serve(async (req) => {
       } catch (e: any) {
         console.error("auto generate-subdivision-plan failed:", e?.message);
       }
+      return matRes;
     };
 
     if (body.action === "approve") {
