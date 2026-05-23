@@ -141,10 +141,22 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
     [parentParcel?.gpsCoordinates, parentParcel?.areaSqm],
   );
 
-  // Helpers — accurate area + perimeter via the metric frame.
+  // Normalized area of the parent polygon — used to scale lot areas to the
+  // parent's official `area_sqm` (fixes false "totale dépasse parcelle mère").
+  const parentNormArea = React.useMemo(
+    () => (parentVertices && parentVertices.length >= 3 ? polygonArea(parentVertices) : 0),
+    [parentVertices],
+  );
+
+  // Helpers — proportional area against the parent (fallback: bbox-accurate)
+  // and perimeter via the anisotropic metric frame.
   const computeArea = useCallback(
-    (poly: Point2D[]) => Math.max(1, Math.round(polygonAreaSqmAccurate(poly, metricFrame))),
-    [metricFrame],
+    (poly: Point2D[]) => Math.max(1, Math.round(
+      parentNormArea > 0 && parentParcel?.areaSqm
+        ? polygonAreaSqmRelative(poly, parentNormArea, parentParcel.areaSqm)
+        : polygonAreaSqmAccurate(poly, metricFrame)
+    )),
+    [metricFrame, parentNormArea, parentParcel?.areaSqm],
   );
   const computePerim = useCallback(
     (poly: Point2D[]) => Math.round(polygonPerimeterM(poly, metricFrame)),
