@@ -2,7 +2,7 @@ import { lazy, Suspense } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Card } from '@/components/ui/card';
-import { Grid3X3, DollarSign, Ruler, Layers, BarChart3, Loader2, ListTree, FileText, Compass, FileCog } from 'lucide-react';
+import { Grid3X3, DollarSign, Ruler, Layers, BarChart3, Loader2, ListTree, FileText, Compass, FileCog, History } from 'lucide-react';
 
 const AdminSubdivisionRequests = lazy(() =>
   import('./AdminSubdivisionRequests').then(m => ({ default: m.AdminSubdivisionRequests }))
@@ -15,6 +15,7 @@ const AdminSubdivisionPlanElements = lazy(() => import('./AdminSubdivisionPlanEl
 const AdminSubdivisionLots = lazy(() => import('./AdminSubdivisionLots'));
 const AdminSubdivisionAnalytics = lazy(() => import('./AdminSubdivisionAnalytics'));
 const AdminSubdivisionPlanConfig = lazy(() => import('./AdminSubdivisionPlanConfig'));
+const AdminSubdivisionPlanVersions = lazy(() => import('./AdminSubdivisionPlanVersions'));
 
 const Fallback = () => (
   <div className="flex items-center justify-center py-16 text-muted-foreground">
