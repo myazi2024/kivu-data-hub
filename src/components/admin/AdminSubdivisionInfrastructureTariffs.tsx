@@ -20,7 +20,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from 'sonner';
-import { Plus, Pencil, Trash2, Loader2, Building2, Search, RefreshCw, AlertTriangle, Info } from 'lucide-react';
+import { Plus, Pencil, Trash2, Loader2, Building2, Search, AlertTriangle, Info } from 'lucide-react';
 
 const CATEGORIES: { value: InfrastructureCategory; label: string }[] = [
   { value: 'voirie', label: 'Voirie' },
