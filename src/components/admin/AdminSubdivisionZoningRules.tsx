@@ -386,19 +386,27 @@ const AdminSubdivisionZoningRules: React.FC = () => {
       .order('display_order');
     setMaterials(((data as RoadSurfaceMaterial[]) ?? []).filter(m => m.is_active));
   };
+  // Nouveau modèle : un seul tarif de base `road_surface`, multiplié par price_multiplier
+  // du matériau choisi. Un matériau est « tarifé » dès que sa multiplicateur > 0
+  // ET que le tarif de base existe.
   const fetchRoadSurfaceTariffs = async () => {
     const { data } = await untypedTables
       .subdivision_infrastructure_tariffs()
-      .select('infrastructure_key')
-      .eq('is_active', true);
-    const keys = new Set<string>(
-      ((data as Array<{ infrastructure_key: string }>) ?? [])
-        .map(t => t.infrastructure_key)
-        .filter(k => k.startsWith('road_surface_'))
-        .map(k => k.replace(/^road_surface_/, '')),
-    );
-    setRoadSurfaceTariffKeys(keys);
+      .select('infrastructure_key, rate_usd, is_active')
+      .eq('infrastructure_key', 'road_surface');
+    const baseTariff = (data ?? [])[0] as { rate_usd?: number; is_active?: boolean } | undefined;
+    const baseOk = !!baseTariff && baseTariff.is_active !== false && Number(baseTariff.rate_usd ?? 0) > 0;
+    // L'ensemble contient les clés des matériaux qui auront un prix > 0
+    // (utilisé pour l'avertissement « ⚠ »).
+    const okKeys = new Set<string>();
+    if (baseOk) {
+      // Renseigné dynamiquement après fetchMaterials via un effet (cf. ci-dessous).
+      // On le laisse vide ici, l'effet d'harmonisation s'en occupe.
+    }
+    setRoadSurfaceTariffKeys(okKeys);
+    setHasRoadSurfaceBase(baseOk);
   };
+
   useEffect(() => { fetchMaterials(); fetchRoadSurfaceTariffs(); }, []);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'urban' | 'rural'>('all');
