@@ -2,10 +2,8 @@ import { lazy, Suspense } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Card } from '@/components/ui/card';
-import { Grid3X3, DollarSign, Ruler, Layers, BarChart3, Loader2, ListTree, FileText, Compass } from 'lucide-react';
+import { Grid3X3, DollarSign, Ruler, Layers, BarChart3, Loader2, ListTree, FileText, Compass, FileCog } from 'lucide-react';
 
-// Lazy-load tab contents — keeps the hub light and avoids upfront cost
-// when an admin only wants one tab.
 const AdminSubdivisionRequests = lazy(() =>
   import('./AdminSubdivisionRequests').then(m => ({ default: m.AdminSubdivisionRequests }))
 );
@@ -16,6 +14,7 @@ const AdminSubdivisionRequiredDocs = lazy(() => import('./AdminSubdivisionRequir
 const AdminSubdivisionPlanElements = lazy(() => import('./AdminSubdivisionPlanElements'));
 const AdminSubdivisionLots = lazy(() => import('./AdminSubdivisionLots'));
 const AdminSubdivisionAnalytics = lazy(() => import('./AdminSubdivisionAnalytics'));
+const AdminSubdivisionPlanConfig = lazy(() => import('./AdminSubdivisionPlanConfig'));
 
 const Fallback = () => (
   <div className="flex items-center justify-center py-16 text-muted-foreground">
