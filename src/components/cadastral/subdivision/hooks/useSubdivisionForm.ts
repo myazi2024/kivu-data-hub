@@ -607,8 +607,12 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
   // Returns { id, reference_number, total_amount_usd } so the caller can trigger payment
   const submit = useCallback(async (_userId: string) => {
     if (!parentParcel) return null;
-    if (!documents.requester_id_document_url || !documents.proof_of_ownership_url) {
-      throw new Error('Pièces obligatoires manquantes (CNI + preuve de propriété).');
+    const keysToCheck = requiredDocKeys.length > 0
+      ? requiredDocKeys
+      : ['requester_id_document', 'proof_of_ownership'];
+    const missing = keysToCheck.filter(k => !(documents as Record<string, string | null | undefined>)[`${k}_url`]);
+    if (missing.length > 0) {
+      throw new Error(`Pièces obligatoires manquantes (${missing.join(', ')}).`);
     }
 
     setSubmitting(true);
