@@ -6,6 +6,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { format } from 'date-fns';
 import { generateAndUploadCertificate } from '@/utils/certificateService';
 import { downloadCsv } from '@/utils/adminQueueUtils';
+import { escapeIlike } from '@/utils/escapeIlike';
+import { useAdminPendingCounts } from '@/hooks/useAdminPendingCounts';
 import { validateSubdivisionAgainstRules, type ValidationResult } from '@/hooks/useZoningRules';
 import {
   type SubdivisionRequest, type ActionType,
