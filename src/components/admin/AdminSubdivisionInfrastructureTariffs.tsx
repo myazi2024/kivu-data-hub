@@ -94,7 +94,7 @@ const AdminSubdivisionInfrastructureTariffs: React.FC = () => {
   const [materials, setMaterials] = useState<RoadSurfaceMaterialLite[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [syncing, setSyncing] = useState(false);
+  
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<InfrastructureTariff | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
