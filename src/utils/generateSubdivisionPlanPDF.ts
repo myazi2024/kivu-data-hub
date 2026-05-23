@@ -155,13 +155,18 @@ export async function generateSubdivisionPlanPDF(
   const S = Math.min(pageW, pageH) / 600; // facteur d'échelle global (typo, lignes)
   const mm = (v: number) => v * S;
 
+  // Charge config + état
+  const config = await loadPlanConfig();
+  const state: PlanLifecycleState = opts.state
+    ?? (opts.preview ? 'sample' : (opts.officialVersion ? 'final' : 'draft'));
+
   // Bordure
   doc.setLineWidth(mm(1));
   doc.setDrawColor(0, 100, 200);
   doc.rect(mm(8), mm(8), pageW - mm(16), pageH - mm(16));
 
-  // === Filigrane diagonal vectoriel ===
-  await drawWatermark(doc, pageW, pageH, `PLAN OFFICIEL — ${req.reference_number}`, S);
+  // === Filigrane d'état (BROUILLON/TEST/SAMPLE — rien pour final) ===
+  await drawStateWatermark(doc, pageW, pageH, state, config.watermarks, req.reference_number, S);
 
   // === En-tête ===
   const logo = await fetchAppLogo();
