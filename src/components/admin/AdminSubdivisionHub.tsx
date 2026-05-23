@@ -2,10 +2,8 @@ import { lazy, Suspense } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Card } from '@/components/ui/card';
-import { Grid3X3, DollarSign, Ruler, Layers, BarChart3, Loader2, ListTree, FileText, Compass } from 'lucide-react';
+import { Grid3X3, DollarSign, Ruler, Layers, BarChart3, Loader2, ListTree, FileText, Compass, FileCog } from 'lucide-react';
 
-// Lazy-load tab contents — keeps the hub light and avoids upfront cost
-// when an admin only wants one tab.
 const AdminSubdivisionRequests = lazy(() =>
   import('./AdminSubdivisionRequests').then(m => ({ default: m.AdminSubdivisionRequests }))
 );
@@ -16,6 +14,7 @@ const AdminSubdivisionRequiredDocs = lazy(() => import('./AdminSubdivisionRequir
 const AdminSubdivisionPlanElements = lazy(() => import('./AdminSubdivisionPlanElements'));
 const AdminSubdivisionLots = lazy(() => import('./AdminSubdivisionLots'));
 const AdminSubdivisionAnalytics = lazy(() => import('./AdminSubdivisionAnalytics'));
+const AdminSubdivisionPlanConfig = lazy(() => import('./AdminSubdivisionPlanConfig'));
 
 const Fallback = () => (
   <div className="flex items-center justify-center py-16 text-muted-foreground">
@@ -23,7 +22,7 @@ const Fallback = () => (
   </div>
 );
 
-const VALID_SUBS = ['requests', 'fees', 'zoning', 'references', 'documents', 'plan-elements', 'lots', 'analytics'] as const;
+const VALID_SUBS = ['requests', 'fees', 'zoning', 'references', 'documents', 'plan-elements', 'plan-config', 'lots', 'analytics'] as const;
 
 export default function AdminSubdivisionHub() {
   const [params, setParams] = useSearchParams();
@@ -52,7 +51,7 @@ export default function AdminSubdivisionHub() {
 
       <Tabs value={active} onValueChange={handleChange} className="w-full">
         <Card className="p-2">
-          <TabsList className="grid grid-cols-4 sm:grid-cols-8 w-full">
+          <TabsList className="grid grid-cols-3 sm:grid-cols-9 w-full">
             <TabsTrigger value="requests" className="gap-1.5">
               <Grid3X3 className="h-4 w-4" /> <span className="hidden sm:inline">Demandes</span>
             </TabsTrigger>
@@ -70,6 +69,9 @@ export default function AdminSubdivisionHub() {
             </TabsTrigger>
             <TabsTrigger value="plan-elements" className="gap-1.5">
               <Compass className="h-4 w-4" /> <span className="hidden sm:inline">Plan</span>
+            </TabsTrigger>
+            <TabsTrigger value="plan-config" className="gap-1.5">
+              <FileCog className="h-4 w-4" /> <span className="hidden sm:inline">Config plan</span>
             </TabsTrigger>
             <TabsTrigger value="lots" className="gap-1.5">
               <Layers className="h-4 w-4" /> <span className="hidden sm:inline">Lots & voies</span>
@@ -97,6 +99,9 @@ export default function AdminSubdivisionHub() {
         </TabsContent>
         <TabsContent value="plan-elements" className="mt-4">
           <Suspense fallback={<Fallback />}><AdminSubdivisionPlanElements /></Suspense>
+        </TabsContent>
+        <TabsContent value="plan-config" className="mt-4">
+          <Suspense fallback={<Fallback />}><AdminSubdivisionPlanConfig /></Suspense>
         </TabsContent>
         <TabsContent value="lots" className="mt-4">
           <Suspense fallback={<Fallback />}><AdminSubdivisionLots /></Suspense>
