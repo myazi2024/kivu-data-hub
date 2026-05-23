@@ -1,51 +1,63 @@
-# Routes bordantes externes — lever l'alerte d'enclavement
+## Cause racine
 
-## Problème
-La validation "lot enclavé" ne reconnaît que les voies tracées **à l'intérieur** de la parcelle. Quand un lot longe une route publique existante hors parcelle (avenue, rue), l'utilisateur n'a aucun moyen de le signaler et reste bloqué.
+Le concepteur calcule deux superficies avec deux référentiels incompatibles :
 
-## Solution
-Ajouter un type de voie « **Route bordante (publique existante)** » :
-- Sélection d'un **côté de la parcelle mère** + saisie nom + largeur
-- Trace automatiquement une polyligne parallèle à ce côté, **côté extérieur** (offset = largeur/2)
-- Marquée `isExisting: true` + nouveau flag `isExternal: true`
-- **Aucun coût** d'infrastructure (revêtement / drainage / éclairage tous nuls)
-- **N'affecte pas la géométrie** des lots (pas d'emprise rognée)
-- Comptée par `lotTouchesRoad` → enclavement levé pour les lots adjacents à ce côté
+- **Parcelle mère** : `parentParcel.areaSqm` vient de la base (`area_sqm` officiel), p.ex. 3 354 m².
+- **Lots issus du découpage** : `computeArea(verts)` appelle `polygonAreaSqmAccurate(verts, metricFrame)` = `aire_normalisée(poly) × sxM × syM`, où `sxM × syM` est l'aire de la **boîte englobante GPS** en m² (haversine sur la lat/lng min-max).
 
-## Modifications
+Quand la parcelle mère n'est pas alignée sur sa boîte englobante (parcelle oblique, en L, allongée…), `bbox_m² × normPolyArea(parent) ≠ area_sqm_DB`. Le `lot 1` initial est créé avec `Math.round(parentParcel.areaSqm)` (DB), mais dès qu'on splitte/coupe, les nouveaux lots utilisent l'échelle bbox. Résultat : la **somme des lots ≈ bbox × normParentArea**, qui peut être 30× plus grande que `area_sqm_DB` → alerte « 110 159 m² dépasse 3 354 m² ».
 
-### 1. Type
-`src/components/cadastral/subdivision/types.ts` — ajouter `isExternal?: boolean` et `borderingParcelSideIndex?: number` sur `SubdivisionRoad`.
+`useCanvasDrag.computeMetrics` souffre du même biais sur chaque drag de sommet/arête.
 
-### 2. Frais serveur
-`supabase/functions/_shared/subdivisionFees.ts` — `computeRoadInfrastructures` ignore (skip) les routes où `isExternal === true` : zéro coût.
+## Correctif
 
-### 3. UI — nouveau panneau
-`src/components/cadastral/subdivision/steps/panels/BorderingRoadsPanel.tsx` (nouveau) :
-- Liste des côtés de la parcelle mère (réutilise la logique d'orientation/longueur de `RoadBorderingSidesPanel`)
-- Pour chaque côté : checkbox « borde une route publique » + select type (avenue, rue, nationale…) + nom + largeur (m)
-- Bouton « Confirmer » → crée un `SubdivisionRoad` avec :
-  - `path` = ligne parallèle au côté `i`, décalée vers l'extérieur de `widthM/(2·scale)`
-  - `isExisting: true`, `isExternal: true`, `borderingParcelSideIndex: i`
-  - Specs infra à `null`
-- Édition / suppression d'une route bordante existante
+Réintroduire le scaling **proportionnel à la parcelle mère** pour les aires (l'ancien code de `geometry.ts` lignes 207/213/471 le faisait déjà : `(normArea / parentNormArea) × parentAreaSqm`). Les longueurs/périmètres continuent d'utiliser la frame GPS anisotrope, qui reste correcte pour les distances.
 
-### 4. Intégration designer
-`StepLotDesigner.tsx` :
-- Onglet « Voies » → 2 sous-sections : **Voies internes** (existant `RoadsListPanel`) + **Routes bordantes** (nouveau panneau)
-- `RoadsListPanel` filtre `roads.filter(r => !r.isExternal)` (les externes n'apparaissent pas dans l'édition libre)
-- Rendu canvas (`LotCanvas`) : routes externes dessinées en style distinct (trait hachuré + label "🛣 publique") sans poignées d'édition
+### 1. `src/components/cadastral/subdivision/utils/metrics.ts`
 
-### 5. Validation
-`utils/subdivisionValidation.ts` — `requireRoadAccess: roads.length > 0` reste tel quel (les externes comptent comme routes). Pas de changement nécessaire car `lotTouchesRoad` parcourt déjà toutes les routes.
+Ajouter une variante d'aire pilotée par la parcelle mère :
 
-### 6. Helper géométrie
-`utils/polygonOps.ts` — petite fonction `offsetSegmentOutward(a, b, parentCentroid, distance)` pour calculer le côté extérieur d'un segment par rapport au centre de la parcelle.
+```ts
+export function polygonAreaSqmRelative(
+  poly: Point2D[],
+  parentNormArea: number,
+  parentAreaSqm: number,
+): number {
+  if (poly.length < 3 || parentNormArea <= 0 || parentAreaSqm <= 0) return 0;
+  return (polygonArea(poly) / parentNormArea) * parentAreaSqm;
+}
+```
 
-### 7. Mémoire projet
-Mettre à jour `mem/admin/subdivision-infrastructure-catalog-fr.md` : routes `isExternal` exclues du calcul de frais.
+### 2. `StepLotDesigner.tsx`
 
-## Hors scope
-- Pas de modification d'admin (pas de tarif pour route externe)
-- Pas de schéma DB (le champ est sérialisé dans le JSON existant `roads`)
-- Pas de changement sur l'emprise des lots
+- Mémoriser `parentNormArea = polygonArea(parentVertices)` (via `useMemo`, fallback 0).
+- Remplacer `computeArea` :
+  ```ts
+  const computeArea = useCallback(
+    (poly: Point2D[]) => Math.max(1, Math.round(
+      parentNormArea > 0 && parentParcel?.areaSqm
+        ? polygonAreaSqmRelative(poly, parentNormArea, parentParcel.areaSqm)
+        : polygonAreaSqmAccurate(poly, metricFrame)
+    )),
+    [metricFrame, parentNormArea, parentParcel?.areaSqm],
+  );
+  ```
+- `computePerim` inchangé (longueurs GPS toujours correctes).
+
+### 3. `src/components/cadastral/subdivision/hooks/useCanvasDrag.ts`
+
+- Étendre la signature pour recevoir `parentNormArea` et `parentAreaSqm` (optionnels).
+- Dans `computeMetrics`, utiliser `polygonAreaSqmRelative` quand les deux valeurs parent sont fournies, sinon retomber sur `polygonAreaSqmAccurate`.
+- Mettre à jour l'appelant (`LotCanvas.tsx`) pour passer ces deux props (déjà disponibles via `parentVertices` + `parentParcel`).
+
+### 4. Vérification
+
+- Ouvrir une demande de lotissement, entrer dans l'onglet Lots, découper la parcelle mère : la somme des lots doit rester ≤ `parentParcel.areaSqm` + 1 %. L'alerte « dépasse celle de la parcelle mère » ne doit plus apparaître pour un découpage interne valide.
+- Le badge « ✅ Plan conforme » doit apparaître quand il n'y a ni erreur ni warning.
+- Le périmètre et les largeurs de voies (déjà calculés via `polygonPerimeterM`/`edgeLengthM`) restent inchangés.
+
+## Hors-scope
+
+- Pas de changement de schéma DB ni d'édition des données existantes.
+- Pas de modification des frais de lotissement (`subdivisionFees.ts` reçoit déjà `areaSqm` cohérent).
+- Pas de refonte de `polygonAreaSqmAccurate` : conservée pour les cas sans parent (ex. mini-map).
