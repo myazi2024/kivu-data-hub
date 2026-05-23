@@ -1248,7 +1248,7 @@ const AdminSubdivisionZoningRules: React.FC = () => {
                         return (
                           <label key={m.key} className={`text-[11px] px-2 py-0.5 rounded border cursor-pointer ${checked ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted/40'}`} title={hasTariff ? (m.description ?? '') : `${m.description ?? ''}\n⚠ Aucun tarif road_surface_${m.key} configuré : frais = 0`}>
                             <input type="checkbox" className="sr-only" checked={checked} onChange={e => setForm(f => {
-                              const prev = f.road_surface_allowed_materials ?? [];
+                              const prev = toStringArray(f.road_surface_allowed_materials);
                               return {
                                 ...f,
                                 road_surface_allowed_materials: e.target.checked
