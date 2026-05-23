@@ -1241,10 +1241,10 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
             onSelectLot={setSelectedLotId}
           />
 
-          {/* Roads management */}
+          {/* Roads management (internal roads built within the subdivision) */}
           <RoadsListPanel
-            roads={roads}
-            editingRoad={editingRoad}
+            roads={roads.filter(r => !r.isExternal)}
+            editingRoad={editingRoad && !editingRoad.isExternal ? editingRoad : null}
             editingRoadId={editingRoadId}
             setEditingRoadId={setEditingRoadId}
             onDeleteRoad={handleDeleteRoad}
@@ -1255,6 +1255,15 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
             hasMultipleLots={lots.length >= 2}
             zoningRule={zoningRule}
           />
+
+          {/* External public roads bordering the parent parcel */}
+          <BorderingRoadsPanel
+            roads={roads}
+            setRoads={setRoads}
+            parentVertices={parentVertices}
+            metricFrame={metricFrame}
+          />
+
 
           {/* Common Spaces */}
           <CommonSpacesPanel commonSpaces={commonSpaces} setCommonSpaces={setCommonSpaces} />
