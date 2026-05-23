@@ -19,6 +19,12 @@ type: feature
 - `_admin_id IS NULL` autorisé uniquement pour appel SERVICE_ROLE (webhook Stripe `finalize_after_payment`) ; l'edge function reste le gatekeeper.
 - Edge `approve-subdivision` : `materializeApprovedRequest` n'utilise QUE le RPC, plus de JS de projection ni de `.catch(console)` silencieux.
 
+## Plan officiel PDF (P1)
+- `generate-subdivision-plan` consomme intégralement `configSnapshot` : `header.org_line1/2/3`, `header.title`, `watermarks.final` (text/color/opacity), `paper_format.{base_mm,min_mm,max_mm}`, `scale_tiers.tiers[]` (échelle normalisée 1:N affichée en footer), `report_program` (signalement WhatsApp + récompense), `footer_text.text`.
+- Cadres signature : RPC `resolveFrames(rows, {isUrban, province})` filtre `applies_to ∈ {both, urban, rural}` + `province_filter` ; fallback minimal seulement si table vide. Plus de cadres hardcodés.
+- Légende auto : `deriveLegendItems(subdivision_legend_symbols, presentTypes)` avec `presentTypes = ['north_arrow','echelle_graphique', roads?'road':_, lots?'lot':_]`.
+- `config_snapshot` archivé tel quel dans `subdivision_plan_versions` (reproductibilité).
+- Note : `src/utils/generateSubdivisionPlanPDF.ts` reste pour aperçu user (preview/brouillon) mais n'est plus la source du plan officiel.
+
 ## Reste à faire
-- **P1** : extraire `generateSubdivisionPlanPDF.ts` + legend/scale/context vers `supabase/functions/_shared/subdivisionPlan/` pour que `generate-subdivision-plan` consomme `configSnapshot` (header, watermarks, paper_format, scale_tiers, report_program, footer_text, cadres, symboles).
 - **P3** : onglet "Versions du plan" dans hub, handler `/verify/:code` type `subdivision_plan`, menu `Documents ▾` regroupant les 3 PDF, suppression `validationCache` sessionStorage, déduplication `useAdminPendingCounts` vs `usePendingCount`.
