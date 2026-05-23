@@ -183,8 +183,23 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
   const [submitted, setSubmitted] = useState(false);
   const [referenceNumber, setReferenceNumber] = useState('');
   const [createdRequestId, setCreatedRequestId] = useState<string | null>(null);
-  // Stable idempotency key for the lifetime of this form session
-  const idempotencyKeyRef = useRef<string>(crypto.randomUUID());
+  // Stable idempotency key for the lifetime of this form session — persisted in localStorage
+  // so the user retains the same key across reloads until the draft is cleared.
+  const idempotencyStorageKey = `${IDEMPOTENCY_KEY_PREFIX}${authUser?.id || 'anon'}-${parcelNumber}`;
+  const idempotencyKeyRef = useRef<string>('');
+  if (!idempotencyKeyRef.current) {
+    try {
+      const stored = typeof localStorage !== 'undefined' ? localStorage.getItem(idempotencyStorageKey) : null;
+      if (stored) {
+        idempotencyKeyRef.current = stored;
+      } else {
+        idempotencyKeyRef.current = crypto.randomUUID();
+        if (typeof localStorage !== 'undefined') localStorage.setItem(idempotencyStorageKey, idempotencyKeyRef.current);
+      }
+    } catch {
+      idempotencyKeyRef.current = crypto.randomUUID();
+    }
+  }
 
   // Validation
   const [validation, setValidation] = useState<ValidationResult>({ isValid: true, errors: [], warnings: [] });
