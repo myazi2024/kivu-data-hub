@@ -250,8 +250,12 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
   
   const clearDraft = useCallback(() => {
     localStorage.removeItem(draftKey);
+    try { localStorage.removeItem(idempotencyStorageKey); } catch { /* ignore */ }
+    // Rotate idempotency key so the next attempt is treated as a new request
+    idempotencyKeyRef.current = crypto.randomUUID();
+    try { localStorage.setItem(idempotencyStorageKey, idempotencyKeyRef.current); } catch { /* ignore */ }
     setDraftRestored(false);
-  }, [draftKey]);
+  }, [draftKey, idempotencyStorageKey]);
   
   // Load parent parcel data
   const loadParcelData = useCallback(async () => {
