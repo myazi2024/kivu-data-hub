@@ -27,7 +27,7 @@ export interface RoadSurfaceMaterial {
 
 const KEY_REGEX = /^[a-z0-9_]+$/;
 
-const emptyForm = { key: '', label: '', description: '', display_order: '10', is_active: true };
+const emptyForm = { key: '', label: '', description: '', display_order: '10', is_active: true, price_multiplier: '1.00' };
 
 interface Props {
   /** Notifier le parent quand la liste change (pour rafraîchir les multi-select dans les règles). */
