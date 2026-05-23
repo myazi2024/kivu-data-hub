@@ -20,7 +20,10 @@ export interface RoadSurfaceMaterial {
   description: string | null;
   display_order: number;
   is_active: boolean;
+  /** Multiplicateur appliqué au tarif de base `road_surface` (catégorie). */
+  price_multiplier?: number;
 }
+
 
 const KEY_REGEX = /^[a-z0-9_]+$/;
 
