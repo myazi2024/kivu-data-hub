@@ -1,6 +1,6 @@
 import React, { useRef, useState, useCallback, useEffect, useMemo } from 'react';
 import { SubdivisionLot, SubdivisionRoad, SubdivisionCommonSpace, COMMON_SPACE_COLORS, COMMON_SPACE_LABELS, LOT_COLORS, USAGE_LABELS, Point2D, LotAnnotation } from './types';
-import { getAllRoadIntersectionPoints, polygonCentroid } from './utils/geometry';
+import { getAllRoadIntersectionPoints, polygonArea, polygonCentroid } from './utils/geometry';
 import { useCanvasViewport } from './hooks/useCanvasViewport';
 import { useCanvasDrag } from './hooks/useCanvasDrag';
 import { useCanvasKeyboard } from './hooks/useCanvasKeyboard';
