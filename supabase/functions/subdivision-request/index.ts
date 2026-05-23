@@ -259,7 +259,9 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Fetch matching rate
+    // Fetch matching rate. Priority: exact location (commune > ville > province)
+    // > generic '*' > first available. Avoids ignoring an admin-configured
+    // location-specific rate just because no '*' row exists.
     const { data: rates } = await supabase
       .from("subdivision_rate_config")
       .select("*")
@@ -267,8 +269,18 @@ Deno.serve(async (req) => {
       .eq("is_active", true);
 
     const ratesData = (rates as any[]) || [];
-    const fallbackRate = ratesData.find((r) => r.location_name === "*");
-    const rate = fallbackRate || ratesData[0];
+    const locCandidates = [
+      body.parent_parcel?.commune,
+      body.parent_parcel?.ville,
+      body.parent_parcel?.province,
+    ].filter((v): v is string => typeof v === 'string' && v.trim().length > 0)
+     .map(v => v.trim().toLowerCase());
+    const matchLocation = (name?: string | null) =>
+      typeof name === 'string' && locCandidates.includes(name.trim().toLowerCase());
+    const rate =
+      ratesData.find((r) => matchLocation(r.location_name)) ??
+      ratesData.find((r) => r.location_name === "*") ??
+      ratesData[0];
 
     // Aggregate roads + common spaces in meters using anisotropic GPS frame
     // (mirrors the client `metricFrame` so areas/lengths match user-facing values).
