@@ -495,7 +495,7 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
       if (road) {
         const newPath = [...road.path];
         newPath[roadEndpointDrag.pointIdx] = snapped;
-        onUpdateRoad(roadEndpointDrag.roadId, { path: newPath });
+        onUpdateRoad(roadEndpointDrag.roadId, { path: newPath, footprint: undefined });
       }
       return;
     }
