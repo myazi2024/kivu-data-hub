@@ -113,7 +113,7 @@ export function useFormValidation(params: UseFormValidationParams) {
     const isPrecaireOrUnbuilt = normalizedNature === 'Précaire' || normalizedNature === 'Non bâti';
     if (!isTerrainNu && formData.constructionNature && !isPrecaireOrUnbuilt && !formData.constructionMaterials) missing.push({ field: 'constructionMaterials', label: 'Matériaux de construction', tab: 'general' });
     if (!isTerrainNu && formData.constructionNature && !isPrecaireOrUnbuilt && !formData.standing) missing.push({ field: 'standing', label: 'Standing', tab: 'general' });
-    if (!isTerrainNu && formData.propertyCategory && formData.propertyCategory !== 'Terrain nu' && !formData.constructionYear) missing.push({ field: 'constructionYear', label: 'Année de construction', tab: 'general' });
+    if (!isTerrainNu && formData.propertyCategory && !formData.constructionYear) missing.push({ field: 'constructionYear', label: 'Année de construction', tab: 'general' });
     if (isAppartement) {
       if (!formData.apartmentNumber) missing.push({ field: 'apartmentNumber', label: "Numéro de l'appartement", tab: 'general' });
       if (!formData.floorNumber) missing.push({ field: 'floorNumber', label: "Numéro de l'étage", tab: 'general' });
