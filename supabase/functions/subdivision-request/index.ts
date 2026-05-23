@@ -551,9 +551,16 @@ Deno.serve(async (req) => {
     });
   } catch (error: any) {
     console.error("subdivision-request error:", error);
-    return new Response(JSON.stringify({ error: error.message }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 400,
-    });
+    return new Response(
+      JSON.stringify({
+        error: error.code || "UNKNOWN_ERROR",
+        message: error.message,
+        violations: error.violations || null,
+      }),
+      {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400,
+      },
+    );
   }
 });
