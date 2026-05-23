@@ -1136,11 +1136,11 @@ const AdminSubdivisionZoningRules: React.FC = () => {
                     <div className="space-y-1">
                       <Label className="text-[11px]">Matériaux autorisés</Label>
                       <div className="flex flex-wrap gap-1.5 p-2 rounded border bg-background">
-                        {DRAINAGE_CANAL_MATERIALS.map(m => {
-                          const checked = (form.drainage_canal_allowed_materials ?? []).includes(m);
+                        {drainageMaterials.map(m => {
+                          const checked = (form.drainage_canal_allowed_materials ?? []).includes(m.key);
                           return (
                             <button
-                              key={m}
+                              key={m.id}
                               type="button"
                               role="checkbox"
                               aria-checked={checked}
@@ -1148,17 +1148,21 @@ const AdminSubdivisionZoningRules: React.FC = () => {
                                 const prev = f.drainage_canal_allowed_materials ?? [];
                                 return {
                                   ...f,
-                                  drainage_canal_allowed_materials: prev.includes(m)
-                                    ? prev.filter(x => x !== m)
-                                    : [...prev, m],
+                                  drainage_canal_allowed_materials: prev.includes(m.key)
+                                    ? prev.filter(x => x !== m.key)
+                                    : [...prev, m.key],
                                 };
                               })}
                               className={`text-[11px] px-2 py-0.5 rounded border cursor-pointer transition-colors ${checked ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted/40 hover:bg-muted'}`}
+                              title={`Multiplicateur ×${(m.price_multiplier ?? 1).toFixed(2)}`}
                             >
-                              {DRAINAGE_CANAL_MATERIAL_LABELS[m]}
+                              {m.label} <span className="opacity-60 ml-0.5">×{(m.price_multiplier ?? 1).toFixed(2)}</span>
                             </button>
                           );
                         })}
+                        {drainageMaterials.length === 0 && (
+                          <span className="text-[11px] text-muted-foreground italic">Aucun matériau actif — configurez-en dans le catalogue ci-dessous.</span>
+                        )}
                       </div>
                     </div>
                     <div className="space-y-1">
