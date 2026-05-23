@@ -1168,11 +1168,11 @@ const AdminSubdivisionZoningRules: React.FC = () => {
                     <div className="space-y-1">
                       <Label className="text-[11px]">Types autorisés</Label>
                       <div className="flex flex-wrap gap-1.5 p-2 rounded border bg-background">
-                        {DRAINAGE_CANAL_TYPES.map(t => {
-                          const checked = (form.drainage_canal_allowed_types ?? []).includes(t);
+                        {drainageTypes.map(t => {
+                          const checked = (form.drainage_canal_allowed_types ?? []).includes(t.key);
                           return (
                             <button
-                              key={t}
+                              key={t.id}
                               type="button"
                               role="checkbox"
                               aria-checked={checked}
@@ -1180,17 +1180,21 @@ const AdminSubdivisionZoningRules: React.FC = () => {
                                 const prev = f.drainage_canal_allowed_types ?? [];
                                 return {
                                   ...f,
-                                  drainage_canal_allowed_types: prev.includes(t)
-                                    ? prev.filter(x => x !== t)
-                                    : [...prev, t],
+                                  drainage_canal_allowed_types: prev.includes(t.key)
+                                    ? prev.filter(x => x !== t.key)
+                                    : [...prev, t.key],
                                 };
                               })}
                               className={`text-[11px] px-2 py-0.5 rounded border cursor-pointer transition-colors ${checked ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted/40 hover:bg-muted'}`}
+                              title={`Multiplicateur ×${(t.price_multiplier ?? 1).toFixed(2)}`}
                             >
-                              {DRAINAGE_CANAL_TYPE_LABELS[t]}
+                              {t.label} <span className="opacity-60 ml-0.5">×{(t.price_multiplier ?? 1).toFixed(2)}</span>
                             </button>
                           );
                         })}
+                        {drainageTypes.length === 0 && (
+                          <span className="text-[11px] text-muted-foreground italic">Aucun type actif — configurez-en dans le catalogue ci-dessous.</span>
+                        )}
                       </div>
                     </div>
                   </div>
