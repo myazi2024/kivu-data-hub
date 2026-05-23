@@ -215,6 +215,7 @@ const AdminSubdivisionLots: React.FC = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead>Demande</TableHead>
                     <TableHead>Parcelle mère</TableHead>
                     <TableHead>Lot</TableHead>
                     <TableHead>Surface</TableHead>
@@ -225,37 +226,49 @@ const AdminSubdivisionLots: React.FC = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filtered.map(l => (
-                    <TableRow key={l.id}>
-                      <TableCell className="font-mono text-xs">{l.parcel_number}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <span
-                            className="h-3 w-3 rounded-sm border border-border"
-                            style={{ backgroundColor: l.color || 'hsl(var(--muted))' }}
-                          />
-                          <span className="font-medium">{l.lot_label || `Lot ${l.lot_number}`}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>{Number(l.area_sqm || 0).toLocaleString()} m²</TableCell>
-                      <TableCell>
-                        {l.intended_use ? (
-                          <Badge variant="outline" className="text-xs">
-                            {USAGE_LABELS[l.intended_use as keyof typeof USAGE_LABELS] || l.intended_use}
-                          </Badge>
-                        ) : '—'}
-                      </TableCell>
-                      <TableCell className="max-w-[180px] truncate">{l.owner_name || '—'}</TableCell>
-                      <TableCell className="text-xs text-muted-foreground">
-                        {new Date(l.created_at).toLocaleDateString('fr-FR')}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button variant="ghost" size="sm" onClick={() => openEdit(l)} className="gap-1">
-                          <Pencil className="h-3.5 w-3.5" /> Éditer
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {filtered.map(l => {
+                    const ref = l.subdivision_requests?.reference_number;
+                    return (
+                      <TableRow key={l.id}>
+                        <TableCell className="text-xs">
+                          {ref ? (
+                            <a
+                              href={`?tab=subdivision-hub&sub=requests&q=${encodeURIComponent(ref)}`}
+                              className="font-mono text-primary hover:underline"
+                              title="Ouvrir la demande parente"
+                            >{ref}</a>
+                          ) : <span className="text-muted-foreground">—</span>}
+                        </TableCell>
+                        <TableCell className="font-mono text-xs">{l.parcel_number}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <span
+                              className="h-3 w-3 rounded-sm border border-border"
+                              style={{ backgroundColor: l.color || 'hsl(var(--muted))' }}
+                            />
+                            <span className="font-medium">{l.lot_label || `Lot ${l.lot_number}`}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>{Number(l.area_sqm || 0).toLocaleString()} m²</TableCell>
+                        <TableCell>
+                          {l.intended_use ? (
+                            <Badge variant="outline" className="text-xs">
+                              {USAGE_LABELS[l.intended_use as keyof typeof USAGE_LABELS] || l.intended_use}
+                            </Badge>
+                          ) : '—'}
+                        </TableCell>
+                        <TableCell className="max-w-[180px] truncate">{l.owner_name || '—'}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground">
+                          {new Date(l.created_at).toLocaleDateString('fr-FR')}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button variant="ghost" size="sm" onClick={() => openEdit(l)} className="gap-1">
+                            <Pencil className="h-3.5 w-3.5" /> Éditer
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>
