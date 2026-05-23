@@ -1,64 +1,51 @@
-## Finalisation harmonisation infrastructure lotissement
+# Routes bordantes externes — lever l'alerte d'enclavement
 
-Suite à la migration DB (catalogues `subdivision_drainage_materials`, `subdivision_drainage_types`, colonne `price_multiplier`) et au correctif écran blanc, voici les 3 chantiers restants.
+## Problème
+La validation "lot enclavé" ne reconnaît que les voies tracées **à l'intérieur** de la parcelle. Quand un lot longe une route publique existante hors parcelle (avenue, rue), l'utilisateur n'a aucun moyen de le signaler et reste bloqué.
 
-### 1. Calcul serveur unifié (`supabase/functions/_shared/subdivisionFees.ts`)
+## Solution
+Ajouter un type de voie « **Route bordante (publique existante)** » :
+- Sélection d'un **côté de la parcelle mère** + saisie nom + largeur
+- Trace automatiquement une polyligne parallèle à ce côté, **côté extérieur** (offset = largeur/2)
+- Marquée `isExisting: true` + nouveau flag `isExternal: true`
+- **Aucun coût** d'infrastructure (revêtement / drainage / éclairage tous nuls)
+- **N'affecte pas la géométrie** des lots (pas d'emprise rognée)
+- Comptée par `lotTouchesRoad` → enclavement levé pour les lots adjacents à ce côté
 
-Remplacer l'ancienne logique par le modèle **base × multiplicateurs** :
+## Modifications
 
-```text
-prix_revêtement  = tarif_base.road_surface     × material.mult × longueur × largeur
-prix_drainage    = tarif_base.drainage         × material.mult × type.mult × longueur × côtés
-prix_éclairage   = tarif_base.street_lighting  × nb_lampadaires
-```
+### 1. Type
+`src/components/cadastral/subdivision/types.ts` — ajouter `isExternal?: boolean` et `borderingParcelSideIndex?: number` sur `SubdivisionRoad`.
 
-- Charger les 3 tarifs base via `infrastructure_key IN ('drainage','road_surface','street_lighting')`
-- Charger les 3 catalogues (road_surface_materials, drainage_materials, drainage_types) avec leurs `price_multiplier`
-- Fallback `multiplier = 1` si clé absente
-- Logs explicites par voie pour audit
-- Met à jour les edge functions consommatrices (création/recalcul demande lotissement)
+### 2. Frais serveur
+`supabase/functions/_shared/subdivisionFees.ts` — `computeRoadInfrastructures` ignore (skip) les routes où `isExternal === true` : zéro coût.
 
-### 2. UI admin — édition des multiplicateurs
+### 3. UI — nouveau panneau
+`src/components/cadastral/subdivision/steps/panels/BorderingRoadsPanel.tsx` (nouveau) :
+- Liste des côtés de la parcelle mère (réutilise la logique d'orientation/longueur de `RoadBorderingSidesPanel`)
+- Pour chaque côté : checkbox « borde une route publique » + select type (avenue, rue, nationale…) + nom + largeur (m)
+- Bouton « Confirmer » → crée un `SubdivisionRoad` avec :
+  - `path` = ligne parallèle au côté `i`, décalée vers l'extérieur de `widthM/(2·scale)`
+  - `isExisting: true`, `isExternal: true`, `borderingParcelSideIndex: i`
+  - Specs infra à `null`
+- Édition / suppression d'une route bordante existante
 
-**`AdminSubdivisionRoadSurfaceMaterials.tsx`** : ajouter colonne/champ `price_multiplier` (number, step 0.01, défaut 1.0) avec aide contextuelle "1.0 = prix de base".
+### 4. Intégration designer
+`StepLotDesigner.tsx` :
+- Onglet « Voies » → 2 sous-sections : **Voies internes** (existant `RoadsListPanel`) + **Routes bordantes** (nouveau panneau)
+- `RoadsListPanel` filtre `roads.filter(r => !r.isExternal)` (les externes n'apparaissent pas dans l'édition libre)
+- Rendu canvas (`LotCanvas`) : routes externes dessinées en style distinct (trait hachuré + label "🛣 publique") sans poignées d'édition
 
-**Nouveau** `src/components/admin/AdminSubdivisionDrainageCatalog.tsx` (2 onglets : Matériaux / Types) reprenant le même pattern que road_surface :
-- Liste avec `key`, `label`, `price_multiplier`, `is_active`, `display_order`
-- CRUD + toggle actif + réordonnancement
-- Aperçu calcul : `base × mult = prix unitaire`
+### 5. Validation
+`utils/subdivisionValidation.ts` — `requireRoadAccess: roads.length > 0` reste tel quel (les externes comptent comme routes). Pas de changement nécessaire car `lotTouchesRoad` parcourt déjà toutes les routes.
 
-Intégration dans `AdminSubdivisionHub.tsx` (onglet Zonage ou nouveau sous-onglet "Catalogues").
+### 6. Helper géométrie
+`utils/polygonOps.ts` — petite fonction `offsetSegmentOutward(a, b, parentCentroid, distance)` pour calculer le côté extérieur d'un segment par rapport au centre de la parcelle.
 
-### 3. Formulaire de demande de lotissement
+### 7. Mémoire projet
+Mettre à jour `mem/admin/subdivision-infrastructure-catalog-fr.md` : routes `isExternal` exclues du calcul de frais.
 
-Remplacer les constantes hardcodées par 3 hooks lisant les tables :
-- `useRoadSurfaceMaterialsCatalog()` (déjà partiellement présent → garantir `price_multiplier`)
-- `useDrainageMaterialsCatalog()` (nouveau)
-- `useDrainageTypesCatalog()` (nouveau)
-
-Dans le composant voirie/drainage :
-- Dropdowns filtrés par `is_active`, triés par `display_order`
-- Affichage estimation locale `base × mult` à titre indicatif (le calcul autoritatif reste serveur)
-- Si une règle de zonage restreint `allowed_materials/types`, intersecter la liste
-
-### 4. Mémoire projet
-
-Mettre à jour `mem://admin/subdivision-infrastructure-catalog-fr` avec les hooks, l'emplacement UI admin, et la formule finale serveur.
-
-### Ordre d'exécution
-1. `subdivisionFees.ts` serveur (cœur métier)
-2. UI admin multiplicateurs (édition humaine)
-3. Hooks + formulaire (consommation)
-4. Mémoire
-
-### Fichiers touchés
-- `supabase/functions/_shared/subdivisionFees.ts`
-- Edge functions appelantes (recalcul si nécessaire)
-- `src/components/admin/AdminSubdivisionRoadSurfaceMaterials.tsx`
-- `src/components/admin/AdminSubdivisionDrainageCatalog.tsx` (nouveau)
-- `src/components/admin/AdminSubdivisionHub.tsx`
-- `src/hooks/useSubdivisionDrainageCatalog.ts` (nouveau)
-- Composant voirie du formulaire demande lotissement
-- `mem/admin/subdivision-infrastructure-catalog-fr.md`
-
-Pas de nouvelle migration SQL (le schéma est déjà en place).
+## Hors scope
+- Pas de modification d'admin (pas de tarif pour route externe)
+- Pas de schéma DB (le champ est sérialisé dans le JSON existant `roads`)
+- Pas de changement sur l'emprise des lots
