@@ -93,10 +93,10 @@ supabase/functions/generate-subdivision-plan/  → aligner sur la nouvelle confi
 - Toute modification de `app_subdivision_plan_config` ou `subdivision_signature_frames` loggée dans `system_config_audit`.
 
 ### G. Livraison par phases
-1. **P0 — Données** : 3 tables + seed + RLS + RPC verify.
-2. **P1 — Admin UI** : nouvel onglet `plan-config` + 6 sous-sections + aperçu.
-3. **P2 — Générateur PDF** : refonte avec cadres N, légende auto, échelle auto, filigranes, programme signalement.
-4. **P3 — Cycle de vie** : brouillon vs final, intégration `plan_versions`, RPC signed URL déjà OK.
+1. **P0 — Données** ✅ : 3 tables + seed + RLS + RPC verify.
+2. **P1 — Admin UI** ✅ : nouvel onglet `plan-config` + 6 sous-sections.
+3. **P2 — Générateur PDF** ✅ : refonte avec cadres N, légende auto, échelle auto, filigranes, programme signalement.
+4. **P3 — Cycle de vie** ✅ : `subdivision_plan_versions` étendue (`official_version`, `pdf_path`, `config_snapshot`, `verification_code`, `is_current` + trigger), edge function `generate-subdivision-plan` insère une ligne immuable avec snapshot complet (config + cadres + symboles) à chaque (re)génération.
 5. **P4 — Mémoire & docs** : MAJ `mem://features/subdivision/specifications-completes-fr` + audit.
 
 ## Détails techniques
