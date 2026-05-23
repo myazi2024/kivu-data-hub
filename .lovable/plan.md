@@ -1,56 +1,51 @@
-# Surface de la parcelle-mère cohérente avec ses côtés GPS
+# Surface parcelle-mère cohérente dès le chargement (onglet Parcelle)
 
-## Cause exacte du bug "triangle 788/387/802 → 2887 m²"
+## Problème
 
-L'étape précédente a bien aligné `parentAreaGeomSqm` dans `StepLotDesigner.tsx`. **Mais** la surface visible dans le panneau "Lot" (champ « Surface » du lot sélectionné, ligne 1122) provient en réalité du « lot parent-boundary » créé dans `useSubdivisionForm.ts` :
+Dans `StepParentParcel.tsx`, le champ « Superficie » du bloc *Parcelle mère (chargée automatiquement)* affiche `parentParcel.areaSqm`, qui provient directement de `cadastral_parcels.area_sqm` (DB). Or cette valeur DB est incohérente avec les côtés GPS affichés ailleurs (cas du triangle 788/387/802 → DB ≈ 2 887 m², géométrie réelle ≈ 149 000 m²).
 
-```ts
-// src/components/cadastral/subdivision/hooks/useSubdivisionForm.ts, ligne 441
-areaSqm: Math.round(parentParcel.areaSqm),  // ← valeur DB, indépendante des côtés GPS
-```
+La correction précédente avait été appliquée dans `StepLotDesigner.tsx` et dans `createInitialLot` (lot parent-boundary), mais **pas à la source** chargée dans `useSubdivisionForm.loadParcelData()`. Résultat : l'onglet *Parcelle* affiche encore la valeur DB brute.
 
-Cette `area_sqm` provient de la base (souvent saisie ou héritée d'un calcul antérieur incohérent). Pour un triangle dont les côtés GPS mesurent 788 / 387 / 802 m, la formule de Héron donne ~149 000 m², alors que la DB renvoie 2 887 m² — d'où l'incohérence visible.
+## Correctif (source unique)
 
-Les étiquettes de côtés, elles, utilisent déjà `edgeLengthM(metricFrame)` (GPS) — donc cohérentes entre elles.
+Dans `src/components/cadastral/subdivision/hooks/useSubdivisionForm.ts` → `loadParcelData()` (lignes 261-308), calculer la superficie géométrique à partir des coordonnées GPS dès la construction de l'objet `ParentParcelInfo`, puis utiliser cette valeur comme `areaSqm`. Fallback DB conservé si moins de 3 points GPS exploitables.
 
-## Correctif (UI / présentation, aucune modif DB)
+### Helper local
 
-### `src/components/cadastral/subdivision/hooks/useSubdivisionForm.ts` — `createInitialLot`
-
-Remplacer la ligne 441 :
+Ajouter, juste avant `setParentParcel(...)` dans chacune des deux branches (lignes 266-282 et 285-308) :
 
 ```ts
-areaSqm: Math.round(parentParcel.areaSqm),
-```
-
-par un calcul géométrique sur la même `metricFrame` que les côtés affichés, avec fallback DB :
-
-```ts
-const geomAreaSqm =
-  metricFrame.hasGps && parentVertices.length >= 3
-    ? Math.max(1, Math.round(polygonAreaSqmAccurate(parentVertices, metricFrame)))
-    : Math.round(parentParcel.areaSqm);
+const dbAreaSqm = (parcelData?.area_sqm /* ou parcel.area_sqm */) || 0;
+let effectiveAreaSqm = dbAreaSqm;
+if (gpsCoords.length >= 3) {
+  const frame = buildMetricFrame(gpsCoords, dbAreaSqm || 1);
+  const normVerts = gpsCoords.map((g) => gpsToNormalized(g, gpsCoords));
+  const geomArea = polygonAreaSqmAccurate(normVerts, frame);
+  if (isFinite(geomArea) && geomArea > 0) {
+    effectiveAreaSqm = Math.round(geomArea);
+  }
+}
 // ...
-areaSqm: geomAreaSqm,
+areaSqm: effectiveAreaSqm,
 ```
 
-Import à compléter : `polygonAreaSqmAccurate` depuis `../utils/metrics` (déjà importé partiellement via `MetricFrame`/`polygonPerimeterM`).
+`buildMetricFrame`, `polygonAreaSqmAccurate` sont déjà importés (ligne 11). `gpsToNormalized` est déjà importé (ligne 9).
 
-### Résultat
+### Effets de bord (souhaités)
 
-- Le panneau « Surface » du lot parent (sélectionné) affiche la surface réellement calculée à partir des côtés GPS (Héron pour un triangle).
-- Triangle 788 / 387 / 802 → ~149 000 m² au lieu de 2 887 m².
-- Cohérence parfaite : `Surface affichée == f(côtés affichés)` et `coveragePercent` reste consistant (déjà basé sur `parentAreaGeomSqm`).
-- Si la parcelle n'a pas de coordonnées GPS, comportement actuel conservé (fallback DB).
+- L'onglet *Parcelle* (bloc Parcelle-mère) affiche désormais la superficie géométrique, cohérente avec les côtés GPS.
+- Le designer de lots, la validation et le snapshot consomment la même valeur → fin de toute incohérence visuelle.
+- `createInitialLot` peut conserver son recalcul actuel (idempotent : même formule, même valeur), ou être simplifié dans une étape ultérieure.
 
-## Hors-scope
+### Hors-scope
 
-- Aucune modification de `parentParcel.areaSqm` en base : la valeur DB reste utilisée pour la facturation serveur (`_shared/subdivisionFees.ts`), la persistance et l'affichage hors designer.
-- Pas de changement des étiquettes de côtés (déjà GPS).
-- Pas de migration ni de recalcul rétroactif des parcelles existantes.
+- **Aucune écriture en base** : `cadastral_parcels.area_sqm` reste inchangé.
+- Les frais serveur (`_shared/subdivisionFees.ts`) qui relisent la DB ne sont pas modifiés.
+- Pas de migration ni de recalcul rétroactif.
+- Si la parcelle n'a pas de GPS exploitable, comportement actuel conservé (valeur DB).
 
 ## Vérification
 
-1. Ouvrir une parcelle triangulaire avec GPS dont les côtés mesurent 788 / 387 / 802 m → la surface du « lot parent » doit afficher ~14,9 ha (149 000 m²).
-2. La somme des surfaces des lots reste ≤ surface mère affichée (pas de faux dépassement).
-3. Une parcelle sans GPS continue d'afficher la surface DB.
+1. Ouvrir la parcelle triangulaire 788/387/802 m → onglet *Parcelle* doit afficher ≈ 14,9 ha (149 000 m²) au lieu de 2 887 m².
+2. Étape *Designer* : la même valeur apparaît (plus de doubles sources).
+3. Une parcelle sans coordonnées GPS continue d'afficher la valeur DB sans erreur.
