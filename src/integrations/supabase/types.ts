@@ -5861,6 +5861,78 @@ export type Database = {
           },
         ]
       }
+      subdivision_drainage_materials: {
+        Row: {
+          created_at: string
+          description: string | null
+          display_order: number
+          id: string
+          is_active: boolean
+          key: string
+          label: string
+          price_multiplier: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          key: string
+          label: string
+          price_multiplier?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          key?: string
+          label?: string
+          price_multiplier?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      subdivision_drainage_types: {
+        Row: {
+          created_at: string
+          description: string | null
+          display_order: number
+          id: string
+          is_active: boolean
+          key: string
+          label: string
+          price_multiplier: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          key: string
+          label: string
+          price_multiplier?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          key?: string
+          label?: string
+          price_multiplier?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       subdivision_infrastructure_tariffs: {
         Row: {
           category: string
@@ -6525,6 +6597,7 @@ export type Database = {
           is_active: boolean
           key: string
           label: string
+          price_multiplier: number
           updated_at: string
         }
         Insert: {
@@ -6535,6 +6608,7 @@ export type Database = {
           is_active?: boolean
           key: string
           label: string
+          price_multiplier?: number
           updated_at?: string
         }
         Update: {
@@ -6545,6 +6619,7 @@ export type Database = {
           is_active?: boolean
           key?: string
           label?: string
+          price_multiplier?: number
           updated_at?: string
         }
         Relationships: []
