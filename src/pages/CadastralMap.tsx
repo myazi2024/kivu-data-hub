@@ -614,7 +614,7 @@ const CadastralMap = () => {
                   <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary/5 border border-primary/10 text-[10px]">
                     <span className="text-muted-foreground">Surface</span>
                     <span className="font-semibold text-foreground">
-                      {selectedParcel.area_sqm?.toLocaleString()} m²
+                      {selectedParcelEffectiveArea.toLocaleString()} m²
                     </span>
                   </div>
                   {selectedParcel.commune && (
