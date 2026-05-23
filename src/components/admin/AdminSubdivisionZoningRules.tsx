@@ -24,6 +24,10 @@ import {
   DRAINAGE_CANAL_TYPE_LABELS,
 } from '@/components/cadastral/subdivision/infrastructureConstants';
 
+/** Normalise toute valeur en tableau de strings (défense contre null/undefined/objet/JSON corrompu). */
+const toStringArray = (v: unknown): string[] =>
+  Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : [];
+
 /** Petit indicateur d'aide affichant un popover explicatif au clic. */
 const FieldHelp: React.FC<{ title: string; description: string; example?: string }> = ({ title, description, example }) => (
   <Popover>
