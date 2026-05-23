@@ -22,7 +22,7 @@ const Fallback = () => (
   </div>
 );
 
-const VALID_SUBS = ['requests', 'fees', 'zoning', 'references', 'documents', 'plan-elements', 'lots', 'analytics'] as const;
+const VALID_SUBS = ['requests', 'fees', 'zoning', 'references', 'documents', 'plan-elements', 'plan-config', 'lots', 'analytics'] as const;
 
 export default function AdminSubdivisionHub() {
   const [params, setParams] = useSearchParams();
@@ -51,7 +51,7 @@ export default function AdminSubdivisionHub() {
 
       <Tabs value={active} onValueChange={handleChange} className="w-full">
         <Card className="p-2">
-          <TabsList className="grid grid-cols-4 sm:grid-cols-8 w-full">
+          <TabsList className="grid grid-cols-3 sm:grid-cols-9 w-full">
             <TabsTrigger value="requests" className="gap-1.5">
               <Grid3X3 className="h-4 w-4" /> <span className="hidden sm:inline">Demandes</span>
             </TabsTrigger>
@@ -69,6 +69,9 @@ export default function AdminSubdivisionHub() {
             </TabsTrigger>
             <TabsTrigger value="plan-elements" className="gap-1.5">
               <Compass className="h-4 w-4" /> <span className="hidden sm:inline">Plan</span>
+            </TabsTrigger>
+            <TabsTrigger value="plan-config" className="gap-1.5">
+              <FileCog className="h-4 w-4" /> <span className="hidden sm:inline">Config plan</span>
             </TabsTrigger>
             <TabsTrigger value="lots" className="gap-1.5">
               <Layers className="h-4 w-4" /> <span className="hidden sm:inline">Lots & voies</span>
