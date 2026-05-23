@@ -1,48 +1,39 @@
-# Plan — Afficher les routes bordantes sur le croquis
+# Conversion "Zone → Voie" : couverture intégrale automatique
 
 ## Problème
-Dans `StepLotDesigner.tsx` (ligne 968 et 1263), les routes externes (`isExternal === true`, ajoutées via `BorderingRoadsPanel`) sont filtrées avant d'être passées à `LotCanvas`. Résultat : rien ne s'affiche sur le croquis quand on déclare une route bordante.
+Quand l'utilisateur dessine une zone (lot ou espace commun) et la convertit en voie via le sélecteur de type, la voie est aujourd'hui rendue comme un rectangle dérivé d'une **ligne centrale** + `widthM` (largeur préréglée 6 m ou largeur inférée mais plafonnée à 30 m). Résultat : pour tout polygone non rectangulaire ou large, la voie affichée ne recouvre pas la zone d'origine — l'utilisateur doit ajuster manuellement la largeur, et le rendu reste approximatif.
 
-Même si on les laissait passer, le rendu actuel centre la bande de route sur `road.path` (qui pour une route bordante = `[side.a, side.b]`, donc collée au côté de la parcelle). La bande chevaucherait la parcelle au lieu d'être à l'extérieur.
+Attendu : la voie doit reprendre **exactement** l'emprise du polygone dessiné, sans intervention.
 
-## Correction
+## Approche
+Ajouter une emprise (`footprint`) optionnelle sur la voie. Quand elle est présente, le canvas dessine ce polygone tel quel comme corps de voie. `path` + `widthM` restent maintenus pour rester compatibles avec les calculs existants (frais, validation, mini-map, infrastructures dérivées).
 
-### 1. `StepLotDesigner.tsx`
-- Ligne 968 (passage à `LotCanvas`) : **ne plus filtrer** `!r.isExternal`. Passer `roads` complet pour que le canvas connaisse les routes externes.
-- Ligne 1263 (`RoadsListPanel`) : **conserver** le filtre `!r.isExternal`. Les routes bordantes restent gérées dans `BorderingRoadsPanel`.
+## Modifications
 
-### 2. `LotCanvas.tsx` — rendu spécifique aux routes externes
-Dans le bloc `roads.map(road => …)` (ligne 826), brancher en début de boucle :
+### 1. `src/components/cadastral/subdivision/types.ts`
+- Ajouter `footprint?: Point2D[]` à `SubdivisionRoad` (coordonnées normalisées, ≥3 points). Commentaire : « Emprise polygonale d'origine quand la voie a été créée par conversion d'une zone dessinée. Si présent, prime sur le rectangle dérivé de `path` + `widthM` pour l'affichage. »
 
-```ts
-if (road.isExternal && road.borderingParcelSideIndex != null) {
-  // Calculer la normale sortante depuis le centroïde de la parcelle-mère
-  // vers le milieu du côté concerné, et tracer une bande parallèle
-  // entièrement à l'extérieur (offset = halfW vers l'extérieur,
-  // donc la face intérieure de la bande coïncide avec le côté).
-  return renderExternalRoadBand(road, parentVertices, ...);
-}
-```
+### 2. `src/components/cadastral/subdivision/utils/convertZoneType.ts`
+Branche `toType === 'road'` lorsque la source est un polygone (lot ou espace commun) et qu'un `metricFrame` est fourni :
+- Calculer `areaM2 = polygonAreaSqmAccurate(polygon, frame)` et `lengthM = edgeLengthM(centerline[0], centerline[1], frame)`.
+- `widthM = clamp(round(areaM2 / lengthM, 0.5), 2, 200)` (relever le plafond actuel de 30 m pour ne pas tronquer les grandes zones ; la précision largeur×longueur ≈ aire reste vraie).
+- Affecter `footprint: polygon` sur l'objet `SubdivisionRoad` retourné.
+- Pour une source `road` (road→road, rare) : ne pas toucher au footprint existant.
 
-Comportement du `renderExternalRoadBand` :
-- Points A = `parentVertices[side]`, B = `parentVertices[(side+1) % n]`, en coords écran via `toScreen`.
-- Largeur en pixels : `(road.widthM / sideLength) * (CANVAS_W - 2*PADDING)` (même formule).
-- Normale **sortante** : prendre la normale perpendiculaire à AB et choisir le sens opposé au centroïde de `parentVertices`.
-- Quatre sommets de la bande : `A`, `B`, `B + n*W`, `A + n*W` (bande entièrement dehors).
-- Rendu :
-  - polygone rempli (style "voie publique existante" : couleur ambre `#d4a574` opacité 0.25, contour solide `#92400e`).
-  - libellé `{road.name} ({width}m)` centré sur la bande, parallèle au côté.
-  - **non interactif** sur le canvas (pas de drag, pas de sélection, pas de hit-area) — gestion via `BorderingRoadsPanel` uniquement.
-- Exclure les routes externes :
-  - du bloc "hit-areas" (ligne 1467)
-  - du calcul `getAllRoadIntersectionPoints` (ligne 1510)
-  - du tri sélection (`selectedRoadId`) — non sélectionnables au canvas.
+### 3. `src/components/cadastral/subdivision/LotCanvas.tsx`
+- Dans la branche de rendu des voies internes (après le bloc `isExternal`, autour des lignes 890-960), avant le calcul rectangle TL/TR/BR/BL : si `road.footprint && road.footprint.length >= 3`, rendre un `<polygon>` à partir de `road.footprint.map(toScreen)` avec les mêmes couleurs/sélection que le rectangle actuel (fill, stroke, sélection), et placer le label au centroïde de ce polygone. Conserver la `<polyline>` invisible sur `path` comme zone de clic et les poignées d'extrémités/largeur.
+- Quand l'utilisateur **édite manuellement** la voie (drag d'une extrémité de `path` ou drag de la poignée de largeur), appeler `onUpdateRoad(id, { ..., footprint: undefined })` pour basculer au rendu rectangle classique (sinon le footprint figerait l'affichage malgré les changements). Idem dans `handleConvertEdgeToRoad` et toute opération qui réécrit `path` ou `widthM`.
 
-### 3. Hors scope
-- Aucune modification de logique métier, validation, fees, ou DB.
-- Pas de changement des routes internes ni de `RoadsListPanel`.
-- Pas de drag/édition graphique des routes bordantes (modifications via panneau).
+### 4. Pas de changement
+- `subdivisionFees.ts` & `infrastructureFromRoads.ts` : continuent d'utiliser `lengthM × widthM` ; comme widthM est désormais inférée pour que le produit colle à l'aire réelle, les frais restent cohérents avec la zone affichée.
+- `polygonOps.lotTouchesRoad`, `subdivisionValidation`, `SubdivisionMiniMap`, backend, DB : inchangés.
+
+## Hors périmètre
+- Pas de modification du formulaire d'édition des voies (`RoadsListPanel`), des frais admin, du schéma DB, ni des voies bordantes externes.
+- Pas de refonte du modèle voie en pur polygone (rétro-compatibilité préservée via `path` + `widthM`).
 
 ## Fichiers touchés
-- `src/components/cadastral/subdivision/steps/StepLotDesigner.tsx` (1 ligne)
-- `src/components/cadastral/subdivision/LotCanvas.tsx` (branche de rendu + exclusions hit-area/intersections)
+- `src/components/cadastral/subdivision/types.ts`
+- `src/components/cadastral/subdivision/utils/convertZoneType.ts`
+- `src/components/cadastral/subdivision/LotCanvas.tsx`
+- `src/components/cadastral/subdivision/steps/StepLotDesigner.tsx` (purge `footprint` lors des éditions manuelles de path/largeur)
