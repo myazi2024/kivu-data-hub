@@ -378,6 +378,8 @@ const AdminSubdivisionZoningRules: React.FC = () => {
   const [roadSurfaceTariffKeys, setRoadSurfaceTariffKeys] = useState<Set<string>>(new Set());
   const [hasRoadSurfaceBase, setHasRoadSurfaceBase] = useState(true);
   const [search, setSearch] = useState('');
+  const { items: drainageMaterials } = useDrainageMaterialsCatalog(true);
+  const { items: drainageTypes } = useDrainageTypesCatalog(true);
 
   const fetchMaterials = async () => {
     const { data } = await untypedTables
