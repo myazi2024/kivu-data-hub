@@ -245,14 +245,14 @@ export function RequestDetailsDialog({ open, onOpenChange, request, onOpenDocume
                     const fi: any = (request as any).fee_items;
                     const bd = fi && typeof fi === 'object' ? (fi.breakdown || fi) : null;
                     if (!bd) return null;
-                    const rows: Array<[string, any]> = [
+                    const rows: Array<[string, any]> = ([
                       ['Lots × tarif', bd.lotsTotal],
                       ['Voirie facturée (ml)', bd.road_length_billable_m],
                       ['Voirie couverte par infrastructure (ml)', bd.road_length_covered_by_infra_m],
                       ['Voirie (linéaire) $', bd.roadTotal],
                       ['Espaces communs $', bd.commonTotal],
                       ['Infrastructures total $', bd.infrastructure_total],
-                    ].filter(([, v]) => v !== undefined && v !== null);
+                    ] as Array<[string, any]>).filter(([, v]) => v !== undefined && v !== null);
                     if (rows.length === 0) return null;
                     return (
                       <div className="col-span-2 mt-2 rounded-md bg-muted/30 p-2 space-y-1">
