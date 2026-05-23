@@ -14,8 +14,10 @@ import { useParentParcelEligibility } from './useParentParcelEligibility';
 import { fetchInfrastructureTariffsAsync } from '@/hooks/useSubdivisionInfrastructureTariffs';
 import { buildInfraItemsFromRoads } from '../utils/infrastructureFromRoads';
 import { inferSectionType } from '../utils/sectionType';
+import { useSubdivisionRequiredDocuments } from '@/hooks/useSubdivisionRequiredDocuments';
 
 const DRAFT_KEY_PREFIX = 'subdivision-draft-v3-';
+const IDEMPOTENCY_KEY_PREFIX = 'subdivision-idem-v1-';
 
 export type { SubdivisionDocuments };
 
@@ -48,8 +50,12 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
   const [draftRestored, setDraftRestored] = useState(false);
 
   // Auto-fill requester from authenticated user — supports first/last/middle metadata
+  // Guarded to run once per user.id so a Personne morale who cleared firstName is not re-overwritten.
+  const lastAutoFillUserIdRef = useRef<string | null>(null);
   useEffect(() => {
     if (!authUser) return;
+    if (lastAutoFillUserIdRef.current === authUser.id) return;
+    lastAutoFillUserIdRef.current = authUser.id;
     const meta = (authUser.user_metadata || {}) as Record<string, any>;
     const fullName: string = meta.full_name || meta.name || '';
     const parts = fullName.trim().split(/\s+/).filter(Boolean);
@@ -177,8 +183,23 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
   const [submitted, setSubmitted] = useState(false);
   const [referenceNumber, setReferenceNumber] = useState('');
   const [createdRequestId, setCreatedRequestId] = useState<string | null>(null);
-  // Stable idempotency key for the lifetime of this form session
-  const idempotencyKeyRef = useRef<string>(crypto.randomUUID());
+  // Stable idempotency key for the lifetime of this form session — persisted in localStorage
+  // so the user retains the same key across reloads until the draft is cleared.
+  const idempotencyStorageKey = `${IDEMPOTENCY_KEY_PREFIX}${authUser?.id || 'anon'}-${parcelNumber}`;
+  const idempotencyKeyRef = useRef<string>('');
+  if (!idempotencyKeyRef.current) {
+    try {
+      const stored = typeof localStorage !== 'undefined' ? localStorage.getItem(idempotencyStorageKey) : null;
+      if (stored) {
+        idempotencyKeyRef.current = stored;
+      } else {
+        idempotencyKeyRef.current = crypto.randomUUID();
+        if (typeof localStorage !== 'undefined') localStorage.setItem(idempotencyStorageKey, idempotencyKeyRef.current);
+      }
+    } catch {
+      idempotencyKeyRef.current = crypto.randomUUID();
+    }
+  }
 
   // Validation
   const [validation, setValidation] = useState<ValidationResult>({ isValid: true, errors: [], warnings: [] });
@@ -229,8 +250,12 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
   
   const clearDraft = useCallback(() => {
     localStorage.removeItem(draftKey);
+    try { localStorage.removeItem(idempotencyStorageKey); } catch { /* ignore */ }
+    // Rotate idempotency key so the next attempt is treated as a new request
+    idempotencyKeyRef.current = crypto.randomUUID();
+    try { localStorage.setItem(idempotencyStorageKey, idempotencyKeyRef.current); } catch { /* ignore */ }
     setDraftRestored(false);
-  }, [draftKey]);
+  }, [draftKey, idempotencyStorageKey]);
   
   // Load parent parcel data
   const loadParcelData = useCallback(async () => {
@@ -302,6 +327,32 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
   const metricFrame = useMemo<MetricFrame>(() => {
     return buildMetricFrame(parentParcel?.gpsCoordinates, parentParcel?.areaSqm || 0);
   }, [parentParcel]);
+
+  // Recompute submission fee whenever lots / roads / parent change. Debounced 300ms.
+  useEffect(() => {
+    if (!parentParcel) {
+      setLoadingFee(false);
+      return;
+    }
+    if (lots.length === 0) {
+      setSubmissionFee(null);
+      setFeeBreakdown(null);
+      setLoadingFee(false);
+      return;
+    }
+    setLoadingFee(true);
+    const t = setTimeout(() => {
+      computeFee(lots, roads, metricFrame);
+    }, 300);
+    return () => clearTimeout(t);
+  }, [lots, roads, metricFrame, parentParcel, computeFee]);
+
+  // Required documents driven by admin config — selects which docs gate the form
+  const { documents: requiredDocs } = useSubdivisionRequiredDocuments(requester.type);
+  const requiredDocKeys = useMemo<string[]>(
+    () => requiredDocs.filter(d => d.is_required && d.is_active).map(d => d.doc_key),
+    [requiredDocs],
+  );
 
   // Conformité aux règles de zonage admin (live, basée sur le plan en cours d'édition)
   const zoningCompliance = useZoningCompliance(
@@ -507,15 +558,19 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
       case 'plan':
         return true;
       case 'documents':
-        return !!(documents.requester_id_document_url && documents.proof_of_ownership_url);
-      case 'summary':
-        return !!(documents.requester_id_document_url && documents.proof_of_ownership_url);
+      case 'summary': {
+        // Si la liste admin n'est pas encore chargée, garde le legacy minimum
+        const keys = requiredDocKeys.length > 0
+          ? requiredDocKeys
+          : ['requester_id_document', 'proof_of_ownership'];
+        return keys.every(k => !!(documents as Record<string, string | null | undefined>)[`${k}_url`]);
+      }
       case 'zoning':
         return true; // page d'information uniquement
       default:
         return false;
     }
-  }, [parentParcel, requester, lots, validation, purpose, documents, parentEligibility]);
+  }, [parentParcel, requester, lots, validation, purpose, documents, parentEligibility, requiredDocKeys]);
 
   // Navigation — l'onglet 'zoning' n'est ajouté que si une règle s'applique à la zone
   const hasZoningRule = !!zoningCompliance.rule && !zoningCompliance.loading;
@@ -552,8 +607,12 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
   // Returns { id, reference_number, total_amount_usd } so the caller can trigger payment
   const submit = useCallback(async (_userId: string) => {
     if (!parentParcel) return null;
-    if (!documents.requester_id_document_url || !documents.proof_of_ownership_url) {
-      throw new Error('Pièces obligatoires manquantes (CNI + preuve de propriété).');
+    const keysToCheck = requiredDocKeys.length > 0
+      ? requiredDocKeys
+      : ['requester_id_document', 'proof_of_ownership'];
+    const missing = keysToCheck.filter(k => !(documents as Record<string, string | null | undefined>)[`${k}_url`]);
+    if (missing.length > 0) {
+      throw new Error(`Pièces obligatoires manquantes (${missing.join(', ')}).`);
     }
 
     setSubmitting(true);
@@ -655,7 +714,7 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
     } finally {
       setSubmitting(false);
     }
-  }, [parentParcel, parcelData, requester, lots, roads, commonSpaces, servitudes, planElements, purpose, parcelNumber, parcelId, documents, clearDraft]);
+  }, [parentParcel, parcelData, requester, lots, roads, commonSpaces, servitudes, planElements, purpose, parcelNumber, parcelId, documents, clearDraft, requiredDocKeys]);
 
   const markSubmittedFallback = useCallback(() => setSubmitted(true), []);
 
@@ -664,7 +723,7 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
     // Steps
     currentStep, setCurrentStep, steps, goNext, goPrev, isStepValid,
     // Parent parcel
-    parentParcel, loadingParcel, setParentParcel,
+    parentParcel, loadingParcel,
     // Parent vertices (normalized shape)
     parentVertices,
     // Anisotropic metric frame for accurate measurements
@@ -672,14 +731,14 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
     // Requester
     requester, setRequester,
     // Plan data
-    lots, setLots: setLotsWithHistory, setLotsRaw: setLots, setSkipHistory,
+    lots, setLots: setLotsWithHistory,
     roads, setRoads, commonSpaces, setCommonSpaces,
     servitudes, setServitudes, planElements, setPlanElements,
     // Operations
-    handleAutoSubdivide: createInitialLot, updateLot, deleteLot,
-    undo, redo, canUndo: historyIndexRef.current > 0, canRedo: historyIndexRef.current < historyRef.current.length - 1, historyVersion,
+    deleteLot,
+    undo, redo, canUndo: historyIndexRef.current > 0, canRedo: historyIndexRef.current < historyRef.current.length - 1,
     // Validation
-    validation, runValidation,
+    validation,
     // Conformité zonage admin
     zoningCompliance,
     // Éligibilité de la parcelle-mère (vérifiée en amont)
@@ -689,7 +748,6 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
     // Documents
     documents, setDocuments,
     // Submission
-
     submitting, submitted, referenceNumber, createdRequestId, submit, markSubmittedFallback,
     // Pricing
     submissionFee, loadingFee, feeBreakdown,

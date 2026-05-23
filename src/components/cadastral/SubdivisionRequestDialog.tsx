@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
@@ -19,7 +18,6 @@ import StepDocuments from './subdivision/steps/StepDocuments';
 
 import StepSummary from './subdivision/steps/StepSummary';
 import StepZoningRules from './subdivision/steps/StepZoningRules';
-import { inferSectionType } from './subdivision/utils/sectionType';
 
 interface SubdivisionRequestDialogProps {
   parcelNumber: string;
@@ -111,9 +109,9 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
         });
         return;
       }
-      if (code === 'OWNERSHIP_REQUIRED') {
+      if (code === 'OWNERSHIP_REQUIRED' || code === 'REQUESTER_INVALID') {
         form.setCurrentStep('parcel');
-        toast({ title: 'Propriété requise', description: err.message, variant: 'destructive' });
+        toast({ title: code === 'REQUESTER_INVALID' ? 'Identité incomplète' : 'Propriété requise', description: err.message, variant: 'destructive' });
         return;
       }
       toast({ title: 'Erreur', description: err.message, variant: 'destructive' });
