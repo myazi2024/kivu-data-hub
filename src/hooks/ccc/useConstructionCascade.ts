@@ -158,6 +158,10 @@ export function useConstructionCascade({
     if (formData.declaredUsage && !usages.includes(formData.declaredUsage)) {
       handleInputChange('declaredUsage', undefined);
     }
+    // Auto-select when only one usage is available
+    if (usages.length === 1 && formData.declaredUsage !== usages[0]) {
+      handleInputChange('declaredUsage', usages[0]);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData.constructionType, formData.constructionNature, getPicklistDependentOptions]);
 
