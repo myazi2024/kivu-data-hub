@@ -267,10 +267,6 @@ const AdminSubdivisionInfrastructureTariffs: React.FC = () => {
               </p>
             </div>
             <div className="flex gap-2 shrink-0">
-              <Button size="sm" variant="outline" onClick={syncRoadSurfaces} disabled={syncing} title="Crée un tarif road_surface_<material> pour chaque matériau actif du catalogue">
-                {syncing ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-1" />}
-                Sync revêtements{missingMatCount > 0 && ` (${missingMatCount})`}
-              </Button>
               <Button size="sm" onClick={openAdd}><Plus className="h-4 w-4 mr-1" /> Ajouter</Button>
             </div>
           </div>
@@ -279,11 +275,18 @@ const AdminSubdivisionInfrastructureTariffs: React.FC = () => {
           <Alert className="mb-3">
             <Info className="h-4 w-4" />
             <AlertDescription className="text-xs">
-              <strong>Conventions de clés liées aux voies :</strong>{' '}
-              <code>road_surface_&lt;materiau&gt;</code> (m²) · <code>drainage_&lt;materiau&gt;</code> (ml) avec fallback <code>drainage</code> ·{' '}
-              <code>street_lighting_solar</code> (unité) avec fallback <code>street_lighting</code>.
+              <strong>Modèle « base + multiplicateur » :</strong> seules les 3 clés de base sont utilisées —
+              <code> road_surface</code> (m²), <code>drainage</code> (ml), <code>street_lighting</code> (unité).
+              Le coût final d'un matériau ou d'un type est calculé en multipliant le tarif de base par le
+              <em> price_multiplier</em> défini dans le catalogue correspondant (Catalogue revêtements / drainage).
+              {legacyMaterialTariffs.length > 0 && (
+                <span className="block mt-1 text-destructive">
+                  ⚠ {legacyMaterialTariffs.length} clé(s) obsolète(s) de type <code>road_surface_&lt;mat&gt;</code> / <code>drainage_&lt;mat&gt;</code> détectée(s) — supprimez-les.
+                </span>
+              )}
             </AlertDescription>
           </Alert>
+
 
           <div className="flex flex-wrap gap-2 mb-3">
             <div className="relative flex-1 min-w-[180px]">
