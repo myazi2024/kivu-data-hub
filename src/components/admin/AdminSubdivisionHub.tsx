@@ -52,7 +52,7 @@ export default function AdminSubdivisionHub() {
 
       <Tabs value={active} onValueChange={handleChange} className="w-full">
         <Card className="p-2">
-          <TabsList className="grid grid-cols-3 sm:grid-cols-9 w-full">
+          <TabsList className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-10 w-full">
             <TabsTrigger value="requests" className="gap-1.5">
               <Grid3X3 className="h-4 w-4" /> <span className="hidden sm:inline">Demandes</span>
             </TabsTrigger>
@@ -73,6 +73,9 @@ export default function AdminSubdivisionHub() {
             </TabsTrigger>
             <TabsTrigger value="plan-config" className="gap-1.5">
               <FileCog className="h-4 w-4" /> <span className="hidden sm:inline">Config plan</span>
+            </TabsTrigger>
+            <TabsTrigger value="versions" className="gap-1.5">
+              <History className="h-4 w-4" /> <span className="hidden sm:inline">Versions</span>
             </TabsTrigger>
             <TabsTrigger value="lots" className="gap-1.5">
               <Layers className="h-4 w-4" /> <span className="hidden sm:inline">Lots & voies</span>
