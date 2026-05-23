@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { asUntypedPayload } from '@/integrations/supabase/untyped';
@@ -111,18 +111,20 @@ export function AdminSubdivisionRequests() {
     }
   };
 
-  // Reset page sur changement de filtres (sans déclencher de double fetch)
+  // Fetch unique : reset page→1 sur changement de filtres SANS double fetch.
+  const filtersKey = `${statusFilter}|${dateFrom}|${dateTo}|${sortBy}|${searchQuery}`;
+  const lastFiltersKeyRef = useRef(filtersKey);
   useEffect(() => {
-    if (page !== 1) setPage(1);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [statusFilter, dateFrom, dateTo, sortBy, searchQuery]);
-
-  // Refetch unique : page OU filtres (debouncé sur la recherche)
-  useEffect(() => {
+    const filtersChanged = lastFiltersKeyRef.current !== filtersKey;
+    lastFiltersKeyRef.current = filtersKey;
+    if (filtersChanged && page !== 1) {
+      setPage(1); // un seul fetch sera émis au prochain run (page=1, filtersChanged=false)
+      return;
+    }
     const t = setTimeout(() => { fetchRequests(); }, searchQuery ? 300 : 0);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, statusFilter, dateFrom, dateTo, sortBy, searchQuery]);
+  }, [page, filtersKey]);
 
   const paginatedRequests = requests; // already paginated server-side
   const totalPages = Math.max(1, Math.ceil(totalCount / ITEMS_PER_PAGE));
