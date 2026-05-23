@@ -27,6 +27,7 @@ import { genId, nextLotNumber, polygonUnionMany } from '../utils/polygonOps';
 import LotVerticesEditor from './LotVerticesEditor';
 import LotsListPanel from './panels/LotsListPanel';
 import RoadsListPanel from './panels/RoadsListPanel';
+import BorderingRoadsPanel from './panels/BorderingRoadsPanel';
 import CommonSpacesPanel from './panels/CommonSpacesPanel';
 import ServitudesPanel from './panels/ServitudesPanel';
 import ValidationPanel from './panels/ValidationPanel';
