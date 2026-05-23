@@ -46,7 +46,9 @@ export function useFormValidation(params: UseFormValidationParams) {
 
   const missingFieldsList = useMemo<MissingField[]>(() => {
     const missing: MissingField[] = [];
-    const isTerrainNu = formData.constructionType === 'Terrain nu';
+    const isTerrainNu =
+      formData.constructionType === 'Terrain nu' ||
+      formData.propertyCategory === 'Terrain nu';
     const isAppartement = formData.propertyCategory === 'Appartement';
 
     // GENERAL
