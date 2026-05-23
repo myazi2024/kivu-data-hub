@@ -143,7 +143,7 @@ const AdminSubdivisionRoadSurfaceMaterials: React.FC<Props> = ({ onChanged }) =>
                   <TableRow>
                     <TableHead>Clé</TableHead>
                     <TableHead>Libellé</TableHead>
-                    <TableHead>Description</TableHead>
+                    <TableHead className="text-right">Mult. prix</TableHead>
                     <TableHead className="text-right">Ordre</TableHead>
                     <TableHead>Actif</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
@@ -153,8 +153,11 @@ const AdminSubdivisionRoadSurfaceMaterials: React.FC<Props> = ({ onChanged }) =>
                   {items.map(m => (
                     <TableRow key={m.id}>
                       <TableCell className="font-mono text-xs"><Badge variant="outline">{m.key}</Badge></TableCell>
-                      <TableCell className="font-medium">{m.label}</TableCell>
-                      <TableCell className="text-xs text-muted-foreground max-w-xs truncate" title={m.description ?? ''}>{m.description}</TableCell>
+                      <TableCell className="font-medium">
+                        <div>{m.label}</div>
+                        {m.description && <div className="text-[10px] text-muted-foreground truncate max-w-[180px]" title={m.description}>{m.description}</div>}
+                      </TableCell>
+                      <TableCell className="text-right font-mono text-xs">×{(m.price_multiplier ?? 1).toFixed(2)}</TableCell>
                       <TableCell className="text-right font-mono">{m.display_order}</TableCell>
                       <TableCell><Switch checked={m.is_active} onCheckedChange={() => toggleActive(m)} /></TableCell>
                       <TableCell className="text-right">
