@@ -103,3 +103,7 @@ type: feature
 - `AdminSubdivisionRequests` : `useAdminPendingCounts` (pendingCount.subdivisions) remplace requête locale, `escapeIlike` sur search (liste + export), bulk via `Promise.allSettled` chunké 5×, CSV des échecs auto-téléchargé.
 - `RequestDetailsDialog` : bouton **Certificat** (signed URL), carte **Frais & détail** affichant `processing_fee_usd`, `infrastructure_fee_usd`, `road_surface_fee_usd`, décomposition serveur (`road_length_billable_m`/`road_length_covered_by_infra_m`/`infrastructure_total`/`lotsTotal`/`roadTotal`/`commonTotal`) depuis `fee_items.breakdown`.
 - `AdminSubdivisionFeesConfig` : badges **deprecated** sur colonnes/labels `road_fee_per_linear_m_usd` + `common_space_fee_per_sqm_usd`, opacité réduite dans le formulaire, note guidant vers la section *Tarifs par type d'infrastructure*.
+
+## Lot K — P2 admin (mai 2026)
+- `AdminSubdivisionAnalytics` : KPIs serveur via `get_subdivision_admin_stats` (sans plafond 1000). Ajout cartes Payées (final), Escaladées, Lots cumulés, Revenus encaissés, 7j/30j. Tendances + zones limitées à 5000 rows (avant 1000), bannière d'avertissement si atteint. Plus de référence aux colonnes inexistantes `province/ville/commune` — fallback sur `parent_parcel_location`.
+- `AdminSubdivisionLots` : colonne **Demande** (join `subdivision_requests:subdivision_request_id(reference_number,status)`), recherche par référence parent, deep-link `?tab=subdivision-hub&sub=requests&q=<ref>` cliquable.
