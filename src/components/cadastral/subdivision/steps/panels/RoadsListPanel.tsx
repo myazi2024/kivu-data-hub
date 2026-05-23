@@ -75,6 +75,18 @@ const RoadsListPanel: React.FC<Props> = ({
   const requireLighting = !!zoningRule?.require_solar_lighting;
   const requireRoadSurface = !!zoningRule?.require_road_surface;
   const { labels: roadSurfaceLabels } = useSubdivisionReferences('road_surface');
+  const { items: drainageMaterialsCatalog } = useDrainageMaterialsCatalog(true);
+  const { items: drainageTypesCatalog } = useDrainageTypesCatalog(true);
+  const drainageMaterialLabelMap = React.useMemo(() => {
+    const m = new Map<string, string>(Object.entries(DRAINAGE_CANAL_MATERIAL_LABELS));
+    for (const it of drainageMaterialsCatalog) m.set(it.key, it.label);
+    return m;
+  }, [drainageMaterialsCatalog]);
+  const drainageTypeLabelMap = React.useMemo(() => {
+    const m = new Map<string, string>(Object.entries(DRAINAGE_CANAL_TYPE_LABELS));
+    for (const it of drainageTypesCatalog) m.set(it.key, it.label);
+    return m;
+  }, [drainageTypesCatalog]);
 
   const updateCanal = (road: SubdivisionRoad, patch: Partial<DrainageCanalSpec>) => {
     const current = road.drainageCanal ?? defaultDrainage(zoningRule);
