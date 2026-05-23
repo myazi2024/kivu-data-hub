@@ -15,6 +15,7 @@ import { fetchInfrastructureTariffsAsync } from '@/hooks/useSubdivisionInfrastru
 import { buildInfraItemsFromRoads } from '../utils/infrastructureFromRoads';
 import { inferSectionType } from '../utils/sectionType';
 import { useSubdivisionRequiredDocuments } from '@/hooks/useSubdivisionRequiredDocuments';
+import { computeEffectiveAreaSqm } from '@/utils/parcelGeometricArea';
 
 const DRAFT_KEY_PREFIX = 'subdivision-draft-v3-';
 const IDEMPOTENCY_KEY_PREFIX = 'subdivision-idem-v1-';
