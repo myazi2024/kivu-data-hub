@@ -1255,20 +1255,28 @@ const AdminSubdivisionZoningRules: React.FC = () => {
                         const checked = (form.road_surface_allowed_materials ?? []).includes(m.key);
                         const hasTariff = roadSurfaceTariffKeys.has(m.key);
                         return (
-                          <label key={m.key} className={`text-[11px] px-2 py-0.5 rounded border cursor-pointer ${checked ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted/40'}`} title={hasTariff ? (m.description ?? '') : `${m.description ?? ''}\n⚠ Aucun tarif road_surface_${m.key} configuré : frais = 0`}>
-                            <input type="checkbox" className="sr-only" checked={checked} onChange={e => setForm(f => {
+                          <button
+                            key={m.key}
+                            type="button"
+                            role="checkbox"
+                            aria-checked={checked}
+                            title={hasTariff ? (m.description ?? '') : `${m.description ?? ''}\n⚠ Aucun tarif road_surface_${m.key} configuré : frais = 0`}
+                            onClick={() => setForm(f => {
                               const prev = f.road_surface_allowed_materials ?? [];
                               return {
                                 ...f,
-                                road_surface_allowed_materials: e.target.checked
-                                  ? (prev.includes(m.key) ? prev : [...prev, m.key])
-                                  : prev.filter(x => x !== m.key),
+                                road_surface_allowed_materials: prev.includes(m.key)
+                                  ? prev.filter(x => x !== m.key)
+                                  : [...prev, m.key],
                               };
-                            })} />
+                            })}
+                            className={`text-[11px] px-2 py-0.5 rounded border cursor-pointer transition-colors ${checked ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted/40 hover:bg-muted'}`}
+                          >
                             {m.label}{!hasTariff && <span className="ml-1" aria-label="Tarif manquant">⚠</span>}
-                          </label>
+                          </button>
                         );
                       })}
+
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
