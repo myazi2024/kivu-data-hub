@@ -526,7 +526,7 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
           const deltaM = deltaNorm * sideLength;
           const sign = projectedPx > 0 ? 1 : -1;
           const newWidth = Math.max(2, Math.min(30, roadWidthDrag.startWidth + sign * deltaM * 2));
-          onUpdateRoad(roadWidthDrag.roadId, { widthM: Math.round(newWidth * 2) / 2 });
+          onUpdateRoad(roadWidthDrag.roadId, { widthM: Math.round(newWidth * 2) / 2, footprint: undefined });
         }
       }
       return;
