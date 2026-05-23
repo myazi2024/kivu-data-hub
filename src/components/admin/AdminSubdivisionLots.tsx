@@ -75,7 +75,8 @@ const AdminSubdivisionLots: React.FC = () => {
         l.parcel_number?.toLowerCase().includes(q) ||
         l.lot_number?.toLowerCase().includes(q) ||
         (l.lot_label || '').toLowerCase().includes(q) ||
-        (l.owner_name || '').toLowerCase().includes(q)
+        (l.owner_name || '').toLowerCase().includes(q) ||
+        (l.subdivision_requests?.reference_number || '').toLowerCase().includes(q)
       );
     });
   }, [lots, search, useFilter]);
