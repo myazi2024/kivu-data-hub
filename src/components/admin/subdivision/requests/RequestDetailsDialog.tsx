@@ -7,8 +7,9 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   Grid3X3, MapPin, User, Phone, Mail, Paperclip, FileText, Square,
-  Route, TreePine, Shield, AlertTriangle, Download, FileCheck2, Loader2, Award, DollarSign,
+  Route, TreePine, Shield, AlertTriangle, Download, FileCheck2, Loader2, Award, DollarSign, ChevronDown,
 } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { StatusBadge } from '@/components/shared/StatusBadge';
