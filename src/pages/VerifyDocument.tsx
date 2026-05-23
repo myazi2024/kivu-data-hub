@@ -188,6 +188,21 @@ const VerifyDocument: React.FC = () => {
                     <span className="text-muted-foreground">Code :</span>
                     <span className="font-mono text-xs">{result.verification_code}</span>
                   </div>
+                  {result.document_type === 'subdivision_plan' && result.metadata && (
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+                      <span className="text-muted-foreground">Plan :</span>
+                      {result.metadata.official_version != null && (
+                        <Badge variant="outline">v{result.metadata.official_version}</Badge>
+                      )}
+                      {result.metadata.is_current && (
+                        <Badge className="bg-green-600 hover:bg-green-700">Version courante</Badge>
+                      )}
+                      {result.metadata.state && (
+                        <Badge variant="secondary">{result.metadata.state}</Badge>
+                      )}
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
