@@ -220,6 +220,33 @@ export type Database = {
         }
         Relationships: []
       }
+      app_subdivision_plan_config: {
+        Row: {
+          config_key: string
+          config_value: Json
+          created_at: string
+          id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          config_key: string
+          config_value?: Json
+          created_at?: string
+          id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          config_key?: string
+          config_value?: Json
+          created_at?: string
+          id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       archived_invoices: {
         Row: {
           archive_reason: string | null
@@ -5894,6 +5921,45 @@ export type Database = {
         }
         Relationships: []
       }
+      subdivision_legend_symbols: {
+        Row: {
+          active: boolean
+          code: string
+          color: string
+          created_at: string
+          display_order: number
+          id: string
+          label: string
+          source_element_type: string | null
+          svg_icon: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          code: string
+          color?: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          label: string
+          source_element_type?: string | null
+          svg_icon?: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          code?: string
+          color?: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          label?: string
+          source_element_type?: string | null
+          svg_icon?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       subdivision_lots: {
         Row: {
           area_sqm: number
@@ -6517,6 +6583,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      subdivision_signature_frames: {
+        Row: {
+          active: boolean
+          applies_to: string
+          authority: string
+          created_at: string
+          created_by: string | null
+          display_order: number
+          id: string
+          name: string
+          province_filter: string[]
+          show_seal: boolean
+          title_template: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          applies_to?: string
+          authority?: string
+          created_at?: string
+          created_by?: string | null
+          display_order?: number
+          id?: string
+          name: string
+          province_filter?: string[]
+          show_seal?: boolean
+          title_template: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          applies_to?: string
+          authority?: string
+          created_at?: string
+          created_by?: string | null
+          display_order?: number
+          id?: string
+          name?: string
+          province_filter?: string[]
+          show_seal?: boolean
+          title_template?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       subdivision_zoning_rules: {
         Row: {
@@ -8246,6 +8357,17 @@ export type Database = {
           parcel_number: string
           reference_number: string
           status: string
+        }[]
+      }
+      verify_subdivision_plan: {
+        Args: { _ref: string }
+        Returns: {
+          approved_at: string
+          number_of_lots: number
+          parcel_number: string
+          reference_number: string
+          status: string
+          version: number
         }[]
       }
     }
