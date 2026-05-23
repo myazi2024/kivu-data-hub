@@ -300,8 +300,9 @@ const RoadsListPanel: React.FC<Props> = ({
                       <SelectContent>
                         {(zoningRule?.drainage_canal_allowed_materials?.length
                           ? zoningRule.drainage_canal_allowed_materials
-                          : Object.keys(DRAINAGE_CANAL_MATERIAL_LABELS)).map(m => (
-                          <SelectItem key={m} value={m}>{DRAINAGE_CANAL_MATERIAL_LABELS[m as keyof typeof DRAINAGE_CANAL_MATERIAL_LABELS] ?? m}</SelectItem>
+                          : drainageMaterialsCatalog.map(m => m.key)
+                        ).map(m => (
+                          <SelectItem key={m} value={m}>{drainageMaterialLabelMap.get(m) ?? m}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -313,8 +314,9 @@ const RoadsListPanel: React.FC<Props> = ({
                       <SelectContent>
                         {(zoningRule?.drainage_canal_allowed_types?.length
                           ? zoningRule.drainage_canal_allowed_types
-                          : Object.keys(DRAINAGE_CANAL_TYPE_LABELS)).map(t => (
-                          <SelectItem key={t} value={t}>{DRAINAGE_CANAL_TYPE_LABELS[t as keyof typeof DRAINAGE_CANAL_TYPE_LABELS] ?? t}</SelectItem>
+                          : drainageTypesCatalog.map(t => t.key)
+                        ).map(t => (
+                          <SelectItem key={t} value={t}>{drainageTypeLabelMap.get(t) ?? t}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
