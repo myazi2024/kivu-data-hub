@@ -178,6 +178,20 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
     }
   }, [data.constructionType]);
 
+  // Auto-select single-option nature (e.g. Terrain nu → Non bâti)
+  useEffect(() => {
+    if (availableNatures.length === 1 && data.constructionNature !== availableNatures[0]) {
+      update('constructionNature', availableNatures[0]);
+    }
+  }, [availableNatures.join('|')]);
+
+  // Auto-select single-option usage
+  useEffect(() => {
+    if (availableUsages.length === 1 && data.declaredUsage !== availableUsages[0]) {
+      update('declaredUsage', availableUsages[0]);
+    }
+  }, [availableUsages.join('|')]);
+
   // Permit type restrictions (simplified for additional block)
   const getPermitTypeRestrictions = () => {
     const restrictions = {
