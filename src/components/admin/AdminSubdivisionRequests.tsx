@@ -166,7 +166,7 @@ export function AdminSubdivisionRequests() {
     if (dateFrom) q = q.gte('created_at', new Date(dateFrom).toISOString());
     if (dateTo) q = q.lte('created_at', new Date(new Date(dateTo).getTime() + 86400000).toISOString());
     if (searchQuery.trim()) {
-      const s = searchQuery.trim();
+      const s = escapeIlike(searchQuery.trim());
       q = q.or(`reference_number.ilike.%${s}%,parcel_number.ilike.%${s}%,requester_last_name.ilike.%${s}%`);
     }
     const { data, error } = await q;
