@@ -503,6 +503,7 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
     setRoads([]);
     setCommonSpaces([]);
     setServitudes([]);
+    setBoundaries([]);
   }, []);
 
   
