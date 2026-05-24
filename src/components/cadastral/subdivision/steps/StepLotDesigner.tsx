@@ -539,7 +539,8 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
   }, [lots, setLots, computeArea, computePerim, trackAdminAction]);
 
   // Cut every lot a single drawn line crosses (≥2 intersections), in one transaction.
-  const handleCutLotsAlongLine = useCallback((cutStart: Point2D, cutEnd: Point2D) => {
+  // Appelée via la modale "Rôle de la ligne" → branche Limite.
+  const applyCutAlongLine = useCallback((cutStart: Point2D, cutEnd: Point2D) => {
     const nextLots: SubdivisionLot[] = [];
     let cutCount = 0;
 
