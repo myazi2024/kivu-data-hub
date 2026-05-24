@@ -1433,6 +1433,7 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
             setCanvasMode={setCanvasMode}
             hasMultipleLots={lots.length >= 2}
             zoningRule={zoningRule}
+            metricFrame={metricFrame}
           />
 
           {/* External public roads bordering the parent parcel */}

@@ -8,7 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Trash2, Route, Droplets, Sun, Construction } from 'lucide-react';
-import { SubdivisionRoad } from '../../types';
+import { SubdivisionRoad, Point2D } from '../../types';
+import { edgeLengthM, type MetricFrame } from '../../utils/metrics';
 import {
   DRAINAGE_CANAL_MATERIAL_LABELS,
   DRAINAGE_CANAL_TYPE_LABELS,
@@ -37,6 +38,8 @@ interface Props {
   hasMultipleLots: boolean;
   /** Active zoning rule (used to require/validate per-road infrastructures). */
   zoningRule?: ZoningRule | null;
+  /** Metric frame to compute road centerline length in meters. */
+  metricFrame?: MetricFrame;
 }
 
 const formatWidth = (n: number) => Math.round(n * 10) / 10;
@@ -69,7 +72,7 @@ const defaultRoadSurface = (rule?: ZoningRule | null): RoadSurfaceSpec => ({
 const RoadsListPanel: React.FC<Props> = ({
   roads, editingRoad, editingRoadId, setEditingRoadId,
   onDeleteRoad, onUpdateRoad, onAddRoad,
-  canvasMode, setCanvasMode, hasMultipleLots, zoningRule,
+  canvasMode, setCanvasMode, hasMultipleLots, zoningRule, metricFrame,
 }) => {
   const requireCanal = !!zoningRule?.require_drainage_canal;
   const requireLighting = !!zoningRule?.require_solar_lighting;
@@ -200,7 +203,7 @@ const RoadsListPanel: React.FC<Props> = ({
                     max={30}
                     step={0.5}
                     value={[editingRoad.widthM]}
-                    onValueChange={([v]) => onUpdateRoad(editingRoad.id, { widthM: formatWidth(v) })}
+                    onValueChange={([v]) => onUpdateRoad(editingRoad.id, { widthM: formatWidth(v), footprint: undefined })}
                     className="flex-1"
                     aria-label="Largeur de la voie en mètres"
                   />
@@ -210,13 +213,67 @@ const RoadsListPanel: React.FC<Props> = ({
                     max={30}
                     step={0.5}
                     value={formatWidth(editingRoad.widthM)}
-                    onChange={e => onUpdateRoad(editingRoad.id, { widthM: formatWidth(parseFloat(e.target.value) || 6) })}
+                    onChange={e => onUpdateRoad(editingRoad.id, { widthM: formatWidth(parseFloat(e.target.value) || 6), footprint: undefined })}
                     className="h-7 text-xs w-16"
                     aria-label="Largeur (saisie numérique)"
                   />
                 </div>
               </div>
             </div>
+
+            {/* Longueur manuelle — n'affecte que cette voie (path scaled around centroid). */}
+            {metricFrame && editingRoad.path && editingRoad.path.length >= 2 && (() => {
+              const path = editingRoad.path;
+              let currentLenM = 0;
+              for (let i = 1; i < path.length; i++) {
+                currentLenM += edgeLengthM(path[i - 1], path[i], metricFrame);
+              }
+              const displayLen = Math.round(currentLenM * 10) / 10;
+              const setLengthM = (newLenM: number) => {
+                if (!Number.isFinite(newLenM) || newLenM <= 0 || currentLenM <= 0) return;
+                const clamped = Math.max(2, Math.min(2000, newLenM));
+                const ratio = clamped / currentLenM;
+                if (Math.abs(ratio - 1) < 1e-4) return;
+                const cx = path.reduce((s, p) => s + p.x, 0) / path.length;
+                const cy = path.reduce((s, p) => s + p.y, 0) / path.length;
+                const newPath: Point2D[] = path.map(p => ({
+                  x: cx + (p.x - cx) * ratio,
+                  y: cy + (p.y - cy) * ratio,
+                }));
+                onUpdateRoad(editingRoad.id, { path: newPath, footprint: undefined });
+              };
+              const sliderMax = Math.max(50, Math.ceil(currentLenM * 2));
+              return (
+                <div>
+                  <Label className="text-xs">Longueur ({displayLen}m)</Label>
+                  <div className="flex items-center gap-2">
+                    <Slider
+                      min={2}
+                      max={sliderMax}
+                      step={0.5}
+                      value={[Math.min(sliderMax, displayLen)]}
+                      onValueChange={([v]) => setLengthM(v)}
+                      className="flex-1"
+                      aria-label="Longueur de la voie en mètres"
+                    />
+                    <Input
+                      type="number"
+                      min={2}
+                      step={0.5}
+                      value={displayLen}
+                      onChange={e => setLengthM(parseFloat(e.target.value))}
+                      className="h-7 text-xs w-16"
+                      aria-label="Longueur (saisie numérique)"
+                    />
+                  </div>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">
+                    Met à l'échelle uniquement cette voie autour de son centre. Les lots et la parcelle ne sont pas affectés.
+                  </p>
+                </div>
+              );
+            })()}
+
+
 
             {/* Revêtement de la voie — piloté par la règle de zonage */}
             {requireRoadSurface && (
