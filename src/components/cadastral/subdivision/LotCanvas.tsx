@@ -715,6 +715,120 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
   const sw = (base: number) => base / z;
   const fs = (base: number) => base / z;
 
+  // Memoized parent-parcel graduations. Big parcels × fine step can generate
+  // thousands of nodes; recomputing this on every pointer-move (lot edit)
+  // tanks FPS. Keys: vertices, frame, zoom, pan, visibility.
+  const parentTicksNode = useMemo(() => {
+    if (!showDimensions || !parentVertices || parentVertices.length < 3) return null;
+    const zz = Math.max(1, viewport.viewport.zoom);
+    const sw2 = (b: number) => b / zz;
+    const fs2 = (b: number) => b / zz;
+
+    const cN = polygonCentroid(parentVertices);
+    let totalLen = 0;
+    for (let i = 0; i < parentVertices.length; i++) {
+      totalLen += edgeLengthM(parentVertices[i], parentVertices[(i + 1) % parentVertices.length], metricFrame);
+    }
+    let step: number;
+    let majorEvery: number;
+    if (zz >= 3) { step = 0.5; majorEvery = 2; }
+    else if (zz >= 2) { step = 1; majorEvery = 5; }
+    else if (zz >= 1.3) { step = 2; majorEvery = 10; }
+    else { step = totalLen / 5 > 400 ? 10 : 5; majorEvery = 25; }
+    const MAX_TICKS = 800;
+    while (totalLen / step > MAX_TICKS && step < 10) {
+      step = step < 1 ? 1 : step < 2 ? 2 : step < 5 ? 5 : 10;
+      majorEvery = step <= 1 ? 5 : step <= 2 ? 10 : step <= 5 ? 25 : 50;
+    }
+    const eps = step / 100;
+    const isMajorK = (k: number) => Math.abs(k / majorEvery - Math.round(k / majorEvery)) < eps;
+
+    // Visible viewBox AABB in screen coords (for culling off-screen sides).
+    const vx0 = -viewport.viewport.panX;
+    const vy0 = -viewport.viewport.panY;
+    const vx1 = vx0 + CANVAS_W / zz;
+    const vy1 = vy0 + CANVAS_H / zz;
+
+    const groups: React.ReactNode[] = [];
+    for (let i = 0; i < parentVertices.length; i++) {
+      const v = parentVertices[i];
+      const next = parentVertices[(i + 1) % parentVertices.length];
+      const Lm = edgeLengthM(v, next, metricFrame);
+      if (Lm < 10) continue;
+      const sv = toScreen(v);
+      const sn = toScreen(next);
+      const dx = sn.x - sv.x;
+      const dy = sn.y - sv.y;
+      const pxLen = Math.sqrt(dx * dx + dy * dy) || 1;
+      const minX = Math.min(sv.x, sn.x), maxX = Math.max(sv.x, sn.x);
+      const minY = Math.min(sv.y, sn.y), maxY = Math.max(sv.y, sn.y);
+      if (maxX < vx0 || minX > vx1 || maxY < vy0 || minY > vy1) continue;
+      const pxPerTick = (pxLen * step) / Lm;
+      if (pxPerTick < 3) continue;
+      const majorsOnly = pxPerTick < 6;
+
+      const mid = { x: (sv.x + sn.x) / 2, y: (sv.y + sn.y) / 2 };
+      const sc = toScreen(cN);
+      let nx = -dy / pxLen;
+      let ny = dx / pxLen;
+      if ((mid.x + nx - sc.x) ** 2 + (mid.y + ny - sc.y) ** 2 <
+          (mid.x - sc.x) ** 2 + (mid.y - sc.y) ** 2) {
+        nx = -nx; ny = -ny;
+      }
+      const lenMinor = sw2(3);
+      const lenMajor = sw2(6);
+      const labelOff = lenMajor + sw2(5);
+      const tickStroke = sw2(0.6);
+      const labelFs = fs2(7);
+
+      const ticks: React.ReactNode[] = [];
+      for (let k = step; k < Lm; k += step) {
+        const major = isMajorK(k);
+        if (majorsOnly && !major) continue;
+        const t = k / Lm;
+        const px = sv.x + dx * t;
+        const py = sv.y + dy * t;
+        const len = major ? lenMajor : lenMinor;
+        ticks.push(
+          <line
+            key={`t-${step}-${i}-${k}`}
+            x1={px} y1={py}
+            x2={px + nx * len} y2={py + ny * len}
+            stroke="hsl(var(--primary))"
+            strokeWidth={tickStroke}
+            opacity={0.45}
+          />
+        );
+        if (major && Lm >= majorEvery) {
+          const kLabel = step < 1 ? k.toFixed(1).replace('.', ',') : String(Math.round(k));
+          ticks.push(
+            <text
+              key={`tl-${step}-${i}-${k}`}
+              x={px + nx * labelOff}
+              y={py + ny * labelOff}
+              textAnchor="middle"
+              dominantBaseline="middle"
+              fontSize={labelFs}
+              fill="hsl(var(--muted-foreground))"
+              opacity={0.55}
+            >{kLabel}</text>
+          );
+        }
+      }
+      if (ticks.length) groups.push(<g key={`ptick-${i}`}>{ticks}</g>);
+    }
+    if (!groups.length) return null;
+    return <g className="parent-ticks select-none" pointerEvents="none">{groups}</g>;
+  }, [
+    showDimensions,
+    parentVertices,
+    metricFrame,
+    viewport.viewport.zoom,
+    viewport.viewport.panX,
+    viewport.viewport.panY,
+    toScreen,
+  ]);
+
   return (
 
     <div ref={containerRef} className="relative" tabIndex={-1}>
@@ -788,87 +902,8 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
         )}
 
 
-        {/* Parent parcel side graduations — discreet 5 m ticks (25 m majors) */}
-        {showDimensions && parentVertices && parentVertices.length >= 3 && (() => {
-          const cN = polygonCentroid(parentVertices);
-          let totalLen = 0;
-          for (let i = 0; i < parentVertices.length; i++) {
-            const a = parentVertices[i];
-            const b = parentVertices[(i + 1) % parentVertices.length];
-            totalLen += edgeLengthM(a, b, metricFrame);
-          }
-          // Dynamic step: densify with zoom, up to 0.5 m for fine adjustments.
-          let step: number;
-          let majorEvery: number;
-          if (z >= 3) { step = 0.5; majorEvery = 2; }
-          else if (z >= 2) { step = 1; majorEvery = 5; }
-          else if (z >= 1.3) { step = 2; majorEvery = 10; }
-          else { step = totalLen / 5 > 400 ? 10 : 5; majorEvery = 25; }
-          // Anti-clutter fallback: if too many ticks at this step, coarsen.
-          while (totalLen / step > 600 && step < 10) {
-            step = step < 1 ? 1 : step < 2 ? 2 : step < 5 ? 5 : 10;
-            majorEvery = step <= 1 ? 5 : step <= 2 ? 10 : step <= 5 ? 25 : 50;
-          }
-          const eps = step / 100;
-          const isMajorK = (k: number) => Math.abs(k / majorEvery - Math.round(k / majorEvery)) < eps;
-          return (
-            <g className="parent-ticks select-none" pointerEvents="none">
-              {parentVertices.map((v, i) => {
-                const next = parentVertices[(i + 1) % parentVertices.length];
-                const Lm = edgeLengthM(v, next, metricFrame);
-                if (Lm < 10) return null;
-                const sv = toScreen(v);
-                const sn = toScreen(next);
-                const dx = sn.x - sv.x;
-                const dy = sn.y - sv.y;
-                const pxLen = Math.sqrt(dx * dx + dy * dy) || 1;
-                const mid = { x: (sv.x + sn.x) / 2, y: (sv.y + sn.y) / 2 };
-                const sc = toScreen(cN);
-                let nx = -dy / pxLen;
-                let ny = dx / pxLen;
-                if ((mid.x + nx - sc.x) ** 2 + (mid.y + ny - sc.y) ** 2 <
-                    (mid.x - sc.x) ** 2 + (mid.y - sc.y) ** 2) {
-                  nx = -nx; ny = -ny;
-                }
-                const ticks: React.ReactNode[] = [];
-                for (let k = step; k < Lm; k += step) {
-                  const t = k / Lm;
-                  const px = sv.x + dx * t;
-                  const py = sv.y + dy * t;
-                  const major = isMajorK(k);
-                  const len = sw(major ? 6 : 3);
-                  ticks.push(
-                    <line
-                      key={`t-${i}-${k}`}
-                      x1={px} y1={py}
-                      x2={px + nx * len} y2={py + ny * len}
-                      stroke="hsl(var(--primary))"
-                      strokeWidth={sw(0.6)}
-                      opacity={0.45}
-                    />
-                  );
-                  if (major && Lm >= majorEvery) {
-                    const off = len + sw(5);
-                    const kLabel = step < 1 ? k.toFixed(1).replace('.', ',') : String(Math.round(k));
-                    ticks.push(
-                      <text
-                        key={`tl-${i}-${k}`}
-                        x={px + nx * off}
-                        y={py + ny * off}
-                        textAnchor="middle"
-                        dominantBaseline="middle"
-                        fontSize={fs(7)}
-                        fill="hsl(var(--muted-foreground))"
-                        opacity={0.55}
-                      >{kLabel}</text>
-                    );
-                  }
-                }
-                return <g key={`ptick-${i}`}>{ticks}</g>;
-              })}
-            </g>
-          );
-        })()}
+        {/* Parent parcel side graduations — memoized, viewport-culled, density-filtered */}
+        {parentTicksNode}
 
 
         {/* Parent parcel side measurements */}
