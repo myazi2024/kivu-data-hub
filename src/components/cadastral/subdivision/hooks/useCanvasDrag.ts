@@ -270,9 +270,20 @@ export function useCanvasDrag(
     lastNorm.current = null;
   }, []);
 
+  // Expose a compact, read-only view of the live boundary-vertex drag so the
+  // canvas can render real-time tooltips (edge length + impacted area).
+  const boundaryDragInfo = dragState?.type === 'boundary-vertex' && dragState.boundaryTwins
+    ? {
+        twins: dragState.boundaryTwins,
+        primaryLotId: dragState.lotId,
+        primaryVertexIdx: dragState.vertexIdx ?? 0,
+      }
+    : null;
+
   return {
     isDragging: !!dragState,
     dragType: dragState?.type || null,
+    boundaryDragInfo,
     startVertexDrag,
     startBoundaryVertexDrag,
     startEdgeDrag,
