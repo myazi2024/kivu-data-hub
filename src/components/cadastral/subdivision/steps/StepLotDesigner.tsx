@@ -530,7 +530,9 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
     let cutCount = 0;
 
     for (const lot of lots) {
-      if (lot.isParentBoundary || lot.vertices.length < 3) {
+      // Note: la parcelle-mère doit pouvoir être coupée comme un lot normal.
+      // Les deux enfants seront marqués isParentBoundary: false ci-dessous.
+      if (lot.vertices.length < 3) {
         nextLots.push(lot);
         continue;
       }
