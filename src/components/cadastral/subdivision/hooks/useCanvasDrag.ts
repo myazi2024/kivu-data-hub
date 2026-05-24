@@ -1,8 +1,9 @@
 import { useState, useCallback, useRef } from 'react';
 import { SubdivisionLot, Point2D } from '../types';
 import { MetricFrame, polygonAreaSqmAccurate, polygonAreaSqmRelative, polygonPerimeterM } from '../utils/metrics';
+import { projectOnPolyline } from '../utils/geometry';
 
-type DragType = 'vertex' | 'edge' | 'shared-edge' | 'polygon' | null;
+type DragType = 'vertex' | 'edge' | 'shared-edge' | 'polygon' | 'boundary-vertex' | null;
 
 interface DragState {
   type: DragType;
