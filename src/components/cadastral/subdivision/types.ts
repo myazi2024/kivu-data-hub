@@ -146,6 +146,8 @@ export interface SubdivisionPlanData {
   roads: SubdivisionRoad[];
   commonSpaces: SubdivisionCommonSpace[];
   servitudes: SubdivisionServitude[];
+  /** Limites tracées par l'utilisateur (séparations visuelles entre lots). */
+  boundaries?: SubdivisionBoundary[];
   planElements: PlanElements;
 }
 
