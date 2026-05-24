@@ -18,6 +18,10 @@ interface DragState {
   twin?: { lot1Idx1: number; lot1Idx2: number; lot2Idx1: number; lot2Idx2: number };
   startNorm?: Point2D;
   startVertices?: Point2D[];
+  // For boundary-vertex: every (lot, vertex) sharing the captured boundary
+  // sommet, and the current edge of the parent perimeter we slide along.
+  boundaryTwins?: { lotId: string; vertexIdx: number }[];
+  boundaryEdgeIdx?: number;
 }
 
 const SNAP_TOLERANCE = 0.015; // normalized
