@@ -1,85 +1,60 @@
-# Lisibilité dynamique des valeurs sur le croquis
-
 ## Objectif
 
-Éliminer la superposition des labels (longueurs des côtés, surfaces, numéros, noms propriétaires, orientations, graduations) sur le croquis de la parcelle-mère et des lots. Adapter l'affichage au niveau de zoom avec :
-- **Anti-collision avec leader line** (ligne de rappel) pour décaler les labels qui se chevauchent.
-- **Sortie automatique du label hors du lot** (avec leader line) lorsque le lot est trop petit pour le contenir.
-- **Seuils de zoom progressifs** gérés selon les bonnes pratiques cartographiques.
+Permettre, dans l'onglet "Lot" du SubdivisionRequestDialog, de saisir et faire glisser les sommets de lots situés sur le périmètre de la parcelle-mère, contraints à rester sur ce périmètre. Tous les lots partageant ce sommet suivent en temps réel ; aucune validation ne bloque le drag (les alertes s'affichent après).
 
-Périmètre : composant `LotCanvas.tsx` (utilisé par `StepLotDesigner` et `StepPlanView`). Pas de changement de logique métier.
+## Comportement attendu
 
-## Diagnostic actuel
+- Au survol d'un sommet d'un lot qui se trouve sur le bord de la parcelle-mère, le curseur passe en mode "glissement contraint" (curseur `grab` + halo visuel sur le sommet).
+- Mousedown : on capture le sommet et l'arête du périmètre sur laquelle il repose (segment `[Pk, Pk+1]` du `parentVertices`).
+- Mousemove : la position souris est projetée sur le périmètre entier (segment courant en priorité, puis segments voisins si le curseur dépasse `Pk` ou `Pk+1`). Le sommet glisse librement le long du périmètre, peut franchir un sommet de la parcelle-mère et continuer sur l'arête suivante.
+- Tous les lots qui partagent ce sommet (même coordonnée, tolérance epsilon ≈ 1e-4 en normalisé) voient ce sommet mis à jour ensemble, en une seule transaction d'update — la jonction reste cohérente, leurs surfaces et périmètres sont recalculés via `computeMetrics`.
+- Mouseup : commit final, l'historique undo/redo capture l'état.
+- Aucun blocage live (auto-intersection, surface minimale, enclavement). Les alertes existantes (`validateSubdivisionFull`) restent et s'affichent dans le panneau de validation après le drop.
 
-`LotCanvas` rend chaque label à une position fixe :
-- Longueurs parcelle-mère : badge rectangulaire au milieu de chaque côté, décalé vers l'extérieur (lignes 941-985).
-- Graduations parent (ticks tous les 0,5 / 1 / 2 / 5 m) avec étiquette à chaque tick majeur (lignes 751-851) — déjà filtré par densité pixels mais texte non culled.
-- Labels de lots : numéro, surface, nom propriétaire empilés verticalement autour du centroïde (lignes 1389-1409) sans tenir compte de la taille du lot.
-- Dimensions des arêtes de lots (lignes 1536-1553) : texte au milieu de chaque arête, sans détection de collision avec les autres labels.
+## Détection "sommet sur périmètre"
 
-Aucun de ces labels ne sait s'il chevauche un autre. Au zoom in, le `viewBox` rétrécit, les positions se rapprochent à l'écran et tout devient illisible.
+Un sommet de lot `v` est éligible si `isPointOnPolygonEdge(v, parentVertices, eps)` est vrai. Le segment d'attache est l'arête `[Pk, Pk+1]` la plus proche (distance point-segment minimale).
 
-## Plan d'implémentation
+## Projection sur le périmètre
 
-### 1. Nouveau module `utils/labelLayout.ts`
+Nouvelle utilitaire `projectOnPolyline(point, ring, startEdgeIdx)` dans `utils/geometry.ts` :
+1. Projeter `point` sur l'arête `startEdgeIdx` → si la projection tombe à l'intérieur du segment (param t ∈ [0,1]), on garde.
+2. Sinon, on étend la recherche aux arêtes voisines (avant/après) puis à tout l'anneau, et on retient la projection à distance euclidienne minimale.
+3. Retourne `{ point: Point2D, edgeIdx: number, t: number }`.
 
-Petit moteur de placement avec :
-- `type LabelBox = { id; x; y; w; h; priority; anchor: { x; y } }` (anchor = point de rattachement réel — milieu d'arête, centroïde…).
-- `placeLabels(boxes, options)` : trie par priorité décroissante, place greedy, et pour chaque collision tente jusqu'à 8 positions candidates (offsets perpendiculaires croissants ±). Si aucune position libre dans un rayon `maxOffsetPx`, le label est marqué `dropped` (masqué) ou `leadered = true` selon priorité.
-- Retourne `{ placed: PlacedLabel[], leaders: Array<{from, to}> }` avec `from = anchor`, `to = position finale` lorsque le décalage dépasse un seuil.
+Cela permet de "tourner" autour d'un coin de la parcelle-mère sans décrocher.
 
-Priorités (haute → basse) :
-1. Numéro de lot
-2. Surface du lot
-3. Longueur du côté du lot
-4. Longueur du côté de la parcelle-mère (badge)
-5. Orientation cardinale
-6. Nom propriétaire
-7. Graduations tick (labels métriques)
+## Propagation aux lots voisins
 
-### 2. Seuils de zoom (LOD)
+Nouveau helper dans `useCanvasDrag.ts` : `startBoundaryVertexDrag(lotId, vertexIdx)` :
+- Trouve tous les `(lotId, vertexIdx)` dont la coordonnée normalisée correspond à celle du sommet capturé (epsilon).
+- Stocke la liste dans `dragState.boundaryTwins: { lotId, vertexIdx }[]`.
+- Stocke `dragState.startEdgeIdx` (arête de départ sur le périmètre).
 
-Dans `LotCanvas`, calculer `lod` depuis `viewport.zoom` (bonnes pratiques cartographiques) :
+Dans `moveDrag`, branche `'boundary-vertex'` :
+- Projeter la souris via `projectOnPolyline`.
+- Pour chaque twin, cloner `vertices`, remplacer `vertices[vertexIdx]` par la position projetée, recalculer métriques, et appeler `onUpdateLot`.
 
-| Zoom | Affiché |
-|---|---|
-| < 1.0 | Numéro de lot seul (+ longueurs parcelle-mère) |
-| ≥ 1.0 | + Surface |
-| ≥ 1.5 | + Longueurs des côtés des lots |
-| ≥ 2.0 | + Orientations cardinales, nom propriétaire |
-| ≥ 2.5 | + Graduations métriques fines |
+## Intégration dans `LotCanvas.tsx`
 
-Le filtre `lod` s'applique **avant** le placement (réduit la combinatoire).
-
-### 3. Application dans `LotCanvas.tsx`
-
-- Construire la liste `LabelBox[]` à partir des labels actuellement rendus (estimer la largeur via `label.length * fontSize * 0.6`).
-- Appeler `placeLabels()` une fois dans un `useMemo` indexé sur `[lots, parentVertices, viewport, showDimensions, showAreas, showLotNumbers, showOwnerNames]`.
-- Remplacer les `<text>` actuels par un rendu à partir de `placed` :
-  - Position = position post-placement (qui peut différer du milieu d'arête ou du centroïde).
-  - Si `leadered`, dessiner un `<line>` fin pointillé `from anchor to position` en `hsl(var(--muted-foreground))` opacity 0.5 + petit point au point d'ancrage.
-  - Si `dropped`, ne rien dessiner.
-- Pour les **petits lots** (surface écran < seuil), forcer `leadered = true` sur numéro + surface en les sortant au-dessus du lot.
-
-### 4. Performance
-
-- Le `useMemo` du placement ne se déclenche qu'au changement réel d'entrée. Le pan ne change pas le placement (positions en coords monde transformées au rendu).
-- Cull précoce : les labels hors viewport ne rentrent pas dans le solveur.
-- Plafond de tentatives par label = 8 ; complexité O(n × k) sur n labels visibles.
+- Dans le rendu des handles de sommets (cercles draggables existants), détecter via une fonction `isOnParentBoundary(v)` les sommets éligibles et appliquer un style distinct (anneau pointillé `stroke-primary`, curseur `grab`).
+- Brancher `onMouseDown` sur ces sommets vers `startBoundaryVertexDrag` au lieu de `startVertexDrag` standard.
+- Aucun changement aux autres types de drag (edge/shared-edge/polygon/vertex interne).
 
 ## Détails techniques
 
-- Tous les calculs `screen coords` réutilisent `toScreen()` existant.
-- Tailles texte/marges via les helpers `sw()` / `fs()` déjà présents pour rester invariants au zoom.
-- Aucune migration DB, aucune modif de business logic, aucun changement de props publiques de `LotCanvas`.
-- Mode `readOnly` (utilisé dans `StepPlanView`) reçoit le même traitement → bénéficie aussi à l'export PNG.
+Fichiers modifiés :
+- `src/components/cadastral/subdivision/utils/geometry.ts` — ajouter `projectPointOnSegment` (si absent) et `projectOnPolyline`.
+- `src/components/cadastral/subdivision/hooks/useCanvasDrag.ts` — nouveau type `'boundary-vertex'`, `startBoundaryVertexDrag`, branche dans `moveDrag` avec projection + propagation aux twins ; signature étendue pour recevoir `parentVertices`.
+- `src/components/cadastral/subdivision/LotCanvas.tsx` — calcul mémoïsé des sommets-sur-bord, style visuel distinct, routage du mousedown, passage de `parentVertices` au hook.
 
-## Fichiers touchés
+Garanties :
+- Aucune écriture serveur, aucun changement de modèle de données.
+- `computeMetrics` continue d'utiliser `polygonAreaSqmRelative` (cohérence somme = parent).
+- Epsilon de matching aligné avec l'existant (`polygonOps.ts` ≈ 1e-4).
+- Pas de validation live : l'utilisateur garde la main, les alertes apparaissent dans le panneau après mouseup comme aujourd'hui.
 
-- **Créé** : `src/components/cadastral/subdivision/utils/labelLayout.ts`
-- **Modifié** : `src/components/cadastral/subdivision/LotCanvas.tsx` (rendu des sections labels parent, dimensions lots, infos lots).
-
-## Hors périmètre
-
-- Pas de changement aux outils de dessin, drag, snapping, validation, ou exports CSV/PDF.
-- Pas de nouveaux toggles UI (les switches de `StepPlanView` continuent à fonctionner à l'identique — ils alimentent simplement le filtre amont).
+Hors scope :
+- Snap automatique au bord pour les sommets internes (l'utilisateur a choisi "Uniquement sommets de lots sur la limite").
+- Validations bloquantes pendant le drag.
+- Modification des arêtes internes ou de la géométrie de la parcelle-mère.
