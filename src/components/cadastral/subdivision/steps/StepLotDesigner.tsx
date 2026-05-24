@@ -610,6 +610,54 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
     trackAdminAction({ module: 'subdivision', action: 'lot_cut', meta: { count: cutCount } });
   }, [lots, setLots, computeArea, computePerim, trackAdminAction]);
 
+  // Nouvelle entrée : ouvre la modale "Rôle de la ligne" après tracé.
+  const handleLineDrawn = useCallback((cutStart: Point2D, cutEnd: Point2D) => {
+    setPendingLine({ start: cutStart, end: cutEnd });
+    setLineDialogOpen(true);
+  }, []);
+
+  const handleConfirmRoadFromLine = useCallback((params: RoadCreationParams) => {
+    if (!pendingLine) return;
+    const newRoad: SubdivisionRoad = {
+      id: genId('road'),
+      name: `Voie ${roads.length + 1}`,
+      widthM: params.widthM,
+      surfaceType: 'planned',
+      isExisting: false,
+      path: [pendingLine.start, pendingLine.end],
+      affectedLotIds: [],
+      drainageCanal: params.drainage,
+      solarLighting: params.lighting,
+      roadSurface: params.surface,
+    };
+    const splitRoads = splitRoadsAtIntersections([...roads, newRoad]) as SubdivisionRoad[];
+    setRoads(splitRoads);
+    setEditingRoadId(newRoad.id);
+    setCanvasMode('select');
+    setPendingLine(null);
+    trackAdminAction({ module: 'subdivision', action: 'road_created' as any });
+  }, [pendingLine, roads, setRoads, trackAdminAction]);
+
+  const handleConfirmBoundaryFromLine = useCallback((params: BoundaryCreationParams) => {
+    if (!pendingLine) return;
+    // 1. Découpe géométrique des lots traversés.
+    applyCutAlongLine(pendingLine.start, pendingLine.end);
+    // 2. Scinder le tracé contre les voies existantes.
+    const sideLength = Math.sqrt(parentParcel?.areaSqm || 1000);
+    const segments = splitLineByRoads(pendingLine.start, pendingLine.end, roads, sideLength);
+    const newBoundaries: SubdivisionBoundary[] = segments.map(seg => ({
+      id: genId('boundary'),
+      path: [seg.start, seg.end],
+      isBuilt: params.isBuilt,
+      wallMaterial: params.wallMaterial,
+      wallHeightM: params.wallHeightM,
+    }));
+    setBoundaries([...boundaries, ...newBoundaries]);
+    setPendingLine(null);
+    trackAdminAction({ module: 'subdivision', action: 'boundary_created' as any, meta: { segments: newBoundaries.length } });
+  }, [pendingLine, applyCutAlongLine, roads, parentParcel, boundaries, setBoundaries, trackAdminAction]);
+
+
   // Handle finished road drawing — also split the traversed lot
   const handleFinishRoadDraw = useCallback((path: Point2D[]) => {
     if (path.length < 2) return;
