@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import {
-  Plus, Trash2, Undo2, Redo2, RotateCcw,
+  Plus, Trash2, Undo2, Redo2, RotateCcw, AlertTriangle,
   Info, Route,
   MousePointer, Scissors, Shield, TreePine
 } from 'lucide-react';
