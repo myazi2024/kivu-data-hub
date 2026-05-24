@@ -1539,27 +1539,8 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
                 </g>
               )}
 
-              {showLotNumbers && (
-                <text x={cx} y={cy - (showAreas ? 6 : 0)} textAnchor="middle" dominantBaseline="middle"
-                  fontSize={14} fontWeight="bold" fill={color} className="select-none pointer-events-none">
-                  {lot.lotNumber}
-                </text>
-              )}
+              {/* Lot number / area / owner labels — rendered via placedLabels overlay (anti-collision + LOD). */}
 
-              {showAreas && (
-                <text x={cx} y={cy + (showLotNumbers ? 10 : 0)} textAnchor="middle" dominantBaseline="middle"
-                  fontSize={9} fill="#666" className="select-none pointer-events-none">
-                  <title>Calculée depuis la projection GPS de la parcelle mère</title>
-                  {formatSqm(lot.areaSqm)}
-                </text>
-              )}
-
-              {showOwnerNames && lot.ownerName && (
-                <text x={cx} y={cy + 22} textAnchor="middle" dominantBaseline="middle"
-                  fontSize={7} fill="#888" className="select-none pointer-events-none">
-                  {lot.ownerName}
-                </text>
-              )}
 
               {lot.notes?.includes('route existante') && (
                 <g className="select-none pointer-events-none">
