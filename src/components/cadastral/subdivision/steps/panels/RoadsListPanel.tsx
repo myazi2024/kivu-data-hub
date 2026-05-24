@@ -72,7 +72,7 @@ const defaultRoadSurface = (rule?: ZoningRule | null): RoadSurfaceSpec => ({
 const RoadsListPanel: React.FC<Props> = ({
   roads, editingRoad, editingRoadId, setEditingRoadId,
   onDeleteRoad, onUpdateRoad, onAddRoad,
-  canvasMode, setCanvasMode, hasMultipleLots, zoningRule,
+  canvasMode, setCanvasMode, hasMultipleLots, zoningRule, metricFrame,
 }) => {
   const requireCanal = !!zoningRule?.require_drainage_canal;
   const requireLighting = !!zoningRule?.require_solar_lighting;
