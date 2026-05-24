@@ -168,6 +168,7 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
 
   const [commonSpaces, setCommonSpaces] = useState<SubdivisionCommonSpace[]>([]);
   const [servitudes, setServitudes] = useState<SubdivisionServitude[]>([]);
+  const [boundaries, setBoundaries] = useState<SubdivisionBoundary[]>([]);
   const [planElements, setPlanElements] = useState<PlanElements>(DEFAULT_PLAN_ELEMENTS);
   
   // Purpose
