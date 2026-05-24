@@ -237,7 +237,33 @@ export function useCanvasDrag(
       onUpdateLot(dragState.lotId, newVerts, m.areaSqm, m.perimeterM);
       lastNorm.current = normalized;
     }
-  }, [dragState, lots, onUpdateLot, snapToGrid, computeMetrics]);
+
+    if (
+      dragState.type === 'boundary-vertex' &&
+      dragState.vertexIdx !== undefined &&
+      dragState.boundaryTwins &&
+      parentVertices && parentVertices.length >= 3
+    ) {
+      // Project mouse onto the parent perimeter, biased to the current edge so
+      // we slide smoothly and can "turn the corner" at parent vertices.
+      const proj = projectOnPolyline(normalized, parentVertices, dragState.boundaryEdgeIdx);
+      const newPos = { x: Math.max(0, Math.min(1, proj.point.x)), y: Math.max(0, Math.min(1, proj.point.y)) };
+      // Update every lot sharing this boundary vertex so junctions stay glued.
+      for (const t of dragState.boundaryTwins) {
+        const tl = lots.find(l => l.id === t.lotId);
+        if (!tl) continue;
+        if (t.vertexIdx < 0 || t.vertexIdx >= tl.vertices.length) continue;
+        const verts = [...tl.vertices];
+        verts[t.vertexIdx] = { ...newPos };
+        const m = computeMetrics(verts);
+        onUpdateLot(t.lotId, verts, m.areaSqm, m.perimeterM);
+      }
+      // Track the new hosting edge for the next move.
+      if (proj.edgeIdx !== dragState.boundaryEdgeIdx) {
+        setDragState({ ...dragState, boundaryEdgeIdx: proj.edgeIdx });
+      }
+    }
+  }, [dragState, lots, onUpdateLot, snapToGrid, computeMetrics, parentVertices]);
 
   const endDrag = useCallback(() => {
     setDragState(null);
@@ -248,6 +274,7 @@ export function useCanvasDrag(
     isDragging: !!dragState,
     dragType: dragState?.type || null,
     startVertexDrag,
+    startBoundaryVertexDrag,
     startEdgeDrag,
     startSharedEdgeDrag,
     startPolygonDrag,
