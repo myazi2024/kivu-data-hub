@@ -79,6 +79,39 @@ export function useCanvasDrag(
     setDragState({ type: 'vertex', lotId, vertexIdx });
   }, [lots]);
 
+  /**
+   * Drag a vertex that sits on the parent parcel perimeter. The vertex is
+   * constrained to slide along the perimeter (can turn corners). Every other
+   * lot vertex sharing the same coordinate moves with it so junctions stay
+   * coherent.
+   */
+  const startBoundaryVertexDrag = useCallback((lotId: string, vertexIdx: number) => {
+    const lot = lots.find(l => l.id === lotId);
+    if (!lot || lot.isParentBoundary) return;
+    if (!parentVertices || parentVertices.length < 3) return;
+    const v = lot.vertices[vertexIdx];
+    if (!v) return;
+    const EPS = 1e-3;
+    const twins: { lotId: string; vertexIdx: number }[] = [];
+    for (const l of lots) {
+      if (l.isParentBoundary) continue;
+      l.vertices.forEach((vv, i) => {
+        if (Math.abs(vv.x - v.x) < EPS && Math.abs(vv.y - v.y) < EPS) {
+          twins.push({ lotId: l.id, vertexIdx: i });
+        }
+      });
+    }
+    // Find the perimeter edge currently hosting this vertex.
+    const proj = projectOnPolyline(v, parentVertices);
+    setDragState({
+      type: 'boundary-vertex',
+      lotId,
+      vertexIdx,
+      boundaryTwins: twins,
+      boundaryEdgeIdx: proj.edgeIdx,
+    });
+  }, [lots, parentVertices]);
+
   const startEdgeDrag = useCallback((lotId: string, edgeIdx: number, normPos: Point2D) => {
     const lot = lots.find(l => l.id === lotId);
     if (!lot || lot.isParentBoundary) return;
