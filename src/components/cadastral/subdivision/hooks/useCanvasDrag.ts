@@ -35,6 +35,7 @@ export function useCanvasDrag(
   parentNormArea?: number,
   parentAreaSqm?: number,
   parentVertices?: Point2D[],
+  zoom: number = 1,
 ) {
   const [dragState, setDragState] = useState<DragState | null>(null);
   const lastNorm = useRef<Point2D | null>(null);
