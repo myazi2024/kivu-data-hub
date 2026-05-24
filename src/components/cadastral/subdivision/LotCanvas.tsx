@@ -2183,6 +2183,79 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
             </text>
           </g>
         )}
+
+        {/* Real-time tooltip during boundary-vertex drag: shows the two
+            adjacent edge lengths of the primary lot + areas of every lot
+            sharing the dragged sommet. */}
+        {drag.boundaryDragInfo && (() => {
+          const info = drag.boundaryDragInfo;
+          const primary = lots.find(l => l.id === info.primaryLotId);
+          if (!primary || primary.vertices.length < 3) return null;
+          const vIdx = info.primaryVertexIdx;
+          const n = primary.vertices.length;
+          const v = primary.vertices[vIdx];
+          const vPrev = primary.vertices[(vIdx - 1 + n) % n];
+          const vNext = primary.vertices[(vIdx + 1) % n];
+          const lenPrev = metricFrame ? edgeLengthM(vPrev, v, metricFrame) : 0;
+          const lenNext = metricFrame ? edgeLengthM(v, vNext, metricFrame) : 0;
+          const anchor = toScreen(v);
+          // Build line list (primary first, then other affected lots).
+          const seen = new Set<string>();
+          const rows: { label: string; areaSqm: number }[] = [];
+          rows.push({ label: `Lot ${primary.lotNumber}`, areaSqm: primary.areaSqm ?? 0 });
+          seen.add(primary.id);
+          for (const t of info.twins) {
+            if (seen.has(t.lotId)) continue;
+            const l = lots.find(ll => ll.id === t.lotId);
+            if (!l) continue;
+            rows.push({ label: `Lot ${l.lotNumber}`, areaSqm: l.areaSqm ?? 0 });
+            seen.add(t.lotId);
+          }
+          const padX = 8;
+          const padY = 6;
+          const lineH = 11;
+          const headerLines = 2;
+          const totalLines = headerLines + rows.length;
+          const boxW = 150;
+          const boxH = totalLines * lineH + padY * 2;
+          // Keep tooltip on-screen: flip when too close to right/bottom edge.
+          let x = anchor.x + 14;
+          let y = anchor.y - boxH - 14;
+          if (x + boxW > CANVAS_W - 4) x = anchor.x - boxW - 14;
+          if (y < 4) y = anchor.y + 14;
+          return (
+            <g className="pointer-events-none" style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.25))' }}>
+              <rect
+                x={x} y={y} width={boxW} height={boxH} rx={4}
+                fill="hsl(var(--popover))" stroke="hsl(var(--primary))" strokeWidth={1} opacity={0.97}
+              />
+              <text x={x + padX} y={y + padY + 9} fontSize={9} fontWeight="bold" fill="hsl(var(--primary))">
+                Côté précédent : {formatMeters(lenPrev)}
+              </text>
+              <text x={x + padX} y={y + padY + 9 + lineH} fontSize={9} fontWeight="bold" fill="hsl(var(--primary))">
+                Côté suivant : {formatMeters(lenNext)}
+              </text>
+              {rows.map((r, i) => (
+                <text
+                  key={i}
+                  x={x + padX}
+                  y={y + padY + 9 + (headerLines + i) * lineH}
+                  fontSize={9}
+                  fill="hsl(var(--popover-foreground))"
+                >
+                  {r.label} : {formatSqm(r.areaSqm)}
+                </text>
+              ))}
+              {/* Connector from anchor to box */}
+              <line
+                x1={anchor.x} y1={anchor.y}
+                x2={x < anchor.x ? x + boxW : x}
+                y2={y < anchor.y ? y + boxH : y}
+                stroke="hsl(var(--primary))" strokeWidth={1} strokeDasharray="2 2" opacity={0.6}
+              />
+            </g>
+          );
+        })()}
       </svg>
 
       {/* Keyboard shortcuts hint */}
