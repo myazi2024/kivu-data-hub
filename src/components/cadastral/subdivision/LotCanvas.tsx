@@ -1134,53 +1134,8 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
         {parentTicksNode}
 
 
-        {/* Parent parcel side measurements */}
+        {/* Parent parcel side measurements — now rendered via placedLabels overlay (anti-collision + LOD). */}
 
-        {parentVertices && parentVertices.length >= 3 && (
-          <g>
-            {parentVertices.map((v, i) => {
-              const next = parentVertices[(i + 1) % parentVertices.length];
-              const sv = toScreen(v);
-              const sn = toScreen(next);
-              const mx = (sv.x + sn.x) / 2;
-              const my = (sv.y + sn.y) / 2;
-
-              const Lm = edgeLengthM(v, next, metricFrame);
-              const label = z >= 2
-                ? `${Lm.toFixed(1).replace('.', ',')} m`
-                : formatMeters(Lm);
-
-              const orientationLabel = parentSides?.[i]?.orientation || '';
-              const edgeDx = sn.y - sv.y;
-              const edgeDy = sv.x - sn.x;
-              const edgeLen = Math.sqrt(edgeDx * edgeDx + edgeDy * edgeDy) || 1;
-              const offsetX = (edgeDx / edgeLen) * sw(16);
-              const offsetY = (edgeDy / edgeLen) * sw(16);
-              const rectW = sw(44);
-              const rectH = sw(orientationLabel ? 22 : 14);
-
-              return (
-                <g key={`parent-dim-${i}`}>
-                  <rect
-                    x={mx + offsetX - rectW / 2} y={my + offsetY - sw(8)}
-                    width={rectW} height={rectH} rx={sw(3)}
-                    fill="hsl(var(--background))" fillOpacity={0.85}
-                    stroke="hsl(var(--primary))" strokeWidth={sw(0.5)} strokeOpacity={0.4}
-                  />
-                  <text x={mx + offsetX} y={my + offsetY + (orientationLabel ? sw(-1) : sw(2))}
-                    textAnchor="middle" dominantBaseline="middle" fontSize={fs(9)} fontWeight="bold"
-                    fill="hsl(var(--primary))" className="select-none pointer-events-none">{label}</text>
-                  {orientationLabel && (
-                    <text x={mx + offsetX} y={my + offsetY + sw(10)}
-                      textAnchor="middle" dominantBaseline="middle" fontSize={fs(7)}
-                      fill="hsl(var(--muted-foreground))" className="select-none pointer-events-none">{orientationLabel}</text>
-                  )}
-                </g>
-              );
-
-            })}
-          </g>
-        )}
 
         {/* Layer ordering: selected layer on top */}
         {(() => {
