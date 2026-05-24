@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import {
   SubdivisionLot, SubdivisionRoad, SubdivisionCommonSpace, SubdivisionServitude,
+  SubdivisionBoundary,
   ParentParcelInfo, LOT_COLORS, USAGE_LABELS,
   Point2D, LotAnnotation
 } from '../types';
@@ -28,6 +29,8 @@ import { convertZoneType, ZoneType } from '../utils/convertZoneType';
 import LotCanvas, { CanvasMode, EdgeInfo } from '../LotCanvas';
 import { buildMetricFrame, polygonAreaSqmAccurate, polygonAreaSqmRelative, polygonPerimeterM, formatMeters, formatSqm } from '../utils/metrics';
 import { genId, nextLotNumber, polygonUnionMany } from '../utils/polygonOps';
+import { splitLineByRoads } from '../utils/lineRoadSplit';
+import LineRoleDialog, { RoadCreationParams, BoundaryCreationParams } from '../dialogs/LineRoleDialog';
 import LotVerticesEditor from './LotVerticesEditor';
 import LotsListPanel from './panels/LotsListPanel';
 import RoadsListPanel from './panels/RoadsListPanel';
@@ -36,6 +39,7 @@ import CommonSpacesPanel from './panels/CommonSpacesPanel';
 import ServitudesPanel from './panels/ServitudesPanel';
 import ValidationPanel from './panels/ValidationPanel';
 import { useAdminAnalytics } from '@/lib/adminAnalytics';
+import { useSubdivisionReferences } from '@/hooks/useSubdivisionReferences';
 
 interface StepLotDesignerProps {
   parentParcel: ParentParcelInfo | null;
