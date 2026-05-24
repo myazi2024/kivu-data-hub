@@ -243,13 +243,13 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
     if (lots.length === 0 && roads.length === 0) return;
     try {
       localStorage.setItem(draftKey, JSON.stringify({
-        lots, roads, commonSpaces, servitudes, purpose, planElements,
+        lots, roads, commonSpaces, servitudes, boundaries, purpose, planElements,
         savedAt: new Date().toISOString(),
       }));
     } catch {
       // storage full — ignore
     }
-  }, [lots, roads, commonSpaces, servitudes, purpose, planElements, draftKey]);
+  }, [lots, roads, commonSpaces, servitudes, boundaries, purpose, planElements, draftKey]);
 
   
   const clearDraft = useCallback(() => {
