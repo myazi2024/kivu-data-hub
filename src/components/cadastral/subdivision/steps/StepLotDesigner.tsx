@@ -112,6 +112,10 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
   const [canvasMode, setCanvasMode] = useState<CanvasMode>('select');
   const [canvasShowGrid, setCanvasShowGrid] = useState(true);
   const detailsPanelRef = React.useRef<HTMLDivElement>(null);
+  const [resetDialogOpen, setResetDialogOpen] = useState(false);
+  const hasModifications =
+    !(lots.length <= 1 && (lots.length === 0 || lots[0]?.isParentBoundary)) ||
+    roads.length > 0 || commonSpaces.length > 0 || servitudes.length > 0;
 
   // Auto-scroll vers le panneau de détails sur mobile lors d'une sélection
   const scrollToDetailsOnMobile = React.useCallback(() => {
