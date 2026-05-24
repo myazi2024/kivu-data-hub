@@ -56,23 +56,26 @@ export function useCanvasDrag(
 
   const snapToGrid = useCallback((p: Point2D): Point2D => {
     if (!snapEnabled) return p;
+    // Snap tolerance shrinks with zoom so that fine adjustments stay possible
+    // at high zoom (1px on screen ≈ same tolerance perception at any zoom).
+    const tol = SNAP_TOLERANCE / Math.max(1, zoom);
     const gridStep = 0.05; // 1/20
     const snapped = { ...p };
     if (showGrid) {
       const gx = Math.round(p.x / gridStep) * gridStep;
       const gy = Math.round(p.y / gridStep) * gridStep;
-      if (Math.abs(p.x - gx) < SNAP_TOLERANCE) snapped.x = gx;
-      if (Math.abs(p.y - gy) < SNAP_TOLERANCE) snapped.y = gy;
+      if (Math.abs(p.x - gx) < tol) snapped.x = gx;
+      if (Math.abs(p.y - gy) < tol) snapped.y = gy;
     }
     // Snap to other lot edges
     for (const lot of lots) {
       for (const v of lot.vertices) {
-        if (Math.abs(p.x - v.x) < SNAP_TOLERANCE) snapped.x = v.x;
-        if (Math.abs(p.y - v.y) < SNAP_TOLERANCE) snapped.y = v.y;
+        if (Math.abs(p.x - v.x) < tol) snapped.x = v.x;
+        if (Math.abs(p.y - v.y) < tol) snapped.y = v.y;
       }
     }
     return snapped;
-  }, [snapEnabled, showGrid, lots]);
+  }, [snapEnabled, showGrid, lots, zoom]);
 
   const startVertexDrag = useCallback((lotId: string, vertexIdx: number) => {
     const lot = lots.find(l => l.id === lotId);
