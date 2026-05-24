@@ -8,8 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Trash2, Route, Droplets, Sun, Construction } from 'lucide-react';
-import { SubdivisionRoad, Point2D } from '../../types';
-import { edgeLengthM, type MetricFrame } from '../../utils/metrics';
+import { SubdivisionRoad } from '../../types';
 import {
   DRAINAGE_CANAL_MATERIAL_LABELS,
   DRAINAGE_CANAL_TYPE_LABELS,
@@ -38,7 +37,6 @@ interface Props {
   hasMultipleLots: boolean;
   /** Active zoning rule (used to require/validate per-road infrastructures). */
   zoningRule?: ZoningRule | null;
-  metricFrame?: MetricFrame;
 }
 
 const formatWidth = (n: number) => Math.round(n * 10) / 10;
@@ -71,7 +69,7 @@ const defaultRoadSurface = (rule?: ZoningRule | null): RoadSurfaceSpec => ({
 const RoadsListPanel: React.FC<Props> = ({
   roads, editingRoad, editingRoadId, setEditingRoadId,
   onDeleteRoad, onUpdateRoad, onAddRoad,
-  canvasMode, setCanvasMode, hasMultipleLots, zoningRule, metricFrame,
+  canvasMode, setCanvasMode, hasMultipleLots, zoningRule,
 }) => {
   const requireCanal = !!zoningRule?.require_drainage_canal;
   const requireLighting = !!zoningRule?.require_solar_lighting;
@@ -101,34 +99,6 @@ const RoadsListPanel: React.FC<Props> = ({
   const updateRoadSurface = (road: SubdivisionRoad, patch: Partial<RoadSurfaceSpec>) => {
     const current = road.roadSurface ?? defaultRoadSurface(zoningRule);
     onUpdateRoad(road.id, { roadSurface: { ...current, ...patch } });
-  };
-
-  // Longueur courante (m) du polyline (centerline) — anisotropique via metricFrame.
-  const currentLengthM = React.useMemo(() => {
-    if (!editingRoad || !metricFrame) return null;
-    const path = editingRoad.path;
-    if (!path || path.length < 2) return null;
-    let total = 0;
-    for (let i = 0; i < path.length - 1; i++) {
-      total += edgeLengthM(path[i], path[i + 1], metricFrame);
-    }
-    return total > 0 ? total : null;
-  }, [editingRoad, metricFrame]);
-
-  const setRoadLength = (road: SubdivisionRoad, newLengthM: number) => {
-    if (!currentLengthM || currentLengthM <= 0) return;
-    const factor = newLengthM / currentLengthM;
-    if (!Number.isFinite(factor) || factor <= 0) return;
-    const path = road.path;
-    if (!path || path.length < 2) return;
-    const last = path[path.length - 1];
-    const first = path[0];
-    const mid: Point2D = { x: (first.x + last.x) / 2, y: (first.y + last.y) / 2 };
-    const nextPath: Point2D[] = path.map(p => ({
-      x: mid.x + (p.x - mid.x) * factor,
-      y: mid.y + (p.y - mid.y) * factor,
-    }));
-    onUpdateRoad(road.id, { path: nextPath });
   };
 
   return (
@@ -247,45 +217,6 @@ const RoadsListPanel: React.FC<Props> = ({
                 </div>
               </div>
             </div>
-
-            {currentLengthM != null && (
-              <div>
-                <Label className="text-xs">
-                  Longueur ({formatWidth(currentLengthM)}m)
-                  {editingRoad.isExisting && (
-                    <span className="ml-1 text-[10px] text-muted-foreground">(suit le côté de la parcelle)</span>
-                  )}
-                </Label>
-                <div className="flex items-center gap-2">
-                  <Slider
-                    min={5}
-                    max={2000}
-                    step={0.5}
-                    value={[Math.min(2000, Math.max(5, currentLengthM))]}
-                    onValueChange={([v]) => setRoadLength(editingRoad, formatWidth(v))}
-                    className="flex-1"
-                    aria-label="Longueur de la voie en mètres"
-                    disabled={editingRoad.isExisting}
-                  />
-                  <Input
-                    type="number"
-                    min={5}
-                    max={2000}
-                    step={0.5}
-                    value={formatWidth(currentLengthM)}
-                    onChange={e => {
-                      const v = parseFloat(e.target.value);
-                      if (Number.isFinite(v) && v >= 5) setRoadLength(editingRoad, formatWidth(v));
-                    }}
-                    className="h-7 text-xs w-20"
-                    aria-label="Longueur (saisie numérique)"
-                    disabled={editingRoad.isExisting}
-                  />
-                </div>
-              </div>
-            )}
-
-
 
             {/* Revêtement de la voie — piloté par la règle de zonage */}
             {requireRoadSurface && (
