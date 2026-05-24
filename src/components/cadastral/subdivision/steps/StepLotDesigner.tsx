@@ -957,8 +957,64 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
           <Badge variant="outline" className="text-[10px]">
             {coveragePercent}% couvert
           </Badge>
+          {onResetDesigner && (
+            <TooltipProvider delayDuration={300}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setResetDialogOpen(true)}
+                    disabled={!hasModifications}
+                    aria-label="Réinitialiser le lotissement"
+                    className="h-7 px-2 text-[11px] text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                  >
+                    <RotateCcw className="h-3.5 w-3.5 sm:mr-1" />
+                    <span className="hidden sm:inline">Réinitialiser</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="text-xs">
+                  Supprimer lots, voiries, espaces communs et servitudes
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
         </div>
       </div>
+
+      <AlertDialog open={resetDialogOpen} onOpenChange={setResetDialogOpen}>
+        <AlertDialogContent className="rounded-2xl max-w-[420px]">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-base">Réinitialiser le lotissement ?</AlertDialogTitle>
+            <AlertDialogDescription className="text-sm">
+              Tous les lots dérivés, voiries, espaces communs et servitudes seront supprimés.
+              La parcelle-mère sera restaurée à son état initial. Cette action est irréversible.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="rounded-xl text-sm">Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                trackAdminAction({
+                  module: 'subdivision',
+                  action: 'designer_reset',
+                  meta: { lots: lots.length, roads: roads.length, commonSpaces: commonSpaces.length, servitudes: servitudes.length },
+                });
+                onResetDesigner?.();
+                setSelectedLotIdState(null);
+                setSelectedLotIds([]);
+                setEditingRoadIdState(null);
+                setCanvasMode('select');
+                setResetDialogOpen(false);
+              }}
+              className="rounded-xl text-sm bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Réinitialiser
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Guide when only the locked parent parcel is present */}
       {lots.length === 1 && lots[0].isParentBoundary && (
