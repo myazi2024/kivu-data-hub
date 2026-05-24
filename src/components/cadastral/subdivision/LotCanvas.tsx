@@ -137,7 +137,7 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
   );
 
   // Drag system (recomputes area + perimeter via metric frame on every move)
-  const drag = useCanvasDrag(lots, onUpdateLot, snapEnabled, showGrid, metricFrame, parentNormArea, parentAreaSqm);
+  const drag = useCanvasDrag(lots, onUpdateLot, snapEnabled, showGrid, metricFrame, parentNormArea, parentAreaSqm, parentVertices);
 
   // Detect shared edges between lots
   const sharedEdges = useMemo(() => {
