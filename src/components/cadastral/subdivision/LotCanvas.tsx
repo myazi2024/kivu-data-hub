@@ -1,6 +1,6 @@
 import React, { useRef, useState, useCallback, useEffect, useMemo } from 'react';
 import { SubdivisionLot, SubdivisionRoad, SubdivisionCommonSpace, COMMON_SPACE_COLORS, COMMON_SPACE_LABELS, LOT_COLORS, USAGE_LABELS, Point2D, LotAnnotation } from './types';
-import { getAllRoadIntersectionPoints, polygonArea, polygonCentroid } from './utils/geometry';
+import { getAllRoadIntersectionPoints, isPointOnPolygonEdge, polygonArea, polygonCentroid } from './utils/geometry';
 import { useCanvasViewport } from './hooks/useCanvasViewport';
 import { useCanvasDrag } from './hooks/useCanvasDrag';
 import { useCanvasKeyboard } from './hooks/useCanvasKeyboard';
@@ -413,23 +413,53 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
     }
   }, [readOnly, viewport, mode, lineDrawMultiMode, lineDrawPoints, getSvgPos, fromScreen, drag]);
 
+  // True if a point lies on the parent parcel perimeter (tolerant).
+  const isOnParentBoundary = useCallback((p: Point2D): boolean => {
+    if (!parentVertices || parentVertices.length < 3) return false;
+    return isPointOnPolygonEdge(p, parentVertices, 0.008);
+  }, [parentVertices]);
+
+  // True if BOTH endpoints of an edge are on the parent perimeter — the edge
+  // is considered locked (changes would deform the mother parcel).
+  const isEdgeOnParentBoundary = useCallback((p1: Point2D, p2: Point2D): boolean => {
+    return isOnParentBoundary(p1) && isOnParentBoundary(p2);
+  }, [isOnParentBoundary]);
+
   const handleVertexMouseDown = useCallback((lotId: string, vertexIdx: number, e: React.MouseEvent) => {
     if (readOnly || mode !== 'select') return;
     const lot = lots.find(l => l.id === lotId);
     if (lot?.isParentBoundary) return;
+    // Block vertices that sit on the parent perimeter — moving them would
+    // deform the mother parcel.
+    if (lot && isOnParentBoundary(lot.vertices[vertexIdx])) return;
     e.stopPropagation();
     drag.startVertexDrag(lotId, vertexIdx);
-  }, [readOnly, mode, drag, lots]);
+  }, [readOnly, mode, drag, lots, isOnParentBoundary]);
 
   const handleEdgeMouseDown = useCallback((lotId: string, edgeIdx: number, e: React.MouseEvent) => {
     if (readOnly || mode !== 'select') return;
     const lot = lots.find(l => l.id === lotId);
-    if (lot?.isParentBoundary) return;
+    if (!lot || lot.isParentBoundary) return;
+    const p1 = lot.vertices[edgeIdx];
+    const p2 = lot.vertices[(edgeIdx + 1) % lot.vertices.length];
+    // Lock any edge that coincides with the parent parcel perimeter.
+    if (isEdgeOnParentBoundary(p1, p2)) return;
     e.stopPropagation();
     const pos = getSvgPos(e);
     const normalized = fromScreen(pos.x, pos.y);
+    // If shared with another lot, drag both lots together.
+    const shared = sharedEdges.find(se =>
+      (se.lotId1 === lotId && se.edgeIdx1 === edgeIdx) ||
+      (se.lotId2 === lotId && se.edgeIdx2 === edgeIdx)
+    );
+    if (shared && shared.lotId2 !== undefined && shared.edgeIdx2 !== undefined) {
+      const otherLotId = shared.lotId1 === lotId ? shared.lotId2 : shared.lotId1;
+      const otherEdgeIdx = shared.lotId1 === lotId ? shared.edgeIdx2 : shared.edgeIdx1;
+      drag.startSharedEdgeDrag(lotId, edgeIdx, otherLotId, otherEdgeIdx, normalized);
+      return;
+    }
     drag.startEdgeDrag(lotId, edgeIdx, normalized);
-  }, [readOnly, mode, drag, getSvgPos, fromScreen, lots]);
+  }, [readOnly, mode, drag, getSvgPos, fromScreen, lots, sharedEdges, isEdgeOnParentBoundary]);
 
   const handlePolygonMouseDown = useCallback((lotId: string, e: React.MouseEvent) => {
     if (readOnly || mode !== 'select') return;
@@ -1471,6 +1501,8 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
                 if (normalizedAngle >= 22.5 && normalizedAngle < 67.5) cursorStyle = 'nwse-resize';
                 else if (normalizedAngle >= 67.5 && normalizedAngle < 112.5) cursorStyle = 'ns-resize';
                 else if (normalizedAngle >= 112.5 && normalizedAngle < 157.5) cursorStyle = 'nesw-resize';
+                const isParentEdge = isEdgeOnParentBoundary(v, next);
+                if (isParentEdge) cursorStyle = 'not-allowed';
                 return (
                   <line
                     key={`edge-hit-${i}`}
@@ -1494,7 +1526,9 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
                       setEdgeContextMenu({ edge, screenPos: midScreen });
                       setContextMenuLotId(null);
                     }}
-                  />
+                  >
+                    {isParentEdge && <title>Limite de la parcelle-mère — verrouillée</title>}
+                  </line>
                 );
               })}
 
@@ -1518,15 +1552,16 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
                 );
               })}
 
-              {/* Vertices: locked grey squares for parent-boundary lots, draggable circles otherwise */}
-              {!readOnly && mode === 'select' && isSelected && screenVertices.map((sv, i) => (
-                lot.isParentBoundary ? (
+              {/* Vertices: locked grey squares for parent-boundary lots/vertices, draggable circles otherwise */}
+              {!readOnly && mode === 'select' && isSelected && screenVertices.map((sv, i) => {
+                const lockedVertex = lot.isParentBoundary || isOnParentBoundary(lot.vertices[i]);
+                return lockedVertex ? (
                   <rect
                     key={i} x={sv.x - 3.5} y={sv.y - 3.5} width={7} height={7}
                     fill="hsl(var(--muted))" stroke="hsl(var(--muted-foreground))" strokeWidth={1.5}
                     style={{ cursor: 'not-allowed' }}
                   >
-                    <title>Forme verrouillée — Diviser le lot pour éditer</title>
+                    <title>Sommet verrouillé — appartient à la parcelle-mère</title>
                   </rect>
                 ) : (
                   <circle
@@ -1535,8 +1570,8 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
                     className="cursor-grab active:cursor-grabbing touch-none"
                     onPointerDown={e => handleVertexMouseDown(lot.id, i, e)}
                   />
-                )
-              ))}
+                );
+              })}
 
               {/* Rotation ring (skipped for locked parent-boundary lot) */}
               {!readOnly && mode === 'select' && isSelected && !lot.isParentBoundary && (() => {
