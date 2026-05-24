@@ -708,7 +708,15 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
     return getParallelEdges(start, end);
   }, [mode, lineDrawPoints, lineDrawMousePos, getParallelEdges, fromScreen]);
 
+  // Inverse-scale helpers: SVG viewBox shrinks with zoom, so constant stroke/font
+  // widths visually grow. Divide visual sizes by z (floor 1) to keep them stable
+  // and let the user make fine adjustments when zoomed in.
+  const z = Math.max(1, viewport.viewport.zoom);
+  const sw = (base: number) => base / z;
+  const fs = (base: number) => base / z;
+
   return (
+
     <div ref={containerRef} className="relative" tabIndex={-1}>
       {/* Zoom controls — placés à gauche pour ne pas chevaucher la barre d'outils flottante (à droite) */}
       <div className="absolute top-2 left-2 z-20 flex flex-col gap-1 pointer-events-auto">
@@ -767,29 +775,42 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
             points={parentVertices.map(v => { const s = toScreen(v); return `${s.x},${s.y}`; }).join(' ')}
             fill="none"
             stroke="hsl(var(--primary))"
-            strokeWidth={2}
-            strokeDasharray="6 3"
+            strokeWidth={sw(2)}
+            strokeDasharray={`${sw(6)} ${sw(3)}`}
             opacity={0.5}
           />
         ) : (
           <rect
             x={PADDING} y={PADDING}
             width={CANVAS_W - 2 * PADDING} height={CANVAS_H - 2 * PADDING}
-            fill="none" stroke="hsl(var(--primary))" strokeWidth={2} strokeDasharray="6 3" opacity={0.5}
+            fill="none" stroke="hsl(var(--primary))" strokeWidth={sw(2)} strokeDasharray={`${sw(6)} ${sw(3)}`} opacity={0.5}
           />
         )}
+
 
         {/* Parent parcel side graduations — discreet 5 m ticks (25 m majors) */}
         {showDimensions && parentVertices && parentVertices.length >= 3 && (() => {
           const cN = polygonCentroid(parentVertices);
-          // Auto-step: keep total ticks reasonable on very large parcels
           let totalLen = 0;
           for (let i = 0; i < parentVertices.length; i++) {
             const a = parentVertices[i];
             const b = parentVertices[(i + 1) % parentVertices.length];
             totalLen += edgeLengthM(a, b, metricFrame);
           }
-          const step = totalLen / 5 > 400 ? 10 : 5;
+          // Dynamic step: densify with zoom, up to 0.5 m for fine adjustments.
+          let step: number;
+          let majorEvery: number;
+          if (z >= 3) { step = 0.5; majorEvery = 2; }
+          else if (z >= 2) { step = 1; majorEvery = 5; }
+          else if (z >= 1.3) { step = 2; majorEvery = 10; }
+          else { step = totalLen / 5 > 400 ? 10 : 5; majorEvery = 25; }
+          // Anti-clutter fallback: if too many ticks at this step, coarsen.
+          while (totalLen / step > 600 && step < 10) {
+            step = step < 1 ? 1 : step < 2 ? 2 : step < 5 ? 5 : 10;
+            majorEvery = step <= 1 ? 5 : step <= 2 ? 10 : step <= 5 ? 25 : 50;
+          }
+          const eps = step / 100;
+          const isMajorK = (k: number) => Math.abs(k / majorEvery - Math.round(k / majorEvery)) < eps;
           return (
             <g className="parent-ticks select-none" pointerEvents="none">
               {parentVertices.map((v, i) => {
@@ -801,7 +822,6 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
                 const dx = sn.x - sv.x;
                 const dy = sn.y - sv.y;
                 const pxLen = Math.sqrt(dx * dx + dy * dy) || 1;
-                // Outward normal: pick the side opposite the centroid
                 const mid = { x: (sv.x + sn.x) / 2, y: (sv.y + sn.y) / 2 };
                 const sc = toScreen(cN);
                 let nx = -dy / pxLen;
@@ -815,30 +835,32 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
                   const t = k / Lm;
                   const px = sv.x + dx * t;
                   const py = sv.y + dy * t;
-                  const isMajor = k % 25 === 0;
-                  const len = isMajor ? 6 : 3;
+                  const major = isMajorK(k);
+                  const len = sw(major ? 6 : 3);
                   ticks.push(
                     <line
                       key={`t-${i}-${k}`}
                       x1={px} y1={py}
                       x2={px + nx * len} y2={py + ny * len}
                       stroke="hsl(var(--primary))"
-                      strokeWidth={0.6}
+                      strokeWidth={sw(0.6)}
                       opacity={0.45}
                     />
                   );
-                  if (isMajor && Lm >= 25) {
+                  if (major && Lm >= majorEvery) {
+                    const off = len + sw(5);
+                    const kLabel = step < 1 ? k.toFixed(1).replace('.', ',') : String(Math.round(k));
                     ticks.push(
                       <text
                         key={`tl-${i}-${k}`}
-                        x={px + nx * (len + 5)}
-                        y={py + ny * (len + 5)}
+                        x={px + nx * off}
+                        y={py + ny * off}
                         textAnchor="middle"
                         dominantBaseline="middle"
-                        fontSize={7}
+                        fontSize={fs(7)}
                         fill="hsl(var(--muted-foreground))"
                         opacity={0.55}
-                      >{k}</text>
+                      >{kLabel}</text>
                     );
                   }
                 }
@@ -847,6 +869,7 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
             </g>
           );
         })()}
+
 
         {/* Parent parcel side measurements */}
 
@@ -859,37 +882,39 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
               const mx = (sv.x + sn.x) / 2;
               const my = (sv.y + sn.y) / 2;
 
-              // Toujours utiliser la longueur géométrique GPS (edgeLengthM) pour
-              // rester cohérent avec la surface, le périmètre et les arêtes des lots.
-              // parentSides[i].length (saisie manuelle) peut diverger et causerait
-              // un double étiquetage incohérent.
-              const label = formatMeters(edgeLengthM(v, next, metricFrame));
+              const Lm = edgeLengthM(v, next, metricFrame);
+              const label = z >= 2
+                ? `${Lm.toFixed(1).replace('.', ',')} m`
+                : formatMeters(Lm);
 
               const orientationLabel = parentSides?.[i]?.orientation || '';
               const edgeDx = sn.y - sv.y;
               const edgeDy = sv.x - sn.x;
               const edgeLen = Math.sqrt(edgeDx * edgeDx + edgeDy * edgeDy) || 1;
-              const offsetX = (edgeDx / edgeLen) * 16;
-              const offsetY = (edgeDy / edgeLen) * 16;
+              const offsetX = (edgeDx / edgeLen) * sw(16);
+              const offsetY = (edgeDy / edgeLen) * sw(16);
+              const rectW = sw(44);
+              const rectH = sw(orientationLabel ? 22 : 14);
 
               return (
                 <g key={`parent-dim-${i}`}>
                   <rect
-                    x={mx + offsetX - 22} y={my + offsetY - 8}
-                    width={44} height={orientationLabel ? 22 : 14} rx={3}
+                    x={mx + offsetX - rectW / 2} y={my + offsetY - sw(8)}
+                    width={rectW} height={rectH} rx={sw(3)}
                     fill="hsl(var(--background))" fillOpacity={0.85}
-                    stroke="hsl(var(--primary))" strokeWidth={0.5} strokeOpacity={0.4}
+                    stroke="hsl(var(--primary))" strokeWidth={sw(0.5)} strokeOpacity={0.4}
                   />
-                  <text x={mx + offsetX} y={my + offsetY + (orientationLabel ? -1 : 2)}
-                    textAnchor="middle" dominantBaseline="middle" fontSize={9} fontWeight="bold"
+                  <text x={mx + offsetX} y={my + offsetY + (orientationLabel ? sw(-1) : sw(2))}
+                    textAnchor="middle" dominantBaseline="middle" fontSize={fs(9)} fontWeight="bold"
                     fill="hsl(var(--primary))" className="select-none pointer-events-none">{label}</text>
                   {orientationLabel && (
-                    <text x={mx + offsetX} y={my + offsetY + 10}
-                      textAnchor="middle" dominantBaseline="middle" fontSize={7}
+                    <text x={mx + offsetX} y={my + offsetY + sw(10)}
+                      textAnchor="middle" dominantBaseline="middle" fontSize={fs(7)}
                       fill="hsl(var(--muted-foreground))" className="select-none pointer-events-none">{orientationLabel}</text>
                   )}
                 </g>
               );
+
             })}
           </g>
         )}
