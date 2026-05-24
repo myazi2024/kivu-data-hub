@@ -779,7 +779,77 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
           />
         )}
 
+        {/* Parent parcel side graduations — discreet 5 m ticks (25 m majors) */}
+        {showDimensions && parentVertices && parentVertices.length >= 3 && (() => {
+          const cN = polygonCentroid(parentVertices);
+          // Auto-step: keep total ticks reasonable on very large parcels
+          let totalLen = 0;
+          for (let i = 0; i < parentVertices.length; i++) {
+            const a = parentVertices[i];
+            const b = parentVertices[(i + 1) % parentVertices.length];
+            totalLen += edgeLengthM(a, b, metricFrame);
+          }
+          const step = totalLen / 5 > 400 ? 10 : 5;
+          return (
+            <g className="parent-ticks select-none" pointerEvents="none">
+              {parentVertices.map((v, i) => {
+                const next = parentVertices[(i + 1) % parentVertices.length];
+                const Lm = edgeLengthM(v, next, metricFrame);
+                if (Lm < 10) return null;
+                const sv = toScreen(v);
+                const sn = toScreen(next);
+                const dx = sn.x - sv.x;
+                const dy = sn.y - sv.y;
+                const pxLen = Math.sqrt(dx * dx + dy * dy) || 1;
+                // Outward normal: pick the side opposite the centroid
+                const mid = { x: (sv.x + sn.x) / 2, y: (sv.y + sn.y) / 2 };
+                const sc = toScreen(cN);
+                let nx = -dy / pxLen;
+                let ny = dx / pxLen;
+                if ((mid.x + nx - sc.x) ** 2 + (mid.y + ny - sc.y) ** 2 <
+                    (mid.x - sc.x) ** 2 + (mid.y - sc.y) ** 2) {
+                  nx = -nx; ny = -ny;
+                }
+                const ticks: React.ReactNode[] = [];
+                for (let k = step; k < Lm; k += step) {
+                  const t = k / Lm;
+                  const px = sv.x + dx * t;
+                  const py = sv.y + dy * t;
+                  const isMajor = k % 25 === 0;
+                  const len = isMajor ? 6 : 3;
+                  ticks.push(
+                    <line
+                      key={`t-${i}-${k}`}
+                      x1={px} y1={py}
+                      x2={px + nx * len} y2={py + ny * len}
+                      stroke="hsl(var(--primary))"
+                      strokeWidth={0.6}
+                      opacity={0.45}
+                    />
+                  );
+                  if (isMajor && Lm >= 25) {
+                    ticks.push(
+                      <text
+                        key={`tl-${i}-${k}`}
+                        x={px + nx * (len + 5)}
+                        y={py + ny * (len + 5)}
+                        textAnchor="middle"
+                        dominantBaseline="middle"
+                        fontSize={7}
+                        fill="hsl(var(--muted-foreground))"
+                        opacity={0.55}
+                      >{k}</text>
+                    );
+                  }
+                }
+                return <g key={`ptick-${i}`}>{ticks}</g>;
+              })}
+            </g>
+          );
+        })()}
+
         {/* Parent parcel side measurements */}
+
         {parentVertices && parentVertices.length >= 3 && (
           <g>
             {parentVertices.map((v, i) => {
