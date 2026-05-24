@@ -108,10 +108,18 @@ function segmentSegmentIntersection(
 
 const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
   parentParcel, parentVertices, parentSides, lots, setLots, roads, setRoads,
-  commonSpaces, setCommonSpaces, servitudes, setServitudes, lotIds,
+  commonSpaces, setCommonSpaces, servitudes, setServitudes,
+  boundaries: boundariesProp, setBoundaries: setBoundariesProp,
+  lotIds,
   onCreateInitialLot, validation, canUndo, canRedo, onUndo, onRedo, onResetDesigner, zoningRule,
 }) => {
   const { trackAdminAction } = useAdminAnalytics();
+  const { labels: roadSurfaceLabels } = useSubdivisionReferences('road_surface');
+  const [internalBoundaries, setInternalBoundaries] = useState<SubdivisionBoundary[]>([]);
+  const boundaries = boundariesProp ?? internalBoundaries;
+  const setBoundaries = setBoundariesProp ?? setInternalBoundaries;
+  const [pendingLine, setPendingLine] = useState<{ start: Point2D; end: Point2D } | null>(null);
+  const [lineDialogOpen, setLineDialogOpen] = useState(false);
   const [selectedLotId, setSelectedLotIdState] = useState<string | null>(null);
   const [selectedLotIds, setSelectedLotIds] = useState<string[]>([]);
   const [editingRoadId, setEditingRoadIdState] = useState<string | null>(null);
