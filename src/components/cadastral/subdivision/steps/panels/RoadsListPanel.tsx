@@ -103,6 +103,34 @@ const RoadsListPanel: React.FC<Props> = ({
     onUpdateRoad(road.id, { roadSurface: { ...current, ...patch } });
   };
 
+  // Longueur courante (m) du polyline (centerline) — anisotropique via metricFrame.
+  const currentLengthM = React.useMemo(() => {
+    if (!editingRoad || !metricFrame) return null;
+    const path = editingRoad.path;
+    if (!path || path.length < 2) return null;
+    let total = 0;
+    for (let i = 0; i < path.length - 1; i++) {
+      total += edgeLengthM(path[i], path[i + 1], metricFrame);
+    }
+    return total > 0 ? total : null;
+  }, [editingRoad, metricFrame]);
+
+  const setRoadLength = (road: SubdivisionRoad, newLengthM: number) => {
+    if (!currentLengthM || currentLengthM <= 0) return;
+    const factor = newLengthM / currentLengthM;
+    if (!Number.isFinite(factor) || factor <= 0) return;
+    const path = road.path;
+    if (!path || path.length < 2) return;
+    const last = path[path.length - 1];
+    const first = path[0];
+    const mid: Point2D = { x: (first.x + last.x) / 2, y: (first.y + last.y) / 2 };
+    const nextPath: Point2D[] = path.map(p => ({
+      x: mid.x + (p.x - mid.x) * factor,
+      y: mid.y + (p.y - mid.y) * factor,
+    }));
+    onUpdateRoad(road.id, { path: nextPath });
+  };
+
   return (
   <Card>
     <CardContent className="pt-3">
