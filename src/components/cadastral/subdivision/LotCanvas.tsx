@@ -50,6 +50,7 @@ interface LotCanvasProps {
   onConvertEdgeToRoad?: (edge: EdgeInfo) => void;
   onMergeLots?: (ids: string[]) => void;
   onCutLot?: (lotId: string, cutStart: Point2D, cutEnd: Point2D) => void;
+  onCutLotsAlongLine?: (cutStart: Point2D, cutEnd: Point2D) => void;
   onFinishRoadDraw?: (path: Point2D[]) => void;
   mode?: CanvasMode;
   onModeChange?: (mode: CanvasMode) => void;
@@ -81,7 +82,7 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
   selectedLotId, selectedLotIds = [], onSelectLot, onToggleLotSelection, onUpdateLot,
   onUpdateLotAnnotations, onDeleteLot, onDuplicateLot,
   selectedRoadId, onSelectRoad, onDeleteRoad, onUpdateRoad, onSplitLot, onMergeLots,
-  onCutLot, onFinishRoadDraw, onConvertEdgeToRoad, mode = 'select', onModeChange,
+  onCutLot, onCutLotsAlongLine, onFinishRoadDraw, onConvertEdgeToRoad, mode = 'select', onModeChange,
   showGrid = true, onToggleGrid, showDimensions = true, showLotNumbers = true,
   showAreas = true, showRoads = true, showCommonSpaces = true, showNorth = true,
   showLegend = false, showScale = true, showOwnerNames = false,
@@ -596,16 +597,19 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
     if (mode === 'drawRoad') {
       onFinishRoadDraw?.(path);
     } else {
-      // drawLine mode: cut lot
+      // drawLine mode: cut every lot the line crosses (batch), with fallback
+      // to single-lot cut for back-compat.
       const cutStart = path[0];
       const cutEnd = path[path.length - 1];
-      const mid = { x: (cutStart.x + cutEnd.x) / 2, y: (cutStart.y + cutEnd.y) / 2 };
-      const targetLot = lots.find(lot => pointInPolygon(mid, lot.vertices));
-      if (targetLot && onCutLot) {
-        onCutLot(targetLot.id, cutStart, cutEnd);
+      if (onCutLotsAlongLine) {
+        onCutLotsAlongLine(cutStart, cutEnd);
+      } else if (onCutLot) {
+        const mid = { x: (cutStart.x + cutEnd.x) / 2, y: (cutStart.y + cutEnd.y) / 2 };
+        const targetLot = lots.find(lot => pointInPolygon(mid, lot.vertices));
+        if (targetLot) onCutLot(targetLot.id, cutStart, cutEnd);
       }
     }
-  }, [mode, onFinishRoadDraw, onCutLot, lots]);
+  }, [mode, onFinishRoadDraw, onCutLot, onCutLotsAlongLine, lots]);
 
   const handleMouseUp = useCallback((e: React.MouseEvent) => {
     // Line simple drag: finish on mouse up

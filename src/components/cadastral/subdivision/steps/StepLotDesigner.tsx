@@ -524,6 +524,75 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
     trackAdminAction({ module: 'subdivision', action: 'lot_cut' });
   }, [lots, setLots, computeArea, computePerim, trackAdminAction]);
 
+  // Cut every lot a single drawn line crosses (≥2 intersections), in one transaction.
+  const handleCutLotsAlongLine = useCallback((cutStart: Point2D, cutEnd: Point2D) => {
+    const nextLots: SubdivisionLot[] = [];
+    let cutCount = 0;
+
+    for (const lot of lots) {
+      if (lot.isParentBoundary || lot.vertices.length < 3) {
+        nextLots.push(lot);
+        continue;
+      }
+      const verts = lot.vertices;
+      const intersections: { point: Point2D; edgeIdx: number; t: number }[] = [];
+      for (let i = 0; i < verts.length; i++) {
+        const j = (i + 1) % verts.length;
+        const inter = lineSegmentIntersection(cutStart, cutEnd, verts[i], verts[j]);
+        if (inter) intersections.push({ point: inter.point, edgeIdx: i, t: inter.t });
+      }
+      if (intersections.length < 2) {
+        nextLots.push(lot);
+        continue;
+      }
+      intersections.sort((a, b) => a.edgeIdx - b.edgeIdx || a.t - b.t);
+      const int1 = intersections[0];
+      const int2 = intersections[1];
+
+      const poly1: Point2D[] = [int1.point];
+      for (let i = (int1.edgeIdx + 1) % verts.length; i !== (int2.edgeIdx + 1) % verts.length; i = (i + 1) % verts.length) {
+        poly1.push(verts[i]);
+      }
+      poly1.push(int2.point);
+
+      const poly2: Point2D[] = [int2.point];
+      for (let i = (int2.edgeIdx + 1) % verts.length; i !== (int1.edgeIdx + 1) % verts.length; i = (i + 1) % verts.length) {
+        poly2.push(verts[i]);
+      }
+      poly2.push(int1.point);
+
+      if (poly1.length < 3 || poly2.length < 3) {
+        nextLots.push(lot);
+        continue;
+      }
+
+      const num1 = nextLotNumber(nextLots);
+      const newLot1: SubdivisionLot = {
+        ...lot, id: genId('lot'), lotNumber: String(num1),
+        vertices: poly1,
+        areaSqm: computeArea(poly1),
+        perimeterM: computePerim(poly1),
+        isParentBoundary: false,
+      };
+      nextLots.push(newLot1);
+      const num2 = nextLotNumber(nextLots);
+      const newLot2: SubdivisionLot = {
+        ...lot, id: genId('lot'), lotNumber: String(num2),
+        vertices: poly2,
+        areaSqm: computeArea(poly2),
+        perimeterM: computePerim(poly2),
+        isParentBoundary: false,
+      };
+      nextLots.push(newLot2);
+      cutCount++;
+    }
+
+    if (cutCount === 0) return;
+    setLots(nextLots);
+    setCanvasMode('select');
+    trackAdminAction({ module: 'subdivision', action: 'lot_cut', meta: { count: cutCount } });
+  }, [lots, setLots, computeArea, computePerim, trackAdminAction]);
+
   // Handle finished road drawing — also split the traversed lot
   const handleFinishRoadDraw = useCallback((path: Point2D[]) => {
     if (path.length < 2) return;
@@ -1077,6 +1146,7 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
                 onSplitLot={handleSplitLot}
                 onMergeLots={handleMergeLots}
                 onCutLot={handleCutLot}
+                onCutLotsAlongLine={handleCutLotsAlongLine}
                 onFinishRoadDraw={handleFinishRoadDraw}
                 onConvertEdgeToRoad={handleConvertEdgeToRoad}
                 roadPresetWidth={roadPresetWidth}
