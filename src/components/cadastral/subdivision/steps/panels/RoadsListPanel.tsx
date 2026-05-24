@@ -248,6 +248,45 @@ const RoadsListPanel: React.FC<Props> = ({
               </div>
             </div>
 
+            {currentLengthM != null && (
+              <div>
+                <Label className="text-xs">
+                  Longueur ({formatWidth(currentLengthM)}m)
+                  {editingRoad.isExisting && (
+                    <span className="ml-1 text-[10px] text-muted-foreground">(suit le côté de la parcelle)</span>
+                  )}
+                </Label>
+                <div className="flex items-center gap-2">
+                  <Slider
+                    min={5}
+                    max={2000}
+                    step={0.5}
+                    value={[Math.min(2000, Math.max(5, currentLengthM))]}
+                    onValueChange={([v]) => setRoadLength(editingRoad, formatWidth(v))}
+                    className="flex-1"
+                    aria-label="Longueur de la voie en mètres"
+                    disabled={editingRoad.isExisting}
+                  />
+                  <Input
+                    type="number"
+                    min={5}
+                    max={2000}
+                    step={0.5}
+                    value={formatWidth(currentLengthM)}
+                    onChange={e => {
+                      const v = parseFloat(e.target.value);
+                      if (Number.isFinite(v) && v >= 5) setRoadLength(editingRoad, formatWidth(v));
+                    }}
+                    className="h-7 text-xs w-20"
+                    aria-label="Longueur (saisie numérique)"
+                    disabled={editingRoad.isExisting}
+                  />
+                </div>
+              </div>
+            )}
+
+
+
             {/* Revêtement de la voie — piloté par la règle de zonage */}
             {requireRoadSurface && (
               <div className="rounded-md border bg-card/50 p-2 space-y-2">
