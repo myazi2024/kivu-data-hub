@@ -1,48 +1,45 @@
-# Pourquoi le lot étroit n’est pas sélectionnable
+## Problème
 
-Pour chaque lot affiché en mode `select`, le canvas dessine au-dessus du polygone des « hit lines » invisibles de **14 px de large** sur chaque arête (`pointerEvents="stroke"`, `LotCanvas.tsx` ~ligne 1649). Quand un lot mesure moins de ~10 m de large, ces deux hit lines opposées **recouvrent intégralement l’intérieur du polygone** à l’écran.
+En mode "tracer une ligne" (drawLine), la coupe ne cible qu'**un seul** lot : celui qui contient le milieu du segment. Si on trace une ligne qui traverse plusieurs lots adjacents, un seul est coupé (souvent aucun si le milieu tombe sur une voie ou hors lot).
 
-Résultat : le clic tombe d’abord sur l’arête → `handleEdgeMouseDown` démarre un redimensionnement d’arête et appelle `e.stopPropagation()` (ligne 453). Le `onClick` du polygone ne se déclenche jamais, donc `onSelectLot` n’est jamais appelé → impossible de sélectionner le lot, donc impossible d’afficher le sélecteur « Type de zone (lot / voie / espace vert) » qui n’apparaît que pour le lot sélectionné (`StepLotDesigner.tsx`, `handleConvertSelectedZone` retourne si `!selectedLotId`).
+Deux points en cause :
+- `LotCanvas.tsx` `finishLineDraw` (l. 593-608) sélectionne `targetLot = lots.find(lot => pointInPolygon(mid, lot.vertices))` puis appelle `onCutLot(targetLot.id, …)` une seule fois.
+- `StepLotDesigner.tsx` `handleCutLot` (l. 466-525) opère sur un seul lot et fait `setLots(lots.map…)` — l'appeler en boucle ne fonctionnerait pas (closure `lots` figée).
 
-Le même mécanisme protège déjà le drag du polygone (`handlePolygonMouseDown`, ligne 472) : il n’agit que si `lotId === selectedLotId`. Les arêtes n’ont pas cette garde.
+## Objectif
 
-# Correctif (chirurgical, frontend uniquement)
+Une ligne tracée d'un bord à l'autre coupe **simultanément tous les lots qu'elle traverse** (≥2 intersections avec leur périmètre), en une seule transaction.
 
-Aligner les arêtes sur le pattern du polygone : **un premier clic sélectionne le lot, un second clic redimensionne**.
+## Changements
 
-## Fichier modifié
+### 1. `StepLotDesigner.tsx` — nouveau handler batch
 
-`src/components/cadastral/subdivision/LotCanvas.tsx`
+Ajouter `handleCutLotsAlongLine(cutStart, cutEnd)` qui :
+- parcourt tous les lots non-`isParentBoundary`
+- pour chaque lot, calcule les intersections de la ligne avec ses arêtes (même algo que `handleCutLot`)
+- ne garde que les lots avec ≥ 2 intersections ; construit les deux polygones enfants
+- accumule un nouveau tableau `nextLots` (remplace chaque lot coupé par 2 enfants, conserve les autres tels quels), avec `genId('lot')` et numérotation incrémentale unique (`nextLotNumber`)
+- un seul `setLots(nextLots)` à la fin + analytics `lot_cut` avec `meta.count`
+- si aucun lot n'est coupé → no-op (et idéalement un toast info, optionnel)
+- garde `handleCutLot` existant inchangé (peut être réutilisé par d'autres flows si besoin) ou le remplace par un wrapper qui appelle le batch
 
-### 1. `handleEdgeMouseDown` (~lignes 445-468)
+### 2. `LotCanvas.tsx` — appeler le batch
 
-Ajouter en tête, après les gardes `readOnly / mode / isParentBoundary` :
+- Ajouter une prop `onCutLotsAlongLine?: (cutStart: Point2D, cutEnd: Point2D) => void`.
+- Dans `finishLineDraw`, en mode `drawLine` :
+  - si `onCutLotsAlongLine` est fourni → l'appeler avec `path[0]` et `path[path.length-1]` (et supprimer la recherche `pointInPolygon(mid…)`).
+  - fallback sur l'ancien `onCutLot` si la nouvelle prop n'est pas branchée (rétro-compat).
+- Brancher `onCutLotsAlongLine={handleCutLotsAlongLine}` dans `StepLotDesigner` (l. ~1079).
 
-```ts
-if (lotId !== selectedLotId) {
-  e.stopPropagation();
-  onSelectLot(lotId);
-  onSelectRoad?.(null);
-  setContextMenuLotId(null);
-  return; // ne pas démarrer le edge-drag tant que le lot n'est pas le lot actif
-}
-```
+### 3. Aucune modif sur
 
-Mettre à jour les dépendances du `useCallback` (`selectedLotId`, `onSelectLot`, `onSelectRoad`).
+- la géométrie/algo de coupe par lot (réutilisé tel quel)
+- le mode `drawRoad` (déjà multi-lots côté `handleFinishRoadDraw`)
+- les validations / frais / styles / snap / zoom
 
-### 2. `onContextMenu` du hit-line d’arête (~lignes 1652-1667)
+## Points techniques
 
-Pour rester cohérent : si `lotId !== selectedLotId`, d’abord sélectionner le lot puis ouvrir le menu contextuel d’arête (le menu reste utile, mais le lot devient actif en même temps). Ce point est optionnel mais évite la même confusion sur clic droit.
-
-### 3. Aucun changement
-
-- Mode `selectEdge` : intentionnellement laissé tel quel (cliquer une arête convertit en voie, c’est le but du mode).
-- `handleVertexMouseDown` : les poignées de sommets ne s’affichent que pour le lot déjà sélectionné (ligne 1682 `isSelected && ...`), donc pas de problème.
-- Pas de changement de logique métier, de seuils, ni de styles.
-
-## Validation
-
-- Tracer un lot étroit (largeur < 10 m), cliquer dessus → le lot devient sélectionné (contour primaire), le panneau « Type de zone » s’affiche.
-- Cliquer une seconde fois sur la même arête → comportement actuel (resize d’arête).
-- Cliquer sur un lot large non sélectionné → reste sélectionnable (le clic tombe sur l’intérieur du polygone comme avant).
-- `selectEdge` mode et conversion edge → voie : inchangés.
+- Intersection : continuer d'utiliser `lineSegmentIntersection` (segment-segment), comme `handleCutLot`. Une ligne qui ne touche que tangentiellement un lot (< 2 intersections) est ignorée pour ce lot, ce qui est le comportement attendu.
+- Numérotation : `nextLotNumber(existing)` (utilitaire existant dans `polygonOps.ts`) appliqué de manière incrémentale au fur et à mesure que la liste grossit, pour éviter les collisions.
+- Conserver les propriétés non-géométriques du lot d'origine (zone type, etc.) sur les deux enfants via spread `...lot`.
+- Pas de changement de schéma, pas de migration.
