@@ -791,14 +791,26 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
         {/* Parent parcel side graduations — discreet 5 m ticks (25 m majors) */}
         {showDimensions && parentVertices && parentVertices.length >= 3 && (() => {
           const cN = polygonCentroid(parentVertices);
-          // Auto-step: keep total ticks reasonable on very large parcels
           let totalLen = 0;
           for (let i = 0; i < parentVertices.length; i++) {
             const a = parentVertices[i];
             const b = parentVertices[(i + 1) % parentVertices.length];
             totalLen += edgeLengthM(a, b, metricFrame);
           }
-          const step = totalLen / 5 > 400 ? 10 : 5;
+          // Dynamic step: densify with zoom, up to 0.5 m for fine adjustments.
+          let step: number;
+          let majorEvery: number;
+          if (z >= 3) { step = 0.5; majorEvery = 2; }
+          else if (z >= 2) { step = 1; majorEvery = 5; }
+          else if (z >= 1.3) { step = 2; majorEvery = 10; }
+          else { step = totalLen / 5 > 400 ? 10 : 5; majorEvery = 25; }
+          // Anti-clutter fallback: if too many ticks at this step, coarsen.
+          while (totalLen / step > 600 && step < 10) {
+            step = step < 1 ? 1 : step < 2 ? 2 : step < 5 ? 5 : 10;
+            majorEvery = step <= 1 ? 5 : step <= 2 ? 10 : step <= 5 ? 25 : 50;
+          }
+          const eps = step / 100;
+          const isMajorK = (k: number) => Math.abs(k / majorEvery - Math.round(k / majorEvery)) < eps;
           return (
             <g className="parent-ticks select-none" pointerEvents="none">
               {parentVertices.map((v, i) => {
@@ -810,7 +822,6 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
                 const dx = sn.x - sv.x;
                 const dy = sn.y - sv.y;
                 const pxLen = Math.sqrt(dx * dx + dy * dy) || 1;
-                // Outward normal: pick the side opposite the centroid
                 const mid = { x: (sv.x + sn.x) / 2, y: (sv.y + sn.y) / 2 };
                 const sc = toScreen(cN);
                 let nx = -dy / pxLen;
@@ -824,30 +835,32 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
                   const t = k / Lm;
                   const px = sv.x + dx * t;
                   const py = sv.y + dy * t;
-                  const isMajor = k % 25 === 0;
-                  const len = isMajor ? 6 : 3;
+                  const major = isMajorK(k);
+                  const len = sw(major ? 6 : 3);
                   ticks.push(
                     <line
                       key={`t-${i}-${k}`}
                       x1={px} y1={py}
                       x2={px + nx * len} y2={py + ny * len}
                       stroke="hsl(var(--primary))"
-                      strokeWidth={0.6}
+                      strokeWidth={sw(0.6)}
                       opacity={0.45}
                     />
                   );
-                  if (isMajor && Lm >= 25) {
+                  if (major && Lm >= majorEvery) {
+                    const off = len + sw(5);
+                    const kLabel = step < 1 ? k.toFixed(1).replace('.', ',') : String(Math.round(k));
                     ticks.push(
                       <text
                         key={`tl-${i}-${k}`}
-                        x={px + nx * (len + 5)}
-                        y={py + ny * (len + 5)}
+                        x={px + nx * off}
+                        y={py + ny * off}
                         textAnchor="middle"
                         dominantBaseline="middle"
-                        fontSize={7}
+                        fontSize={fs(7)}
                         fill="hsl(var(--muted-foreground))"
                         opacity={0.55}
-                      >{k}</text>
+                      >{kLabel}</text>
                     );
                   }
                 }
@@ -856,6 +869,7 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
             </g>
           );
         })()}
+
 
         {/* Parent parcel side measurements */}
 
