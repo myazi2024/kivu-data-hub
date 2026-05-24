@@ -708,7 +708,15 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
     return getParallelEdges(start, end);
   }, [mode, lineDrawPoints, lineDrawMousePos, getParallelEdges, fromScreen]);
 
+  // Inverse-scale helpers: SVG viewBox shrinks with zoom, so constant stroke/font
+  // widths visually grow. Divide visual sizes by z (floor 1) to keep them stable
+  // and let the user make fine adjustments when zoomed in.
+  const z = Math.max(1, viewport.viewport.zoom);
+  const sw = (base: number) => base / z;
+  const fs = (base: number) => base / z;
+
   return (
+
     <div ref={containerRef} className="relative" tabIndex={-1}>
       {/* Zoom controls — placés à gauche pour ne pas chevaucher la barre d'outils flottante (à droite) */}
       <div className="absolute top-2 left-2 z-20 flex flex-col gap-1 pointer-events-auto">
