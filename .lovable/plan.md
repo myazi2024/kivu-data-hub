@@ -1,45 +1,38 @@
 ## Problème
 
-En mode "tracer une ligne" (drawLine), la coupe ne cible qu'**un seul** lot : celui qui contient le milieu du segment. Si on trace une ligne qui traverse plusieurs lots adjacents, un seul est coupé (souvent aucun si le milieu tombe sur une voie ou hors lot).
+Depuis l'ajout du batch multi-lots (`handleCutLotsAlongLine`), tracer une ligne sur la **parcelle-mère seule** (avant tout sous-lot) ne produit aucun effet : la ligne semble ignorée et aucune division n'apparaît.
 
-Deux points en cause :
-- `LotCanvas.tsx` `finishLineDraw` (l. 593-608) sélectionne `targetLot = lots.find(lot => pointInPolygon(mid, lot.vertices))` puis appelle `onCutLot(targetLot.id, …)` une seule fois.
-- `StepLotDesigner.tsx` `handleCutLot` (l. 466-525) opère sur un seul lot et fait `setLots(lots.map…)` — l'appeler en boucle ne fonctionnerait pas (closure `lots` figée).
+Cause exacte (`StepLotDesigner.tsx`, ligne 533) :
 
-## Objectif
+```ts
+if (lot.isParentBoundary || lot.vertices.length < 3) {
+  nextLots.push(lot);
+  continue;   // ← la parcelle-mère est systématiquement sautée
+}
+```
 
-Une ligne tracée d'un bord à l'autre coupe **simultanément tous les lots qu'elle traverse** (≥2 intersections avec leur périmètre), en une seule transaction.
+Avant le batch, le fallback appelait `handleCutLot` sur le lot contenant le milieu — et `handleCutLot` (l. 466) n'a aucune garde `isParentBoundary`, donc la mère était coupée sans souci. Le batch a accidentellement perdu ce comportement.
 
-## Changements
+La modification de la longueur de voie (`RoadsListPanel`) n'est **pas** en cause — elle ne touche ni `handleCutLotsAlongLine`, ni le rendu du canvas, ni la liste `lots`.
 
-### 1. `StepLotDesigner.tsx` — nouveau handler batch
+## Changement
 
-Ajouter `handleCutLotsAlongLine(cutStart, cutEnd)` qui :
-- parcourt tous les lots non-`isParentBoundary`
-- pour chaque lot, calcule les intersections de la ligne avec ses arêtes (même algo que `handleCutLot`)
-- ne garde que les lots avec ≥ 2 intersections ; construit les deux polygones enfants
-- accumule un nouveau tableau `nextLots` (remplace chaque lot coupé par 2 enfants, conserve les autres tels quels), avec `genId('lot')` et numérotation incrémentale unique (`nextLotNumber`)
-- un seul `setLots(nextLots)` à la fin + analytics `lot_cut` avec `meta.count`
-- si aucun lot n'est coupé → no-op (et idéalement un toast info, optionnel)
-- garde `handleCutLot` existant inchangé (peut être réutilisé par d'autres flows si besoin) ou le remplace par un wrapper qui appelle le batch
+### `StepLotDesigner.tsx` — `handleCutLotsAlongLine` (l. 528-594)
 
-### 2. `LotCanvas.tsx` — appeler le batch
+Retirer la garde `lot.isParentBoundary` : la parcelle-mère doit pouvoir être coupée comme n'importe quel lot. Les deux enfants produits sont déjà marqués `isParentBoundary: false` (l. 575, 584), donc la mère disparaît au profit de deux vrais lots — exactement le comportement de `handleCutLot` historique.
 
-- Ajouter une prop `onCutLotsAlongLine?: (cutStart: Point2D, cutEnd: Point2D) => void`.
-- Dans `finishLineDraw`, en mode `drawLine` :
-  - si `onCutLotsAlongLine` est fourni → l'appeler avec `path[0]` et `path[path.length-1]` (et supprimer la recherche `pointInPolygon(mid…)`).
-  - fallback sur l'ancien `onCutLot` si la nouvelle prop n'est pas branchée (rétro-compat).
-- Brancher `onCutLotsAlongLine={handleCutLotsAlongLine}` dans `StepLotDesigner` (l. ~1079).
+```ts
+if (lot.vertices.length < 3) {       // on garde uniquement la garde géométrique
+  nextLots.push(lot);
+  continue;
+}
+```
 
-### 3. Aucune modif sur
+Aucune autre modification : algo d'intersection, numérotation `nextLotNumber`, analytics `lot_cut`, fallback `onCutLot`, rendu de la ligne en cours, mode `drawRoad`, et l'éditeur de longueur de voie restent strictement inchangés.
 
-- la géométrie/algo de coupe par lot (réutilisé tel quel)
-- le mode `drawRoad` (déjà multi-lots côté `handleFinishRoadDraw`)
-- les validations / frais / styles / snap / zoom
+## Vérifications post-fix (non-régression)
 
-## Points techniques
-
-- Intersection : continuer d'utiliser `lineSegmentIntersection` (segment-segment), comme `handleCutLot`. Une ligne qui ne touche que tangentiellement un lot (< 2 intersections) est ignorée pour ce lot, ce qui est le comportement attendu.
-- Numérotation : `nextLotNumber(existing)` (utilitaire existant dans `polygonOps.ts`) appliqué de manière incrémentale au fur et à mesure que la liste grossit, pour éviter les collisions.
-- Conserver les propriétés non-géométriques du lot d'origine (zone type, etc.) sur les deux enfants via spread `...lot`.
-- Pas de changement de schéma, pas de migration.
+- Diviser la parcelle-mère seule en deux lots via "tracer une ligne" → 2 lots créés, mère remplacée.
+- Tracer une ligne traversant plusieurs sous-lots adjacents → toujours coupés en batch.
+- Tracer une voie (`drawRoad`) → comportement inchangé (passe par `handleFinishRoadDraw`).
+- Ajuster largeur ET longueur d'une voie dans le panneau → la liste `lots` n'est pas affectée.
