@@ -766,7 +766,7 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
     // Plan data
     lots, setLots: setLotsWithHistory,
     roads, setRoads, commonSpaces, setCommonSpaces,
-    servitudes, setServitudes, planElements, setPlanElements,
+    servitudes, setServitudes, boundaries, setBoundaries, planElements, setPlanElements,
     // Operations
     deleteLot, resetDesigner,
     undo, redo, canUndo: historyIndexRef.current > 0, canRedo: historyIndexRef.current < historyRef.current.length - 1,
