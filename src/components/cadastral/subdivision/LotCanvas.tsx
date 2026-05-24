@@ -1501,6 +1501,8 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
                 if (normalizedAngle >= 22.5 && normalizedAngle < 67.5) cursorStyle = 'nwse-resize';
                 else if (normalizedAngle >= 67.5 && normalizedAngle < 112.5) cursorStyle = 'ns-resize';
                 else if (normalizedAngle >= 112.5 && normalizedAngle < 157.5) cursorStyle = 'nesw-resize';
+                const isParentEdge = isEdgeOnParentBoundary(v, next);
+                if (isParentEdge) cursorStyle = 'not-allowed';
                 return (
                   <line
                     key={`edge-hit-${i}`}
@@ -1524,7 +1526,9 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
                       setEdgeContextMenu({ edge, screenPos: midScreen });
                       setContextMenuLotId(null);
                     }}
-                  />
+                  >
+                    {isParentEdge && <title>Limite de la parcelle-mère — verrouillée</title>}
+                  </line>
                 );
               })}
 
