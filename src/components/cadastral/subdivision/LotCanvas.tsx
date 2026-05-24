@@ -2083,6 +2083,55 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
           </g>
         )}
 
+
+        {/* Unified labels overlay (anti-collision + LOD + leader lines) */}
+        <g className="labels-overlay select-none" pointerEvents="none">
+          {placedLabels.map(lab => {
+            if (lab.dropped) return null;
+            const p = lab.payload || {};
+            const dxL = lab.cx - lab.anchor.x;
+            const dyL = lab.cy - lab.anchor.y;
+            const distL = Math.hypot(dxL, dyL);
+            const showLeader = lab.leadered && distL > Math.max(2, lab.height * 0.4);
+            return (
+              <g key={lab.id}>
+                {showLeader && (
+                  <>
+                    <line
+                      x1={lab.anchor.x} y1={lab.anchor.y}
+                      x2={lab.cx} y2={lab.cy}
+                      stroke="hsl(var(--muted-foreground))"
+                      strokeWidth={Math.max(0.4, lab.height * 0.04)}
+                      strokeDasharray={`${Math.max(2, lab.height * 0.3)} ${Math.max(2, lab.height * 0.2)}`}
+                      opacity={0.5}
+                    />
+                    <circle cx={lab.anchor.x} cy={lab.anchor.y}
+                      r={Math.max(0.5, lab.height * 0.08)}
+                      fill="hsl(var(--muted-foreground))" opacity={0.6} />
+                  </>
+                )}
+                {p.withBg && (
+                  <rect
+                    x={lab.cx - lab.width / 2} y={lab.cy - lab.height / 2}
+                    width={lab.width} height={lab.height}
+                    rx={lab.height * 0.2}
+                    fill="hsl(var(--background))" fillOpacity={0.85}
+                    stroke="hsl(var(--primary))" strokeOpacity={0.4}
+                    strokeWidth={Math.max(0.3, lab.height * 0.04)}
+                  />
+                )}
+                <text
+                  x={lab.cx} y={lab.cy}
+                  textAnchor="middle" dominantBaseline="middle"
+                  fontSize={p.fontSize}
+                  fontWeight={p.fontWeight}
+                  fill={p.fill}
+                >{p.text}</text>
+              </g>
+            );
+          })}
+        </g>
+
         {/* North indicator */}
         {showNorth && (
           <g transform={`translate(${CANVAS_W - 20}, ${PADDING + 15})`}>
