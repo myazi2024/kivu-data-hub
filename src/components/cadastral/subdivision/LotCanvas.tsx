@@ -775,17 +775,18 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
             points={parentVertices.map(v => { const s = toScreen(v); return `${s.x},${s.y}`; }).join(' ')}
             fill="none"
             stroke="hsl(var(--primary))"
-            strokeWidth={2}
-            strokeDasharray="6 3"
+            strokeWidth={sw(2)}
+            strokeDasharray={`${sw(6)} ${sw(3)}`}
             opacity={0.5}
           />
         ) : (
           <rect
             x={PADDING} y={PADDING}
             width={CANVAS_W - 2 * PADDING} height={CANVAS_H - 2 * PADDING}
-            fill="none" stroke="hsl(var(--primary))" strokeWidth={2} strokeDasharray="6 3" opacity={0.5}
+            fill="none" stroke="hsl(var(--primary))" strokeWidth={sw(2)} strokeDasharray={`${sw(6)} ${sw(3)}`} opacity={0.5}
           />
         )}
+
 
         {/* Parent parcel side graduations — discreet 5 m ticks (25 m majors) */}
         {showDimensions && parentVertices && parentVertices.length >= 3 && (() => {
