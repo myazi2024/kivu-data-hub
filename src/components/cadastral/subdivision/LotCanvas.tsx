@@ -413,23 +413,53 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
     }
   }, [readOnly, viewport, mode, lineDrawMultiMode, lineDrawPoints, getSvgPos, fromScreen, drag]);
 
+  // True if a point lies on the parent parcel perimeter (tolerant).
+  const isOnParentBoundary = useCallback((p: Point2D): boolean => {
+    if (!parentVertices || parentVertices.length < 3) return false;
+    return isPointOnPolygonEdge(p, parentVertices, 0.008);
+  }, [parentVertices]);
+
+  // True if BOTH endpoints of an edge are on the parent perimeter — the edge
+  // is considered locked (changes would deform the mother parcel).
+  const isEdgeOnParentBoundary = useCallback((p1: Point2D, p2: Point2D): boolean => {
+    return isOnParentBoundary(p1) && isOnParentBoundary(p2);
+  }, [isOnParentBoundary]);
+
   const handleVertexMouseDown = useCallback((lotId: string, vertexIdx: number, e: React.MouseEvent) => {
     if (readOnly || mode !== 'select') return;
     const lot = lots.find(l => l.id === lotId);
     if (lot?.isParentBoundary) return;
+    // Block vertices that sit on the parent perimeter — moving them would
+    // deform the mother parcel.
+    if (lot && isOnParentBoundary(lot.vertices[vertexIdx])) return;
     e.stopPropagation();
     drag.startVertexDrag(lotId, vertexIdx);
-  }, [readOnly, mode, drag, lots]);
+  }, [readOnly, mode, drag, lots, isOnParentBoundary]);
 
   const handleEdgeMouseDown = useCallback((lotId: string, edgeIdx: number, e: React.MouseEvent) => {
     if (readOnly || mode !== 'select') return;
     const lot = lots.find(l => l.id === lotId);
-    if (lot?.isParentBoundary) return;
+    if (!lot || lot.isParentBoundary) return;
+    const p1 = lot.vertices[edgeIdx];
+    const p2 = lot.vertices[(edgeIdx + 1) % lot.vertices.length];
+    // Lock any edge that coincides with the parent parcel perimeter.
+    if (isEdgeOnParentBoundary(p1, p2)) return;
     e.stopPropagation();
     const pos = getSvgPos(e);
     const normalized = fromScreen(pos.x, pos.y);
+    // If shared with another lot, drag both lots together.
+    const shared = sharedEdges.find(se =>
+      (se.lotId1 === lotId && se.edgeIdx1 === edgeIdx) ||
+      (se.lotId2 === lotId && se.edgeIdx2 === edgeIdx)
+    );
+    if (shared && shared.lotId2 !== undefined && shared.edgeIdx2 !== undefined) {
+      const otherLotId = shared.lotId1 === lotId ? shared.lotId2 : shared.lotId1;
+      const otherEdgeIdx = shared.lotId1 === lotId ? shared.edgeIdx2 : shared.edgeIdx1;
+      drag.startSharedEdgeDrag(lotId, edgeIdx, otherLotId, otherEdgeIdx, normalized);
+      return;
+    }
     drag.startEdgeDrag(lotId, edgeIdx, normalized);
-  }, [readOnly, mode, drag, getSvgPos, fromScreen, lots]);
+  }, [readOnly, mode, drag, getSvgPos, fromScreen, lots, sharedEdges, isEdgeOnParentBoundary]);
 
   const handlePolygonMouseDown = useCallback((lotId: string, e: React.MouseEvent) => {
     if (readOnly || mode !== 'select') return;
