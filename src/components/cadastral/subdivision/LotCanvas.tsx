@@ -430,9 +430,14 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
     if (readOnly || mode !== 'select') return;
     const lot = lots.find(l => l.id === lotId);
     if (lot?.isParentBoundary) return;
-    // Block vertices that sit on the parent perimeter — moving them would
-    // deform the mother parcel.
-    if (lot && isOnParentBoundary(lot.vertices[vertexIdx])) return;
+    // Vertices that sit on the parent perimeter use a constrained drag that
+    // slides them along the boundary (and propagates to every lot sharing
+    // that sommet).
+    if (lot && isOnParentBoundary(lot.vertices[vertexIdx])) {
+      e.stopPropagation();
+      drag.startBoundaryVertexDrag(lotId, vertexIdx);
+      return;
+    }
     e.stopPropagation();
     drag.startVertexDrag(lotId, vertexIdx);
   }, [readOnly, mode, drag, lots, isOnParentBoundary]);
