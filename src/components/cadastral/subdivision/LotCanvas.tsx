@@ -1666,25 +1666,9 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
                 );
               })}
 
-              {/* Dimensions on edges */}
-              {showDimensions && !lot.isParentBoundary && lot.vertices.map((v, i) => {
-                const next = lot.vertices[(i + 1) % lot.vertices.length];
-                const sv = toScreen(v);
-                const sn = toScreen(next);
-                const mx = (sv.x + sn.x) / 2;
-                const my = (sv.y + sn.y) / 2;
-                const label = getDimensionLabel(v, next);
-                const dx = sn.y - sv.y;
-                const dy = sv.x - sn.x;
-                const len = Math.sqrt(dx * dx + dy * dy) || 1;
-                const offsetX = (dx / len) * 10;
-                const offsetY = (dy / len) * 10;
-                return (
-                  <text key={i} x={mx + offsetX} y={my + offsetY}
-                    textAnchor="middle" dominantBaseline="middle" fontSize={7} fill="#999"
-                    className="select-none pointer-events-none">{label}</text>
-                );
-              })}
+              {/* Lot edge dimensions — rendered via placedLabels overlay (anti-collision + LOD). */}
+
+
 
               {/* Vertices: locked grey squares for parent-boundary lots/vertices, draggable circles otherwise */}
               {!readOnly && mode === 'select' && isSelected && screenVertices.map((sv, i) => {
