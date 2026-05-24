@@ -8,7 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Trash2, Route, Droplets, Sun, Construction } from 'lucide-react';
-import { SubdivisionRoad } from '../../types';
+import { SubdivisionRoad, Point2D } from '../../types';
+import { edgeLengthM, type MetricFrame } from '../../utils/metrics';
 import {
   DRAINAGE_CANAL_MATERIAL_LABELS,
   DRAINAGE_CANAL_TYPE_LABELS,
