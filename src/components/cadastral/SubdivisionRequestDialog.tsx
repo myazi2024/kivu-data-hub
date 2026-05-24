@@ -276,6 +276,7 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
                 canRedo={form.canRedo}
                 onUndo={form.undo}
                 onRedo={form.redo}
+                onResetDesigner={form.resetDesigner}
                 zoningRule={form.zoningCompliance.rule}
               />
             )}

@@ -489,6 +489,20 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
       setLots(JSON.parse(JSON.stringify(historyRef.current[historyIndexRef.current])));
     }
   }, []);
+
+  // Reset the lot designer to a blank state — the useEffect will recreate the locked parent lot.
+  const resetDesigner = useCallback(() => {
+    historyRef.current = [];
+    historyIndexRef.current = -1;
+    skipHistoryRef.current = false;
+    setHistoryVersion(v => v + 1);
+    setLots([]);
+    setRoads([]);
+    setCommonSpaces([]);
+    setServitudes([]);
+  }, []);
+
+  
   
   // Update lot — geometry of the parent-boundary lot is locked
   const updateLot = useCallback((lotId: string, updates: Partial<SubdivisionLot>) => {
@@ -749,7 +763,7 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
     roads, setRoads, commonSpaces, setCommonSpaces,
     servitudes, setServitudes, planElements, setPlanElements,
     // Operations
-    deleteLot,
+    deleteLot, resetDesigner,
     undo, redo, canUndo: historyIndexRef.current > 0, canRedo: historyIndexRef.current < historyRef.current.length - 1,
     // Validation
     validation,
