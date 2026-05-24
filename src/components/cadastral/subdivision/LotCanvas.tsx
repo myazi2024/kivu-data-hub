@@ -1552,15 +1552,16 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
                 );
               })}
 
-              {/* Vertices: locked grey squares for parent-boundary lots, draggable circles otherwise */}
-              {!readOnly && mode === 'select' && isSelected && screenVertices.map((sv, i) => (
-                lot.isParentBoundary ? (
+              {/* Vertices: locked grey squares for parent-boundary lots/vertices, draggable circles otherwise */}
+              {!readOnly && mode === 'select' && isSelected && screenVertices.map((sv, i) => {
+                const lockedVertex = lot.isParentBoundary || isOnParentBoundary(lot.vertices[i]);
+                return lockedVertex ? (
                   <rect
                     key={i} x={sv.x - 3.5} y={sv.y - 3.5} width={7} height={7}
                     fill="hsl(var(--muted))" stroke="hsl(var(--muted-foreground))" strokeWidth={1.5}
                     style={{ cursor: 'not-allowed' }}
                   >
-                    <title>Forme verrouillée — Diviser le lot pour éditer</title>
+                    <title>Sommet verrouillé — appartient à la parcelle-mère</title>
                   </rect>
                 ) : (
                   <circle
@@ -1569,8 +1570,8 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
                     className="cursor-grab active:cursor-grabbing touch-none"
                     onPointerDown={e => handleVertexMouseDown(lot.id, i, e)}
                   />
-                )
-              ))}
+                );
+              })}
 
               {/* Rotation ring (skipped for locked parent-boundary lot) */}
               {!readOnly && mode === 'select' && isSelected && !lot.isParentBoundary && (() => {
