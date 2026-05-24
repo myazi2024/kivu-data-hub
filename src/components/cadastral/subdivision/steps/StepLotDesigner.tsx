@@ -1029,7 +1029,7 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
               }}
               className="rounded-xl text-sm bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Réinitialiser
+              Oui, tout réinitialiser
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
