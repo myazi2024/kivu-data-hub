@@ -882,37 +882,39 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
               const mx = (sv.x + sn.x) / 2;
               const my = (sv.y + sn.y) / 2;
 
-              // Toujours utiliser la longueur géométrique GPS (edgeLengthM) pour
-              // rester cohérent avec la surface, le périmètre et les arêtes des lots.
-              // parentSides[i].length (saisie manuelle) peut diverger et causerait
-              // un double étiquetage incohérent.
-              const label = formatMeters(edgeLengthM(v, next, metricFrame));
+              const Lm = edgeLengthM(v, next, metricFrame);
+              const label = z >= 2
+                ? `${Lm.toFixed(1).replace('.', ',')} m`
+                : formatMeters(Lm);
 
               const orientationLabel = parentSides?.[i]?.orientation || '';
               const edgeDx = sn.y - sv.y;
               const edgeDy = sv.x - sn.x;
               const edgeLen = Math.sqrt(edgeDx * edgeDx + edgeDy * edgeDy) || 1;
-              const offsetX = (edgeDx / edgeLen) * 16;
-              const offsetY = (edgeDy / edgeLen) * 16;
+              const offsetX = (edgeDx / edgeLen) * sw(16);
+              const offsetY = (edgeDy / edgeLen) * sw(16);
+              const rectW = sw(44);
+              const rectH = sw(orientationLabel ? 22 : 14);
 
               return (
                 <g key={`parent-dim-${i}`}>
                   <rect
-                    x={mx + offsetX - 22} y={my + offsetY - 8}
-                    width={44} height={orientationLabel ? 22 : 14} rx={3}
+                    x={mx + offsetX - rectW / 2} y={my + offsetY - sw(8)}
+                    width={rectW} height={rectH} rx={sw(3)}
                     fill="hsl(var(--background))" fillOpacity={0.85}
-                    stroke="hsl(var(--primary))" strokeWidth={0.5} strokeOpacity={0.4}
+                    stroke="hsl(var(--primary))" strokeWidth={sw(0.5)} strokeOpacity={0.4}
                   />
-                  <text x={mx + offsetX} y={my + offsetY + (orientationLabel ? -1 : 2)}
-                    textAnchor="middle" dominantBaseline="middle" fontSize={9} fontWeight="bold"
+                  <text x={mx + offsetX} y={my + offsetY + (orientationLabel ? sw(-1) : sw(2))}
+                    textAnchor="middle" dominantBaseline="middle" fontSize={fs(9)} fontWeight="bold"
                     fill="hsl(var(--primary))" className="select-none pointer-events-none">{label}</text>
                   {orientationLabel && (
-                    <text x={mx + offsetX} y={my + offsetY + 10}
-                      textAnchor="middle" dominantBaseline="middle" fontSize={7}
+                    <text x={mx + offsetX} y={my + offsetY + sw(10)}
+                      textAnchor="middle" dominantBaseline="middle" fontSize={fs(7)}
                       fill="hsl(var(--muted-foreground))" className="select-none pointer-events-none">{orientationLabel}</text>
                   )}
                 </g>
               );
+
             })}
           </g>
         )}
