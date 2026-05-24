@@ -38,6 +38,8 @@ interface Props {
   hasMultipleLots: boolean;
   /** Active zoning rule (used to require/validate per-road infrastructures). */
   zoningRule?: ZoningRule | null;
+  /** Metric frame to compute road centerline length in meters. */
+  metricFrame?: MetricFrame;
 }
 
 const formatWidth = (n: number) => Math.round(n * 10) / 10;
