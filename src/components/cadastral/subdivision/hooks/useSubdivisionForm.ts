@@ -226,6 +226,7 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
           setRoads(draft.roads || []);
           setCommonSpaces(draft.commonSpaces || []);
           setServitudes(draft.servitudes || []);
+          setBoundaries(draft.boundaries || []);
           setPurpose(draft.purpose || '');
           if (draft.planElements) setPlanElements(draft.planElements);
           // NOTE: legacy `selectedInfrastructures` field ignored — désormais dérivé des voies.
