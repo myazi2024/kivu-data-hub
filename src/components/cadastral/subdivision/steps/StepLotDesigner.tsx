@@ -984,12 +984,31 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
       </div>
 
       <AlertDialog open={resetDialogOpen} onOpenChange={setResetDialogOpen}>
-        <AlertDialogContent className="rounded-2xl max-w-[420px]">
+        <AlertDialogContent className="rounded-2xl max-w-[440px]">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-base">Réinitialiser le lotissement ?</AlertDialogTitle>
-            <AlertDialogDescription className="text-sm">
-              Tous les lots dérivés, voiries, espaces communs et servitudes seront supprimés.
-              La parcelle-mère sera restaurée à son état initial. Cette action est irréversible.
+            <div className="mx-auto sm:mx-0 flex h-11 w-11 items-center justify-center rounded-full bg-destructive/10 ring-1 ring-destructive/20">
+              <AlertTriangle className="h-5 w-5 text-destructive" aria-hidden="true" />
+            </div>
+            <AlertDialogTitle className="text-base">
+              Réinitialiser le lotissement de la parcelle-mère ?
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="text-sm text-muted-foreground space-y-2">
+                <p>
+                  Cette action va <strong className="text-foreground">effacer toutes les modifications</strong> apportées
+                  à la parcelle-mère :
+                </p>
+                <ul className="list-disc pl-5 space-y-0.5">
+                  <li>{lots.filter(l => !l.isParentBoundary).length} lot(s) dérivé(s)</li>
+                  <li>{roads.length} voirie(s)</li>
+                  <li>{commonSpaces.length} espace(s) commun(s)</li>
+                  <li>{servitudes.length} servitude(s)</li>
+                </ul>
+                <p className="rounded-md border border-destructive/30 bg-destructive/5 px-2.5 py-2 text-destructive font-medium">
+                  ⚠ Cette action est irréversible. L'historique d'annulation sera également vidé.
+                </p>
+                <p>Souhaitez-vous confirmer la réinitialisation ?</p>
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
