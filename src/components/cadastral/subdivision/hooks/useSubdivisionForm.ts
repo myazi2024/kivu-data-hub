@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { User } from '@supabase/supabase-js';
 import {
   SubdivisionLot, SubdivisionRoad, SubdivisionCommonSpace, SubdivisionServitude,
+  SubdivisionBoundary,
   PlanElements, DEFAULT_PLAN_ELEMENTS, ParentParcelInfo, RequesterInfo,
   SubdivisionStep, SubdivisionPlanData, Point2D, FeeBreakdown, SubdivisionDocuments
 } from '../types';
@@ -167,6 +168,7 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
 
   const [commonSpaces, setCommonSpaces] = useState<SubdivisionCommonSpace[]>([]);
   const [servitudes, setServitudes] = useState<SubdivisionServitude[]>([]);
+  const [boundaries, setBoundaries] = useState<SubdivisionBoundary[]>([]);
   const [planElements, setPlanElements] = useState<PlanElements>(DEFAULT_PLAN_ELEMENTS);
   
   // Purpose
@@ -224,6 +226,7 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
           setRoads(draft.roads || []);
           setCommonSpaces(draft.commonSpaces || []);
           setServitudes(draft.servitudes || []);
+          setBoundaries(draft.boundaries || []);
           setPurpose(draft.purpose || '');
           if (draft.planElements) setPlanElements(draft.planElements);
           // NOTE: legacy `selectedInfrastructures` field ignored — désormais dérivé des voies.
@@ -240,13 +243,13 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
     if (lots.length === 0 && roads.length === 0) return;
     try {
       localStorage.setItem(draftKey, JSON.stringify({
-        lots, roads, commonSpaces, servitudes, purpose, planElements,
+        lots, roads, commonSpaces, servitudes, boundaries, purpose, planElements,
         savedAt: new Date().toISOString(),
       }));
     } catch {
       // storage full — ignore
     }
-  }, [lots, roads, commonSpaces, servitudes, purpose, planElements, draftKey]);
+  }, [lots, roads, commonSpaces, servitudes, boundaries, purpose, planElements, draftKey]);
 
   
   const clearDraft = useCallback(() => {
@@ -500,6 +503,7 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
     setRoads([]);
     setCommonSpaces([]);
     setServitudes([]);
+    setBoundaries([]);
   }, []);
 
   
@@ -692,6 +696,7 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
           roads,
           commonSpaces,
           servitudes,
+          boundaries,
           planElements,
           purpose,
           documents,
@@ -742,7 +747,7 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
     } finally {
       setSubmitting(false);
     }
-  }, [parentParcel, parcelData, requester, lots, roads, commonSpaces, servitudes, planElements, purpose, parcelNumber, parcelId, documents, clearDraft, requiredDocKeys]);
+  }, [parentParcel, parcelData, requester, lots, roads, commonSpaces, servitudes, boundaries, planElements, purpose, parcelNumber, parcelId, documents, clearDraft, requiredDocKeys]);
 
   const markSubmittedFallback = useCallback(() => setSubmitted(true), []);
 
@@ -761,7 +766,7 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
     // Plan data
     lots, setLots: setLotsWithHistory,
     roads, setRoads, commonSpaces, setCommonSpaces,
-    servitudes, setServitudes, planElements, setPlanElements,
+    servitudes, setServitudes, boundaries, setBoundaries, planElements, setPlanElements,
     // Operations
     deleteLot, resetDesigner,
     undo, redo, canUndo: historyIndexRef.current > 0, canRedo: historyIndexRef.current < historyRef.current.length - 1,
