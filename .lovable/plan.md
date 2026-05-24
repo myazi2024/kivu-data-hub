@@ -1,60 +1,45 @@
 ## Objectif
 
-Permettre, dans l'onglet "Lot" du SubdivisionRequestDialog, de saisir et faire glisser les sommets de lots situés sur le périmètre de la parcelle-mère, contraints à rester sur ce périmètre. Tous les lots partageant ce sommet suivent en temps réel ; aucune validation ne bloque le drag (les alertes s'affichent après).
+Rendre tous les déplacements interactifs sur la parcelle-mère (drags de sommets, d'arêtes, d'arêtes partagées, de polygones entiers, glissement contraint sur le périmètre, ainsi que le pan de la vue) naturels à n'importe quel niveau de zoom : 1 px souris ≈ 1 px écran perçu, quel que soit le zoom. Le snap (grille + sommets) devient plus fin proportionnellement au zoom.
 
 ## Comportement attendu
 
-- Au survol d'un sommet d'un lot qui se trouve sur le bord de la parcelle-mère, le curseur passe en mode "glissement contraint" (curseur `grab` + halo visuel sur le sommet).
-- Mousedown : on capture le sommet et l'arête du périmètre sur laquelle il repose (segment `[Pk, Pk+1]` du `parentVertices`).
-- Mousemove : la position souris est projetée sur le périmètre entier (segment courant en priorité, puis segments voisins si le curseur dépasse `Pk` ou `Pk+1`). Le sommet glisse librement le long du périmètre, peut franchir un sommet de la parcelle-mère et continuer sur l'arête suivante.
-- Tous les lots qui partagent ce sommet (même coordonnée, tolérance epsilon ≈ 1e-4 en normalisé) voient ce sommet mis à jour ensemble, en une seule transaction d'update — la jonction reste cohérente, leurs surfaces et périmètres sont recalculés via `computeMetrics`.
-- Mouseup : commit final, l'historique undo/redo capture l'état.
-- Aucun blocage live (auto-intersection, surface minimale, enclavement). Les alertes existantes (`validateSubdivisionFull`) restent et s'affichent dans le panneau de validation après le drop.
-
-## Détection "sommet sur périmètre"
-
-Un sommet de lot `v` est éligible si `isPointOnPolygonEdge(v, parentVertices, eps)` est vrai. Le segment d'attache est l'arête `[Pk, Pk+1]` la plus proche (distance point-segment minimale).
-
-## Projection sur le périmètre
-
-Nouvelle utilitaire `projectOnPolyline(point, ring, startEdgeIdx)` dans `utils/geometry.ts` :
-1. Projeter `point` sur l'arête `startEdgeIdx` → si la projection tombe à l'intérieur du segment (param t ∈ [0,1]), on garde.
-2. Sinon, on étend la recherche aux arêtes voisines (avant/après) puis à tout l'anneau, et on retient la projection à distance euclidienne minimale.
-3. Retourne `{ point: Point2D, edgeIdx: number, t: number }`.
-
-Cela permet de "tourner" autour d'un coin de la parcelle-mère sans décrocher.
-
-## Propagation aux lots voisins
-
-Nouveau helper dans `useCanvasDrag.ts` : `startBoundaryVertexDrag(lotId, vertexIdx)` :
-- Trouve tous les `(lotId, vertexIdx)` dont la coordonnée normalisée correspond à celle du sommet capturé (epsilon).
-- Stocke la liste dans `dragState.boundaryTwins: { lotId, vertexIdx }[]`.
-- Stocke `dragState.startEdgeIdx` (arête de départ sur le périmètre).
-
-Dans `moveDrag`, branche `'boundary-vertex'` :
-- Projeter la souris via `projectOnPolyline`.
-- Pour chaque twin, cloner `vertices`, remplacer `vertices[vertexIdx]` par la position projetée, recalculer métriques, et appeler `onUpdateLot`.
-
-## Intégration dans `LotCanvas.tsx`
-
-- Dans le rendu des handles de sommets (cercles draggables existants), détecter via une fonction `isOnParentBoundary(v)` les sommets éligibles et appliquer un style distinct (anneau pointillé `stroke-primary`, curseur `grab`).
-- Brancher `onMouseDown` sur ces sommets vers `startBoundaryVertexDrag` au lieu de `startVertexDrag` standard.
-- Aucun changement aux autres types de drag (edge/shared-edge/polygon/vertex interne).
+- **Au zoom 1×** : comportement actuel inchangé.
+- **Au zoom 2×** : un déplacement souris de 100 px à l'écran déplace le sommet/lot de la même distance visuelle qu'au zoom 1× (donc dans le repère normalisé, le déplacement réel est ÷2).
+- **Pan** : déjà correct car la conversion `clientX→viewBox` utilise déjà `/ viewport.zoom`. À auditer pour confirmer, ajuster si nécessaire.
+- **Snap** : `SNAP_TOLERANCE` effectif = `0.015 / zoom`. À zoom 4×, le snap devient quasi imperceptible sauf en collant vraiment au sommet → ajustement millimétrique facile.
 
 ## Détails techniques
 
-Fichiers modifiés :
-- `src/components/cadastral/subdivision/utils/geometry.ts` — ajouter `projectPointOnSegment` (si absent) et `projectOnPolyline`.
-- `src/components/cadastral/subdivision/hooks/useCanvasDrag.ts` — nouveau type `'boundary-vertex'`, `startBoundaryVertexDrag`, branche dans `moveDrag` avec projection + propagation aux twins ; signature étendue pour recevoir `parentVertices`.
-- `src/components/cadastral/subdivision/LotCanvas.tsx` — calcul mémoïsé des sommets-sur-bord, style visuel distinct, routage du mousedown, passage de `parentVertices` au hook.
+### Loi d'échelle retenue : `1 / zoom` (inversement proportionnel)
 
-Garanties :
-- Aucune écriture serveur, aucun changement de modèle de données.
-- `computeMetrics` continue d'utiliser `polygonAreaSqmRelative` (cohérence somme = parent).
-- Epsilon de matching aligné avec l'existant (`polygonOps.ts` ≈ 1e-4).
-- Pas de validation live : l'utilisateur garde la main, les alertes apparaissent dans le panneau après mouseup comme aujourd'hui.
+C'est la loi naturelle : la souris se déplace dans l'espace écran, on la convertit dans l'espace normalisé du SVG. Le facteur exact est déjà `(canvasW / rect.width) / zoom`. Aujourd'hui la conversion `clientX → normalized` est faite dans `LotCanvas.tsx` au niveau du `onMouseMove` du SVG ; il faut confirmer qu'elle prend bien en compte `viewport.zoom` et `viewport.panX/Y`. Si non, c'est là que se situe le bug racine et la correction est de diviser par `zoom` à la source.
 
-Hors scope :
-- Snap automatique au bord pour les sommets internes (l'utilisateur a choisi "Uniquement sommets de lots sur la limite").
-- Validations bloquantes pendant le drag.
-- Modification des arêtes internes ou de la géométrie de la parcelle-mère.
+### Fichiers à modifier
+
+1. **`src/components/cadastral/subdivision/LotCanvas.tsx`**
+   - Dans la conversion `clientX/clientY → normalized` (mousemove handler), s'assurer que :
+     ```
+     normX = ((clientX - rect.left) * canvasW / rect.width / zoom - panX) / canvasW
+     normY = ((clientY - rect.top)  * canvasH / rect.height / zoom - panY) / canvasH
+     ```
+   - Cela rend automatiquement tous les drags (vertex, edge, shared-edge, polygon, boundary-vertex) cohérents avec le zoom puisqu'ils consomment tous `normalized` dans `moveDrag`.
+
+2. **`src/components/cadastral/subdivision/hooks/useCanvasDrag.ts`**
+   - Accepter un `zoom` optionnel (ou le SNAP_TOLERANCE effectif) en paramètre du hook.
+   - Dans `snapToGrid`, remplacer le `SNAP_TOLERANCE` constant par `SNAP_TOLERANCE / Math.max(1, zoom)` : le snap se resserre quand on zoome, donc plus de précision fine à zoom élevé sans bloquer le déplacement.
+
+3. **`src/components/cadastral/subdivision/hooks/useCanvasViewport.ts`**
+   - Le pan utilise déjà `* scaleX / viewport.zoom` → correct, à laisser tel quel. Vérification seulement.
+
+### Hors périmètre
+- Pas de modificateur clavier (Shift/Alt) pour précision fine.
+- Pas de changement sur les seuils de visibilité de labels ou autre rendu lié au zoom.
+- Pas de changement de la loi de zoom elle-même (toujours 0.9/1.1 par tick wheel, bornes 0.5×–4×).
+
+## Validation
+
+- Au zoom 4× : déplacer un sommet de boundary suit la souris pixel-à-pixel à l'écran (pas 4× trop vite).
+- Au zoom 4× : pan reste fluide et 1:1.
+- Au zoom 4× : snap ne "happe" plus de loin, seulement quand on est très près d'une cible.
+- Au zoom 1× : comportement identique à aujourd'hui.
