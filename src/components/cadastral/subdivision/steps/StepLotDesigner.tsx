@@ -56,6 +56,7 @@ interface StepLotDesignerProps {
   canRedo: boolean;
   onUndo: () => void;
   onRedo: () => void;
+  onResetDesigner?: () => void;
   zoningRule?: import('@/hooks/useZoningRules').ZoningRule | null;
 }
 
