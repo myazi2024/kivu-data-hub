@@ -1675,18 +1675,45 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
 
 
 
-              {/* Vertices: locked grey squares for parent-boundary lots/vertices, draggable circles otherwise */}
+              {/* Vertices: locked grey squares for the parent boundary lot,
+                  draggable boundary-handles (dotted halo) for lot vertices
+                  sitting on the parent perimeter, plain draggable circles
+                  otherwise. */}
               {!readOnly && mode === 'select' && isSelected && screenVertices.map((sv, i) => {
-                const lockedVertex = lot.isParentBoundary || isOnParentBoundary(lot.vertices[i]);
-                return lockedVertex ? (
-                  <rect
-                    key={i} x={sv.x - 3.5} y={sv.y - 3.5} width={7} height={7}
-                    fill="hsl(var(--muted))" stroke="hsl(var(--muted-foreground))" strokeWidth={1.5}
-                    style={{ cursor: 'not-allowed' }}
-                  >
-                    <title>Sommet verrouillé — appartient à la parcelle-mère</title>
-                  </rect>
-                ) : (
+                if (lot.isParentBoundary) {
+                  return (
+                    <rect
+                      key={i} x={sv.x - 3.5} y={sv.y - 3.5} width={7} height={7}
+                      fill="hsl(var(--muted))" stroke="hsl(var(--muted-foreground))" strokeWidth={1.5}
+                      style={{ cursor: 'not-allowed' }}
+                    >
+                      <title>Sommet verrouillé — appartient à la parcelle-mère</title>
+                    </rect>
+                  );
+                }
+                const onBoundary = isOnParentBoundary(lot.vertices[i]);
+                if (onBoundary) {
+                  return (
+                    <g key={i}>
+                      {/* Dashed halo to signal "glissement contraint sur le périmètre" */}
+                      <circle
+                        cx={sv.x} cy={sv.y} r={10}
+                        fill="none" stroke="hsl(var(--primary))" strokeWidth={1.2}
+                        strokeDasharray="3 2" opacity={0.7}
+                        className="pointer-events-none"
+                      />
+                      <circle
+                        cx={sv.x} cy={sv.y} r={7}
+                        fill="hsl(var(--primary) / 0.15)" stroke="hsl(var(--primary))" strokeWidth={2}
+                        className="cursor-grab active:cursor-grabbing touch-none"
+                        onPointerDown={e => handleVertexMouseDown(lot.id, i, e)}
+                      >
+                        <title>Sommet sur la limite — glisser le long du périmètre de la parcelle-mère</title>
+                      </circle>
+                    </g>
+                  );
+                }
+                return (
                   <circle
                     key={i} cx={sv.x} cy={sv.y} r={7}
                     fill="white" stroke="hsl(var(--primary))" strokeWidth={2}
