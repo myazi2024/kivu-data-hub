@@ -1146,6 +1146,7 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
                 onSplitLot={handleSplitLot}
                 onMergeLots={handleMergeLots}
                 onCutLot={handleCutLot}
+                onCutLotsAlongLine={handleCutLotsAlongLine}
                 onFinishRoadDraw={handleFinishRoadDraw}
                 onConvertEdgeToRoad={handleConvertEdgeToRoad}
                 roadPresetWidth={roadPresetWidth}
