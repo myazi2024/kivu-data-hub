@@ -860,6 +860,203 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
     toScreen,
   ]);
 
+  // Unified label placement (anti-collision + LOD + leader-line).
+  // Replaces individual <text> blocks for parent edges, lot info and lot
+  // edge dimensions so they never overlap, with values revealed
+  // progressively as zoom increases (best-practice LOD thresholds).
+  const placedLabels = useMemo(() => {
+    if (!lots.length && (!parentVertices || parentVertices.length < 3)) return [];
+    const zz = Math.max(1, viewport.viewport.zoom);
+    const fs2 = (b: number) => b / zz;
+    const sw2 = (b: number) => b / zz;
+
+    const showLotEdge = zz >= 1.5;
+    const showParentOrient = zz >= 1.5;
+    const showLotAreaLOD = zz >= 1;
+    const showLotOwnerLOD = zz >= 2;
+
+    const items: LabelBox[] = [];
+
+    // ---- Parent edges (length + orientation) ----
+    if (parentVertices && parentVertices.length >= 3) {
+      const cN = polygonCentroid(parentVertices);
+      const sc = toScreen(cN);
+      for (let i = 0; i < parentVertices.length; i++) {
+        const v = parentVertices[i];
+        const next = parentVertices[(i + 1) % parentVertices.length];
+        const sv = toScreen(v);
+        const sn = toScreen(next);
+        const mx = (sv.x + sn.x) / 2;
+        const my = (sv.y + sn.y) / 2;
+        const Lm = edgeLengthM(v, next, metricFrame);
+        const text = zz >= 2 ? `${Lm.toFixed(1).replace('.', ',')} m` : formatMeters(Lm);
+        const dx = sn.x - sv.x;
+        const dy = sn.y - sv.y;
+        const len = Math.hypot(dx, dy) || 1;
+        let nx = -dy / len;
+        let ny = dx / len;
+        if ((mx + nx - sc.x) ** 2 + (my + ny - sc.y) ** 2 <
+            (mx - sc.x) ** 2 + (my - sc.y) ** 2) {
+          nx = -nx; ny = -ny;
+        }
+        const off = sw2(14);
+        const fontSize = fs2(9);
+        items.push({
+          id: `pe-${i}`,
+          priority: 75,
+          anchor: { x: mx, y: my },
+          cx: mx + nx * off,
+          cy: my + ny * off,
+          width: estimateTextWidth(text, fontSize) + sw2(8),
+          height: fontSize * 1.6,
+          payload: { kind: 'parentEdge', text, fontSize, fill: 'hsl(var(--primary))', fontWeight: 700, withBg: true },
+        });
+
+        const orientation = parentSides?.[i]?.orientation || '';
+        if (showParentOrient && orientation) {
+          const off2 = sw2(28);
+          const ofs = fs2(7);
+          items.push({
+            id: `po-${i}`,
+            priority: 40,
+            anchor: { x: mx, y: my },
+            cx: mx + nx * off2,
+            cy: my + ny * off2,
+            width: estimateTextWidth(orientation, ofs) + sw2(4),
+            height: ofs * 1.3,
+            payload: { kind: 'parentOrient', text: orientation, fontSize: ofs, fill: 'hsl(var(--muted-foreground))' },
+          });
+        }
+      }
+    }
+
+    // ---- Lots (number / area / owner / edge dims) ----
+    for (const lot of lots) {
+      if (!lot.vertices?.length) continue;
+      const sv = lot.vertices.map(v => toScreen(v));
+      const cx = sv.reduce((s, p) => s + p.x, 0) / sv.length;
+      const cy = sv.reduce((s, p) => s + p.y, 0) / sv.length;
+      const minX = Math.min(...sv.map(p => p.x));
+      const maxX = Math.max(...sv.map(p => p.x));
+      const minY = Math.min(...sv.map(p => p.y));
+      const maxY = Math.max(...sv.map(p => p.y));
+      const w = maxX - minX;
+      const h = maxY - minY;
+      // Lot too small to host its labels — push them above the lot AABB
+      // (the solver may shift further but will keep the leader line).
+      const tooSmall = w < sw2(60) || h < sw2(28);
+      const baseCx = tooSmall ? (minX + maxX) / 2 : cx;
+      const baseCy = tooSmall ? minY - sw2(16) : cy;
+      const color = lot.color || LOT_COLORS[lot.intendedUse];
+
+      if (showLotNumbers) {
+        const fontSize = fs2(14);
+        const text = String(lot.lotNumber);
+        const yPos = (showAreas && showLotAreaLOD) ? baseCy - fs2(6) : baseCy;
+        items.push({
+          id: `ln-${lot.id}`,
+          priority: 100,
+          anchor: { x: cx, y: cy },
+          cx: baseCx, cy: yPos,
+          width: estimateTextWidth(text, fontSize),
+          height: fontSize * 1.2,
+          payload: { kind: 'lotNumber', text, fontSize, fill: color, fontWeight: 'bold' },
+        });
+      }
+      if (showAreas && showLotAreaLOD) {
+        const fontSize = fs2(9);
+        const text = formatSqm(lot.areaSqm);
+        const yPos = baseCy + (showLotNumbers ? fs2(10) : 0);
+        items.push({
+          id: `la-${lot.id}`,
+          priority: 80,
+          anchor: { x: cx, y: cy },
+          cx: baseCx, cy: yPos,
+          width: estimateTextWidth(text, fontSize),
+          height: fontSize * 1.2,
+          payload: { kind: 'lotArea', text, fontSize, fill: 'hsl(var(--muted-foreground))' },
+        });
+      }
+      if (showOwnerNames && showLotOwnerLOD && lot.ownerName) {
+        const fontSize = fs2(7);
+        const text = lot.ownerName;
+        items.push({
+          id: `lo-${lot.id}`,
+          priority: 25,
+          anchor: { x: cx, y: cy },
+          cx: baseCx, cy: baseCy + fs2(22),
+          width: estimateTextWidth(text, fontSize),
+          height: fontSize * 1.2,
+          payload: { kind: 'lotOwner', text, fontSize, fill: 'hsl(var(--muted-foreground))' },
+        });
+      }
+
+      if (showDimensions && showLotEdge && !lot.isParentBoundary) {
+        for (let i = 0; i < lot.vertices.length; i++) {
+          const a = sv[i];
+          const b = sv[(i + 1) % sv.length];
+          const v = lot.vertices[i];
+          const next = lot.vertices[(i + 1) % lot.vertices.length];
+          const mx = (a.x + b.x) / 2;
+          const my = (a.y + b.y) / 2;
+          const Lm = edgeLengthM(v, next, metricFrame);
+          const text = formatMeters(Lm);
+          const fontSize = fs2(7);
+          const dx = b.x - a.x;
+          const dy = b.y - a.y;
+          const len = Math.hypot(dx, dy) || 1;
+          let nx = -dy / len;
+          let ny = dx / len;
+          if ((mx + nx - cx) ** 2 + (my + ny - cy) ** 2 <
+              (mx - cx) ** 2 + (my - cy) ** 2) {
+            nx = -nx; ny = -ny;
+          }
+          const off = sw2(9);
+          items.push({
+            id: `le-${lot.id}-${i}`,
+            priority: 55,
+            anchor: { x: mx, y: my },
+            cx: mx + nx * off,
+            cy: my + ny * off,
+            width: estimateTextWidth(text, fontSize),
+            height: fontSize * 1.2,
+            payload: { kind: 'lotEdge', text, fontSize, fill: 'hsl(var(--muted-foreground))' },
+          });
+        }
+      }
+    }
+
+    const vp = {
+      x0: -viewport.viewport.panX - 20,
+      y0: -viewport.viewport.panY - 20,
+      x1: -viewport.viewport.panX + CANVAS_W / zz + 20,
+      y1: -viewport.viewport.panY + CANVAS_H / zz + 20,
+    };
+    return placeLabels(items, {
+      maxOffsetPx: sw2(80),
+      leaderThresholdPx: sw2(6),
+      stepPx: sw2(10),
+      paddingPx: sw2(2),
+      viewport: vp,
+      dropBelowPriority: 35,
+    });
+  }, [
+    lots,
+    parentVertices,
+    parentSides,
+    metricFrame,
+    viewport.viewport.zoom,
+    viewport.viewport.panX,
+    viewport.viewport.panY,
+    toScreen,
+    showDimensions,
+    showLotNumbers,
+    showAreas,
+    showOwnerNames,
+  ]);
+
+
+
   return (
 
     <div ref={containerRef} className="relative" tabIndex={-1}>
