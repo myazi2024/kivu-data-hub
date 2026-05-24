@@ -34,6 +34,7 @@ export function useCanvasDrag(
   metricFrame?: MetricFrame,
   parentNormArea?: number,
   parentAreaSqm?: number,
+  parentVertices?: Point2D[],
 ) {
   const [dragState, setDragState] = useState<DragState | null>(null);
   const lastNorm = useRef<Point2D | null>(null);
