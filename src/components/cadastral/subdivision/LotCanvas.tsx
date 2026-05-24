@@ -446,6 +446,15 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
     if (readOnly || mode !== 'select') return;
     const lot = lots.find(l => l.id === lotId);
     if (!lot || lot.isParentBoundary) return;
+    // 1er clic = sélectionner le lot (utile pour les lots étroits dont les hit-lines
+    // d'arêtes recouvrent l'intérieur du polygone). 2ᵉ clic = redimensionner.
+    if (lotId !== selectedLotId) {
+      e.stopPropagation();
+      onSelectLot(lotId);
+      onSelectRoad?.(null);
+      setContextMenuLotId(null);
+      return;
+    }
     const p1 = lot.vertices[edgeIdx];
     const p2 = lot.vertices[(edgeIdx + 1) % lot.vertices.length];
     // Lock any edge that coincides with the parent parcel perimeter.
@@ -465,7 +474,8 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
       return;
     }
     drag.startEdgeDrag(lotId, edgeIdx, normalized);
-  }, [readOnly, mode, drag, getSvgPos, fromScreen, lots, sharedEdges, isEdgeOnParentBoundary]);
+  }, [readOnly, mode, selectedLotId, onSelectLot, onSelectRoad, drag, getSvgPos, fromScreen, lots, sharedEdges, isEdgeOnParentBoundary]);
+
 
   const handlePolygonMouseDown = useCallback((lotId: string, e: React.MouseEvent) => {
     if (readOnly || mode !== 'select') return;

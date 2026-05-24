@@ -1,45 +1,48 @@
-## Objectif
+# Pourquoi le lot étroit n’est pas sélectionnable
 
-Rendre tous les déplacements interactifs sur la parcelle-mère (drags de sommets, d'arêtes, d'arêtes partagées, de polygones entiers, glissement contraint sur le périmètre, ainsi que le pan de la vue) naturels à n'importe quel niveau de zoom : 1 px souris ≈ 1 px écran perçu, quel que soit le zoom. Le snap (grille + sommets) devient plus fin proportionnellement au zoom.
+Pour chaque lot affiché en mode `select`, le canvas dessine au-dessus du polygone des « hit lines » invisibles de **14 px de large** sur chaque arête (`pointerEvents="stroke"`, `LotCanvas.tsx` ~ligne 1649). Quand un lot mesure moins de ~10 m de large, ces deux hit lines opposées **recouvrent intégralement l’intérieur du polygone** à l’écran.
 
-## Comportement attendu
+Résultat : le clic tombe d’abord sur l’arête → `handleEdgeMouseDown` démarre un redimensionnement d’arête et appelle `e.stopPropagation()` (ligne 453). Le `onClick` du polygone ne se déclenche jamais, donc `onSelectLot` n’est jamais appelé → impossible de sélectionner le lot, donc impossible d’afficher le sélecteur « Type de zone (lot / voie / espace vert) » qui n’apparaît que pour le lot sélectionné (`StepLotDesigner.tsx`, `handleConvertSelectedZone` retourne si `!selectedLotId`).
 
-- **Au zoom 1×** : comportement actuel inchangé.
-- **Au zoom 2×** : un déplacement souris de 100 px à l'écran déplace le sommet/lot de la même distance visuelle qu'au zoom 1× (donc dans le repère normalisé, le déplacement réel est ÷2).
-- **Pan** : déjà correct car la conversion `clientX→viewBox` utilise déjà `/ viewport.zoom`. À auditer pour confirmer, ajuster si nécessaire.
-- **Snap** : `SNAP_TOLERANCE` effectif = `0.015 / zoom`. À zoom 4×, le snap devient quasi imperceptible sauf en collant vraiment au sommet → ajustement millimétrique facile.
+Le même mécanisme protège déjà le drag du polygone (`handlePolygonMouseDown`, ligne 472) : il n’agit que si `lotId === selectedLotId`. Les arêtes n’ont pas cette garde.
 
-## Détails techniques
+# Correctif (chirurgical, frontend uniquement)
 
-### Loi d'échelle retenue : `1 / zoom` (inversement proportionnel)
+Aligner les arêtes sur le pattern du polygone : **un premier clic sélectionne le lot, un second clic redimensionne**.
 
-C'est la loi naturelle : la souris se déplace dans l'espace écran, on la convertit dans l'espace normalisé du SVG. Le facteur exact est déjà `(canvasW / rect.width) / zoom`. Aujourd'hui la conversion `clientX → normalized` est faite dans `LotCanvas.tsx` au niveau du `onMouseMove` du SVG ; il faut confirmer qu'elle prend bien en compte `viewport.zoom` et `viewport.panX/Y`. Si non, c'est là que se situe le bug racine et la correction est de diviser par `zoom` à la source.
+## Fichier modifié
 
-### Fichiers à modifier
+`src/components/cadastral/subdivision/LotCanvas.tsx`
 
-1. **`src/components/cadastral/subdivision/LotCanvas.tsx`**
-   - Dans la conversion `clientX/clientY → normalized` (mousemove handler), s'assurer que :
-     ```
-     normX = ((clientX - rect.left) * canvasW / rect.width / zoom - panX) / canvasW
-     normY = ((clientY - rect.top)  * canvasH / rect.height / zoom - panY) / canvasH
-     ```
-   - Cela rend automatiquement tous les drags (vertex, edge, shared-edge, polygon, boundary-vertex) cohérents avec le zoom puisqu'ils consomment tous `normalized` dans `moveDrag`.
+### 1. `handleEdgeMouseDown` (~lignes 445-468)
 
-2. **`src/components/cadastral/subdivision/hooks/useCanvasDrag.ts`**
-   - Accepter un `zoom` optionnel (ou le SNAP_TOLERANCE effectif) en paramètre du hook.
-   - Dans `snapToGrid`, remplacer le `SNAP_TOLERANCE` constant par `SNAP_TOLERANCE / Math.max(1, zoom)` : le snap se resserre quand on zoome, donc plus de précision fine à zoom élevé sans bloquer le déplacement.
+Ajouter en tête, après les gardes `readOnly / mode / isParentBoundary` :
 
-3. **`src/components/cadastral/subdivision/hooks/useCanvasViewport.ts`**
-   - Le pan utilise déjà `* scaleX / viewport.zoom` → correct, à laisser tel quel. Vérification seulement.
+```ts
+if (lotId !== selectedLotId) {
+  e.stopPropagation();
+  onSelectLot(lotId);
+  onSelectRoad?.(null);
+  setContextMenuLotId(null);
+  return; // ne pas démarrer le edge-drag tant que le lot n'est pas le lot actif
+}
+```
 
-### Hors périmètre
-- Pas de modificateur clavier (Shift/Alt) pour précision fine.
-- Pas de changement sur les seuils de visibilité de labels ou autre rendu lié au zoom.
-- Pas de changement de la loi de zoom elle-même (toujours 0.9/1.1 par tick wheel, bornes 0.5×–4×).
+Mettre à jour les dépendances du `useCallback` (`selectedLotId`, `onSelectLot`, `onSelectRoad`).
+
+### 2. `onContextMenu` du hit-line d’arête (~lignes 1652-1667)
+
+Pour rester cohérent : si `lotId !== selectedLotId`, d’abord sélectionner le lot puis ouvrir le menu contextuel d’arête (le menu reste utile, mais le lot devient actif en même temps). Ce point est optionnel mais évite la même confusion sur clic droit.
+
+### 3. Aucun changement
+
+- Mode `selectEdge` : intentionnellement laissé tel quel (cliquer une arête convertit en voie, c’est le but du mode).
+- `handleVertexMouseDown` : les poignées de sommets ne s’affichent que pour le lot déjà sélectionné (ligne 1682 `isSelected && ...`), donc pas de problème.
+- Pas de changement de logique métier, de seuils, ni de styles.
 
 ## Validation
 
-- Au zoom 4× : déplacer un sommet de boundary suit la souris pixel-à-pixel à l'écran (pas 4× trop vite).
-- Au zoom 4× : pan reste fluide et 1:1.
-- Au zoom 4× : snap ne "happe" plus de loin, seulement quand on est très près d'une cible.
-- Au zoom 1× : comportement identique à aujourd'hui.
+- Tracer un lot étroit (largeur < 10 m), cliquer dessus → le lot devient sélectionné (contour primaire), le panneau « Type de zone » s’affiche.
+- Cliquer une seconde fois sur la même arête → comportement actuel (resize d’arête).
+- Cliquer sur un lot large non sélectionné → reste sélectionnable (le clic tombe sur l’intérieur du polygone comme avant).
+- `selectEdge` mode et conversion edge → voie : inchangés.
