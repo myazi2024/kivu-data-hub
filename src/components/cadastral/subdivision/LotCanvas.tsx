@@ -6,6 +6,7 @@ import { useCanvasDrag } from './hooks/useCanvasDrag';
 import { useCanvasKeyboard } from './hooks/useCanvasKeyboard';
 import { ZoomIn, ZoomOut, Maximize2, Magnet } from 'lucide-react';
 import { MetricFrame, buildMetricFrame, edgeLengthM, polygonAreaSqmAccurate, polygonPerimeterM, formatMeters, formatSqm } from './utils/metrics';
+import { placeLabels, estimateTextWidth, LabelBox } from './utils/labelLayout';
 
 interface ParcelSide {
   length?: number | string;
