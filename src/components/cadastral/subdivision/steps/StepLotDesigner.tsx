@@ -53,6 +53,8 @@ interface StepLotDesignerProps {
   setCommonSpaces: (spaces: SubdivisionCommonSpace[]) => void;
   servitudes: SubdivisionServitude[];
   setServitudes: (servitudes: SubdivisionServitude[]) => void;
+  boundaries?: SubdivisionBoundary[];
+  setBoundaries?: (boundaries: SubdivisionBoundary[]) => void;
   lotIds: string[];
   onCreateInitialLot?: () => void;
   validation: ValidationResult;
