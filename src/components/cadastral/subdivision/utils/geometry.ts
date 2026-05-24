@@ -534,3 +534,72 @@ export function validateSubdivision(
     warnings,
   };
 }
+
+/**
+ * Project a point onto a single segment [a, b]. Returns the closest point on
+ * the segment along with the parameter t (0 at a, 1 at b) and the distance.
+ */
+export function projectPointOnSegment(
+  p: Point2D,
+  a: Point2D,
+  b: Point2D,
+): { point: Point2D; t: number; dist: number } {
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  const lenSq = dx * dx + dy * dy;
+  if (lenSq === 0) {
+    return { point: { ...a }, t: 0, dist: distance(p, a) };
+  }
+  const tRaw = ((p.x - a.x) * dx + (p.y - a.y) * dy) / lenSq;
+  const t = Math.max(0, Math.min(1, tRaw));
+  const point = { x: a.x + t * dx, y: a.y + t * dy };
+  return { point, t, dist: distance(p, point) };
+}
+
+/**
+ * Project a point onto a closed polyline (polygon perimeter). Returns the
+ * nearest projection across all edges. If `startEdgeIdx` is provided, that
+ * edge plus its two neighbours are considered first; only when the projection
+ * falls at a segment endpoint do we sweep the entire ring to allow the moving
+ * vertex to "turn the corner" around a parent polygon vertex.
+ */
+export function projectOnPolyline(
+  p: Point2D,
+  ring: Point2D[],
+  startEdgeIdx?: number,
+): { point: Point2D; edgeIdx: number; t: number } {
+  if (ring.length < 2) return { point: { ...p }, edgeIdx: 0, t: 0 };
+  const n = ring.length;
+
+  const tryEdge = (i: number) => {
+    const a = ring[i];
+    const b = ring[(i + 1) % n];
+    const r = projectPointOnSegment(p, a, b);
+    return { ...r, edgeIdx: i };
+  };
+
+  let best = startEdgeIdx !== undefined ? tryEdge(startEdgeIdx) : tryEdge(0);
+  if (startEdgeIdx !== undefined) {
+    const prev = (startEdgeIdx - 1 + n) % n;
+    const next = (startEdgeIdx + 1) % n;
+    for (const idx of [prev, next]) {
+      const c = tryEdge(idx);
+      if (c.dist < best.dist) best = c;
+    }
+    // If projection sits on an endpoint, the optimum may live further around
+    // the ring → sweep all edges.
+    if (best.t <= 1e-6 || best.t >= 1 - 1e-6) {
+      for (let i = 0; i < n; i++) {
+        if (i === best.edgeIdx) continue;
+        const c = tryEdge(i);
+        if (c.dist < best.dist) best = c;
+      }
+    }
+  } else {
+    for (let i = 1; i < n; i++) {
+      const c = tryEdge(i);
+      if (c.dist < best.dist) best = c;
+    }
+  }
+  return { point: best.point, edgeIdx: best.edgeIdx, t: best.t };
+}
