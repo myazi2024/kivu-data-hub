@@ -1,8 +1,9 @@
 import { useState, useCallback, useRef } from 'react';
 import { SubdivisionLot, Point2D } from '../types';
 import { MetricFrame, polygonAreaSqmAccurate, polygonAreaSqmRelative, polygonPerimeterM } from '../utils/metrics';
+import { projectOnPolyline } from '../utils/geometry';
 
-type DragType = 'vertex' | 'edge' | 'shared-edge' | 'polygon' | null;
+type DragType = 'vertex' | 'edge' | 'shared-edge' | 'polygon' | 'boundary-vertex' | null;
 
 interface DragState {
   type: DragType;
@@ -17,6 +18,10 @@ interface DragState {
   twin?: { lot1Idx1: number; lot1Idx2: number; lot2Idx1: number; lot2Idx2: number };
   startNorm?: Point2D;
   startVertices?: Point2D[];
+  // For boundary-vertex: every (lot, vertex) sharing the captured boundary
+  // sommet, and the current edge of the parent perimeter we slide along.
+  boundaryTwins?: { lotId: string; vertexIdx: number }[];
+  boundaryEdgeIdx?: number;
 }
 
 const SNAP_TOLERANCE = 0.015; // normalized
@@ -29,6 +34,7 @@ export function useCanvasDrag(
   metricFrame?: MetricFrame,
   parentNormArea?: number,
   parentAreaSqm?: number,
+  parentVertices?: Point2D[],
 ) {
   const [dragState, setDragState] = useState<DragState | null>(null);
   const lastNorm = useRef<Point2D | null>(null);
@@ -72,6 +78,39 @@ export function useCanvasDrag(
     if (!lot || lot.isParentBoundary) return;
     setDragState({ type: 'vertex', lotId, vertexIdx });
   }, [lots]);
+
+  /**
+   * Drag a vertex that sits on the parent parcel perimeter. The vertex is
+   * constrained to slide along the perimeter (can turn corners). Every other
+   * lot vertex sharing the same coordinate moves with it so junctions stay
+   * coherent.
+   */
+  const startBoundaryVertexDrag = useCallback((lotId: string, vertexIdx: number) => {
+    const lot = lots.find(l => l.id === lotId);
+    if (!lot || lot.isParentBoundary) return;
+    if (!parentVertices || parentVertices.length < 3) return;
+    const v = lot.vertices[vertexIdx];
+    if (!v) return;
+    const EPS = 1e-3;
+    const twins: { lotId: string; vertexIdx: number }[] = [];
+    for (const l of lots) {
+      if (l.isParentBoundary) continue;
+      l.vertices.forEach((vv, i) => {
+        if (Math.abs(vv.x - v.x) < EPS && Math.abs(vv.y - v.y) < EPS) {
+          twins.push({ lotId: l.id, vertexIdx: i });
+        }
+      });
+    }
+    // Find the perimeter edge currently hosting this vertex.
+    const proj = projectOnPolyline(v, parentVertices);
+    setDragState({
+      type: 'boundary-vertex',
+      lotId,
+      vertexIdx,
+      boundaryTwins: twins,
+      boundaryEdgeIdx: proj.edgeIdx,
+    });
+  }, [lots, parentVertices]);
 
   const startEdgeDrag = useCallback((lotId: string, edgeIdx: number, normPos: Point2D) => {
     const lot = lots.find(l => l.id === lotId);
@@ -198,7 +237,33 @@ export function useCanvasDrag(
       onUpdateLot(dragState.lotId, newVerts, m.areaSqm, m.perimeterM);
       lastNorm.current = normalized;
     }
-  }, [dragState, lots, onUpdateLot, snapToGrid, computeMetrics]);
+
+    if (
+      dragState.type === 'boundary-vertex' &&
+      dragState.vertexIdx !== undefined &&
+      dragState.boundaryTwins &&
+      parentVertices && parentVertices.length >= 3
+    ) {
+      // Project mouse onto the parent perimeter, biased to the current edge so
+      // we slide smoothly and can "turn the corner" at parent vertices.
+      const proj = projectOnPolyline(normalized, parentVertices, dragState.boundaryEdgeIdx);
+      const newPos = { x: Math.max(0, Math.min(1, proj.point.x)), y: Math.max(0, Math.min(1, proj.point.y)) };
+      // Update every lot sharing this boundary vertex so junctions stay glued.
+      for (const t of dragState.boundaryTwins) {
+        const tl = lots.find(l => l.id === t.lotId);
+        if (!tl) continue;
+        if (t.vertexIdx < 0 || t.vertexIdx >= tl.vertices.length) continue;
+        const verts = [...tl.vertices];
+        verts[t.vertexIdx] = { ...newPos };
+        const m = computeMetrics(verts);
+        onUpdateLot(t.lotId, verts, m.areaSqm, m.perimeterM);
+      }
+      // Track the new hosting edge for the next move.
+      if (proj.edgeIdx !== dragState.boundaryEdgeIdx) {
+        setDragState({ ...dragState, boundaryEdgeIdx: proj.edgeIdx });
+      }
+    }
+  }, [dragState, lots, onUpdateLot, snapToGrid, computeMetrics, parentVertices]);
 
   const endDrag = useCallback(() => {
     setDragState(null);
@@ -209,6 +274,7 @@ export function useCanvasDrag(
     isDragging: !!dragState,
     dragType: dragState?.type || null,
     startVertexDrag,
+    startBoundaryVertexDrag,
     startEdgeDrag,
     startSharedEdgeDrag,
     startPolygonDrag,
