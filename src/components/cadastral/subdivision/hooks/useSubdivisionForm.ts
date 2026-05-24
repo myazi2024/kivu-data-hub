@@ -696,6 +696,7 @@ export function useSubdivisionForm(parcelNumber: string, parcelData?: any, authU
           roads,
           commonSpaces,
           servitudes,
+          boundaries,
           planElements,
           purpose,
           documents,
