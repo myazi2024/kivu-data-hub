@@ -1,5 +1,5 @@
 import React, { useRef, useState, useCallback, useEffect, useMemo } from 'react';
-import { SubdivisionLot, SubdivisionRoad, SubdivisionCommonSpace, SubdivisionBoundary, COMMON_SPACE_COLORS, COMMON_SPACE_LABELS, LOT_COLORS, USAGE_LABELS, Point2D, LotAnnotation } from './types';
+import { SubdivisionLot, SubdivisionRoad, SubdivisionCommonSpace, COMMON_SPACE_COLORS, COMMON_SPACE_LABELS, LOT_COLORS, USAGE_LABELS, Point2D, LotAnnotation } from './types';
 import { getAllRoadIntersectionPoints, isPointOnPolygonEdge, polygonArea, polygonCentroid } from './utils/geometry';
 import { useCanvasViewport } from './hooks/useCanvasViewport';
 import { useCanvasDrag } from './hooks/useCanvasDrag';
@@ -14,7 +14,7 @@ interface ParcelSide {
   [key: string]: any;
 }
 
-export type CanvasMode = 'select' | 'drawLine' | 'selectEdge';
+export type CanvasMode = 'select' | 'drawLine' | 'drawRoad' | 'selectEdge';
 
 export interface EdgeInfo {
   lotId1: string;
@@ -51,8 +51,7 @@ interface LotCanvasProps {
   onMergeLots?: (ids: string[]) => void;
   onCutLot?: (lotId: string, cutStart: Point2D, cutEnd: Point2D) => void;
   onCutLotsAlongLine?: (cutStart: Point2D, cutEnd: Point2D) => void;
-  /** Limites tracées par l'utilisateur (rendues en pointillés ou trait plein si mur construit). */
-  boundaries?: SubdivisionBoundary[];
+  onFinishRoadDraw?: (path: Point2D[]) => void;
   mode?: CanvasMode;
   onModeChange?: (mode: CanvasMode) => void;
   showGrid?: boolean;
@@ -83,7 +82,7 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
   selectedLotId, selectedLotIds = [], onSelectLot, onToggleLotSelection, onUpdateLot,
   onUpdateLotAnnotations, onDeleteLot, onDuplicateLot,
   selectedRoadId, onSelectRoad, onDeleteRoad, onUpdateRoad, onSplitLot, onMergeLots,
-  onCutLot, onCutLotsAlongLine, boundaries = [], onConvertEdgeToRoad, mode = 'select', onModeChange,
+  onCutLot, onCutLotsAlongLine, onFinishRoadDraw, onConvertEdgeToRoad, mode = 'select', onModeChange,
   showGrid = true, onToggleGrid, showDimensions = true, showLotNumbers = true,
   showAreas = true, showRoads = true, showCommonSpaces = true, showNorth = true,
   showLegend = false, showScale = true, showOwnerNames = false,
@@ -202,7 +201,7 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
         setEdgeContextMenu(null);
         return;
       }
-      if ((mode === 'drawLine') && lineDrawPoints.length > 0) {
+      if ((mode === 'drawLine' || mode === 'drawRoad') && lineDrawPoints.length > 0) {
         setLineDrawPoints([]);
         setLineDrawMousePos(null);
         setIsLineDragging(false);
@@ -218,7 +217,7 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
       setContextMenuLotId(null);
     },
     onBackspace: () => {
-      if ((mode === 'drawLine') && lineDrawMultiMode && lineDrawPoints.length > 1) {
+      if ((mode === 'drawLine' || mode === 'drawRoad') && lineDrawMultiMode && lineDrawPoints.length > 1) {
         setLineDrawPoints(prev => prev.slice(0, -1));
       }
     },
@@ -406,7 +405,7 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
     }
 
     // drawLine/drawRoad: simple drag mode
-    if ((mode === 'drawLine') && e.button === 0 && !lineDrawMultiMode && lineDrawPoints.length === 0) {
+    if ((mode === 'drawLine' || mode === 'drawRoad') && e.button === 0 && !lineDrawMultiMode && lineDrawPoints.length === 0) {
       const pos = getSvgPos(e);
       const normalized = fromScreen(pos.x, pos.y);
       const snapped = drag.snapToGrid(normalized);
@@ -506,7 +505,7 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
     const pos = getSvgPos(e);
 
     // drawLine/drawRoad: update preview
-    if (mode === 'drawLine') {
+    if (mode === 'drawLine' || mode === 'drawRoad') {
       if (isLineDragging && lineDrawPoints.length === 1) {
         setLineDrawMousePos({ x: pos.x, y: pos.y });
       } else if (lineDrawMultiMode && lineDrawPoints.length > 0) {
@@ -592,20 +591,25 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
     }
   }, [viewport, getSvgPos, fromScreen, mode, lineDrawPoints, drag, isLineDragging, lineDrawMultiMode, roadEndpointDrag, roads, onUpdateRoad, roadWidthDrag, toScreen, sideLength, rotationDrag, selectedLotId, selectedRoadId, lots, onUpdateLot]);
 
-  // Directly execute action after line drawing finishes.
-  // Always opens the LineRoleDialog upstream (Voie/Limite) via onCutLotsAlongLine.
+  // Directly execute action after line drawing finishes
   const finishLineDraw = useCallback((path: Point2D[]) => {
     if (path.length < 2) return;
-    const cutStart = path[0];
-    const cutEnd = path[path.length - 1];
-    if (onCutLotsAlongLine) {
-      onCutLotsAlongLine(cutStart, cutEnd);
-    } else if (onCutLot) {
-      const mid = { x: (cutStart.x + cutEnd.x) / 2, y: (cutStart.y + cutEnd.y) / 2 };
-      const targetLot = lots.find(lot => pointInPolygon(mid, lot.vertices));
-      if (targetLot) onCutLot(targetLot.id, cutStart, cutEnd);
+    if (mode === 'drawRoad') {
+      onFinishRoadDraw?.(path);
+    } else {
+      // drawLine mode: cut every lot the line crosses (batch), with fallback
+      // to single-lot cut for back-compat.
+      const cutStart = path[0];
+      const cutEnd = path[path.length - 1];
+      if (onCutLotsAlongLine) {
+        onCutLotsAlongLine(cutStart, cutEnd);
+      } else if (onCutLot) {
+        const mid = { x: (cutStart.x + cutEnd.x) / 2, y: (cutStart.y + cutEnd.y) / 2 };
+        const targetLot = lots.find(lot => pointInPolygon(mid, lot.vertices));
+        if (targetLot) onCutLot(targetLot.id, cutStart, cutEnd);
+      }
     }
-  }, [onCutLot, onCutLotsAlongLine, lots]);
+  }, [mode, onFinishRoadDraw, onCutLot, onCutLotsAlongLine, lots]);
 
   const handleMouseUp = useCallback((e: React.MouseEvent) => {
     // Line simple drag: finish on mouse up
@@ -646,7 +650,7 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
     const pos = getSvgPos(e);
     const normalized = fromScreen(pos.x, pos.y);
 
-    if (mode === 'drawLine') {
+    if (mode === 'drawLine' || mode === 'drawRoad') {
       if (isLineDragging) return;
       // Shift-click or already in multi-mode: add point
       if (e.shiftKey || lineDrawMultiMode) {
@@ -669,7 +673,7 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
   }, [readOnly, mode, getSvgPos, fromScreen, lots, onSelectLot, onSelectRoad, drag, isLineDragging, lineDrawMultiMode]);
 
   const handleCanvasDoubleClick = useCallback((e: React.MouseEvent) => {
-    if ((mode === 'drawLine') && lineDrawPoints.length >= 2) {
+    if ((mode === 'drawLine' || mode === 'drawRoad') && lineDrawPoints.length >= 2) {
       e.preventDefault();
       e.stopPropagation();
       finishLineDraw(lineDrawPoints);
@@ -727,7 +731,7 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
     ? 'grabbing'
     : viewport.isSpaceDown()
     ? 'grab'
-    : (mode === 'drawLine') ? 'crosshair'
+    : (mode === 'drawLine' || mode === 'drawRoad') ? 'crosshair'
     : mode === 'selectEdge' ? 'pointer'
     : mode === 'select' ? 'grab'
     : 'default';
@@ -738,7 +742,7 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
 
   // Compute parallel distance lines for current drawing
   const distanceLines = useMemo(() => {
-    if (mode !== 'drawLine') return [];
+    if (mode !== 'drawLine' && mode !== 'drawRoad') return [];
     let start: Point2D | null = null;
     let end: Point2D | null = null;
 
@@ -1149,28 +1153,7 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
         {parentTicksNode}
 
 
-        {/* Boundaries (limites tracées par l'utilisateur) — rendu sous les voies. */}
-        {boundaries.length > 0 && (
-          <g key="boundaries-layer" pointerEvents="none">
-            {boundaries.map(b => {
-              if (!b.path || b.path.length < 2) return null;
-              const a = toScreen(b.path[0]);
-              const c = toScreen(b.path[b.path.length - 1]);
-              return (
-                <line
-                  key={b.id}
-                  x1={a.x} y1={a.y} x2={c.x} y2={c.y}
-                  stroke={b.isBuilt ? 'hsl(var(--foreground))' : 'hsl(var(--muted-foreground))'}
-                  strokeWidth={b.isBuilt ? 2.5 : 1.5}
-                  strokeDasharray={b.isBuilt ? undefined : '4 3'}
-                  strokeLinecap="round"
-                />
-              );
-            })}
-          </g>
-        )}
-
-
+        {/* Parent parcel side measurements — now rendered via placedLabels overlay (anti-collision + LOD). */}
 
 
         {/* Layer ordering: selected layer on top */}
@@ -1980,7 +1963,7 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
         })()}
 
         {/* Line drawing preview */}
-        {(mode === 'drawLine') && lineDrawPoints.length > 0 && (() => {
+        {(mode === 'drawLine' || mode === 'drawRoad') && lineDrawPoints.length > 0 && (() => {
           const allPts = [...lineDrawPoints];
           const screenPts = allPts.map(p => toScreen(p));
           const polyStr = screenPts.map(p => `${p.x},${p.y}`).join(' ');
@@ -2119,11 +2102,11 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
         })}
 
         {/* Mode instruction overlay */}
-        {(mode === 'drawLine') && (
+        {(mode === 'drawLine' || mode === 'drawRoad') && (
           <g className="pointer-events-none">
             <rect x={CANVAS_W / 2 - 155} y={CANVAS_H - 24} width={310} height={20} rx={4} fill="hsl(var(--primary))" fillOpacity={0.1} />
             <text x={CANVAS_W / 2} y={CANVAS_H - 14} textAnchor="middle" dominantBaseline="middle" fontSize={9} fill="hsl(var(--primary))" fontWeight="600">
-              {false ? '🛣' : '✏️'} Glissez pour tracer • Shift+clic: multi-segments • Backspace: annuler point
+              {mode === 'drawRoad' ? '🛣' : '✏️'} Glissez pour tracer • Shift+clic: multi-segments • Backspace: annuler point
             </text>
           </g>
         )}

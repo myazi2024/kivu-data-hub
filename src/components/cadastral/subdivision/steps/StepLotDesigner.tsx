@@ -20,7 +20,6 @@ import {
 } from '@/components/ui/alert-dialog';
 import {
   SubdivisionLot, SubdivisionRoad, SubdivisionCommonSpace, SubdivisionServitude,
-  SubdivisionBoundary,
   ParentParcelInfo, LOT_COLORS, USAGE_LABELS,
   Point2D, LotAnnotation
 } from '../types';
@@ -29,8 +28,6 @@ import { convertZoneType, ZoneType } from '../utils/convertZoneType';
 import LotCanvas, { CanvasMode, EdgeInfo } from '../LotCanvas';
 import { buildMetricFrame, polygonAreaSqmAccurate, polygonAreaSqmRelative, polygonPerimeterM, formatMeters, formatSqm } from '../utils/metrics';
 import { genId, nextLotNumber, polygonUnionMany } from '../utils/polygonOps';
-import { splitLineByRoads } from '../utils/lineRoadSplit';
-import LineRoleDialog, { RoadCreationParams, BoundaryCreationParams } from '../dialogs/LineRoleDialog';
 import LotVerticesEditor from './LotVerticesEditor';
 import LotsListPanel from './panels/LotsListPanel';
 import RoadsListPanel from './panels/RoadsListPanel';
@@ -39,7 +36,6 @@ import CommonSpacesPanel from './panels/CommonSpacesPanel';
 import ServitudesPanel from './panels/ServitudesPanel';
 import ValidationPanel from './panels/ValidationPanel';
 import { useAdminAnalytics } from '@/lib/adminAnalytics';
-import { useSubdivisionReferences } from '@/hooks/useSubdivisionReferences';
 
 interface StepLotDesignerProps {
   parentParcel: ParentParcelInfo | null;
@@ -53,8 +49,6 @@ interface StepLotDesignerProps {
   setCommonSpaces: (spaces: SubdivisionCommonSpace[]) => void;
   servitudes: SubdivisionServitude[];
   setServitudes: (servitudes: SubdivisionServitude[]) => void;
-  boundaries?: SubdivisionBoundary[];
-  setBoundaries?: (boundaries: SubdivisionBoundary[]) => void;
   lotIds: string[];
   onCreateInitialLot?: () => void;
   validation: ValidationResult;
@@ -108,18 +102,10 @@ function segmentSegmentIntersection(
 
 const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
   parentParcel, parentVertices, parentSides, lots, setLots, roads, setRoads,
-  commonSpaces, setCommonSpaces, servitudes, setServitudes,
-  boundaries: boundariesProp, setBoundaries: setBoundariesProp,
-  lotIds,
+  commonSpaces, setCommonSpaces, servitudes, setServitudes, lotIds,
   onCreateInitialLot, validation, canUndo, canRedo, onUndo, onRedo, onResetDesigner, zoningRule,
 }) => {
   const { trackAdminAction } = useAdminAnalytics();
-  const { labels: roadSurfaceLabels } = useSubdivisionReferences('road_surface');
-  const [internalBoundaries, setInternalBoundaries] = useState<SubdivisionBoundary[]>([]);
-  const boundaries = boundariesProp ?? internalBoundaries;
-  const setBoundaries = setBoundariesProp ?? setInternalBoundaries;
-  const [pendingLine, setPendingLine] = useState<{ start: Point2D; end: Point2D } | null>(null);
-  const [lineDialogOpen, setLineDialogOpen] = useState(false);
   const [selectedLotId, setSelectedLotIdState] = useState<string | null>(null);
   const [selectedLotIds, setSelectedLotIds] = useState<string[]>([]);
   const [editingRoadId, setEditingRoadIdState] = useState<string | null>(null);
@@ -539,8 +525,7 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
   }, [lots, setLots, computeArea, computePerim, trackAdminAction]);
 
   // Cut every lot a single drawn line crosses (≥2 intersections), in one transaction.
-  // Appelée via la modale "Rôle de la ligne" → branche Limite.
-  const applyCutAlongLine = useCallback((cutStart: Point2D, cutEnd: Point2D) => {
+  const handleCutLotsAlongLine = useCallback((cutStart: Point2D, cutEnd: Point2D) => {
     const nextLots: SubdivisionLot[] = [];
     let cutCount = 0;
 
@@ -610,58 +595,182 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
     trackAdminAction({ module: 'subdivision', action: 'lot_cut', meta: { count: cutCount } });
   }, [lots, setLots, computeArea, computePerim, trackAdminAction]);
 
-  // Nouvelle entrée : ouvre la modale "Rôle de la ligne" après tracé.
-  const handleLineDrawn = useCallback((cutStart: Point2D, cutEnd: Point2D) => {
-    setPendingLine({ start: cutStart, end: cutEnd });
-    setLineDialogOpen(true);
-  }, []);
+  // Handle finished road drawing — also split the traversed lot
+  const handleFinishRoadDraw = useCallback((path: Point2D[]) => {
+    if (path.length < 2) return;
+    const cutStart = path[0];
+    const cutEnd = path[path.length - 1];
 
-  const handleConfirmRoadFromLine = useCallback((params: RoadCreationParams) => {
-    if (!pendingLine) return;
+    // 1. Create the road (affectedLotIds will be set below)
     const newRoad: SubdivisionRoad = {
       id: genId('road'),
       name: `Voie ${roads.length + 1}`,
-      widthM: params.widthM,
-      surfaceType: 'planned',
+      widthM: roadPresetWidth,
+      surfaceType: roadPresetSurface,
       isExisting: false,
-      path: [pendingLine.start, pendingLine.end],
+      path,
       affectedLotIds: [],
-      drainageCanal: params.drainage,
-      solarLighting: params.lighting,
-      roadSurface: params.surface,
     };
-    const splitRoads = splitRoadsAtIntersections([...roads, newRoad]) as SubdivisionRoad[];
+    // Split existing roads at intersection points with the new road
+    const allRoads = [...roads, newRoad];
+    const splitRoads = splitRoadsAtIntersections(allRoads) as SubdivisionRoad[];
     setRoads(splitRoads);
     setEditingRoadId(newRoad.id);
-    setCanvasMode('select');
-    setPendingLine(null);
-    trackAdminAction({ module: 'subdivision', action: 'road_created' as any });
-  }, [pendingLine, roads, setRoads, trackAdminAction]);
 
-  const handleConfirmBoundaryFromLine = useCallback((params: BoundaryCreationParams) => {
-    if (!pendingLine) return;
-    // 1. Découpe géométrique des lots traversés.
-    applyCutAlongLine(pendingLine.start, pendingLine.end);
-    // 2. Scinder le tracé contre les voies existantes.
+    // 2. Find lot traversed by the drawn line
+    let targetLot: SubdivisionLot | null = null;
+    let bestIntersections: { point: Point2D; edgeIdx: number; t: number }[] = [];
+
+    for (const lot of lots) {
+      const verts = lot.vertices;
+      if (verts.length < 3) continue;
+      const intersections: { point: Point2D; edgeIdx: number; t: number }[] = [];
+      for (let i = 0; i < verts.length; i++) {
+        const j = (i + 1) % verts.length;
+        const inter = segmentSegmentIntersection(cutStart, cutEnd, verts[i], verts[j]);
+        if (inter) {
+          intersections.push({ point: inter.point, edgeIdx: i, t: inter.t });
+        }
+      }
+      if (intersections.length >= 2) {
+        targetLot = lot;
+        bestIntersections = intersections;
+        break;
+      }
+    }
+
+    if (!targetLot || bestIntersections.length < 2) {
+      // Fallback: road drawn along a shared edge — shrink bordering lots
+      const sideLength = Math.sqrt(parentParcel?.areaSqm || 1000);
+      const halfWidthNorm = (roadPresetWidth / 2) / sideLength;
+      const rdx = cutEnd.x - cutStart.x;
+      const rdy = cutEnd.y - cutStart.y;
+      const roadLen = Math.sqrt(rdx * rdx + rdy * rdy) || 1;
+      const nx = -rdy / roadLen;
+      const ny = rdx / roadLen;
+      const TOLERANCE = 0.02;
+
+      let anyBordering = false;
+      const borderingLotIds: string[] = [];
+      const updatedLots = lots.map(lot => {
+        const nearCount = lot.vertices.filter(v => {
+          const perpDist = Math.abs((v.x - cutStart.x) * nx + (v.y - cutStart.y) * ny);
+          return perpDist < TOLERANCE;
+        }).length;
+        if (nearCount < 2) return lot;
+
+        anyBordering = true;
+        borderingLotIds.push(lot.id);
+        const centroid = {
+          x: lot.vertices.reduce((s, v) => s + v.x, 0) / lot.vertices.length,
+          y: lot.vertices.reduce((s, v) => s + v.y, 0) / lot.vertices.length,
+        };
+        const side = (centroid.x - cutStart.x) * nx + (centroid.y - cutStart.y) * ny;
+        const pushDir = side > 0 ? 1 : -1;
+
+        const newVertices = lot.vertices.map(v => {
+          const perpDist = Math.abs((v.x - cutStart.x) * nx + (v.y - cutStart.y) * ny);
+          if (perpDist < TOLERANCE) {
+            return { x: v.x + nx * pushDir * halfWidthNorm, y: v.y + ny * pushDir * halfWidthNorm };
+          }
+          return v;
+        });
+
+        return { ...lot, vertices: newVertices, areaSqm: computeArea(newVertices), perimeterM: computePerim(newVertices) };
+      });
+
+      if (anyBordering) {
+        // Store affectedLotIds on the new road
+        const updatedRoads = splitRoads.map(r =>
+          r.id === newRoad.id ? { ...r, affectedLotIds: borderingLotIds } : r
+        );
+        setRoads(updatedRoads);
+        setLots(updatedLots);
+      }
+      setCanvasMode('select');
+      return;
+    }
+
+    // 3. Cut the lot in two (same algo as handleCutLot)
+    const verts = targetLot.vertices;
+    bestIntersections.sort((a, b) => a.edgeIdx - b.edgeIdx || a.t - b.t);
+    const int1 = bestIntersections[0];
+    const int2 = bestIntersections[1];
+
+    const poly1: Point2D[] = [int1.point];
+    for (let i = (int1.edgeIdx + 1) % verts.length; i !== (int2.edgeIdx + 1) % verts.length; i = (i + 1) % verts.length) {
+      poly1.push(verts[i]);
+    }
+    poly1.push(int2.point);
+
+    const poly2: Point2D[] = [int2.point];
+    for (let i = (int2.edgeIdx + 1) % verts.length; i !== (int1.edgeIdx + 1) % verts.length; i = (i + 1) % verts.length) {
+      poly2.push(verts[i]);
+    }
+    poly2.push(int1.point);
+
+    if (poly1.length < 3 || poly2.length < 3) {
+      setCanvasMode('select');
+      return;
+    }
+
+    // 4. Shrink both polygons away from the road centerline by halfWidth
     const sideLength = Math.sqrt(parentParcel?.areaSqm || 1000);
-    const segments = splitLineByRoads(pendingLine.start, pendingLine.end, roads, sideLength);
-    const newBoundaries: SubdivisionBoundary[] = segments.map(seg => ({
-      id: genId('boundary'),
-      path: [seg.start, seg.end],
-      isBuilt: params.isBuilt,
-      wallMaterial: params.wallMaterial,
-      wallHeightM: params.wallHeightM,
-    }));
-    setBoundaries([...boundaries, ...newBoundaries]);
-    setPendingLine(null);
-    trackAdminAction({ module: 'subdivision', action: 'boundary_created' as any, meta: { segments: newBoundaries.length } });
-  }, [pendingLine, applyCutAlongLine, roads, parentParcel, boundaries, setBoundaries, trackAdminAction]);
+    const halfWidthNorm = (roadPresetWidth / 2) / sideLength;
+    const rdx = cutEnd.x - cutStart.x;
+    const rdy = cutEnd.y - cutStart.y;
+    const roadLen = Math.sqrt(rdx * rdx + rdy * rdy) || 1;
+    const nx = -rdy / roadLen;
+    const ny = rdx / roadLen;
+    const TOLERANCE = 0.02;
 
+    const shrinkPoly = (poly: Point2D[]): Point2D[] => {
+      const centroid = {
+        x: poly.reduce((s, v) => s + v.x, 0) / poly.length,
+        y: poly.reduce((s, v) => s + v.y, 0) / poly.length,
+      };
+      const side = (centroid.x - cutStart.x) * nx + (centroid.y - cutStart.y) * ny;
+      const pushDir = side > 0 ? 1 : -1;
 
-  // Note: l'ancien handler `handleFinishRoadDraw` (mode `drawRoad` séparé)
-  // a été supprimé dans la refonte « Voie/Limite ». Toute ligne tracée passe
-  // désormais par `handleLineDrawn` → `LineRoleDialog` qui crée soit une voie
-  // (handleConfirmRoadFromLine) soit une limite (handleConfirmBoundaryFromLine).
+      return poly.map(v => {
+        const perpDist = Math.abs((v.x - cutStart.x) * nx + (v.y - cutStart.y) * ny);
+        if (perpDist < TOLERANCE) {
+          return { x: v.x + nx * pushDir * halfWidthNorm, y: v.y + ny * pushDir * halfWidthNorm };
+        }
+        return v;
+      });
+    };
+
+    const shrunk1 = shrinkPoly(poly1);
+    const shrunk2 = shrinkPoly(poly2);
+
+    const maxLotNum = lots.reduce((m, l) => Math.max(m, parseInt(l.lotNumber) || 0), 0);
+
+    const newLot1: SubdivisionLot = {
+      ...targetLot, id: genId('lot'), lotNumber: String(maxLotNum + 1),
+      vertices: shrunk1,
+      areaSqm: computeArea(shrunk1),
+      perimeterM: computePerim(shrunk1),
+      isParentBoundary: false,
+    };
+    const newLot2: SubdivisionLot = {
+      ...targetLot, id: genId('lot'), lotNumber: String(maxLotNum + 2),
+      vertices: shrunk2,
+      areaSqm: computeArea(shrunk2),
+      perimeterM: computePerim(shrunk2),
+      isParentBoundary: false,
+    };
+
+    // Store affectedLotIds on the new road for future width adjustments
+    const updatedRoads = splitRoads.map(r =>
+      r.id === newRoad.id ? { ...r, affectedLotIds: [newLot1.id, newLot2.id] } : r
+    );
+    setRoads(updatedRoads);
+
+    setLots(lots.map(l => l.id === targetLot!.id ? newLot1 : l).concat(newLot2));
+    setSelectedLotId(newLot1.id);
+    setCanvasMode('select');
+  }, [lots, setLots, roads, setRoads, roadPresetWidth, roadPresetSurface, parentParcel, parentVertices, computeArea, computePerim]);
 
   // Convert an edge between lots to a road
   const handleConvertEdgeToRoad = useCallback((edge: EdgeInfo) => {
@@ -1039,9 +1148,9 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
                 onSplitLot={handleSplitLot}
                 onMergeLots={handleMergeLots}
                 onCutLot={handleCutLot}
-                onCutLotsAlongLine={handleLineDrawn}
+                onCutLotsAlongLine={handleCutLotsAlongLine}
+                onFinishRoadDraw={handleFinishRoadDraw}
                 onConvertEdgeToRoad={handleConvertEdgeToRoad}
-                boundaries={boundaries}
                 roadPresetWidth={roadPresetWidth}
                 roadPresetSurface={roadPresetSurface}
                 mode={canvasMode}
@@ -1349,28 +1458,6 @@ const StepLotDesigner: React.FC<StepLotDesignerProps> = ({
         </div>
       </div>
     </div>
-
-    <LineRoleDialog
-      open={lineDialogOpen}
-      onOpenChange={(open) => {
-        setLineDialogOpen(open);
-        if (!open) setPendingLine(null);
-      }}
-      zoningRule={zoningRule}
-      roadSurfaceLabels={roadSurfaceLabels}
-      onConfirmRoad={(params) => {
-        handleConfirmRoadFromLine(params);
-        setLineDialogOpen(false);
-      }}
-      onConfirmBoundary={(params) => {
-        handleConfirmBoundaryFromLine(params);
-        setLineDialogOpen(false);
-      }}
-      onCancel={() => {
-        setLineDialogOpen(false);
-        setPendingLine(null);
-      }}
-    />
     </TooltipProvider>
   );
 };

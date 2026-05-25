@@ -96,23 +96,6 @@ export interface SubdivisionServitude {
   path?: Point2D[];
 }
 
-/**
- * Limite de lotissement tracée par l'utilisateur. Sert à la représentation
- * visuelle des séparations (mur ou trait virtuel) entre lots. La découpe
- * géométrique effective est faite au moment du tracé via la modale
- * « Rôle de la ligne » (cf. dialogs/LineRoleDialog). Les portions traversant
- * une voie sont déjà retirées : une limite traversant N voies produit N+1
- * entrées indépendantes.
- */
-export interface SubdivisionBoundary {
-  id: string;
-  /** Segment normalisé [start, end] dans le repère parcelle-mère. */
-  path: Point2D[];
-  isBuilt: boolean;
-  wallMaterial?: string;
-  wallHeightM?: number;
-}
-
 export interface PlanElements {
   showGrid: boolean;
   showNorthIndicator: boolean;
@@ -146,8 +129,6 @@ export interface SubdivisionPlanData {
   roads: SubdivisionRoad[];
   commonSpaces: SubdivisionCommonSpace[];
   servitudes: SubdivisionServitude[];
-  /** Limites tracées par l'utilisateur (séparations visuelles entre lots). */
-  boundaries?: SubdivisionBoundary[];
   planElements: PlanElements;
 }
 
