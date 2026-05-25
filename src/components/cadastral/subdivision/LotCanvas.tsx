@@ -51,7 +51,8 @@ interface LotCanvasProps {
   onMergeLots?: (ids: string[]) => void;
   onCutLot?: (lotId: string, cutStart: Point2D, cutEnd: Point2D) => void;
   onCutLotsAlongLine?: (cutStart: Point2D, cutEnd: Point2D) => void;
-  onFinishRoadDraw?: (path: Point2D[]) => void;
+  /** Limites tracées par l'utilisateur (rendues en pointillés ou trait plein si mur construit). */
+  boundaries?: SubdivisionBoundary[];
   mode?: CanvasMode;
   onModeChange?: (mode: CanvasMode) => void;
   showGrid?: boolean;
@@ -82,7 +83,7 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
   selectedLotId, selectedLotIds = [], onSelectLot, onToggleLotSelection, onUpdateLot,
   onUpdateLotAnnotations, onDeleteLot, onDuplicateLot,
   selectedRoadId, onSelectRoad, onDeleteRoad, onUpdateRoad, onSplitLot, onMergeLots,
-  onCutLot, onCutLotsAlongLine, onFinishRoadDraw, onConvertEdgeToRoad, mode = 'select', onModeChange,
+  onCutLot, onCutLotsAlongLine, boundaries = [], onConvertEdgeToRoad, mode = 'select', onModeChange,
   showGrid = true, onToggleGrid, showDimensions = true, showLotNumbers = true,
   showAreas = true, showRoads = true, showCommonSpaces = true, showNorth = true,
   showLegend = false, showScale = true, showOwnerNames = false,
@@ -591,25 +592,20 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
     }
   }, [viewport, getSvgPos, fromScreen, mode, lineDrawPoints, drag, isLineDragging, lineDrawMultiMode, roadEndpointDrag, roads, onUpdateRoad, roadWidthDrag, toScreen, sideLength, rotationDrag, selectedLotId, selectedRoadId, lots, onUpdateLot]);
 
-  // Directly execute action after line drawing finishes
+  // Directly execute action after line drawing finishes.
+  // Always opens the LineRoleDialog upstream (Voie/Limite) via onCutLotsAlongLine.
   const finishLineDraw = useCallback((path: Point2D[]) => {
     if (path.length < 2) return;
-    if (false) {
-      onFinishRoadDraw?.(path);
-    } else {
-      // drawLine mode: cut every lot the line crosses (batch), with fallback
-      // to single-lot cut for back-compat.
-      const cutStart = path[0];
-      const cutEnd = path[path.length - 1];
-      if (onCutLotsAlongLine) {
-        onCutLotsAlongLine(cutStart, cutEnd);
-      } else if (onCutLot) {
-        const mid = { x: (cutStart.x + cutEnd.x) / 2, y: (cutStart.y + cutEnd.y) / 2 };
-        const targetLot = lots.find(lot => pointInPolygon(mid, lot.vertices));
-        if (targetLot) onCutLot(targetLot.id, cutStart, cutEnd);
-      }
+    const cutStart = path[0];
+    const cutEnd = path[path.length - 1];
+    if (onCutLotsAlongLine) {
+      onCutLotsAlongLine(cutStart, cutEnd);
+    } else if (onCutLot) {
+      const mid = { x: (cutStart.x + cutEnd.x) / 2, y: (cutStart.y + cutEnd.y) / 2 };
+      const targetLot = lots.find(lot => pointInPolygon(mid, lot.vertices));
+      if (targetLot) onCutLot(targetLot.id, cutStart, cutEnd);
     }
-  }, [mode, onFinishRoadDraw, onCutLot, onCutLotsAlongLine, lots]);
+  }, [onCutLot, onCutLotsAlongLine, lots]);
 
   const handleMouseUp = useCallback((e: React.MouseEvent) => {
     // Line simple drag: finish on mouse up
@@ -1153,7 +1149,28 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
         {parentTicksNode}
 
 
-        {/* Parent parcel side measurements — now rendered via placedLabels overlay (anti-collision + LOD). */}
+        {/* Boundaries (limites tracées par l'utilisateur) — rendu sous les voies. */}
+        {boundaries.length > 0 && (
+          <g key="boundaries-layer" pointerEvents="none">
+            {boundaries.map(b => {
+              if (!b.path || b.path.length < 2) return null;
+              const a = toScreen(b.path[0]);
+              const c = toScreen(b.path[b.path.length - 1]);
+              return (
+                <line
+                  key={b.id}
+                  x1={a.x} y1={a.y} x2={c.x} y2={c.y}
+                  stroke={b.isBuilt ? 'hsl(var(--foreground))' : 'hsl(var(--muted-foreground))'}
+                  strokeWidth={b.isBuilt ? 2.5 : 1.5}
+                  strokeDasharray={b.isBuilt ? undefined : '4 3'}
+                  strokeLinecap="round"
+                />
+              );
+            })}
+          </g>
+        )}
+
+
 
 
         {/* Layer ordering: selected layer on top */}
