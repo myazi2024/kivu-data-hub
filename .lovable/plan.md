@@ -1,38 +1,30 @@
 ## Problème
 
-Depuis l'ajout du batch multi-lots (`handleCutLotsAlongLine`), tracer une ligne sur la **parcelle-mère seule** (avant tout sous-lot) ne produit aucun effet : la ligne semble ignorée et aucune division n'apparaît.
+Le bouton « Approuver » échoue avec `cannot insert a non-DEFAULT value into column "area_hectares"`. La colonne `cadastral_parcels.area_hectares` est `GENERATED ALWAYS AS (area_sqm / 10000.0)`, mais **deux fonctions trigger** SQL essaient encore d'écrire dedans :
 
-Cause exacte (`StepLotDesigner.tsx`, ligne 533) :
+- `create_parcel_from_approved_contribution()` — INSERT incluant `area_hectares` (ligne 16, 27)
+- `sync_approved_contribution_to_parcel()` — INSERT et UPDATE incluant `area_hectares` (lignes 168, 200, 233)
 
-```ts
-if (lot.isParentBoundary || lot.vertices.length < 3) {
-  nextLots.push(lot);
-  continue;   // ← la parcelle-mère est systématiquement sautée
-}
-```
+Les deux sont déclenchées sur `UPDATE` de `cadastral_contributions` quand le statut passe à `approved`, donc l'erreur remonte côté admin. Le code TypeScript du front est déjà correct (il n'insère pas `area_hectares`) — seules les fonctions Postgres sont à corriger.
 
-Avant le batch, le fallback appelait `handleCutLot` sur le lot contenant le milieu — et `handleCutLot` (l. 466) n'a aucune garde `isParentBoundary`, donc la mère était coupée sans souci. Le batch a accidentellement perdu ce comportement.
+## Plan
 
-La modification de la longueur de voie (`RoadsListPanel`) n'est **pas** en cause — elle ne touche ni `handleCutLotsAlongLine`, ni le rendu du canvas, ni la liste `lots`.
+### Migration SQL (une seule, deux `CREATE OR REPLACE FUNCTION`)
 
-## Changement
+**1. `create_parcel_from_approved_contribution()`**
+- Retirer la colonne `area_hectares` de la liste des colonnes du `INSERT INTO cadastral_parcels`
+- Retirer la valeur correspondante `NEW.area_sqm / 10000.0` du `VALUES`
+- Tout le reste de la fonction (historiques propriétaires/bornage/taxes/hypothèques/permis) reste identique
 
-### `StepLotDesigner.tsx` — `handleCutLotsAlongLine` (l. 528-594)
+**2. `sync_approved_contribution_to_parcel()`**
+- Dans la branche `UPDATE` : supprimer la ligne `area_hectares = COALESCE(NEW.area_sqm / 10000, area_hectares),`
+- Dans la branche `INSERT` (fallback sans `original_parcel_id`) : retirer `area_hectares` de la liste de colonnes et la valeur `COALESCE(NEW.area_sqm / 10000, 0)` correspondante
+- Conserver `SECURITY DEFINER` + `SET search_path = public`
 
-Retirer la garde `lot.isParentBoundary` : la parcelle-mère doit pouvoir être coupée comme n'importe quel lot. Les deux enfants produits sont déjà marqués `isParentBoundary: false` (l. 575, 584), donc la mère disparaît au profit de deux vrais lots — exactement le comportement de `handleCutLot` historique.
+Aucune modification de schéma (la colonne `area_hectares` reste `GENERATED ALWAYS`), aucune modification des triggers eux-mêmes, aucune modification du code TypeScript. Le calcul `area_hectares = area_sqm / 10000` continuera d'être produit automatiquement par Postgres à chaque INSERT/UPDATE de `area_sqm`.
 
-```ts
-if (lot.vertices.length < 3) {       // on garde uniquement la garde géométrique
-  nextLots.push(lot);
-  continue;
-}
-```
+### Vérification post-migration
 
-Aucune autre modification : algo d'intersection, numérotation `nextLotNumber`, analytics `lot_cut`, fallback `onCutLot`, rendu de la ligne en cours, mode `drawRoad`, et l'éditeur de longueur de voie restent strictement inchangés.
-
-## Vérifications post-fix (non-régression)
-
-- Diviser la parcelle-mère seule en deux lots via "tracer une ligne" → 2 lots créés, mère remplacée.
-- Tracer une ligne traversant plusieurs sous-lots adjacents → toujours coupés en batch.
-- Tracer une voie (`drawRoad`) → comportement inchangé (passe par `handleFinishRoadDraw`).
-- Ajuster largeur ET longueur d'une voie dans le panneau → la liste `lots` n'est pas affectée.
+- Approuver une contribution `pending` de type `new` → parcelle créée, `area_hectares` peuplé automatiquement
+- Approuver une contribution `update` liée à `original_parcel_id` → parcelle mise à jour, pas d'erreur
+- `SELECT area_sqm, area_hectares FROM cadastral_parcels` sur la nouvelle ligne → ratio 10000 respecté
