@@ -1149,7 +1149,28 @@ const LotCanvas: React.FC<LotCanvasProps> = ({
         {parentTicksNode}
 
 
-        {/* Parent parcel side measurements — now rendered via placedLabels overlay (anti-collision + LOD). */}
+        {/* Boundaries (limites tracées par l'utilisateur) — rendu sous les voies. */}
+        {boundaries.length > 0 && (
+          <g key="boundaries-layer" pointerEvents="none">
+            {boundaries.map(b => {
+              if (!b.path || b.path.length < 2) return null;
+              const a = toScreen(b.path[0]);
+              const c = toScreen(b.path[b.path.length - 1]);
+              return (
+                <line
+                  key={b.id}
+                  x1={a.x} y1={a.y} x2={c.x} y2={c.y}
+                  stroke={b.isBuilt ? 'hsl(var(--foreground))' : 'hsl(var(--muted-foreground))'}
+                  strokeWidth={b.isBuilt ? 2.5 : 1.5}
+                  strokeDasharray={b.isBuilt ? undefined : '4 3'}
+                  strokeLinecap="round"
+                />
+              );
+            })}
+          </g>
+        )}
+
+
 
 
         {/* Layer ordering: selected layer on top */}
