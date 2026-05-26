@@ -22,7 +22,7 @@ import { CCCTestDialog } from './ccc/CCCTestDialog';
 import type { Contribution, ContributionStats, ValidationResult, TestResult } from './ccc/types';
 import type {
   OwnershipHistoryEntry, BoundaryHistoryEntry, BuildingPermitEntry,
-  MortgageHistoryEntry, GpsCoordinate,
+  MortgageHistoryEntry,
 } from './ccc/cccHelpers';
 import { useAdminAnalytics } from '@/lib/adminAnalytics';
 
