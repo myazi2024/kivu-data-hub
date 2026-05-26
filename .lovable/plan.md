@@ -1,30 +1,45 @@
 ## Problème
 
-Le bouton « Approuver » échoue avec `cannot insert a non-DEFAULT value into column "area_hectares"`. La colonne `cadastral_parcels.area_hectares` est `GENERATED ALWAYS AS (area_sqm / 10000.0)`, mais **deux fonctions trigger** SQL essaient encore d'écrire dedans :
+Le bouton « Approuver » échoue avec :
+`new row for relation "cadastral_parcels" violates check constraint "cadastral_parcels_declared_usage_check"`
 
-- `create_parcel_from_approved_contribution()` — INSERT incluant `area_hectares` (ligne 16, 27)
-- `sync_approved_contribution_to_parcel()` — INSERT et UPDATE incluant `area_hectares` (lignes 168, 200, 233)
+Ligne fautive : `declared_usage = 'Usage mixte'`.
 
-Les deux sont déclenchées sur `UPDATE` de `cadastral_contributions` quand le statut passe à `approved`, donc l'erreur remonte côté admin. Le code TypeScript du front est déjà correct (il n'insère pas `area_hectares`) — seules les fonctions Postgres sont à corriger.
+La contrainte CHECK actuelle sur `cadastral_parcels.declared_usage` n'accepte que les **valeurs héritées** :
+`'Résidentiel', 'Commercial', 'Mixte', 'Institutionnel', 'Industriel', 'Agricole'`.
+
+Or, le formulaire CCC (`useCCCFormPicklists` → `picklist_declared_usage`, cf. `src/utils/declaredUsageNormalizer.ts`) écrit désormais :
+`'Habitation', 'Usage mixte', 'Commerce', 'Bureau', 'Entrepôt', 'Industrie', 'Agriculture', 'Terrain vacant', 'Parking'`.
+
+Quand le trigger `create_parcel_from_approved_contribution()` copie la contribution vers `cadastral_parcels`, la valeur courante « Usage mixte » est rejetée. Aucun trigger ne fait de normalisation, et la source de vérité front est la nouvelle picklist — c'est la contrainte qui est obsolète.
 
 ## Plan
 
-### Migration SQL (une seule, deux `CREATE OR REPLACE FUNCTION`)
+### Migration SQL (une seule)
 
-**1. `create_parcel_from_approved_contribution()`**
-- Retirer la colonne `area_hectares` de la liste des colonnes du `INSERT INTO cadastral_parcels`
-- Retirer la valeur correspondante `NEW.area_sqm / 10000.0` du `VALUES`
-- Tout le reste de la fonction (historiques propriétaires/bornage/taxes/hypothèques/permis) reste identique
+**1. Remplacer la contrainte `cadastral_parcels_declared_usage_check`**
+- `ALTER TABLE public.cadastral_parcels DROP CONSTRAINT cadastral_parcels_declared_usage_check;`
+- `ALTER TABLE public.cadastral_parcels ADD CONSTRAINT cadastral_parcels_declared_usage_check CHECK (declared_usage = ANY (ARRAY[…]));`
 
-**2. `sync_approved_contribution_to_parcel()`**
-- Dans la branche `UPDATE` : supprimer la ligne `area_hectares = COALESCE(NEW.area_sqm / 10000, area_hectares),`
-- Dans la branche `INSERT` (fallback sans `original_parcel_id`) : retirer `area_hectares` de la liste de colonnes et la valeur `COALESCE(NEW.area_sqm / 10000, 0)` correspondante
-- Conserver `SECURITY DEFINER` + `SET search_path = public`
+Liste autorisée (union picklist CCC actuelle + valeurs légales encore présentes en base pour rétro-compatibilité) :
 
-Aucune modification de schéma (la colonne `area_hectares` reste `GENERATED ALWAYS`), aucune modification des triggers eux-mêmes, aucune modification du code TypeScript. Le calcul `area_hectares = area_sqm / 10000` continuera d'être produit automatiquement par Postgres à chaque INSERT/UPDATE de `area_sqm`.
+```
+'Habitation', 'Usage mixte', 'Commerce', 'Bureau', 'Entrepôt',
+'Industrie', 'Agriculture', 'Terrain vacant', 'Parking', 'Location',
+-- legacy
+'Résidentiel', 'Commercial', 'Mixte', 'Institutionnel', 'Industriel', 'Agricole'
+```
+
+(Liste alignée avec `KNOWN_USAGES` + `LEGACY_MAP` de `src/utils/declaredUsageNormalizer.ts`.)
+
+### Hors scope
+
+- Pas de modification des triggers `create_parcel_from_approved_contribution()` ni `sync_approved_contribution_to_parcel()` — leur correctif `area_hectares` reste en place.
+- Pas de modification du front (`declaredUsageNormalizer.ts` reste l'unique source de mapping pour l'affichage analytique).
+- Les contraintes `construction_nature`, `parcel_type`, `lease_type` ne sont pas concernées (le ligne fautive les respecte).
 
 ### Vérification post-migration
 
-- Approuver une contribution `pending` de type `new` → parcelle créée, `area_hectares` peuplé automatiquement
-- Approuver une contribution `update` liée à `original_parcel_id` → parcelle mise à jour, pas d'erreur
-- `SELECT area_sqm, area_hectares FROM cadastral_parcels` sur la nouvelle ligne → ratio 10000 respecté
+- Réessayer l'approbation de la contribution `SU/123456` (déclared_usage = « Usage mixte ») → doit créer la parcelle.
+- `SELECT DISTINCT declared_usage FROM cadastral_contributions` (« Habitation », « Usage mixte ») → toutes acceptées par la nouvelle contrainte.
+- Aucune ligne existante de `cadastral_parcels` rejetée (les valeurs legacy restent autorisées).
