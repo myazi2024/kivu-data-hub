@@ -1,45 +1,32 @@
 ## Problème
 
-Le bouton « Approuver » échoue avec :
-`new row for relation "cadastral_parcels" violates check constraint "cadastral_parcels_declared_usage_check"`
+À l'approbation d'une contribution, le toast `Contribution approuvée mais erreur lors de la création de la parcelle` s'affiche. Cause racine : **la parcelle est créée deux fois**.
 
-Ligne fautive : `declared_usage = 'Usage mixte'`.
-
-La contrainte CHECK actuelle sur `cadastral_parcels.declared_usage` n'accepte que les **valeurs héritées** :
-`'Résidentiel', 'Commercial', 'Mixte', 'Institutionnel', 'Industriel', 'Agricole'`.
-
-Or, le formulaire CCC (`useCCCFormPicklists` → `picklist_declared_usage`, cf. `src/utils/declaredUsageNormalizer.ts`) écrit désormais :
-`'Habitation', 'Usage mixte', 'Commerce', 'Bureau', 'Entrepôt', 'Industrie', 'Agriculture', 'Terrain vacant', 'Parking'`.
-
-Quand le trigger `create_parcel_from_approved_contribution()` copie la contribution vers `cadastral_parcels`, la valeur courante « Usage mixte » est rejetée. Aucun trigger ne fait de normalisation, et la source de vérité front est la nouvelle picklist — c'est la contrainte qui est obsolète.
+1. Le trigger DB `trigger_create_parcel_on_approval` (fonction `create_parcel_from_approved_contribution`) crée déjà la parcelle dans `cadastral_parcels` quand `status` passe à `approved`.
+2. Le trigger DB `sync_contribution_to_parcel_trigger` (fonction `sync_approved_contribution_to_parcel`) met aussi à jour la parcelle si une contribution approuvée est éditée.
+3. Le composant `AdminCCCContributions.tsx` fait **en plus** un `INSERT` manuel ligne 322 (nouvelle contribution) et un `UPDATE` manuel ligne 251 (contribution `update`). L'INSERT entre en conflit avec l'unicité de `parcel_number` → échec silencieux côté client → toast d'erreur.
 
 ## Plan
 
-### Migration SQL (une seule)
+### Refactor `src/components/admin/AdminCCCContributions.tsx` (handleApprove)
 
-**1. Remplacer la contrainte `cadastral_parcels_declared_usage_check`**
-- `ALTER TABLE public.cadastral_parcels DROP CONSTRAINT cadastral_parcels_declared_usage_check;`
-- `ALTER TABLE public.cadastral_parcels ADD CONSTRAINT cadastral_parcels_declared_usage_check CHECK (declared_usage = ANY (ARRAY[…]));`
-
-Liste autorisée (union picklist CCC actuelle + valeurs légales encore présentes en base pour rétro-compatibilité) :
-
-```
-'Habitation', 'Usage mixte', 'Commerce', 'Bureau', 'Entrepôt',
-'Industrie', 'Agriculture', 'Terrain vacant', 'Parking', 'Location',
--- legacy
-'Résidentiel', 'Commercial', 'Mixte', 'Institutionnel', 'Industriel', 'Agricole'
-```
-
-(Liste alignée avec `KNOWN_USAGES` + `LEGACY_MAP` de `src/utils/declaredUsageNormalizer.ts`.)
+1. **Supprimer** le bloc `INSERT` manuel sur `cadastral_parcels` (lignes ~322‑386).
+2. **Supprimer** le bloc `UPDATE` manuel sur `cadastral_parcels` (lignes ~251‑311) pour la branche `isUpdateContribution`.
+3. Après l'update de la contribution (`status='approved'`), récupérer `targetParcelId` :
+   - branche `update` : `targetParcelId = updatedContribution.original_parcel_id` (inchangé).
+   - branche création : `SELECT id FROM cadastral_parcels WHERE parcel_number = updatedContribution.parcel_number` (créé à l'instant par le trigger).
+   - Si le SELECT renvoie 0 ligne → toast d'erreur explicite et `return`.
+4. Conserver intégralement la logique de création des historiques associés (`cadastral_ownership_history`, `cadastral_boundary_history`, `cadastral_tax_history`, `cadastral_building_permits`, `cadastral_mortgages`) qui utilise `targetParcelId`.
+5. Conserver les messages de succès, audit, analytics, `fetchContributions()`.
 
 ### Hors scope
 
-- Pas de modification des triggers `create_parcel_from_approved_contribution()` ni `sync_approved_contribution_to_parcel()` — leur correctif `area_hectares` reste en place.
-- Pas de modification du front (`declaredUsageNormalizer.ts` reste l'unique source de mapping pour l'affichage analytique).
-- Les contraintes `construction_nature`, `parcel_type`, `lease_type` ne sont pas concernées (le ligne fautive les respecte).
+- Aucune migration SQL. Les triggers `create_parcel_from_approved_contribution` et `sync_approved_contribution_to_parcel` (déjà corrigés pour `area_hectares`) restent inchangés.
+- Aucune modification des contraintes `declared_usage`, `parcel_type`, etc.
+- Aucune modification de la création des historiques / hypothèques.
 
-### Vérification post-migration
+### Vérification post-fix
 
-- Réessayer l'approbation de la contribution `SU/123456` (déclared_usage = « Usage mixte ») → doit créer la parcelle.
-- `SELECT DISTINCT declared_usage FROM cadastral_contributions` (« Habitation », « Usage mixte ») → toutes acceptées par la nouvelle contrainte.
-- Aucune ligne existante de `cadastral_parcels` rejetée (les valeurs legacy restent autorisées).
+- Approuver une contribution `pending` (ex. `SU/123456`, `declared_usage = "Usage mixte"`) → toast succès, parcelle visible dans `cadastral_parcels` (créée par trigger), histoires créées, code CCC généré.
+- Approuver une contribution de type `update` → la parcelle existante reflète les nouvelles données (via trigger sync), aucune duplication.
+- Aucune erreur `duplicate key value violates unique constraint "cadastral_parcels_parcel_number_key"` dans les logs Postgres.

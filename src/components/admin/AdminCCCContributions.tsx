@@ -244,143 +244,23 @@ const AdminCCCContributions: React.FC = () => {
       let targetParcelId: string;
 
       if (isUpdateContribution) {
-        // Pour les contributions "update", mettre à jour la parcelle existante avec les nouvelles données
+        // La parcelle existante est mise à jour automatiquement par
+        // le trigger DB `sync_contribution_to_parcel_trigger`.
         targetParcelId = updatedContribution.original_parcel_id;
-        console.log('Contribution de mise à jour - mise à jour de la parcelle existante:', targetParcelId);
-
-        const { error: updateParcelError } = await supabase
-          .from('cadastral_parcels')
-          .update({
-            parcel_number: updatedContribution.parcel_number,
-            current_owner_name: updatedContribution.current_owner_name,
-            current_owner_legal_status: updatedContribution.current_owner_legal_status,
-            current_owner_since: updatedContribution.current_owner_since,
-            area_sqm: updatedContribution.area_sqm,
-            parcel_type: updatedContribution.parcel_type || undefined,
-            property_title_type: updatedContribution.property_title_type,
-            title_reference_number: updatedContribution.title_reference_number,
-            title_issue_date: updatedContribution.title_issue_date,
-            lease_type: updatedContribution.lease_type,
-            construction_type: updatedContribution.construction_type,
-            construction_nature: updatedContribution.construction_nature,
-            construction_materials: updatedContribution.construction_materials,
-            construction_year: updatedContribution.construction_year,
-            declared_usage: updatedContribution.declared_usage,
-            standing: updatedContribution.standing,
-            house_number: updatedContribution.house_number,
-            property_category: updatedContribution.property_category,
-            apartment_number: updatedContribution.apartment_number,
-            floor_number: updatedContribution.floor_number,
-            is_title_in_current_owner_name: updatedContribution.is_title_in_current_owner_name,
-            lease_years: updatedContribution.lease_years,
-            additional_constructions: updatedContribution.additional_constructions,
-            road_sides: updatedContribution.road_sides,
-            servitude_data: updatedContribution.servitude_data,
-            has_dispute: updatedContribution.has_dispute,
-            dispute_data: updatedContribution.dispute_data,
-            building_shapes: updatedContribution.building_shapes,
-            sound_environment: updatedContribution.sound_environment,
-            nearby_noise_sources: updatedContribution.nearby_noise_sources,
-            province: updatedContribution.province,
-            ville: updatedContribution.ville,
-            commune: updatedContribution.commune,
-            quartier: updatedContribution.quartier,
-            avenue: updatedContribution.avenue,
-            territoire: updatedContribution.territoire,
-            collectivite: updatedContribution.collectivite,
-            groupement: updatedContribution.groupement,
-            village: updatedContribution.village,
-            location: [
-              updatedContribution.province,
-              updatedContribution.ville,
-              updatedContribution.commune,
-              updatedContribution.quartier
-            ].filter(Boolean).join(', ') || undefined,
-            gps_coordinates: updatedContribution.gps_coordinates,
-            parcel_sides: updatedContribution.parcel_sides,
-            whatsapp_number: updatedContribution.whatsapp_number,
-            owner_document_url: updatedContribution.owner_document_url,
-            property_title_document_url: updatedContribution.property_title_document_url,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', targetParcelId);
-
-        if (updateParcelError) {
-          console.error('Erreur lors de la mise à jour de la parcelle:', updateParcelError);
-          toast.warning('Contribution approuvée mais erreur lors de la mise à jour de la parcelle');
-        }
+        console.log('Contribution de mise à jour - parcelle synchronisée par trigger:', targetParcelId);
       } else {
-        // Pour les nouvelles contributions, créer la parcelle
-        let latitude = null;
-        let longitude = null;
-        if (updatedContribution.gps_coordinates && Array.isArray(updatedContribution.gps_coordinates) && updatedContribution.gps_coordinates.length > 0) {
-          const firstCoord = updatedContribution.gps_coordinates[0] as GpsCoordinate;
-          latitude = firstCoord.lat || firstCoord.latitude || null;
-          longitude = firstCoord.lng || firstCoord.longitude || null;
-        }
-
-        const { data: createdParcel, error: parcelError } = await supabase
+        // Pour les nouvelles contributions, la parcelle est créée automatiquement
+        // par le trigger DB `trigger_create_parcel_on_approval`.
+        // On récupère son id pour chaîner les historiques associés.
+        const { data: createdParcel, error: parcelFetchError } = await supabase
           .from('cadastral_parcels')
-          .insert({
-            parcel_number: updatedContribution.parcel_number,
-            current_owner_name: updatedContribution.current_owner_name,
-            current_owner_legal_status: updatedContribution.current_owner_legal_status,
-            current_owner_since: updatedContribution.current_owner_since,
-            area_sqm: updatedContribution.area_sqm,
-            parcel_type: updatedContribution.parcel_type || 'SU',
-            property_title_type: updatedContribution.property_title_type,
-            title_reference_number: updatedContribution.title_reference_number,
-            title_issue_date: updatedContribution.title_issue_date,
-            lease_type: updatedContribution.lease_type,
-            construction_type: updatedContribution.construction_type,
-            construction_nature: updatedContribution.construction_nature,
-            construction_materials: updatedContribution.construction_materials,
-            construction_year: updatedContribution.construction_year,
-            declared_usage: updatedContribution.declared_usage,
-            standing: updatedContribution.standing,
-            house_number: updatedContribution.house_number,
-            property_category: updatedContribution.property_category,
-            apartment_number: updatedContribution.apartment_number,
-            floor_number: updatedContribution.floor_number,
-            is_title_in_current_owner_name: updatedContribution.is_title_in_current_owner_name,
-            lease_years: updatedContribution.lease_years,
-            additional_constructions: updatedContribution.additional_constructions,
-            road_sides: updatedContribution.road_sides,
-            servitude_data: updatedContribution.servitude_data,
-            has_dispute: updatedContribution.has_dispute,
-            dispute_data: updatedContribution.dispute_data,
-            building_shapes: updatedContribution.building_shapes,
-            sound_environment: updatedContribution.sound_environment,
-            nearby_noise_sources: updatedContribution.nearby_noise_sources,
-            province: updatedContribution.province,
-            ville: updatedContribution.ville,
-            commune: updatedContribution.commune,
-            quartier: updatedContribution.quartier,
-            avenue: updatedContribution.avenue,
-            territoire: updatedContribution.territoire,
-            collectivite: updatedContribution.collectivite,
-            groupement: updatedContribution.groupement,
-            village: updatedContribution.village,
-            location: [
-              updatedContribution.province,
-              updatedContribution.ville,
-              updatedContribution.commune,
-              updatedContribution.quartier
-            ].filter(Boolean).join(', ') || 'Non renseigné',
-            gps_coordinates: updatedContribution.gps_coordinates,
-            parcel_sides: updatedContribution.parcel_sides,
-            latitude,
-            longitude,
-            whatsapp_number: updatedContribution.whatsapp_number,
-            owner_document_url: updatedContribution.owner_document_url,
-            property_title_document_url: updatedContribution.property_title_document_url
-          })
-          .select()
-          .single();
+          .select('id')
+          .eq('parcel_number', updatedContribution.parcel_number)
+          .maybeSingle();
 
-        if (parcelError) {
-          console.error('Erreur lors de la création de la parcelle:', parcelError);
-          toast.error('Contribution approuvée mais erreur lors de la création de la parcelle');
+        if (parcelFetchError || !createdParcel) {
+          console.error('Erreur lors de la récupération de la parcelle créée:', parcelFetchError);
+          toast.error('Contribution approuvée mais parcelle introuvable. Vérifiez les logs.');
           await fetchContributions();
           return;
         }
@@ -479,6 +359,7 @@ const AdminCCCContributions: React.FC = () => {
           toast.warning(`Parcelle créée mais erreurs sur les historiques: ${historyErrors.join(', ')}`);
         }
       }
+
 
       // Traiter les hypothèques (pour les nouvelles contributions ET les mises à jour)
       if (updatedContribution.mortgage_history && Array.isArray(updatedContribution.mortgage_history)) {
