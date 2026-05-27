@@ -406,8 +406,13 @@ const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefre
                       <Label>Aperçu icône</Label>
                       <div className="h-10 flex items-center gap-2 px-3 rounded-md border bg-muted/20">
                         {(() => {
-                          const Icon = formData.icon_name ? resolveLucideIcon(formData.icon_name, null as any) : null;
-                          return Icon ? <Icon className="h-4 w-4 text-primary" /> : <span className="text-xs text-muted-foreground">Icône invalide ou vide</span>;
+                          if (!formData.icon_name) return <span className="text-xs text-muted-foreground">Saisir un nom d'icône Lucide</span>;
+                          const Icon = resolveLucideIcon(formData.icon_name);
+                          const Fallback = resolveLucideIcon('___invalid___');
+                          const isValid = Icon !== Fallback;
+                          return isValid
+                            ? <><Icon className="h-4 w-4 text-primary" /><span className="text-xs text-muted-foreground">{formData.icon_name}</span></>
+                            : <span className="text-xs text-destructive">Icône inconnue</span>;
                         })()}
                       </div>
                     </div>
