@@ -1,32 +1,59 @@
-## Problème
+## Diagnostic
 
-À l'approbation d'une contribution, le toast `Contribution approuvée mais erreur lors de la création de la parcelle` s'affiche. Cause racine : **la parcelle est créée deux fois**.
+J'ai inspecté `useCadastralPayment.tsx`, `CadastralPaymentDialog.tsx`, `useTestMode.tsx` et la table `cadastral_search_config`. **Le mode test est actuellement activé dans la base** (`config_key='test_mode'` → `enabled: true`). Cela explique entièrement les deux problèmes :
 
-1. Le trigger DB `trigger_create_parcel_on_approval` (fonction `create_parcel_from_approved_contribution`) crée déjà la parcelle dans `cadastral_parcels` quand `status` passe à `approved`.
-2. Le trigger DB `sync_contribution_to_parcel_trigger` (fonction `sync_approved_contribution_to_parcel`) met aussi à jour la parcelle si une contribution approuvée est éditée.
-3. Le composant `AdminCCCContributions.tsx` fait **en plus** un `INSERT` manuel ligne 322 (nouvelle contribution) et un `UPDATE` manuel ligne 251 (contribution `update`). L'INSERT entre en conflit avec l'unicité de `parcel_number` → échec silencieux côté client → toast d'erreur.
+### Problème 1 — Remise CCC non déduite
+
+Dans `useCadastralPayment.tsx` (branche `if (isTestModeActive)`, lignes ~150-180), la facture est insérée directement avec :
+
+```ts
+total_amount_usd: totalAmount,        // somme brute
+discount_amount_usd: 0,
+// discountData ignoré
+```
+
+Le paramètre `discountData` n'est **jamais** utilisé dans cette branche. Résultat : la facture remise au `CadastralPaymentDialog` affiche le sous-total complet, sans la remise CCC.
+
+Hors mode test, la RPC `create_cadastral_invoice_secure_v2` applique correctement la remise via `discount_code_param`.
+
+### Problème 2 — Bannière « Mode Test actif »
+
+`CadastralPaymentDialog.tsx` (ligne 244) affiche la bannière « Mode Test actif » et le bouton « Simuler le paiement (test) » dès que `useTestMode().isTestModeActive === true`. C'est le comportement attendu **quand le mode test est activé**.
+
+## Cause racine commune
+
+Le mode test n'a pas été désactivé après les tests précédents. L'utilisateur effectue une transaction qu'il considère réelle, mais l'application est encore en mode test.
 
 ## Plan
 
-### Refactor `src/components/admin/AdminCCCContributions.tsx` (handleApprove)
+### 1. Désactiver le mode test (migration SQL)
 
-1. **Supprimer** le bloc `INSERT` manuel sur `cadastral_parcels` (lignes ~322‑386).
-2. **Supprimer** le bloc `UPDATE` manuel sur `cadastral_parcels` (lignes ~251‑311) pour la branche `isUpdateContribution`.
-3. Après l'update de la contribution (`status='approved'`), récupérer `targetParcelId` :
-   - branche `update` : `targetParcelId = updatedContribution.original_parcel_id` (inchangé).
-   - branche création : `SELECT id FROM cadastral_parcels WHERE parcel_number = updatedContribution.parcel_number` (créé à l'instant par le trigger).
-   - Si le SELECT renvoie 0 ligne → toast d'erreur explicite et `return`.
-4. Conserver intégralement la logique de création des historiques associés (`cadastral_ownership_history`, `cadastral_boundary_history`, `cadastral_tax_history`, `cadastral_building_permits`, `cadastral_mortgages`) qui utilise `targetParcelId`.
-5. Conserver les messages de succès, audit, analytics, `fetchContributions()`.
+Mettre `enabled: false` dans `cadastral_search_config` pour `config_key = 'test_mode'`. Une fois exécuté :
+- Le flux passera par la RPC `create_cadastral_invoice_secure_v2` → la remise CCC sera appliquée côté serveur.
+- La bannière « Mode Test actif » disparaîtra du dialog de paiement.
+- Les vrais fournisseurs de paiement (Stripe / Mobile Money) seront utilisés.
 
-### Hors scope
+### 2. Correctif défensif : appliquer la remise même en mode test
 
-- Aucune migration SQL. Les triggers `create_parcel_from_approved_contribution` et `sync_approved_contribution_to_parcel` (déjà corrigés pour `area_hectares`) restent inchangés.
-- Aucune modification des contraintes `declared_usage`, `parcel_type`, etc.
-- Aucune modification de la création des historiques / hypothèques.
+Dans `src/hooks/useCadastralPayment.tsx`, branche `isTestModeActive`, utiliser `discountData` pour calculer :
 
-### Vérification post-fix
+```ts
+const originalAmount = selectedServices.reduce((s, x) => s + (x.price || 0), 0);
+const discountAmt = Math.min(discountData?.amount ?? 0, originalAmount);
+const totalAmount = Math.max(0, originalAmount - discountAmt);
+```
 
-- Approuver une contribution `pending` (ex. `SU/123456`, `declared_usage = "Usage mixte"`) → toast succès, parcelle visible dans `cadastral_parcels` (créée par trigger), histoires créées, code CCC généré.
-- Approuver une contribution de type `update` → la parcelle existante reflète les nouvelles données (via trigger sync), aucune duplication.
-- Aucune erreur `duplicate key value violates unique constraint "cadastral_parcels_parcel_number_key"` dans les logs Postgres.
+Et stocker `original_amount_usd = originalAmount`, `discount_amount_usd = discountAmt`, `discount_code_used = discountData?.code ?? null`, `total_amount_usd = totalAmount`. Ainsi le dialog affichera le bon montant même si l'admin réactive le mode test.
+
+Aucun changement à la RPC, au dialog, ni au composant BillingTotals (qui calcule déjà correctement `discountedAmount` pour l'affichage du panneau de facturation — le bug est purement côté facture créée).
+
+## Hors périmètre
+
+- Logique de validation/application de la remise dans la RPC (déjà correcte).
+- UI du panneau (l'affichage de la remise dans `BillingTotals` fonctionne déjà).
+- Flux Stripe / Mobile Money réels.
+
+## Vérification post-fix
+
+1. Confirmer dans la table `cadastral_search_config` que `test_mode.enabled = false`.
+2. Re-tester le flux SU/123456 + CCC-58829 : la facture créée doit avoir `total_amount_usd = sous-total − remise`, la bannière « Mode Test » doit être absente.
