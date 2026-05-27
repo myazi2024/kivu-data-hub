@@ -149,9 +149,7 @@ export const useCadastralPayment = () => {
 
       // Mode test actif → INSERT direct sans RPC sécurisée
       if (isTestModeActive) {
-        const originalAmount = selectedServices.reduce((sum, s) => sum + (s.price || 0), 0);
-        const discountAmt = Math.min(Math.max(discountData?.amount ?? 0, 0), originalAmount);
-        const totalAmount = Math.max(0, originalAmount - discountAmt);
+        const totalAmount = selectedServices.reduce((sum, s) => sum + (s.price || 0), 0);
         const { data: testInvoice, error: testError } = await supabase
           .from('cadastral_invoices')
           .insert({
@@ -160,9 +158,8 @@ export const useCadastralPayment = () => {
             invoice_number: `TEST-${Date.now()}`,
             selected_services: serviceIds,
             total_amount_usd: totalAmount,
-            original_amount_usd: originalAmount,
-            discount_amount_usd: discountAmt,
-            discount_code_used: discountData?.code || null,
+            original_amount_usd: totalAmount,
+            discount_amount_usd: 0,
             payment_method: 'TEST',
             client_email: user.email || '',
             client_name: fiscalIdentity?.client_name || user.user_metadata?.full_name || null,
@@ -179,7 +176,6 @@ export const useCadastralPayment = () => {
           })
           .select()
           .single();
-
 
         if (testError) throw testError;
 
