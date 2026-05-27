@@ -6,6 +6,9 @@ import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent } from '@/components/ui/collapsible';
 import { trackEvent } from '@/lib/analytics';
 import type { CadastralService } from '@/hooks/useCadastralServices';
+import { getCadastralCategoryMeta } from '@/constants/cadastralServiceCategories';
+import { useCurrencyConfig } from '@/hooks/useCurrencyConfig';
+import { formatCurrency } from '@/utils/formatters';
 
 interface ServiceListItemProps {
   service: CadastralService;
@@ -56,13 +59,9 @@ const ServiceListItem: React.FC<ServiceListItemProps> = ({
     onToggleSelect();
   };
 
-  const category = service.category ?? 'consultation';
-  const categoryMeta: Record<string, { label: string; className: string }> = {
-    consultation: { label: 'Consultation', className: 'bg-muted text-muted-foreground border-border' },
-    fiscal: { label: 'Fiscal', className: 'bg-secondary text-secondary-foreground border-border' },
-    juridique: { label: 'Juridique', className: 'bg-destructive/10 text-destructive border-destructive/30' },
-  };
-  const catInfo = categoryMeta[category] ?? categoryMeta.consultation;
+  const catInfo = getCadastralCategoryMeta(service.category);
+  const { selectedCurrency, convertFromUsd } = useCurrencyConfig();
+  const priceLabel = formatCurrency(convertFromUsd(service.price), selectedCurrency);
 
   return (
     <div
@@ -126,7 +125,7 @@ const ServiceListItem: React.FC<ServiceListItemProps> = ({
           variant={hasData ? 'default' : 'secondary'}
           className={`shrink-0 ${hasData ? 'text-sm px-2 py-0.5 font-semibold' : 'text-xs px-1.5 py-0.5 opacity-60'}`}
         >
-          ${service.price.toFixed(2)}
+          {priceLabel}
         </Badge>
 
         <Checkbox

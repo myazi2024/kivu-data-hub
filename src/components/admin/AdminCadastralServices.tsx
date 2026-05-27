@@ -8,12 +8,21 @@ import { Switch } from '@/components/ui/switch';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Plus, Edit, Trash2, AlertCircle, DollarSign } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import {
+  CADASTRAL_SERVICE_CATEGORIES,
+  type CadastralServiceCategory,
+  getCadastralCategoryMeta,
+} from '@/constants/cadastralServiceCategories';
+import { validateRequiredDataFieldsJson } from '@/lib/cadastralServiceRules';
+import { resolveLucideIcon } from '@/lib/lucideIconMap';
+import { trackEvent } from '@/lib/analytics';
 
-interface CadastralService {
+interface CadastralServiceRow {
   id: string;
   service_id: string;
   name: string;
@@ -23,6 +32,7 @@ interface CadastralService {
   icon_name: string | null;
   display_order: number | null;
   required_data_fields: any;
+  category: CadastralServiceCategory | string | null;
   created_at: string;
   updated_at: string;
 }
@@ -32,9 +42,9 @@ interface AdminCadastralServicesProps {
 }
 
 const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefresh }) => {
-  const [services, setServices] = useState<CadastralService[]>([]);
+  const [services, setServices] = useState<CadastralServiceRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [editingService, setEditingService] = useState<CadastralService | null>(null);
+  const [editingService, setEditingService] = useState<CadastralServiceRow | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [requiredDataFieldsText, setRequiredDataFieldsText] = useState('');
   const [requiredDataFieldsError, setRequiredDataFieldsError] = useState<string | null>(null);
@@ -46,6 +56,7 @@ const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefre
     is_active: true,
     icon_name: '',
     display_order: 0,
+    category: 'consultation' as CadastralServiceCategory,
   });
 
   useEffect(() => {
@@ -78,19 +89,29 @@ const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefre
         return;
       }
 
-      // Parse required_data_fields JSON si non vide
-      let requiredDataFields: any = null;
-      if (requiredDataFieldsText.trim()) {
-        try {
-          requiredDataFields = JSON.parse(requiredDataFieldsText);
-          setRequiredDataFieldsError(null);
-        } catch (e: any) {
-          setRequiredDataFieldsError(`JSON invalide : ${e.message}`);
-          toast.error('Le JSON des règles de disponibilité est invalide');
+      // Validation stricte du JSON de règles de disponibilité.
+      const ruleValidation = validateRequiredDataFieldsJson(requiredDataFieldsText);
+      if (!ruleValidation.valid) {
+        setRequiredDataFieldsError(ruleValidation.error || 'Spec invalide');
+        toast.error(ruleValidation.error || 'Le JSON des règles est invalide');
+        return;
+      }
+      setRequiredDataFieldsError(null);
+
+      // Pré-check unicité service_id en création (évite erreur Postgres opaque).
+      if (!editingService) {
+        const { data: existing } = await supabase
+          .from('cadastral_services_config')
+          .select('id')
+          .eq('service_id', formData.service_id)
+          .maybeSingle();
+        if (existing) {
+          toast.error(`Le service_id "${formData.service_id}" existe déjà. Choisissez un identifiant unique.`);
           return;
         }
       }
 
+      const previousCategory = editingService?.category ?? null;
       const payload = {
         name: formData.name,
         description: formData.description || null,
@@ -98,13 +119,14 @@ const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefre
         is_active: formData.is_active,
         icon_name: formData.icon_name || null,
         display_order: formData.display_order || 0,
-        required_data_fields: requiredDataFields,
+        required_data_fields: ruleValidation.parsed,
+        category: formData.category,
       };
 
       if (editingService) {
         const { error } = await supabase
           .from('cadastral_services_config')
-          .update({ ...payload, updated_at: new Date().toISOString() })
+          .update({ ...payload, required_data_fields: payload.required_data_fields as any, updated_at: new Date().toISOString() })
           .eq('id', editingService.id);
 
         if (error) throw error;
@@ -112,10 +134,18 @@ const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefre
       } else {
         const { error } = await supabase
           .from('cadastral_services_config')
-          .insert([{ ...payload, service_id: formData.service_id }]);
+          .insert([{ ...payload, required_data_fields: payload.required_data_fields as any, service_id: formData.service_id }]);
 
         if (error) throw error;
         toast.success('✅ Service créé avec succès');
+      }
+
+      if (previousCategory !== formData.category) {
+        trackEvent('cadastral_catalog_category_changed', {
+          service_id: formData.service_id,
+          from: previousCategory,
+          to: formData.category,
+        });
       }
 
       fetchServices();
@@ -132,33 +162,15 @@ const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefre
     if (!confirm(`Êtes-vous sûr de vouloir supprimer le service "${serviceId}" ?`)) return;
 
     try {
-      // Vérifier l'utilisation directement dans les factures
-      const { data: invoices, error: invoiceError } = await supabase
+      // Comptage ciblé via jsonb @> (pas de scan limité à 1000).
+      const { count: usageCount, error: invoiceError } = await supabase
         .from('cadastral_invoices')
-        .select('id, selected_services')
-        .limit(1000);
+        .select('id', { count: 'exact', head: true })
+        .contains('selected_services', [serviceId]);
 
       if (invoiceError) throw invoiceError;
 
-      // Compter les factures utilisant ce service
-      let usageCount = 0;
-      invoices?.forEach(invoice => {
-        let services: string[] = [];
-        if (Array.isArray(invoice.selected_services)) {
-          services = invoice.selected_services.filter((item): item is string => typeof item === 'string');
-        } else if (typeof invoice.selected_services === 'string') {
-          try {
-            services = JSON.parse(invoice.selected_services);
-          } catch {
-            services = [];
-          }
-        }
-        if (services.includes(serviceId)) {
-          usageCount++;
-        }
-      });
-
-      if (usageCount > 0) {
+      if ((usageCount ?? 0) > 0) {
         toast.error(
           `Ce service est utilisé dans ${usageCount} facture(s). Désactivez-le plutôt que de le supprimer.`,
           { duration: 5000 }
@@ -182,7 +194,7 @@ const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefre
     }
   };
 
-  const openEditDialog = (service: CadastralService) => {
+  const openEditDialog = (service: CadastralServiceRow) => {
     setEditingService(service);
     setFormData({
       service_id: service.service_id,
@@ -192,6 +204,7 @@ const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefre
       is_active: service.is_active,
       icon_name: service.icon_name || '',
       display_order: service.display_order ?? 0,
+      category: (service.category as CadastralServiceCategory) || 'consultation',
     });
     setRequiredDataFieldsText(
       service.required_data_fields ? JSON.stringify(service.required_data_fields, null, 2) : ''
@@ -210,6 +223,7 @@ const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefre
       is_active: true,
       icon_name: '',
       display_order: 0,
+      category: 'consultation',
     });
     setRequiredDataFieldsText('');
     setRequiredDataFieldsError(null);
@@ -373,6 +387,37 @@ const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefre
                     </div>
                   </div>
 
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="category">Catégorie *</Label>
+                      <Select
+                        value={formData.category}
+                        onValueChange={(v) => setFormData({ ...formData, category: v as CadastralServiceCategory })}
+                      >
+                        <SelectTrigger id="category"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {CADASTRAL_SERVICE_CATEGORIES.map((c) => (
+                            <SelectItem key={c} value={c}>{getCadastralCategoryMeta(c).label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label>Aperçu icône</Label>
+                      <div className="h-10 flex items-center gap-2 px-3 rounded-md border bg-muted/20">
+                        {(() => {
+                          if (!formData.icon_name) return <span className="text-xs text-muted-foreground">Saisir un nom d'icône Lucide</span>;
+                          const Icon = resolveLucideIcon(formData.icon_name);
+                          const Fallback = resolveLucideIcon('___invalid___');
+                          const isValid = Icon !== Fallback;
+                          return isValid
+                            ? <><Icon className="h-4 w-4 text-primary" /><span className="text-xs text-muted-foreground">{formData.icon_name}</span></>
+                            : <span className="text-xs text-destructive">Icône inconnue</span>;
+                        })()}
+                      </div>
+                    </div>
+                  </div>
+
                   <div>
                     <Label htmlFor="required_data_fields">Règles de disponibilité (JSON)</Label>
                     <Textarea
@@ -424,6 +469,7 @@ const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefre
                 <TableHead>Ordre</TableHead>
                 <TableHead>ID</TableHead>
                 <TableHead>Nom</TableHead>
+                <TableHead>Catégorie</TableHead>
                 <TableHead>Icône</TableHead>
                 <TableHead>Prix</TableHead>
                 <TableHead>Règles</TableHead>
@@ -437,6 +483,11 @@ const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefre
                   <TableCell className="text-sm text-muted-foreground">{service.display_order ?? '—'}</TableCell>
                   <TableCell className="font-mono text-sm">{service.service_id}</TableCell>
                   <TableCell className="font-medium">{service.name}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className={getCadastralCategoryMeta(service.category).className}>
+                      {getCadastralCategoryMeta(service.category).label}
+                    </Badge>
+                  </TableCell>
                   <TableCell className="font-mono text-xs">{service.icon_name || '—'}</TableCell>
                   <TableCell>${Number(service.price_usd).toFixed(2)}</TableCell>
                   <TableCell>

@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import type { CadastralServiceCategory } from '@/constants/cadastralServiceCategories';
+
 
 export interface CadastralService {
   id: string;
@@ -10,7 +12,7 @@ export interface CadastralService {
   icon_name?: string | null;
   required_data_fields?: unknown;
   display_order?: number | null;
-  category?: string | null;
+  category?: CadastralServiceCategory | string | null;
 }
 
 /**
@@ -60,8 +62,11 @@ export const useCadastralServices = () => {
   useEffect(() => {
     loadServices();
 
+    // Channel name unique pour éviter les collisions quand plusieurs composants
+    // montent le hook simultanément (panneau facturation + panier + admin).
+    const channelName = `cadastral-services-changes-${Math.random().toString(36).slice(2, 10)}`;
     const channel = supabase
-      .channel('cadastral-services-changes')
+      .channel(channelName)
       .on(
         'postgres_changes',
         {
@@ -70,21 +75,13 @@ export const useCadastralServices = () => {
           table: 'cadastral_services_config'
         },
         (payload) => {
-          console.log('📡 Changement détecté dans cadastral_services_config:', payload);
           loadServices();
-
           if (payload.eventType === 'INSERT') {
-            toast.success('Un nouveau service a été ajouté au catalogue', {
-              description: 'Le catalogue a été mis à jour automatiquement'
-            });
+            toast.success('Un nouveau service a été ajouté au catalogue');
           } else if (payload.eventType === 'UPDATE') {
-            toast.info('Le catalogue de services a été mis à jour', {
-              description: 'Les prix ou descriptions ont pu changer'
-            });
+            toast.info('Le catalogue de services a été mis à jour');
           } else if (payload.eventType === 'DELETE') {
-            toast.warning('Un service a été retiré du catalogue', {
-              description: 'Le catalogue a été actualisé'
-            });
+            toast.warning('Un service a été retiré du catalogue');
           }
         }
       )
@@ -92,8 +89,9 @@ export const useCadastralServices = () => {
         if (err) {
           console.error('❌ Erreur Realtime cadastral_services_config:', err);
         }
-        if (status === 'CHANNEL_ERROR') {
-          console.warn('⚠️ Canal Realtime en erreur, rechargement des services...');
+        // Retry sur tout statut "non vivant" (coupure WS, timeout, fermeture).
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          console.warn(`⚠️ Canal Realtime ${status}, rechargement du catalogue...`);
           loadServices();
         }
       });
