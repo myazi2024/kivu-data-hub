@@ -17,19 +17,7 @@ import { trackEvent } from '@/lib/analytics';
 import { cn } from '@/lib/utils';
 import CartParcelDiscountInput from './cart/CartParcelDiscountInput';
 
-/**
- * Mapping catégorie → libellé court + classes sémantiques (design tokens).
- */
-const CATEGORY_META: Record<string, { label: string; className: string }> = {
-  consultation: { label: 'Consultation', className: 'bg-primary/10 text-primary border-primary/20' },
-  fiscal: { label: 'Fiscal', className: 'bg-accent/20 text-accent-foreground border-accent/30' },
-  juridique: { label: 'Juridique', className: 'bg-secondary text-secondary-foreground border-border' },
-};
-
-const getCategoryMeta = (cat?: string) => {
-  if (!cat) return null;
-  return CATEGORY_META[cat] || { label: cat, className: 'bg-muted text-muted-foreground border-border' };
-};
+import { getCadastralCategoryMeta } from '@/constants/cadastralServiceCategories';
 
 /**
  * Bouton flottant + Sheet récapitulant le panier multi-parcelles cadastral.
