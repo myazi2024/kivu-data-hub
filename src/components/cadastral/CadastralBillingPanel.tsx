@@ -35,6 +35,7 @@ import {
   validateFiscalIdentity,
   type ClientFiscalIdentity,
 } from '@/components/billing/ClientFiscalIdentityForm';
+import { formatCurrency } from '@/utils/formatters';
 
 interface CadastralBillingPanelProps {
   searchResult: CadastralSearchResult;
@@ -342,7 +343,7 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
                         Dossier complet de la parcelle
                       </div>
                       <p className="text-[11px] text-muted-foreground mt-0.5 leading-tight">
-                        {selectableServices.length} services pour ${bundleTotal.toFixed(2)} — toutes les informations en 1 paiement.
+                        {selectableServices.length} services pour {formatCurrency(convertFromUsd(bundleTotal), selectedCurrency)} — toutes les informations en 1 paiement.
                       </p>
                     </div>
                     <Badge variant="secondary" className="text-[10px] px-1.5 py-0.5 shrink-0">
@@ -377,8 +378,8 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
                       }}
                     >
                       {selectedServiceIds.length === 0
-                        ? `Tout ajouter — $${bundleTotal.toFixed(2)}`
-                        : `Compléter le dossier (+$${remainingValue.toFixed(2)})`}
+                        ? `Tout ajouter — ${formatCurrency(convertFromUsd(bundleTotal), selectedCurrency)}`
+                        : `Compléter le dossier (+${formatCurrency(convertFromUsd(remainingValue), selectedCurrency)})`}
                     </Button>
                   )}
                 </div>
