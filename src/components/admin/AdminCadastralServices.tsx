@@ -387,6 +387,32 @@ const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefre
                     </div>
                   </div>
 
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="category">Catégorie *</Label>
+                      <Select
+                        value={formData.category}
+                        onValueChange={(v) => setFormData({ ...formData, category: v as CadastralServiceCategory })}
+                      >
+                        <SelectTrigger id="category"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {CADASTRAL_SERVICE_CATEGORIES.map((c) => (
+                            <SelectItem key={c} value={c}>{getCadastralCategoryMeta(c).label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label>Aperçu icône</Label>
+                      <div className="h-10 flex items-center gap-2 px-3 rounded-md border bg-muted/20">
+                        {(() => {
+                          const Icon = formData.icon_name ? resolveLucideIcon(formData.icon_name, null as any) : null;
+                          return Icon ? <Icon className="h-4 w-4 text-primary" /> : <span className="text-xs text-muted-foreground">Icône invalide ou vide</span>;
+                        })()}
+                      </div>
+                    </div>
+                  </div>
+
                   <div>
                     <Label htmlFor="required_data_fields">Règles de disponibilité (JSON)</Label>
                     <Textarea
@@ -438,6 +464,7 @@ const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefre
                 <TableHead>Ordre</TableHead>
                 <TableHead>ID</TableHead>
                 <TableHead>Nom</TableHead>
+                <TableHead>Catégorie</TableHead>
                 <TableHead>Icône</TableHead>
                 <TableHead>Prix</TableHead>
                 <TableHead>Règles</TableHead>
@@ -451,6 +478,11 @@ const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefre
                   <TableCell className="text-sm text-muted-foreground">{service.display_order ?? '—'}</TableCell>
                   <TableCell className="font-mono text-sm">{service.service_id}</TableCell>
                   <TableCell className="font-medium">{service.name}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className={getCadastralCategoryMeta(service.category).className}>
+                      {getCadastralCategoryMeta(service.category).label}
+                    </Badge>
+                  </TableCell>
                   <TableCell className="font-mono text-xs">{service.icon_name || '—'}</TableCell>
                   <TableCell>${Number(service.price_usd).toFixed(2)}</TableCell>
                   <TableCell>
