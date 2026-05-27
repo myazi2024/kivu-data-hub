@@ -8,12 +8,21 @@ import { Switch } from '@/components/ui/switch';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Plus, Edit, Trash2, AlertCircle, DollarSign } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import {
+  CADASTRAL_SERVICE_CATEGORIES,
+  type CadastralServiceCategory,
+  getCadastralCategoryMeta,
+} from '@/constants/cadastralServiceCategories';
+import { validateRequiredDataFieldsJson } from '@/lib/cadastralServiceRules';
+import { resolveLucideIcon } from '@/lib/lucideIconMap';
+import { trackEvent } from '@/lib/analytics';
 
-interface CadastralService {
+interface CadastralServiceRow {
   id: string;
   service_id: string;
   name: string;
@@ -23,6 +32,7 @@ interface CadastralService {
   icon_name: string | null;
   display_order: number | null;
   required_data_fields: any;
+  category: CadastralServiceCategory | string | null;
   created_at: string;
   updated_at: string;
 }
@@ -32,9 +42,9 @@ interface AdminCadastralServicesProps {
 }
 
 const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefresh }) => {
-  const [services, setServices] = useState<CadastralService[]>([]);
+  const [services, setServices] = useState<CadastralServiceRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [editingService, setEditingService] = useState<CadastralService | null>(null);
+  const [editingService, setEditingService] = useState<CadastralServiceRow | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [requiredDataFieldsText, setRequiredDataFieldsText] = useState('');
   const [requiredDataFieldsError, setRequiredDataFieldsError] = useState<string | null>(null);
@@ -46,6 +56,7 @@ const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefre
     is_active: true,
     icon_name: '',
     display_order: 0,
+    category: 'consultation' as CadastralServiceCategory,
   });
 
   useEffect(() => {
