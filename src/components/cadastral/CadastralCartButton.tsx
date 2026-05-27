@@ -188,7 +188,7 @@ const CadastralCartButton: React.FC = () => {
                   <ul className="space-y-1.5">
                     {p.services.map((s) => {
                       const owned = isOwned(p.parcelNumber, s.id);
-                      const meta = getCategoryMeta(s.category);
+                      const meta = getCadastralCategoryMeta(s.category);
                       return (
                         <li
                           key={s.id}
