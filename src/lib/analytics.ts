@@ -33,7 +33,8 @@ export type AnalyticsEvent =
   | 'cadastral_cart_focus_billing'
   | 'admin_tab_view'
   | 'admin_tab_denied'
-  | 'admin_action';
+  | 'admin_action'
+  | 'cadastral_catalog_category_changed';
 
 export async function trackEvent(event: AnalyticsEvent, payload?: Record<string, any>) {
   try {

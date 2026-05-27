@@ -126,7 +126,7 @@ const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefre
       if (editingService) {
         const { error } = await supabase
           .from('cadastral_services_config')
-          .update({ ...payload, updated_at: new Date().toISOString() })
+          .update({ ...payload, required_data_fields: payload.required_data_fields as any, updated_at: new Date().toISOString() })
           .eq('id', editingService.id);
 
         if (error) throw error;
@@ -134,7 +134,7 @@ const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefre
       } else {
         const { error } = await supabase
           .from('cadastral_services_config')
-          .insert([{ ...payload, service_id: formData.service_id }]);
+          .insert([{ ...payload, required_data_fields: payload.required_data_fields as any, service_id: formData.service_id }]);
 
         if (error) throw error;
         toast.success('✅ Service créé avec succès');
@@ -194,7 +194,7 @@ const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefre
     }
   };
 
-  const openEditDialog = (service: CadastralService) => {
+  const openEditDialog = (service: CadastralServiceRow) => {
     setEditingService(service);
     setFormData({
       service_id: service.service_id,
@@ -204,6 +204,7 @@ const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefre
       is_active: service.is_active,
       icon_name: service.icon_name || '',
       display_order: service.display_order ?? 0,
+      category: (service.category as CadastralServiceCategory) || 'consultation',
     });
     setRequiredDataFieldsText(
       service.required_data_fields ? JSON.stringify(service.required_data_fields, null, 2) : ''
@@ -222,6 +223,7 @@ const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefre
       is_active: true,
       icon_name: '',
       display_order: 0,
+      category: 'consultation',
     });
     setRequiredDataFieldsText('');
     setRequiredDataFieldsError(null);
