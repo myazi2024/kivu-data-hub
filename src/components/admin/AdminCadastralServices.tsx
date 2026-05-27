@@ -89,19 +89,29 @@ const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefre
         return;
       }
 
-      // Parse required_data_fields JSON si non vide
-      let requiredDataFields: any = null;
-      if (requiredDataFieldsText.trim()) {
-        try {
-          requiredDataFields = JSON.parse(requiredDataFieldsText);
-          setRequiredDataFieldsError(null);
-        } catch (e: any) {
-          setRequiredDataFieldsError(`JSON invalide : ${e.message}`);
-          toast.error('Le JSON des règles de disponibilité est invalide');
+      // Validation stricte du JSON de règles de disponibilité.
+      const ruleValidation = validateRequiredDataFieldsJson(requiredDataFieldsText);
+      if (!ruleValidation.valid) {
+        setRequiredDataFieldsError(ruleValidation.error || 'Spec invalide');
+        toast.error(ruleValidation.error || 'Le JSON des règles est invalide');
+        return;
+      }
+      setRequiredDataFieldsError(null);
+
+      // Pré-check unicité service_id en création (évite erreur Postgres opaque).
+      if (!editingService) {
+        const { data: existing } = await supabase
+          .from('cadastral_services_config')
+          .select('id')
+          .eq('service_id', formData.service_id)
+          .maybeSingle();
+        if (existing) {
+          toast.error(`Le service_id "${formData.service_id}" existe déjà. Choisissez un identifiant unique.`);
           return;
         }
       }
 
+      const previousCategory = editingService?.category ?? null;
       const payload = {
         name: formData.name,
         description: formData.description || null,
@@ -109,7 +119,8 @@ const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefre
         is_active: formData.is_active,
         icon_name: formData.icon_name || null,
         display_order: formData.display_order || 0,
-        required_data_fields: requiredDataFields,
+        required_data_fields: ruleValidation.parsed,
+        category: formData.category,
       };
 
       if (editingService) {
@@ -129,6 +140,14 @@ const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefre
         toast.success('✅ Service créé avec succès');
       }
 
+      if (previousCategory !== formData.category) {
+        trackEvent('cadastral_catalog_category_changed', {
+          service_id: formData.service_id,
+          from: previousCategory,
+          to: formData.category,
+        });
+      }
+
       fetchServices();
       if (onRefresh) onRefresh();
       setIsDialogOpen(false);
@@ -143,33 +162,15 @@ const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefre
     if (!confirm(`Êtes-vous sûr de vouloir supprimer le service "${serviceId}" ?`)) return;
 
     try {
-      // Vérifier l'utilisation directement dans les factures
-      const { data: invoices, error: invoiceError } = await supabase
+      // Comptage ciblé via jsonb @> (pas de scan limité à 1000).
+      const { count: usageCount, error: invoiceError } = await supabase
         .from('cadastral_invoices')
-        .select('id, selected_services')
-        .limit(1000);
+        .select('id', { count: 'exact', head: true })
+        .contains('selected_services', [serviceId]);
 
       if (invoiceError) throw invoiceError;
 
-      // Compter les factures utilisant ce service
-      let usageCount = 0;
-      invoices?.forEach(invoice => {
-        let services: string[] = [];
-        if (Array.isArray(invoice.selected_services)) {
-          services = invoice.selected_services.filter((item): item is string => typeof item === 'string');
-        } else if (typeof invoice.selected_services === 'string') {
-          try {
-            services = JSON.parse(invoice.selected_services);
-          } catch {
-            services = [];
-          }
-        }
-        if (services.includes(serviceId)) {
-          usageCount++;
-        }
-      });
-
-      if (usageCount > 0) {
+      if ((usageCount ?? 0) > 0) {
         toast.error(
           `Ce service est utilisé dans ${usageCount} facture(s). Désactivez-le plutôt que de le supprimer.`,
           { duration: 5000 }
