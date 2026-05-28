@@ -230,14 +230,12 @@ export const useCadastralPayment = () => {
       if (status === 'aborted') return null;
 
       if (status === 'completed') {
-        await supabase
-          .from('cadastral_invoices')
-          .update({
-            status: 'paid',
-            payment_method: paymentData.provider,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', invoiceId);
+        const { error: markError } = await supabase.rpc('mark_cadastral_invoice_paid_safe', {
+          p_invoice_id: invoiceId,
+          p_payment_method: paymentData.provider,
+        });
+        if (markError) throw markError;
+
 
         const invoiceServiceIds = await getInvoiceServices(invoiceId);
 
