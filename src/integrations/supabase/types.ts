@@ -7847,6 +7847,31 @@ export type Database = {
       count_audit_logs: { Args: never; Returns: number }
       count_test_data_stats: { Args: never; Returns: Json }
       count_test_data_to_cleanup: { Args: never; Returns: Json }
+      create_cadastral_invoice_safe: {
+        Args: {
+          p_client_address?: string
+          p_client_id_nat?: string
+          p_client_name?: string
+          p_client_nif?: string
+          p_client_rccm?: string
+          p_client_tax_regime?: string
+          p_client_type?: string
+          p_discount_code?: string
+          p_mode: string
+          p_parcel_number: string
+          p_selected_services: string[]
+        }
+        Returns: {
+          discount_amount_usd: number
+          discount_code_used: string
+          error_message: string
+          invoice_id: string
+          invoice_number: string
+          original_amount_usd: number
+          status: string
+          total_amount_usd: number
+        }[]
+      }
       create_cadastral_invoice_secure: {
         Args: {
           discount_code_param?: string
@@ -8315,6 +8340,13 @@ export type Database = {
       log_pii_export: {
         Args: { _filters?: Json; _row_count: number; _table_name: string }
         Returns: undefined
+      }
+      mark_cadastral_invoice_paid_safe: {
+        Args: { p_invoice_id: string; p_payment_method: string }
+        Returns: {
+          error_message: string
+          ok: boolean
+        }[]
       }
       migrate_approved_contribution: {
         Args: { contribution_id: string }

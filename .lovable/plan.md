@@ -1,67 +1,112 @@
-# Audit — Catalogue de services (carte cadastrale)
+# Audit approfondi — Catalogue services carte cadastrale (passe 2)
 
-## Périmètre
-- Table `cadastral_services_config` (5 services actifs : `information $1.50`, `location_history $2.00`, `history $3.00`, `obligations $15.00`, `land_disputes $6.99`).
-- Hook `useCadastralServices` + Realtime.
-- UI consommateurs : `CadastralBillingPanel`, `ServiceListItem`, `CadastralCartButton`, `CadastralResultCard`, `CadastralDocumentView`, `lib/pdf.ts`, `lib/invoiceDownload.ts`.
-- Admin : `AdminCadastralServices`.
+Périmètre élargi par rapport à la passe 1 : sécurité paiement, PDF, RLS, edge functions, robustesse Realtime.
 
-## Forces
-- Source unique en BD + Realtime (`postgres_changes`) avec rechargement sur erreur de canal.
-- Filtre `is_active` + `deleted_at IS NULL`, tri `display_order`.
-- Disponibilité service par parcelle gérée via `required_data_fields` JSON + fallback legacy.
-- Synchronisation prix du panier au chargement catalogue (`updateServicePrices`, batch).
-- Anti-doublon achat via `checkMultipleServiceAccess` + bouton bundle « Dossier complet ».
-- Analytics : `cadastral_service_view/select/unselect`, `cadastral_cart_*`.
+## Findings critiques
 
-## Problèmes identifiés
+### P0-S1 — Insertion client de `cadastral_invoices` (sécurité paiement)
+`cadastral_invoices` a `INSERT WITH CHECK (auth.uid() = user_id)`. Le client choisit son `total_amount_usd` et la liste `selected_services`. Puis `create-payment` lit cette ligne et facture `invoice.total_amount_usd`. Un client malicieux peut insérer un `total_amount_usd = 0.01` pour 5 services et payer 1 cent.
+- **Viole la règle Core** « Payments: Clients never insert. Edge functions via SERVICE_ROLE_KEY handle insertions. »
+- **Fix** : edge function `create-cadastral-invoice` (SERVICE_ROLE) qui :
+  1. relit `cadastral_services_config` (prix serveur),
+  2. valide `selected_services` contre catalogue actif,
+  3. applique le code promo via `discount_codes` validation serveur,
+  4. insère la facture avec total recalculé,
+  5. retourne l'invoice au client.
+- Révoquer `INSERT` à `authenticated` sur `cadastral_invoices`.
 
-### P0 — Bloquants fonctionnels
-1. **Champ `category` invisible côté admin.** `AdminCadastralServices` ne lit/écrit pas `category`. Tout nouveau service est créé sans catégorie → badge par défaut « Consultation » même pour un service fiscal/juridique. Aujourd'hui les 5 services historiques ont la bonne valeur (seed SQL), mais la création/édition admin écrase ou laisse `null`.
-2. **Incohérence du mapping catégorie entre composants.** `ServiceListItem` mappe `fiscal → bg-secondary`, `juridique → bg-destructive/10`. `CadastralCartButton.CATEGORY_META` mappe `fiscal → bg-accent/20`, `juridique → bg-secondary`. Mêmes catégories, deux apparences. Centraliser dans `src/constants/cadastralServiceCategories.ts`.
+### P0-PDF — Cache stale + mapping cassé dans `invoiceDownload.loadServicesCatalog`
+```ts
+const { data } = await supabase
+  .from('cadastral_services_config')
+  .select('id, service_id, name, price_usd, category, ...')
+  .is('deleted_at', null);  // ❌ pas de is_active
+cachedServices = (data ?? []) as unknown as CadastralService[];  // ❌ cast brut
+```
+- `id` de la BD (UUID PK) écrase `service.id` attendu (= `service_id`). Le PDF ne retrouvera jamais le service par sa clé métier → libellés vides ou « Service inconnu ».
+- `cachedServices` est un cache module-level **jamais invalidé** : changement admin = PDF stale toute la session.
+- `is_active` non filtré.
+- **Fix** : mapper explicitement `id: row.service_id`, filtrer `is_active`, invalider via subscribe Realtime ou TanStack Query partagée avec `useCadastralServices`.
 
-### P1 — UX / cohérence devise
-3. **Devise hardcodée `$` dans le panneau de facturation** (lignes 345, 380-381, 129 de `ServiceListItem`). Le drawer panier convertit via `convertFromUsd` + `formatCurrency`, le panneau de facturation non. Si l'utilisateur sélectionne CDF, le bundle affiche encore des dollars.
-4. **`CadastralResultCard.handleDownloadPDF` ne charge pas le catalogue avant l'appel**. Si l'appel arrive avant la fin de `useCadastralServices`, `catalogServices` peut être vide → PDF avec libellés vides. Ajouter `await` sur un état chargé ou fallback.
-5. **`useCadastralServices` ne propage pas le statut de souscription Realtime** (`SUBSCRIBED` vs `CLOSED`). En cas de coupure WS, le canal redémarre seulement sur `CHANNEL_ERROR`. Ajouter retry sur `CLOSED`/`TIMED_OUT`.
+## Findings P1
 
-### P2 — Robustesse données
-6. **Pas de garde-fou unicité `service_id`.** L'admin n'empêche pas la collision avant INSERT (la BD a probablement la contrainte, mais l'erreur n'est pas traduite). Vérifier l'existence avant `insert` et afficher un message clair.
-7. **`required_data_fields` JSON non validé contre un schéma.** L'admin parse uniquement `JSON.parse`, sans vérifier `mode ∈ {any,all}` ni les `type` autorisés (`always_true`, `truthy`, `non_empty_array`). Une faute de frappe casse silencieusement la disponibilité.
-8. **`fallbackIconMap` dans `CadastralBillingPanel`** redonde avec `resolveLucideIcon`. Si un service legacy n'a pas d'icône en BD, OK ; mais l'admin permet de saisir un nom d'icône invalide → afficher un check icône (preview live).
-9. **Suppression admin compte `selected_services` via scan de `cadastral_invoices` (LIMIT 1000)**. Faux négatif si > 1000 factures. Remplacer par `select count(*) … where selected_services @> jsonb_build_array(serviceId)` (ou RPC dédiée).
+### P1-1 — Bundle « Compléter le dossier » sous-vend
+`CadastralCartButton` ne propose dans la suggestion bundle que les services avec `required_data_fields == null`. Les services avec règles (même si elles passeraient pour la parcelle) sont exclus → on rate des ventes. Devrait évaluer `evaluateServiceAvailability` sur la parcelle active.
 
-### P3 — Cosmétique / dette
-10. **`AdminCadastralServices.CadastralService` redéfinit l'interface** au lieu de réutiliser celle du hook → drift assuré.
-11. **`SelectQuery` du panier n'utilise pas `display_order`** : `useCadastralServices` trie déjà, mais `CadastralCartButton` filtre `missing` sans re-trier. OK pour 5 services, à surveiller si le catalogue grossit.
-12. **Realtime channel name `cadastral-services-changes` non unique** : si le hook est monté plusieurs fois (résultat + panier + admin ouverts), Supabase peut dédupliquer ou logger des warnings. Préfixer avec un identifiant aléatoire.
-13. **Pas d'aperçu en temps réel des règles JSON** dans l'admin (impossible de tester contre une parcelle avant de sauver).
-14. **Mémoire** : aucune note projet ne documente l'architecture catalogue (composants, contrats, catégories). À sauvegarder à la fin de l'audit.
+### P1-2 — Realtime retry sans débounce (boucle potentielle)
+`useCadastralServices` rappelle `loadServices()` sur `CHANNEL_ERROR | TIMED_OUT | CLOSED`. Si le canal échoue de manière répétée (perte réseau prolongée), boucle de requêtes serveur. Ajouter backoff exponentiel + cap (3 tentatives sur 30 s) puis afficher l'erreur en UI.
 
-## Plan d'action proposé (à confirmer)
+### P1-3 — Suppression admin avec `window.confirm`
+`AdminCadastralServices.handleDelete` utilise `confirm()` (banni par les memories `partners`/`expertise`/`mutations` qui standardisent sur `AlertDialog`). Remplacer.
 
-### Lot A — Cohérence catégorie & devise (P0/P1)
-- Ajouter `category` dans `AdminCadastralServices.formData`, dialog (Select consultation/fiscal/juridique), table.
-- Créer `src/constants/cadastralServiceCategories.ts` (label + classes sémantiques) et l'utiliser dans `ServiceListItem` ET `CadastralCartButton`.
-- Remplacer `$${price.toFixed(2)}` par `formatCurrency(convertFromUsd(price), selectedCurrency)` dans le bundle « Dossier complet » et `ServiceListItem.Badge`.
-- Tracker `cadastral_catalog_category_changed` côté admin.
+### P1-4 — `deleted_at` jamais utilisé par l'admin
+Schéma supporte le soft-delete (`deleted_at TIMESTAMPTZ`), mais admin fait `DELETE` permanent. Si une facture passée référence le service après une fenêtre de temps long > scan, la suppression brise les libellés PDF historiques. Préférer soft-delete (`update deleted_at = now()`).
 
-### Lot B — Robustesse hook & admin (P2)
-- `useCadastralServices` : retry sur `CLOSED`/`TIMED_OUT`, channel name unique, expose `realtimeStatus`.
-- Admin : pré-check unicité `service_id`, validation stricte du JSON `required_data_fields` (Zod), preview Lucide icon, suppression via `count(*)` ciblé.
-- Réutiliser `CadastralService` du hook dans l'admin.
+### P1-5 — RLS publique laisse fuir les services soft-deleted actifs
+```
+Services config are viewable by everyone  USING (is_active = true)
+```
+Si une ligne a `is_active=true` ET `deleted_at IS NOT NULL`, elle est exposée. Ajouter `AND deleted_at IS NULL`.
 
-### Lot C — Mémoire & doc
-- Mémoire projet `features/cadastral-services-catalog-fr` documentant : schéma BD, hook, contrats catégorie, règles `required_data_fields`, consommateurs.
+### P1-6 — `category` sans contrainte BD
+Colonne `text NOT NULL DEFAULT 'consultation'` sans CHECK / enum. Un INSERT direct (edge / migration) peut écrire `'foo'`. Ajouter `CHECK (category IN ('consultation','fiscal','juridique'))` ou créer un type enum.
+
+### P1-7 — Politiques RLS dupliquées sur `cadastral_invoices`
+Deux paires identiques : « Admins can view all invoices » / « Admins view all invoices » et « Users can view their own invoices » / « Users view own invoices ». Dette à nettoyer (migration drop des doublons).
+
+## Findings P2 / P3
+
+- **P2-1** — `fallbackIconMap` persistant dans `CadastralBillingPanel` (lignes 281-287) : doublon avec `resolveLucideIcon` + `icon_name` BD (les 5 services ont déjà tous un `icon_name`). Supprimable.
+- **P2-2** — `legacyAvailability` hardcodé pour les 5 services historiques : redondant avec `required_data_fields` BD (déjà renseigné pour les 5). Plan : supprimer le fallback une fois validé qu'aucune ligne BD active n'a `required_data_fields == null`.
+- **P2-3** — Admin ne tracke pas `cadastral_catalog_service_created / updated / deleted` (uniquement `category_changed`). Ajouter pour audit complet.
+- **P2-4** — Aucune validation du format `service_id` côté admin (lowercase, snake_case, pas d'espaces). Risque d'identifiants incohérents (`Information` vs `information`).
+- **P2-5** — Aucun garde-fou si deux services partagent le même `display_order` (sub-ordre = `service_id` ASC — non déterministe métier).
+- **P2-6** — `addService` / `addServiceForParcel` font `category: (service as any).category` dans deux endroits : `CadastralBillingPanel` (375) et `CadastralCartButton` (275). `CadastralService` typant maintenant `category`, le cast `as any` est inutile.
+- **P3-1** — Stats admin « Valeur Catalogue » en `$` hardcodé : acceptable (admin USD base) mais incohérent avec le reste de l'app. Mentionner dans la mémoire.
+
+## Plan d'action proposé
+
+### Lot S — Sécurité paiement (P0-S1) — migration + edge function
+1. Migration : révoquer `INSERT` sur `cadastral_invoices` à `authenticated`, garder `service_role`.
+2. Créer edge function `create-cadastral-invoice` :
+   - input : `selected_services[]`, `parcel_number`, `fiscal_identity`, `discount_code?`
+   - recalcule total depuis `cadastral_services_config` (is_active + deleted_at IS NULL),
+   - valide code promo via RPC existante,
+   - insère la facture avec SERVICE_ROLE,
+   - renvoie l'invoice.
+3. Brancher `useCadastralPayment.createInvoice` sur l'edge function (plus d'INSERT direct).
+4. RLS update + nettoyage des politiques dupliquées (P1-7).
+
+### Lot PDF — Cache & mapping (P0-PDF)
+1. Fix `loadServicesCatalog` : mapper `id: row.service_id`, filtrer `is_active`.
+2. Invalidation cache via Realtime ou migration vers TanStack Query partagée (`useCadastralServices`).
+
+### Lot R — Robustesse hook & RLS
+- P1-2 : backoff exponentiel + cap dans `useCadastralServices`.
+- P1-5 : migration policy `is_active AND deleted_at IS NULL`.
+- P1-6 : CHECK constraint sur `category`.
+
+### Lot U — UX & dette
+- P1-1 : suggestion bundle = `evaluateServiceAvailability(parcel)` pour services à règles.
+- P1-3 : remplacer `confirm()` par `AlertDialog`.
+- P1-4 : admin = soft-delete (`deleted_at`) + bouton « Restaurer ».
+- P2-1 / P2-2 : supprimer `fallbackIconMap` + `legacyAvailability` après vérif BD.
+- P2-3 / P2-4 / P2-5 : tracking événements, regex `service_id`, warning UI si `display_order` dupliqué.
+- P2-6 : retirer les `as any`.
 
 ### Hors-scope
-- Pas de migration SQL (table & RLS déjà OK).
-- Pas de refonte du flux de paiement.
-- Pas de changement des prix.
+- Pas de refonte du flux de paiement Stripe / Mobile Money.
+- Pas de changement des prix actuels.
+- Pas de migration des factures historiques.
 
 ## Vérifications post-fix
-- Créer un service `test_fiscal` catégorie `fiscal` → badge identique panier vs liste billing.
-- Sélectionner CDF → bouton bundle affiche le montant en FC.
-- Couper le WS Realtime → reload automatique < 5 s.
-- Saisir un JSON invalide → erreur explicite avant sauvegarde.
-- Supprimer un service inutilisé → succès ; service utilisé → blocage avec compteur exact.
+- Tentative d'INSERT direct `cadastral_invoices` depuis client → refusée.
+- Téléchargement PDF après désactivation d'un service admin → libellés à jour (cache invalidé).
+- Coupure WS prolongée → 3 tentatives puis bandeau erreur (pas de boucle).
+- Insert direct SQL `category='foo'` → CHECK refuse.
+- Bundle « Compléter le dossier » d'une parcelle avec données complètes → propose les 4 services manquants (même ceux à règles).
+- Suppression service utilisé en facture → bloquée (déjà OK) ; suppression service inutilisé → soft-delete réversible.
+
+## Mémoire à mettre à jour
+- `mem://features/cadastral-services-catalog-fr` : ajouter Lot S, Lot PDF, soft-delete, backoff.
+- `mem://payment/architecture-facturation-unifiee-fr` : signaler que `cadastral_invoices` passe en INSERT edge-only.

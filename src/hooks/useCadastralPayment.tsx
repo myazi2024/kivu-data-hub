@@ -98,112 +98,21 @@ export const useCadastralPayment = () => {
 
       const serviceIds = selectedServices.map(s => s.id);
 
-      // Paiement non requis → accès gratuit
-      if (!isPaymentRequired()) {
-        const { data: invoice, error } = await supabase
-          .from('cadastral_invoices')
-          .insert({
-            user_id: user.id,
-            parcel_number: parcelNumber,
-            invoice_number: null as any,
-            selected_services: serviceIds,
-            total_amount_usd: 0,
-            original_amount_usd: 0,
-            discount_amount_usd: 0,
-            discount_code_used: 'BYPASS',
-            payment_method: 'BYPASS',
-            client_email: user.email || '',
-            client_name: fiscalIdentity?.client_name || user.user_metadata?.full_name || null,
-            client_type: fiscalIdentity?.client_type || null,
-            client_nif: fiscalIdentity?.client_nif?.trim() || null,
-            client_rccm: fiscalIdentity?.client_rccm?.trim() || null,
-            client_id_nat: fiscalIdentity?.client_id_nat?.trim() || null,
-            client_address: fiscalIdentity?.client_address?.trim() || null,
-            client_tax_regime: fiscalIdentity?.client_tax_regime?.trim() || null,
-            geographical_zone: selectedServices[0]?.parcel_location || '',
-            status: 'paid',
-            currency_code: 'USD',
-            exchange_rate_used: 1
-          })
-          .select()
-          .single();
+      // Mode unifié : la RPC sécurisée recalcule le total côté serveur, applique le code promo,
+      // vérifie les modes bypass/test contre system_config et insère la facture.
+      const mode: 'paid' | 'bypass' | 'test' = !isPaymentRequired()
+        ? 'bypass'
+        : isTestModeActive
+          ? 'test'
+          : 'paid';
 
-        if (error) throw error;
-
-        await grantServiceAccess(user.id, invoice.id, parcelNumber, serviceIds);
-
-        trackEvent('cadastral_service_purchase', {
-          parcel_number: parcelNumber,
-          invoice_id: invoice.id,
-          service_ids: serviceIds,
-          service_count: serviceIds.length,
-          total_usd: 0,
-          payment_method: 'BYPASS',
-        });
-
-        toast({ title: "Accès accordé", description: "Services accessibles gratuitement" });
-        clearServices();
-        window.dispatchEvent(new CustomEvent('cadastralPaymentCompleted'));
-        return invoice;
-      }
-
-      // Mode test actif → INSERT direct sans RPC sécurisée
-      if (isTestModeActive) {
-        const totalAmount = selectedServices.reduce((sum, s) => sum + (s.price || 0), 0);
-        const { data: testInvoice, error: testError } = await supabase
-          .from('cadastral_invoices')
-          .insert({
-            user_id: user.id,
-            parcel_number: parcelNumber,
-            invoice_number: `TEST-${Date.now()}`,
-            selected_services: serviceIds,
-            total_amount_usd: totalAmount,
-            original_amount_usd: totalAmount,
-            discount_amount_usd: 0,
-            payment_method: 'TEST',
-            client_email: user.email || '',
-            client_name: fiscalIdentity?.client_name || user.user_metadata?.full_name || null,
-            client_type: fiscalIdentity?.client_type || null,
-            client_nif: fiscalIdentity?.client_nif?.trim() || null,
-            client_rccm: fiscalIdentity?.client_rccm?.trim() || null,
-            client_id_nat: fiscalIdentity?.client_id_nat?.trim() || null,
-            client_address: fiscalIdentity?.client_address?.trim() || null,
-            client_tax_regime: fiscalIdentity?.client_tax_regime?.trim() || null,
-            geographical_zone: selectedServices[0]?.parcel_location || '',
-            status: 'pending',
-            currency_code: 'USD',
-            exchange_rate_used: 1
-          })
-          .select()
-          .single();
-
-        if (testError) throw testError;
-
-        toast({
-          title: "Facture test créée",
-          description: `Facture ${testInvoice.invoice_number} créée (mode test)`
-        });
-
-        return {
-          id: testInvoice.id,
-          invoice_number: testInvoice.invoice_number,
-          total_amount_usd: testInvoice.total_amount_usd,
-          original_amount_usd: testInvoice.original_amount_usd,
-          discount_amount_usd: testInvoice.discount_amount_usd,
-          selected_services: serviceIds,
-          status: 'pending',
-          parcel_number: parcelNumber,
-          created_at: testInvoice.created_at
-        };
-      }
-
-      // Paiement requis → RPC sécurisée v2 (DGI)
       const { data: rpcResult, error: rpcError } = await supabase.rpc(
-        'create_cadastral_invoice_secure_v2',
+        'create_cadastral_invoice_safe',
         {
-          parcel_number_param: parcelNumber,
-          selected_services_param: serviceIds,
-          discount_code_param: discountData?.code || null,
+          p_mode: mode,
+          p_parcel_number: parcelNumber,
+          p_selected_services: serviceIds,
+          p_discount_code: discountData?.code || null,
           p_client_type: fiscalIdentity?.client_type || null,
           p_client_name: fiscalIdentity?.client_name || null,
           p_client_nif: fiscalIdentity?.client_nif || null,
@@ -218,26 +127,45 @@ export const useCadastralPayment = () => {
 
       const result = Array.isArray(rpcResult) ? rpcResult[0] : rpcResult;
 
-      if (result.error_message) {
-        toast({ title: "Erreur", description: result.error_message, variant: "destructive" });
+      if (!result || result.error_message) {
+        toast({
+          title: "Erreur",
+          description: result?.error_message || "Impossible de créer la facture",
+          variant: "destructive",
+        });
         return null;
       }
 
-      toast({
-        title: "Facture créée",
-        description: `Facture ${result.invoice_number} créée avec succès`
-      });
+      // Mode bypass : la RPC a déjà accordé l'accès aux services.
+      if (mode === 'bypass') {
+        trackEvent('cadastral_service_purchase', {
+          parcel_number: parcelNumber,
+          invoice_id: result.invoice_id,
+          service_ids: serviceIds,
+          service_count: serviceIds.length,
+          total_usd: 0,
+          payment_method: 'BYPASS',
+        });
+        toast({ title: "Accès accordé", description: "Services accessibles gratuitement" });
+        clearServices();
+        window.dispatchEvent(new CustomEvent('cadastralPaymentCompleted'));
+      } else {
+        toast({
+          title: mode === 'test' ? "Facture test créée" : "Facture créée",
+          description: `Facture ${result.invoice_number} créée avec succès`,
+        });
+      }
 
       return {
         id: result.invoice_id,
         invoice_number: result.invoice_number,
-        total_amount_usd: result.total_amount_usd,
-        original_amount_usd: result.original_amount_usd,
-        discount_amount_usd: result.discount_amount_usd,
+        total_amount_usd: Number(result.total_amount_usd),
+        original_amount_usd: Number(result.original_amount_usd),
+        discount_amount_usd: Number(result.discount_amount_usd),
         selected_services: serviceIds,
-        status: 'pending',
+        status: result.status,
         parcel_number: parcelNumber,
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
       };
     } catch (error) {
       console.error('Error creating invoice:', error);
@@ -247,6 +175,7 @@ export const useCadastralPayment = () => {
       setLoading(false);
     }
   }, [user, selectedServices, parcelNumber, isPaymentRequired, isTestModeActive, clearServices, toast]);
+
 
   const processMobileMoneyPayment = useCallback(async (invoiceId: string, paymentData: CadastralPaymentData) => {
     if (!user) {
@@ -301,14 +230,12 @@ export const useCadastralPayment = () => {
       if (status === 'aborted') return null;
 
       if (status === 'completed') {
-        await supabase
-          .from('cadastral_invoices')
-          .update({
-            status: 'paid',
-            payment_method: paymentData.provider,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', invoiceId);
+        const { error: markError } = await supabase.rpc('mark_cadastral_invoice_paid_safe', {
+          p_invoice_id: invoiceId,
+          p_payment_method: paymentData.provider,
+        });
+        if (markError) throw markError;
+
 
         const invoiceServiceIds = await getInvoiceServices(invoiceId);
 
