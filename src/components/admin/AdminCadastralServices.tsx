@@ -507,6 +507,7 @@ const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefre
                 </DialogFooter>
               </DialogContent>
             </Dialog>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
