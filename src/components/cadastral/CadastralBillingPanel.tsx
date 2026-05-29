@@ -372,7 +372,7 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
                             description: service.description,
                             parcel_number: searchResult.parcel.parcel_number,
                             parcel_location: searchResult.parcel.location,
-                            category: (service as any).category,
+                            category: typeof service.category === 'string' ? service.category : undefined,
                           });
                         });
                       }}
