@@ -170,11 +170,15 @@ const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefre
     }
   };
 
-  const handleDelete = async (id: string, serviceId: string) => {
-    if (!confirm(`Êtes-vous sûr de vouloir supprimer le service "${serviceId}" ?`)) return;
+  const requestDelete = (id: string, serviceId: string) => {
+    setDeleteTarget({ id, serviceId });
+  };
 
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    const { id, serviceId } = deleteTarget;
+    setDeleting(true);
     try {
-      // Comptage ciblé via jsonb @> (pas de scan limité à 1000).
       const { count: usageCount, error: invoiceError } = await supabase
         .from('cadastral_invoices')
         .select('id', { count: 'exact', head: true })
@@ -187,6 +191,7 @@ const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefre
           `Ce service est utilisé dans ${usageCount} facture(s). Désactivez-le plutôt que de le supprimer.`,
           { duration: 5000 }
         );
+        setDeleteTarget(null);
         return;
       }
 
@@ -200,9 +205,12 @@ const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefre
       toast.success('✅ Service supprimé avec succès');
       fetchServices();
       if (onRefresh) onRefresh();
+      setDeleteTarget(null);
     } catch (error: any) {
       console.error('Erreur lors de la suppression:', error);
       toast.error(error.message || 'Erreur lors de la suppression');
+    } finally {
+      setDeleting(false);
     }
   };
 
