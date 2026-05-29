@@ -3,9 +3,8 @@
  * - Lit le format par défaut depuis la config admin (`invoice_template_config`).
  * - Si aucun catalogue de services n'est fourni, le récupère automatiquement
  *   pour éviter d'afficher « Service inconnu » dans le PDF (B7).
- *
- * Utilisé par : CadastralResultCard, CadastralPaymentDialog,
- *               CadastralClientDashboard, InvoicePreviewPanel.
+ * - Cache local invalidé en temps réel via Supabase Realtime sur
+ *   `cadastral_services_config` (Lot PDF : évite l'incohérence après MAJ admin).
  */
 import { fetchInvoiceTemplateConfig } from '@/hooks/useInvoiceTemplateConfig';
 import { supabase } from '@/integrations/supabase/client';
@@ -13,25 +12,51 @@ import type { CadastralInvoice, InvoiceFormat } from '@/lib/pdf';
 import type { CadastralService } from '@/hooks/useCadastralServices';
 
 interface DownloadOptions {
-  /** Force un format spécifique. Sinon : `default_format` admin → 'a4'. */
   format?: InvoiceFormat;
-  /** Catalogue de services pré-chargé (sinon récupéré). */
   services?: CadastralService[];
-  /** Nom de fichier optionnel. */
   filename?: string;
-  /** Ouvre le PDF dans un nouvel onglet au lieu de le télécharger (mode comparaison). */
   openInNewTab?: boolean;
 }
 
 let cachedServices: CadastralService[] | null = null;
+let realtimeBound = false;
+
+function bindCatalogInvalidation() {
+  if (realtimeBound) return;
+  realtimeBound = true;
+  supabase
+    .channel('invoice-download-catalog-invalidation')
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'cadastral_services_config' },
+      () => {
+        cachedServices = null;
+      }
+    )
+    .subscribe();
+}
 
 async function loadServicesCatalog(): Promise<CadastralService[]> {
+  bindCatalogInvalidation();
   if (cachedServices) return cachedServices;
+
   const { data } = await supabase
     .from('cadastral_services_config')
-    .select('id, service_id, name, price_usd, category, description, icon_name, display_order, is_active')
+    .select('service_id, name, price_usd, category, description, icon_name, display_order, required_data_fields')
+    .eq('is_active', true)
     .is('deleted_at', null);
-  cachedServices = (data ?? []) as unknown as CadastralService[];
+
+  // Mapping correct : `id` côté PDF = `service_id` métier (pas la PK UUID).
+  cachedServices = (data ?? []).map((row: any) => ({
+    id: row.service_id,
+    name: row.name,
+    price: Number(row.price_usd),
+    description: row.description ?? '',
+    icon_name: row.icon_name ?? null,
+    required_data_fields: row.required_data_fields ?? null,
+    display_order: row.display_order ?? null,
+    category: row.category ?? 'consultation',
+  }));
   return cachedServices;
 }
 

@@ -14,6 +14,16 @@ import { toast } from 'sonner';
 import { Plus, Edit, Trash2, AlertCircle, DollarSign } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
   CADASTRAL_SERVICE_CATEGORIES,
   type CadastralServiceCategory,
   getCadastralCategoryMeta,
@@ -58,6 +68,8 @@ const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefre
     display_order: 0,
     category: 'consultation' as CadastralServiceCategory,
   });
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; serviceId: string } | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     fetchServices();
@@ -158,11 +170,15 @@ const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefre
     }
   };
 
-  const handleDelete = async (id: string, serviceId: string) => {
-    if (!confirm(`Êtes-vous sûr de vouloir supprimer le service "${serviceId}" ?`)) return;
+  const requestDelete = (id: string, serviceId: string) => {
+    setDeleteTarget({ id, serviceId });
+  };
 
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    const { id, serviceId } = deleteTarget;
+    setDeleting(true);
     try {
-      // Comptage ciblé via jsonb @> (pas de scan limité à 1000).
       const { count: usageCount, error: invoiceError } = await supabase
         .from('cadastral_invoices')
         .select('id', { count: 'exact', head: true })
@@ -175,6 +191,7 @@ const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefre
           `Ce service est utilisé dans ${usageCount} facture(s). Désactivez-le plutôt que de le supprimer.`,
           { duration: 5000 }
         );
+        setDeleteTarget(null);
         return;
       }
 
@@ -188,9 +205,12 @@ const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefre
       toast.success('✅ Service supprimé avec succès');
       fetchServices();
       if (onRefresh) onRefresh();
+      setDeleteTarget(null);
     } catch (error: any) {
       console.error('Erreur lors de la suppression:', error);
       toast.error(error.message || 'Erreur lors de la suppression');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -514,7 +534,7 @@ const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefre
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleDelete(service.id, service.service_id)}
+                        onClick={() => requestDelete(service.id, service.service_id)}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -526,6 +546,29 @@ const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefre
           </Table>
         </CardContent>
       </Card>
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Supprimer le service ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Vous êtes sur le point de supprimer définitivement le service{' '}
+              <span className="font-mono font-semibold">{deleteTarget?.serviceId}</span>.
+              Cette action est irréversible. Si le service est référencé dans des factures, la suppression sera bloquée.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); confirmDelete(); }}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting ? 'Suppression…' : 'Supprimer'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
