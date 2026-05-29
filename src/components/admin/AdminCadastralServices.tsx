@@ -68,6 +68,8 @@ const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefre
     display_order: 0,
     category: 'consultation' as CadastralServiceCategory,
   });
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; serviceId: string } | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     fetchServices();
