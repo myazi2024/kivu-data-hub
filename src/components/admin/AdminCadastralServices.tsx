@@ -337,12 +337,17 @@ const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefre
       {/* Main Table */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-2 flex-wrap">
             <CardTitle className="flex items-center gap-2">
               <DollarSign className="h-5 w-5" />
               Gestion du Catalogue de Services Cadastraux
             </CardTitle>
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Switch id="show-deleted" checked={showDeleted} onCheckedChange={setShowDeleted} />
+                <Label htmlFor="show-deleted" className="cursor-pointer">Afficher la corbeille</Label>
+              </div>
+              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
                 <Button onClick={resetForm}>
                   <Plus className="h-4 w-4 mr-2" />
