@@ -134,28 +134,35 @@ const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefre
         is_active: formData.is_active,
         icon_name: formData.icon_name || null,
         display_order: formData.display_order || 0,
-        required_data_fields: ruleValidation.parsed,
+        required_data_fields: ruleValidation.parsed as Json | null,
         category: formData.category,
       };
 
       if (editingService) {
         const { error } = await supabase
           .from('cadastral_services_config')
-          .update({ ...payload, required_data_fields: payload.required_data_fields as any, updated_at: new Date().toISOString() })
+          .update({ ...payload, updated_at: new Date().toISOString() })
           .eq('id', editingService.id);
 
         if (error) throw error;
         toast.success('✅ Service mis à jour avec succès');
+        trackEvent('cadastral_catalog_service_updated', {
+          service_id: formData.service_id,
+        });
       } else {
         const { error } = await supabase
           .from('cadastral_services_config')
-          .insert([{ ...payload, required_data_fields: payload.required_data_fields as any, service_id: formData.service_id }]);
+          .insert([{ ...payload, service_id: formData.service_id }]);
 
         if (error) throw error;
         toast.success('✅ Service créé avec succès');
+        trackEvent('cadastral_catalog_service_created', {
+          service_id: formData.service_id,
+          category: formData.category,
+        });
       }
 
-      if (previousCategory !== formData.category) {
+      if (editingService && previousCategory !== formData.category) {
         trackEvent('cadastral_catalog_category_changed', {
           service_id: formData.service_id,
           from: previousCategory,
@@ -173,8 +180,13 @@ const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefre
     }
   };
 
-  const requestDelete = (id: string, serviceId: string) => {
-    setDeleteTarget({ id, serviceId });
+  const requestDelete = async (id: string, serviceId: string) => {
+    // Pré-compte l'usage pour décider entre soft-delete et message explicite.
+    const { count } = await supabase
+      .from('cadastral_invoices')
+      .select('id', { count: 'exact', head: true })
+      .contains('selected_services', [serviceId]);
+    setDeleteTarget({ id, serviceId, usage: count ?? 0 });
   };
 
   const confirmDelete = async () => {
@@ -182,30 +194,17 @@ const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefre
     const { id, serviceId } = deleteTarget;
     setDeleting(true);
     try {
-      const { count: usageCount, error: invoiceError } = await supabase
-        .from('cadastral_invoices')
-        .select('id', { count: 'exact', head: true })
-        .contains('selected_services', [serviceId]);
-
-      if (invoiceError) throw invoiceError;
-
-      if ((usageCount ?? 0) > 0) {
-        toast.error(
-          `Ce service est utilisé dans ${usageCount} facture(s). Désactivez-le plutôt que de le supprimer.`,
-          { duration: 5000 }
-        );
-        setDeleteTarget(null);
-        return;
-      }
-
+      // Soft-delete : on marque `deleted_at` + `is_active=false` au lieu d'un DELETE
+      // permanent. Préserve l'intégrité historique des libellés PDF de factures.
       const { error } = await supabase
         .from('cadastral_services_config')
-        .delete()
+        .update({ deleted_at: new Date().toISOString(), is_active: false, updated_at: new Date().toISOString() })
         .eq('id', id);
 
       if (error) throw error;
 
-      toast.success('✅ Service supprimé avec succès');
+      toast.success('✅ Service archivé (soft-delete). Restaurable depuis la corbeille.');
+      trackEvent('cadastral_catalog_service_deleted', { service_id: serviceId, soft: true });
       fetchServices();
       if (onRefresh) onRefresh();
       setDeleteTarget(null);
@@ -214,6 +213,22 @@ const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefre
       toast.error(error.message || 'Erreur lors de la suppression');
     } finally {
       setDeleting(false);
+    }
+  };
+
+  const restoreService = async (id: string, serviceId: string) => {
+    try {
+      const { error } = await supabase
+        .from('cadastral_services_config')
+        .update({ deleted_at: null, updated_at: new Date().toISOString() })
+        .eq('id', id);
+      if (error) throw error;
+      toast.success('✅ Service restauré');
+      trackEvent('cadastral_catalog_service_restored', { service_id: serviceId });
+      fetchServices();
+      if (onRefresh) onRefresh();
+    } catch (error: any) {
+      toast.error(error.message || 'Erreur lors de la restauration');
     }
   };
 
