@@ -42,8 +42,9 @@ interface CadastralServiceRow {
   is_active: boolean;
   icon_name: string | null;
   display_order: number | null;
-  required_data_fields: any;
+  required_data_fields: Json | null;
   category: CadastralServiceCategory | string | null;
+  deleted_at: string | null;
   created_at: string;
   updated_at: string;
 }
