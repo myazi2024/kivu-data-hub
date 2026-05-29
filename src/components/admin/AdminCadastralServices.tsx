@@ -546,26 +546,43 @@ const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefre
                     )}
                   </TableCell>
                   <TableCell>
-                    <Badge variant={service.is_active ? 'default' : 'secondary'}>
-                      {service.is_active ? 'Actif' : 'Inactif'}
-                    </Badge>
+                    {service.deleted_at ? (
+                      <Badge variant="destructive">Archivé</Badge>
+                    ) : (
+                      <Badge variant={service.is_active ? 'default' : 'secondary'}>
+                        {service.is_active ? 'Actif' : 'Inactif'}
+                      </Badge>
+                    )}
                   </TableCell>
                   <TableCell>
                     <div className="flex space-x-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => openEditDialog(service)}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => requestDelete(service.id, service.service_id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      {service.deleted_at ? (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => restoreService(service.id, service.service_id)}
+                          title="Restaurer"
+                        >
+                          <RotateCcw className="h-4 w-4" />
+                        </Button>
+                      ) : (
+                        <>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => openEditDialog(service)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => requestDelete(service.id, service.service_id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>
