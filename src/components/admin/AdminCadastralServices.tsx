@@ -534,7 +534,7 @@ const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefre
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleDelete(service.id, service.service_id)}
+                        onClick={() => requestDelete(service.id, service.service_id)}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
