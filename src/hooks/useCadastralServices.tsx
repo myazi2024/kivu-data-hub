@@ -62,18 +62,20 @@ export const useCadastralServices = () => {
   useEffect(() => {
     loadServices();
 
-    // Channel name unique pour éviter les collisions quand plusieurs composants
-    // montent le hook simultanément (panneau facturation + panier + admin).
-    const channelName = `cadastral-services-changes-${Math.random().toString(36).slice(2, 10)}`;
+    const channelName = `cadastral-services-changes-${crypto.randomUUID()}`;
+
+    // Lot R : back-off exponentiel borné (max 3 retries, 2s → 8s) pour éviter
+    // une boucle infinie de rechargements lors de coupures WS prolongées.
+    let retryCount = 0;
+    let retryTimer: ReturnType<typeof setTimeout> | null = null;
+    let cancelled = false;
+    const MAX_RETRIES = 3;
+
     const channel = supabase
       .channel(channelName)
       .on(
         'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'cadastral_services_config'
-        },
+        { event: '*', schema: 'public', table: 'cadastral_services_config' },
         (payload) => {
           loadServices();
           if (payload.eventType === 'INSERT') {
@@ -89,14 +91,26 @@ export const useCadastralServices = () => {
         if (err) {
           console.error('❌ Erreur Realtime cadastral_services_config:', err);
         }
-        // Retry sur tout statut "non vivant" (coupure WS, timeout, fermeture).
+        if (status === 'SUBSCRIBED') {
+          retryCount = 0;
+          return;
+        }
         if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
-          console.warn(`⚠️ Canal Realtime ${status}, rechargement du catalogue...`);
-          loadServices();
+          if (cancelled) return;
+          if (retryCount >= MAX_RETRIES) {
+            console.warn(`⚠️ Realtime ${status} : abandon après ${MAX_RETRIES} tentatives.`);
+            return;
+          }
+          const delay = Math.min(2000 * Math.pow(2, retryCount), 8000);
+          retryCount += 1;
+          console.warn(`⚠️ Realtime ${status}, retry ${retryCount}/${MAX_RETRIES} dans ${delay}ms`);
+          retryTimer = setTimeout(() => loadServices(), delay);
         }
       });
 
     return () => {
+      cancelled = true;
+      if (retryTimer) clearTimeout(retryTimer);
       supabase.removeChannel(channel);
     };
   }, []);
