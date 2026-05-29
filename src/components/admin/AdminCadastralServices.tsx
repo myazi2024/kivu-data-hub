@@ -134,7 +134,7 @@ const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefre
         is_active: formData.is_active,
         icon_name: formData.icon_name || null,
         display_order: formData.display_order || 0,
-        required_data_fields: ruleValidation.parsed as Json | null,
+        required_data_fields: ruleValidation.parsed as unknown as Json | null,
         category: formData.category,
       };
 
