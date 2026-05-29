@@ -76,16 +76,20 @@ const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefre
 
   useEffect(() => {
     fetchServices();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showDeleted]);
 
   const fetchServices = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      let query = supabase
         .from('cadastral_services_config')
         .select('*')
         .order('display_order', { ascending: true, nullsFirst: false })
         .order('service_id', { ascending: true });
+      if (!showDeleted) query = query.is('deleted_at', null);
+
+      const { data, error } = await query;
 
       if (error) throw error;
       setServices(data || []);
