@@ -15,6 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { formatCurrency } from '@/utils/formatters';
 import { trackEvent } from '@/lib/analytics';
 import { cn } from '@/lib/utils';
+import { evaluateServiceAvailability } from '@/lib/serviceAvailability';
 import CartParcelDiscountInput from './cart/CartParcelDiscountInput';
 
 import { getCadastralCategoryMeta } from '@/constants/cadastralServiceCategories';
