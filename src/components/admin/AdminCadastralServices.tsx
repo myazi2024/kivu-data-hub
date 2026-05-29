@@ -595,11 +595,15 @@ const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefre
       <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Supprimer le service ?</AlertDialogTitle>
+            <AlertDialogTitle>Archiver le service ?</AlertDialogTitle>
             <AlertDialogDescription>
-              Vous êtes sur le point de supprimer définitivement le service{' '}
-              <span className="font-mono font-semibold">{deleteTarget?.serviceId}</span>.
-              Cette action est irréversible. Si le service est référencé dans des factures, la suppression sera bloquée.
+              Le service <span className="font-mono font-semibold">{deleteTarget?.serviceId}</span> sera marqué comme supprimé (soft-delete)
+              et retiré du catalogue public. {deleteTarget && deleteTarget.usage > 0 ? (
+                <span className="block mt-2 text-amber-600">
+                  ⚠️ Référencé dans {deleteTarget.usage} facture(s) — l'archivage préserve l'historique PDF.
+                </span>
+              ) : null}
+              {' '}Il restera restaurable depuis la corbeille.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -609,7 +613,7 @@ const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefre
               disabled={deleting}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {deleting ? 'Suppression…' : 'Supprimer'}
+              {deleting ? 'Archivage…' : 'Archiver'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
