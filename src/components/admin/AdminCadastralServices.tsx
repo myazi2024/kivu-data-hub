@@ -10,8 +10,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
+import type { Json } from '@/integrations/supabase/types';
 import { toast } from 'sonner';
-import { Plus, Edit, Trash2, AlertCircle, DollarSign } from 'lucide-react';
+import { Plus, Edit, Trash2, AlertCircle, DollarSign, RotateCcw } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   AlertDialog,
@@ -41,8 +42,9 @@ interface CadastralServiceRow {
   is_active: boolean;
   icon_name: string | null;
   display_order: number | null;
-  required_data_fields: any;
+  required_data_fields: Json | null;
   category: CadastralServiceCategory | string | null;
+  deleted_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -68,21 +70,26 @@ const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefre
     display_order: 0,
     category: 'consultation' as CadastralServiceCategory,
   });
-  const [deleteTarget, setDeleteTarget] = useState<{ id: string; serviceId: string } | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; serviceId: string; usage: number } | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [showDeleted, setShowDeleted] = useState(false);
 
   useEffect(() => {
     fetchServices();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showDeleted]);
 
   const fetchServices = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      let query = supabase
         .from('cadastral_services_config')
         .select('*')
         .order('display_order', { ascending: true, nullsFirst: false })
         .order('service_id', { ascending: true });
+      if (!showDeleted) query = query.is('deleted_at', null);
+
+      const { data, error } = await query;
 
       if (error) throw error;
       setServices(data || []);
@@ -131,28 +138,35 @@ const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefre
         is_active: formData.is_active,
         icon_name: formData.icon_name || null,
         display_order: formData.display_order || 0,
-        required_data_fields: ruleValidation.parsed,
+        required_data_fields: ruleValidation.parsed as unknown as Json | null,
         category: formData.category,
       };
 
       if (editingService) {
         const { error } = await supabase
           .from('cadastral_services_config')
-          .update({ ...payload, required_data_fields: payload.required_data_fields as any, updated_at: new Date().toISOString() })
+          .update({ ...payload, updated_at: new Date().toISOString() })
           .eq('id', editingService.id);
 
         if (error) throw error;
         toast.success('✅ Service mis à jour avec succès');
+        trackEvent('cadastral_catalog_service_updated', {
+          service_id: formData.service_id,
+        });
       } else {
         const { error } = await supabase
           .from('cadastral_services_config')
-          .insert([{ ...payload, required_data_fields: payload.required_data_fields as any, service_id: formData.service_id }]);
+          .insert([{ ...payload, service_id: formData.service_id }]);
 
         if (error) throw error;
         toast.success('✅ Service créé avec succès');
+        trackEvent('cadastral_catalog_service_created', {
+          service_id: formData.service_id,
+          category: formData.category,
+        });
       }
 
-      if (previousCategory !== formData.category) {
+      if (editingService && previousCategory !== formData.category) {
         trackEvent('cadastral_catalog_category_changed', {
           service_id: formData.service_id,
           from: previousCategory,
@@ -170,8 +184,13 @@ const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefre
     }
   };
 
-  const requestDelete = (id: string, serviceId: string) => {
-    setDeleteTarget({ id, serviceId });
+  const requestDelete = async (id: string, serviceId: string) => {
+    // Pré-compte l'usage pour décider entre soft-delete et message explicite.
+    const { count } = await supabase
+      .from('cadastral_invoices')
+      .select('id', { count: 'exact', head: true })
+      .contains('selected_services', [serviceId]);
+    setDeleteTarget({ id, serviceId, usage: count ?? 0 });
   };
 
   const confirmDelete = async () => {
@@ -179,30 +198,17 @@ const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefre
     const { id, serviceId } = deleteTarget;
     setDeleting(true);
     try {
-      const { count: usageCount, error: invoiceError } = await supabase
-        .from('cadastral_invoices')
-        .select('id', { count: 'exact', head: true })
-        .contains('selected_services', [serviceId]);
-
-      if (invoiceError) throw invoiceError;
-
-      if ((usageCount ?? 0) > 0) {
-        toast.error(
-          `Ce service est utilisé dans ${usageCount} facture(s). Désactivez-le plutôt que de le supprimer.`,
-          { duration: 5000 }
-        );
-        setDeleteTarget(null);
-        return;
-      }
-
+      // Soft-delete : on marque `deleted_at` + `is_active=false` au lieu d'un DELETE
+      // permanent. Préserve l'intégrité historique des libellés PDF de factures.
       const { error } = await supabase
         .from('cadastral_services_config')
-        .delete()
+        .update({ deleted_at: new Date().toISOString(), is_active: false, updated_at: new Date().toISOString() })
         .eq('id', id);
 
       if (error) throw error;
 
-      toast.success('✅ Service supprimé avec succès');
+      toast.success('✅ Service archivé (soft-delete). Restaurable depuis la corbeille.');
+      trackEvent('cadastral_catalog_service_deleted', { service_id: serviceId, soft: true });
       fetchServices();
       if (onRefresh) onRefresh();
       setDeleteTarget(null);
@@ -211,6 +217,22 @@ const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefre
       toast.error(error.message || 'Erreur lors de la suppression');
     } finally {
       setDeleting(false);
+    }
+  };
+
+  const restoreService = async (id: string, serviceId: string) => {
+    try {
+      const { error } = await supabase
+        .from('cadastral_services_config')
+        .update({ deleted_at: null, updated_at: new Date().toISOString() })
+        .eq('id', id);
+      if (error) throw error;
+      toast.success('✅ Service restauré');
+      trackEvent('cadastral_catalog_service_restored', { service_id: serviceId });
+      fetchServices();
+      if (onRefresh) onRefresh();
+    } catch (error: any) {
+      toast.error(error.message || 'Erreur lors de la restauration');
     }
   };
 
@@ -315,12 +337,17 @@ const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefre
       {/* Main Table */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-2 flex-wrap">
             <CardTitle className="flex items-center gap-2">
               <DollarSign className="h-5 w-5" />
               Gestion du Catalogue de Services Cadastraux
             </CardTitle>
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Switch id="show-deleted" checked={showDeleted} onCheckedChange={setShowDeleted} />
+                <Label htmlFor="show-deleted" className="cursor-pointer">Afficher la corbeille</Label>
+              </div>
+              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
                 <Button onClick={resetForm}>
                   <Plus className="h-4 w-4 mr-2" />
@@ -480,6 +507,7 @@ const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefre
                 </DialogFooter>
               </DialogContent>
             </Dialog>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -518,26 +546,43 @@ const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefre
                     )}
                   </TableCell>
                   <TableCell>
-                    <Badge variant={service.is_active ? 'default' : 'secondary'}>
-                      {service.is_active ? 'Actif' : 'Inactif'}
-                    </Badge>
+                    {service.deleted_at ? (
+                      <Badge variant="destructive">Archivé</Badge>
+                    ) : (
+                      <Badge variant={service.is_active ? 'default' : 'secondary'}>
+                        {service.is_active ? 'Actif' : 'Inactif'}
+                      </Badge>
+                    )}
                   </TableCell>
                   <TableCell>
                     <div className="flex space-x-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => openEditDialog(service)}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => requestDelete(service.id, service.service_id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      {service.deleted_at ? (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => restoreService(service.id, service.service_id)}
+                          title="Restaurer"
+                        >
+                          <RotateCcw className="h-4 w-4" />
+                        </Button>
+                      ) : (
+                        <>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => openEditDialog(service)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => requestDelete(service.id, service.service_id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>
@@ -550,11 +595,15 @@ const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefre
       <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Supprimer le service ?</AlertDialogTitle>
+            <AlertDialogTitle>Archiver le service ?</AlertDialogTitle>
             <AlertDialogDescription>
-              Vous êtes sur le point de supprimer définitivement le service{' '}
-              <span className="font-mono font-semibold">{deleteTarget?.serviceId}</span>.
-              Cette action est irréversible. Si le service est référencé dans des factures, la suppression sera bloquée.
+              Le service <span className="font-mono font-semibold">{deleteTarget?.serviceId}</span> sera marqué comme supprimé (soft-delete)
+              et retiré du catalogue public. {deleteTarget && deleteTarget.usage > 0 ? (
+                <span className="block mt-2 text-amber-600">
+                  ⚠️ Référencé dans {deleteTarget.usage} facture(s) — l'archivage préserve l'historique PDF.
+                </span>
+              ) : null}
+              {' '}Il restera restaurable depuis la corbeille.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -564,7 +613,7 @@ const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefre
               disabled={deleting}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {deleting ? 'Suppression…' : 'Supprimer'}
+              {deleting ? 'Archivage…' : 'Archiver'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -47,7 +47,7 @@ export const useCadastralServices = () => {
         icon_name: service.icon_name ?? null,
         required_data_fields: service.required_data_fields ?? null,
         display_order: service.display_order ?? null,
-        category: (service as any).category ?? 'consultation',
+        category: (service.category as CadastralServiceCategory | string | null) ?? 'consultation',
       }));
 
       setServices(mappedServices);

@@ -15,6 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { formatCurrency } from '@/utils/formatters';
 import { trackEvent } from '@/lib/analytics';
 import { cn } from '@/lib/utils';
+import { evaluateServiceAvailability } from '@/lib/serviceAvailability';
 import CartParcelDiscountInput from './cart/CartParcelDiscountInput';
 
 import { getCadastralCategoryMeta } from '@/constants/cadastralServiceCategories';
@@ -238,15 +239,19 @@ const CadastralCartButton: React.FC = () => {
                   </ul>
 
                   {/* P2 — Suggestion bundle : services manquants pour compléter le dossier.
-                      P1-5 : on ne propose QUE les services sans contrainte de disponibilité (required_data_fields null),
-                      pour ne pas pousser un service qui sera grisé "données indisponibles" dans le panneau de facturation. */}
+                      Lot U : on évalue `required_data_fields` contre le contexte minimal de la parcelle
+                      (parcel.ville/province depuis parcelLocation) pour inclure les services dont les règles
+                      passent malgré un contexte limité, au lieu d'exclure systématiquement tout service à règles. */}
                   {(() => {
                     const inCartIds = new Set(p.services.map((s) => s.id));
+                    // Contexte minimal : on n'a que parcelNumber/parcelLocation dans le panier.
+                    const [ville, province] = (p.parcelLocation || '').split(',').map((s) => s.trim());
+                    const parcelCtx = { parcel: { ville: ville || null, province: province || null, parcel_number: p.parcelNumber } };
                     const missing = catalogServices.filter(
                       (cs) =>
                         !inCartIds.has(cs.id) &&
                         !isOwned(p.parcelNumber, cs.id) &&
-                        cs.required_data_fields == null
+                        evaluateServiceAvailability(cs.required_data_fields, parcelCtx)
                     );
                     if (missing.length === 0 || catalogServices.length === 0) return null;
                     const missingTotal = missing.reduce((acc, m) => acc + m.price, 0);
@@ -272,7 +277,7 @@ const CadastralCartButton: React.FC = () => {
                                 description: cs.description,
                                 parcel_number: p.parcelNumber,
                                 parcel_location: p.parcelLocation,
-                                category: (cs as any).category,
+                                category: typeof cs.category === 'string' ? cs.category : undefined,
                               });
                             });
                             trackEvent('cadastral_cart_complete_bundle', {

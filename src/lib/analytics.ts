@@ -34,7 +34,11 @@ export type AnalyticsEvent =
   | 'admin_tab_view'
   | 'admin_tab_denied'
   | 'admin_action'
-  | 'cadastral_catalog_category_changed';
+  | 'cadastral_catalog_category_changed'
+  | 'cadastral_catalog_service_created'
+  | 'cadastral_catalog_service_updated'
+  | 'cadastral_catalog_service_deleted'
+  | 'cadastral_catalog_service_restored';
 
 export async function trackEvent(event: AnalyticsEvent, payload?: Record<string, any>) {
   try {
