@@ -1,12 +1,6 @@
 import React, { useState } from 'react';
-import {
-  FileText,
-  MapPin,
-  History,
-  Receipt,
-  Building2,
-  Scale,
-} from 'lucide-react';
+import { Building2 } from 'lucide-react';
+
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
