@@ -568,7 +568,15 @@ const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefre
             <TableBody>
               {services.map((service) => (
                 <TableRow key={service.id}>
-                  <TableCell className="text-sm text-muted-foreground">{service.display_order ?? '—'}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    <span className="inline-flex items-center gap-1">
+                      {service.display_order ?? '—'}
+                      {service.display_order != null && duplicateOrders.has(Number(service.display_order)) && !service.deleted_at && service.is_active && (
+                        <span title="Ordre dupliqué — tri non déterministe" className="text-amber-600">⚠</span>
+                      )}
+                    </span>
+                  </TableCell>
+
                   <TableCell className="font-mono text-sm">{service.service_id}</TableCell>
                   <TableCell className="font-medium">{service.name}</TableCell>
                   <TableCell>
