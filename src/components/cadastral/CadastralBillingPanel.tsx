@@ -109,21 +109,16 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
   }, [searchResult.parcel.parcel_number, getCartDiscount, appliedDiscount]);
 
   const serviceAvailability = React.useMemo(() => {
-    const fallback = legacyAvailability(searchResult);
     const result: Record<string, boolean> = {};
     catalogServices.forEach(svc => {
-      if (svc.required_data_fields) {
-        result[svc.id] = evaluateServiceAvailability(svc.required_data_fields, searchResult);
-      } else if (svc.id in fallback) {
-        result[svc.id] = fallback[svc.id];
-      } else {
-        result[svc.id] = true;
-      }
+      result[svc.id] = svc.required_data_fields
+        ? evaluateServiceAvailability(svc.required_data_fields, searchResult)
+        : true;
     });
     return result;
   }, [searchResult, catalogServices]);
 
-  // Fix #18: Synchroniser les prix du panier via batch update (1 seul re-render)
+  // B5/O2 : sync prix du panier (dep selectedServices ajoutée).
   React.useEffect(() => {
     if (catalogServices.length === 0 || selectedServices.length === 0) return;
     const updates = selectedServices
@@ -135,27 +130,32 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
         return null;
       })
       .filter((u): u is { id: string; price: number } => u !== null);
-    
+
     if (updates.length > 0) {
       updateServicePrices(updates);
     }
-  }, [catalogServices]);
+  }, [catalogServices, selectedServices, updateServicePrices]);
 
   React.useEffect(() => {
     setParcelNumber(searchResult.parcel.parcel_number);
   }, [searchResult.parcel.parcel_number, setParcelNumber]);
 
-  // Par défaut, seuls les services avec données disponibles sont déroulés
+  // O3 : auto-expand des services disponibles, étendu aux nouveaux IDs apparus via Realtime.
   React.useEffect(() => {
-    if (catalogServices.length > 0 && expandedServices.size === 0) {
-      const servicesWithData = new Set(
-        catalogServices
-          .filter(s => serviceAvailability[s.id] ?? true)
-          .map(s => s.id)
-      );
-      setExpandedServices(servicesWithData);
-    }
+    if (catalogServices.length === 0) return;
+    setExpandedServices(prev => {
+      const next = new Set(prev);
+      let changed = false;
+      catalogServices.forEach(s => {
+        if ((serviceAvailability[s.id] ?? true) && !next.has(s.id)) {
+          next.add(s.id);
+          changed = true;
+        }
+      });
+      return changed ? next : prev;
+    });
   }, [catalogServices, serviceAvailability]);
+
 
   React.useEffect(() => {
     if (preselectServiceId && catalogServices.length > 0 && !selectedServices.some(s => s.id === preselectServiceId)) {
