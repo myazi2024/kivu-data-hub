@@ -122,9 +122,11 @@ export const useCadastralServices = () => {
     return () => {
       cancelled = true;
       if (retryTimer) clearTimeout(retryTimer);
+      if (toastTimer) clearTimeout(toastTimer);
       supabase.removeChannel(channel);
     };
   }, []);
+
 
   return {
     services,
