@@ -255,18 +255,10 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
     onPaymentSuccess(services.length > 0 ? services : selectedServices.map(s => s.id));
   };
 
-  // Fallback historique si icon_name absent en BD (rétro-compatibilité)
-  const fallbackIconMap: Record<string, any> = {
-    'information': FileText,
-    'location_history': MapPin,
-    'history': History,
-    'obligations': Receipt,
-    'land_disputes': Scale,
-  };
-  const getServiceIcon = (service: { id: string; icon_name?: string | null }) => {
-    if (service.icon_name) return resolveLucideIcon(service.icon_name, Building2);
-    return fallbackIconMap[service.id] || Building2;
-  };
+  // B5 : `fallbackIconMap` retiré — toutes les lignes BD ont `icon_name` renseigné.
+  const getServiceIcon = (service: { icon_name?: string | null }) =>
+    resolveLucideIcon(service.icon_name ?? null, Building2);
+
 
   const totalAmount = getTotalAmount();
   const discountedAmount = appliedDiscount ? Math.max(0, totalAmount - appliedDiscount.amount) : totalAmount;
