@@ -210,22 +210,14 @@ export const useCadastralPayment = () => {
       if (status === 'aborted') return null;
 
       if (status === 'completed') {
+        // RPC atomique : marque la facture payée + insère cadastral_service_access
         const { error: markError } = await supabase.rpc('mark_cadastral_invoice_paid_safe', {
           p_invoice_id: invoiceId,
           p_payment_method: paymentData.provider,
         });
         if (markError) throw markError;
 
-
         const invoiceServiceIds = await getInvoiceServices(invoiceId);
-
-        try {
-          await grantServiceAccess(user.id, invoiceId, invoice.data.parcel_number, invoiceServiceIds);
-        } catch (accessError) {
-          console.error('Première tentative grantServiceAccess échouée, retry...', accessError);
-          await new Promise(r => setTimeout(r, 1000));
-          await grantServiceAccess(user.id, invoiceId, invoice.data.parcel_number, invoiceServiceIds);
-        }
 
         setPaymentStep('success');
         toast({ title: "Paiement réussi", description: "Vos services sont maintenant accessibles" });
@@ -244,6 +236,7 @@ export const useCadastralPayment = () => {
 
         return invoice.data;
       } else if (status === 'failed') {
+
         throw new Error('Payment failed');
       }
 
