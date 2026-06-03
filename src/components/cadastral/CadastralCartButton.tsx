@@ -244,15 +244,26 @@ const CadastralCartButton: React.FC = () => {
                       passent malgré un contexte limité, au lieu d'exclure systématiquement tout service à règles. */}
                   {(() => {
                     const inCartIds = new Set(p.services.map((s) => s.id));
-                    // Contexte minimal : on n'a que parcelNumber/parcelLocation dans le panier.
-                    const [ville, province] = (p.parcelLocation || '').split(',').map((s) => s.trim());
-                    const parcelCtx = { parcel: { ville: ville || null, province: province || null, parcel_number: p.parcelNumber } };
+                    // B4 : si parcelLocation est non vide, on suppose que ville ET province
+                    // existent côté BD (la chaîne d'affichage agrège les deux). Sinon, on
+                    // parse en best-effort (séparateur virgule), et on laisse les services
+                    // à règle dure (ownership_history non vide, etc.) être écartés naturellement.
+                    const locTokens = (p.parcelLocation || '').split(',').map((s) => s.trim()).filter(Boolean);
+                    const hasLoc = locTokens.length > 0;
+                    const parcelCtx = {
+                      parcel: {
+                        ville: hasLoc ? (locTokens[0] || 'unknown') : null,
+                        province: hasLoc ? (locTokens[1] || locTokens[0] || 'unknown') : null,
+                        parcel_number: p.parcelNumber,
+                      },
+                    };
                     const missing = catalogServices.filter(
                       (cs) =>
                         !inCartIds.has(cs.id) &&
                         !isOwned(p.parcelNumber, cs.id) &&
                         evaluateServiceAvailability(cs.required_data_fields, parcelCtx)
                     );
+
                     if (missing.length === 0 || catalogServices.length === 0) return null;
                     const missingTotal = missing.reduce((acc, m) => acc + m.price, 0);
                     return (
