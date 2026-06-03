@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { Building2 } from 'lucide-react';
+import { trackEvent } from '@/lib/analytics';
+
 
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
