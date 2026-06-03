@@ -295,8 +295,24 @@ const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefre
     setRequiredDataFieldsError(null);
   };
 
-  const totalRevenue = services.reduce((sum, s) => sum + Number(s.price_usd), 0);
-  const activeServices = services.filter(s => s.is_active).length;
+  // O4 : sommer seulement les actifs non archivés (comparable même quand la corbeille est visible)
+  const totalRevenue = services
+    .filter(s => !s.deleted_at && s.is_active)
+    .reduce((sum, s) => sum + Number(s.price_usd), 0);
+  const activeServices = services.filter(s => s.is_active && !s.deleted_at).length;
+
+  // B9 : détection des display_order dupliqués (services actifs uniquement)
+  const duplicateOrders = React.useMemo(() => {
+    const counts = new Map<number, number>();
+    services
+      .filter(s => !s.deleted_at && s.is_active && s.display_order != null)
+      .forEach(s => {
+        const o = Number(s.display_order);
+        counts.set(o, (counts.get(o) ?? 0) + 1);
+      });
+    return new Set(Array.from(counts.entries()).filter(([, c]) => c > 1).map(([o]) => o));
+  }, [services]);
+
 
   if (loading) {
     return (
