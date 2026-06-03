@@ -33,22 +33,7 @@ const getInvoiceServices = async (invoiceId: string): Promise<string[]> => {
 };
 
 
-const getInvoiceServices = async (invoiceId: string): Promise<string[]> => {
-  const { data, error } = await supabase
-    .from('cadastral_invoices')
-    .select('selected_services')
-    .eq('id', invoiceId)
-    .single();
 
-  if (error) throw error;
-
-  const services = data?.selected_services;
-  if (Array.isArray(services)) return services as string[];
-  if (typeof services === 'string') {
-    try { return JSON.parse(services); } catch { return []; }
-  }
-  return [];
-};
 
 export const useCadastralPayment = () => {
   const [loading, setLoading] = useState(false);
