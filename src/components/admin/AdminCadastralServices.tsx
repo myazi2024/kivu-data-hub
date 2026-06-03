@@ -101,10 +101,18 @@ const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefre
     }
   };
 
+  const SERVICE_ID_REGEX = /^[a-z][a-z0-9_]*$/;
+
   const handleSave = async () => {
     try {
       if (!formData.service_id || !formData.name || formData.price_usd <= 0) {
         toast.error('Veuillez remplir tous les champs obligatoires');
+        return;
+      }
+
+      // B8 : validation format service_id (lowercase snake_case)
+      if (!editingService && !SERVICE_ID_REGEX.test(formData.service_id)) {
+        toast.error('Identifiant invalide : minuscules, chiffres et _ uniquement (commence par une lettre).');
         return;
       }
 
@@ -129,6 +137,7 @@ const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefre
           return;
         }
       }
+
 
       const previousCategory = editingService?.category ?? null;
       const payload = {
@@ -222,6 +231,20 @@ const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefre
 
   const restoreService = async (id: string, serviceId: string) => {
     try {
+      // B7 : pré-check unicité avant restauration (un autre service actif pourrait avoir
+      // réutilisé le service_id entre-temps).
+      const { data: conflict } = await supabase
+        .from('cadastral_services_config')
+        .select('id')
+        .eq('service_id', serviceId)
+        .is('deleted_at', null)
+        .neq('id', id)
+        .maybeSingle();
+      if (conflict) {
+        toast.error(`Impossible de restaurer : un service actif utilise déjà l'identifiant "${serviceId}".`);
+        return;
+      }
+
       const { error } = await supabase
         .from('cadastral_services_config')
         .update({ deleted_at: null, updated_at: new Date().toISOString() })
@@ -235,6 +258,7 @@ const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefre
       toast.error(error.message || 'Erreur lors de la restauration');
     }
   };
+
 
   const openEditDialog = (service: CadastralServiceRow) => {
     setEditingService(service);
@@ -271,8 +295,24 @@ const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefre
     setRequiredDataFieldsError(null);
   };
 
-  const totalRevenue = services.reduce((sum, s) => sum + Number(s.price_usd), 0);
-  const activeServices = services.filter(s => s.is_active).length;
+  // O4 : sommer seulement les actifs non archivés (comparable même quand la corbeille est visible)
+  const totalRevenue = services
+    .filter(s => !s.deleted_at && s.is_active)
+    .reduce((sum, s) => sum + Number(s.price_usd), 0);
+  const activeServices = services.filter(s => s.is_active && !s.deleted_at).length;
+
+  // B9 : détection des display_order dupliqués (services actifs uniquement)
+  const duplicateOrders = React.useMemo(() => {
+    const counts = new Map<number, number>();
+    services
+      .filter(s => !s.deleted_at && s.is_active && s.display_order != null)
+      .forEach(s => {
+        const o = Number(s.display_order);
+        counts.set(o, (counts.get(o) ?? 0) + 1);
+      });
+    return new Set(Array.from(counts.entries()).filter(([, c]) => c > 1).map(([o]) => o));
+  }, [services]);
+
 
   if (loading) {
     return (
@@ -528,7 +568,15 @@ const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefre
             <TableBody>
               {services.map((service) => (
                 <TableRow key={service.id}>
-                  <TableCell className="text-sm text-muted-foreground">{service.display_order ?? '—'}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    <span className="inline-flex items-center gap-1">
+                      {service.display_order ?? '—'}
+                      {service.display_order != null && duplicateOrders.has(Number(service.display_order)) && !service.deleted_at && service.is_active && (
+                        <span title="Ordre dupliqué — tri non déterministe" className="text-amber-600">⚠</span>
+                      )}
+                    </span>
+                  </TableCell>
+
                   <TableCell className="font-mono text-sm">{service.service_id}</TableCell>
                   <TableCell className="font-medium">{service.name}</TableCell>
                   <TableCell>

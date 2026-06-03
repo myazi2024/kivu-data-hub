@@ -1,12 +1,8 @@
 import React, { useState } from 'react';
-import {
-  FileText,
-  MapPin,
-  History,
-  Receipt,
-  Building2,
-  Scale,
-} from 'lucide-react';
+import { Building2 } from 'lucide-react';
+import { trackEvent } from '@/lib/analytics';
+
+
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -46,24 +42,8 @@ interface CadastralBillingPanelProps {
   alreadyPaidServices?: string[];
 }
 
-// Fallback hardcodé conservé si aucun spec n'est défini en BD pour un service legacy.
-const legacyAvailability = (searchResult: CadastralSearchResult): Record<string, boolean> => {
-  const { parcel, ownership_history, tax_history, mortgage_history, boundary_history } = searchResult;
-  return {
-    information: true,
-    location_history: !!(
-      (parcel.province && parcel.ville) ||
-      (boundary_history && boundary_history.length > 0) ||
-      (parcel.gps_coordinates && Array.isArray(parcel.gps_coordinates) && parcel.gps_coordinates.length > 0)
-    ),
-    history: !!(ownership_history && ownership_history.length > 0),
-    obligations: !!(
-      (tax_history && tax_history.length > 0) ||
-      (mortgage_history && mortgage_history.length > 0)
-    ),
-    land_disputes: true,
-  };
-};
+// B5 : `legacyAvailability` retiré — tous les services BD ont désormais `required_data_fields`.
+
 
 const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({ 
   searchResult, 
@@ -131,21 +111,16 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
   }, [searchResult.parcel.parcel_number, getCartDiscount, appliedDiscount]);
 
   const serviceAvailability = React.useMemo(() => {
-    const fallback = legacyAvailability(searchResult);
     const result: Record<string, boolean> = {};
     catalogServices.forEach(svc => {
-      if (svc.required_data_fields) {
-        result[svc.id] = evaluateServiceAvailability(svc.required_data_fields, searchResult);
-      } else if (svc.id in fallback) {
-        result[svc.id] = fallback[svc.id];
-      } else {
-        result[svc.id] = true;
-      }
+      result[svc.id] = svc.required_data_fields
+        ? evaluateServiceAvailability(svc.required_data_fields, searchResult)
+        : true;
     });
     return result;
   }, [searchResult, catalogServices]);
 
-  // Fix #18: Synchroniser les prix du panier via batch update (1 seul re-render)
+  // B5/O2 : sync prix du panier (dep selectedServices ajoutée).
   React.useEffect(() => {
     if (catalogServices.length === 0 || selectedServices.length === 0) return;
     const updates = selectedServices
@@ -157,27 +132,32 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
         return null;
       })
       .filter((u): u is { id: string; price: number } => u !== null);
-    
+
     if (updates.length > 0) {
       updateServicePrices(updates);
     }
-  }, [catalogServices]);
+  }, [catalogServices, selectedServices, updateServicePrices]);
 
   React.useEffect(() => {
     setParcelNumber(searchResult.parcel.parcel_number);
   }, [searchResult.parcel.parcel_number, setParcelNumber]);
 
-  // Par défaut, seuls les services avec données disponibles sont déroulés
+  // O3 : auto-expand des services disponibles, étendu aux nouveaux IDs apparus via Realtime.
   React.useEffect(() => {
-    if (catalogServices.length > 0 && expandedServices.size === 0) {
-      const servicesWithData = new Set(
-        catalogServices
-          .filter(s => serviceAvailability[s.id] ?? true)
-          .map(s => s.id)
-      );
-      setExpandedServices(servicesWithData);
-    }
+    if (catalogServices.length === 0) return;
+    setExpandedServices(prev => {
+      const next = new Set(prev);
+      let changed = false;
+      catalogServices.forEach(s => {
+        if ((serviceAvailability[s.id] ?? true) && !next.has(s.id)) {
+          next.add(s.id);
+          changed = true;
+        }
+      });
+      return changed ? next : prev;
+    });
   }, [catalogServices, serviceAvailability]);
+
 
   React.useEffect(() => {
     if (preselectServiceId && catalogServices.length > 0 && !selectedServices.some(s => s.id === preselectServiceId)) {
@@ -277,18 +257,10 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
     onPaymentSuccess(services.length > 0 ? services : selectedServices.map(s => s.id));
   };
 
-  // Fallback historique si icon_name absent en BD (rétro-compatibilité)
-  const fallbackIconMap: Record<string, any> = {
-    'information': FileText,
-    'location_history': MapPin,
-    'history': History,
-    'obligations': Receipt,
-    'land_disputes': Scale,
-  };
-  const getServiceIcon = (service: { id: string; icon_name?: string | null }) => {
-    if (service.icon_name) return resolveLucideIcon(service.icon_name, Building2);
-    return fallbackIconMap[service.id] || Building2;
-  };
+  // B5 : `fallbackIconMap` retiré — toutes les lignes BD ont `icon_name` renseigné.
+  const getServiceIcon = (service: { icon_name?: string | null }) =>
+    resolveLucideIcon(service.icon_name ?? null, Building2);
+
 
   const totalAmount = getTotalAmount();
   const discountedAmount = appliedDiscount ? Math.max(0, totalAmount - appliedDiscount.amount) : totalAmount;
@@ -375,7 +347,14 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
                             category: typeof service.category === 'string' ? service.category : undefined,
                           });
                         });
+                        // O5 : tracking du bundle "Tout ajouter / Compléter le dossier"
+                        trackEvent(selectedServiceIds.length === 0 ? 'cadastral_bundle_add_all' : 'cadastral_bundle_complete_panel', {
+                          parcel_number: searchResult.parcel.parcel_number,
+                          added_count: remainingToAdd.length,
+                          added_value_usd: remainingValue,
+                        });
                       }}
+
                     >
                       {selectedServiceIds.length === 0
                         ? `Tout ajouter — ${formatCurrency(convertFromUsd(bundleTotal), selectedCurrency)}`
@@ -408,6 +387,8 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
                     onToggleSelect={() => handleServiceToggle(service.id)}
                     onToggleExpand={() => toggleServiceExpansion(service.id)}
                     onRequestContribution={onRequestContribution}
+                    priceLabel={formatCurrency(convertFromUsd(service.price), selectedCurrency)}
+
                   />
                 );
               })}

@@ -71,6 +71,17 @@ export const useCadastralServices = () => {
     let cancelled = false;
     const MAX_RETRIES = 3;
 
+    // Lot X (B10) : debounce toast pour regrouper les rafales d'updates admin (1.5s).
+    const pendingEvents = new Set<'INSERT' | 'UPDATE' | 'DELETE'>();
+    let toastTimer: ReturnType<typeof setTimeout> | null = null;
+    const flushToast = () => {
+      if (pendingEvents.has('INSERT')) toast.success('Le catalogue de services a été enrichi');
+      else if (pendingEvents.has('DELETE')) toast.warning('Un service a été retiré du catalogue');
+      else if (pendingEvents.has('UPDATE')) toast.info('Le catalogue de services a été mis à jour');
+      pendingEvents.clear();
+      toastTimer = null;
+    };
+
     const channel = supabase
       .channel(channelName)
       .on(
@@ -78,15 +89,15 @@ export const useCadastralServices = () => {
         { event: '*', schema: 'public', table: 'cadastral_services_config' },
         (payload) => {
           loadServices();
-          if (payload.eventType === 'INSERT') {
-            toast.success('Un nouveau service a été ajouté au catalogue');
-          } else if (payload.eventType === 'UPDATE') {
-            toast.info('Le catalogue de services a été mis à jour');
-          } else if (payload.eventType === 'DELETE') {
-            toast.warning('Un service a été retiré du catalogue');
-          }
+          const t = payload.eventType as 'INSERT' | 'UPDATE' | 'DELETE';
+          pendingEvents.add(t);
+          if (toastTimer) clearTimeout(toastTimer);
+          // Pas de toast quand l'onglet est en arrière-plan
+          if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
+          toastTimer = setTimeout(flushToast, 1500);
         }
       )
+
       .subscribe((status, err) => {
         if (err) {
           console.error('❌ Erreur Realtime cadastral_services_config:', err);
@@ -111,9 +122,11 @@ export const useCadastralServices = () => {
     return () => {
       cancelled = true;
       if (retryTimer) clearTimeout(retryTimer);
+      if (toastTimer) clearTimeout(toastTimer);
       supabase.removeChannel(channel);
     };
   }, []);
+
 
   return {
     services,

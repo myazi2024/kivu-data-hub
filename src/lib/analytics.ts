@@ -38,7 +38,10 @@ export type AnalyticsEvent =
   | 'cadastral_catalog_service_created'
   | 'cadastral_catalog_service_updated'
   | 'cadastral_catalog_service_deleted'
-  | 'cadastral_catalog_service_restored';
+  | 'cadastral_catalog_service_restored'
+  | 'cadastral_bundle_add_all'
+  | 'cadastral_bundle_complete_panel';
+
 
 export async function trackEvent(event: AnalyticsEvent, payload?: Record<string, any>) {
   try {

@@ -20,6 +20,8 @@ interface ServiceListItemProps {
   onToggleSelect: () => void;
   onToggleExpand: () => void;
   onRequestContribution?: () => void;
+  /** O1 : prix pré-formaté côté parent (évite useCurrencyConfig par item). */
+  priceLabel?: string;
 }
 
 const ServiceListItem: React.FC<ServiceListItemProps> = ({
@@ -32,6 +34,7 @@ const ServiceListItem: React.FC<ServiceListItemProps> = ({
   onToggleSelect,
   onToggleExpand,
   onRequestContribution,
+  priceLabel: priceLabelProp,
 }) => {
   const isDisabled = !hasData || isAlreadyPaid;
   const viewedRef = useRef(false);
@@ -60,8 +63,10 @@ const ServiceListItem: React.FC<ServiceListItemProps> = ({
   };
 
   const catInfo = getCadastralCategoryMeta(service.category);
+  // Fallback : si le parent ne fournit pas priceLabel, on calcule localement (rétro-compat).
   const { selectedCurrency, convertFromUsd } = useCurrencyConfig();
-  const priceLabel = formatCurrency(convertFromUsd(service.price), selectedCurrency);
+  const priceLabel = priceLabelProp ?? formatCurrency(convertFromUsd(service.price), selectedCurrency);
+
 
   return (
     <div
