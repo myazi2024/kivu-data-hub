@@ -353,7 +353,8 @@ export const useCadastralPayment = () => {
       clearServices();
       window.dispatchEvent(new CustomEvent('cadastralPaymentCompleted'));
 
-      return invoice.data;
+      return invoiceData ?? null;
+
     } catch (error: any) {
       console.error('Test payment error:', error);
       toast({ title: "Erreur", description: error.message, variant: "destructive" });
