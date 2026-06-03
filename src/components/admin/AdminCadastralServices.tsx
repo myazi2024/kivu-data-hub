@@ -231,6 +231,20 @@ const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefre
 
   const restoreService = async (id: string, serviceId: string) => {
     try {
+      // B7 : pré-check unicité avant restauration (un autre service actif pourrait avoir
+      // réutilisé le service_id entre-temps).
+      const { data: conflict } = await supabase
+        .from('cadastral_services_config')
+        .select('id')
+        .eq('service_id', serviceId)
+        .is('deleted_at', null)
+        .neq('id', id)
+        .maybeSingle();
+      if (conflict) {
+        toast.error(`Impossible de restaurer : un service actif utilise déjà l'identifiant "${serviceId}".`);
+        return;
+      }
+
       const { error } = await supabase
         .from('cadastral_services_config')
         .update({ deleted_at: null, updated_at: new Date().toISOString() })
@@ -244,6 +258,7 @@ const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefre
       toast.error(error.message || 'Erreur lors de la restauration');
     }
   };
+
 
   const openEditDialog = (service: CadastralServiceRow) => {
     setEditingService(service);
