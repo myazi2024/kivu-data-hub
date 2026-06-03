@@ -40,24 +40,8 @@ interface CadastralBillingPanelProps {
   alreadyPaidServices?: string[];
 }
 
-// Fallback hardcodé conservé si aucun spec n'est défini en BD pour un service legacy.
-const legacyAvailability = (searchResult: CadastralSearchResult): Record<string, boolean> => {
-  const { parcel, ownership_history, tax_history, mortgage_history, boundary_history } = searchResult;
-  return {
-    information: true,
-    location_history: !!(
-      (parcel.province && parcel.ville) ||
-      (boundary_history && boundary_history.length > 0) ||
-      (parcel.gps_coordinates && Array.isArray(parcel.gps_coordinates) && parcel.gps_coordinates.length > 0)
-    ),
-    history: !!(ownership_history && ownership_history.length > 0),
-    obligations: !!(
-      (tax_history && tax_history.length > 0) ||
-      (mortgage_history && mortgage_history.length > 0)
-    ),
-    land_disputes: true,
-  };
-};
+// B5 : `legacyAvailability` retiré — tous les services BD ont désormais `required_data_fields`.
+
 
 const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({ 
   searchResult, 
