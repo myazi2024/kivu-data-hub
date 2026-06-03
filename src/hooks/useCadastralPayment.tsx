@@ -289,7 +289,7 @@ export const useCadastralPayment = () => {
   }, [availableMethods, toast]);
 
   /**
-   * Paiement simulé en mode test — crée une transaction completed + accorde l'accès.
+   * Paiement simulé en mode test — passe par les RPC sécurisées (atomicité + RLS).
    */
   const processTestPayment = useCallback(async (invoiceId: string) => {
     if (!user) {
@@ -301,8 +301,8 @@ export const useCadastralPayment = () => {
       setLoading(true);
       setPaymentStep('processing');
 
-      // Créer une transaction simulée
-      const { data: txn, error: txnError } = await supabase
+      // Transaction simulée (RLS autorise INSERT du propriétaire)
+      const { error: txnError } = await supabase
         .from('payment_transactions')
         .insert({
           user_id: user.id,
@@ -314,41 +314,33 @@ export const useCadastralPayment = () => {
           currency_code: 'USD',
           status: 'completed',
           transaction_reference: `TEST-${Date.now()}`,
-        })
-        .select('id')
-        .single();
-
+        });
       if (txnError) throw txnError;
 
-      // Marquer la facture comme payée
-      await supabase
-        .from('cadastral_invoices')
-        .update({
-          status: 'paid',
-          payment_method: 'TEST',
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', invoiceId);
+      // RPC atomique : marque payée + grant cadastral_service_access
+      const { error: markError } = await supabase.rpc('mark_cadastral_invoice_paid_safe', {
+        p_invoice_id: invoiceId,
+        p_payment_method: 'TEST',
+      });
+      if (markError) throw markError;
 
-      // Accorder l'accès aux services
-      const invoice = await supabase
+      // Lecture finale (parcel_number + services) en une requête
+      const { data: invoiceData } = await supabase
         .from('cadastral_invoices')
-        .select('parcel_number, selected_services')
+        .select('parcel_number, selected_services, total_amount_usd')
         .eq('id', invoiceId)
         .single();
 
-      if (invoice.data) {
-        const serviceIds = await getInvoiceServices(invoiceId);
-        await grantServiceAccess(user.id, invoiceId, invoice.data.parcel_number, serviceIds);
-      }
+      const serviceIds = Array.isArray(invoiceData?.selected_services)
+        ? (invoiceData!.selected_services as string[])
+        : await getInvoiceServices(invoiceId);
 
       setPaymentStep('success');
       toast({ title: "Paiement test simulé", description: "Services débloqués (mode test)" });
 
-      if (invoice.data) {
-        const serviceIds = await getInvoiceServices(invoiceId);
+      if (invoiceData) {
         trackEvent('cadastral_service_purchase', {
-          parcel_number: invoice.data.parcel_number,
+          parcel_number: invoiceData.parcel_number,
           invoice_id: invoiceId,
           service_ids: serviceIds,
           service_count: serviceIds.length,
@@ -356,6 +348,7 @@ export const useCadastralPayment = () => {
           payment_method: 'TEST',
         });
       }
+
 
       clearServices();
       window.dispatchEvent(new CustomEvent('cadastralPaymentCompleted'));
