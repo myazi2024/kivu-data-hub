@@ -15,28 +15,23 @@ export interface CadastralPaymentData {
   name: string;
 }
 
-const grantServiceAccess = async (
-  userId: string,
-  invoiceId: string,
-  parcelNumber: string,
-  serviceIds: string[]
-) => {
-  const rows = serviceIds.map(serviceId => ({
-    user_id: userId,
-    invoice_id: invoiceId,
-    parcel_number: parcelNumber,
-    service_type: serviceId
-  }));
+const getInvoiceServices = async (invoiceId: string): Promise<string[]> => {
+  const { data, error } = await supabase
+    .from('cadastral_invoices')
+    .select('selected_services')
+    .eq('id', invoiceId)
+    .single();
 
-  const { error } = await supabase
-    .from('cadastral_service_access')
-    .upsert(rows, { onConflict: 'user_id,parcel_number,service_type' });
+  if (error) throw error;
 
-  if (error) {
-    console.error('Erreur lors de l\'attribution des accès:', error);
-    throw error;
+  const services = data?.selected_services;
+  if (Array.isArray(services)) return services as string[];
+  if (typeof services === 'string') {
+    try { return JSON.parse(services); } catch { return []; }
   }
+  return [];
 };
+
 
 const getInvoiceServices = async (invoiceId: string): Promise<string[]> => {
   const { data, error } = await supabase
