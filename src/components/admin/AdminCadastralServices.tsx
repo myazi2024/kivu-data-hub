@@ -101,10 +101,18 @@ const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefre
     }
   };
 
+  const SERVICE_ID_REGEX = /^[a-z][a-z0-9_]*$/;
+
   const handleSave = async () => {
     try {
       if (!formData.service_id || !formData.name || formData.price_usd <= 0) {
         toast.error('Veuillez remplir tous les champs obligatoires');
+        return;
+      }
+
+      // B8 : validation format service_id (lowercase snake_case)
+      if (!editingService && !SERVICE_ID_REGEX.test(formData.service_id)) {
+        toast.error('Identifiant invalide : minuscules, chiffres et _ uniquement (commence par une lettre).');
         return;
       }
 
@@ -129,6 +137,7 @@ const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefre
           return;
         }
       }
+
 
       const previousCategory = editingService?.category ?? null;
       const payload = {
