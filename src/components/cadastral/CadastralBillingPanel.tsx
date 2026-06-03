@@ -347,7 +347,14 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
                             category: typeof service.category === 'string' ? service.category : undefined,
                           });
                         });
+                        // O5 : tracking du bundle "Tout ajouter / Compléter le dossier"
+                        trackEvent(selectedServiceIds.length === 0 ? 'cadastral_bundle_add_all' : 'cadastral_bundle_complete_panel', {
+                          parcel_number: searchResult.parcel.parcel_number,
+                          added_count: remainingToAdd.length,
+                          added_value_usd: remainingValue,
+                        });
                       }}
+
                     >
                       {selectedServiceIds.length === 0
                         ? `Tout ajouter — ${formatCurrency(convertFromUsd(bundleTotal), selectedCurrency)}`
