@@ -387,6 +387,8 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
                     onToggleSelect={() => handleServiceToggle(service.id)}
                     onToggleExpand={() => toggleServiceExpansion(service.id)}
                     onRequestContribution={onRequestContribution}
+                    priceLabel={formatCurrency(convertFromUsd(service.price), selectedCurrency)}
+
                   />
                 );
               })}
