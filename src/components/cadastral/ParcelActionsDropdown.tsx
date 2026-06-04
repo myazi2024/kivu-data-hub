@@ -79,10 +79,10 @@ const DEFAULT_ACTION_ICONS: Record<string, React.ComponentType<{ className?: str
   land_dispute: AlertTriangle,
 };
 
-const ActionIcon: React.FC<{ iconName?: string; actionKey: string }> = ({ iconName, actionKey }) => {
+const ActionIcon: React.FC<{ iconName?: string; actionKey: string; className?: string }> = ({ iconName, actionKey, className }) => {
   const Icon = (iconName && ICON_MAP[iconName]) || DEFAULT_ACTION_ICONS[actionKey];
   if (!Icon) return null;
-  return <Icon className="h-4 w-4 text-muted-foreground shrink-0" />;
+  return <Icon className={className ?? 'h-4 w-4'} />;
 };
 
 const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
@@ -168,26 +168,31 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
             <span className="text-[9px] text-muted-foreground font-medium bg-muted/50 px-1.5 py-0.5 rounded-full">{visibleActions.length}</span>
           </div>
           <div className="overflow-y-auto overscroll-contain max-h-[55dvh] sm:max-h-[260px] scrollbar-thin">
-            <div className="px-2.5 pb-2 space-y-0.5">
+            <div className="px-2.5 pb-2 space-y-2">
               {groupedActions.map((item, index) => {
-                if (item === 'separator') return <Separator key={`sep-${index}`} className="my-1 opacity-30" />;
+                if (item === 'separator') return null;
                 const action = item;
+                const disabled = !action.isActive;
                 return (
                   <button
                     key={action.id}
                     onClick={() => handleActionClick(action)}
                     onFocus={() => handleMenuItemFocus(index)}
-                    disabled={!action.isActive}
-                    className={`w-full flex items-center gap-2.5 px-2.5 py-2.5 min-h-11 rounded-xl text-left transition-all duration-150
-                      ${action.isActive ? 'hover:bg-primary/5 hover:shadow-sm active:scale-[0.98] cursor-pointer' : 'opacity-35 cursor-not-allowed'}`}
+                    disabled={disabled}
+                    className={`w-full flex items-center gap-3 p-3 min-h-12 rounded-2xl border-2 shadow-md text-left transition-all duration-200
+                      ${disabled
+                        ? 'opacity-40 cursor-not-allowed border-border/50 bg-muted/20'
+                        : 'border-primary/40 bg-background hover:border-primary/60 hover:bg-primary/5 hover:shadow-lg active:scale-[0.99] cursor-pointer'}`}
                   >
-                    <ActionIcon iconName={action.iconName} actionKey={action.key} />
+                    <div className={`shrink-0 p-2 rounded-xl ${disabled ? 'bg-muted text-muted-foreground/50' : 'bg-primary/10 text-primary'}`}>
+                      <ActionIcon iconName={action.iconName} actionKey={action.key} className="h-4 w-4" />
+                    </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="font-medium text-[13px] text-foreground truncate">{action.label}</span>
+                        <h4 className="font-medium text-sm text-foreground leading-tight truncate">{action.label}</h4>
                         <ActionBadge badge={action.badge} />
                       </div>
-                      <p className="text-[10px] text-muted-foreground truncate mt-0.5">{action.description}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{action.description}</p>
                     </div>
                   </button>
                 );
