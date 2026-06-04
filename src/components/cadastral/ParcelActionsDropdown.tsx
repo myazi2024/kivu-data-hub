@@ -79,10 +79,10 @@ const DEFAULT_ACTION_ICONS: Record<string, React.ComponentType<{ className?: str
   land_dispute: AlertTriangle,
 };
 
-const ActionIcon: React.FC<{ iconName?: string; actionKey: string }> = ({ iconName, actionKey }) => {
+const ActionIcon: React.FC<{ iconName?: string; actionKey: string; className?: string }> = ({ iconName, actionKey, className }) => {
   const Icon = (iconName && ICON_MAP[iconName]) || DEFAULT_ACTION_ICONS[actionKey];
   if (!Icon) return null;
-  return <Icon className="h-4 w-4 text-muted-foreground shrink-0" />;
+  return <Icon className={className ?? 'h-4 w-4'} />;
 };
 
 const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
