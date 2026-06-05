@@ -33,7 +33,13 @@ export interface CadastralContributionData {
   standing?: string;
   constructionYear?: number;
   rentalStartDate?: string; // ISO yyyy-MM-dd, requis si declaredUsage === 'Location'
-  
+
+  // Configuration locative (si declaredUsage === 'Location')
+  rentalConfiguration?: 'single' | 'multi';
+  rentalUnitsCount?: number;
+  monthlyRentUsd?: number;
+  rentalUnits?: Array<{ label?: string; monthlyRentUsd?: number }>;
+
   // Capacité d'accueil
   isOccupied?: boolean;
   occupantCount?: number;
