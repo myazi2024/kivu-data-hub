@@ -11,6 +11,7 @@ import { BuildingPermitIssuingServiceSelect } from './BuildingPermitIssuingServi
 import { useToast } from '@/hooks/use-toast';
 import { resolveAvailableUsages } from '@/utils/constructionUsageResolver';
 import RentalStartDateField from './RentalStartDateField';
+import { RentalConfigurationSelector, MonthlyRentFields } from './RentalConfigurationFields';
 
 export interface AdditionalConstructionPermit {
   permitType: 'construction' | 'regularization';
