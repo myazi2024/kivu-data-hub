@@ -459,6 +459,21 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
         />
       )}
 
+      {/* Configuration locative : mono-local vs multi-locaux */}
+      {data.declaredUsage === 'Location' && (
+        <RentalConfigurationSelector
+          state={{
+            rentalConfiguration: data.rentalConfiguration,
+            rentalUnitsCount: data.rentalUnitsCount,
+            monthlyRentUsd: data.monthlyRentUsd,
+            rentalUnits: data.rentalUnits,
+          }}
+          onPatch={(patch) => onChange(index, { ...data, ...patch })}
+          propertyCategory={data.propertyCategory}
+          constructionType={data.constructionType}
+        />
+      )}
+
       {/* Capacité d'accueil */}
       {isNotTerrainNu && (
         <>
