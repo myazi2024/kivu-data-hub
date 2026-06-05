@@ -31,6 +31,11 @@ export interface AdditionalConstruction {
   rentalStartDate?: string; // ISO yyyy-MM-dd, requis si declaredUsage === 'Location'
   apartmentNumber?: string;
   floorNumber?: string;
+  // Configuration locative (si declaredUsage === 'Location')
+  rentalConfiguration?: 'single' | 'multi';
+  rentalUnitsCount?: number;
+  monthlyRentUsd?: number;
+  rentalUnits?: Array<{ label?: string; monthlyRentUsd?: number }>;
   // Capacité d'accueil
   isOccupied?: boolean;
   occupantCount?: number;
