@@ -161,6 +161,11 @@ export interface CadastralContributionData {
     constructionYear?: number;
     apartmentNumber?: string;
     floorNumber?: string;
+    rentalStartDate?: string;
+    rentalConfiguration?: 'single' | 'multi';
+    rentalUnitsCount?: number;
+    monthlyRentUsd?: number;
+    rentalUnits?: Array<{ label?: string; monthlyRentUsd?: number }>;
     isOccupied?: boolean;
     occupantCount?: number;
     hostingCapacity?: number;
