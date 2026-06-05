@@ -12,6 +12,7 @@ import { MdDashboard, MdLocationOn, MdInsertDriveFile } from 'react-icons/md';
 import BlockResetButton from '../BlockResetButton';
 import { CadastralContributionData } from '@/hooks/useCadastralContribution';
 import RentalStartDateField from '../RentalStartDateField';
+import { RentalConfigurationSelector, MonthlyRentFields } from '../RentalConfigurationFields';
 import { PropertyTitleTypeSelect, PROPERTY_TITLE_TYPES, getEffectiveTitleName } from '../PropertyTitleTypeSelect';
 
 import { InputWithPopover } from '../InputWithPopover';
