@@ -1001,9 +1001,13 @@ const ConstructionSection: React.FC<ConstructionSectionProps> = ({
           </div>
           <Select value={formData.declaredUsage || ''} onValueChange={(value) => {
             handleInputChange('declaredUsage', value);
-            // Vider rentalStartDate si on quitte "Location"
-            if (value !== 'Location' && formData.rentalStartDate) {
-              handleInputChange('rentalStartDate', undefined);
+            // Vider rentalStartDate et la config locative si on quitte "Location"
+            if (value !== 'Location') {
+              if (formData.rentalStartDate) handleInputChange('rentalStartDate', undefined);
+              if (formData.rentalConfiguration) handleInputChange('rentalConfiguration', undefined);
+              if (formData.rentalUnitsCount) handleInputChange('rentalUnitsCount', undefined);
+              if (formData.monthlyRentUsd) handleInputChange('monthlyRentUsd', undefined);
+              if (formData.rentalUnits) handleInputChange('rentalUnits', undefined);
             }
             setHighlightRequiredFields(false);
           }} disabled={!formData.constructionType || !formData.constructionNature}>
