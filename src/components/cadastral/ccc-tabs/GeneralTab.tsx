@@ -12,6 +12,7 @@ import { MdDashboard, MdLocationOn, MdInsertDriveFile } from 'react-icons/md';
 import BlockResetButton from '../BlockResetButton';
 import { CadastralContributionData } from '@/hooks/useCadastralContribution';
 import RentalStartDateField from '../RentalStartDateField';
+import { RentalConfigurationSelector, MonthlyRentFields } from '../RentalConfigurationFields';
 import { PropertyTitleTypeSelect, PROPERTY_TITLE_TYPES, getEffectiveTitleName } from '../PropertyTitleTypeSelect';
 
 import { InputWithPopover } from '../InputWithPopover';
@@ -1000,9 +1001,13 @@ const ConstructionSection: React.FC<ConstructionSectionProps> = ({
           </div>
           <Select value={formData.declaredUsage || ''} onValueChange={(value) => {
             handleInputChange('declaredUsage', value);
-            // Vider rentalStartDate si on quitte "Location"
-            if (value !== 'Location' && formData.rentalStartDate) {
-              handleInputChange('rentalStartDate', undefined);
+            // Vider rentalStartDate et la config locative si on quitte "Location"
+            if (value !== 'Location') {
+              if (formData.rentalStartDate) handleInputChange('rentalStartDate', undefined);
+              if (formData.rentalConfiguration) handleInputChange('rentalConfiguration', undefined);
+              if (formData.rentalUnitsCount) handleInputChange('rentalUnitsCount', undefined);
+              if (formData.monthlyRentUsd) handleInputChange('monthlyRentUsd', undefined);
+              if (formData.rentalUnits) handleInputChange('rentalUnits', undefined);
             }
             setHighlightRequiredFields(false);
           }} disabled={!formData.constructionType || !formData.constructionNature}>
@@ -1111,6 +1116,24 @@ const ConstructionSection: React.FC<ConstructionSectionProps> = ({
         />
       )}
 
+      {/* Configuration locative : mono-local vs multi-locaux */}
+      {formData.declaredUsage === 'Location' && (
+        <RentalConfigurationSelector
+          state={{
+            rentalConfiguration: formData.rentalConfiguration,
+            rentalUnitsCount: formData.rentalUnitsCount,
+            monthlyRentUsd: formData.monthlyRentUsd,
+            rentalUnits: formData.rentalUnits,
+          }}
+          onPatch={(patch) => {
+            Object.entries(patch).forEach(([k, v]) => handleInputChange(k as any, v));
+          }}
+          propertyCategory={formData.propertyCategory}
+          constructionType={formData.constructionType}
+          highlightRequired={highlightRequiredFields}
+        />
+      )}
+
       {/* Hosting capacity sub-block */}
       {formData.propertyCategory && formData.propertyCategory !== 'Terrain nu' && formData.constructionType && formData.constructionType !== 'Terrain nu' && (
         <>
@@ -1145,6 +1168,27 @@ const ConstructionSection: React.FC<ConstructionSectionProps> = ({
               </div>
             )}
           </div>
+        </>
+      )}
+
+      {/* Loyer mensuel — après Capacité d'accueil, conditionnel si Location */}
+      {formData.declaredUsage === 'Location' && (
+        <>
+          <div className="border-t border-border/50 my-2" />
+          <MonthlyRentFields
+            state={{
+              rentalConfiguration: formData.rentalConfiguration,
+              rentalUnitsCount: formData.rentalUnitsCount,
+              monthlyRentUsd: formData.monthlyRentUsd,
+              rentalUnits: formData.rentalUnits,
+            }}
+            onPatch={(patch) => {
+              Object.entries(patch).forEach(([k, v]) => handleInputChange(k as any, v));
+            }}
+            propertyCategory={formData.propertyCategory}
+            constructionType={formData.constructionType}
+            highlightRequired={highlightRequiredFields}
+          />
         </>
       )}
 

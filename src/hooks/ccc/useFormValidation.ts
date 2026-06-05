@@ -96,6 +96,27 @@ export function useFormValidation(params: UseFormValidationParams) {
           missing.push({ field: 'rentalStartDate', label: `Date de mise en location < 01/01/${formData.constructionYear}`, tab: 'general' });
         }
       }
+      if (!formData.rentalConfiguration) {
+        missing.push({ field: 'rentalConfiguration', label: 'Configuration locative (un seul local ou plusieurs locaux)', tab: 'general' });
+      } else if (formData.rentalConfiguration === 'single') {
+        if (!formData.monthlyRentUsd || Number(formData.monthlyRentUsd) <= 0) {
+          missing.push({ field: 'monthlyRentUsd', label: 'Loyer mensuel actuel (USD)', tab: 'general' });
+        }
+      } else if (formData.rentalConfiguration === 'multi') {
+        const count = Number(formData.rentalUnitsCount) || 0;
+        if (count < 2) {
+          missing.push({ field: 'rentalUnitsCount', label: 'Nombre de locaux mis en location (min. 2)', tab: 'general' });
+        }
+        const units = Array.isArray(formData.rentalUnits) ? formData.rentalUnits : [];
+        if (units.length !== count) {
+          missing.push({ field: 'rentalUnits', label: 'Loyers par local : nombre de saisies incohérent', tab: 'general' });
+        }
+        units.forEach((u, i) => {
+          if (!u || !u.monthlyRentUsd || Number(u.monthlyRentUsd) <= 0) {
+            missing.push({ field: `rentalUnit_${i}`, label: `Loyer mensuel du local #${i + 1}`, tab: 'general' });
+          }
+        });
+      }
     }
     additionalConstructions.forEach((c, idx) => {
       if (c.declaredUsage === 'Location') {
@@ -106,6 +127,27 @@ export function useFormValidation(params: UseFormValidationParams) {
           if (new Date(c.rentalStartDate) < min) {
             missing.push({ field: `additionalRentalStartDate_${idx}`, label: `Date de mise en location < 01/01/${c.constructionYear} (construction #${idx + 2})`, tab: 'general' });
           }
+        }
+        if (!c.rentalConfiguration) {
+          missing.push({ field: `additionalRentalConfig_${idx}`, label: `Configuration locative (construction #${idx + 2})`, tab: 'general' });
+        } else if (c.rentalConfiguration === 'single') {
+          if (!c.monthlyRentUsd || Number(c.monthlyRentUsd) <= 0) {
+            missing.push({ field: `additionalMonthlyRent_${idx}`, label: `Loyer mensuel (construction #${idx + 2})`, tab: 'general' });
+          }
+        } else if (c.rentalConfiguration === 'multi') {
+          const count = Number(c.rentalUnitsCount) || 0;
+          if (count < 2) {
+            missing.push({ field: `additionalRentalUnitsCount_${idx}`, label: `Nombre de locaux (construction #${idx + 2})`, tab: 'general' });
+          }
+          const units = Array.isArray(c.rentalUnits) ? c.rentalUnits : [];
+          if (units.length !== count) {
+            missing.push({ field: `additionalRentalUnits_${idx}`, label: `Loyers par local : nombre incohérent (construction #${idx + 2})`, tab: 'general' });
+          }
+          units.forEach((u, i) => {
+            if (!u || !u.monthlyRentUsd || Number(u.monthlyRentUsd) <= 0) {
+              missing.push({ field: `additionalRentalUnit_${idx}_${i}`, label: `Loyer du local #${i + 1} (construction #${idx + 2})`, tab: 'general' });
+            }
+          });
         }
       }
     });

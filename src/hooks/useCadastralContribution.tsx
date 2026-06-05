@@ -33,7 +33,13 @@ export interface CadastralContributionData {
   standing?: string;
   constructionYear?: number;
   rentalStartDate?: string; // ISO yyyy-MM-dd, requis si declaredUsage === 'Location'
-  
+
+  // Configuration locative (si declaredUsage === 'Location')
+  rentalConfiguration?: 'single' | 'multi';
+  rentalUnitsCount?: number;
+  monthlyRentUsd?: number;
+  rentalUnits?: Array<{ label?: string; monthlyRentUsd?: number }>;
+
   // Capacité d'accueil
   isOccupied?: boolean;
   occupantCount?: number;
@@ -155,6 +161,11 @@ export interface CadastralContributionData {
     constructionYear?: number;
     apartmentNumber?: string;
     floorNumber?: string;
+    rentalStartDate?: string;
+    rentalConfiguration?: 'single' | 'multi';
+    rentalUnitsCount?: number;
+    monthlyRentUsd?: number;
+    rentalUnits?: Array<{ label?: string; monthlyRentUsd?: number }>;
     isOccupied?: boolean;
     occupantCount?: number;
     hostingCapacity?: number;
@@ -300,6 +311,15 @@ export const useCadastralContribution = () => {
       declared_usage: blank(data.declaredUsage),
       standing: blank(data.standing),
       rental_start_date: blankDate(data.rentalStartDate),
+      rental_configuration: data.rentalConfiguration ?? null,
+      rental_units_count: blankNum(data.rentalUnitsCount),
+      monthly_rent_usd: blankNum(data.monthlyRentUsd),
+      rental_units: data.rentalUnits && data.rentalUnits.length > 0
+        ? data.rentalUnits.map(u => ({
+            label: u.label ?? null,
+            monthly_rent_usd: blankNum(u.monthlyRentUsd),
+          }))
+        : null,
       building_permits: buildingPermitsSnake,
       previous_permit_number: data.previousPermitNumber || data.permitRequest?.originalPermitNumber,
       province: data.province,

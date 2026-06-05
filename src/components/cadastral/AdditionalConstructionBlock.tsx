@@ -11,6 +11,7 @@ import { BuildingPermitIssuingServiceSelect } from './BuildingPermitIssuingServi
 import { useToast } from '@/hooks/use-toast';
 import { resolveAvailableUsages } from '@/utils/constructionUsageResolver';
 import RentalStartDateField from './RentalStartDateField';
+import { RentalConfigurationSelector, MonthlyRentFields } from './RentalConfigurationFields';
 
 export interface AdditionalConstructionPermit {
   permitType: 'construction' | 'regularization';
@@ -31,6 +32,11 @@ export interface AdditionalConstruction {
   rentalStartDate?: string; // ISO yyyy-MM-dd, requis si declaredUsage === 'Location'
   apartmentNumber?: string;
   floorNumber?: string;
+  // Configuration locative (si declaredUsage === 'Location')
+  rentalConfiguration?: 'single' | 'multi';
+  rentalUnitsCount?: number;
+  monthlyRentUsd?: number;
+  rentalUnits?: Array<{ label?: string; monthlyRentUsd?: number }>;
   // Capacité d'accueil
   isOccupied?: boolean;
   occupantCount?: number;
@@ -301,9 +307,17 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
             </Popover>
           </div>
           <Select value={data.declaredUsage} onValueChange={(v) => {
-            // Vider rentalStartDate si on quitte "Location"
-            if (v !== 'Location' && data.rentalStartDate) {
-              onChange(index, { ...data, declaredUsage: v, rentalStartDate: undefined });
+            // Vider toute la config locative si on quitte "Location"
+            if (v !== 'Location') {
+              onChange(index, {
+                ...data,
+                declaredUsage: v,
+                rentalStartDate: undefined,
+                rentalConfiguration: undefined,
+                rentalUnitsCount: undefined,
+                monthlyRentUsd: undefined,
+                rentalUnits: undefined,
+              });
             } else {
               update('declaredUsage', v);
             }
@@ -445,6 +459,21 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
         />
       )}
 
+      {/* Configuration locative : mono-local vs multi-locaux */}
+      {data.declaredUsage === 'Location' && (
+        <RentalConfigurationSelector
+          state={{
+            rentalConfiguration: data.rentalConfiguration,
+            rentalUnitsCount: data.rentalUnitsCount,
+            monthlyRentUsd: data.monthlyRentUsd,
+            rentalUnits: data.rentalUnits,
+          }}
+          onPatch={(patch) => onChange(index, { ...data, ...patch })}
+          propertyCategory={data.propertyCategory}
+          constructionType={data.constructionType}
+        />
+      )}
+
       {/* Capacité d'accueil */}
       {isNotTerrainNu && (
         <>
@@ -517,6 +546,25 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
           </div>
         </>
       )}
+
+      {/* Loyer mensuel — après Capacité d'accueil, conditionnel si Location */}
+      {data.declaredUsage === 'Location' && (
+        <>
+          <div className="border-t border-border/50 my-2" />
+          <MonthlyRentFields
+            state={{
+              rentalConfiguration: data.rentalConfiguration,
+              rentalUnitsCount: data.rentalUnitsCount,
+              monthlyRentUsd: data.monthlyRentUsd,
+              rentalUnits: data.rentalUnits,
+            }}
+            onPatch={(patch) => onChange(index, { ...data, ...patch })}
+            propertyCategory={data.propertyCategory}
+            constructionType={data.constructionType}
+          />
+        </>
+      )}
+
 
       {/* Section Autorisation de bâtir */}
       {showBuildingPermit && (
