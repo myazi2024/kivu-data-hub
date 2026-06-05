@@ -547,6 +547,25 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
         </>
       )}
 
+      {/* Loyer mensuel — après Capacité d'accueil, conditionnel si Location */}
+      {data.declaredUsage === 'Location' && (
+        <>
+          <div className="border-t border-border/50 my-2" />
+          <MonthlyRentFields
+            state={{
+              rentalConfiguration: data.rentalConfiguration,
+              rentalUnitsCount: data.rentalUnitsCount,
+              monthlyRentUsd: data.monthlyRentUsd,
+              rentalUnits: data.rentalUnits,
+            }}
+            onPatch={(patch) => onChange(index, { ...data, ...patch })}
+            propertyCategory={data.propertyCategory}
+            constructionType={data.constructionType}
+          />
+        </>
+      )}
+
+
       {/* Section Autorisation de bâtir */}
       {showBuildingPermit && (
         <>
