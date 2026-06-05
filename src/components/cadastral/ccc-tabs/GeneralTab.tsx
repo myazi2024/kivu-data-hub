@@ -1116,6 +1116,24 @@ const ConstructionSection: React.FC<ConstructionSectionProps> = ({
         />
       )}
 
+      {/* Configuration locative : mono-local vs multi-locaux */}
+      {formData.declaredUsage === 'Location' && (
+        <RentalConfigurationSelector
+          state={{
+            rentalConfiguration: formData.rentalConfiguration,
+            rentalUnitsCount: formData.rentalUnitsCount,
+            monthlyRentUsd: formData.monthlyRentUsd,
+            rentalUnits: formData.rentalUnits,
+          }}
+          onPatch={(patch) => {
+            Object.entries(patch).forEach(([k, v]) => handleInputChange(k as any, v));
+          }}
+          propertyCategory={formData.propertyCategory}
+          constructionType={formData.constructionType}
+          highlightRequired={highlightRequiredFields}
+        />
+      )}
+
       {/* Hosting capacity sub-block */}
       {formData.propertyCategory && formData.propertyCategory !== 'Terrain nu' && formData.constructionType && formData.constructionType !== 'Terrain nu' && (
         <>
@@ -1150,6 +1168,27 @@ const ConstructionSection: React.FC<ConstructionSectionProps> = ({
               </div>
             )}
           </div>
+        </>
+      )}
+
+      {/* Loyer mensuel — après Capacité d'accueil, conditionnel si Location */}
+      {formData.declaredUsage === 'Location' && (
+        <>
+          <div className="border-t border-border/50 my-2" />
+          <MonthlyRentFields
+            state={{
+              rentalConfiguration: formData.rentalConfiguration,
+              rentalUnitsCount: formData.rentalUnitsCount,
+              monthlyRentUsd: formData.monthlyRentUsd,
+              rentalUnits: formData.rentalUnits,
+            }}
+            onPatch={(patch) => {
+              Object.entries(patch).forEach(([k, v]) => handleInputChange(k as any, v));
+            }}
+            propertyCategory={formData.propertyCategory}
+            constructionType={formData.constructionType}
+            highlightRequired={highlightRequiredFields}
+          />
         </>
       )}
 
