@@ -221,6 +221,42 @@ const ObligationsTab: React.FC<ObligationsTabProps> = ({
                       .map(t => t.constructionRef as string)
                   );
                   const isMissing = !tax.constructionRef;
+
+                  // Résolution du contexte locatif (single/multi + loyers)
+                  const ref = tax.constructionRef;
+                  let rentalCtx: {
+                    config?: 'single' | 'multi';
+                    monthlyTotal: number;
+                    units: Array<{ label?: string; monthlyRentUsd?: number }>;
+                  } | null = null;
+                  if (ref === 'main') {
+                    rentalCtx = {
+                      config: formData.rentalConfiguration,
+                      monthlyTotal:
+                        formData.rentalConfiguration === 'multi'
+                          ? (formData.rentalUnits || []).reduce((s, u) => s + (Number(u?.monthlyRentUsd) || 0), 0)
+                          : Number(formData.monthlyRentUsd) || 0,
+                      units: formData.rentalConfiguration === 'multi'
+                        ? (formData.rentalUnits || [])
+                        : (formData.monthlyRentUsd ? [{ label: 'Local unique', monthlyRentUsd: formData.monthlyRentUsd }] : []),
+                    };
+                  } else if (ref?.startsWith('additional:')) {
+                    const idx = parseInt(ref.split(':')[1], 10);
+                    const c: any = (additionalConstructions || [])[idx];
+                    if (c) {
+                      rentalCtx = {
+                        config: c.rentalConfiguration,
+                        monthlyTotal:
+                          c.rentalConfiguration === 'multi'
+                            ? (c.rentalUnits || []).reduce((s: number, u: any) => s + (Number(u?.monthlyRentUsd) || 0), 0)
+                            : Number(c.monthlyRentUsd) || 0,
+                        units: c.rentalConfiguration === 'multi'
+                          ? (c.rentalUnits || [])
+                          : (c.monthlyRentUsd ? [{ label: 'Local unique', monthlyRentUsd: c.monthlyRentUsd }] : []),
+                      };
+                    }
+                  }
+
                   return (
                     <div className="space-y-1">
                       <Label className="text-sm font-medium">
@@ -251,6 +287,29 @@ const ObligationsTab: React.FC<ObligationsTabProps> = ({
                       <p className="text-[11px] text-muted-foreground">
                         L'IRL est rattaché à une construction louée précise. 1 IRL par construction en location.
                       </p>
+
+                      {rentalCtx && rentalCtx.config && (
+                        <div className="mt-2 rounded-xl bg-muted/40 p-2 space-y-1">
+                          <p className="text-[11px] font-medium text-foreground">
+                            {rentalCtx.config === 'multi'
+                              ? `${rentalCtx.units.length} local(s) en location`
+                              : '1 local en location'}
+                            {' · '}
+                            <span className="text-muted-foreground font-normal">
+                              total mensuel {rentalCtx.monthlyTotal.toFixed(2)} USD · annuel estimé {(rentalCtx.monthlyTotal * 12).toFixed(2)} USD
+                            </span>
+                          </p>
+                          {rentalCtx.config === 'multi' && rentalCtx.units.length > 0 && (
+                            <ul className="text-[11px] text-muted-foreground space-y-0.5 pl-3 list-disc">
+                              {rentalCtx.units.map((u, i) => (
+                                <li key={i}>
+                                  {u.label || `Local #${i + 1}`} — {Number(u.monthlyRentUsd || 0).toFixed(2)} USD/mois
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                        </div>
+                      )}
                     </div>
                   );
                 })()}
