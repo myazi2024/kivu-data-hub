@@ -307,9 +307,17 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
             </Popover>
           </div>
           <Select value={data.declaredUsage} onValueChange={(v) => {
-            // Vider rentalStartDate si on quitte "Location"
-            if (v !== 'Location' && data.rentalStartDate) {
-              onChange(index, { ...data, declaredUsage: v, rentalStartDate: undefined });
+            // Vider toute la config locative si on quitte "Location"
+            if (v !== 'Location') {
+              onChange(index, {
+                ...data,
+                declaredUsage: v,
+                rentalStartDate: undefined,
+                rentalConfiguration: undefined,
+                rentalUnitsCount: undefined,
+                monthlyRentUsd: undefined,
+                rentalUnits: undefined,
+              });
             } else {
               update('declaredUsage', v);
             }
