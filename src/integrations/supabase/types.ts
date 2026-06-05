@@ -1001,6 +1001,7 @@ export type Database = {
           is_title_in_current_owner_name: boolean | null
           lease_type: string | null
           lease_years: number | null
+          monthly_rent_usd: number | null
           mortgage_history: Json | null
           nearby_noise_sources: string | null
           occupant_count: number | null
@@ -1021,7 +1022,10 @@ export type Database = {
           rejection_date: string | null
           rejection_reason: string | null
           rejection_reasons: Json | null
+          rental_configuration: string | null
           rental_start_date: string | null
+          rental_units: Json | null
+          rental_units_count: number | null
           reviewed_at: string | null
           reviewed_by: string | null
           road_sides: Json | null
@@ -1084,6 +1088,7 @@ export type Database = {
           is_title_in_current_owner_name?: boolean | null
           lease_type?: string | null
           lease_years?: number | null
+          monthly_rent_usd?: number | null
           mortgage_history?: Json | null
           nearby_noise_sources?: string | null
           occupant_count?: number | null
@@ -1104,7 +1109,10 @@ export type Database = {
           rejection_date?: string | null
           rejection_reason?: string | null
           rejection_reasons?: Json | null
+          rental_configuration?: string | null
           rental_start_date?: string | null
+          rental_units?: Json | null
+          rental_units_count?: number | null
           reviewed_at?: string | null
           reviewed_by?: string | null
           road_sides?: Json | null
@@ -1167,6 +1175,7 @@ export type Database = {
           is_title_in_current_owner_name?: boolean | null
           lease_type?: string | null
           lease_years?: number | null
+          monthly_rent_usd?: number | null
           mortgage_history?: Json | null
           nearby_noise_sources?: string | null
           occupant_count?: number | null
@@ -1187,7 +1196,10 @@ export type Database = {
           rejection_date?: string | null
           rejection_reason?: string | null
           rejection_reasons?: Json | null
+          rental_configuration?: string | null
           rental_start_date?: string | null
+          rental_units?: Json | null
+          rental_units_count?: number | null
           reviewed_at?: string | null
           reviewed_by?: string | null
           road_sides?: Json | null
@@ -1803,6 +1815,7 @@ export type Database = {
           lease_years: number | null
           location: string
           longitude: number | null
+          monthly_rent_usd: number | null
           nearby_noise_sources: string | null
           nombre_bornes: number | null
           occupant_count: number | null
@@ -1815,7 +1828,10 @@ export type Database = {
           property_title_type: string
           province: string | null
           quartier: string | null
+          rental_configuration: string | null
           rental_start_date: string | null
+          rental_units: Json | null
+          rental_units_count: number | null
           road_sides: Json | null
           servitude_data: Json | null
           sound_environment: string | null
@@ -1864,6 +1880,7 @@ export type Database = {
           lease_years?: number | null
           location: string
           longitude?: number | null
+          monthly_rent_usd?: number | null
           nearby_noise_sources?: string | null
           nombre_bornes?: number | null
           occupant_count?: number | null
@@ -1876,7 +1893,10 @@ export type Database = {
           property_title_type?: string
           province?: string | null
           quartier?: string | null
+          rental_configuration?: string | null
           rental_start_date?: string | null
+          rental_units?: Json | null
+          rental_units_count?: number | null
           road_sides?: Json | null
           servitude_data?: Json | null
           sound_environment?: string | null
@@ -1925,6 +1945,7 @@ export type Database = {
           lease_years?: number | null
           location?: string
           longitude?: number | null
+          monthly_rent_usd?: number | null
           nearby_noise_sources?: string | null
           nombre_bornes?: number | null
           occupant_count?: number | null
@@ -1937,7 +1958,10 @@ export type Database = {
           property_title_type?: string
           province?: string | null
           quartier?: string | null
+          rental_configuration?: string | null
           rental_start_date?: string | null
+          rental_units?: Json | null
+          rental_units_count?: number | null
           road_sides?: Json | null
           servitude_data?: Json | null
           sound_environment?: string | null
