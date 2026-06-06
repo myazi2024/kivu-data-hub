@@ -33,7 +33,7 @@ export interface UseFormValidationParams {
   nearbySoundSources: string;
 }
 
-const TAB_ORDER = ['general', 'location', 'history', 'obligations', 'review'];
+const TAB_ORDER = ['general', 'location', 'history', 'obligations', 'market-value', 'review'];
 
 export function useFormValidation(params: UseFormValidationParams) {
   const {
@@ -309,6 +309,42 @@ export function useFormValidation(params: UseFormValidationParams) {
           missing.push({ field: 'permitIssueDate', label: msg, tab: 'general' });
         }
       }
+    }
+
+    // MARKET VALUE
+    if (formData.wouldSellIfOffered === undefined || formData.wouldSellIfOffered === null) {
+      missing.push({ field: 'wouldSellIfOffered', label: 'Disposition à vendre la parcelle (Oui/Non)', tab: 'market-value' });
+    } else if (formData.wouldSellIfOffered === true) {
+      if (!formData.resalePriceAmount || Number(formData.resalePriceAmount) <= 0) {
+        missing.push({ field: 'resalePriceAmount', label: 'Prix de revente proposé', tab: 'market-value' });
+      }
+      if (!formData.resalePriceCurrency) {
+        missing.push({ field: 'resalePriceCurrency', label: 'Devise du prix de revente', tab: 'market-value' });
+      }
+    }
+    if (formData.hasRecentAppraisal === undefined || formData.hasRecentAppraisal === null) {
+      missing.push({ field: 'hasRecentAppraisal', label: 'Expertise immobilière récente (Oui/Non)', tab: 'market-value' });
+    } else if (formData.hasRecentAppraisal === true) {
+      if (!formData.appraisalDate) {
+        missing.push({ field: 'appraisalDate', label: "Date de l'expertise immobilière", tab: 'market-value' });
+      }
+      if (!formData.appraisedValueAmount || Number(formData.appraisedValueAmount) <= 0) {
+        missing.push({ field: 'appraisedValueAmount', label: 'Valeur vénale retenue', tab: 'market-value' });
+      }
+      if (!formData.appraisedValueCurrency) {
+        missing.push({ field: 'appraisedValueCurrency', label: 'Devise de la valeur vénale', tab: 'market-value' });
+      }
+      if (!formData.appraisalReportUrl) {
+        missing.push({ field: 'appraisalReportUrl', label: "Rapport d'expertise (pièce jointe)", tab: 'market-value' });
+      }
+    }
+    // Loyer cible positif si saisi
+    if (Array.isArray(formData.marketListings)) {
+      formData.marketListings.forEach((l, i) => {
+        if (l?.listForRent && l.targetRentUsd !== undefined && l.targetRentUsd !== null && Number(l.targetRentUsd) < 0) {
+          missing.push({ field: `marketListingRent_${i}`, label: `Loyer cible du local "${l.unitLabel || i + 1}" invalide`, tab: 'market-value' });
+        }
+      });
     }
 
     return missing;
