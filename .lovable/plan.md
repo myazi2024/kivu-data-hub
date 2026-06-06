@@ -1,88 +1,147 @@
 ## Objectif
 
-Quand `declaredUsage === 'Location'` dans le bloc Construction (onglet Infos), ajouter deux nouveaux indicateurs, puis aligner l'onglet Obligations (IRL) sur le nombre de locaux déclarés. Appliquer la même logique pour la construction principale **et** les constructions additionnelles (`AdditionalConstructionBlock`), pour conserver la cohérence du formulaire et de l'IRL (1 IRL ↔ 1 construction louée, désormais multi-locaux).
+Ajouter un nouvel onglet **« Valeur marchande »** au formulaire CCC, inséré **entre « Obligations » et « Récapitulatif »**, pour collecter :
+- la valeur de revente hypothétique de la parcelle,
+- la valeur vénale issue d'une expertise immobilière récente (≤ 6 mois) avec pièce jointe,
+- pour les biens loués mais dont certains locaux sont **inoccupés**, la mise sur le marché locatif de ces locaux.
 
-## 1. Nouveaux champs (onglet Infos → bloc Construction)
+L'onglet est accessible une fois les onglets précédents valides (logique `isTabAccessible` existante).
 
-Insertion conditionnelle à `declaredUsage === 'Location'`, dans `GeneralTab.tsx` et `AdditionalConstructionBlock.tsx`.
+## 1. Structure de l'onglet (`MarketValueTab.tsx`)
 
-### A. Configuration locative (après "En location depuis quand ?")
+### Bloc 1 — Valeur marchande de la parcelle (toujours visible)
 
-- Libellé reformulé : **« Comment ce bien est-il mis en location ? »**
-- Sous-texte : « Le bien est-il loué comme un seul local à un unique locataire, ou divisé en plusieurs locaux loués séparément ? »
-- Type : sélecteur (radio cards 2 options) → champ `rentalConfiguration`:
-  - `single` → libellé : « Un seul local (un locataire) »
-  - `multi` → libellé : « Divisé en plusieurs locaux loués séparément »
-- Si `multi` : afficher un input numérique `rentalUnitsCount` (min 2, max 50), libellé : « Nombre de locaux mis en location ».
+**Sous-bloc 1.1 — Valeur de revente hypothétique**
+- Question : « Si un acheteur sérieux se présentait aujourd'hui, accepteriez-vous de vendre cette parcelle ? » → Radio cards Oui / Non (`wouldSellIfOffered: boolean`).
+- Si **Oui** :
+  - Question : « Après négociation, à quel prix raisonnable accepteriez-vous de vendre ? »
+  - Sélecteur de devise (USD / CDF) via `useCurrencyConfig` + champ numérique (`resalePriceAmount: number`, `resalePriceCurrency: 'USD'|'CDF'`).
+  - Conversion automatique affichée (équivalent dans l'autre devise) et stockage normalisé en USD (`resalePriceUsd`) calculé via `exchangeRate`.
 
-### B. Loyer mensuel (après "Capacité d'accueil")
+**Sous-bloc 1.2 — Valeur vénale (expertise immobilière)**
+- Question : « Une expertise immobilière a-t-elle été réalisée sur cette parcelle au cours des 6 derniers mois ? » → Radio Oui / Non (`hasRecentAppraisal: boolean`).
+- Si **Oui** :
+  - Date de l'expertise (`appraisalDate`, contrôle ≤ aujourd'hui et ≥ aujourd'hui − 6 mois → warning si hors fenêtre).
+  - Nom de l'expert / cabinet (`appraiserName`, optionnel).
+  - Valeur vénale retenue : sélecteur devise + montant (`appraisedValueAmount`, `appraisedValueCurrency`), conversion auto → `appraisedValueUsd`.
+  - Upload du rapport d'expertise via `StorageFileUpload` (bucket privé `expertise-reports`) :
+    - Types acceptés : `application/pdf`, `image/jpeg`, `image/png`.
+    - Taille max 10 Mo (via `MAX_FILE_SIZES.document`).
+    - Stocké en URL : `appraisalReportUrl`.
 
-- Libellé : **« Loyer mensuel actuel (USD) »**
-- Si `rentalConfiguration === 'single'` (ou non défini) : un seul champ numérique `monthlyRentUsd`.
-- Si `rentalConfiguration === 'multi'` : générer `rentalUnitsCount` cartes (`rentalUnits: Array<{ label?: string; monthlyRentUsd?: number }>`), une par local :
-  - Label par défaut : « Local #1 », « Local #2 »…
-  - Champ libre `label` (optionnel) + champ numérique `monthlyRentUsd` (requis).
-  - Synchronisation : si l'utilisateur change `rentalUnitsCount`, ajuster la longueur du tableau (préserver les valeurs existantes ; vider les surplus).
-- Total mensuel affiché en bas, et total annuel (× 12) pour information.
+### Bloc 2 — Mise sur le marché des locaux non occupés (conditionnel)
 
-## 2. Logique dépendante & invariants
+**Condition d'affichage** : pour chaque construction où `declaredUsage === 'Location'` ET `isOccupied === false` (i.e. construction louée mais inoccupée), ou — selon la sémantique existante — `rentalConfiguration === 'multi'` avec des locaux non occupés. Implémentation initiale : on lit `formData` + `additionalConstructions`, on filtre celles répondant `declaredUsage='Location'` & `isOccupied=false`.
 
-- Si `declaredUsage` quitte « Location » → reset `rentalConfiguration`, `rentalUnitsCount`, `monthlyRentUsd`, `rentalUnits`, et `rentalStartDate` (déjà existant).
-- Si `rentalConfiguration` passe `multi → single` → conserver seulement le 1er loyer comme `monthlyRentUsd`, vider `rentalUnits` et `rentalUnitsCount`.
-- Si `rentalConfiguration` passe `single → multi` avec `monthlyRentUsd` saisi → seed `rentalUnits[0].monthlyRentUsd = monthlyRentUsd`, défaut `rentalUnitsCount = 2`.
-- Validation soumission CCC (`useFormValidation.ts`) : si Location, exiger `rentalConfiguration` + (`monthlyRentUsd > 0` OU tous les `rentalUnits[i].monthlyRentUsd > 0`) + cohérence longueur tableau / `rentalUnitsCount`.
-- Inclure les nouveaux champs dans `DRAFT_SAFE_FIELDS` (`useFormPersistence.ts`) et dans le score de complétude.
+- **Paragraphe contextuel dynamique** :
+  > « Vous avez indiqué dans l'onglet *Infos* que **{N} {bienTerm}** (catégorie / type tels que renseignés) ne sont pas actuellement occupés. Souhaitez-vous les proposer à la location ? »
+  - `{bienTerm}` est contextualisé : « appartement(s) », « maison(s) », « local/locaux » selon `propertyCategory` ou `constructionType`.
+- **Liste des locaux vacants** (cartes), chacune affichant :
+  - Libellé (catégorie + n° + étage si renseigné),
+  - Loyer mensuel actuel (USD) si présent dans `rentalUnits`,
+  - Capacité d'accueil (`hostingCapacity`),
+  - Type de construction, nature, matériaux, standing.
+- **Action par carte** :
+  - Case à cocher « Mettre sur le marché »,
+  - Si cochée : champ optionnel « Loyer cible (USD) » (`targetRentUsd`),
+  - Champ optionnel « Disponible à partir du » (`availableFrom: date`).
+- Données stockées dans un tableau `marketListings: Array<{ constructionRef, unitLabel, listForRent, targetRentUsd?, availableFrom? }>`.
 
-## 3. Onglet Obligations — IRL
+Si aucun local vacant éligible → bloc 2 masqué et un petit hint indique que tout est déclaré occupé.
 
-Dans `ObligationsTab.tsx` :
+## 2. Données & types
 
-- Le picklist `Construction concernée` (IRL) reste 1 entrée par construction louée — inchangé.
-- Sous le sélecteur, afficher un rappel contextuel calculé à partir de la construction sélectionnée :
-  - `single` → « 1 local en location · loyer mensuel: X USD · annuel estimé: 12·X USD ».
-  - `multi` → « N locaux en location · total mensuel: ΣX USD · annuel estimé: 12·ΣX USD », avec une mini-liste des locaux.
-- Lors du déclenchement du `IRLCalculator` pour cette construction : pré-remplir les `tenants` à partir de `rentalUnits` (1 tenant par local, `unitName = label`, `monthlyRentUsd = saisi`). Si `single`, créer 1 tenant unique. L'utilisateur reste libre d'ajuster.
-- Le sélecteur d'année et le blocage « déjà déclarée » restent inchangés.
+Étendre `CadastralContributionData` (dans `src/hooks/useCadastralContribution.tsx`) :
 
-## 4. Persistance & Backend
+```ts
+// Valeur marchande
+wouldSellIfOffered?: boolean;
+resalePriceAmount?: number;
+resalePriceCurrency?: 'USD' | 'CDF';
+resalePriceUsd?: number; // normalisé
 
-- Ajouter à `CadastralContributionData` (interface principale et entrée du tableau `additionalConstructions`) :
-  - `rentalConfiguration?: 'single' | 'multi'`
-  - `rentalUnitsCount?: number`
-  - `monthlyRentUsd?: number`
-  - `rentalUnits?: Array<{ label?: string; monthlyRentUsd?: number }>`
-- `buildContributionPayload` : sérialiser ces champs dans `permit_request_data`-style JSON ? Non — préférer une **migration** ajoutant 4 colonnes dédiées à `cadastral_contributions` :
-  - `rental_configuration text` (CHECK in `('single','multi')`)
-  - `rental_units_count integer`
-  - `monthly_rent_usd numeric`
-  - `rental_units jsonb` (`[{label, monthly_rent_usd}]`)
-- Trigger CCC → `cadastral_parcels` : propager `rental_configuration`, `rental_units_count`, `monthly_rent_usd`, `rental_units` (colonnes parallèles à créer côté parcelle pour réutilisation IRL).
-- Mapping admin (`CCCDetailsDialog.tsx`, `ReviewTab.tsx`, `ConstructionSection.tsx` du PDF) : afficher les nouvelles infos.
+// Valeur vénale
+hasRecentAppraisal?: boolean;
+appraisalDate?: string;
+appraiserName?: string;
+appraisedValueAmount?: number;
+appraisedValueCurrency?: 'USD' | 'CDF';
+appraisedValueUsd?: number;
+appraisalReportUrl?: string;
 
-## 5. UI/UX
+// Mise sur le marché
+marketListings?: Array<{
+  constructionRef: string; // 'main' | additionalConstructions[i] id
+  unitLabel?: string;
+  listForRent: boolean;
+  targetRentUsd?: number;
+  availableFrom?: string;
+}>;
+```
 
-- Réutiliser les classes existantes (`rounded-2xl`, `bg-primary/10`, `h-10 rounded-xl text-sm`).
-- Animation `animate-fade-in` à l'apparition des cartes locataires.
-- Mobile-first (le formulaire est rendu en 360 px).
-- Reformulations professionnelles appliquées (cf. libellés ci-dessus).
+`buildContributionPayload` mappe ces champs vers les colonnes SQL (voir §4).
 
-## 6. Vérification
+## 3. Validation (`useFormValidation.ts`)
 
-- Compilation TS ; tests existants `useFormValidation` à étendre (cas Location single/multi).
-- Test manuel : usage = Location → bascule single/multi, modification de `rentalUnitsCount`, soumission, ouverture IRL pré-rempli.
-- Pas de régression sur les autres usages (`Habitation`, `Commerce`, etc.).
+- Bloc 1 :
+  - `wouldSellIfOffered` requis (Oui/Non).
+  - Si Oui → `resalePriceAmount > 0` + devise.
+  - `hasRecentAppraisal` requis. Si Oui → `appraisalDate`, `appraisedValueAmount > 0`, `appraisalReportUrl`.
+  - Warning (non bloquant) si `appraisalDate` > 6 mois.
+- Bloc 2 (si rendu) : aucune obligation, mais si `listForRent=true` et `targetRentUsd` saisi, vérifier > 0.
 
-## Fichiers modifiés (estimés)
+Ces règles s'ajoutent dans `validateForSubmission` avec `tab: 'market-value'`, et l'onglet est accessible via `isTabAccessible('market-value')` après `obligations`.
 
-- `src/hooks/useCadastralContribution.tsx` — interface + payload + colonnes
-- `src/hooks/useCCCFormState.ts` — reset/cascade des nouveaux champs
-- `src/hooks/ccc/useFormValidation.ts` — règles validation
-- `src/hooks/ccc/useFormPersistence.ts` — DRAFT_SAFE_FIELDS
-- `src/components/cadastral/ccc-tabs/GeneralTab.tsx` — UI Configuration + Loyer (construction principale)
-- `src/components/cadastral/AdditionalConstructionBlock.tsx` — UI miroir pour constructions additionnelles
-- `src/components/cadastral/ccc-tabs/ObligationsTab.tsx` — rappel multi-locaux sous IRL
-- `src/components/cadastral/IRLCalculator.tsx` (+ `IRLTenantsList.tsx`) — pré-remplissage tenants
-- `src/components/cadastral/ccc-tabs/ReviewTab.tsx` — affichage récap
-- `src/components/cadastral/cadastral-document/sections/ConstructionSection.tsx` — PDF
-- `src/components/admin/ccc/CCCDetailsDialog.tsx` + `types.ts` — vue admin
-- Migration SQL : `cadastral_contributions` + `cadastral_parcels` + trigger sync
+## 4. Backend (migration unique)
+
+Migration ajoutant à `cadastral_contributions` et `cadastral_parcels` :
+- `would_sell_if_offered boolean`
+- `resale_price_amount numeric`, `resale_price_currency text CHECK (in 'USD','CDF')`, `resale_price_usd numeric`
+- `has_recent_appraisal boolean`
+- `appraisal_date date`
+- `appraiser_name text`
+- `appraised_value_amount numeric`, `appraised_value_currency text CHECK`, `appraised_value_usd numeric`
+- `appraisal_report_url text`
+- `market_listings jsonb DEFAULT '[]'::jsonb`
+
+Trigger CCC → `cadastral_parcels` propage ces colonnes (mêmes noms côté parcelle).
+
+Bucket Storage privé `expertise-reports` (créé via `supabase--storage_create_bucket`) + policies RLS sur `storage.objects` :
+- `INSERT` autorisé à l'utilisateur authentifié pour `name LIKE auth.uid()||'/%'`,
+- `SELECT` au propriétaire et aux rôles admin (réutiliser `has_role`).
+
+`DRAFT_SAFE_FIELDS` étendu (sauf `appraisalReportUrl` qui n'est pas PII mais reste OK).
+
+## 5. UI/UX & onglet
+
+- Ajouter `TabsTrigger value="market-value"` (libellé « Valeur marchande ») et `TabsContent` correspondant dans `CadastralContributionDialog.tsx`, **entre « Obligations » et « Envoi »**.
+- Mettre à jour `isTabAccessible` / la séquence des onglets dans `useCCCFormState.ts` pour inclure `market-value`.
+- Réutiliser les composants `Card`, `RadioGroup`, `Input`, `Label`, `CurrencySelector` (ou un composant local minimal), `StorageFileUpload`, classes `rounded-2xl`, `animate-fade-in`.
+- Mobile-first (rendu testé à 360 px).
+
+## 6. Récapitulatif & Admin
+
+- `ReviewTab.tsx` : nouvelle section « Valeur marchande » récap (prix de revente, expertise + lien rapport, locaux mis en marché).
+- `CCCDetailsDialog.tsx` admin + `types.ts` (Contribution) : ajouter les colonnes pour affichage. Lecture du rapport via URL signée (RPC `get_signed_appraisal_report` calquée sur `get_signed_expertise_certificate`).
+
+## 7. Vérification
+
+- Compilation TS.
+- Tests manuels :
+  1. Bloc 1 : Non → champs masqués ; Oui → saisie USD ↔ CDF (conversion correcte).
+  2. Bloc 1.2 : upload PDF, JPG, refus DOCX, refus > 10 Mo.
+  3. Bloc 2 : marquer une construction `Location` + `isOccupied=false`, vérifier la liste et la persistance des `marketListings`.
+  4. Soumission : payload contient les nouveaux champs, valeurs visibles dans Admin et Récapitulatif.
+
+## Fichiers (estimés)
+
+- **Création** : `src/components/cadastral/ccc-tabs/MarketValueTab.tsx`, sous-composants `MarketValueResaleBlock.tsx`, `MarketValueAppraisalBlock.tsx`, `VacantUnitsMarketingBlock.tsx`.
+- **Édition** :
+  - `src/components/cadastral/CadastralContributionDialog.tsx` (onglet + content)
+  - `src/hooks/useCCCFormState.ts` (séquence onglets, score complétude, reset)
+  - `src/hooks/useCadastralContribution.tsx` (interfaces + payload)
+  - `src/hooks/ccc/useFormValidation.ts` (règles)
+  - `src/hooks/ccc/useFormPersistence.ts` (DRAFT_SAFE_FIELDS)
+  - `src/components/cadastral/ccc-tabs/ReviewTab.tsx`
+  - `src/components/admin/ccc/CCCDetailsDialog.tsx` + `types.ts`
+- **Migration SQL** + bucket `expertise-reports` + RPC signed URL.

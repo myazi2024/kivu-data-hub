@@ -177,7 +177,29 @@ export interface CadastralContributionData {
       attachmentUrl?: string;
     };
   }>;
-  
+
+  // ─── Valeur marchande (onglet "Valeur marchande") ───
+  wouldSellIfOffered?: boolean;
+  resalePriceAmount?: number;
+  resalePriceCurrency?: 'USD' | 'CDF';
+  resalePriceUsd?: number;
+
+  hasRecentAppraisal?: boolean;
+  appraisalDate?: string;
+  appraiserName?: string;
+  appraisedValueAmount?: number;
+  appraisedValueCurrency?: 'USD' | 'CDF';
+  appraisedValueUsd?: number;
+  appraisalReportUrl?: string;
+
+  marketListings?: Array<{
+    constructionRef: string;
+    unitLabel?: string;
+    listForRent: boolean;
+    targetRentUsd?: number;
+    availableFrom?: string;
+  }>;
+
   // Métadonnées
   whatsappNumber?: string;
 }
@@ -350,6 +372,21 @@ export const useCadastralContribution = () => {
       building_shapes: data.buildingShapes && data.buildingShapes.length > 0 ? data.buildingShapes : null,
       sound_environment: data.soundEnvironment || null,
       nearby_noise_sources: data.nearbySoundSources || null,
+      // ─── Valeur marchande ───
+      would_sell_if_offered: data.wouldSellIfOffered ?? null,
+      resale_price_amount: blankNum(data.resalePriceAmount),
+      resale_price_currency: data.resalePriceCurrency ?? null,
+      resale_price_usd: blankNum(data.resalePriceUsd),
+      has_recent_appraisal: data.hasRecentAppraisal ?? null,
+      appraisal_date: blankDate(data.appraisalDate),
+      appraiser_name: blank(data.appraiserName),
+      appraised_value_amount: blankNum(data.appraisedValueAmount),
+      appraised_value_currency: data.appraisedValueCurrency ?? null,
+      appraised_value_usd: blankNum(data.appraisedValueUsd),
+      appraisal_report_url: blank(data.appraisalReportUrl),
+      market_listings: Array.isArray(data.marketListings) && data.marketListings.length > 0
+        ? data.marketListings
+        : [],
     };
 
     if (data.permitRequest) {
