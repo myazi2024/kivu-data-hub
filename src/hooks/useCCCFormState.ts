@@ -1074,6 +1074,19 @@ export const useCCCFormState = ({
           collectivite: contrib.collectivite || undefined, groupement: contrib.groupement || undefined, village: contrib.village || undefined,
           whatsappNumber: contrib.whatsapp_number || undefined, previousPermitNumber: contrib.previous_permit_number || undefined,
           ownerDocumentUrl: contrib.owner_document_url || undefined, titleDocumentUrl: contrib.property_title_document_url || undefined,
+          // ─── Valeur marchande ───
+          wouldSellIfOffered: (contrib as any).would_sell_if_offered ?? undefined,
+          resalePriceAmount: (contrib as any).resale_price_amount != null ? Number((contrib as any).resale_price_amount) : undefined,
+          resalePriceCurrency: (contrib as any).resale_price_currency || undefined,
+          resalePriceUsd: (contrib as any).resale_price_usd != null ? Number((contrib as any).resale_price_usd) : undefined,
+          hasRecentAppraisal: (contrib as any).has_recent_appraisal ?? undefined,
+          appraisalDate: (contrib as any).appraisal_date || undefined,
+          appraiserName: (contrib as any).appraiser_name || undefined,
+          appraisedValueAmount: (contrib as any).appraised_value_amount != null ? Number((contrib as any).appraised_value_amount) : undefined,
+          appraisedValueCurrency: (contrib as any).appraised_value_currency || undefined,
+          appraisedValueUsd: (contrib as any).appraised_value_usd != null ? Number((contrib as any).appraised_value_usd) : undefined,
+          appraisalReportUrl: (contrib as any).appraisal_report_url || undefined,
+          marketListings: Array.isArray((contrib as any).market_listings) ? (contrib as any).market_listings : undefined,
         }));
 
         const ownersDetails = contrib.current_owners_details as any[];
