@@ -177,7 +177,29 @@ export interface CadastralContributionData {
       attachmentUrl?: string;
     };
   }>;
-  
+
+  // ─── Valeur marchande (onglet "Valeur marchande") ───
+  wouldSellIfOffered?: boolean;
+  resalePriceAmount?: number;
+  resalePriceCurrency?: 'USD' | 'CDF';
+  resalePriceUsd?: number;
+
+  hasRecentAppraisal?: boolean;
+  appraisalDate?: string;
+  appraiserName?: string;
+  appraisedValueAmount?: number;
+  appraisedValueCurrency?: 'USD' | 'CDF';
+  appraisedValueUsd?: number;
+  appraisalReportUrl?: string;
+
+  marketListings?: Array<{
+    constructionRef: string;
+    unitLabel?: string;
+    listForRent: boolean;
+    targetRentUsd?: number;
+    availableFrom?: string;
+  }>;
+
   // Métadonnées
   whatsappNumber?: string;
 }
