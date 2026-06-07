@@ -53,7 +53,7 @@ const pluralizeSubject = (subject: string, count: number): string => {
   return `${base}s`;
 };
 
-/** Construit la liste des constructions louées dont au moins un local est vacant. */
+/** Construit la liste des locaux vacants dans les constructions louées. */
 const buildVacantTargets = (
   formData: CadastralContributionData,
   additional: AdditionalConstruction[],
@@ -66,6 +66,7 @@ const buildVacantTargets = (
     subject: string;
     currentRentUsd?: number;
     hostingCapacity?: number;
+    floor?: string;
     constructionType?: string;
     constructionNature?: string;
     constructionMaterials?: string;
@@ -85,22 +86,25 @@ const buildVacantTargets = (
     hostingCapacity: number | undefined,
     rentalConfiguration: 'single' | 'multi' | undefined,
     monthlyRentUsd: number | undefined,
-    rentalUnits: Array<{ label?: string; monthlyRentUsd?: number }> | undefined,
+    rentalUnits: Array<any> | undefined,
     suffix: string,
   ) => {
     if (declaredUsage !== 'Location') return;
-    if (isOccupied !== false) return;
     const subj = subjectFor(cat, type);
     if (rentalConfiguration === 'multi' && Array.isArray(rentalUnits) && rentalUnits.length > 0) {
+      // En multi : chaque local a son propre isOccupied.
       rentalUnits.forEach((u, i) => {
+        if (u?.isOccupied !== false) return;
+        const floorLbl = u?.floor === 'RDC' ? 'RDC' : (u?.floor ? `${u.floor}e étage` : undefined);
         out.push({
           ref: `${base}:unit:${i}`,
           constructionRef: base,
           unitIndex: i,
-          label: u.label || `Local #${i + 1}`,
+          label: u?.label || `Local #${i + 1}${floorLbl ? ` · ${floorLbl}` : ''}`,
           subject: subj,
-          currentRentUsd: u.monthlyRentUsd,
-          hostingCapacity,
+          currentRentUsd: u?.monthlyRentUsd,
+          hostingCapacity: u?.hostingCapacity,
+          floor: u?.floor,
           constructionType: type,
           constructionNature: nature,
           constructionMaterials: materials,
@@ -108,6 +112,8 @@ const buildVacantTargets = (
         });
       });
     } else {
+      // En single : on regarde l'occupation globale de la construction.
+      if (isOccupied !== false) return;
       out.push({
         ref: base,
         constructionRef: base,
@@ -151,7 +157,7 @@ const buildVacantTargets = (
       c.hostingCapacity,
       c.rentalConfiguration as 'single' | 'multi' | undefined,
       c.monthlyRentUsd,
-      c.rentalUnits as Array<{ label?: string; monthlyRentUsd?: number }> | undefined,
+      c.rentalUnits as Array<any> | undefined,
       ` #${idx + 2}`,
     );
   });
