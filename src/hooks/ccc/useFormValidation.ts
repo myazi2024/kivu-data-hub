@@ -88,12 +88,16 @@ export function useFormValidation(params: UseFormValidationParams) {
     if (!isTerrainNu && !formData.constructionNature) missing.push({ field: 'constructionNature', label: 'Nature de construction', tab: 'general' });
     if (!isTerrainNu && !formData.declaredUsage) missing.push({ field: 'declaredUsage', label: 'Usage déclaré', tab: 'general' });
     if (formData.declaredUsage === 'Location') {
-      if (!formData.rentalStartDate) {
-        missing.push({ field: 'rentalStartDate', label: 'En location depuis quand ? (construction principale)', tab: 'general' });
-      } else if (formData.constructionYear) {
-        const min = new Date(formData.constructionYear, 0, 1);
-        if (new Date(formData.rentalStartDate) < min) {
-          missing.push({ field: 'rentalStartDate', label: `Date de mise en location < 01/01/${formData.constructionYear}`, tab: 'general' });
+      const isMulti = formData.rentalConfiguration === 'multi';
+      // Date globale de mise en location : requise uniquement en mode single
+      if (!isMulti) {
+        if (!formData.rentalStartDate) {
+          missing.push({ field: 'rentalStartDate', label: 'En location depuis quand ? (construction principale)', tab: 'general' });
+        } else if (formData.constructionYear) {
+          const min = new Date(formData.constructionYear, 0, 1);
+          if (new Date(formData.rentalStartDate) < min) {
+            missing.push({ field: 'rentalStartDate', label: `Date de mise en location < 01/01/${formData.constructionYear}`, tab: 'general' });
+          }
         }
       }
       if (!formData.rentalConfiguration) {
@@ -109,23 +113,43 @@ export function useFormValidation(params: UseFormValidationParams) {
         }
         const units = Array.isArray(formData.rentalUnits) ? formData.rentalUnits : [];
         if (units.length !== count) {
-          missing.push({ field: 'rentalUnits', label: 'Loyers par local : nombre de saisies incohérent', tab: 'general' });
+          missing.push({ field: 'rentalUnits', label: 'Locaux : nombre de saisies incohérent', tab: 'general' });
         }
-        units.forEach((u, i) => {
+        const showFloor = formData.floorNumber ? parseInt(formData.floorNumber, 10) >= 1 : false;
+        units.forEach((u: any, i: number) => {
           if (!u || !u.monthlyRentUsd || Number(u.monthlyRentUsd) <= 0) {
             missing.push({ field: `rentalUnit_${i}`, label: `Loyer mensuel du local #${i + 1}`, tab: 'general' });
+          }
+          if (!u || u.isOccupied === undefined || u.isOccupied === null) {
+            missing.push({ field: `rentalUnitOccupied_${i}`, label: `Local #${i + 1} : statut d'occupation`, tab: 'general' });
+          } else if (!u.hostingCapacity || Number(u.hostingCapacity) <= 0) {
+            missing.push({ field: `rentalUnitCapacity_${i}`, label: `Local #${i + 1} : capacité d'accueil`, tab: 'general' });
+          }
+          if (!u || !u.rentalStartDate) {
+            missing.push({ field: `rentalUnitDate_${i}`, label: `Local #${i + 1} : date de mise en location`, tab: 'general' });
+          } else if (formData.constructionYear) {
+            const min = new Date(formData.constructionYear, 0, 1);
+            if (new Date(u.rentalStartDate) < min) {
+              missing.push({ field: `rentalUnitDate_${i}`, label: `Local #${i + 1} : date < 01/01/${formData.constructionYear}`, tab: 'general' });
+            }
+          }
+          if (showFloor && (!u || !u.floor)) {
+            missing.push({ field: `rentalUnitFloor_${i}`, label: `Local #${i + 1} : emplacement (étage)`, tab: 'general' });
           }
         });
       }
     }
     additionalConstructions.forEach((c, idx) => {
       if (c.declaredUsage === 'Location') {
-        if (!c.rentalStartDate) {
-          missing.push({ field: `additionalRentalStartDate_${idx}`, label: `En location depuis quand ? (construction #${idx + 2})`, tab: 'general' });
-        } else if (c.constructionYear) {
-          const min = new Date(c.constructionYear, 0, 1);
-          if (new Date(c.rentalStartDate) < min) {
-            missing.push({ field: `additionalRentalStartDate_${idx}`, label: `Date de mise en location < 01/01/${c.constructionYear} (construction #${idx + 2})`, tab: 'general' });
+        const isMulti = c.rentalConfiguration === 'multi';
+        if (!isMulti) {
+          if (!c.rentalStartDate) {
+            missing.push({ field: `additionalRentalStartDate_${idx}`, label: `En location depuis quand ? (construction #${idx + 2})`, tab: 'general' });
+          } else if (c.constructionYear) {
+            const min = new Date(c.constructionYear, 0, 1);
+            if (new Date(c.rentalStartDate) < min) {
+              missing.push({ field: `additionalRentalStartDate_${idx}`, label: `Date de mise en location < 01/01/${c.constructionYear} (construction #${idx + 2})`, tab: 'general' });
+            }
           }
         }
         if (!c.rentalConfiguration) {
@@ -141,11 +165,28 @@ export function useFormValidation(params: UseFormValidationParams) {
           }
           const units = Array.isArray(c.rentalUnits) ? c.rentalUnits : [];
           if (units.length !== count) {
-            missing.push({ field: `additionalRentalUnits_${idx}`, label: `Loyers par local : nombre incohérent (construction #${idx + 2})`, tab: 'general' });
+            missing.push({ field: `additionalRentalUnits_${idx}`, label: `Locaux : nombre incohérent (construction #${idx + 2})`, tab: 'general' });
           }
-          units.forEach((u, i) => {
+          const showFloor = c.floorNumber ? parseInt(c.floorNumber, 10) >= 1 : false;
+          units.forEach((u: any, i: number) => {
             if (!u || !u.monthlyRentUsd || Number(u.monthlyRentUsd) <= 0) {
               missing.push({ field: `additionalRentalUnit_${idx}_${i}`, label: `Loyer du local #${i + 1} (construction #${idx + 2})`, tab: 'general' });
+            }
+            if (!u || u.isOccupied === undefined || u.isOccupied === null) {
+              missing.push({ field: `additionalRentalUnitOccupied_${idx}_${i}`, label: `Local #${i + 1} : occupation (construction #${idx + 2})`, tab: 'general' });
+            } else if (!u.hostingCapacity || Number(u.hostingCapacity) <= 0) {
+              missing.push({ field: `additionalRentalUnitCapacity_${idx}_${i}`, label: `Local #${i + 1} : capacité (construction #${idx + 2})`, tab: 'general' });
+            }
+            if (!u || !u.rentalStartDate) {
+              missing.push({ field: `additionalRentalUnitDate_${idx}_${i}`, label: `Local #${i + 1} : date de mise en location (construction #${idx + 2})`, tab: 'general' });
+            } else if (c.constructionYear) {
+              const min = new Date(c.constructionYear, 0, 1);
+              if (new Date(u.rentalStartDate) < min) {
+                missing.push({ field: `additionalRentalUnitDate_${idx}_${i}`, label: `Local #${i + 1} : date < 01/01/${c.constructionYear} (construction #${idx + 2})`, tab: 'general' });
+              }
+            }
+            if (showFloor && (!u || !u.floor)) {
+              missing.push({ field: `additionalRentalUnitFloor_${idx}_${i}`, label: `Local #${i + 1} : emplacement (construction #${idx + 2})`, tab: 'general' });
             }
           });
         }

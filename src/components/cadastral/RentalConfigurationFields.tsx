@@ -1,6 +1,7 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { Home, Building2, DollarSign } from 'lucide-react';
 
@@ -9,6 +10,10 @@ export type RentalConfiguration = 'single' | 'multi';
 export interface RentalUnit {
   label?: string;
   monthlyRentUsd?: number;
+  isOccupied?: boolean;
+  hostingCapacity?: number;
+  rentalStartDate?: string; // ISO yyyy-MM-dd
+  floor?: string;           // 'RDC' | '1' | '2' …
 }
 
 export interface RentalConfigurationState {
@@ -28,6 +33,10 @@ interface CommonProps {
   constructionType?: string;
   /** Highlight required fields if validation has been attempted. */
   highlightRequired?: boolean;
+  /** Nombre d'étages déclarés sur la construction parente (pour le sélecteur d'emplacement). */
+  numberOfFloors?: number;
+  /** Année de construction parente (borne min de la date de mise en location). */
+  constructionYear?: number;
 }
 
 const buildSubject = (cat?: string, type?: string): string => {
@@ -51,6 +60,15 @@ const resizeUnits = (units: RentalUnit[] | undefined, count: number): RentalUnit
   return current;
 };
 
+const floorLabel = (i: number): string => {
+  if (i === 0) return 'RDC';
+  if (i === 1) return '1er étage';
+  return `${i}e étage`;
+};
+const floorValue = (i: number): string => (i === 0 ? 'RDC' : String(i));
+
+const TODAY = new Date().toISOString().slice(0, 10);
+
 /** ─── A. Configuration locative (sélecteur single/multi + count) ─── */
 export const RentalConfigurationSelector: React.FC<CommonProps> = ({
   state, onPatch, propertyCategory, constructionType, highlightRequired,
@@ -60,7 +78,6 @@ export const RentalConfigurationSelector: React.FC<CommonProps> = ({
 
   const selectMode = (mode: RentalConfiguration) => {
     if (mode === 'single') {
-      // multi → single : conserver le 1er loyer
       const firstRent = state.rentalUnits?.[0]?.monthlyRentUsd;
       onPatch({
         rentalConfiguration: 'single',
@@ -71,7 +88,6 @@ export const RentalConfigurationSelector: React.FC<CommonProps> = ({
     } else {
       const count = clampCount(state.rentalUnitsCount ?? MIN_UNITS);
       const seeded: RentalUnit[] = resizeUnits(state.rentalUnits, count);
-      // single → multi : seed le premier local avec monthlyRentUsd existant
       if (state.monthlyRentUsd && !seeded[0]?.monthlyRentUsd) {
         seeded[0] = { ...seeded[0], monthlyRentUsd: state.monthlyRentUsd };
       }
@@ -162,7 +178,7 @@ export const RentalConfigurationSelector: React.FC<CommonProps> = ({
 
 /** ─── B. Loyer mensuel (1 champ si single, x cartes si multi) ─── */
 export const MonthlyRentFields: React.FC<CommonProps> = ({
-  state, onPatch, propertyCategory, constructionType, highlightRequired,
+  state, onPatch, propertyCategory, constructionType, highlightRequired, numberOfFloors, constructionYear,
 }) => {
   const total = useMemo(() => {
     if (state.rentalConfiguration === 'multi') {
@@ -170,6 +186,12 @@ export const MonthlyRentFields: React.FC<CommonProps> = ({
     }
     return Number(state.monthlyRentUsd) || 0;
   }, [state.rentalConfiguration, state.rentalUnits, state.monthlyRentUsd]);
+
+  // Min date pour la mise en location : 1er janvier de l'année de construction.
+  const minRentalDate = useMemo(() => {
+    if (!constructionYear) return undefined;
+    return `${constructionYear}-01-01`;
+  }, [constructionYear]);
 
   // Don't render if user hasn't chosen a configuration yet.
   if (!state.rentalConfiguration) return null;
@@ -184,6 +206,12 @@ export const MonthlyRentFields: React.FC<CommonProps> = ({
     list[idx] = { ...list[idx], ...patch };
     onPatch({ rentalUnits: list });
   };
+
+  const showFloorSelect = Number(numberOfFloors) >= 1;
+  const floorOptions = useMemo(() => {
+    const max = Math.max(0, Math.min(50, Number(numberOfFloors) || 0));
+    return Array.from({ length: max + 1 }, (_, i) => ({ value: floorValue(i), label: floorLabel(i) }));
+  }, [numberOfFloors]);
 
   return (
     <div className="space-y-2 animate-fade-in">
@@ -220,7 +248,11 @@ export const MonthlyRentFields: React.FC<CommonProps> = ({
       {state.rentalConfiguration === 'multi' && (
         <div className="space-y-2 pl-1">
           {resizeUnits(state.rentalUnits, state.rentalUnitsCount ?? MIN_UNITS).map((unit, idx) => {
-            const missing = highlightRequired && !unit.monthlyRentUsd;
+            const missingRent = highlightRequired && !unit.monthlyRentUsd;
+            const missingOccupied = highlightRequired && unit.isOccupied === undefined;
+            const missingCapacity = highlightRequired && unit.isOccupied !== undefined && !unit.hostingCapacity;
+            const missingDate = highlightRequired && !unit.rentalStartDate;
+            const missingFloor = highlightRequired && showFloorSelect && !unit.floor;
             return (
               <div
                 key={idx}
@@ -234,6 +266,7 @@ export const MonthlyRentFields: React.FC<CommonProps> = ({
                     </span>
                   ) : null}
                 </div>
+
                 <div className="grid grid-cols-1 gap-2">
                   <div className="space-y-1">
                     <Label className="text-xs font-medium text-muted-foreground">
@@ -246,9 +279,93 @@ export const MonthlyRentFields: React.FC<CommonProps> = ({
                       className="h-9 rounded-xl text-sm"
                     />
                   </div>
+
+                  {showFloorSelect && (
+                    <div className="space-y-1">
+                      <Label className={cn('text-xs font-medium', missingFloor ? 'text-destructive' : 'text-muted-foreground')}>
+                        Emplacement du local {missingFloor && <span className="text-destructive">*</span>}
+                      </Label>
+                      <Select
+                        value={unit.floor ?? ''}
+                        onValueChange={(v) => updateUnit(idx, { floor: v })}
+                      >
+                        <SelectTrigger className={cn('h-9 rounded-xl text-sm', missingFloor && 'border-destructive ring-1 ring-destructive/40')}>
+                          <SelectValue placeholder="Sélectionner l'étage" />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl">
+                          {floorOptions.map(opt => (
+                            <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
                   <div className="space-y-1">
-                    <Label className={cn('text-xs font-medium', missing ? 'text-destructive' : 'text-muted-foreground')}>
-                      Loyer mensuel (USD) {missing && <span className="text-destructive">*</span>}
+                    <Label className={cn('text-xs font-medium', missingOccupied ? 'text-destructive' : 'text-muted-foreground')}>
+                      Ce local est-il actuellement occupé ? {missingOccupied && <span className="text-destructive">*</span>}
+                    </Label>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => updateUnit(idx, { isOccupied: true })}
+                        className={cn(
+                          'flex-1 h-9 rounded-xl text-xs font-semibold transition-all border-2',
+                          unit.isOccupied === true
+                            ? 'border-primary bg-primary/10 text-primary'
+                            : 'border-border bg-background text-foreground hover:border-primary/40',
+                        )}
+                      >
+                        Oui
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => updateUnit(idx, { isOccupied: false })}
+                        className={cn(
+                          'flex-1 h-9 rounded-xl text-xs font-semibold transition-all border-2',
+                          unit.isOccupied === false
+                            ? 'border-primary bg-primary/10 text-primary'
+                            : 'border-border bg-background text-foreground hover:border-primary/40',
+                        )}
+                      >
+                        Non
+                      </button>
+                    </div>
+                  </div>
+
+                  {unit.isOccupied !== undefined && (
+                    <div className="space-y-1">
+                      <Label className={cn('text-xs font-medium', missingCapacity ? 'text-destructive' : 'text-muted-foreground')}>
+                        Capacité d'accueil (personnes) {missingCapacity && <span className="text-destructive">*</span>}
+                      </Label>
+                      <Input
+                        type="number"
+                        min={1}
+                        value={unit.hostingCapacity ?? ''}
+                        onChange={(e) => updateUnit(idx, { hostingCapacity: e.target.value ? parseInt(e.target.value) : undefined })}
+                        placeholder="Ex: 4"
+                        className={cn('h-9 rounded-xl text-sm', missingCapacity && 'border-destructive ring-1 ring-destructive/40')}
+                      />
+                    </div>
+                  )}
+
+                  <div className="space-y-1">
+                    <Label className={cn('text-xs font-medium', missingDate ? 'text-destructive' : 'text-muted-foreground')}>
+                      En location depuis le {missingDate && <span className="text-destructive">*</span>}
+                    </Label>
+                    <Input
+                      type="date"
+                      min={minRentalDate}
+                      max={TODAY}
+                      value={unit.rentalStartDate ?? ''}
+                      onChange={(e) => updateUnit(idx, { rentalStartDate: e.target.value || undefined })}
+                      className={cn('h-9 rounded-xl text-sm', missingDate && 'border-destructive ring-1 ring-destructive/40')}
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label className={cn('text-xs font-medium', missingRent ? 'text-destructive' : 'text-muted-foreground')}>
+                      Loyer mensuel (USD) {missingRent && <span className="text-destructive">*</span>}
                     </Label>
                     <Input
                       type="number"
@@ -261,7 +378,7 @@ export const MonthlyRentFields: React.FC<CommonProps> = ({
                       placeholder="Ex: 250"
                       className={cn(
                         'h-9 rounded-xl text-sm',
-                        missing && 'border-destructive ring-1 ring-destructive/40',
+                        missingRent && 'border-destructive ring-1 ring-destructive/40',
                       )}
                     />
                   </div>
@@ -292,4 +409,15 @@ export const computeMonthlyRentTotal = (state: RentalConfigurationState): number
     return (state.rentalUnits || []).reduce((s, u) => s + (Number(u?.monthlyRentUsd) || 0), 0);
   }
   return Number(state.monthlyRentUsd) || 0;
+};
+
+/** Compute total hosting capacity (somme des locaux si multi, sinon la valeur globale). */
+export const computeHostingCapacityTotal = (
+  state: RentalConfigurationState & { hostingCapacity?: number },
+): number | undefined => {
+  if (state.rentalConfiguration === 'multi') {
+    const sum = (state.rentalUnits || []).reduce((s, u) => s + (Number(u?.hostingCapacity) || 0), 0);
+    return sum > 0 ? sum : undefined;
+  }
+  return state.hostingCapacity;
 };
