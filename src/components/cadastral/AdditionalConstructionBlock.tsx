@@ -36,7 +36,14 @@ export interface AdditionalConstruction {
   rentalConfiguration?: 'single' | 'multi';
   rentalUnitsCount?: number;
   monthlyRentUsd?: number;
-  rentalUnits?: Array<{ label?: string; monthlyRentUsd?: number }>;
+  rentalUnits?: Array<{
+    label?: string;
+    monthlyRentUsd?: number;
+    isOccupied?: boolean;
+    hostingCapacity?: number;
+    rentalStartDate?: string;
+    floor?: string;
+  }>;
   // Capacité d'accueil
   isOccupied?: boolean;
   occupantCount?: number;
@@ -450,8 +457,8 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
         </div>
       )}
 
-      {/* Date de mise en location — conditionnel si usage = Location */}
-      {data.declaredUsage === 'Location' && (
+      {/* Date de mise en location — uniquement single (mode multi gère par local) */}
+      {data.declaredUsage === 'Location' && data.rentalConfiguration !== 'multi' && (
         <RentalStartDateField
           value={data.rentalStartDate}
           onChange={(v) => update('rentalStartDate', v)}
@@ -474,8 +481,8 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
         />
       )}
 
-      {/* Capacité d'accueil */}
-      {isNotTerrainNu && (
+      {/* Capacité d'accueil — masqué en mode multi (saisi par local) */}
+      {isNotTerrainNu && !(data.declaredUsage === 'Location' && data.rentalConfiguration === 'multi') && (
         <>
           <div className="border-t border-border/50 my-2" />
           <div className="flex items-start gap-2 mb-2">
@@ -561,6 +568,8 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
             onPatch={(patch) => onChange(index, { ...data, ...patch })}
             propertyCategory={data.propertyCategory}
             constructionType={data.constructionType}
+            numberOfFloors={data.floorNumber ? parseInt(data.floorNumber, 10) : undefined}
+            constructionYear={data.constructionYear}
           />
         </>
       )}
