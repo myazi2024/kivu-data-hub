@@ -128,6 +128,21 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
   handleNextTab, toast,
   resetTitleBlock, resetOwnersBlock, resetConstructionBlock
 }) => {
+  // Agrégation auto : en mode multi-locaux, la capacité d'accueil globale = Σ capacités des locaux.
+  React.useEffect(() => {
+    if (formData.declaredUsage === 'Location' && formData.rentalConfiguration === 'multi') {
+      const sum = (formData.rentalUnits || []).reduce(
+        (s, u: any) => s + (Number(u?.hostingCapacity) || 0),
+        0,
+      );
+      const next = sum > 0 ? sum : undefined;
+      if (next !== formData.hostingCapacity) {
+        handleInputChange('hostingCapacity', next);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData.declaredUsage, formData.rentalConfiguration, JSON.stringify(formData.rentalUnits)]);
+
   return (
     <div className="space-y-4 sm:space-y-6 mt-4 sm:mt-6 animate-fade-in">
       <PropertyTitleTypeSelect 
