@@ -38,7 +38,14 @@ export interface CadastralContributionData {
   rentalConfiguration?: 'single' | 'multi';
   rentalUnitsCount?: number;
   monthlyRentUsd?: number;
-  rentalUnits?: Array<{ label?: string; monthlyRentUsd?: number }>;
+  rentalUnits?: Array<{
+    label?: string;
+    monthlyRentUsd?: number;
+    isOccupied?: boolean;
+    hostingCapacity?: number;
+    rentalStartDate?: string;
+    floor?: string;
+  }>;
 
   // Capacité d'accueil
   isOccupied?: boolean;
@@ -165,7 +172,14 @@ export interface CadastralContributionData {
     rentalConfiguration?: 'single' | 'multi';
     rentalUnitsCount?: number;
     monthlyRentUsd?: number;
-    rentalUnits?: Array<{ label?: string; monthlyRentUsd?: number }>;
+    rentalUnits?: Array<{
+      label?: string;
+      monthlyRentUsd?: number;
+      isOccupied?: boolean;
+      hostingCapacity?: number;
+      rentalStartDate?: string;
+      floor?: string;
+    }>;
     isOccupied?: boolean;
     occupantCount?: number;
     hostingCapacity?: number;
@@ -340,6 +354,10 @@ export const useCadastralContribution = () => {
         ? data.rentalUnits.map(u => ({
             label: u.label ?? null,
             monthly_rent_usd: blankNum(u.monthlyRentUsd),
+            is_occupied: u.isOccupied ?? null,
+            hosting_capacity: blankNum(u.hostingCapacity),
+            rental_start_date: blankDate(u.rentalStartDate),
+            floor: u.floor ?? null,
           }))
         : null,
       building_permits: buildingPermitsSnake,
