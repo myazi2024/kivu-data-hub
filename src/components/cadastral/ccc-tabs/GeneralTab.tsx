@@ -1106,8 +1106,8 @@ const ConstructionSection: React.FC<ConstructionSectionProps> = ({
         </div>
       )}
 
-      {/* Date de mise en location — conditionnel si usage = Location */}
-      {formData.declaredUsage === 'Location' && (
+      {/* Date de mise en location — UNIQUEMENT en mode single (le mode multi gère par local) */}
+      {formData.declaredUsage === 'Location' && formData.rentalConfiguration !== 'multi' && (
         <RentalStartDateField
           value={formData.rentalStartDate}
           onChange={(v) => handleInputChange('rentalStartDate', v)}
@@ -1134,8 +1134,8 @@ const ConstructionSection: React.FC<ConstructionSectionProps> = ({
         />
       )}
 
-      {/* Hosting capacity sub-block */}
-      {formData.propertyCategory && formData.propertyCategory !== 'Terrain nu' && formData.constructionType && formData.constructionType !== 'Terrain nu' && (
+      {/* Hosting capacity sub-block — MASQUÉ en mode multi (saisi par local) */}
+      {formData.propertyCategory && formData.propertyCategory !== 'Terrain nu' && formData.constructionType && formData.constructionType !== 'Terrain nu' && !(formData.declaredUsage === 'Location' && formData.rentalConfiguration === 'multi') && (
         <>
           <div className="border-t border-border/50 my-2" />
           <div className="flex items-start gap-2 mb-2">
@@ -1188,6 +1188,8 @@ const ConstructionSection: React.FC<ConstructionSectionProps> = ({
             propertyCategory={formData.propertyCategory}
             constructionType={formData.constructionType}
             highlightRequired={highlightRequiredFields}
+            numberOfFloors={formData.floorNumber ? parseInt(formData.floorNumber, 10) : undefined}
+            constructionYear={formData.constructionYear}
           />
         </>
       )}
