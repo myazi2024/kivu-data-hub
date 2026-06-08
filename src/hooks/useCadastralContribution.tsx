@@ -212,6 +212,7 @@ export interface CadastralContributionData {
     listForRent: boolean;
     targetRentUsd?: number;
     availableFrom?: string;
+    coverImageUrls?: string[];
   }>;
 
   // Métadonnées
