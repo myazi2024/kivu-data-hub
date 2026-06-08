@@ -34,11 +34,15 @@ export const InputWithPopover: React.FC<InputWithPopoverProps> = ({
 
   const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
     setHasFocus(true);
-    
-    // Démarrer le timer de 5 secondes
-    timerRef.current = setTimeout(() => {
+
+    if (triggerImmediately) {
       setOpen(true);
-    }, 5000);
+    } else {
+      // Démarrer le timer de 5 secondes
+      timerRef.current = setTimeout(() => {
+        setOpen(true);
+      }, 5000);
+    }
 
     // Appeler l'onFocus original si présent
     if (inputProps.onFocus) {
