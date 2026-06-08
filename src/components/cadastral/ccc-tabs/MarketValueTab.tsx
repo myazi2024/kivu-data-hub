@@ -83,8 +83,11 @@ const buildVacantTargets = (
     constructionNature?: string;
     constructionMaterials?: string;
     standing?: string;
+    constructionYear?: number;
+    soundEnvironment?: string;
   };
   const out: Target[] = [];
+  const sharedSound = formData.soundEnvironment;
 
   const pushFor = (
     base: 'main' | `additional:${number}`,
@@ -99,12 +102,12 @@ const buildVacantTargets = (
     rentalConfiguration: 'single' | 'multi' | undefined,
     monthlyRentUsd: number | undefined,
     rentalUnits: Array<any> | undefined,
+    constructionYear: number | undefined,
     suffix: string,
   ) => {
     if (declaredUsage !== 'Location') return;
     const subj = subjectFor(cat, type);
     if (rentalConfiguration === 'multi' && Array.isArray(rentalUnits) && rentalUnits.length > 0) {
-      // En multi : chaque local a son propre isOccupied.
       rentalUnits.forEach((u, i) => {
         if (u?.isOccupied !== false) return;
         const floorLbl = u?.floor === 'RDC' ? 'RDC' : (u?.floor ? `${u.floor}e étage` : undefined);
@@ -121,10 +124,11 @@ const buildVacantTargets = (
           constructionNature: nature,
           constructionMaterials: materials,
           standing,
+          constructionYear,
+          soundEnvironment: sharedSound,
         });
       });
     } else {
-      // En single : on regarde l'occupation globale de la construction.
       if (isOccupied !== false) return;
       out.push({
         ref: base,
@@ -137,6 +141,8 @@ const buildVacantTargets = (
         constructionNature: nature,
         constructionMaterials: materials,
         standing,
+        constructionYear,
+        soundEnvironment: sharedSound,
       });
     }
   };
@@ -154,6 +160,7 @@ const buildVacantTargets = (
     formData.rentalConfiguration,
     formData.monthlyRentUsd,
     formData.rentalUnits,
+    formData.constructionYear,
     ' principal',
   );
   additional.forEach((c, idx) => {
@@ -170,12 +177,14 @@ const buildVacantTargets = (
       c.rentalConfiguration as 'single' | 'multi' | undefined,
       c.monthlyRentUsd,
       c.rentalUnits as Array<any> | undefined,
+      c.constructionYear,
       ` #${idx + 2}`,
     );
   });
 
   return out;
 };
+
 
 const MarketValueTab: React.FC<MarketValueTabProps> = ({
   formData,
