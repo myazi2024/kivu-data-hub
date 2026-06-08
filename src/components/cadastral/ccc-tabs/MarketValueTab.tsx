@@ -744,7 +744,18 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
         <Button
           type="button"
           className="h-10 rounded-xl"
-          onClick={() => handleNextTab('market-value', 'review')}
+          onClick={() => {
+            const incomplete = listings.find((l: any) => {
+              if (!l?.listForRent) return false;
+              const imgs = Array.isArray(l.coverImageUrls) ? l.coverImageUrls.filter(Boolean) : [];
+              return imgs.length < 1;
+            });
+            if (incomplete) {
+              toast.error("Ajoutez au moins une image de couverture pour chaque local proposé à la location.");
+              return;
+            }
+            handleNextTab('market-value', 'review');
+          }}
         >
           Suivant <ChevronRight className="h-4 w-4 ml-1" />
         </Button>
