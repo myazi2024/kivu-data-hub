@@ -6,12 +6,22 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ChevronLeft, ChevronRight, DollarSign, FileText, Home, Building2, AlertCircle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, DollarSign, FileText, Home, Building2, AlertCircle, ImagePlus, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 import StorageFileUpload from '@/components/shared/StorageFileUpload';
+import { InputWithPopover } from '@/components/cadastral/InputWithPopover';
 import { useCurrencyConfig, type CurrencyCode } from '@/hooks/useCurrencyConfig';
 import { CadastralContributionData } from '@/hooks/useCadastralContribution';
 import type { AdditionalConstruction } from '@/components/cadastral/AdditionalConstructionBlock';
+
+const SOUND_ENV_LABELS: Record<string, string> = {
+  tres_calme: 'Très calme',
+  calme: 'Calme',
+  modere: 'Modéré',
+  bruyant: 'Bruyant',
+  tres_bruyant: 'Très bruyant',
+};
 
 export interface MarketListingEntry {
   constructionRef: string; // 'main' | 'additional:<idx>' | 'additional:<idx>:unit:<i>'
@@ -19,7 +29,9 @@ export interface MarketListingEntry {
   listForRent: boolean;
   targetRentUsd?: number;
   availableFrom?: string;
+  coverImageUrls?: string[];
 }
+
 
 interface MarketValueTabProps {
   formData: CadastralContributionData;
