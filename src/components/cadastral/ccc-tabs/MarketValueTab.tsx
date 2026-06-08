@@ -6,12 +6,22 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ChevronLeft, ChevronRight, DollarSign, FileText, Home, Building2, AlertCircle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, DollarSign, FileText, Home, Building2, AlertCircle, ImagePlus, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 import StorageFileUpload from '@/components/shared/StorageFileUpload';
+import { InputWithPopover } from '@/components/cadastral/InputWithPopover';
 import { useCurrencyConfig, type CurrencyCode } from '@/hooks/useCurrencyConfig';
 import { CadastralContributionData } from '@/hooks/useCadastralContribution';
 import type { AdditionalConstruction } from '@/components/cadastral/AdditionalConstructionBlock';
+
+const SOUND_ENV_LABELS: Record<string, string> = {
+  tres_calme: 'Très calme',
+  calme: 'Calme',
+  modere: 'Modéré',
+  bruyant: 'Bruyant',
+  tres_bruyant: 'Très bruyant',
+};
 
 export interface MarketListingEntry {
   constructionRef: string; // 'main' | 'additional:<idx>' | 'additional:<idx>:unit:<i>'
@@ -19,7 +29,9 @@ export interface MarketListingEntry {
   listForRent: boolean;
   targetRentUsd?: number;
   availableFrom?: string;
+  coverImageUrls?: string[];
 }
+
 
 interface MarketValueTabProps {
   formData: CadastralContributionData;
@@ -71,8 +83,11 @@ const buildVacantTargets = (
     constructionNature?: string;
     constructionMaterials?: string;
     standing?: string;
+    constructionYear?: number;
+    soundEnvironment?: string;
   };
   const out: Target[] = [];
+  const sharedSound = formData.soundEnvironment;
 
   const pushFor = (
     base: 'main' | `additional:${number}`,
@@ -87,12 +102,12 @@ const buildVacantTargets = (
     rentalConfiguration: 'single' | 'multi' | undefined,
     monthlyRentUsd: number | undefined,
     rentalUnits: Array<any> | undefined,
+    constructionYear: number | undefined,
     suffix: string,
   ) => {
     if (declaredUsage !== 'Location') return;
     const subj = subjectFor(cat, type);
     if (rentalConfiguration === 'multi' && Array.isArray(rentalUnits) && rentalUnits.length > 0) {
-      // En multi : chaque local a son propre isOccupied.
       rentalUnits.forEach((u, i) => {
         if (u?.isOccupied !== false) return;
         const floorLbl = u?.floor === 'RDC' ? 'RDC' : (u?.floor ? `${u.floor}e étage` : undefined);
@@ -109,10 +124,11 @@ const buildVacantTargets = (
           constructionNature: nature,
           constructionMaterials: materials,
           standing,
+          constructionYear,
+          soundEnvironment: sharedSound,
         });
       });
     } else {
-      // En single : on regarde l'occupation globale de la construction.
       if (isOccupied !== false) return;
       out.push({
         ref: base,
@@ -125,6 +141,8 @@ const buildVacantTargets = (
         constructionNature: nature,
         constructionMaterials: materials,
         standing,
+        constructionYear,
+        soundEnvironment: sharedSound,
       });
     }
   };
@@ -142,6 +160,7 @@ const buildVacantTargets = (
     formData.rentalConfiguration,
     formData.monthlyRentUsd,
     formData.rentalUnits,
+    formData.constructionYear,
     ' principal',
   );
   additional.forEach((c, idx) => {
@@ -158,12 +177,14 @@ const buildVacantTargets = (
       c.rentalConfiguration as 'single' | 'multi' | undefined,
       c.monthlyRentUsd,
       c.rentalUnits as Array<any> | undefined,
+      c.constructionYear,
       ` #${idx + 2}`,
     );
   });
 
   return out;
 };
+
 
 const MarketValueTab: React.FC<MarketValueTabProps> = ({
   formData,
@@ -363,7 +384,7 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
                       <SelectItem value="CDF">CDF</SelectItem>
                     </SelectContent>
                   </Select>
-                  <Input
+                  <InputWithPopover
                     type="number"
                     inputMode="decimal"
                     min={0}
@@ -371,6 +392,9 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
                     placeholder="Montant"
                     value={resaleAmount ?? ''}
                     onChange={(e) => setResaleAmount(e.target.value)}
+                    triggerImmediately
+                    helpTitle="Comment estimer la valeur marchande ?"
+                    helpText="Pour estimer un prix réaliste, comparez votre parcelle (vide ou bâtie) aux 3 biens voisins les plus similaires (emplacement, mise en valeur, dimensions) qui ont été récemment vendus, puis calculez la moyenne de leurs prix. Cette moyenne vous donne la valeur marchande minimale à laquelle vous pouvez raisonnablement vendre."
                     className={cn(
                       "flex-1 h-11 rounded-xl",
                       missingResaleAmount && "ring-2 ring-destructive border-destructive",
@@ -587,42 +611,114 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
                               {t.constructionNature ? <span>Nature : {t.constructionNature}</span> : null}
                               {t.constructionMaterials ? <span>Matériaux : {t.constructionMaterials}</span> : null}
                               {t.standing ? <span>Standing : {t.standing}</span> : null}
+                              {t.constructionYear ? <span>Année : {t.constructionYear}</span> : null}
+                              {t.soundEnvironment ? <span>Environnement sonore : {SOUND_ENV_LABELS[t.soundEnvironment] || t.soundEnvironment}</span> : null}
                             </div>
 
-                            {checked && (
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 animate-fade-in">
-                                <div className="space-y-1">
-                                  <Label className="text-[11px] font-medium text-foreground">Loyer cible (USD/mois)</Label>
-                                  <Input
-                                    type="number"
-                                    inputMode="decimal"
-                                    min={0}
-                                    step="any"
-                                    placeholder="Optionnel"
-                                    value={entry?.targetRentUsd ?? ''}
-                                    onChange={(e) =>
-                                      updateListing(t.ref, {
-                                        targetRentUsd: e.target.value === '' ? undefined : Number(e.target.value),
-                                      }, { unitLabel: t.label })
-                                    }
-                                    className="h-10 rounded-xl text-sm"
-                                  />
+                            {checked && (() => {
+                              const images = Array.isArray(entry?.coverImageUrls) ? entry!.coverImageUrls!.filter(Boolean) : [];
+                              const missingImages = highlightRequiredFields && images.length < 1;
+                              const canAdd = images.length < 10;
+                              return (
+                                <div className="space-y-3 pt-1 animate-fade-in">
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                    <div className="space-y-1">
+                                      <Label className="text-[11px] font-medium text-foreground">Loyer cible (USD/mois)</Label>
+                                      <Input
+                                        type="number"
+                                        inputMode="decimal"
+                                        min={0}
+                                        step="any"
+                                        placeholder="Optionnel"
+                                        value={entry?.targetRentUsd ?? ''}
+                                        onChange={(e) =>
+                                          updateListing(t.ref, {
+                                            targetRentUsd: e.target.value === '' ? undefined : Number(e.target.value),
+                                          }, { unitLabel: t.label })
+                                        }
+                                        className="h-10 rounded-xl text-sm"
+                                      />
+                                    </div>
+                                    <div className="space-y-1">
+                                      <Label className="text-[11px] font-medium text-foreground">Disponible à partir du</Label>
+                                      <Input
+                                        type="date"
+                                        value={entry?.availableFrom || ''}
+                                        onChange={(e) =>
+                                          updateListing(t.ref, {
+                                            availableFrom: e.target.value || undefined,
+                                          }, { unitLabel: t.label })
+                                        }
+                                        className="h-10 rounded-xl text-sm"
+                                      />
+                                    </div>
+                                  </div>
+
+                                  {/* Images de couverture */}
+                                  <div className={cn(
+                                    "space-y-2 rounded-xl border p-2.5",
+                                    missingImages ? "border-destructive ring-1 ring-destructive/30 bg-destructive/5" : "border-border bg-background",
+                                  )}>
+                                    <div className="flex items-center justify-between gap-2">
+                                      <Label className="text-[11px] font-medium text-foreground flex items-center gap-1.5">
+                                        <ImagePlus className="h-3.5 w-3.5 text-primary" />
+                                        Images de couverture pour l'annonce
+                                        <span className="text-destructive">*</span>
+                                      </Label>
+                                      <span className="text-[10px] text-muted-foreground">{images.length}/10</span>
+                                    </div>
+                                    <p className="text-[10px] text-muted-foreground">
+                                      Jusqu'à 10 photos de l'intérieur du local · JPG, PNG ou WebP · 5 Mo max chacune · au moins 1 obligatoire.
+                                    </p>
+
+                                    {images.length > 0 && (
+                                      <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                                        {images.map((url, imgIdx) => (
+                                          <div key={`${url}-${imgIdx}`} className="relative group aspect-square rounded-lg overflow-hidden border border-border bg-muted">
+                                            <img src={url} alt={`Local ${t.label} - photo ${imgIdx + 1}`} className="w-full h-full object-cover" />
+                                            <button
+                                              type="button"
+                                              aria-label="Supprimer cette image"
+                                              onClick={() => {
+                                                const next = images.filter((_, i) => i !== imgIdx);
+                                                updateListing(t.ref, { coverImageUrls: next }, { unitLabel: t.label });
+                                              }}
+                                              className="absolute top-1 right-1 h-6 w-6 inline-flex items-center justify-center rounded-full bg-destructive text-destructive-foreground opacity-90 hover:opacity-100 shadow"
+                                            >
+                                              <X className="h-3.5 w-3.5" />
+                                            </button>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    )}
+
+                                    {canAdd ? (
+                                      <StorageFileUpload
+                                        key={`upl-${t.ref}-${images.length}`}
+                                        bucket="cadastral-documents"
+                                        value={null}
+                                        onChange={(url) => {
+                                          if (!url) return;
+                                          const next = [...images, url];
+                                          updateListing(t.ref, { coverImageUrls: next }, { unitLabel: t.label });
+                                        }}
+                                        accept="image/jpeg,image/png,image/webp"
+                                        isPublic={true}
+                                        label="Ajouter une image"
+                                        maxSizeMB={5}
+                                        pathPrefix="market-listings"
+                                      />
+                                    ) : (
+                                      <p className="text-[10px] text-muted-foreground italic">Maximum 10 images atteint.</p>
+                                    )}
+
+                                    {missingImages && (
+                                      <p className="text-[11px] text-destructive">Au moins une image de couverture est requise.</p>
+                                    )}
+                                  </div>
                                 </div>
-                                <div className="space-y-1">
-                                  <Label className="text-[11px] font-medium text-foreground">Disponible à partir du</Label>
-                                  <Input
-                                    type="date"
-                                    value={entry?.availableFrom || ''}
-                                    onChange={(e) =>
-                                      updateListing(t.ref, {
-                                        availableFrom: e.target.value || undefined,
-                                      }, { unitLabel: t.label })
-                                    }
-                                    className="h-10 rounded-xl text-sm"
-                                  />
-                                </div>
-                              </div>
-                            )}
+                              );
+                            })()}
                           </div>
                         </div>
                       </div>
@@ -648,7 +744,18 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
         <Button
           type="button"
           className="h-10 rounded-xl"
-          onClick={() => handleNextTab('market-value', 'review')}
+          onClick={() => {
+            const incomplete = listings.find((l: any) => {
+              if (!l?.listForRent) return false;
+              const imgs = Array.isArray(l.coverImageUrls) ? l.coverImageUrls.filter(Boolean) : [];
+              return imgs.length < 1;
+            });
+            if (incomplete) {
+              toast.error("Ajoutez au moins une image de couverture pour chaque local proposé à la location.");
+              return;
+            }
+            handleNextTab('market-value', 'review');
+          }}
         >
           Suivant <ChevronRight className="h-4 w-4 ml-1" />
         </Button>
