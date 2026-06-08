@@ -193,6 +193,12 @@ export const MonthlyRentFields: React.FC<CommonProps> = ({
     return `${constructionYear}-01-01`;
   }, [constructionYear]);
 
+  const showFloorSelect = Number(numberOfFloors) >= 1;
+  const floorOptions = useMemo(() => {
+    const max = Math.max(0, Math.min(50, Number(numberOfFloors) || 0));
+    return Array.from({ length: max + 1 }, (_, i) => ({ value: floorValue(i), label: floorLabel(i) }));
+  }, [numberOfFloors]);
+
   // Don't render if user hasn't chosen a configuration yet.
   if (!state.rentalConfiguration) return null;
 
@@ -207,11 +213,6 @@ export const MonthlyRentFields: React.FC<CommonProps> = ({
     onPatch({ rentalUnits: list });
   };
 
-  const showFloorSelect = Number(numberOfFloors) >= 1;
-  const floorOptions = useMemo(() => {
-    const max = Math.max(0, Math.min(50, Number(numberOfFloors) || 0));
-    return Array.from({ length: max + 1 }, (_, i) => ({ value: floorValue(i), label: floorLabel(i) }));
-  }, [numberOfFloors]);
 
   return (
     <div className="space-y-2 animate-fade-in">
