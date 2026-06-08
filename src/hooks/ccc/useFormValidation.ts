@@ -379,11 +379,17 @@ export function useFormValidation(params: UseFormValidationParams) {
         missing.push({ field: 'appraisalReportUrl', label: "Rapport d'expertise (pièce jointe)", tab: 'market-value' });
       }
     }
-    // Loyer cible positif si saisi
+    // Loyer cible positif si saisi + au moins 1 image par local proposé
     if (Array.isArray(formData.marketListings)) {
-      formData.marketListings.forEach((l, i) => {
+      formData.marketListings.forEach((l: any, i: number) => {
         if (l?.listForRent && l.targetRentUsd !== undefined && l.targetRentUsd !== null && Number(l.targetRentUsd) < 0) {
           missing.push({ field: `marketListingRent_${i}`, label: `Loyer cible du local "${l.unitLabel || i + 1}" invalide`, tab: 'market-value' });
+        }
+        if (l?.listForRent) {
+          const imgs = Array.isArray(l.coverImageUrls) ? l.coverImageUrls.filter(Boolean) : [];
+          if (imgs.length < 1) {
+            missing.push({ field: `marketListingImages_${i}`, label: `Au moins une image de couverture est requise pour le local "${l.unitLabel || i + 1}"`, tab: 'market-value' });
+          }
         }
       });
     }
