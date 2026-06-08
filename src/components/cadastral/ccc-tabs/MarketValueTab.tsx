@@ -611,42 +611,114 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
                               {t.constructionNature ? <span>Nature : {t.constructionNature}</span> : null}
                               {t.constructionMaterials ? <span>Matériaux : {t.constructionMaterials}</span> : null}
                               {t.standing ? <span>Standing : {t.standing}</span> : null}
+                              {t.constructionYear ? <span>Année : {t.constructionYear}</span> : null}
+                              {t.soundEnvironment ? <span>Environnement sonore : {SOUND_ENV_LABELS[t.soundEnvironment] || t.soundEnvironment}</span> : null}
                             </div>
 
-                            {checked && (
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 animate-fade-in">
-                                <div className="space-y-1">
-                                  <Label className="text-[11px] font-medium text-foreground">Loyer cible (USD/mois)</Label>
-                                  <Input
-                                    type="number"
-                                    inputMode="decimal"
-                                    min={0}
-                                    step="any"
-                                    placeholder="Optionnel"
-                                    value={entry?.targetRentUsd ?? ''}
-                                    onChange={(e) =>
-                                      updateListing(t.ref, {
-                                        targetRentUsd: e.target.value === '' ? undefined : Number(e.target.value),
-                                      }, { unitLabel: t.label })
-                                    }
-                                    className="h-10 rounded-xl text-sm"
-                                  />
+                            {checked && (() => {
+                              const images = Array.isArray(entry?.coverImageUrls) ? entry!.coverImageUrls!.filter(Boolean) : [];
+                              const missingImages = highlightRequiredFields && images.length < 1;
+                              const canAdd = images.length < 10;
+                              return (
+                                <div className="space-y-3 pt-1 animate-fade-in">
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                    <div className="space-y-1">
+                                      <Label className="text-[11px] font-medium text-foreground">Loyer cible (USD/mois)</Label>
+                                      <Input
+                                        type="number"
+                                        inputMode="decimal"
+                                        min={0}
+                                        step="any"
+                                        placeholder="Optionnel"
+                                        value={entry?.targetRentUsd ?? ''}
+                                        onChange={(e) =>
+                                          updateListing(t.ref, {
+                                            targetRentUsd: e.target.value === '' ? undefined : Number(e.target.value),
+                                          }, { unitLabel: t.label })
+                                        }
+                                        className="h-10 rounded-xl text-sm"
+                                      />
+                                    </div>
+                                    <div className="space-y-1">
+                                      <Label className="text-[11px] font-medium text-foreground">Disponible à partir du</Label>
+                                      <Input
+                                        type="date"
+                                        value={entry?.availableFrom || ''}
+                                        onChange={(e) =>
+                                          updateListing(t.ref, {
+                                            availableFrom: e.target.value || undefined,
+                                          }, { unitLabel: t.label })
+                                        }
+                                        className="h-10 rounded-xl text-sm"
+                                      />
+                                    </div>
+                                  </div>
+
+                                  {/* Images de couverture */}
+                                  <div className={cn(
+                                    "space-y-2 rounded-xl border p-2.5",
+                                    missingImages ? "border-destructive ring-1 ring-destructive/30 bg-destructive/5" : "border-border bg-background",
+                                  )}>
+                                    <div className="flex items-center justify-between gap-2">
+                                      <Label className="text-[11px] font-medium text-foreground flex items-center gap-1.5">
+                                        <ImagePlus className="h-3.5 w-3.5 text-primary" />
+                                        Images de couverture pour l'annonce
+                                        <span className="text-destructive">*</span>
+                                      </Label>
+                                      <span className="text-[10px] text-muted-foreground">{images.length}/10</span>
+                                    </div>
+                                    <p className="text-[10px] text-muted-foreground">
+                                      Jusqu'à 10 photos de l'intérieur du local · JPG, PNG ou WebP · 5 Mo max chacune · au moins 1 obligatoire.
+                                    </p>
+
+                                    {images.length > 0 && (
+                                      <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                                        {images.map((url, imgIdx) => (
+                                          <div key={`${url}-${imgIdx}`} className="relative group aspect-square rounded-lg overflow-hidden border border-border bg-muted">
+                                            <img src={url} alt={`Local ${t.label} - photo ${imgIdx + 1}`} className="w-full h-full object-cover" />
+                                            <button
+                                              type="button"
+                                              aria-label="Supprimer cette image"
+                                              onClick={() => {
+                                                const next = images.filter((_, i) => i !== imgIdx);
+                                                updateListing(t.ref, { coverImageUrls: next }, { unitLabel: t.label });
+                                              }}
+                                              className="absolute top-1 right-1 h-6 w-6 inline-flex items-center justify-center rounded-full bg-destructive text-destructive-foreground opacity-90 hover:opacity-100 shadow"
+                                            >
+                                              <X className="h-3.5 w-3.5" />
+                                            </button>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    )}
+
+                                    {canAdd ? (
+                                      <StorageFileUpload
+                                        key={`upl-${t.ref}-${images.length}`}
+                                        bucket="cadastral-documents"
+                                        value={null}
+                                        onChange={(url) => {
+                                          if (!url) return;
+                                          const next = [...images, url];
+                                          updateListing(t.ref, { coverImageUrls: next }, { unitLabel: t.label });
+                                        }}
+                                        accept="image/jpeg,image/png,image/webp"
+                                        isPublic={true}
+                                        label="Ajouter une image"
+                                        maxSizeMB={5}
+                                        pathPrefix="market-listings"
+                                      />
+                                    ) : (
+                                      <p className="text-[10px] text-muted-foreground italic">Maximum 10 images atteint.</p>
+                                    )}
+
+                                    {missingImages && (
+                                      <p className="text-[11px] text-destructive">Au moins une image de couverture est requise.</p>
+                                    )}
+                                  </div>
                                 </div>
-                                <div className="space-y-1">
-                                  <Label className="text-[11px] font-medium text-foreground">Disponible à partir du</Label>
-                                  <Input
-                                    type="date"
-                                    value={entry?.availableFrom || ''}
-                                    onChange={(e) =>
-                                      updateListing(t.ref, {
-                                        availableFrom: e.target.value || undefined,
-                                      }, { unitLabel: t.label })
-                                    }
-                                    className="h-10 rounded-xl text-sm"
-                                  />
-                                </div>
-                              </div>
-                            )}
+                              );
+                            })()}
                           </div>
                         </div>
                       </div>
