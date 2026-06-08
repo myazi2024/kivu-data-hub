@@ -384,7 +384,7 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
                       <SelectItem value="CDF">CDF</SelectItem>
                     </SelectContent>
                   </Select>
-                  <Input
+                  <InputWithPopover
                     type="number"
                     inputMode="decimal"
                     min={0}
@@ -392,6 +392,9 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
                     placeholder="Montant"
                     value={resaleAmount ?? ''}
                     onChange={(e) => setResaleAmount(e.target.value)}
+                    triggerImmediately
+                    helpTitle="Comment estimer la valeur marchande ?"
+                    helpText="Pour estimer un prix réaliste, comparez votre parcelle (vide ou bâtie) aux 3 biens voisins les plus similaires (emplacement, mise en valeur, dimensions) qui ont été récemment vendus, puis calculez la moyenne de leurs prix. Cette moyenne vous donne la valeur marchande minimale à laquelle vous pouvez raisonnablement vendre."
                     className={cn(
                       "flex-1 h-11 rounded-xl",
                       missingResaleAmount && "ring-2 ring-destructive border-destructive",
