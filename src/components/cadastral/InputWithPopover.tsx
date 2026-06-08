@@ -7,11 +7,14 @@ import { useIsMobile } from '@/hooks/use-mobile';
 interface InputWithPopoverProps extends React.ComponentPropsWithoutRef<typeof Input> {
   helpText: string;
   helpTitle?: string;
+  /** Si true, ouvre l'infobulle immédiatement au focus (sinon délai 5 s). */
+  triggerImmediately?: boolean;
 }
 
 export const InputWithPopover: React.FC<InputWithPopoverProps> = ({ 
   helpText, 
   helpTitle = "Aide",
+  triggerImmediately = false,
   ...inputProps 
 }) => {
   const isMobile = useIsMobile();
