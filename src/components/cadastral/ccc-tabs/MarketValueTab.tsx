@@ -161,6 +161,7 @@ const buildVacantTargets = (
       });
     } else {
       if (isOccupied !== false) return;
+      const cy = Number(constructionYear) || Number(formData.constructionYear) || undefined;
       out.push({
         ref: base,
         constructionRef: base,
@@ -172,8 +173,8 @@ const buildVacantTargets = (
         constructionNature: nature,
         constructionMaterials: materials,
         standing,
-        constructionYear,
-        soundEnvironment: sharedSound,
+        constructionYear: cy,
+        soundEnvironment: sharedSound || undefined,
       });
     }
   };
