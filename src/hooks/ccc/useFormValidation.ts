@@ -362,6 +362,20 @@ export function useFormValidation(params: UseFormValidationParams) {
       if (!formData.resalePriceCurrency) {
         missing.push({ field: 'resalePriceCurrency', label: 'Devise du prix de revente', tab: 'market-value' });
       }
+      const sale = formData.saleListing || {};
+      const saleImgs = Array.isArray(sale.coverImageUrls) ? sale.coverImageUrls.filter(Boolean) : [];
+      if (saleImgs.length < 1) {
+        missing.push({ field: 'saleListingImages', label: "Au moins une photo de la parcelle est requise pour l'annonce de vente", tab: 'market-value' });
+      }
+      if (!sale.paymentTerms) {
+        missing.push({ field: 'saleListingPaymentTerms', label: "Modalités de paiement (annonce de vente)", tab: 'market-value' });
+      }
+      if (!sale.availability) {
+        missing.push({ field: 'saleListingAvailability', label: "Disponibilité (annonce de vente)", tab: 'market-value' });
+      }
+      if ((sale.description || '').length > 500) {
+        missing.push({ field: 'saleListingDescription', label: "Description de la vente : 500 caractères max", tab: 'market-value' });
+      }
     }
     if (formData.hasRecentAppraisal === undefined || formData.hasRecentAppraisal === null) {
       missing.push({ field: 'hasRecentAppraisal', label: 'Expertise immobilière récente (Oui/Non)', tab: 'market-value' });
