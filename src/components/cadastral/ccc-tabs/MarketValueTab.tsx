@@ -639,12 +639,25 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
                             <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
                               {t.currentRentUsd ? <span>Loyer actuel : {fmtUSD(t.currentRentUsd)}/mois</span> : null}
                               {t.hostingCapacity ? <span>Capacité : {t.hostingCapacity} pers.</span> : null}
+                              {t.floor ? <span>Étage : {t.floor === 'RDC' ? 'RDC' : `${t.floor}e`}</span> : null}
                               {t.constructionType ? <span>Type : {t.constructionType}</span> : null}
                               {t.constructionNature ? <span>Nature : {t.constructionNature}</span> : null}
                               {t.constructionMaterials ? <span>Matériaux : {t.constructionMaterials}</span> : null}
                               {t.standing ? <span>Standing : {t.standing}</span> : null}
-                              {t.constructionYear ? <span>Année : {t.constructionYear}</span> : null}
-                              {t.soundEnvironment ? <span>Environnement sonore : {SOUND_ENV_LABELS[t.soundEnvironment] || t.soundEnvironment}</span> : null}
+                              {t.constructionYear ? (
+                                <span>Année : {t.constructionYear}</span>
+                              ) : (
+                                <button type="button" onClick={() => handleTabChange('general')} className="text-amber-700 dark:text-amber-300 hover:underline">
+                                  Année : — compléter dans Infos
+                                </button>
+                              )}
+                              {t.soundEnvironment ? (
+                                <span>Environnement sonore : {SOUND_ENV_LABELS[t.soundEnvironment] || t.soundEnvironment}</span>
+                              ) : (
+                                <button type="button" onClick={() => handleTabChange('location')} className="text-amber-700 dark:text-amber-300 hover:underline">
+                                  Environnement sonore : — compléter dans Localisation
+                                </button>
+                              )}
                             </div>
 
                             {checked && (() => {
