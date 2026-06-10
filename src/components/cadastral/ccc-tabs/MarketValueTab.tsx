@@ -30,7 +30,37 @@ export interface MarketListingEntry {
   targetRentUsd?: number;
   availableFrom?: string;
   coverImageUrls?: string[];
+  coverImageMainUrl?: string;
+  rentCurrency?: 'USD' | 'CDF';
+  rentAmount?: number;
+  depositMonths?: number;
+  minLeaseMonths?: number;
+  leaseType?: 'meuble' | 'non_meuble' | 'court_sejour' | 'bureau';
+  chargesIncluded?: {
+    water?: boolean;
+    electricity?: boolean;
+    security?: boolean;
+    waste?: boolean;
+    internet?: boolean;
+  };
+  description?: string;
+  contactChannel?: 'whatsapp' | 'phone' | 'email';
+  contactValue?: string;
+  visitSlots?: string;
 }
+
+const LEASE_TYPE_LABELS: Record<string, string> = {
+  meuble: 'Meublé',
+  non_meuble: 'Non meublé',
+  court_sejour: 'Court séjour',
+  bureau: 'Bureau / professionnel',
+};
+
+const CONTACT_LABELS: Record<string, string> = {
+  whatsapp: 'WhatsApp',
+  phone: 'Téléphone',
+  email: 'Email',
+};
 
 
 interface MarketValueTabProps {
@@ -111,6 +141,7 @@ const buildVacantTargets = (
       rentalUnits.forEach((u, i) => {
         if (u?.isOccupied !== false) return;
         const floorLbl = u?.floor === 'RDC' ? 'RDC' : (u?.floor ? `${u.floor}e étage` : undefined);
+        const cy = Number(constructionYear) || Number(formData.constructionYear) || undefined;
         out.push({
           ref: `${base}:unit:${i}`,
           constructionRef: base,
@@ -124,12 +155,13 @@ const buildVacantTargets = (
           constructionNature: nature,
           constructionMaterials: materials,
           standing,
-          constructionYear,
-          soundEnvironment: sharedSound,
+          constructionYear: cy,
+          soundEnvironment: sharedSound || undefined,
         });
       });
     } else {
       if (isOccupied !== false) return;
+      const cy = Number(constructionYear) || Number(formData.constructionYear) || undefined;
       out.push({
         ref: base,
         constructionRef: base,
@@ -141,8 +173,8 @@ const buildVacantTargets = (
         constructionNature: nature,
         constructionMaterials: materials,
         standing,
-        constructionYear,
-        soundEnvironment: sharedSound,
+        constructionYear: cy,
+        soundEnvironment: sharedSound || undefined,
       });
     }
   };
@@ -404,6 +436,196 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
                 {resaleAmount && resaleAmount > 0 && (
                   <p className="text-xs text-muted-foreground">{equivalent(resaleAmount, resaleCurrency)}</p>
                 )}
+
+                {/* ─── Annonce de vente ─── */}
+                {(() => {
+                  const sale = formData.saleListing || {};
+                  const saleImages = Array.isArray(sale.coverImageUrls) ? sale.coverImageUrls.filter(Boolean) : [];
+                  const saleMain = sale.coverImageMainUrl && saleImages.includes(sale.coverImageMainUrl) ? sale.coverImageMainUrl : saleImages[0];
+                  const missingSaleImages = highlightRequiredFields && saleImages.length < 1;
+                  const canAddSale = saleImages.length < 10;
+                  const saleDesc = sale.description || '';
+                  const saleTooLong = saleDesc.length > 500;
+                  const updateSale = (patch: Partial<NonNullable<CadastralContributionData['saleListing']>>) => {
+                    handleInputChange('saleListing', { ...sale, ...patch });
+                  };
+                  return (
+                    <div className="space-y-3 pt-2 mt-2 border-t border-border animate-fade-in">
+                      <Label className="text-[11px] font-semibold text-foreground uppercase tracking-wide flex items-center gap-1.5">
+                        <Home className="h-3.5 w-3.5 text-primary" /> Détails de l'annonce de vente
+                      </Label>
+
+                      {/* Images parcelle */}
+                      <div className={cn(
+                        "space-y-2 rounded-xl border p-2.5",
+                        missingSaleImages ? "border-destructive ring-1 ring-destructive/30 bg-destructive/5" : "border-border bg-background",
+                      )}>
+                        <div className="flex items-center justify-between gap-2">
+                          <Label className="text-[11px] font-medium text-foreground flex items-center gap-1.5">
+                            <ImagePlus className="h-3.5 w-3.5 text-primary" />
+                            Photos de la parcelle <span className="text-destructive">*</span>
+                          </Label>
+                          <span className="text-[10px] text-muted-foreground">{saleImages.length}/10</span>
+                        </div>
+                        <p className="text-[10px] text-muted-foreground">
+                          1 à 10 photos · JPG/PNG/WebP · 5 Mo max · au moins 1 obligatoire. Cliquez sur ⭐ pour la photo principale.
+                        </p>
+                        {saleImages.length > 0 && (
+                          <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                            {saleImages.map((url, i) => {
+                              const isMain = url === saleMain;
+                              return (
+                                <div key={`${url}-${i}`} className={cn("relative group aspect-square rounded-lg overflow-hidden border bg-muted", isMain ? "border-primary ring-2 ring-primary" : "border-border")}>
+                                  <img src={url} alt={`Parcelle - photo ${i + 1}`} className="w-full h-full object-cover" />
+                                  <button type="button" onClick={() => updateSale({ coverImageMainUrl: url })} className={cn("absolute top-1 left-1 h-6 px-1.5 inline-flex items-center justify-center rounded-full text-[10px] font-medium shadow", isMain ? "bg-primary text-primary-foreground" : "bg-background/90 text-foreground hover:bg-primary/20")}>
+                                    {isMain ? '⭐ Principale' : '⭐'}
+                                  </button>
+                                  <button type="button" aria-label="Supprimer" onClick={() => {
+                                    const next = saleImages.filter((_, k) => k !== i);
+                                    const patch: any = { coverImageUrls: next };
+                                    if (isMain) patch.coverImageMainUrl = next[0];
+                                    updateSale(patch);
+                                  }} className="absolute top-1 right-1 h-6 w-6 inline-flex items-center justify-center rounded-full bg-destructive text-destructive-foreground opacity-90 hover:opacity-100 shadow">
+                                    <X className="h-3.5 w-3.5" />
+                                  </button>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                        {canAddSale ? (
+                          <StorageFileUpload
+                            key={`upl-sale-${saleImages.length}`}
+                            bucket="cadastral-documents"
+                            value={null}
+                            onChange={(url) => {
+                              if (!url) return;
+                              const next = [...saleImages, url];
+                              const patch: any = { coverImageUrls: next };
+                              if (!saleMain) patch.coverImageMainUrl = url;
+                              updateSale(patch);
+                            }}
+                            accept="image/jpeg,image/png,image/webp"
+                            isPublic={true}
+                            label="Ajouter une image"
+                            maxSizeMB={5}
+                            pathPrefix="sale-listings"
+                          />
+                        ) : (
+                          <p className="text-[10px] text-muted-foreground italic">Maximum 10 images atteint.</p>
+                        )}
+                        {missingSaleImages && (
+                          <p className="text-[11px] text-destructive">Au moins une image de la parcelle est requise.</p>
+                        )}
+                      </div>
+
+                      {/* Modalités de prix */}
+                      <div className="rounded-xl border border-border bg-background p-2.5 space-y-2">
+                        <Label className="text-[11px] font-semibold text-foreground uppercase tracking-wide">Modalités de prix</Label>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          <div className="space-y-1">
+                            <Label className="text-[11px] font-medium text-foreground">Prix</Label>
+                            <Select value={sale.priceNegotiable === undefined ? '' : (sale.priceNegotiable ? 'negotiable' : 'firm')} onValueChange={(v) => updateSale({ priceNegotiable: v === 'negotiable' })}>
+                              <SelectTrigger className="h-10 rounded-xl text-sm"><SelectValue placeholder="Ferme / Négociable" /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="firm">Prix ferme</SelectItem>
+                                <SelectItem value="negotiable">Négociable</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-[11px] font-medium text-foreground">Modalités de paiement <span className="text-destructive">*</span></Label>
+                            <Select value={sale.paymentTerms || ''} onValueChange={(v) => updateSale({ paymentTerms: v as any })}>
+                              <SelectTrigger className="h-10 rounded-xl text-sm"><SelectValue placeholder="Choisir…" /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="cash">Cash</SelectItem>
+                                <SelectItem value="installments">Échelonné</SelectItem>
+                                <SelectItem value="both">Cash ou échelonné</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Disponibilité */}
+                      <div className="rounded-xl border border-border bg-background p-2.5 space-y-2">
+                        <Label className="text-[11px] font-semibold text-foreground uppercase tracking-wide">Disponibilité</Label>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          <div className="space-y-1">
+                            <Label className="text-[11px] font-medium text-foreground">Disponible <span className="text-destructive">*</span></Label>
+                            <Select value={sale.availability || ''} onValueChange={(v) => updateSale({ availability: v as any })}>
+                              <SelectTrigger className="h-10 rounded-xl text-sm"><SelectValue placeholder="Choisir…" /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="immediate">Immédiatement</SelectItem>
+                                <SelectItem value="conditional">Sous conditions</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          {sale.availability === 'conditional' && (
+                            <div className="space-y-1">
+                              <Label className="text-[11px] font-medium text-foreground">Précisions</Label>
+                              <Input
+                                type="text" placeholder="Ex. après récolte 2026"
+                                value={sale.availabilityNote || ''}
+                                onChange={(e) => updateSale({ availabilityNote: e.target.value || undefined })}
+                                className="h-10 rounded-xl text-sm"
+                              />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Description & contact */}
+                      <div className="rounded-xl border border-border bg-background p-2.5 space-y-2">
+                        <Label className="text-[11px] font-semibold text-foreground uppercase tracking-wide">Description & contact</Label>
+                        <div className="space-y-1">
+                          <Label className="text-[11px] font-medium text-foreground">Description (500 caractères max)</Label>
+                          <Textarea
+                            rows={3} maxLength={500}
+                            placeholder="Atouts de la parcelle : accès, voisinage, projets autour, raison de la vente…"
+                            value={saleDesc}
+                            onChange={(e) => updateSale({ description: e.target.value })}
+                            className={cn("rounded-xl text-sm", saleTooLong && "ring-2 ring-destructive border-destructive")}
+                          />
+                          <p className="text-[10px] text-muted-foreground text-right">{saleDesc.length}/500</p>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          <div className="space-y-1">
+                            <Label className="text-[11px] font-medium text-foreground">Canal de contact préféré</Label>
+                            <Select value={sale.contactChannel || ''} onValueChange={(v) => updateSale({ contactChannel: v as any })}>
+                              <SelectTrigger className="h-10 rounded-xl text-sm"><SelectValue placeholder="Choisir…" /></SelectTrigger>
+                              <SelectContent>
+                                {Object.entries(CONTACT_LABELS).map(([k, l]) => (
+                                  <SelectItem key={k} value={k}>{l}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-[11px] font-medium text-foreground">Coordonnée</Label>
+                            <Input
+                              type="text"
+                              placeholder={sale.contactChannel === 'email' ? 'email@exemple.com' : '+243 …'}
+                              value={sale.contactValue || ''}
+                              onChange={(e) => updateSale({ contactValue: e.target.value || undefined })}
+                              className="h-10 rounded-xl text-sm"
+                            />
+                          </div>
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-[11px] font-medium text-foreground">Créneaux de visite (optionnel)</Label>
+                          <Input
+                            type="text"
+                            placeholder="Ex. Lun-Ven 9h-17h, Sam matin"
+                            value={sale.visitSlots || ''}
+                            onChange={(e) => updateSale({ visitSlots: e.target.value || undefined })}
+                            className="h-10 rounded-xl text-sm"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             )}
           </div>
@@ -607,50 +829,131 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
                             <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
                               {t.currentRentUsd ? <span>Loyer actuel : {fmtUSD(t.currentRentUsd)}/mois</span> : null}
                               {t.hostingCapacity ? <span>Capacité : {t.hostingCapacity} pers.</span> : null}
+                              {t.floor ? <span>Étage : {t.floor === 'RDC' ? 'RDC' : `${t.floor}e`}</span> : null}
                               {t.constructionType ? <span>Type : {t.constructionType}</span> : null}
                               {t.constructionNature ? <span>Nature : {t.constructionNature}</span> : null}
                               {t.constructionMaterials ? <span>Matériaux : {t.constructionMaterials}</span> : null}
                               {t.standing ? <span>Standing : {t.standing}</span> : null}
-                              {t.constructionYear ? <span>Année : {t.constructionYear}</span> : null}
-                              {t.soundEnvironment ? <span>Environnement sonore : {SOUND_ENV_LABELS[t.soundEnvironment] || t.soundEnvironment}</span> : null}
+                              {t.constructionYear ? (
+                                <span>Année : {t.constructionYear}</span>
+                              ) : (
+                                <button type="button" onClick={() => handleTabChange('general')} className="text-amber-700 dark:text-amber-300 hover:underline">
+                                  Année : — compléter dans Infos
+                                </button>
+                              )}
+                              {t.soundEnvironment ? (
+                                <span>Environnement sonore : {SOUND_ENV_LABELS[t.soundEnvironment] || t.soundEnvironment}</span>
+                              ) : (
+                                <button type="button" onClick={() => handleTabChange('location')} className="text-amber-700 dark:text-amber-300 hover:underline">
+                                  Environnement sonore : — compléter dans Localisation
+                                </button>
+                              )}
                             </div>
 
                             {checked && (() => {
                               const images = Array.isArray(entry?.coverImageUrls) ? entry!.coverImageUrls!.filter(Boolean) : [];
+                              const mainUrl = entry?.coverImageMainUrl && images.includes(entry.coverImageMainUrl) ? entry.coverImageMainUrl : images[0];
                               const missingImages = highlightRequiredFields && images.length < 1;
                               const canAdd = images.length < 10;
+                              const charges = entry?.chargesIncluded || {};
+                              const rentCur = entry?.rentCurrency || 'USD';
+                              const desc = entry?.description || '';
+                              const tooLong = desc.length > 500;
                               return (
                                 <div className="space-y-3 pt-1 animate-fade-in">
-                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                    <div className="space-y-1">
-                                      <Label className="text-[11px] font-medium text-foreground">Loyer cible (USD/mois)</Label>
-                                      <Input
-                                        type="number"
-                                        inputMode="decimal"
-                                        min={0}
-                                        step="any"
-                                        placeholder="Optionnel"
-                                        value={entry?.targetRentUsd ?? ''}
-                                        onChange={(e) =>
-                                          updateListing(t.ref, {
-                                            targetRentUsd: e.target.value === '' ? undefined : Number(e.target.value),
-                                          }, { unitLabel: t.label })
-                                        }
-                                        className="h-10 rounded-xl text-sm"
-                                      />
+                                  {/* Loyer & caution */}
+                                  <div className="rounded-xl border border-border bg-background p-2.5 space-y-2">
+                                    <Label className="text-[11px] font-semibold text-foreground uppercase tracking-wide">Loyer & caution</Label>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                      <div className="space-y-1">
+                                        <Label className="text-[11px] font-medium text-foreground">Loyer mensuel souhaité</Label>
+                                        <div className="flex gap-2">
+                                          <Select value={rentCur} onValueChange={(v) => updateListing(t.ref, { rentCurrency: v as 'USD' | 'CDF' }, { unitLabel: t.label })}>
+                                            <SelectTrigger className="w-20 h-10 rounded-xl text-sm"><SelectValue /></SelectTrigger>
+                                            <SelectContent>
+                                              <SelectItem value="USD">USD</SelectItem>
+                                              <SelectItem value="CDF">CDF</SelectItem>
+                                            </SelectContent>
+                                          </Select>
+                                          <Input
+                                            type="number" inputMode="decimal" min={0} step="any" placeholder="Montant"
+                                            value={entry?.rentAmount ?? ''}
+                                            onChange={(e) => {
+                                              const n = e.target.value === '' ? undefined : Number(e.target.value);
+                                              const usd = n === undefined ? undefined : (rentCur === 'USD' ? n : n / cdfRate);
+                                              updateListing(t.ref, { rentAmount: n, targetRentUsd: usd }, { unitLabel: t.label });
+                                            }}
+                                            className="flex-1 h-10 rounded-xl text-sm"
+                                          />
+                                        </div>
+                                      </div>
+                                      <div className="space-y-1">
+                                        <Label className="text-[11px] font-medium text-foreground">Caution (mois de loyer)</Label>
+                                        <Input
+                                          type="number" inputMode="numeric" min={0} max={12} step="1" placeholder="Ex. 2"
+                                          value={entry?.depositMonths ?? ''}
+                                          onChange={(e) => updateListing(t.ref, { depositMonths: e.target.value === '' ? undefined : Number(e.target.value) }, { unitLabel: t.label })}
+                                          className="h-10 rounded-xl text-sm"
+                                        />
+                                      </div>
                                     </div>
-                                    <div className="space-y-1">
-                                      <Label className="text-[11px] font-medium text-foreground">Disponible à partir du</Label>
-                                      <Input
-                                        type="date"
-                                        value={entry?.availableFrom || ''}
-                                        onChange={(e) =>
-                                          updateListing(t.ref, {
-                                            availableFrom: e.target.value || undefined,
-                                          }, { unitLabel: t.label })
-                                        }
-                                        className="h-10 rounded-xl text-sm"
-                                      />
+                                  </div>
+
+                                  {/* Disponibilité & bail */}
+                                  <div className="rounded-xl border border-border bg-background p-2.5 space-y-2">
+                                    <Label className="text-[11px] font-semibold text-foreground uppercase tracking-wide">Disponibilité & type de bail</Label>
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                      <div className="space-y-1">
+                                        <Label className="text-[11px] font-medium text-foreground">Libre à partir du</Label>
+                                        <Input
+                                          type="date"
+                                          value={entry?.availableFrom || ''}
+                                          onChange={(e) => updateListing(t.ref, { availableFrom: e.target.value || undefined }, { unitLabel: t.label })}
+                                          className="h-10 rounded-xl text-sm"
+                                        />
+                                      </div>
+                                      <div className="space-y-1">
+                                        <Label className="text-[11px] font-medium text-foreground">Bail min. (mois)</Label>
+                                        <Input
+                                          type="number" inputMode="numeric" min={1} max={120} step="1" placeholder="Ex. 12"
+                                          value={entry?.minLeaseMonths ?? ''}
+                                          onChange={(e) => updateListing(t.ref, { minLeaseMonths: e.target.value === '' ? undefined : Number(e.target.value) }, { unitLabel: t.label })}
+                                          className="h-10 rounded-xl text-sm"
+                                        />
+                                      </div>
+                                      <div className="space-y-1">
+                                        <Label className="text-[11px] font-medium text-foreground">Type de location</Label>
+                                        <Select value={entry?.leaseType || ''} onValueChange={(v) => updateListing(t.ref, { leaseType: v as any }, { unitLabel: t.label })}>
+                                          <SelectTrigger className="h-10 rounded-xl text-sm"><SelectValue placeholder="Choisir…" /></SelectTrigger>
+                                          <SelectContent>
+                                            {Object.entries(LEASE_TYPE_LABELS).map(([k, l]) => (
+                                              <SelectItem key={k} value={k}>{l}</SelectItem>
+                                            ))}
+                                          </SelectContent>
+                                        </Select>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* Charges incluses */}
+                                  <div className="rounded-xl border border-border bg-background p-2.5 space-y-2">
+                                    <Label className="text-[11px] font-semibold text-foreground uppercase tracking-wide">Charges incluses dans le loyer</Label>
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                      {([
+                                        ['water', 'Eau'],
+                                        ['electricity', 'Électricité'],
+                                        ['internet', 'Internet'],
+                                        ['security', 'Gardiennage'],
+                                        ['waste', 'Ordures'],
+                                      ] as const).map(([key, label]) => (
+                                        <label key={key} className="flex items-center gap-2 rounded-lg border border-border bg-background px-2 py-1.5 text-xs cursor-pointer">
+                                          <Checkbox
+                                            checked={!!(charges as any)[key]}
+                                            onCheckedChange={(v) => updateListing(t.ref, { chargesIncluded: { ...charges, [key]: !!v } }, { unitLabel: t.label })}
+                                          />
+                                          <span>{label}</span>
+                                        </label>
+                                      ))}
                                     </div>
                                   </div>
 
@@ -668,27 +971,40 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
                                       <span className="text-[10px] text-muted-foreground">{images.length}/10</span>
                                     </div>
                                     <p className="text-[10px] text-muted-foreground">
-                                      Jusqu'à 10 photos de l'intérieur du local · JPG, PNG ou WebP · 5 Mo max chacune · au moins 1 obligatoire.
+                                      Jusqu'à 10 photos · JPG/PNG/WebP · 5 Mo max · au moins 1 obligatoire. Cliquez sur ⭐ pour marquer la photo principale.
                                     </p>
 
                                     {images.length > 0 && (
                                       <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                                        {images.map((url, imgIdx) => (
-                                          <div key={`${url}-${imgIdx}`} className="relative group aspect-square rounded-lg overflow-hidden border border-border bg-muted">
-                                            <img src={url} alt={`Local ${t.label} - photo ${imgIdx + 1}`} className="w-full h-full object-cover" />
-                                            <button
-                                              type="button"
-                                              aria-label="Supprimer cette image"
-                                              onClick={() => {
-                                                const next = images.filter((_, i) => i !== imgIdx);
-                                                updateListing(t.ref, { coverImageUrls: next }, { unitLabel: t.label });
-                                              }}
-                                              className="absolute top-1 right-1 h-6 w-6 inline-flex items-center justify-center rounded-full bg-destructive text-destructive-foreground opacity-90 hover:opacity-100 shadow"
-                                            >
-                                              <X className="h-3.5 w-3.5" />
-                                            </button>
-                                          </div>
-                                        ))}
+                                        {images.map((url, imgIdx) => {
+                                          const isMain = url === mainUrl;
+                                          return (
+                                            <div key={`${url}-${imgIdx}`} className={cn("relative group aspect-square rounded-lg overflow-hidden border bg-muted", isMain ? "border-primary ring-2 ring-primary" : "border-border")}>
+                                              <img src={url} alt={`Local ${t.label} - photo ${imgIdx + 1}`} className="w-full h-full object-cover" />
+                                              <button
+                                                type="button"
+                                                aria-label={isMain ? "Photo principale" : "Définir comme photo principale"}
+                                                onClick={() => updateListing(t.ref, { coverImageMainUrl: url }, { unitLabel: t.label })}
+                                                className={cn("absolute top-1 left-1 h-6 px-1.5 inline-flex items-center justify-center rounded-full text-[10px] font-medium shadow", isMain ? "bg-primary text-primary-foreground" : "bg-background/90 text-foreground hover:bg-primary/20")}
+                                              >
+                                                {isMain ? '⭐ Principale' : '⭐'}
+                                              </button>
+                                              <button
+                                                type="button"
+                                                aria-label="Supprimer cette image"
+                                                onClick={() => {
+                                                  const next = images.filter((_, i) => i !== imgIdx);
+                                                  const patch: Partial<MarketListingEntry> = { coverImageUrls: next };
+                                                  if (isMain) patch.coverImageMainUrl = next[0];
+                                                  updateListing(t.ref, patch, { unitLabel: t.label });
+                                                }}
+                                                className="absolute top-1 right-1 h-6 w-6 inline-flex items-center justify-center rounded-full bg-destructive text-destructive-foreground opacity-90 hover:opacity-100 shadow"
+                                              >
+                                                <X className="h-3.5 w-3.5" />
+                                              </button>
+                                            </div>
+                                          );
+                                        })}
                                       </div>
                                     )}
 
@@ -700,7 +1016,9 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
                                         onChange={(url) => {
                                           if (!url) return;
                                           const next = [...images, url];
-                                          updateListing(t.ref, { coverImageUrls: next }, { unitLabel: t.label });
+                                          const patch: Partial<MarketListingEntry> = { coverImageUrls: next };
+                                          if (!mainUrl) patch.coverImageMainUrl = url;
+                                          updateListing(t.ref, patch, { unitLabel: t.label });
                                         }}
                                         accept="image/jpeg,image/png,image/webp"
                                         isPublic={true}
@@ -715,6 +1033,56 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
                                     {missingImages && (
                                       <p className="text-[11px] text-destructive">Au moins une image de couverture est requise.</p>
                                     )}
+                                  </div>
+
+                                  {/* Description & contact */}
+                                  <div className="rounded-xl border border-border bg-background p-2.5 space-y-2">
+                                    <Label className="text-[11px] font-semibold text-foreground uppercase tracking-wide">Description & contact</Label>
+                                    <div className="space-y-1">
+                                      <Label className="text-[11px] font-medium text-foreground">Description de l'annonce (500 caractères max)</Label>
+                                      <Textarea
+                                        rows={3}
+                                        maxLength={500}
+                                        placeholder="Décrivez les atouts du local : lumière, vue, voisinage, équipements, accès…"
+                                        value={desc}
+                                        onChange={(e) => updateListing(t.ref, { description: e.target.value }, { unitLabel: t.label })}
+                                        className={cn("rounded-xl text-sm", tooLong && "ring-2 ring-destructive border-destructive")}
+                                      />
+                                      <p className="text-[10px] text-muted-foreground text-right">{desc.length}/500</p>
+                                    </div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                      <div className="space-y-1">
+                                        <Label className="text-[11px] font-medium text-foreground">Canal de contact préféré</Label>
+                                        <Select value={entry?.contactChannel || ''} onValueChange={(v) => updateListing(t.ref, { contactChannel: v as any }, { unitLabel: t.label })}>
+                                          <SelectTrigger className="h-10 rounded-xl text-sm"><SelectValue placeholder="Choisir…" /></SelectTrigger>
+                                          <SelectContent>
+                                            {Object.entries(CONTACT_LABELS).map(([k, l]) => (
+                                              <SelectItem key={k} value={k}>{l}</SelectItem>
+                                            ))}
+                                          </SelectContent>
+                                        </Select>
+                                      </div>
+                                      <div className="space-y-1">
+                                        <Label className="text-[11px] font-medium text-foreground">Coordonnée ({CONTACT_LABELS[entry?.contactChannel || 'phone'] || 'contact'})</Label>
+                                        <Input
+                                          type="text"
+                                          placeholder={entry?.contactChannel === 'email' ? 'email@exemple.com' : '+243 …'}
+                                          value={entry?.contactValue || ''}
+                                          onChange={(e) => updateListing(t.ref, { contactValue: e.target.value || undefined }, { unitLabel: t.label })}
+                                          className="h-10 rounded-xl text-sm"
+                                        />
+                                      </div>
+                                    </div>
+                                    <div className="space-y-1">
+                                      <Label className="text-[11px] font-medium text-foreground">Créneaux de visite (optionnel)</Label>
+                                      <Input
+                                        type="text"
+                                        placeholder="Ex. Lun-Ven 9h-17h, Sam matin"
+                                        value={entry?.visitSlots || ''}
+                                        onChange={(e) => updateListing(t.ref, { visitSlots: e.target.value || undefined }, { unitLabel: t.label })}
+                                        className="h-10 rounded-xl text-sm"
+                                      />
+                                    </div>
                                   </div>
                                 </div>
                               );
@@ -752,6 +1120,23 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
             });
             if (incomplete) {
               toast.error("Ajoutez au moins une image de couverture pour chaque local proposé à la location.");
+              return;
+            }
+            if (wouldSell === true) {
+              const sale = formData.saleListing || {};
+              const saleImgs = Array.isArray(sale.coverImageUrls) ? sale.coverImageUrls.filter(Boolean) : [];
+              if (saleImgs.length < 1) {
+                toast.error("Ajoutez au moins une photo de la parcelle pour l'annonce de vente.");
+                return;
+              }
+              if (!sale.paymentTerms || !sale.availability) {
+                toast.error("Renseignez les modalités de paiement et la disponibilité de la parcelle.");
+                return;
+              }
+            }
+            const tooLongDesc = (listings as any[]).find(l => (l?.description || '').length > 500);
+            if (tooLongDesc) {
+              toast.error("Une description de local dépasse 500 caractères.");
               return;
             }
             handleNextTab('market-value', 'review');
