@@ -213,7 +213,39 @@ export interface CadastralContributionData {
     targetRentUsd?: number;
     availableFrom?: string;
     coverImageUrls?: string[];
+    // Annonce location enrichie
+    coverImageMainUrl?: string;
+    rentCurrency?: 'USD' | 'CDF';
+    rentAmount?: number;
+    depositMonths?: number;
+    minLeaseMonths?: number;
+    leaseType?: 'meuble' | 'non_meuble' | 'court_sejour' | 'bureau';
+    chargesIncluded?: {
+      water?: boolean;
+      electricity?: boolean;
+      security?: boolean;
+      waste?: boolean;
+      internet?: boolean;
+    };
+    description?: string;
+    contactChannel?: 'whatsapp' | 'phone' | 'email';
+    contactValue?: string;
+    visitSlots?: string;
   }>;
+
+  // ─── Annonce de vente de la parcelle (si wouldSellIfOffered === true) ───
+  saleListing?: {
+    coverImageUrls?: string[];
+    coverImageMainUrl?: string;
+    priceNegotiable?: boolean;
+    paymentTerms?: 'cash' | 'installments' | 'both';
+    availability?: 'immediate' | 'conditional';
+    availabilityNote?: string;
+    description?: string;
+    contactChannel?: 'whatsapp' | 'phone' | 'email';
+    contactValue?: string;
+    visitSlots?: string;
+  };
 
   // Métadonnées
   whatsappNumber?: string;
