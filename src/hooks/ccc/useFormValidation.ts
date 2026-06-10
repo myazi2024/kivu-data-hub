@@ -404,6 +404,14 @@ export function useFormValidation(params: UseFormValidationParams) {
           if (imgs.length < 1) {
             missing.push({ field: `marketListingImages_${i}`, label: `Au moins une image de couverture est requise pour le local "${l.unitLabel || i + 1}"`, tab: 'market-value' });
           }
+          if ((l.description || '').length > 500) {
+            missing.push({ field: `marketListingDesc_${i}`, label: `Description du local "${l.unitLabel || i + 1}" : 500 caractères max`, tab: 'market-value' });
+          }
+          const hasAmt = l.rentAmount !== undefined && l.rentAmount !== null && l.rentAmount !== '';
+          const hasCur = !!l.rentCurrency;
+          if (hasAmt !== hasCur) {
+            missing.push({ field: `marketListingRentPair_${i}`, label: `Loyer du local "${l.unitLabel || i + 1}" : indiquez à la fois la devise et le montant`, tab: 'market-value' });
+          }
         }
       });
     }
