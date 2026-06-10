@@ -141,6 +141,7 @@ const buildVacantTargets = (
       rentalUnits.forEach((u, i) => {
         if (u?.isOccupied !== false) return;
         const floorLbl = u?.floor === 'RDC' ? 'RDC' : (u?.floor ? `${u.floor}e étage` : undefined);
+        const cy = Number(constructionYear) || Number(formData.constructionYear) || undefined;
         out.push({
           ref: `${base}:unit:${i}`,
           constructionRef: base,
@@ -154,8 +155,8 @@ const buildVacantTargets = (
           constructionNature: nature,
           constructionMaterials: materials,
           standing,
-          constructionYear,
-          soundEnvironment: sharedSound,
+          constructionYear: cy,
+          soundEnvironment: sharedSound || undefined,
         });
       });
     } else {
