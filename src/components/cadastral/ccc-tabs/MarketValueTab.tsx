@@ -1122,6 +1122,23 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
               toast.error("Ajoutez au moins une image de couverture pour chaque local proposé à la location.");
               return;
             }
+            if (wouldSell === true) {
+              const sale = formData.saleListing || {};
+              const saleImgs = Array.isArray(sale.coverImageUrls) ? sale.coverImageUrls.filter(Boolean) : [];
+              if (saleImgs.length < 1) {
+                toast.error("Ajoutez au moins une photo de la parcelle pour l'annonce de vente.");
+                return;
+              }
+              if (!sale.paymentTerms || !sale.availability) {
+                toast.error("Renseignez les modalités de paiement et la disponibilité de la parcelle.");
+                return;
+              }
+            }
+            const tooLongDesc = (listings as any[]).find(l => (l?.description || '').length > 500);
+            if (tooLongDesc) {
+              toast.error("Une description de local dépasse 500 caractères.");
+              return;
+            }
             handleNextTab('market-value', 'review');
           }}
         >
