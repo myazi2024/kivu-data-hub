@@ -438,6 +438,7 @@ export const useCadastralContribution = () => {
       market_listings: Array.isArray(data.marketListings) && data.marketListings.length > 0
         ? data.marketListings
         : [],
+      sale_listing: data.saleListing && data.wouldSellIfOffered === true ? data.saleListing : null,
     };
 
     if (data.permitRequest) {
