@@ -662,40 +662,108 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
 
                             {checked && (() => {
                               const images = Array.isArray(entry?.coverImageUrls) ? entry!.coverImageUrls!.filter(Boolean) : [];
+                              const mainUrl = entry?.coverImageMainUrl && images.includes(entry.coverImageMainUrl) ? entry.coverImageMainUrl : images[0];
                               const missingImages = highlightRequiredFields && images.length < 1;
                               const canAdd = images.length < 10;
+                              const charges = entry?.chargesIncluded || {};
+                              const rentCur = entry?.rentCurrency || 'USD';
+                              const desc = entry?.description || '';
+                              const tooLong = desc.length > 500;
                               return (
                                 <div className="space-y-3 pt-1 animate-fade-in">
-                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                    <div className="space-y-1">
-                                      <Label className="text-[11px] font-medium text-foreground">Loyer cible (USD/mois)</Label>
-                                      <Input
-                                        type="number"
-                                        inputMode="decimal"
-                                        min={0}
-                                        step="any"
-                                        placeholder="Optionnel"
-                                        value={entry?.targetRentUsd ?? ''}
-                                        onChange={(e) =>
-                                          updateListing(t.ref, {
-                                            targetRentUsd: e.target.value === '' ? undefined : Number(e.target.value),
-                                          }, { unitLabel: t.label })
-                                        }
-                                        className="h-10 rounded-xl text-sm"
-                                      />
+                                  {/* Loyer & caution */}
+                                  <div className="rounded-xl border border-border bg-background p-2.5 space-y-2">
+                                    <Label className="text-[11px] font-semibold text-foreground uppercase tracking-wide">Loyer & caution</Label>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                      <div className="space-y-1">
+                                        <Label className="text-[11px] font-medium text-foreground">Loyer mensuel souhaité</Label>
+                                        <div className="flex gap-2">
+                                          <Select value={rentCur} onValueChange={(v) => updateListing(t.ref, { rentCurrency: v as 'USD' | 'CDF' }, { unitLabel: t.label })}>
+                                            <SelectTrigger className="w-20 h-10 rounded-xl text-sm"><SelectValue /></SelectTrigger>
+                                            <SelectContent>
+                                              <SelectItem value="USD">USD</SelectItem>
+                                              <SelectItem value="CDF">CDF</SelectItem>
+                                            </SelectContent>
+                                          </Select>
+                                          <Input
+                                            type="number" inputMode="decimal" min={0} step="any" placeholder="Montant"
+                                            value={entry?.rentAmount ?? ''}
+                                            onChange={(e) => {
+                                              const n = e.target.value === '' ? undefined : Number(e.target.value);
+                                              const usd = n === undefined ? undefined : (rentCur === 'USD' ? n : n / cdfRate);
+                                              updateListing(t.ref, { rentAmount: n, targetRentUsd: usd }, { unitLabel: t.label });
+                                            }}
+                                            className="flex-1 h-10 rounded-xl text-sm"
+                                          />
+                                        </div>
+                                      </div>
+                                      <div className="space-y-1">
+                                        <Label className="text-[11px] font-medium text-foreground">Caution (mois de loyer)</Label>
+                                        <Input
+                                          type="number" inputMode="numeric" min={0} max={12} step="1" placeholder="Ex. 2"
+                                          value={entry?.depositMonths ?? ''}
+                                          onChange={(e) => updateListing(t.ref, { depositMonths: e.target.value === '' ? undefined : Number(e.target.value) }, { unitLabel: t.label })}
+                                          className="h-10 rounded-xl text-sm"
+                                        />
+                                      </div>
                                     </div>
-                                    <div className="space-y-1">
-                                      <Label className="text-[11px] font-medium text-foreground">Disponible à partir du</Label>
-                                      <Input
-                                        type="date"
-                                        value={entry?.availableFrom || ''}
-                                        onChange={(e) =>
-                                          updateListing(t.ref, {
-                                            availableFrom: e.target.value || undefined,
-                                          }, { unitLabel: t.label })
-                                        }
-                                        className="h-10 rounded-xl text-sm"
-                                      />
+                                  </div>
+
+                                  {/* Disponibilité & bail */}
+                                  <div className="rounded-xl border border-border bg-background p-2.5 space-y-2">
+                                    <Label className="text-[11px] font-semibold text-foreground uppercase tracking-wide">Disponibilité & type de bail</Label>
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                      <div className="space-y-1">
+                                        <Label className="text-[11px] font-medium text-foreground">Libre à partir du</Label>
+                                        <Input
+                                          type="date"
+                                          value={entry?.availableFrom || ''}
+                                          onChange={(e) => updateListing(t.ref, { availableFrom: e.target.value || undefined }, { unitLabel: t.label })}
+                                          className="h-10 rounded-xl text-sm"
+                                        />
+                                      </div>
+                                      <div className="space-y-1">
+                                        <Label className="text-[11px] font-medium text-foreground">Bail min. (mois)</Label>
+                                        <Input
+                                          type="number" inputMode="numeric" min={1} max={120} step="1" placeholder="Ex. 12"
+                                          value={entry?.minLeaseMonths ?? ''}
+                                          onChange={(e) => updateListing(t.ref, { minLeaseMonths: e.target.value === '' ? undefined : Number(e.target.value) }, { unitLabel: t.label })}
+                                          className="h-10 rounded-xl text-sm"
+                                        />
+                                      </div>
+                                      <div className="space-y-1">
+                                        <Label className="text-[11px] font-medium text-foreground">Type de location</Label>
+                                        <Select value={entry?.leaseType || ''} onValueChange={(v) => updateListing(t.ref, { leaseType: v as any }, { unitLabel: t.label })}>
+                                          <SelectTrigger className="h-10 rounded-xl text-sm"><SelectValue placeholder="Choisir…" /></SelectTrigger>
+                                          <SelectContent>
+                                            {Object.entries(LEASE_TYPE_LABELS).map(([k, l]) => (
+                                              <SelectItem key={k} value={k}>{l}</SelectItem>
+                                            ))}
+                                          </SelectContent>
+                                        </Select>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* Charges incluses */}
+                                  <div className="rounded-xl border border-border bg-background p-2.5 space-y-2">
+                                    <Label className="text-[11px] font-semibold text-foreground uppercase tracking-wide">Charges incluses dans le loyer</Label>
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                      {([
+                                        ['water', 'Eau'],
+                                        ['electricity', 'Électricité'],
+                                        ['internet', 'Internet'],
+                                        ['security', 'Gardiennage'],
+                                        ['waste', 'Ordures'],
+                                      ] as const).map(([key, label]) => (
+                                        <label key={key} className="flex items-center gap-2 rounded-lg border border-border bg-background px-2 py-1.5 text-xs cursor-pointer">
+                                          <Checkbox
+                                            checked={!!(charges as any)[key]}
+                                            onCheckedChange={(v) => updateListing(t.ref, { chargesIncluded: { ...charges, [key]: !!v } }, { unitLabel: t.label })}
+                                          />
+                                          <span>{label}</span>
+                                        </label>
+                                      ))}
                                     </div>
                                   </div>
 
@@ -713,27 +781,40 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
                                       <span className="text-[10px] text-muted-foreground">{images.length}/10</span>
                                     </div>
                                     <p className="text-[10px] text-muted-foreground">
-                                      Jusqu'à 10 photos de l'intérieur du local · JPG, PNG ou WebP · 5 Mo max chacune · au moins 1 obligatoire.
+                                      Jusqu'à 10 photos · JPG/PNG/WebP · 5 Mo max · au moins 1 obligatoire. Cliquez sur ⭐ pour marquer la photo principale.
                                     </p>
 
                                     {images.length > 0 && (
                                       <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                                        {images.map((url, imgIdx) => (
-                                          <div key={`${url}-${imgIdx}`} className="relative group aspect-square rounded-lg overflow-hidden border border-border bg-muted">
-                                            <img src={url} alt={`Local ${t.label} - photo ${imgIdx + 1}`} className="w-full h-full object-cover" />
-                                            <button
-                                              type="button"
-                                              aria-label="Supprimer cette image"
-                                              onClick={() => {
-                                                const next = images.filter((_, i) => i !== imgIdx);
-                                                updateListing(t.ref, { coverImageUrls: next }, { unitLabel: t.label });
-                                              }}
-                                              className="absolute top-1 right-1 h-6 w-6 inline-flex items-center justify-center rounded-full bg-destructive text-destructive-foreground opacity-90 hover:opacity-100 shadow"
-                                            >
-                                              <X className="h-3.5 w-3.5" />
-                                            </button>
-                                          </div>
-                                        ))}
+                                        {images.map((url, imgIdx) => {
+                                          const isMain = url === mainUrl;
+                                          return (
+                                            <div key={`${url}-${imgIdx}`} className={cn("relative group aspect-square rounded-lg overflow-hidden border bg-muted", isMain ? "border-primary ring-2 ring-primary" : "border-border")}>
+                                              <img src={url} alt={`Local ${t.label} - photo ${imgIdx + 1}`} className="w-full h-full object-cover" />
+                                              <button
+                                                type="button"
+                                                aria-label={isMain ? "Photo principale" : "Définir comme photo principale"}
+                                                onClick={() => updateListing(t.ref, { coverImageMainUrl: url }, { unitLabel: t.label })}
+                                                className={cn("absolute top-1 left-1 h-6 px-1.5 inline-flex items-center justify-center rounded-full text-[10px] font-medium shadow", isMain ? "bg-primary text-primary-foreground" : "bg-background/90 text-foreground hover:bg-primary/20")}
+                                              >
+                                                {isMain ? '⭐ Principale' : '⭐'}
+                                              </button>
+                                              <button
+                                                type="button"
+                                                aria-label="Supprimer cette image"
+                                                onClick={() => {
+                                                  const next = images.filter((_, i) => i !== imgIdx);
+                                                  const patch: Partial<MarketListingEntry> = { coverImageUrls: next };
+                                                  if (isMain) patch.coverImageMainUrl = next[0];
+                                                  updateListing(t.ref, patch, { unitLabel: t.label });
+                                                }}
+                                                className="absolute top-1 right-1 h-6 w-6 inline-flex items-center justify-center rounded-full bg-destructive text-destructive-foreground opacity-90 hover:opacity-100 shadow"
+                                              >
+                                                <X className="h-3.5 w-3.5" />
+                                              </button>
+                                            </div>
+                                          );
+                                        })}
                                       </div>
                                     )}
 
@@ -745,7 +826,9 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
                                         onChange={(url) => {
                                           if (!url) return;
                                           const next = [...images, url];
-                                          updateListing(t.ref, { coverImageUrls: next }, { unitLabel: t.label });
+                                          const patch: Partial<MarketListingEntry> = { coverImageUrls: next };
+                                          if (!mainUrl) patch.coverImageMainUrl = url;
+                                          updateListing(t.ref, patch, { unitLabel: t.label });
                                         }}
                                         accept="image/jpeg,image/png,image/webp"
                                         isPublic={true}
@@ -760,6 +843,56 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
                                     {missingImages && (
                                       <p className="text-[11px] text-destructive">Au moins une image de couverture est requise.</p>
                                     )}
+                                  </div>
+
+                                  {/* Description & contact */}
+                                  <div className="rounded-xl border border-border bg-background p-2.5 space-y-2">
+                                    <Label className="text-[11px] font-semibold text-foreground uppercase tracking-wide">Description & contact</Label>
+                                    <div className="space-y-1">
+                                      <Label className="text-[11px] font-medium text-foreground">Description de l'annonce (500 caractères max)</Label>
+                                      <Textarea
+                                        rows={3}
+                                        maxLength={500}
+                                        placeholder="Décrivez les atouts du local : lumière, vue, voisinage, équipements, accès…"
+                                        value={desc}
+                                        onChange={(e) => updateListing(t.ref, { description: e.target.value }, { unitLabel: t.label })}
+                                        className={cn("rounded-xl text-sm", tooLong && "ring-2 ring-destructive border-destructive")}
+                                      />
+                                      <p className="text-[10px] text-muted-foreground text-right">{desc.length}/500</p>
+                                    </div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                      <div className="space-y-1">
+                                        <Label className="text-[11px] font-medium text-foreground">Canal de contact préféré</Label>
+                                        <Select value={entry?.contactChannel || ''} onValueChange={(v) => updateListing(t.ref, { contactChannel: v as any }, { unitLabel: t.label })}>
+                                          <SelectTrigger className="h-10 rounded-xl text-sm"><SelectValue placeholder="Choisir…" /></SelectTrigger>
+                                          <SelectContent>
+                                            {Object.entries(CONTACT_LABELS).map(([k, l]) => (
+                                              <SelectItem key={k} value={k}>{l}</SelectItem>
+                                            ))}
+                                          </SelectContent>
+                                        </Select>
+                                      </div>
+                                      <div className="space-y-1">
+                                        <Label className="text-[11px] font-medium text-foreground">Coordonnée ({CONTACT_LABELS[entry?.contactChannel || 'phone'] || 'contact'})</Label>
+                                        <Input
+                                          type="text"
+                                          placeholder={entry?.contactChannel === 'email' ? 'email@exemple.com' : '+243 …'}
+                                          value={entry?.contactValue || ''}
+                                          onChange={(e) => updateListing(t.ref, { contactValue: e.target.value || undefined }, { unitLabel: t.label })}
+                                          className="h-10 rounded-xl text-sm"
+                                        />
+                                      </div>
+                                    </div>
+                                    <div className="space-y-1">
+                                      <Label className="text-[11px] font-medium text-foreground">Créneaux de visite (optionnel)</Label>
+                                      <Input
+                                        type="text"
+                                        placeholder="Ex. Lun-Ven 9h-17h, Sam matin"
+                                        value={entry?.visitSlots || ''}
+                                        onChange={(e) => updateListing(t.ref, { visitSlots: e.target.value || undefined }, { unitLabel: t.label })}
+                                        className="h-10 rounded-xl text-sm"
+                                      />
+                                    </div>
                                   </div>
                                 </div>
                               );
