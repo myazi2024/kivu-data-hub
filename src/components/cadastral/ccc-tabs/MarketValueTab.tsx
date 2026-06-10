@@ -30,7 +30,37 @@ export interface MarketListingEntry {
   targetRentUsd?: number;
   availableFrom?: string;
   coverImageUrls?: string[];
+  coverImageMainUrl?: string;
+  rentCurrency?: 'USD' | 'CDF';
+  rentAmount?: number;
+  depositMonths?: number;
+  minLeaseMonths?: number;
+  leaseType?: 'meuble' | 'non_meuble' | 'court_sejour' | 'bureau';
+  chargesIncluded?: {
+    water?: boolean;
+    electricity?: boolean;
+    security?: boolean;
+    waste?: boolean;
+    internet?: boolean;
+  };
+  description?: string;
+  contactChannel?: 'whatsapp' | 'phone' | 'email';
+  contactValue?: string;
+  visitSlots?: string;
 }
+
+const LEASE_TYPE_LABELS: Record<string, string> = {
+  meuble: 'Meublé',
+  non_meuble: 'Non meublé',
+  court_sejour: 'Court séjour',
+  bureau: 'Bureau / professionnel',
+};
+
+const CONTACT_LABELS: Record<string, string> = {
+  whatsapp: 'WhatsApp',
+  phone: 'Téléphone',
+  email: 'Email',
+};
 
 
 interface MarketValueTabProps {
