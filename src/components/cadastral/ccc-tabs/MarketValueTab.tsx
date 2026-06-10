@@ -436,6 +436,196 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
                 {resaleAmount && resaleAmount > 0 && (
                   <p className="text-xs text-muted-foreground">{equivalent(resaleAmount, resaleCurrency)}</p>
                 )}
+
+                {/* ─── Annonce de vente ─── */}
+                {(() => {
+                  const sale = formData.saleListing || {};
+                  const saleImages = Array.isArray(sale.coverImageUrls) ? sale.coverImageUrls.filter(Boolean) : [];
+                  const saleMain = sale.coverImageMainUrl && saleImages.includes(sale.coverImageMainUrl) ? sale.coverImageMainUrl : saleImages[0];
+                  const missingSaleImages = highlightRequiredFields && saleImages.length < 1;
+                  const canAddSale = saleImages.length < 10;
+                  const saleDesc = sale.description || '';
+                  const saleTooLong = saleDesc.length > 500;
+                  const updateSale = (patch: Partial<NonNullable<CadastralContributionData['saleListing']>>) => {
+                    handleInputChange('saleListing', { ...sale, ...patch });
+                  };
+                  return (
+                    <div className="space-y-3 pt-2 mt-2 border-t border-border animate-fade-in">
+                      <Label className="text-[11px] font-semibold text-foreground uppercase tracking-wide flex items-center gap-1.5">
+                        <Home className="h-3.5 w-3.5 text-primary" /> Détails de l'annonce de vente
+                      </Label>
+
+                      {/* Images parcelle */}
+                      <div className={cn(
+                        "space-y-2 rounded-xl border p-2.5",
+                        missingSaleImages ? "border-destructive ring-1 ring-destructive/30 bg-destructive/5" : "border-border bg-background",
+                      )}>
+                        <div className="flex items-center justify-between gap-2">
+                          <Label className="text-[11px] font-medium text-foreground flex items-center gap-1.5">
+                            <ImagePlus className="h-3.5 w-3.5 text-primary" />
+                            Photos de la parcelle <span className="text-destructive">*</span>
+                          </Label>
+                          <span className="text-[10px] text-muted-foreground">{saleImages.length}/10</span>
+                        </div>
+                        <p className="text-[10px] text-muted-foreground">
+                          1 à 10 photos · JPG/PNG/WebP · 5 Mo max · au moins 1 obligatoire. Cliquez sur ⭐ pour la photo principale.
+                        </p>
+                        {saleImages.length > 0 && (
+                          <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                            {saleImages.map((url, i) => {
+                              const isMain = url === saleMain;
+                              return (
+                                <div key={`${url}-${i}`} className={cn("relative group aspect-square rounded-lg overflow-hidden border bg-muted", isMain ? "border-primary ring-2 ring-primary" : "border-border")}>
+                                  <img src={url} alt={`Parcelle - photo ${i + 1}`} className="w-full h-full object-cover" />
+                                  <button type="button" onClick={() => updateSale({ coverImageMainUrl: url })} className={cn("absolute top-1 left-1 h-6 px-1.5 inline-flex items-center justify-center rounded-full text-[10px] font-medium shadow", isMain ? "bg-primary text-primary-foreground" : "bg-background/90 text-foreground hover:bg-primary/20")}>
+                                    {isMain ? '⭐ Principale' : '⭐'}
+                                  </button>
+                                  <button type="button" aria-label="Supprimer" onClick={() => {
+                                    const next = saleImages.filter((_, k) => k !== i);
+                                    const patch: any = { coverImageUrls: next };
+                                    if (isMain) patch.coverImageMainUrl = next[0];
+                                    updateSale(patch);
+                                  }} className="absolute top-1 right-1 h-6 w-6 inline-flex items-center justify-center rounded-full bg-destructive text-destructive-foreground opacity-90 hover:opacity-100 shadow">
+                                    <X className="h-3.5 w-3.5" />
+                                  </button>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                        {canAddSale ? (
+                          <StorageFileUpload
+                            key={`upl-sale-${saleImages.length}`}
+                            bucket="cadastral-documents"
+                            value={null}
+                            onChange={(url) => {
+                              if (!url) return;
+                              const next = [...saleImages, url];
+                              const patch: any = { coverImageUrls: next };
+                              if (!saleMain) patch.coverImageMainUrl = url;
+                              updateSale(patch);
+                            }}
+                            accept="image/jpeg,image/png,image/webp"
+                            isPublic={true}
+                            label="Ajouter une image"
+                            maxSizeMB={5}
+                            pathPrefix="sale-listings"
+                          />
+                        ) : (
+                          <p className="text-[10px] text-muted-foreground italic">Maximum 10 images atteint.</p>
+                        )}
+                        {missingSaleImages && (
+                          <p className="text-[11px] text-destructive">Au moins une image de la parcelle est requise.</p>
+                        )}
+                      </div>
+
+                      {/* Modalités de prix */}
+                      <div className="rounded-xl border border-border bg-background p-2.5 space-y-2">
+                        <Label className="text-[11px] font-semibold text-foreground uppercase tracking-wide">Modalités de prix</Label>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          <div className="space-y-1">
+                            <Label className="text-[11px] font-medium text-foreground">Prix</Label>
+                            <Select value={sale.priceNegotiable === undefined ? '' : (sale.priceNegotiable ? 'negotiable' : 'firm')} onValueChange={(v) => updateSale({ priceNegotiable: v === 'negotiable' })}>
+                              <SelectTrigger className="h-10 rounded-xl text-sm"><SelectValue placeholder="Ferme / Négociable" /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="firm">Prix ferme</SelectItem>
+                                <SelectItem value="negotiable">Négociable</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-[11px] font-medium text-foreground">Modalités de paiement <span className="text-destructive">*</span></Label>
+                            <Select value={sale.paymentTerms || ''} onValueChange={(v) => updateSale({ paymentTerms: v as any })}>
+                              <SelectTrigger className="h-10 rounded-xl text-sm"><SelectValue placeholder="Choisir…" /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="cash">Cash</SelectItem>
+                                <SelectItem value="installments">Échelonné</SelectItem>
+                                <SelectItem value="both">Cash ou échelonné</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Disponibilité */}
+                      <div className="rounded-xl border border-border bg-background p-2.5 space-y-2">
+                        <Label className="text-[11px] font-semibold text-foreground uppercase tracking-wide">Disponibilité</Label>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          <div className="space-y-1">
+                            <Label className="text-[11px] font-medium text-foreground">Disponible <span className="text-destructive">*</span></Label>
+                            <Select value={sale.availability || ''} onValueChange={(v) => updateSale({ availability: v as any })}>
+                              <SelectTrigger className="h-10 rounded-xl text-sm"><SelectValue placeholder="Choisir…" /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="immediate">Immédiatement</SelectItem>
+                                <SelectItem value="conditional">Sous conditions</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          {sale.availability === 'conditional' && (
+                            <div className="space-y-1">
+                              <Label className="text-[11px] font-medium text-foreground">Précisions</Label>
+                              <Input
+                                type="text" placeholder="Ex. après récolte 2026"
+                                value={sale.availabilityNote || ''}
+                                onChange={(e) => updateSale({ availabilityNote: e.target.value || undefined })}
+                                className="h-10 rounded-xl text-sm"
+                              />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Description & contact */}
+                      <div className="rounded-xl border border-border bg-background p-2.5 space-y-2">
+                        <Label className="text-[11px] font-semibold text-foreground uppercase tracking-wide">Description & contact</Label>
+                        <div className="space-y-1">
+                          <Label className="text-[11px] font-medium text-foreground">Description (500 caractères max)</Label>
+                          <Textarea
+                            rows={3} maxLength={500}
+                            placeholder="Atouts de la parcelle : accès, voisinage, projets autour, raison de la vente…"
+                            value={saleDesc}
+                            onChange={(e) => updateSale({ description: e.target.value })}
+                            className={cn("rounded-xl text-sm", saleTooLong && "ring-2 ring-destructive border-destructive")}
+                          />
+                          <p className="text-[10px] text-muted-foreground text-right">{saleDesc.length}/500</p>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          <div className="space-y-1">
+                            <Label className="text-[11px] font-medium text-foreground">Canal de contact préféré</Label>
+                            <Select value={sale.contactChannel || ''} onValueChange={(v) => updateSale({ contactChannel: v as any })}>
+                              <SelectTrigger className="h-10 rounded-xl text-sm"><SelectValue placeholder="Choisir…" /></SelectTrigger>
+                              <SelectContent>
+                                {Object.entries(CONTACT_LABELS).map(([k, l]) => (
+                                  <SelectItem key={k} value={k}>{l}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-[11px] font-medium text-foreground">Coordonnée</Label>
+                            <Input
+                              type="text"
+                              placeholder={sale.contactChannel === 'email' ? 'email@exemple.com' : '+243 …'}
+                              value={sale.contactValue || ''}
+                              onChange={(e) => updateSale({ contactValue: e.target.value || undefined })}
+                              className="h-10 rounded-xl text-sm"
+                            />
+                          </div>
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-[11px] font-medium text-foreground">Créneaux de visite (optionnel)</Label>
+                          <Input
+                            type="text"
+                            placeholder="Ex. Lun-Ven 9h-17h, Sam matin"
+                            value={sale.visitSlots || ''}
+                            onChange={(e) => updateSale({ visitSlots: e.target.value || undefined })}
+                            className="h-10 rounded-xl text-sm"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             )}
           </div>
