@@ -1,6 +1,7 @@
 // Edge function: proxify Mapbox tile requests so the access token never leaves the server.
 // Usage from client: GET /functions/v1/proxy-mapbox-tiles/{styleId}/{z}/{x}/{y}{@2x}.{ext}
 // Example: /functions/v1/proxy-mapbox-tiles/mapbox/streets-v12/3/4/2.png
+import { enforceRateLimit, rateLimitResponse } from '../_shared/rateLimit.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -12,6 +13,9 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
+
+  const rl = await enforceRateLimit(req, 'mapbox.tile');
+  if (!rl.allowed) return rateLimitResponse(rl, corsHeaders);
 
   const token = Deno.env.get('MAPBOX_ACCESS_TOKEN');
   if (!token) {
