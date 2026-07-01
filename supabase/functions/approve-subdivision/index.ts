@@ -25,6 +25,10 @@ interface ApproveBody {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
+  const { enforceRateLimit, rateLimitResponse } = await import("../_shared/rateLimit.ts");
+  const rl = await enforceRateLimit(req, "subdivision.approve");
+  if (!rl.allowed) return rateLimitResponse(rl, corsHeaders);
+
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
