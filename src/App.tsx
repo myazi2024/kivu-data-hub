@@ -22,6 +22,9 @@ import React, { Suspense } from "react";
 import { Loader2 } from "lucide-react";
 import { lazyWithRetry } from "@/lib/lazyWithRetry";
 import { useAppAppearance } from "@/hooks/useAppAppearance";
+import { installRateLimitInterceptor } from "@/lib/rateLimitInterceptor";
+
+installRateLimitInterceptor();
 import { Navigate } from "react-router-dom";
 import useScrollToTop from "@/hooks/useScrollToTop";
 import ScrollToTopButton from "@/components/ScrollToTopButton";
