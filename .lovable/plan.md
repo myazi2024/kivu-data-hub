@@ -1,124 +1,75 @@
 
-# Rate limiting anti-abus — plan complet
-
 ## Objectif
 
-Bloquer les scripts qui frappent l'API en boucle (paiements, tuiles Mapbox, exports, RPC admin, écritures publiques), plafonner le coût VPS/Mapbox, préserver l'expérience des utilisateurs légitimes, notifier les admins en cas d'abus répété.
+Auditer le formulaire de contribution CCC (menu Carte cadastrale) sur les 4 axes retenus — UX mobile, dépendances inter-onglets, validation/anti-fraude, robustesse technique — puis appliquer directement les correctifs des bugs critiques détectés. Aucune refonte fonctionnelle ni changement produit.
 
-## Décisions retenues
+## Périmètre audité
 
-- **Périmètre** : complet — edge functions + RPC coûteuses + écritures publiques + garde-fou client.
-- **Quotas** : valeurs "équilibrées" (voir tableau plus bas), stockées dans une table `rate_limit_config` modifiable via l'admin, donc ajustables sans redéploiement.
-- **Blocage** : ban temporaire 15 min après 5 refus 429 sur 10 min + insertion dans `fraud_attempts` + notification aux admins.
-- **Identification anon** : hash SHA-256 de `IP + user-agent` (moins de faux positifs sur NAT/mobile) ; les endpoints les plus sensibles (paiements, exports) exigent en plus une session authentifiée.
+- `CadastralContributionDialog.tsx` (orchestrateur, 264 l.)
+- `useCCCFormState.ts` (1452 l.) et sous-hooks `ccc/useFormValidation.ts`, `useFormPersistence.ts`, `useConstructionCascade.ts`, `useGeographicCascade.ts`
+- 6 onglets : `GeneralTab`, `LocationTab`, `HistoryTab`, `ObligationsTab`, `MarketValueTab`, `ReviewTab`
+- Composants dépendants : `RentalConfigurationFields`, `AdditionalConstructionBlock`, `InputWithPopover`
+- Hook de soumission `useCadastralContribution.tsx` (860 l.)
 
-## Architecture
+## Zones à haut risque déjà repérées (à confirmer par lecture ciblée)
 
-```text
-┌─────────────┐    ┌──────────────────────┐    ┌─────────────────────┐
-│  Client     │───▶│ Edge function        │───▶│ RPC check_rate_limit│
-│  (React)    │    │ (create-payment, …)  │    │  atomique           │
-└─────────────┘    └──────────────────────┘    └─────────────────────┘
-      │                     │                             │
-      │ 429 + retry_after   │ 429 JSON                    │ table buckets
-      ▼                     ▼                             │ table bans
-  toast + backoff        early return                     │ fraud_attempts
-                                                          ▼
-                                                   notify admins
-```
+1. **Gating séquentiel des onglets** — `isTabAccessible` itère toute la liste des champs manquants pour chaque onglet précédent. Un seul champ manquant dans « Passé » verrouille totalement `market-value` et `review`, sans indicateur clair de la cause.
+2. **`handleTabChange` non mémoïsé** — provoque la recréation de `handleNextTab` à chaque render et re-renders en cascade des 6 onglets (perf mobile).
+3. **Devise et prix `resalePriceUsd`** — champ persisté distinct de `resalePriceAmount`/`resalePriceCurrency`. Risque de désynchro si l'utilisateur change de devise après saisie (valeur stockée obsolète).
+4. **Config locative multi-locaux vs capacité globale** — `hostingCapacity` global peut rester renseigné après passage en `multi`, doublons de calcul dans `ObligationsTab` (IRL).
+5. **Validation IRL** — la référence `additional:<idx>` reste attachée après suppression d'une construction additionnelle (IRL orphelin non nettoyé côté state).
+6. **`MarketValueTab.buildVacantTargets`** — héritage `constructionYear` typé string vs number selon la source (`additionalConstructions` vs `formData`).
+7. **Uploads** — `market-listings` et `appraisal-reports` : pas de rollback si soumission échoue (fichiers orphelins dans le bucket).
+8. **Validation "next tab"** — le clic « Suivant » utilise `getMissingFieldsForTab(current)` mais l'utilisateur peut naviguer manuellement dans le `TabsTrigger` sans passer par la validation ; `isTabAccessible` doit gérer proprement les états intermédiaires.
+9. **`InputWithPopover triggerImmediately`** — vérifier qu'il ne se déclenche pas sur re-render et n'accroche pas le focus mobile.
+10. **Rate-limit récemment posé** — vérifier que les uploads d'images (Storage) ne saturent pas les quotas anonymes (formulaire pré-auth possible via QuickAuth).
 
-## Composants
+## Livraison en 3 phases
 
-### 1. Base de données (migration)
+### Phase 1 — Audit approfondi (lecture, aucune modif)
 
-- `rate_limit_config(action_key text pk, window_seconds int, max_requests int, ban_after_violations int, ban_seconds int, enabled bool)` — quotas modifiables.
-- `rate_limit_buckets(key text, action_key text, window_start timestamptz, count int, pk(key, action_key, window_start))` — compteurs par fenêtre glissante.
-- `rate_limit_bans(key text, action_key text, banned_until timestamptz, violation_count int, reason text)` — bans actifs.
-- Fonction `public.check_and_consume_rate_limit(_key text, _action text) returns jsonb` (SECURITY DEFINER, `search_path = public`) : atomique, renvoie `{allowed, remaining, retry_after_seconds, banned}`, insère dans `fraud_attempts` + `notifications` (admins via `has_role`) au 5ᵉ 429.
-- Fonction `cleanup_rate_limits()` appelée par `cleanup_expired_data()`.
-- GRANT EXECUTE aux rôles `authenticated`, `anon`, `service_role`.
-- Seed `rate_limit_config` avec les valeurs ci-dessous.
+Lecture ciblée (≈ 15 fichiers) pour lister les défauts par sévérité :
+- **Critique** : crash, blocage utilisateur, perte de données, faille validation.
+- **Important** : incohérence UX, dépendance manquante, perf perceptible.
+- **Mineur** : libellés, harmonisation.
 
-### 2. Helper partagé edge functions
+Rendu : liste priorisée en chat avant toute modification.
 
-`supabase/functions/_shared/rateLimit.ts` :
+### Phase 2 — Correctifs critiques (build)
 
-- Extrait `user_id` du JWT si présent, sinon calcule `hash(ip + ua)` (SHA-256).
-- Appelle la RPC via service role.
-- Si `allowed=false` → renvoie `429` avec `Retry-After` et JSON `{ error: "rate_limited", message: "Trop de requêtes, veuillez réessayer plus tard.", retry_after_seconds }`.
-- Export : `withRateLimit(req, actionKey, handler)`.
+Application immédiate des correctifs **Critique** uniquement, sans toucher au produit :
+- Mémoïsation `handleTabChange` (élimine re-renders des 6 onglets).
+- Nettoyage IRL orphelins lors de la suppression d'une construction additionnelle.
+- Reset `hostingCapacity`/`isOccupied` globaux lors du passage en `rentalConfiguration='multi'` (et inversement).
+- Normalisation numérique de `constructionYear` dans `buildVacantTargets`.
+- Recalcul systématique de `resalePriceUsd` quand devise ou montant change.
+- Rollback des uploads Storage si la soumission finale échoue (réutiliser le tracker existant de `useFormPersistence`).
+- Guard `isTabAccessible` : signal explicite (toast) quand l'utilisateur tente d'ouvrir un onglet verrouillé, avec renvoi vers le premier onglet incomplet.
 
-### 3. Edge functions instrumentées
+### Phase 3 — Recommandations (chat, sans code)
 
-`create-payment`, `process-mobile-money-payment`, `test-payment-provider`, `update-payment-status`, `stripe-webhook` (exclu — signature Stripe), `send-invoice-reminder`, `track-publication-download`, `proxy-mapbox-tiles`, `health-check`, `health-snapshot`, `cleanup-test-data-batch`, `approve-subdivision`, `process-refund`, `system-alerts-check`.
+Points **Important/Mineur** listés pour arbitrage ultérieur (modularisation `GeneralTab` 1427 l. et `MarketValueTab` 1152 l., extraction de sous-composants, alignement libellés, télémétrie manquante).
 
-### 4. RPC critiques (garde côté SQL)
+## Contraintes respectées
 
-Wrapper interne : les RPC coûteuses (`get_admin_pending_counts`, `export_user_data`, `mark_cadastral_invoice_paid_safe`, `process_mutation_decision`, `take_charge_mutation_request`, `escalate_mutation_request`, RPC expertise/subdivision) appellent `check_and_consume_rate_limit(auth.uid()::text, '<action>')` en premier et lèvent une exception si refusé — l'erreur PostgREST est mappée en toast 429.
+- Aucun changement de schéma DB, RLS, ni logique métier serveur.
+- Aucune modification du produit (pas de nouveaux champs, pas de renommage utilisateur).
+- Aucune modif des edge functions ni du système de rate-limiting.
+- Semantic tokens Tailwind, ESM only, cohérent avec les règles mémoire (`Autorisation`, `crypto.randomUUID`, statuts EN).
 
-### 5. Client React
+## Détails techniques (Phase 2)
 
-- `src/lib/rateLimitClient.ts` : détecteur 429 (edge + PostgREST error code `P0429`), toast standardisé « Trop de requêtes, veuillez réessayer plus tard » + compte à rebours `retry_after`, backoff exponentiel borné (max 3 retries) réservé aux GET idempotents.
-- Intégration dans `useCadastralServices`, hooks paiement/mutation/expertise et fetch tuiles Mapbox.
-- Debounce/guard bouton "Approuver/Payer" — désactivé pendant la fenêtre de retry.
-
-## Quotas seed (`rate_limit_config`)
-
-| action_key | fenêtre | max | ban après | durée ban |
-|---|---|---|---|---|
-| payment.create | 60 s | 5 | 5 violations / 10 min | 15 min |
-| payment.mobile_money | 60 s | 5 | 5 | 15 min |
-| payment.mark_paid | 60 s | 10 | 5 | 15 min |
-| admin.pending_counts | 60 s | 30 | 10 | 10 min |
-| admin.export_pii | 300 s | 3 | 3 | 60 min |
-| mutation.decision | 60 s | 10 | 5 | 15 min |
-| expertise.decision | 60 s | 10 | 5 | 15 min |
-| subdivision.approve | 60 s | 5 | 5 | 15 min |
-| ccc.submit | 60 s | 3 | 5 | 30 min |
-| dispute.submit | 60 s | 3 | 5 | 30 min |
-| mapbox.tile | 60 s | 300 | 3 | 30 min |
-| public.verify_document | 60 s | 20 | 5 | 15 min |
-| public.health | 60 s | 60 | — | — |
-| anon.default | 60 s | 100 | 5 | 15 min |
-| auth.default | 60 s | 300 | 10 | 15 min |
-
-Modifiables depuis un nouvel écran admin (hors périmètre initial — table éditable via SQL suffit pour v1).
-
-## Réponse HTTP standardisée
-
-```json
-HTTP/1.1 429 Too Many Requests
-Retry-After: 42
-Content-Type: application/json
-{
-  "error": "rate_limited",
-  "message": "Trop de requêtes, veuillez réessayer plus tard.",
-  "retry_after_seconds": 42,
-  "banned": false
-}
-```
-
-## Détection & alerte
-
-- 5 refus 429 dans 10 min sur la même clé → insertion dans `fraud_attempts (attempt_type='rate_limit_ban', identifier=key, metadata={action, count})` et notification aux `super_admin` via `notifications` (title « Attaque potentielle détectée »).
-- Purge quotidienne via `cleanup_expired_data()`.
+- `useCCCFormState.ts` : `handleTabChange = useCallback(...)` ; dépendances de `handleNextTab` mises à jour.
+- Suppression construction : callback `removeAdditionalConstruction` purge `taxRecords` dont `constructionRef === 'additional:<idx>'` et réindexe les refs `additional:<n>` pour n > idx.
+- `RentalConfigurationFields`/`AdditionalConstructionBlock` : dans le patch `selectMode('multi')`, ajouter `isOccupied: undefined, hostingCapacity: undefined, occupantCount: undefined` sur le parent.
+- `MarketValueTab.buildVacantTargets` : `Number(construction.constructionYear) || undefined` avant assignation.
+- `useCadastralContribution` : lors de l'assignation `resalePriceUsd`, calcul déterministe via `useCurrencyConfig().toUsd(amount, currency)`; recalculé côté `MarketValueTab` sur `onChange` des deux champs.
+- `useFormPersistence.rollbackUploadedFiles` : appelé dans le `catch` de `handleSubmit` (déjà exposé, à câbler si manquant).
+- `handleAttemptClose` : toast informatif si des uploads sont trackés et non soumis.
 
 ## Hors périmètre
 
-- WAF / Cloudflare / captcha.
-- Ban IP permanent (le VPS n'a pas de firewall applicatif intégré ici).
-- UI admin dédiée pour éditer `rate_limit_config` (v2 si besoin).
-
-## Livrables
-
-1. 1 migration Supabase (tables + RPC + seed + GRANTs + politique RLS lecture admin-only).
-2. `supabase/functions/_shared/rateLimit.ts` + patch des ~13 edge functions listées.
-3. Wrapper SQL sur ~8 RPC critiques.
-4. `src/lib/rateLimitClient.ts` + intégration dans supabase client et hooks concernés.
-5. Mémoire `mem://security/rate-limiting-fr` documentant le mécanisme, les quotas et la procédure d'ajustement.
-
-## Validation
-
-- Script Playwright dans `/tmp/browser/` : boucle 20 appels rapides sur `create-payment` puis vérifie 429 + toast.
-- Requête SQL de contrôle : `SELECT * FROM rate_limit_bans WHERE banned_until > now()`.
-- Vérifier qu'une utilisation normale (formulaire CCC, navigation carte) ne déclenche jamais 429.
+- Refonte de la navigation par onglets.
+- Nouveaux indicateurs métier.
+- Modification de la table `cadastral_contributions`.
+- Optimisation SEO/PDF.
