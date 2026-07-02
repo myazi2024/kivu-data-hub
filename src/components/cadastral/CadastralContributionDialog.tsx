@@ -124,6 +124,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                   availableStandings={state.availableStandings}
                   constructionMode={state.constructionMode} setConstructionMode={state.setConstructionMode}
                   additionalConstructions={state.additionalConstructions} setAdditionalConstructions={state.setAdditionalConstructions}
+                  removeAdditionalConstruction={state.removeAdditionalConstruction}
                   permitMode={state.permitMode} setPermitMode={state.setPermitMode}
                   buildingPermits={state.buildingPermits} updateBuildingPermit={state.updateBuildingPermit}
                   updateBuildingPermitFile={state.updateBuildingPermitFile} removeBuildingPermitFile={state.removeBuildingPermitFile}
