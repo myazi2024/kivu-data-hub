@@ -365,6 +365,7 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
         setConstructionMode={setConstructionMode}
         additionalConstructions={additionalConstructions}
         setAdditionalConstructions={setAdditionalConstructions}
+        removeAdditionalConstruction={removeAdditionalConstruction}
         permitMode={permitMode}
         setPermitMode={setPermitMode}
         buildingPermits={buildingPermits}
@@ -883,6 +884,7 @@ interface ConstructionSectionProps {
   setConstructionMode: (v: 'unique' | 'multiple') => void;
   additionalConstructions: AdditionalConstruction[];
   setAdditionalConstructions: React.Dispatch<React.SetStateAction<AdditionalConstruction[]>>;
+  removeAdditionalConstruction?: (index: number) => void;
   permitMode: 'existing' | 'request';
   setPermitMode: (v: 'existing' | 'request') => void;
   buildingPermits: BuildingPermit[];
@@ -905,7 +907,7 @@ const ConstructionSection: React.FC<ConstructionSectionProps> = ({
   availableConstructionTypes, availableConstructionNatures, availableConstructionMaterials,
   availableDeclaredUsages, availableStandings,
   constructionMode, setConstructionMode,
-  additionalConstructions, setAdditionalConstructions,
+  additionalConstructions, setAdditionalConstructions, removeAdditionalConstruction,
   permitMode, setPermitMode, buildingPermits,
   updateBuildingPermit, updateBuildingPermitFile, removeBuildingPermitFile,
   getPermitTypeRestrictions, showPermitWarning, highlightIncompletePermit,
