@@ -191,12 +191,60 @@ export const useCCCFormState = ({
     setFormData(prev => ({ ...prev, [field]: value }));
   }, []);
 
-  const handleTabChange = (tab: string) => {
+  const handleTabChange = useCallback((tab: string) => {
     setActiveTab(tab);
     if (dialogContentRef.current) {
       dialogContentRef.current.scrollTop = 0;
     }
-  };
+  }, [dialogContentRef]);
+
+  /**
+   * Removes an additional construction and reindexes every downstream reference
+   * (`additional:<idx>`) inside taxRecords (IRL) and marketListings so higher
+   * indexes are shifted down and references to the removed index are purged.
+   * Without this, silent data corruption occurs (IRL / market listings attach
+   * to the wrong construction after a removal).
+   */
+  const removeAdditionalConstruction = useCallback((removedIdx: number) => {
+    setAdditionalConstructions(prev => prev.filter((_, j) => j !== removedIdx));
+
+    const remap = (ref: string | undefined | null): string | undefined | null => {
+      if (!ref || !ref.startsWith('additional:')) return ref;
+      const rest = ref.slice('additional:'.length);
+      const [idxStr, ...tail] = rest.split(':');
+      const n = parseInt(idxStr, 10);
+      if (!Number.isFinite(n)) return ref;
+      if (n === removedIdx) return null; // purge
+      if (n > removedIdx) return `additional:${n - 1}${tail.length ? ':' + tail.join(':') : ''}`;
+      return ref;
+    };
+
+    setTaxRecords(prev => prev
+      .map(t => {
+        const next = remap(t.constructionRef);
+        if (next === null) return { ...t, constructionRef: undefined };
+        if (next === t.constructionRef) return t;
+        return { ...t, constructionRef: next as string | undefined };
+      })
+    );
+
+    setFormData(prev => {
+      const listings = Array.isArray(prev.marketListings) ? prev.marketListings : [];
+      if (listings.length === 0) return prev;
+      const nextListings = listings
+        .map((l: any) => {
+          const next = remap(l?.constructionRef);
+          if (next === null) return null;
+          if (next === l?.constructionRef) return l;
+          return { ...l, constructionRef: next };
+        })
+        .filter(Boolean);
+      if (nextListings.length === listings.length &&
+          nextListings.every((l: any, i: number) => l === listings[i])) return prev;
+      return { ...prev, marketListings: nextListings };
+    });
+    markDirty();
+  }, [markDirty]);
 
   const handleSectionTypeChange = (type: 'urbaine' | 'rurale') => {
     setSectionType(type);
