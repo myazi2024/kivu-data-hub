@@ -1462,7 +1462,7 @@ export const useCCCFormState = ({
     // Construction
     PROPERTY_CATEGORY_OPTIONS, availableConstructionTypes, availableConstructionNatures,
     availableConstructionMaterials, availableDeclaredUsages, availableStandings,
-    constructionMode, setConstructionMode, additionalConstructions, setAdditionalConstructions,
+    constructionMode, setConstructionMode, additionalConstructions, setAdditionalConstructions, removeAdditionalConstruction,
     // Permits
     permitMode, setPermitMode, buildingPermits, addBuildingPermit, removeBuildingPermit, updateBuildingPermit, updateBuildingPermitFile, removeBuildingPermitFile,
     getPermitTypeRestrictions, showPermitWarning, highlightIncompletePermit,

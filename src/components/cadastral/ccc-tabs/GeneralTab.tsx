@@ -82,6 +82,8 @@ interface GeneralTabProps {
   setConstructionMode: (v: 'unique' | 'multiple') => void;
   additionalConstructions: AdditionalConstruction[];
   setAdditionalConstructions: React.Dispatch<React.SetStateAction<AdditionalConstruction[]>>;
+  /** Provided by useCCCFormState — reindexes IRL taxRecords and marketListings. */
+  removeAdditionalConstruction?: (index: number) => void;
   // Permit
   permitMode: 'existing' | 'request';
   setPermitMode: (v: 'existing' | 'request') => void;
@@ -119,7 +121,7 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
   availableConstructionTypes, availableConstructionNatures, availableConstructionMaterials,
   availableDeclaredUsages, availableStandings,
   constructionMode, setConstructionMode,
-  additionalConstructions, setAdditionalConstructions,
+  additionalConstructions, setAdditionalConstructions, removeAdditionalConstruction,
   permitMode, setPermitMode, buildingPermits,
   updateBuildingPermit, updateBuildingPermitFile, removeBuildingPermitFile,
   getPermitTypeRestrictions, showPermitWarning, highlightIncompletePermit,
@@ -1408,7 +1410,13 @@ const ConstructionSection: React.FC<ConstructionSectionProps> = ({
                   <AdditionalConstructionBlock
                     key={idx} index={idx} data={construction}
                     onChange={(i, updated) => { const copy = [...additionalConstructions]; copy[i] = updated; setAdditionalConstructions(copy); }}
-                    onRemove={(i) => setAdditionalConstructions(prev => prev.filter((_, j) => j !== i))}
+                    onRemove={(i) => {
+                      if (removeAdditionalConstruction) {
+                        removeAdditionalConstruction(i);
+                      } else {
+                        setAdditionalConstructions(prev => prev.filter((_, j) => j !== i));
+                      }
+                    }}
                     getPicklistDependentOptions={getPicklistDependentOptions}
                   />
                 ))}
