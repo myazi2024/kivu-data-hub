@@ -227,7 +227,7 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
   handleNextTab,
   highlightRequiredFields,
 }) => {
-  const { currencies, convertFromUsd, convertToUsd } = useCurrencyConfig();
+  const { currencies, convertFromUsd } = useCurrencyConfig();
   const cdfRate = useMemo(() => {
     const c = currencies.find(x => x.currency_code === 'CDF');
     return c?.exchange_rate_to_usd ?? 2850;
@@ -239,9 +239,10 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
       if (amount === undefined || amount === null || !Number.isFinite(Number(amount))) return undefined;
       const cur = currency || 'USD';
       if (cur === 'USD') return Number(amount);
-      return convertToUsd(Number(amount), cur);
+      const rate = currencies.find(c => c.currency_code === cur)?.exchange_rate_to_usd ?? cdfRate;
+      return rate > 0 ? Number(amount) / rate : undefined;
     },
-    [convertToUsd],
+    [currencies, cdfRate],
   );
 
   const equivalent = (amount: number | undefined, currency: CurrencyCode | undefined): string => {
@@ -250,9 +251,10 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
       const cdf = convertFromUsd(amount, 'CDF');
       return `≈ ${cdf.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} CDF`;
     }
-    const usd = convertToUsd(amount, currency);
+    const usd = toUsd(amount, currency) ?? 0;
     return `≈ ${usd.toLocaleString('fr-FR', { maximumFractionDigits: 2 })} USD`;
   };
+
 
   // ─── 1.1 — Valeur de revente ───
   const wouldSell = formData.wouldSellIfOffered;
