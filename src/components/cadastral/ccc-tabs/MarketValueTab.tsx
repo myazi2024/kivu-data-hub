@@ -227,7 +227,7 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
   handleNextTab,
   highlightRequiredFields,
 }) => {
-  const { currencies, convertFromUsd } = useCurrencyConfig();
+  const { currencies, convertFromUsd, convertToUsd } = useCurrencyConfig();
   const cdfRate = useMemo(() => {
     const c = currencies.find(x => x.currency_code === 'CDF');
     return c?.exchange_rate_to_usd ?? 2850;
@@ -239,9 +239,9 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
       if (amount === undefined || amount === null || !Number.isFinite(Number(amount))) return undefined;
       const cur = currency || 'USD';
       if (cur === 'USD') return Number(amount);
-      return Number(amount) / cdfRate;
+      return convertToUsd(Number(amount), cur);
     },
-    [cdfRate],
+    [convertToUsd],
   );
 
   const equivalent = (amount: number | undefined, currency: CurrencyCode | undefined): string => {
@@ -250,7 +250,7 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
       const cdf = convertFromUsd(amount, 'CDF');
       return `≈ ${cdf.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} CDF`;
     }
-    const usd = amount / cdfRate;
+    const usd = convertToUsd(amount, currency);
     return `≈ ${usd.toLocaleString('fr-FR', { maximumFractionDigits: 2 })} USD`;
   };
 
@@ -265,6 +265,8 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
       handleInputChange('resalePriceAmount', undefined);
       handleInputChange('resalePriceCurrency', undefined);
       handleInputChange('resalePriceUsd', undefined);
+      // C8 — purge annonce vente si l'utilisateur repasse à Non
+      handleInputChange('saleListing', undefined);
     } else {
       handleInputChange('wouldSellIfOffered', true);
       if (!formData.resalePriceCurrency) handleInputChange('resalePriceCurrency', 'USD');
@@ -313,9 +315,18 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
   };
 
   // ─── 2 — Locaux vacants ───
+  // C3 — deps ciblées (évite recomputation à chaque frappe)
   const vacantTargets = useMemo(
     () => buildVacantTargets(formData, additionalConstructions),
-    [formData, additionalConstructions],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [
+      formData.declaredUsage, formData.propertyCategory, formData.constructionType,
+      formData.constructionNature, formData.constructionMaterials, formData.standing,
+      formData.isOccupied, formData.hostingCapacity, formData.rentalConfiguration,
+      formData.monthlyRentUsd, formData.rentalUnits, formData.constructionYear,
+      formData.soundEnvironment,
+      additionalConstructions,
+    ],
   );
 
   const listings = useMemo<MarketListingEntry[]>(
@@ -327,7 +338,12 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
     const next = [...listings];
     const idx = next.findIndex(l => l.constructionRef === ref);
     if (idx >= 0) {
-      next[idx] = { ...next[idx], ...patch };
+      // C5 — si listForRent bascule à false, purger les données annonce
+      if (patch.listForRent === false) {
+        next[idx] = { constructionRef: ref, unitLabel: next[idx].unitLabel, listForRent: false } as MarketListingEntry;
+      } else {
+        next[idx] = { ...next[idx], ...patch };
+      }
     } else {
       next.push({ constructionRef: ref, listForRent: false, ...defaults, ...patch } as MarketListingEntry);
     }
@@ -336,11 +352,39 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
 
   const findListing = (ref: string) => listings.find(l => l.constructionRef === ref);
 
+  // C1/C2 — Recalcul USD si devise, montant ou cdfRate changent
+  useEffect(() => {
+    // Resale
+    if (resaleAmount !== undefined && resaleCurrency) {
+      const usd = toUsd(resaleAmount, resaleCurrency);
+      if (usd !== formData.resalePriceUsd) handleInputChange('resalePriceUsd', usd);
+    }
+    // Appraisal
+    if (appraisedAmount !== undefined && appraisedCurrency) {
+      const usd = toUsd(appraisedAmount, appraisedCurrency);
+      if (usd !== formData.appraisedValueUsd) handleInputChange('appraisedValueUsd', usd);
+    }
+    // Loyers cibles des locaux proposés
+    if (Array.isArray(listings) && listings.length > 0) {
+      let mutated = false;
+      const next = listings.map(l => {
+        if (!l?.listForRent) return l;
+        if (l.rentAmount === undefined || l.rentAmount === null) return l;
+        const usd = toUsd(Number(l.rentAmount), (l.rentCurrency || 'USD') as CurrencyCode);
+        if (usd !== l.targetRentUsd) { mutated = true; return { ...l, targetRentUsd: usd }; }
+        return l;
+      });
+      if (mutated) handleInputChange('marketListings', next);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cdfRate]);
+
   const showBlock2 = formData.declaredUsage === 'Location'
     || additionalConstructions.some(c => c.declaredUsage === 'Location');
 
   const totalSubject = vacantTargets[0]?.subject || 'bien';
   const subjectLabel = pluralizeSubject(totalSubject, vacantTargets.length);
+
 
   // ─── Validation locale (UI seulement) ───
   const missingResale = highlightRequiredFields && wouldSell === undefined;
