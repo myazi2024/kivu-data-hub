@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback } from 'react';
+import React, { useMemo, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import StorageFileUpload from '@/components/shared/StorageFileUpload';
 import { InputWithPopover } from '@/components/cadastral/InputWithPopover';
 import { useCurrencyConfig, type CurrencyCode } from '@/hooks/useCurrencyConfig';
+
 import { CadastralContributionData } from '@/hooks/useCadastralContribution';
 import type { AdditionalConstruction } from '@/components/cadastral/AdditionalConstructionBlock';
 
@@ -238,9 +239,10 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
       if (amount === undefined || amount === null || !Number.isFinite(Number(amount))) return undefined;
       const cur = currency || 'USD';
       if (cur === 'USD') return Number(amount);
-      return Number(amount) / cdfRate;
+      const rate = currencies.find(c => c.currency_code === cur)?.exchange_rate_to_usd ?? cdfRate;
+      return rate > 0 ? Number(amount) / rate : undefined;
     },
-    [cdfRate],
+    [currencies, cdfRate],
   );
 
   const equivalent = (amount: number | undefined, currency: CurrencyCode | undefined): string => {
@@ -249,9 +251,10 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
       const cdf = convertFromUsd(amount, 'CDF');
       return `≈ ${cdf.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} CDF`;
     }
-    const usd = amount / cdfRate;
+    const usd = toUsd(amount, currency) ?? 0;
     return `≈ ${usd.toLocaleString('fr-FR', { maximumFractionDigits: 2 })} USD`;
   };
+
 
   // ─── 1.1 — Valeur de revente ───
   const wouldSell = formData.wouldSellIfOffered;
@@ -264,6 +267,8 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
       handleInputChange('resalePriceAmount', undefined);
       handleInputChange('resalePriceCurrency', undefined);
       handleInputChange('resalePriceUsd', undefined);
+      // C8 — purge annonce vente si l'utilisateur repasse à Non
+      handleInputChange('saleListing', undefined);
     } else {
       handleInputChange('wouldSellIfOffered', true);
       if (!formData.resalePriceCurrency) handleInputChange('resalePriceCurrency', 'USD');
@@ -312,9 +317,18 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
   };
 
   // ─── 2 — Locaux vacants ───
+  // C3 — deps ciblées (évite recomputation à chaque frappe)
   const vacantTargets = useMemo(
     () => buildVacantTargets(formData, additionalConstructions),
-    [formData, additionalConstructions],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [
+      formData.declaredUsage, formData.propertyCategory, formData.constructionType,
+      formData.constructionNature, formData.constructionMaterials, formData.standing,
+      formData.isOccupied, formData.hostingCapacity, formData.rentalConfiguration,
+      formData.monthlyRentUsd, formData.rentalUnits, formData.constructionYear,
+      formData.soundEnvironment,
+      additionalConstructions,
+    ],
   );
 
   const listings = useMemo<MarketListingEntry[]>(
@@ -326,7 +340,12 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
     const next = [...listings];
     const idx = next.findIndex(l => l.constructionRef === ref);
     if (idx >= 0) {
-      next[idx] = { ...next[idx], ...patch };
+      // C5 — si listForRent bascule à false, purger les données annonce
+      if (patch.listForRent === false) {
+        next[idx] = { constructionRef: ref, unitLabel: next[idx].unitLabel, listForRent: false } as MarketListingEntry;
+      } else {
+        next[idx] = { ...next[idx], ...patch };
+      }
     } else {
       next.push({ constructionRef: ref, listForRent: false, ...defaults, ...patch } as MarketListingEntry);
     }
@@ -335,11 +354,39 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
 
   const findListing = (ref: string) => listings.find(l => l.constructionRef === ref);
 
+  // C1/C2 — Recalcul USD si devise, montant ou cdfRate changent
+  useEffect(() => {
+    // Resale
+    if (resaleAmount !== undefined && resaleCurrency) {
+      const usd = toUsd(resaleAmount, resaleCurrency);
+      if (usd !== formData.resalePriceUsd) handleInputChange('resalePriceUsd', usd);
+    }
+    // Appraisal
+    if (appraisedAmount !== undefined && appraisedCurrency) {
+      const usd = toUsd(appraisedAmount, appraisedCurrency);
+      if (usd !== formData.appraisedValueUsd) handleInputChange('appraisedValueUsd', usd);
+    }
+    // Loyers cibles des locaux proposés
+    if (Array.isArray(listings) && listings.length > 0) {
+      let mutated = false;
+      const next = listings.map(l => {
+        if (!l?.listForRent) return l;
+        if (l.rentAmount === undefined || l.rentAmount === null) return l;
+        const usd = toUsd(Number(l.rentAmount), (l.rentCurrency || 'USD') as CurrencyCode);
+        if (usd !== l.targetRentUsd) { mutated = true; return { ...l, targetRentUsd: usd }; }
+        return l;
+      });
+      if (mutated) handleInputChange('marketListings', next);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cdfRate]);
+
   const showBlock2 = formData.declaredUsage === 'Location'
     || additionalConstructions.some(c => c.declaredUsage === 'Location');
 
   const totalSubject = vacantTargets[0]?.subject || 'bien';
   const subjectLabel = pluralizeSubject(totalSubject, vacantTargets.length);
+
 
   // ─── Validation locale (UI seulement) ───
   const missingResale = highlightRequiredFields && wouldSell === undefined;
@@ -500,11 +547,13 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
                             value={null}
                             onChange={(url) => {
                               if (!url) return;
+                              if (saleImages.includes(url)) { toast.info('Image déjà ajoutée.'); return; }
                               const next = [...saleImages, url];
                               const patch: any = { coverImageUrls: next };
                               if (!saleMain) patch.coverImageMainUrl = url;
                               updateSale(patch);
                             }}
+
                             accept="image/jpeg,image/png,image/webp"
                             isPublic={true}
                             label="Ajouter une image"
@@ -592,7 +641,14 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                           <div className="space-y-1">
                             <Label className="text-[11px] font-medium text-foreground">Canal de contact préféré</Label>
-                            <Select value={sale.contactChannel || ''} onValueChange={(v) => updateSale({ contactChannel: v as any })}>
+                            <Select value={sale.contactChannel || ''} onValueChange={(v) => {
+                              const patch: any = { contactChannel: v as any };
+                              if (v === 'whatsapp' && !sale.contactValue && formData.whatsappNumber) {
+                                patch.contactValue = formData.whatsappNumber;
+                              }
+                              updateSale(patch);
+                            }}>
+
                               <SelectTrigger className="h-10 rounded-xl text-sm"><SelectValue placeholder="Choisir…" /></SelectTrigger>
                               <SelectContent>
                                 {Object.entries(CONTACT_LABELS).map(([k, l]) => (
@@ -1015,11 +1071,13 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
                                         value={null}
                                         onChange={(url) => {
                                           if (!url) return;
+                                          if (images.includes(url)) { toast.info('Image déjà ajoutée.'); return; }
                                           const next = [...images, url];
                                           const patch: Partial<MarketListingEntry> = { coverImageUrls: next };
                                           if (!mainUrl) patch.coverImageMainUrl = url;
                                           updateListing(t.ref, patch, { unitLabel: t.label });
                                         }}
+
                                         accept="image/jpeg,image/png,image/webp"
                                         isPublic={true}
                                         label="Ajouter une image"
@@ -1053,7 +1111,14 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                       <div className="space-y-1">
                                         <Label className="text-[11px] font-medium text-foreground">Canal de contact préféré</Label>
-                                        <Select value={entry?.contactChannel || ''} onValueChange={(v) => updateListing(t.ref, { contactChannel: v as any }, { unitLabel: t.label })}>
+                                       <Select value={entry?.contactChannel || ''} onValueChange={(v) => {
+                                          const patch: Partial<MarketListingEntry> = { contactChannel: v as any };
+                                          if (v === 'whatsapp' && !entry?.contactValue && formData.whatsappNumber) {
+                                            patch.contactValue = formData.whatsappNumber;
+                                          }
+                                          updateListing(t.ref, patch, { unitLabel: t.label });
+                                        }}>
+
                                           <SelectTrigger className="h-10 rounded-xl text-sm"><SelectValue placeholder="Choisir…" /></SelectTrigger>
                                           <SelectContent>
                                             {Object.entries(CONTACT_LABELS).map(([k, l]) => (
