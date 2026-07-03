@@ -435,9 +435,18 @@ export function useFormValidation(params: UseFormValidationParams) {
           if (hasAmt !== hasCur) {
             missing.push({ field: `marketListingRentPair_${i}`, label: `Loyer du local "${l.unitLabel || i + 1}" : indiquez à la fois la devise et le montant`, tab: 'market-value' });
           }
+          if (l.contactValue) {
+            const v = String(l.contactValue).trim();
+            const okEmail = /.+@.+\..+/.test(v);
+            const okPhone = /^\+?\d[\d\s\-]{6,}$/.test(v);
+            if (l.contactChannel === 'email' ? !okEmail : !okPhone) {
+              missing.push({ field: `marketListingContact_${i}`, label: `Coordonnée de contact du local "${l.unitLabel || i + 1}" invalide`, tab: 'market-value' });
+            }
+          }
         }
       });
     }
+
 
     return missing;
   }, [formData, customTitleName, currentOwners, previousOwners, sectionType, permitMode, buildingPermits, parcelSides, taxRecords, hasMortgage, hasDispute, mortgageRecords, ownerDocFile, titleDocFiles, editingContributionId, roadSides, servitude, buildingShapes, constructionMode, additionalConstructions, soundEnvironment, nearbySoundSources]);
