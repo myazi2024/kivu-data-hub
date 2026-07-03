@@ -641,7 +641,14 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                           <div className="space-y-1">
                             <Label className="text-[11px] font-medium text-foreground">Canal de contact préféré</Label>
-                            <Select value={sale.contactChannel || ''} onValueChange={(v) => updateSale({ contactChannel: v as any })}>
+                            <Select value={sale.contactChannel || ''} onValueChange={(v) => {
+                              const patch: any = { contactChannel: v as any };
+                              if (v === 'whatsapp' && !sale.contactValue && formData.whatsappNumber) {
+                                patch.contactValue = formData.whatsappNumber;
+                              }
+                              updateSale(patch);
+                            }}>
+
                               <SelectTrigger className="h-10 rounded-xl text-sm"><SelectValue placeholder="Choisir…" /></SelectTrigger>
                               <SelectContent>
                                 {Object.entries(CONTACT_LABELS).map(([k, l]) => (
