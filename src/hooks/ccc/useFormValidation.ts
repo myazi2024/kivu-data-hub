@@ -356,11 +356,16 @@ export function useFormValidation(params: UseFormValidationParams) {
     if (formData.wouldSellIfOffered === undefined || formData.wouldSellIfOffered === null) {
       missing.push({ field: 'wouldSellIfOffered', label: 'Disposition à vendre la parcelle (Oui/Non)', tab: 'market-value' });
     } else if (formData.wouldSellIfOffered === true) {
-      if (!formData.resalePriceAmount || Number(formData.resalePriceAmount) <= 0) {
+      const hasAmt = !!formData.resalePriceAmount && Number(formData.resalePriceAmount) > 0;
+      const hasCur = !!formData.resalePriceCurrency;
+      if (!hasAmt) {
         missing.push({ field: 'resalePriceAmount', label: 'Prix de revente proposé', tab: 'market-value' });
       }
-      if (!formData.resalePriceCurrency) {
+      if (!hasCur) {
         missing.push({ field: 'resalePriceCurrency', label: 'Devise du prix de revente', tab: 'market-value' });
+      }
+      if (hasAmt !== hasCur) {
+        missing.push({ field: 'resalePricePair', label: 'Indiquez à la fois la devise et le montant du prix de revente', tab: 'market-value' });
       }
       const sale = formData.saleListing || {};
       const saleImgs = Array.isArray(sale.coverImageUrls) ? sale.coverImageUrls.filter(Boolean) : [];
@@ -376,12 +381,29 @@ export function useFormValidation(params: UseFormValidationParams) {
       if ((sale.description || '').length > 500) {
         missing.push({ field: 'saleListingDescription', label: "Description de la vente : 500 caractères max", tab: 'market-value' });
       }
+      // Contact optionnel mais valide si renseigné
+      if (sale.contactValue) {
+        const v = sale.contactValue.trim();
+        const okEmail = /.+@.+\..+/.test(v);
+        const okPhone = /^\+?\d[\d\s\-]{6,}$/.test(v);
+        if (sale.contactChannel === 'email' ? !okEmail : !okPhone) {
+          missing.push({ field: 'saleListingContact', label: "Coordonnée de contact (annonce de vente) invalide", tab: 'market-value' });
+        }
+      }
     }
     if (formData.hasRecentAppraisal === undefined || formData.hasRecentAppraisal === null) {
       missing.push({ field: 'hasRecentAppraisal', label: 'Expertise immobilière récente (Oui/Non)', tab: 'market-value' });
     } else if (formData.hasRecentAppraisal === true) {
       if (!formData.appraisalDate) {
         missing.push({ field: 'appraisalDate', label: "Date de l'expertise immobilière", tab: 'market-value' });
+      } else {
+        // Fenêtre 6 mois cohérente avec la question posée
+        const min = new Date(); min.setMonth(min.getMonth() - 6);
+        const minStr = min.toISOString().slice(0, 10);
+        const today = new Date().toISOString().slice(0, 10);
+        if (formData.appraisalDate < minStr || formData.appraisalDate > today) {
+          missing.push({ field: 'appraisalDateWindow', label: "Date de l'expertise hors fenêtre 6 mois — corrigez la date ou décochez « expertise récente »", tab: 'market-value' });
+        }
       }
       if (!formData.appraisedValueAmount || Number(formData.appraisedValueAmount) <= 0) {
         missing.push({ field: 'appraisedValueAmount', label: 'Valeur vénale retenue', tab: 'market-value' });
@@ -393,6 +415,7 @@ export function useFormValidation(params: UseFormValidationParams) {
         missing.push({ field: 'appraisalReportUrl', label: "Rapport d'expertise (pièce jointe)", tab: 'market-value' });
       }
     }
+
     // Loyer cible positif si saisi + au moins 1 image par local proposé
     if (Array.isArray(formData.marketListings)) {
       formData.marketListings.forEach((l: any, i: number) => {
