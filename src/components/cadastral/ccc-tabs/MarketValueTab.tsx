@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback } from 'react';
+import React, { useMemo, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import StorageFileUpload from '@/components/shared/StorageFileUpload';
 import { InputWithPopover } from '@/components/cadastral/InputWithPopover';
 import { useCurrencyConfig, type CurrencyCode } from '@/hooks/useCurrencyConfig';
+
 import { CadastralContributionData } from '@/hooks/useCadastralContribution';
 import type { AdditionalConstruction } from '@/components/cadastral/AdditionalConstructionBlock';
 
