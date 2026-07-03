@@ -1062,11 +1062,13 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
                                         value={null}
                                         onChange={(url) => {
                                           if (!url) return;
+                                          if (images.includes(url)) { toast.info('Image déjà ajoutée.'); return; }
                                           const next = [...images, url];
                                           const patch: Partial<MarketListingEntry> = { coverImageUrls: next };
                                           if (!mainUrl) patch.coverImageMainUrl = url;
                                           updateListing(t.ref, patch, { unitLabel: t.label });
                                         }}
+
                                         accept="image/jpeg,image/png,image/webp"
                                         isPublic={true}
                                         label="Ajouter une image"
