@@ -547,11 +547,13 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
                             value={null}
                             onChange={(url) => {
                               if (!url) return;
+                              if (saleImages.includes(url)) { toast.info('Image déjà ajoutée.'); return; }
                               const next = [...saleImages, url];
                               const patch: any = { coverImageUrls: next };
                               if (!saleMain) patch.coverImageMainUrl = url;
                               updateSale(patch);
                             }}
+
                             accept="image/jpeg,image/png,image/webp"
                             isPublic={true}
                             label="Ajouter une image"
