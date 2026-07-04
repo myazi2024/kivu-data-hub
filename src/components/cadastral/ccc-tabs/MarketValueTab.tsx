@@ -279,6 +279,10 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
 
   const setWouldSell = (v: boolean) => {
     if (!v) {
+      // Drop images du bucket avant purge du saleListing
+      const sale = formData.saleListing as any;
+      const imgs: string[] = Array.isArray(sale?.coverImageUrls) ? sale.coverImageUrls.filter(Boolean) : [];
+      imgs.forEach(u => dropImage(u));
       handleInputChange('wouldSellIfOffered', false);
       handleInputChange('resalePriceAmount', undefined);
       handleInputChange('resalePriceCurrency', undefined);
