@@ -551,6 +551,7 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
                                     {isMain ? '⭐ Principale' : '⭐'}
                                   </button>
                                   <button type="button" aria-label="Supprimer" onClick={() => {
+                                    dropImage(url);
                                     const next = saleImages.filter((_, k) => k !== i);
                                     const patch: any = { coverImageUrls: next };
                                     if (isMain) patch.coverImageMainUrl = next[0];
@@ -568,9 +569,10 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
                             key={`upl-sale-${saleImages.length}`}
                             bucket="cadastral-documents"
                             value={null}
-                            onChange={(url) => {
+                            onChange={(url, path) => {
                               if (!url) return;
                               if (saleImages.includes(url)) { toast.info('Image déjà ajoutée.'); return; }
+                              if (path) trackUploadedPath?.(path);
                               const next = [...saleImages, url];
                               const patch: any = { coverImageUrls: next };
                               if (!saleMain) patch.coverImageMainUrl = url;
