@@ -255,6 +255,15 @@ export function useFormPersistence(params: UseFormPersistenceParams): UseFormPer
     } finally {
       submitUploadedPathsRef.current = [];
     }
+
+  const removeUploadedPath = useCallback(async (path: string) => {
+    if (!path) return;
+    submitUploadedPathsRef.current = submitUploadedPathsRef.current.filter(p => p !== path);
+    try {
+      await supabase.storage.from('cadastral-documents').remove([path]);
+    } catch (e) {
+      console.warn('Suppression Storage échouée (best-effort):', path, e);
+    }
   }, []);
 
   return {
@@ -263,6 +272,8 @@ export function useFormPersistence(params: UseFormPersistenceParams): UseFormPer
     trackUploadedPath,
     rollbackUploadedFiles,
     resetUploadedTracker,
+    removeUploadedPath,
     hasRestoredDraft,
   };
 }
+
