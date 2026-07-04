@@ -203,6 +203,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                   handleTabChange={state.handleTabChange}
                   handleNextTab={state.handleNextTab}
                   highlightRequiredFields={state.highlightRequiredFields}
+                  trackUploadedPath={state.trackUploadedPath}
+                  removeUploadedPath={state.removeUploadedPath}
                 />
               </TabsContent>
 
