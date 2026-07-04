@@ -314,6 +314,7 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
 
   const setHasAppraisal = (v: boolean) => {
     if (!v) {
+      dropImage(formData.appraisalReportUrl);
       handleInputChange('hasRecentAppraisal', false);
       handleInputChange('appraisalDate', undefined);
       handleInputChange('appraiserName', undefined);
