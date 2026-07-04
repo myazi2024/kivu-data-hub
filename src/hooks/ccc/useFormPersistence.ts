@@ -93,6 +93,8 @@ export interface UseFormPersistenceResult {
   rollbackUploadedFiles: () => Promise<void>;
   /** Reset du tracker (succès → on garde les fichiers). */
   resetUploadedTracker: () => void;
+  /** Suppression granulaire d'un fichier Storage (best-effort, retire aussi du tracker). */
+  removeUploadedPath: (path: string) => Promise<void>;
   /** Indique si un brouillon a été restauré au montage. */
   hasRestoredDraft: boolean;
 }
