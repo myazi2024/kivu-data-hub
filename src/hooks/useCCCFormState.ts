@@ -270,6 +270,7 @@ export const useCCCFormState = ({
     trackUploadedPath,
     rollbackUploadedFiles,
     resetUploadedTracker,
+    removeUploadedPath,
   } = useFormPersistence({
     open, parcelNumber, editingContributionId, isLoadingFromDbRef,
     formData, currentOwners, previousOwners, taxRecords, mortgageRecords,
@@ -1490,6 +1491,7 @@ export const useCCCFormState = ({
     showSuccess, showExitConfirmation, setShowExitConfirmation,
     showQuickAuth, setShowQuickAuth, pendingSubmission, setPendingSubmission,
     saveFormDataToStorage,
+    trackUploadedPath, removeUploadedPath,
     // Misc warnings
     showAreaMismatchWarning, areaMismatchMessage, shouldBlinkSuperficie,
     showPermitTypeBlockedWarning, permitTypeBlockedMessage,

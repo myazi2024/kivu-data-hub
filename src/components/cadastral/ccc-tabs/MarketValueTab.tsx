@@ -71,7 +71,17 @@ interface MarketValueTabProps {
   handleTabChange: (tab: string) => void;
   handleNextTab: (current: string, next: string) => void;
   highlightRequiredFields?: boolean;
+  trackUploadedPath?: (path: string) => void;
+  removeUploadedPath?: (path: string) => Promise<void>;
 }
+
+const STORAGE_PUBLIC_MARKER = '/storage/v1/object/public/cadastral-documents/';
+const pathFromPublicUrl = (url?: string | null): string | null => {
+  if (!url) return null;
+  const i = url.indexOf(STORAGE_PUBLIC_MARKER);
+  if (i === -1) return null;
+  return url.slice(i + STORAGE_PUBLIC_MARKER.length).split('?')[0] || null;
+};
 
 const MIN_DATE = (() => {
   const d = new Date();
@@ -226,8 +236,14 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
   handleTabChange,
   handleNextTab,
   highlightRequiredFields,
+  trackUploadedPath,
+  removeUploadedPath,
 }) => {
   const { currencies, convertFromUsd } = useCurrencyConfig();
+  const dropImage = useCallback((url?: string | null) => {
+    const p = pathFromPublicUrl(url);
+    if (p && removeUploadedPath) void removeUploadedPath(p);
+  }, [removeUploadedPath]);
   const cdfRate = useMemo(() => {
     const c = currencies.find(x => x.currency_code === 'CDF');
     return c?.exchange_rate_to_usd ?? 2850;
@@ -263,6 +279,10 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
 
   const setWouldSell = (v: boolean) => {
     if (!v) {
+      // Drop images du bucket avant purge du saleListing
+      const sale = formData.saleListing as any;
+      const imgs: string[] = Array.isArray(sale?.coverImageUrls) ? sale.coverImageUrls.filter(Boolean) : [];
+      imgs.forEach(u => dropImage(u));
       handleInputChange('wouldSellIfOffered', false);
       handleInputChange('resalePriceAmount', undefined);
       handleInputChange('resalePriceCurrency', undefined);
@@ -294,6 +314,7 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
 
   const setHasAppraisal = (v: boolean) => {
     if (!v) {
+      dropImage(formData.appraisalReportUrl);
       handleInputChange('hasRecentAppraisal', false);
       handleInputChange('appraisalDate', undefined);
       handleInputChange('appraiserName', undefined);
@@ -340,9 +361,11 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
     const next = [...listings];
     const idx = next.findIndex(l => l.constructionRef === ref);
     if (idx >= 0) {
-      // C5 — si listForRent bascule à false, purger les données annonce
+      // C5 — si listForRent bascule à false, purger les données annonce (et supprimer les images du bucket)
       if (patch.listForRent === false) {
-        next[idx] = { constructionRef: ref, unitLabel: next[idx].unitLabel, listForRent: false } as MarketListingEntry;
+        const old = next[idx];
+        (old.coverImageUrls || []).forEach(u => dropImage(u));
+        next[idx] = { constructionRef: ref, unitLabel: old.unitLabel, listForRent: false } as MarketListingEntry;
       } else {
         next[idx] = { ...next[idx], ...patch };
       }
@@ -528,6 +551,7 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
                                     {isMain ? '⭐ Principale' : '⭐'}
                                   </button>
                                   <button type="button" aria-label="Supprimer" onClick={() => {
+                                    dropImage(url);
                                     const next = saleImages.filter((_, k) => k !== i);
                                     const patch: any = { coverImageUrls: next };
                                     if (isMain) patch.coverImageMainUrl = next[0];
@@ -545,9 +569,10 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
                             key={`upl-sale-${saleImages.length}`}
                             bucket="cadastral-documents"
                             value={null}
-                            onChange={(url) => {
+                            onChange={(url, path) => {
                               if (!url) return;
                               if (saleImages.includes(url)) { toast.info('Image déjà ajoutée.'); return; }
+                              if (path) trackUploadedPath?.(path);
                               const next = [...saleImages, url];
                               const patch: any = { coverImageUrls: next };
                               if (!saleMain) patch.coverImageMainUrl = url;
@@ -808,7 +833,12 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
                     <StorageFileUpload
                       bucket="cadastral-documents"
                       value={formData.appraisalReportUrl || null}
-                      onChange={(url) => handleInputChange('appraisalReportUrl', url || undefined)}
+                      onChange={(url, path) => {
+                        const old = formData.appraisalReportUrl;
+                        if (old && old !== url) dropImage(old);
+                        if (url && path) trackUploadedPath?.(path);
+                        handleInputChange('appraisalReportUrl', url || undefined);
+                      }}
                       accept="application/pdf,image/jpeg,image/png"
                       isPublic={true}
                       label="Rapport d'expertise"
@@ -1049,6 +1079,7 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
                                                 type="button"
                                                 aria-label="Supprimer cette image"
                                                 onClick={() => {
+                                                  dropImage(url);
                                                   const next = images.filter((_, i) => i !== imgIdx);
                                                   const patch: Partial<MarketListingEntry> = { coverImageUrls: next };
                                                   if (isMain) patch.coverImageMainUrl = next[0];
@@ -1069,9 +1100,10 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
                                         key={`upl-${t.ref}-${images.length}`}
                                         bucket="cadastral-documents"
                                         value={null}
-                                        onChange={(url) => {
+                                        onChange={(url, path) => {
                                           if (!url) return;
                                           if (images.includes(url)) { toast.info('Image déjà ajoutée.'); return; }
+                                          if (path) trackUploadedPath?.(path);
                                           const next = [...images, url];
                                           const patch: Partial<MarketListingEntry> = { coverImageUrls: next };
                                           if (!mainUrl) patch.coverImageMainUrl = url;

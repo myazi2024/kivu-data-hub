@@ -93,6 +93,8 @@ export interface UseFormPersistenceResult {
   rollbackUploadedFiles: () => Promise<void>;
   /** Reset du tracker (succès → on garde les fichiers). */
   resetUploadedTracker: () => void;
+  /** Suppression granulaire d'un fichier Storage (best-effort, retire aussi du tracker). */
+  removeUploadedPath: (path: string) => Promise<void>;
   /** Indique si un brouillon a été restauré au montage. */
   hasRestoredDraft: boolean;
 }
@@ -257,12 +259,26 @@ export function useFormPersistence(params: UseFormPersistenceParams): UseFormPer
     }
   }, []);
 
+
+
+  const removeUploadedPath = useCallback(async (path: string) => {
+    if (!path) return;
+    submitUploadedPathsRef.current = submitUploadedPathsRef.current.filter(p => p !== path);
+    try {
+      await supabase.storage.from('cadastral-documents').remove([path]);
+    } catch (e) {
+      console.warn('Suppression Storage échouée (best-effort):', path, e);
+    }
+  }, []);
+
   return {
     saveFormDataToStorage,
     clearSavedFormData,
     trackUploadedPath,
     rollbackUploadedFiles,
     resetUploadedTracker,
+    removeUploadedPath,
     hasRestoredDraft,
   };
 }
+
