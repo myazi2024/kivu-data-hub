@@ -71,7 +71,17 @@ interface MarketValueTabProps {
   handleTabChange: (tab: string) => void;
   handleNextTab: (current: string, next: string) => void;
   highlightRequiredFields?: boolean;
+  trackUploadedPath?: (path: string) => void;
+  removeUploadedPath?: (path: string) => Promise<void>;
 }
+
+const STORAGE_PUBLIC_MARKER = '/storage/v1/object/public/cadastral-documents/';
+const pathFromPublicUrl = (url?: string | null): string | null => {
+  if (!url) return null;
+  const i = url.indexOf(STORAGE_PUBLIC_MARKER);
+  if (i === -1) return null;
+  return url.slice(i + STORAGE_PUBLIC_MARKER.length).split('?')[0] || null;
+};
 
 const MIN_DATE = (() => {
   const d = new Date();
