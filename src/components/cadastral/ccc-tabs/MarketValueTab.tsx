@@ -833,7 +833,12 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
                     <StorageFileUpload
                       bucket="cadastral-documents"
                       value={formData.appraisalReportUrl || null}
-                      onChange={(url) => handleInputChange('appraisalReportUrl', url || undefined)}
+                      onChange={(url, path) => {
+                        const old = formData.appraisalReportUrl;
+                        if (old && old !== url) dropImage(old);
+                        if (url && path) trackUploadedPath?.(path);
+                        handleInputChange('appraisalReportUrl', url || undefined);
+                      }}
                       accept="application/pdf,image/jpeg,image/png"
                       isPublic={true}
                       label="Rapport d'expertise"
