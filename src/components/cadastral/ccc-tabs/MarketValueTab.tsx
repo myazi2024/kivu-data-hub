@@ -356,9 +356,11 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
     const next = [...listings];
     const idx = next.findIndex(l => l.constructionRef === ref);
     if (idx >= 0) {
-      // C5 — si listForRent bascule à false, purger les données annonce
+      // C5 — si listForRent bascule à false, purger les données annonce (et supprimer les images du bucket)
       if (patch.listForRent === false) {
-        next[idx] = { constructionRef: ref, unitLabel: next[idx].unitLabel, listForRent: false } as MarketListingEntry;
+        const old = next[idx];
+        (old.coverImageUrls || []).forEach(u => dropImage(u));
+        next[idx] = { constructionRef: ref, unitLabel: old.unitLabel, listForRent: false } as MarketListingEntry;
       } else {
         next[idx] = { ...next[idx], ...patch };
       }
