@@ -1491,6 +1491,7 @@ export const useCCCFormState = ({
     showSuccess, showExitConfirmation, setShowExitConfirmation,
     showQuickAuth, setShowQuickAuth, pendingSubmission, setPendingSubmission,
     saveFormDataToStorage,
+    trackUploadedPath, removeUploadedPath,
     // Misc warnings
     showAreaMismatchWarning, areaMismatchMessage, shouldBlinkSuperficie,
     showPermitTypeBlockedWarning, permitTypeBlockedMessage,
