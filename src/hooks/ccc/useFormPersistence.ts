@@ -255,6 +255,9 @@ export function useFormPersistence(params: UseFormPersistenceParams): UseFormPer
     } finally {
       submitUploadedPathsRef.current = [];
     }
+  }, []);
+
+
 
   const removeUploadedPath = useCallback(async (path: string) => {
     if (!path) return;
