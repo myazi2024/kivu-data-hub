@@ -236,8 +236,14 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
   handleTabChange,
   handleNextTab,
   highlightRequiredFields,
+  trackUploadedPath,
+  removeUploadedPath,
 }) => {
   const { currencies, convertFromUsd } = useCurrencyConfig();
+  const dropImage = useCallback((url?: string | null) => {
+    const p = pathFromPublicUrl(url);
+    if (p && removeUploadedPath) void removeUploadedPath(p);
+  }, [removeUploadedPath]);
   const cdfRate = useMemo(() => {
     const c = currencies.find(x => x.currency_code === 'CDF');
     return c?.exchange_rate_to_usd ?? 2850;
