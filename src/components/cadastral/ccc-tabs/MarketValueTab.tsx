@@ -1079,6 +1079,7 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
                                                 type="button"
                                                 aria-label="Supprimer cette image"
                                                 onClick={() => {
+                                                  dropImage(url);
                                                   const next = images.filter((_, i) => i !== imgIdx);
                                                   const patch: Partial<MarketListingEntry> = { coverImageUrls: next };
                                                   if (isMain) patch.coverImageMainUrl = next[0];
@@ -1099,9 +1100,10 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
                                         key={`upl-${t.ref}-${images.length}`}
                                         bucket="cadastral-documents"
                                         value={null}
-                                        onChange={(url) => {
+                                        onChange={(url, path) => {
                                           if (!url) return;
                                           if (images.includes(url)) { toast.info('Image déjà ajoutée.'); return; }
+                                          if (path) trackUploadedPath?.(path);
                                           const next = [...images, url];
                                           const patch: Partial<MarketListingEntry> = { coverImageUrls: next };
                                           if (!mainUrl) patch.coverImageMainUrl = url;
