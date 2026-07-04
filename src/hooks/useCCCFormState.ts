@@ -270,6 +270,7 @@ export const useCCCFormState = ({
     trackUploadedPath,
     rollbackUploadedFiles,
     resetUploadedTracker,
+    removeUploadedPath,
   } = useFormPersistence({
     open, parcelNumber, editingContributionId, isLoadingFromDbRef,
     formData, currentOwners, previousOwners, taxRecords, mortgageRecords,
