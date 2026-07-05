@@ -45,6 +45,36 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     open, onOpenChange, parcelNumber, editingContributionId, dialogContentRef
   });
 
+  /**
+   * Retourne le libellé du 1er onglet précédent incomplet qui bloque l'accès à `tab`.
+   * Sert à afficher un toast explicite quand l'utilisateur clique un onglet verrouillé.
+   */
+  const getFirstLockingTabLabel = (tab: (typeof TAB_ORDER)[number]): string | null => {
+    const targetIndex = TAB_ORDER.indexOf(tab);
+    if (targetIndex <= 0) return null;
+    for (let i = 0; i < targetIndex; i++) {
+      const previous = TAB_ORDER[i];
+      if (!state.isTabComplete(previous)) return TAB_LABELS[previous];
+    }
+    return null;
+  };
+
+  /** Handler générique de clic sur un trigger d'onglet potentiellement verrouillé. */
+  const handleLockedTabClick = (
+    tab: (typeof TAB_ORDER)[number],
+    event: React.MouseEvent<HTMLButtonElement>,
+  ) => {
+    if (state.isTabAccessible(tab)) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const blockingLabel = getFirstLockingTabLabel(tab);
+    toast.info('Onglet verrouillé', {
+      description: blockingLabel
+        ? `Complétez d'abord l'onglet « ${blockingLabel} » pour continuer.`
+        : 'Complétez d\'abord les onglets précédents pour continuer.',
+    });
+  };
+
   // ─── Success screen ───
   if (state.showSuccess) {
     return (
