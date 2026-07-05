@@ -23,7 +23,12 @@ export interface RentalConfigurationState {
   rentalUnits?: RentalUnit[];
 }
 
-export interface RentalConfigurationPatch extends RentalConfigurationState {}
+export interface RentalConfigurationPatch extends RentalConfigurationState {
+  /** Reset de l'occupation globale au changement de mode (single ↔ multi). */
+  isOccupied?: boolean;
+  hostingCapacity?: number;
+  occupantCount?: number;
+}
 
 interface CommonProps {
   state: RentalConfigurationState;
@@ -77,6 +82,15 @@ export const RentalConfigurationSelector: React.FC<CommonProps> = ({
   const isMissing = highlightRequired && !state.rentalConfiguration;
 
   const selectMode = (mode: RentalConfiguration) => {
+    // Reset explicite de l'occupation globale : évite qu'une valeur héritée du
+    // mode précédent ne subsiste transitoirement (l'agrégation multi la
+    // recalculera à partir des locaux, le mode single la fera ressaisir).
+    const occupancyReset = {
+      isOccupied: undefined,
+      hostingCapacity: undefined,
+      occupantCount: undefined,
+    } as const;
+
     if (mode === 'single') {
       const firstRent = state.rentalUnits?.[0]?.monthlyRentUsd;
       onPatch({
@@ -84,6 +98,7 @@ export const RentalConfigurationSelector: React.FC<CommonProps> = ({
         rentalUnitsCount: undefined,
         rentalUnits: undefined,
         monthlyRentUsd: state.monthlyRentUsd ?? firstRent,
+        ...occupancyReset,
       });
     } else {
       const count = clampCount(state.rentalUnitsCount ?? MIN_UNITS);
@@ -96,6 +111,7 @@ export const RentalConfigurationSelector: React.FC<CommonProps> = ({
         rentalUnitsCount: count,
         rentalUnits: seeded,
         monthlyRentUsd: undefined,
+        ...occupancyReset,
       });
     }
   };

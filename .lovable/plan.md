@@ -1,57 +1,100 @@
-# Rollback Storage granulaire — Onglet Valeur (CCC)
+# Audit & corrections — recommandations résiduelles CCC
 
-## Objectif
-Chaque fois qu'une image (annonce vente, annonce location, rapport d'expertise) est retirée de l'onglet Valeur — via la croix, un remplacement, un décochage `listForRent`, un `wouldSell=false`, ou un vidage du champ rapport — le fichier correspondant doit être supprimé du bucket `cadastral-documents`. En parallèle, chaque upload doit être suivi pour rollback global en cas d'échec de soumission (déjà en place pour les autres onglets).
+Vérification effectuée : **les 3 recommandations ne sont pas encore intégrées**.
 
-## Comportement actuel
-- `StorageFileUpload.onChange(url, path)` expose déjà le path Storage, mais `MarketValueTab` ignore le 2e argument.
-- Les suppressions UI (croix, purge `listForRent=false`, purge `wouldSell=false`, effacement `appraisalReportUrl`) ne font que filtrer le state → fichier orphelin garanti.
-- `useFormPersistence` expose déjà `trackUploadedPath` et `rollbackUploadedFiles` (bucket `cadastral-documents`), consommés par les autres onglets mais pas par MarketValueTab.
+- `GeneralTab.tsx` = 1441 lignes (sous-composants `CurrentOwnersSection`, `ConstructionSection`, `PersonneMoraleFields`, `EtatFields` toujours inline).
+- `MarketValueTab.tsx` = 1249 lignes (monolithique).
+- `RentalConfigurationFields.selectMode('single')` ne réinitialise ni `isOccupied` ni `hostingCapacity` globaux au passage multi→single (et inversement, la valeur multi précédente peut subsister transitoirement avant que l'agrégation ne reprenne).
+- `TabsTrigger disabled` : Radix bloque totalement le clic → aucun feedback utilisateur, l'onglet paraît "cassé".
 
-## Changements
+## 1. Reset explicite occupation au changement de config locative
 
-### 1. `useFormPersistence.ts` — nouveau `removeUploadedPath`
-Ajouter une méthode publique :
-```ts
-removeUploadedPath: (path: string) => Promise<void>
+Fichier : `src/components/cadastral/RentalConfigurationFields.tsx` (fonction `selectMode`).
+
+À chaque changement de mode (`single` ↔ `multi`) et uniquement quand `declaredUsage === 'Location'`, ajouter au patch :
+
 ```
-- Retire `path` du tracker (`submitUploadedPathsRef.current`) si présent.
-- Best-effort `supabase.storage.from('cadastral-documents').remove([path])`, silencieux en cas d'erreur (log console).
-- Exposée dans `UseFormPersistenceResult`.
+isOccupied: undefined,
+hostingCapacity: undefined,
+occupantCount: undefined,
+```
 
-### 2. `useCCCFormState.ts` — propagation
-Ajouter `removeUploadedPath` à la destructuration de `useFormPersistence` et au retour du hook (à côté de `trackUploadedPath`).
+Résultat : plus de valeur transitoire résiduelle. L'agrégation multi repartira à 0 puis se remplira via l'`useEffect` de `GeneralTab`. En single, l'utilisateur ressaisit consciemment.
 
-### 3. `CadastralContributionDialog.tsx` — props
-Récupérer `trackUploadedPath` et `removeUploadedPath` depuis `useCCCFormState`, les passer à `<MarketValueTab>`.
+## 2. Signal utilisateur explicite au clic sur onglet verrouillé
 
-### 4. `MarketValueTab.tsx` — utilisation
-- Ajouter deux props : `trackUploadedPath?: (p: string) => void`, `removeUploadedPath?: (p: string) => Promise<void>`.
-- Helper local `pathFromPublicUrl(url)` : extrait `<prefix>/<uuid>.<ext>` à partir de `.../storage/v1/object/public/cadastral-documents/<path>`. Retourne `null` si non reconnu (pas de suppression → aucune régression si des URL héritées ne matchent pas).
-- Nouveau helper local `dropImage(url)` : `const p = pathFromPublicUrl(url); if (p) void removeUploadedPath?.(p);`
-- Wiring dans les 3 uploaders :
-  - **Vente** (`updateSale` bloc) : `onChange={(url, path) => { … if (path) trackUploadedPath?.(path); … }}`
-  - **Location par unité** (`updateListing` bloc) : idem.
-  - **Rapport d'expertise** (`appraisalReportUrl` `StorageFileUpload`) : au changement, si l'ancienne URL existait et diffère (ou devient nulle), appeler `dropImage(oldUrl)` ; tracker le nouveau path.
-- Wiring des suppressions :
-  - Croix image (vente + location) : appeler `dropImage(url)` avant `updateSale/updateListing`.
-  - `setWouldSell(false)` : après purge, `saleImages.forEach(dropImage)`.
-  - Case `listForRent` décochée : `oldEntry.coverImageUrls?.forEach(dropImage)` avant reset.
-  - Effacement `appraisalReportUrl` (fenêtre 6 mois hors bornes ou décochage `hasRecentAppraisal`) : `dropImage(oldReportUrl)`.
+Fichier : `src/components/cadastral/CadastralContributionDialog.tsx`.
 
-### 5. Hors périmètre
-- Pas de changement de schéma DB, ni de bucket.
-- Pas de refactor du `StorageFileUpload` (déjà compatible).
-- Pas d'ajout d'analytics.
-- Les autres onglets (déjà audités) ne sont pas touchés.
+- Ajouter un helper local `getFirstLockingTab(tab)` : parcourt `TAB_ORDER` jusqu'à `tab`, retourne le 1er précédent incomplet (via `state.isTabComplete` déjà exposé, ou en dérivant de `getMissingFieldsForTab`).
+- Remplacer l'attribut `disabled` par un wrapper : au lieu de `<TabsTrigger disabled>`, garder l'onglet actif mais intercepter `onClick` via un `onPointerDown`/`onClick` guard. Si non accessible :
+  - `e.preventDefault(); e.stopPropagation();`
+  - `toast({ title: 'Onglet verrouillé', description: 'Complétez d'abord l'onglet « <label> » pour continuer.', variant: 'default' })`.
+- Conserver le style visuel verrouillé (opacity-40, `aria-disabled="true"`, `title="Complétez d'abord…"`) mais rendre le trigger cliquable pour capter le clic.
+- Récupérer les labels via un mapping local `TAB_LABELS = { location: 'Localisation', history: 'Passé', … }`.
+
+Bénéfice : l'utilisateur mobile comprend immédiatement pourquoi l'onglet ne s'ouvre pas et où agir.
+
+## 3. Modularisation `GeneralTab.tsx`
+
+Créer `src/components/cadastral/ccc-tabs/general/` :
+
+- `CurrentOwnersSection.tsx` — extrait lignes ~410-770 (composant déjà isolé dans le fichier).
+- `OwnerFields/PersonneMoraleFields.tsx` — extrait lignes ~772-833.
+- `OwnerFields/EtatFields.tsx` — extrait lignes ~834-906.
+- `ConstructionSection.tsx` — extrait lignes ~908-fin de section.
+- `OccupancyBlock.tsx` — bloc `isOccupied` + `hostingCapacity` (lignes ~1170-1200) + effet d'agrégation multi (lignes 133-150).
+
+Le fichier `GeneralTab.tsx` devient un orchestrateur (< 400 lignes) qui ne fait qu'importer et composer.
+
+Aucun changement de logique métier ni de props publiques. Signatures des sous-composants strictement typées (pas de `as any` supplémentaire).
+
+## 4. Modularisation `MarketValueTab.tsx`
+
+Créer `src/components/cadastral/ccc-tabs/market-value/` :
+
+- `constants.ts` — `SOUND_ENV_LABELS`, `LEASE_TYPE_LABELS`, `CONTACT_LABELS`, `STORAGE_PUBLIC_MARKER`, `MIN_DATE`, `TODAY`.
+- `helpers.ts` — `pathFromPublicUrl`, `toUsd`, `dropImage` (factory prenant `removeUploadedPath`), `vacantTargets` builder.
+- `ResaleBlock.tsx` — bloc "Proposer à la vente" (prix, description, images, contact).
+- `AppraisalBlock.tsx` — bloc "Expertise existante" (valeur, date, rapport uploader).
+- `RentalListingsSection.tsx` — cartes par local vacant (contient `RentalListingCard`).
+- `RentalListingCard.tsx` — édition d'un listing (loyer, disponibilité, description, images, contact).
+- `SoundEnvironmentBlock.tsx` — sélecteur environnement sonore + sources.
+
+Le `MarketValueTab.tsx` reste orchestrateur (~250 lignes) : gestion `useEffect` de recalcul USD, wiring des blocs, mémoisation `vacantTargets`.
+
+Aucun changement de comportement observable. Le rollback Storage granulaire déjà en place est préservé.
 
 ## Détails techniques
-- `pathFromPublicUrl` : `const marker = '/storage/v1/object/public/cadastral-documents/'; const i = url.indexOf(marker); return i === -1 ? null : url.slice(i + marker.length).split('?')[0];`
-- Suppressions best-effort : jamais bloquantes, jamais de toast d'erreur (comportement `rollbackUploadedFiles` déjà en place).
-- Idempotent : `remove()` sur path déjà supprimé n'échoue pas (Supabase renvoie 200 vide).
 
-## Fichiers touchés
-- `src/hooks/ccc/useFormPersistence.ts`
-- `src/hooks/useCCCFormState.ts`
+- Aucune migration Supabase.
+- Aucun changement de contrat de props visibles depuis `CadastralContributionDialog` (sauf ajout d'un mapping `TAB_LABELS` local).
+- Le toast utilise le hook existant `useToast` déjà importé dans le dialog.
+- Pour rendre un `TabsTrigger` verrouillé cliquable : ne pas passer `disabled` à Radix, ajouter `data-locked="true"` + classes d'opacité, intercepter dans un handler `onClick` externe.
+
+## Fichiers modifiés
+
+- `src/components/cadastral/RentalConfigurationFields.tsx`
 - `src/components/cadastral/CadastralContributionDialog.tsx`
-- `src/components/cadastral/ccc-tabs/MarketValueTab.tsx`
+- `src/components/cadastral/ccc-tabs/GeneralTab.tsx` (allégé)
+- `src/components/cadastral/ccc-tabs/MarketValueTab.tsx` (allégé)
+
+## Fichiers créés
+
+- `src/components/cadastral/ccc-tabs/general/CurrentOwnersSection.tsx`
+- `src/components/cadastral/ccc-tabs/general/OwnerFields/PersonneMoraleFields.tsx`
+- `src/components/cadastral/ccc-tabs/general/OwnerFields/EtatFields.tsx`
+- `src/components/cadastral/ccc-tabs/general/ConstructionSection.tsx`
+- `src/components/cadastral/ccc-tabs/general/OccupancyBlock.tsx`
+- `src/components/cadastral/ccc-tabs/market-value/constants.ts`
+- `src/components/cadastral/ccc-tabs/market-value/helpers.ts`
+- `src/components/cadastral/ccc-tabs/market-value/ResaleBlock.tsx`
+- `src/components/cadastral/ccc-tabs/market-value/AppraisalBlock.tsx`
+- `src/components/cadastral/ccc-tabs/market-value/RentalListingsSection.tsx`
+- `src/components/cadastral/ccc-tabs/market-value/RentalListingCard.tsx`
+- `src/components/cadastral/ccc-tabs/market-value/SoundEnvironmentBlock.tsx`
+
+## Hors périmètre
+
+- Pas de changement SQL / RLS / edge functions.
+- Pas de refonte du système de validation ni du store CCC.
+- Pas d'ajout de nouvelles fonctionnalités métier.
