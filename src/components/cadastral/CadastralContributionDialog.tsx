@@ -16,6 +16,18 @@ import ReviewTab from './ccc-tabs/ReviewTab';
 import MarketValueTab from './ccc-tabs/MarketValueTab';
 import WhatsAppFloatingButton from './WhatsAppFloatingButton';
 import { QuickAuthDialog } from './QuickAuthDialog';
+import { toast } from 'sonner';
+
+// Ordre & libellés des onglets — dupliqués depuis useFormValidation.ts pour éviter un export dédié.
+const TAB_ORDER = ['general', 'location', 'history', 'obligations', 'market-value', 'review'] as const;
+const TAB_LABELS: Record<(typeof TAB_ORDER)[number], string> = {
+  general: 'Infos',
+  location: 'Localisation',
+  history: 'Passé',
+  obligations: 'Obligations',
+  'market-value': 'Valeur',
+  review: 'Envoi',
+};
 
 interface CadastralContributionDialogProps {
   open: boolean;
