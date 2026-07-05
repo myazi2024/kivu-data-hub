@@ -59,21 +59,6 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     return null;
   };
 
-  /** Handler générique de clic sur un trigger d'onglet potentiellement verrouillé. */
-  const handleLockedTabClick = (
-    tab: (typeof TAB_ORDER)[number],
-    event: React.MouseEvent<HTMLButtonElement>,
-  ) => {
-    if (state.isTabAccessible(tab)) return;
-    event.preventDefault();
-    event.stopPropagation();
-    const blockingLabel = getFirstLockingTabLabel(tab);
-    toast.info('Onglet verrouillé', {
-      description: blockingLabel
-        ? `Complétez d'abord l'onglet « ${blockingLabel} » pour continuer.`
-        : 'Complétez d\'abord les onglets précédents pour continuer.',
-    });
-  };
 
   // ─── Success screen ───
   if (state.showSuccess) {
