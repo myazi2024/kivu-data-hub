@@ -19,6 +19,7 @@ import { InputWithPopover } from '../InputWithPopover';
 import SuggestivePicklist from '../SuggestivePicklist';
 import AdditionalConstructionBlock, { AdditionalConstruction } from '../AdditionalConstructionBlock';
 import { BuildingPermitIssuingServiceSelect } from '../BuildingPermitIssuingServiceSelect';
+import { CurrentOwnersSection } from './general/CurrentOwnersSection';
 
 // Types for owner, permit, etc.
 export interface CurrentOwner {
