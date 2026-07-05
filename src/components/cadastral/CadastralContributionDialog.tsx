@@ -136,15 +136,45 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
             </DialogTitle>
           </DialogHeader>
 
-          <Tabs value={state.activeTab} className="w-full" onValueChange={state.handleTabChange}>
+          <Tabs
+            value={state.activeTab}
+            className="w-full"
+            onValueChange={(next) => {
+              // Intercepte les clics sur onglets verrouillés pour afficher un toast explicite
+              // au lieu du feedback silencieux de Radix (`disabled` ignore l'action).
+              const nextTab = next as (typeof TAB_ORDER)[number];
+              if (!state.isTabAccessible(nextTab)) {
+                const blockingLabel = getFirstLockingTabLabel(nextTab);
+                toast.info('Onglet verrouillé', {
+                  description: blockingLabel
+                    ? `Complétez d'abord l'onglet « ${blockingLabel} » pour continuer.`
+                    : 'Complétez d\'abord les onglets précédents pour continuer.',
+                });
+                return;
+              }
+              state.handleTabChange(next);
+            }}
+          >
             <div className="sticky top-0 z-20 bg-background px-2 sm:px-4 pt-2 pb-1.5 border-b shadow-sm">
               <TabsList className="grid w-full grid-cols-6 h-10 bg-muted/50 p-0.5 rounded-xl shadow-inner gap-0.5">
-                <TabsTrigger value="general" className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-[11px] sm:text-sm font-semibold py-1.5 rounded-lg">Infos</TabsTrigger>
-                <TabsTrigger value="location" disabled={!state.isTabAccessible('location')} className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-[11px] sm:text-sm font-semibold py-1.5 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed">Localisation</TabsTrigger>
-                <TabsTrigger value="history" disabled={!state.isTabAccessible('history')} className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-[11px] sm:text-sm font-semibold py-1.5 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed">Passé</TabsTrigger>
-                <TabsTrigger value="obligations" disabled={!state.isTabAccessible('obligations')} className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-[11px] sm:text-sm font-semibold py-1.5 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed">Obligations</TabsTrigger>
-                <TabsTrigger value="market-value" disabled={!state.isTabAccessible('market-value')} className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-[11px] sm:text-sm font-semibold py-1.5 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed">Valeur</TabsTrigger>
-                <TabsTrigger value="review" disabled={!state.isTabAccessible('review')} className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-[11px] sm:text-sm font-semibold py-1.5 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed">Envoi</TabsTrigger>
+                {TAB_ORDER.map((tab) => {
+                  const locked = !state.isTabAccessible(tab);
+                  return (
+                    <TabsTrigger
+                      key={tab}
+                      value={tab}
+                      aria-disabled={locked || undefined}
+                      data-locked={locked || undefined}
+                      title={locked ? 'Complétez les onglets précédents pour continuer' : undefined}
+                      className={cn(
+                        'data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-[11px] sm:text-sm font-semibold py-1.5 rounded-lg',
+                        locked && 'opacity-40',
+                      )}
+                    >
+                      {TAB_LABELS[tab]}
+                    </TabsTrigger>
+                  );
+                })}
               </TabsList>
             </div>
 
