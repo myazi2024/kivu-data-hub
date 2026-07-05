@@ -23,7 +23,12 @@ export interface RentalConfigurationState {
   rentalUnits?: RentalUnit[];
 }
 
-export interface RentalConfigurationPatch extends RentalConfigurationState {}
+export interface RentalConfigurationPatch extends RentalConfigurationState {
+  /** Reset de l'occupation globale au changement de mode (single ↔ multi). */
+  isOccupied?: boolean;
+  hostingCapacity?: number;
+  occupantCount?: number;
+}
 
 interface CommonProps {
   state: RentalConfigurationState;
