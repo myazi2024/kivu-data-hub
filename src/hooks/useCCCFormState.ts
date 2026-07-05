@@ -1448,7 +1448,7 @@ export const useCCCFormState = ({
     // Form data
     formData, handleInputChange,
     // Tab navigation
-    activeTab, handleTabChange, handleNextTab, isTabAccessible,
+    activeTab, handleTabChange, handleNextTab, isTabAccessible, isTabComplete,
     // Title
     customTitleName, setCustomTitleName, leaseYears, setLeaseYears,
     // File handling
