@@ -234,6 +234,40 @@ const LocationTab: React.FC<LocationTabProps> = ({
         />
       )}
 
+      {/* Construction block (moved from Infos tab) — between admin block and map */}
+      {formData.province && (
+        <ConstructionSection
+          formData={formData}
+          handleInputChange={handleInputChange}
+          PROPERTY_CATEGORY_OPTIONS={PROPERTY_CATEGORY_OPTIONS}
+          availableConstructionTypes={availableConstructionTypes}
+          availableConstructionNatures={availableConstructionNatures}
+          availableConstructionMaterials={availableConstructionMaterials}
+          availableDeclaredUsages={availableDeclaredUsages}
+          availableStandings={availableStandings}
+          constructionMode={constructionMode}
+          setConstructionMode={setConstructionMode}
+          additionalConstructions={additionalConstructions}
+          setAdditionalConstructions={setAdditionalConstructions}
+          removeAdditionalConstruction={removeAdditionalConstruction}
+          permitMode={permitMode}
+          setPermitMode={setPermitMode}
+          buildingPermits={buildingPermits}
+          updateBuildingPermit={updateBuildingPermit}
+          updateBuildingPermitFile={updateBuildingPermitFile}
+          removeBuildingPermitFile={removeBuildingPermitFile}
+          getPermitTypeRestrictions={getPermitTypeRestrictions}
+          showPermitWarning={showPermitWarning}
+          highlightIncompletePermit={highlightIncompletePermit}
+          highlightRequiredFields={highlightRequiredFields}
+          setHighlightRequiredFields={setHighlightRequiredFields}
+          getPicklistDependentOptions={getPicklistDependentOptions}
+          toast={toast}
+          resetConstructionBlock={resetConstructionBlock}
+        />
+      )}
+
+
       {/* Map preview (non-apartment) */}
       {sectionType && formData.propertyCategory !== 'Appartement' && (
         <div className="space-y-3 pt-4 border-t relative z-0">
