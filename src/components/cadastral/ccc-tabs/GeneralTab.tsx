@@ -296,36 +296,8 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
         resetOwnersBlock={resetOwnersBlock}
       />
 
-      {/* Construction section */}
-      <ConstructionSection
-        formData={formData}
-        handleInputChange={handleInputChange}
-        PROPERTY_CATEGORY_OPTIONS={PROPERTY_CATEGORY_OPTIONS}
-        availableConstructionTypes={availableConstructionTypes}
-        availableConstructionNatures={availableConstructionNatures}
-        availableConstructionMaterials={availableConstructionMaterials}
-        availableDeclaredUsages={availableDeclaredUsages}
-        availableStandings={availableStandings}
-        constructionMode={constructionMode}
-        setConstructionMode={setConstructionMode}
-        additionalConstructions={additionalConstructions}
-        setAdditionalConstructions={setAdditionalConstructions}
-        removeAdditionalConstruction={removeAdditionalConstruction}
-        permitMode={permitMode}
-        setPermitMode={setPermitMode}
-        buildingPermits={buildingPermits}
-        updateBuildingPermit={updateBuildingPermit}
-        updateBuildingPermitFile={updateBuildingPermitFile}
-        removeBuildingPermitFile={removeBuildingPermitFile}
-        getPermitTypeRestrictions={getPermitTypeRestrictions}
-        showPermitWarning={showPermitWarning}
-        highlightIncompletePermit={highlightIncompletePermit}
-        highlightRequiredFields={highlightRequiredFields}
-        setHighlightRequiredFields={setHighlightRequiredFields}
-        getPicklistDependentOptions={getPicklistDependentOptions}
-        toast={toast}
-        resetConstructionBlock={resetConstructionBlock}
-      />
+
+
 
       {/* Navigation */}
       <div className="sticky bottom-0 z-10 bg-background/95 backdrop-blur-sm border-t pt-3 pb-3 px-1 -mx-1">
