@@ -18,6 +18,9 @@ import { ParcelMapPreview } from '../ParcelMapPreview';
 import SuggestivePicklist from '../SuggestivePicklist';
 import SectionHelpPopover from '../SectionHelpPopover';
 import { SOUND_LABELS } from '@/constants/expertiseLabels';
+import { ConstructionSection } from './shared/ConstructionSection';
+import type { AdditionalConstruction } from '../AdditionalConstructionBlock';
+import type { BuildingPermit } from './GeneralTab';
 
 interface LocationTabProps {
   formData: CadastralContributionData;
@@ -50,9 +53,32 @@ interface LocationTabProps {
   onSoundEnvironmentChange: (v: string) => void;
   nearbySoundSources: string;
   onNearbySoundSourcesChange: (v: string) => void;
-  // Construction linking
-  constructionMode?: 'unique' | 'multiple';
-  additionalConstructions?: any[];
+  // Construction (moved from GeneralTab)
+  constructionMode: 'unique' | 'multiple';
+  setConstructionMode: (v: 'unique' | 'multiple') => void;
+  additionalConstructions: AdditionalConstruction[];
+  setAdditionalConstructions: React.Dispatch<React.SetStateAction<AdditionalConstruction[]>>;
+  removeAdditionalConstruction?: (index: number) => void;
+  PROPERTY_CATEGORY_OPTIONS: string[];
+  availableConstructionTypes: string[];
+  availableConstructionNatures: string[];
+  availableConstructionMaterials: string[];
+  availableDeclaredUsages: string[];
+  availableStandings: string[];
+  permitMode: 'existing' | 'request';
+  setPermitMode: (v: 'existing' | 'request') => void;
+  buildingPermits: BuildingPermit[];
+  updateBuildingPermit: (index: number, field: string, value: string) => void;
+  updateBuildingPermitFile: (index: number, file: File | null) => void;
+  removeBuildingPermitFile: (index: number) => void;
+  getPermitTypeRestrictions: () => { blockedInExisting?: string };
+  showPermitWarning: boolean;
+  highlightIncompletePermit: boolean;
+  highlightRequiredFields: boolean;
+  setHighlightRequiredFields: (v: boolean) => void;
+  getPicklistDependentOptions: any;
+  toast: (opts: any) => void;
+  resetConstructionBlock: () => void;
   // Navigation
   handleTabChange: (tab: string) => void;
   handleNextTab: (current: string, next: string) => void;
@@ -67,7 +93,16 @@ const LocationTab: React.FC<LocationTabProps> = ({
   roadSides, onRoadSidesChange, parcelSides, onParcelSidesUpdate,
   servitude, onServitudeChange, buildingShapes, onBuildingShapesChange,
   soundEnvironment, onSoundEnvironmentChange, nearbySoundSources, onNearbySoundSourcesChange,
-  constructionMode = 'unique', additionalConstructions = [],
+  constructionMode, setConstructionMode,
+  additionalConstructions, setAdditionalConstructions, removeAdditionalConstruction,
+  PROPERTY_CATEGORY_OPTIONS,
+  availableConstructionTypes, availableConstructionNatures, availableConstructionMaterials,
+  availableDeclaredUsages, availableStandings,
+  permitMode, setPermitMode, buildingPermits,
+  updateBuildingPermit, updateBuildingPermitFile, removeBuildingPermitFile,
+  getPermitTypeRestrictions, showPermitWarning, highlightIncompletePermit,
+  highlightRequiredFields, setHighlightRequiredFields,
+  getPicklistDependentOptions, toast, resetConstructionBlock,
   handleTabChange, handleNextTab, resetLocationBlock
 }) => {
   const isTerrainNu = formData.propertyCategory === 'Terrain nu' || formData.constructionType === 'Terrain nu';
