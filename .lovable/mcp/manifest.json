@@ -1,0 +1,96 @@
+{
+  "version": 1,
+  "sdk_version": "0.20.0",
+  "path": "/functions/v1/mcp",
+  "auth": {
+    "type": "none"
+  },
+  "mcp": {
+    "server": {
+      "name": "bic-mcp",
+      "version": "0.1.0",
+      "title": "BIC RDC MCP"
+    },
+    "tools": [
+      {
+        "name": "list_publications",
+        "title": "List publications",
+        "description": "List the most recent published publications available on the BIC platform (title, category, price, publication date).",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "limit": {
+              "description": "Maximum number of publications to return (default 10, max 50).",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            },
+            "category": {
+              "description": "Optional category filter (case-insensitive substring match).",
+              "type": "string"
+            }
+          }
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_articles",
+        "title": "List articles",
+        "description": "List the most recent published articles/blog posts from the BIC platform (title, slug, theme, published date).",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "limit": {
+              "description": "Maximum number of articles to return (default 10, max 50).",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            },
+            "theme": {
+              "description": "Optional theme filter (case-insensitive substring).",
+              "type": "string"
+            }
+          }
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "verify_document",
+        "title": "Verify a BIC document",
+        "description": "Verify the authenticity of a BIC-issued document (certificate, permit, mutation, etc.) by its verification code. Returns non-sensitive validity metadata only.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "minLength": 3,
+              "description": "The verification code printed on the document (e.g. BIC-CERT-XXXX)."
+            }
+          },
+          "required": [
+            "code"
+          ]
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}

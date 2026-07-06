@@ -8,7 +8,7 @@ import { defineMcp } from "npm:@lovable.dev/mcp-js@0.20.0";
 // src/lib/mcp/tools/list-publications.ts
 import { createClient } from "npm:@supabase/supabase-js@^2.52.1";
 import { defineTool } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z } from "npm:zod@^3.23.8";
+import { z } from "npm:zod@^4.4.3";
 var list_publications_default = defineTool({
   name: "list_publications",
   title: "List publications",
@@ -40,7 +40,7 @@ var list_publications_default = defineTool({
 // src/lib/mcp/tools/list-articles.ts
 import { createClient as createClient2 } from "npm:@supabase/supabase-js@^2.52.1";
 import { defineTool as defineTool2 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z2 } from "npm:zod@^3.23.8";
+import { z as z2 } from "npm:zod@^4.4.3";
 var list_articles_default = defineTool2({
   name: "list_articles",
   title: "List articles",
@@ -72,7 +72,7 @@ var list_articles_default = defineTool2({
 // src/lib/mcp/tools/verify-document.ts
 import { createClient as createClient3 } from "npm:@supabase/supabase-js@^2.52.1";
 import { defineTool as defineTool3 } from "npm:@lovable.dev/mcp-js@0.20.0";
-import { z as z3 } from "npm:zod@^3.23.8";
+import { z as z3 } from "npm:zod@^4.4.3";
 var verify_document_default = defineTool3({
   name: "verify_document",
   title: "Verify a BIC document",
