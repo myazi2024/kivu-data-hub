@@ -1,25 +1,17 @@
 import React from 'react';
-import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Plus, Trash2, Info, X, ChevronRight, Users } from 'lucide-react';
-import { MdDashboard, MdLocationOn, MdInsertDriveFile } from 'react-icons/md';
-import BlockResetButton from '../BlockResetButton';
+import { Plus, Info, X, ChevronRight } from 'lucide-react';
+import { MdInsertDriveFile } from 'react-icons/md';
 import { CadastralContributionData } from '@/hooks/useCadastralContribution';
-import RentalStartDateField from '../RentalStartDateField';
-import { RentalConfigurationSelector, MonthlyRentFields } from '../RentalConfigurationFields';
 import { PropertyTitleTypeSelect, PROPERTY_TITLE_TYPES, getEffectiveTitleName } from '../PropertyTitleTypeSelect';
 
 import { InputWithPopover } from '../InputWithPopover';
-import SuggestivePicklist from '../SuggestivePicklist';
-import AdditionalConstructionBlock, { AdditionalConstruction } from '../AdditionalConstructionBlock';
-import { BuildingPermitIssuingServiceSelect } from '../BuildingPermitIssuingServiceSelect';
 import { CurrentOwnersSection } from './general/CurrentOwnersSection';
+
 
 // Types for owner, permit, etc.
 export interface CurrentOwner {
