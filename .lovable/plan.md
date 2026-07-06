@@ -1,100 +1,59 @@
-# Audit & corrections — recommandations résiduelles CCC
+# Correctifs demandés
 
-Vérification effectuée : **les 3 recommandations ne sont pas encore intégrées**.
+## 1. Erreurs de build (préalable)
 
-- `GeneralTab.tsx` = 1441 lignes (sous-composants `CurrentOwnersSection`, `ConstructionSection`, `PersonneMoraleFields`, `EtatFields` toujours inline).
-- `MarketValueTab.tsx` = 1249 lignes (monolithique).
-- `RentalConfigurationFields.selectMode('single')` ne réinitialise ni `isOccupied` ni `hostingCapacity` globaux au passage multi→single (et inversement, la valeur multi précédente peut subsister transitoirement avant que l'agrégation ne reprenne).
-- `TabsTrigger disabled` : Radix bloque totalement le clic → aucun feedback utilisateur, l'onglet paraît "cassé".
+Les 2 fichiers de tests importent `waitFor` depuis `@testing-library/react`, qui ne l'exporte plus dans la version installée. Le remplacer par `@testing-library/dom` (déjà transitivement dispo) :
 
-## 1. Reset explicite occupation au changement de config locative
+- `src/components/cadastral/subdivision/hooks/__tests__/useParentParcelEligibility.test.tsx` : séparer l'import — `renderHook` reste depuis `@testing-library/react`, `waitFor` depuis `@testing-library/dom`.
+- `src/hooks/__tests__/useCadastralCart.purge.test.tsx` : même correction (`render`, `act` restent, `waitFor` depuis `@testing-library/dom`).
 
-Fichier : `src/components/cadastral/RentalConfigurationFields.tsx` (fonction `selectMode`).
+Aucune logique de test modifiée.
 
-À chaque changement de mode (`single` ↔ `multi`) et uniquement quand `declaredUsage === 'Location'`, ajouter au patch :
+## 2. Déplacement du bloc "Construction" (Infos → Localisation)
 
+### Objectif
+Rendre l'onglet **Infos** dédié uniquement au bloc "Informations sur le propriétaire". Le bloc **Construction** (avec toutes ses dépendances : constructions multiples, permis de construire, uploads, etc.) rejoint l'onglet **Localisation**, positionné **entre le premier bloc (Localisation administrative / Province + Section urbaine/rurale)** et le bloc **Localisation sur la carte** (`ParcelMapPreview`).
+
+### Ordre final de l'onglet Localisation
 ```
-isOccupied: undefined,
-hostingCapacity: undefined,
-occupantCount: undefined,
+1. Localisation administrative (province, section urbaine/rurale, ville/commune/quartier ou territoire/collectivité)
+2. Construction (déplacé)  ← NOUVEAU
+3. Localisation sur la carte (ParcelMapPreview)
+4. Environnement sonore
+5. Mesures appartement (si applicable)
+6. Navigation
 ```
 
-Résultat : plus de valeur transitoire résiduelle. L'agrégation multi repartira à 0 puis se remplira via l'`useEffect` de `GeneralTab`. En single, l'utilisateur ressaisit consciemment.
+### Fichiers touchés
 
-## 2. Signal utilisateur explicite au clic sur onglet verrouillé
+**`src/components/cadastral/ccc-tabs/GeneralTab.tsx`**
+- Retirer le rendu `<ConstructionSection ... />` (lignes 359-388).
+- Retirer les props construction/permis du composant `GeneralTab` (interface + destructuration) : `PROPERTY_CATEGORY_OPTIONS`, `availableConstructionTypes/Natures/Materials`, `availableDeclaredUsages`, `availableStandings`, `constructionMode/setConstructionMode`, `additionalConstructions/setAdditionalConstructions`, `removeAdditionalConstruction`, `permitMode/setPermitMode`, `buildingPermits`, `updateBuildingPermit`, `updateBuildingPermitFile`, `removeBuildingPermitFile`, `getPermitTypeRestrictions`, `showPermitWarning`, `highlightIncompletePermit`, `highlightRequiredFields/setHighlightRequiredFields`, `getPicklistDependentOptions`, `toast`, `resetConstructionBlock`.
+- Extraire le composant `ConstructionSection` (défini plus bas dans le fichier, lignes ~407+) dans un nouveau fichier partagé : **`src/components/cadastral/ccc-tabs/shared/ConstructionSection.tsx`** (export nommé + interface `ConstructionSectionProps`). Cela évite un import inter-tabs fragile.
+- Retirer l'import `AdditionalConstructionBlock` s'il n'est plus utilisé.
 
-Fichier : `src/components/cadastral/CadastralContributionDialog.tsx`.
+**`src/components/cadastral/ccc-tabs/LocationTab.tsx`**
+- Ajouter au composant les props construction/permis listées ci-dessus.
+- Importer `ConstructionSection` depuis `./shared/ConstructionSection`.
+- Insérer `<ConstructionSection ... />` **entre le bloc "Localisation administrative" (Card `province`/`section type`) et le `ParcelMapPreview`** — c.-à-d. avant le rendu conditionnel `sectionType === 'urbaine'`/`'rurale'` ? Non : juste **après** les blocs UrbanSection/RuralSection et **avant** le `ParcelMapPreview`, pour respecter "entre le premier bloc et la localisation sur la carte" (l'ensemble "administrative + section" forme le premier bloc logique).
+- Le bloc Construction reste conditionnel sur `sectionType` (comme aujourd'hui le bloc Construction n'a pas cette contrainte dans Infos, mais l'ajouter dans Location impose de le montrer une fois la section connue — cohérent avec la carte).
+  - **Décision** : afficher Construction dès que `formData.province` est renseigné (indépendamment de `sectionType`), pour ne pas bloquer la saisie construction avant le choix urbain/rural. À valider.
 
-- Ajouter un helper local `getFirstLockingTab(tab)` : parcourt `TAB_ORDER` jusqu'à `tab`, retourne le 1er précédent incomplet (via `state.isTabComplete` déjà exposé, ou en dérivant de `getMissingFieldsForTab`).
-- Remplacer l'attribut `disabled` par un wrapper : au lieu de `<TabsTrigger disabled>`, garder l'onglet actif mais intercepter `onClick` via un `onPointerDown`/`onClick` guard. Si non accessible :
-  - `e.preventDefault(); e.stopPropagation();`
-  - `toast({ title: 'Onglet verrouillé', description: 'Complétez d'abord l'onglet « <label> » pour continuer.', variant: 'default' })`.
-- Conserver le style visuel verrouillé (opacity-40, `aria-disabled="true"`, `title="Complétez d'abord…"`) mais rendre le trigger cliquable pour capter le clic.
-- Récupérer les labels via un mapping local `TAB_LABELS = { location: 'Localisation', history: 'Passé', … }`.
+**`src/components/cadastral/CadastralContributionDialog.tsx`**
+- Retirer du `<GeneralTab ... />` (lignes 168-194) toutes les props construction/permis énumérées ci-dessus.
+- Ajouter ces mêmes props au `<LocationTab ... />` (lignes 198-216).
 
-Bénéfice : l'utilisateur mobile comprend immédiatement pourquoi l'onglet ne s'ouvre pas et où agir.
+### Validation (Onglet Infos — Locking)
+- Le hook `useFormValidation` détermine si l'onglet suivant est déblocable. Vérifier que la logique de validation "Infos" (`isGeneralComplete`) n'exige plus les champs construction, et que la validation "Localisation" (`isLocationComplete`) inclut désormais les champs construction/permis.
+- **Fichier concerné** : `src/hooks/ccc/useFormValidation.ts` — déplacer les checks construction/permis de `isGeneralComplete` vers `isLocationComplete`. Le toast "onglet verrouillé" affichera automatiquement le bon libellé grâce au helper `getFirstLockingTabLabel` déjà en place.
 
-## 3. Modularisation `GeneralTab.tsx`
-
-Créer `src/components/cadastral/ccc-tabs/general/` :
-
-- `CurrentOwnersSection.tsx` — extrait lignes ~410-770 (composant déjà isolé dans le fichier).
-- `OwnerFields/PersonneMoraleFields.tsx` — extrait lignes ~772-833.
-- `OwnerFields/EtatFields.tsx` — extrait lignes ~834-906.
-- `ConstructionSection.tsx` — extrait lignes ~908-fin de section.
-- `OccupancyBlock.tsx` — bloc `isOccupied` + `hostingCapacity` (lignes ~1170-1200) + effet d'agrégation multi (lignes 133-150).
-
-Le fichier `GeneralTab.tsx` devient un orchestrateur (< 400 lignes) qui ne fait qu'importer et composer.
-
-Aucun changement de logique métier ni de props publiques. Signatures des sous-composants strictement typées (pas de `as any` supplémentaire).
-
-## 4. Modularisation `MarketValueTab.tsx`
-
-Créer `src/components/cadastral/ccc-tabs/market-value/` :
-
-- `constants.ts` — `SOUND_ENV_LABELS`, `LEASE_TYPE_LABELS`, `CONTACT_LABELS`, `STORAGE_PUBLIC_MARKER`, `MIN_DATE`, `TODAY`.
-- `helpers.ts` — `pathFromPublicUrl`, `toUsd`, `dropImage` (factory prenant `removeUploadedPath`), `vacantTargets` builder.
-- `ResaleBlock.tsx` — bloc "Proposer à la vente" (prix, description, images, contact).
-- `AppraisalBlock.tsx` — bloc "Expertise existante" (valeur, date, rapport uploader).
-- `RentalListingsSection.tsx` — cartes par local vacant (contient `RentalListingCard`).
-- `RentalListingCard.tsx` — édition d'un listing (loyer, disponibilité, description, images, contact).
-- `SoundEnvironmentBlock.tsx` — sélecteur environnement sonore + sources.
-
-Le `MarketValueTab.tsx` reste orchestrateur (~250 lignes) : gestion `useEffect` de recalcul USD, wiring des blocs, mémoisation `vacantTargets`.
-
-Aucun changement de comportement observable. Le rollback Storage granulaire déjà en place est préservé.
+### Non-régressions à vérifier après implémentation
+- L'onglet Review continue d'afficher les données construction (props déjà passées via `state`).
+- Les onglets Obligations et MarketValue reçoivent toujours `additionalConstructions` via `state` (aucun changement de plumbing DB).
+- Le formulaire reset (`resetConstructionBlock`) fonctionne toujours depuis le nouveau parent Location.
+- Aucun changement SQL, RLS, edge function, permissions, ni logique métier — pure réorganisation UI + validation.
 
 ## Détails techniques
-
-- Aucune migration Supabase.
-- Aucun changement de contrat de props visibles depuis `CadastralContributionDialog` (sauf ajout d'un mapping `TAB_LABELS` local).
-- Le toast utilise le hook existant `useToast` déjà importé dans le dialog.
-- Pour rendre un `TabsTrigger` verrouillé cliquable : ne pas passer `disabled` à Radix, ajouter `data-locked="true"` + classes d'opacité, intercepter dans un handler `onClick` externe.
-
-## Fichiers modifiés
-
-- `src/components/cadastral/RentalConfigurationFields.tsx`
-- `src/components/cadastral/CadastralContributionDialog.tsx`
-- `src/components/cadastral/ccc-tabs/GeneralTab.tsx` (allégé)
-- `src/components/cadastral/ccc-tabs/MarketValueTab.tsx` (allégé)
-
-## Fichiers créés
-
-- `src/components/cadastral/ccc-tabs/general/CurrentOwnersSection.tsx`
-- `src/components/cadastral/ccc-tabs/general/OwnerFields/PersonneMoraleFields.tsx`
-- `src/components/cadastral/ccc-tabs/general/OwnerFields/EtatFields.tsx`
-- `src/components/cadastral/ccc-tabs/general/ConstructionSection.tsx`
-- `src/components/cadastral/ccc-tabs/general/OccupancyBlock.tsx`
-- `src/components/cadastral/ccc-tabs/market-value/constants.ts`
-- `src/components/cadastral/ccc-tabs/market-value/helpers.ts`
-- `src/components/cadastral/ccc-tabs/market-value/ResaleBlock.tsx`
-- `src/components/cadastral/ccc-tabs/market-value/AppraisalBlock.tsx`
-- `src/components/cadastral/ccc-tabs/market-value/RentalListingsSection.tsx`
-- `src/components/cadastral/ccc-tabs/market-value/RentalListingCard.tsx`
-- `src/components/cadastral/ccc-tabs/market-value/SoundEnvironmentBlock.tsx`
-
-## Hors périmètre
-
-- Pas de changement SQL / RLS / edge functions.
-- Pas de refonte du système de validation ni du store CCC.
-- Pas d'ajout de nouvelles fonctionnalités métier.
+- Aucune modification de type `CadastralContributionData`, aucune migration, aucun endpoint touché.
+- L'extraction de `ConstructionSection` dans `shared/` respecte la convention de modularisation existante (`ccc-tabs/general/`, `ccc-tabs/market-value/`).
+- Le prop drilling reste identique côté `useCCCFormState` ; seule la destination change (Location au lieu de General).

@@ -175,22 +175,10 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                   ownerDocFile={state.ownerDocFile} updateCurrentOwner={state.updateCurrentOwner}
                   addCurrentOwner={state.addCurrentOwner} removeCurrentOwner={state.removeCurrentOwner}
                   showOwnerWarning={state.showOwnerWarning} highlightIncompleteOwner={state.highlightIncompleteOwner}
-                  PROPERTY_CATEGORY_OPTIONS={state.PROPERTY_CATEGORY_OPTIONS}
-                  availableConstructionTypes={state.availableConstructionTypes} availableConstructionNatures={state.availableConstructionNatures}
-                  availableConstructionMaterials={state.availableConstructionMaterials} availableDeclaredUsages={state.availableDeclaredUsages}
-                  availableStandings={state.availableStandings}
-                  constructionMode={state.constructionMode} setConstructionMode={state.setConstructionMode}
-                  additionalConstructions={state.additionalConstructions} setAdditionalConstructions={state.setAdditionalConstructions}
-                  removeAdditionalConstruction={state.removeAdditionalConstruction}
-                  permitMode={state.permitMode} setPermitMode={state.setPermitMode}
-                  buildingPermits={state.buildingPermits} updateBuildingPermit={state.updateBuildingPermit}
-                  updateBuildingPermitFile={state.updateBuildingPermitFile} removeBuildingPermitFile={state.removeBuildingPermitFile}
-                  getPermitTypeRestrictions={state.getPermitTypeRestrictions}
-                  showPermitWarning={state.showPermitWarning} highlightIncompletePermit={state.highlightIncompletePermit}
-                  highlightRequiredFields={state.highlightRequiredFields} setHighlightRequiredFields={state.setHighlightRequiredFields}
-                  getPicklistOptions={state.getPicklistOptions} getPicklistDependentOptions={state.getPicklistDependentOptions}
-                  handleNextTab={state.handleNextTab} toast={state.toast}
-                  resetTitleBlock={state.resetTitleBlock} resetOwnersBlock={state.resetOwnersBlock} resetConstructionBlock={state.resetConstructionBlock}
+                  highlightRequiredFields={state.highlightRequiredFields}
+                  getPicklistOptions={state.getPicklistOptions}
+                  handleNextTab={state.handleNextTab}
+                  resetTitleBlock={state.resetTitleBlock} resetOwnersBlock={state.resetOwnersBlock}
                 />
               </TabsContent>
 
@@ -210,11 +198,27 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                   buildingShapes={state.buildingShapes} onBuildingShapesChange={state.setBuildingShapes}
                   soundEnvironment={state.soundEnvironment} onSoundEnvironmentChange={state.setSoundEnvironment}
                   nearbySoundSources={state.nearbySoundSources} onNearbySoundSourcesChange={state.setNearbySoundSources}
-                  constructionMode={state.constructionMode} additionalConstructions={state.additionalConstructions}
+                  constructionMode={state.constructionMode} setConstructionMode={state.setConstructionMode}
+                  additionalConstructions={state.additionalConstructions} setAdditionalConstructions={state.setAdditionalConstructions}
+                  removeAdditionalConstruction={state.removeAdditionalConstruction}
+                  PROPERTY_CATEGORY_OPTIONS={state.PROPERTY_CATEGORY_OPTIONS}
+                  availableConstructionTypes={state.availableConstructionTypes} availableConstructionNatures={state.availableConstructionNatures}
+                  availableConstructionMaterials={state.availableConstructionMaterials} availableDeclaredUsages={state.availableDeclaredUsages}
+                  availableStandings={state.availableStandings}
+                  permitMode={state.permitMode} setPermitMode={state.setPermitMode}
+                  buildingPermits={state.buildingPermits} updateBuildingPermit={state.updateBuildingPermit}
+                  updateBuildingPermitFile={state.updateBuildingPermitFile} removeBuildingPermitFile={state.removeBuildingPermitFile}
+                  getPermitTypeRestrictions={state.getPermitTypeRestrictions}
+                  showPermitWarning={state.showPermitWarning} highlightIncompletePermit={state.highlightIncompletePermit}
+                  highlightRequiredFields={state.highlightRequiredFields} setHighlightRequiredFields={state.setHighlightRequiredFields}
+                  getPicklistDependentOptions={state.getPicklistDependentOptions}
+                  toast={state.toast}
+                  resetConstructionBlock={state.resetConstructionBlock}
                   handleTabChange={state.handleTabChange} handleNextTab={state.handleNextTab}
                   resetLocationBlock={state.resetLocationBlock}
                 />
               </TabsContent>
+
 
               <TabsContent value="history" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
                 <HistoryTab
