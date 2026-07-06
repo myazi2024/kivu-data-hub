@@ -64,43 +64,16 @@ interface GeneralTabProps {
   removeCurrentOwner: (index: number) => void;
   showOwnerWarning: boolean;
   highlightIncompleteOwner: boolean;
-  // Construction
-  PROPERTY_CATEGORY_OPTIONS: string[];
-  availableConstructionTypes: string[];
-  availableConstructionNatures: string[];
-  availableConstructionMaterials: string[];
-  availableDeclaredUsages: string[];
-  availableStandings: string[];
-  constructionMode: 'unique' | 'multiple';
-  setConstructionMode: (v: 'unique' | 'multiple') => void;
-  additionalConstructions: AdditionalConstruction[];
-  setAdditionalConstructions: React.Dispatch<React.SetStateAction<AdditionalConstruction[]>>;
-  /** Provided by useCCCFormState — reindexes IRL taxRecords and marketListings. */
-  removeAdditionalConstruction?: (index: number) => void;
-  // Permit
-  permitMode: 'existing' | 'request';
-  setPermitMode: (v: 'existing' | 'request') => void;
-  buildingPermits: BuildingPermit[];
-  updateBuildingPermit: (index: number, field: string, value: string) => void;
-  updateBuildingPermitFile: (index: number, file: File | null) => void;
-  removeBuildingPermitFile: (index: number) => void;
-  getPermitTypeRestrictions: () => { blockedInExisting?: string };
-  showPermitWarning: boolean;
-  highlightIncompletePermit: boolean;
+  // Permit type (kept because BuildingPermit interface below is exported for validation)
   // Validation highlights
   highlightRequiredFields: boolean;
-  setHighlightRequiredFields: (v: boolean) => void;
   // Picklists
   getPicklistOptions: (key: string) => string[];
-  getPicklistDependentOptions: any; // Accepts both signatures used by parent and AdditionalConstructionBlock
   // Navigation
   handleNextTab: (current: string, next: string) => void;
-  // Toast
-  toast: (opts: any) => void;
   // Reset handlers
   resetTitleBlock: () => void;
   resetOwnersBlock: () => void;
-  resetConstructionBlock: () => void;
 }
 
 const GeneralTab: React.FC<GeneralTabProps> = ({
@@ -110,37 +83,12 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
   currentOwners, setCurrentOwners, ownershipMode, setOwnershipMode,
   ownerDocFile, updateCurrentOwner, addCurrentOwner, removeCurrentOwner,
   showOwnerWarning, highlightIncompleteOwner,
-  PROPERTY_CATEGORY_OPTIONS,
-  availableConstructionTypes, availableConstructionNatures, availableConstructionMaterials,
-  availableDeclaredUsages, availableStandings,
-  constructionMode, setConstructionMode,
-  additionalConstructions, setAdditionalConstructions, removeAdditionalConstruction,
-  permitMode, setPermitMode, buildingPermits,
-  updateBuildingPermit, updateBuildingPermitFile, removeBuildingPermitFile,
-  getPermitTypeRestrictions, showPermitWarning, highlightIncompletePermit,
-  highlightRequiredFields, setHighlightRequiredFields,
-  getPicklistOptions, getPicklistDependentOptions,
-  handleNextTab, toast,
-  resetTitleBlock, resetOwnersBlock, resetConstructionBlock
+  highlightRequiredFields,
+  getPicklistOptions,
+  handleNextTab,
+  resetTitleBlock, resetOwnersBlock
 }) => {
-  // Agrégation auto : en mode multi-locaux, la capacité d'accueil globale = Σ capacités des locaux.
-  // Dépendance sur la somme des capacités (dérivée stable) au lieu de JSON.stringify (coûteux à chaque frappe).
-  const rentalUnitsCapacitySum = React.useMemo(() => {
-    if (formData.rentalConfiguration !== 'multi') return 0;
-    return (formData.rentalUnits || []).reduce(
-      (s, u: any) => s + (Number(u?.hostingCapacity) || 0),
-      0,
-    );
-  }, [formData.rentalConfiguration, formData.rentalUnits]);
 
-  React.useEffect(() => {
-    if (formData.declaredUsage === 'Location' && formData.rentalConfiguration === 'multi') {
-      const next = rentalUnitsCapacitySum > 0 ? rentalUnitsCapacitySum : undefined;
-      if (next !== formData.hostingCapacity) {
-        handleInputChange('hostingCapacity', next);
-      }
-    }
-  }, [formData.declaredUsage, formData.rentalConfiguration, rentalUnitsCapacitySum, formData.hostingCapacity, handleInputChange]);
 
   return (
     <div className="space-y-4 sm:space-y-6 mt-4 sm:mt-6 animate-fade-in">
