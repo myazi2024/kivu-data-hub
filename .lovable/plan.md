@@ -1,59 +1,45 @@
-# Correctifs demandés
+# Audit du formulaire CCC — bugs détectés et correctifs
 
-## 1. Erreurs de build (préalable)
+Audit complet des onglets (Infos, Localisation, Passé, Obligations, Valeur marchande, Récapitulatif), des hooks d'état, de validation, de persistance et du mapping base de données, après le déplacement du bloc « Construction » vers l'onglet Localisation.
 
-Les 2 fichiers de tests importent `waitFor` depuis `@testing-library/react`, qui ne l'exporte plus dans la version installée. Le remplacer par `@testing-library/dom` (déjà transitivement dispo) :
+**Bonne nouvelle** : le déplacement lui-même est propre — toutes les règles de validation construction/location sont bien rattachées à l'onglet Localisation, et l'onglet Infos ne conserve aucun état ni effet orphelin. La ré-indexation des références lors de la suppression d'une construction est également complète et correcte.
 
-- `src/components/cadastral/subdivision/hooks/__tests__/useParentParcelEligibility.test.tsx` : séparer l'import — `renderHook` reste depuis `@testing-library/react`, `waitFor` depuis `@testing-library/dom`.
-- `src/hooks/__tests__/useCadastralCart.purge.test.tsx` : même correction (`render`, `act` restent, `waitFor` depuis `@testing-library/dom`).
+Quatre anomalies réelles ont été confirmées.
 
-Aucune logique de test modifiée.
+## 1. Perte de données locatives à la réédition (critique)
 
-## 2. Déplacement du bloc "Construction" (Infos → Localisation)
+Quand un utilisateur rouvre une contribution existante pour la corriger, la configuration locative des constructions **secondaires** (un seul local / plusieurs locaux, nombre de locaux, loyers, détail de chaque local) n'est pas rechargée, alors qu'elle est bien enregistrée en base. Résultat : les champs apparaissent vides, l'onglet se re-signale comme incomplet, et un nouvel enregistrement écrase les données d'origine.
 
-### Objectif
-Rendre l'onglet **Infos** dédié uniquement au bloc "Informations sur le propriétaire". Le bloc **Construction** (avec toutes ses dépendances : constructions multiples, permis de construire, uploads, etc.) rejoint l'onglet **Localisation**, positionné **entre le premier bloc (Localisation administrative / Province + Section urbaine/rurale)** et le bloc **Localisation sur la carte** (`ParcelMapPreview`).
+Correctif : restaurer ces champs au chargement depuis la base.
 
-### Ordre final de l'onglet Localisation
-```
-1. Localisation administrative (province, section urbaine/rurale, ville/commune/quartier ou territoire/collectivité)
-2. Construction (déplacé)  ← NOUVEAU
-3. Localisation sur la carte (ParcelMapPreview)
-4. Environnement sonore
-5. Mesures appartement (si applicable)
-6. Navigation
-```
+## 2. Brouillon local non sauvegardé pour certains blocs (important)
 
-### Fichiers touchés
+La sauvegarde automatique du brouillon ne se déclenche pas si l'utilisateur ne modifie **que** : le mode « plusieurs constructions », les constructions additionnelles, les tracés de bâtiments du croquis, la servitude, le nom de titre personnalisé, l'environnement sonore ou les données de litige. Un rafraîchissement de page peut alors perdre ces saisies.
 
-**`src/components/cadastral/ccc-tabs/GeneralTab.tsx`**
-- Retirer le rendu `<ConstructionSection ... />` (lignes 359-388).
-- Retirer les props construction/permis du composant `GeneralTab` (interface + destructuration) : `PROPERTY_CATEGORY_OPTIONS`, `availableConstructionTypes/Natures/Materials`, `availableDeclaredUsages`, `availableStandings`, `constructionMode/setConstructionMode`, `additionalConstructions/setAdditionalConstructions`, `removeAdditionalConstruction`, `permitMode/setPermitMode`, `buildingPermits`, `updateBuildingPermit`, `updateBuildingPermitFile`, `removeBuildingPermitFile`, `getPermitTypeRestrictions`, `showPermitWarning`, `highlightIncompletePermit`, `highlightRequiredFields/setHighlightRequiredFields`, `getPicklistDependentOptions`, `toast`, `resetConstructionBlock`.
-- Extraire le composant `ConstructionSection` (défini plus bas dans le fichier, lignes ~407+) dans un nouveau fichier partagé : **`src/components/cadastral/ccc-tabs/shared/ConstructionSection.tsx`** (export nommé + interface `ConstructionSectionProps`). Cela évite un import inter-tabs fragile.
-- Retirer l'import `AdditionalConstructionBlock` s'il n'est plus utilisé.
+Correctif : ajouter ces états au déclencheur de sauvegarde automatique.
 
-**`src/components/cadastral/ccc-tabs/LocationTab.tsx`**
-- Ajouter au composant les props construction/permis listées ci-dessus.
-- Importer `ConstructionSection` depuis `./shared/ConstructionSection`.
-- Insérer `<ConstructionSection ... />` **entre le bloc "Localisation administrative" (Card `province`/`section type`) et le `ParcelMapPreview`** — c.-à-d. avant le rendu conditionnel `sectionType === 'urbaine'`/`'rurale'` ? Non : juste **après** les blocs UrbanSection/RuralSection et **avant** le `ParcelMapPreview`, pour respecter "entre le premier bloc et la localisation sur la carte" (l'ensemble "administrative + section" forme le premier bloc logique).
-- Le bloc Construction reste conditionnel sur `sectionType` (comme aujourd'hui le bloc Construction n'a pas cette contrainte dans Infos, mais l'ajouter dans Location impose de le montrer une fois la section connue — cohérent avec la carte).
-  - **Décision** : afficher Construction dès que `formData.province` est renseigné (indépendamment de `sectionType`), pour ne pas bloquer la saisie construction avant le choix urbain/rural. À valider.
+## 3. Bloc Construction masqué tant que la Province n'est pas choisie (important)
 
-**`src/components/cadastral/CadastralContributionDialog.tsx`**
-- Retirer du `<GeneralTab ... />` (lignes 168-194) toutes les props construction/permis énumérées ci-dessus.
-- Ajouter ces mêmes props au `<LocationTab ... />` (lignes 198-216).
+Le bloc Construction n'apparaît que si une province est renseignée, alors qu'il n'a aucun lien fonctionnel avec elle. Si la localisation est réinitialisée, tout le bloc disparaît de l'écran (les données restent en mémoire mais deviennent invisibles).
 
-### Validation (Onglet Infos — Locking)
-- Le hook `useFormValidation` détermine si l'onglet suivant est déblocable. Vérifier que la logique de validation "Infos" (`isGeneralComplete`) n'exige plus les champs construction, et que la validation "Localisation" (`isLocationComplete`) inclut désormais les champs construction/permis.
-- **Fichier concerné** : `src/hooks/ccc/useFormValidation.ts` — déplacer les checks construction/permis de `isGeneralComplete` vers `isLocationComplete`. Le toast "onglet verrouillé" affichera automatiquement le bon libellé grâce au helper `getFirstLockingTabLabel` déjà en place.
+Correctif : afficher le bloc Construction sans condition sur la province.
 
-### Non-régressions à vérifier après implémentation
-- L'onglet Review continue d'afficher les données construction (props déjà passées via `state`).
-- Les onglets Obligations et MarketValue reçoivent toujours `additionalConstructions` via `state` (aucun changement de plumbing DB).
-- Le formulaire reset (`resetConstructionBlock`) fonctionne toujours depuis le nouveau parent Location.
-- Aucun changement SQL, RLS, edge function, permissions, ni logique métier — pure réorganisation UI + validation.
+## 4. Libellé d'onglet manquant dans le message d'erreur (mineur)
+
+Si la soumission est bloquée par un champ manquant de l'onglet « Valeur marchande », le message affiche `market-value` au lieu du libellé lisible.
+
+Correctif : ajouter le libellé manquant à la table de correspondance.
 
 ## Détails techniques
-- Aucune modification de type `CadastralContributionData`, aucune migration, aucun endpoint touché.
-- L'extraction de `ConstructionSection` dans `shared/` respecte la convention de modularisation existante (`ccc-tabs/general/`, `ccc-tabs/market-value/`).
-- Le prop drilling reste identique côté `useCCCFormState` ; seule la destination change (Location au lieu de General).
+
+- `src/hooks/useCCCFormState.ts` (~l.1189) : ajouter `rentalConfiguration`, `rentalUnitsCount`, `monthlyRentUsd`, `rentalUnits` au mapping de restauration de `additional_constructions`.
+- `src/hooks/useCCCFormState.ts` (l.868) : ajouter `'market-value': 'Valeur marchande'` à `tabNames`.
+- `src/hooks/ccc/useFormPersistence.ts` (l.238) : compléter le tableau de dépendances de l'effet d'autosave avec `constructionMode`, `additionalConstructions`, `buildingShapes`, `servitude`, `customTitleName`, `soundEnvironment`, `nearbySoundSources`, `disputeFormData`.
+- `src/components/cadastral/ccc-tabs/LocationTab.tsx` (l.238) : retirer la condition `formData.province &&` devant `<ConstructionSection />`.
+
+Aucune migration SQL, aucune modification de RLS, d'edge function ou de logique métier : uniquement des correctifs de restauration, de persistance et d'affichage.
+
+## Points signalés mais non modifiés
+
+- `TAB_ORDER` / `TAB_LABELS` sont dupliqués entre `CadastralContributionDialog.tsx` et `useFormValidation.ts` (actuellement synchronisés, risque de dérive future).
+- Les cascades de `useConstructionCascade.ts` désactivent volontairement la règle de dépendances ESLint pour éviter des boucles ; comportement correct aujourd'hui, à ne pas « corriger » naïvement.
