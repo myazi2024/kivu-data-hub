@@ -234,8 +234,10 @@ const LocationTab: React.FC<LocationTabProps> = ({
         />
       )}
 
-      {/* Construction block (moved from Infos tab) — between admin block and map */}
-      {formData.province && (
+      {/* Construction block (moved from Infos tab) — between admin block and map.
+          Toujours visible : aucune dépendance fonctionnelle à la province. */}
+      {(
+
         <ConstructionSection
           formData={formData}
           handleInputChange={handleInputChange}

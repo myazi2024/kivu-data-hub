@@ -865,7 +865,7 @@ export const useCCCFormState = ({
     if (missingFields.length > 0) {
       const fieldsByTab: { [key: string]: string[] } = {};
       missingFields.forEach(f => { if (!fieldsByTab[f.tab]) fieldsByTab[f.tab] = []; fieldsByTab[f.tab].push(f.label); });
-      const tabNames: { [key: string]: string } = { general: 'Infos', location: 'Localisation', history: 'Passé', obligations: 'Obligations', review: 'Récapitulatif' };
+      const tabNames: { [key: string]: string } = { general: 'Infos', location: 'Localisation', history: 'Passé', obligations: 'Obligations', 'market-value': 'Valeur marchande', review: 'Récapitulatif' };
       const summary = Object.entries(fieldsByTab).map(([tab, fields]) => `${tabNames[tab] || tab}: ${fields.join(', ')}`).join(' | ');
       toast({ title: "Champs requis manquants", description: summary.length > 100 ? `${missingFields.length} champs manquants.` : summary, variant: "destructive" });
       return;
@@ -1186,7 +1186,7 @@ export const useCCCFormState = ({
         const additionalConstr = (contrib as any).additional_constructions as any[];
         if (additionalConstr && Array.isArray(additionalConstr) && additionalConstr.length > 0) {
           setConstructionMode('multiple');
-          setAdditionalConstructions(additionalConstr.map((c: any) => ({ propertyCategory: c.propertyCategory || '', constructionType: c.constructionType || '', constructionNature: c.constructionNature || '', constructionMaterials: c.constructionMaterials || '', declaredUsage: c.declaredUsage || '', standing: c.standing || '', constructionYear: c.constructionYear || undefined, rentalStartDate: c.rentalStartDate || undefined, apartmentNumber: c.apartmentNumber || undefined, floorNumber: c.floorNumber || undefined, isOccupied: c.isOccupied ?? undefined, occupantCount: c.occupantCount ?? undefined, hostingCapacity: c.hostingCapacity ?? undefined, permitMode: c.permitMode || undefined, permit: c.permit || undefined })));
+          setAdditionalConstructions(additionalConstr.map((c: any) => ({ propertyCategory: c.propertyCategory || '', constructionType: c.constructionType || '', constructionNature: c.constructionNature || '', constructionMaterials: c.constructionMaterials || '', declaredUsage: c.declaredUsage || '', standing: c.standing || '', constructionYear: c.constructionYear || undefined, rentalStartDate: c.rentalStartDate || undefined, apartmentNumber: c.apartmentNumber || undefined, floorNumber: c.floorNumber || undefined, isOccupied: c.isOccupied ?? undefined, occupantCount: c.occupantCount ?? undefined, hostingCapacity: c.hostingCapacity ?? undefined, rentalConfiguration: c.rentalConfiguration || undefined, rentalUnitsCount: c.rentalUnitsCount ?? undefined, monthlyRentUsd: c.monthlyRentUsd ?? undefined, rentalUnits: Array.isArray(c.rentalUnits) ? c.rentalUnits : undefined, permitMode: c.permitMode || undefined, permit: c.permit || undefined })));
         }
 
         // Restore roadSides, servitude, hasDispute, disputeData, buildingShapes from DB

@@ -235,7 +235,7 @@ export function useFormPersistence(params: UseFormPersistenceParams): UseFormPer
       const timeoutId = setTimeout(() => saveFormDataToStorage(), DEBOUNCE_MS);
       return () => clearTimeout(timeoutId);
     }
-  }, [open, formData, currentOwners, previousOwners, taxRecords, mortgageRecords, buildingPermits, gpsCoordinates, parcelSides, permitMode, permitRequest, hasMortgage, hasDispute, ownershipMode, leaseYears, roadSides, obligationType, sectionType, saveFormDataToStorage, editingContributionId, isLoadingFromDbRef]);
+  }, [open, formData, currentOwners, previousOwners, taxRecords, mortgageRecords, buildingPermits, gpsCoordinates, parcelSides, permitMode, permitRequest, hasMortgage, hasDispute, ownershipMode, leaseYears, roadSides, obligationType, sectionType, constructionMode, additionalConstructions, buildingShapes, servitude, customTitleName, soundEnvironment, nearbySoundSources, disputeFormData, saveFormDataToStorage, editingContributionId, isLoadingFromDbRef]);
 
   // ─── Tracking fichiers uploadés ───
   const trackUploadedPath = useCallback((path: string) => {
