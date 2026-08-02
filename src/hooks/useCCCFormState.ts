@@ -1239,24 +1239,17 @@ export const useCCCFormState = ({
     }
   }, [parcelNumber]);
 
-  // Sync LAST previous owner end date with current owner since (only if not manually set)
-  // FIX audit 3.5: dépendre uniquement de currentOwners[0]?.since (string) au lieu de
-  // l'array complet. Évite la ré-exécution à chaque frappe sur firstName/lastName/etc.
+  // Chaîne des dates de fin des anciens propriétaires.
+  // Ancien #1 (le plus récent) se termine à la date d'entrée du propriétaire actuel ;
+  // chaque ancien suivant se termine à la date de début du précédent.
   const firstOwnerSince = currentOwners[0]?.since;
   useEffect(() => {
     if (isLoadingFromDbRef.current) return;
-    if (firstOwnerSince && previousOwners.length > 0) {
-      const lastIdx = previousOwners.length - 1;
-      const lastPreviousOwner = previousOwners[lastIdx];
-      // Only auto-fill if endDate is empty (don't overwrite manual entries)
-      if (!lastPreviousOwner.endDate) {
-        setPreviousOwners(prev => {
-          const updated = [...prev];
-          updated[lastIdx] = { ...updated[lastIdx], endDate: firstOwnerSince };
-          return updated;
-        });
-      }
-    }
+    if (!firstOwnerSince) return;
+    setPreviousOwners(prev => {
+      const rechained = rechainPreviousOwners(prev, firstOwnerSince);
+      return rechained.some((o, i) => o !== prev[i]) ? rechained : prev;
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [firstOwnerSince]);
 
