@@ -245,11 +245,50 @@ export function useFormValidation(params: UseFormValidationParams) {
     // HISTORY
     const hasValidPreviousOwner = previousOwners.some(o => o.name && o.name.trim() !== '');
     if (!hasValidPreviousOwner) missing.push({ field: 'previousOwner', label: 'Historique de propriété (au moins un ancien propriétaire)', tab: 'history' });
+    previousOwners.forEach((o, idx) => {
+      if (!o.name || o.name.trim() === '') return;
+      if (!o.startDate) {
+        missing.push({ field: `previousOwnerStart_${idx}`, label: `Date de début de propriété — Ancien #${idx + 1}`, tab: 'history' });
+      } else if (o.endDate && o.startDate > o.endDate) {
+        missing.push({ field: `previousOwnerDates_${idx}`, label: `Dates incohérentes — Ancien #${idx + 1} (début après fin)`, tab: 'history' });
+      }
+      if (!o.mutationType) {
+        missing.push({ field: `previousOwnerMutation_${idx}`, label: `Type de mutation — Ancien #${idx + 1}`, tab: 'history' });
+      }
+    });
 
     // OBLIGATIONS - TAXES
+    const PAID_TAX_STATUSES = ['Payé', 'Payé partiellement'];
     taxRecords.forEach((tax, idx) => {
-      if (tax.taxAmount && tax.taxYear && !tax.receiptFile && !tax.existingReceiptUrl) missing.push({ field: `taxReceipt_${idx}`, label: `Reçu de ${tax.taxType} ${tax.taxYear}`, tab: 'obligations' });
+      const isDeclared = Boolean(tax.taxAmount && tax.taxYear);
+      if (!isDeclared) return;
+      const isPaid = PAID_TAX_STATUSES.includes(tax.paymentStatus);
+      if (isPaid && !tax.receiptFile && !tax.existingReceiptUrl) {
+        missing.push({ field: `taxReceipt_${idx}`, label: `Reçu de ${tax.taxType} ${tax.taxYear}`, tab: 'obligations' });
+      }
+      if (isPaid && !tax.paymentDate) {
+        missing.push({ field: `taxPaymentDate_${idx}`, label: `Date de paiement — ${tax.taxType} ${tax.taxYear}`, tab: 'obligations' });
+      }
+      if (tax.paymentStatus === 'Payé partiellement') {
+        const remaining = parseFloat(tax.remainingAmount || '');
+        if (!tax.remainingAmount || Number.isNaN(remaining) || remaining <= 0) {
+          missing.push({ field: `taxRemaining_${idx}`, label: `Montant restant à payer — ${tax.taxType} ${tax.taxYear}`, tab: 'obligations' });
+        }
+      }
+      if (parseFloat(tax.taxAmount) <= 0) {
+        missing.push({ field: `taxAmount_${idx}`, label: `Montant invalide — ${tax.taxType} ${tax.taxYear}`, tab: 'obligations' });
+      }
+      const duplicate = taxRecords.some((other, otherIdx) =>
+        otherIdx < idx &&
+        other.taxType === tax.taxType &&
+        other.taxYear === tax.taxYear &&
+        (other.constructionRef || '') === (tax.constructionRef || '')
+      );
+      if (duplicate) {
+        missing.push({ field: `taxDuplicate_${idx}`, label: `Doublon : ${tax.taxType} ${tax.taxYear} déclaré deux fois`, tab: 'obligations' });
+      }
     });
+
 
     // OBLIGATIONS - IRL × Constructions en location
     const rentalRefs: string[] = [];
