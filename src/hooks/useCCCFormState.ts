@@ -1140,6 +1140,7 @@ export const useCCCFormState = ({
           appraisedValueUsd: (contrib as any).appraised_value_usd != null ? Number((contrib as any).appraised_value_usd) : undefined,
           appraisalReportUrl: (contrib as any).appraisal_report_url || undefined,
           marketListings: Array.isArray((contrib as any).market_listings) ? (contrib as any).market_listings : undefined,
+          saleListing: (contrib as any).sale_listing || undefined,
         }));
 
         const ownersDetails = contrib.current_owners_details as any[];
