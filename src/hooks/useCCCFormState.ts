@@ -719,7 +719,7 @@ export const useCCCFormState = ({
     permitMode, buildingPermits, parcelSides, taxRecords, hasMortgage, hasDispute,
     mortgageRecords, ownerDocFile, titleDocFiles, editingContributionId,
     roadSides, servitude, buildingShapes, constructionMode, additionalConstructions,
-    soundEnvironment, nearbySoundSources,
+    soundEnvironment, nearbySoundSources, disputeFormData,
   });
 
   const handleNextTab = useCallback((currentTab: string, nextTab: string) => {
