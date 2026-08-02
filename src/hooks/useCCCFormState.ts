@@ -1493,7 +1493,7 @@ export const useCCCFormState = ({
     hasMortgage, setHasMortgage, mortgageRecords, setMortgageRecords,
     updateMortgageRecord, addMortgageRecord, removeMortgageRecord, handleMortgageFileChange, removeMortgageFile,
     showMortgageWarning, highlightIncompleteMortgage,
-    hasDispute, setHasDispute,
+    hasDispute, setHasDispute: handleSetHasDispute,
     disputeFormData, setDisputeFormData,
     // Validation
     highlightRequiredFields, setHighlightRequiredFields,
