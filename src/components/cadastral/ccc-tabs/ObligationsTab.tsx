@@ -354,6 +354,8 @@ const ObligationsTab: React.FC<ObligationsTabProps> = ({
                       <SelectContent className="rounded-xl">
                         <SelectItem value="Payé">Payé</SelectItem>
                         <SelectItem value="Payé partiellement">Payé partiellement</SelectItem>
+                        <SelectItem value="Impayé">Impayé</SelectItem>
+                        <SelectItem value="En retard">En retard</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
