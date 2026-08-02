@@ -391,6 +391,18 @@ export const useCCCFormState = ({
   };
 
   // ─── CRUD: Previous owners ───
+  /**
+   * Recalcule la chaîne des dates de fin.
+   * La liste est ordonnée du plus récent (index 0) au plus ancien :
+   *  - Ancien #1 se termine à la date d'entrée du propriétaire actuel
+   *  - Ancien #N se termine à la date de début de l'ancien #N-1
+   */
+  const rechainPreviousOwners = (list: PreviousOwner[], firstOwnerSinceValue?: string): PreviousOwner[] =>
+    list.map((owner, i) => {
+      const expectedEnd = i === 0 ? (firstOwnerSinceValue || '') : (list[i - 1]?.startDate || '');
+      return owner.endDate === expectedEnd ? owner : { ...owner, endDate: expectedEnd };
+    });
+
   const addPreviousOwner = () => {
     const firstCurrentOwner = currentOwners[0];
     if (!firstCurrentOwner?.lastName || !firstCurrentOwner?.firstName) {
@@ -409,19 +421,16 @@ export const useCCCFormState = ({
     setShowPreviousOwnerWarning(false);
     setHighlightIncompletePreviousOwner(false);
     const newOwner: PreviousOwner = {
+      id: crypto.randomUUID(),
       name: '', legalStatus: 'Personne physique', entityType: '', entitySubType: '',
       entitySubTypeOther: '', stateExploitedBy: '', startDate: '', endDate: '', mutationType: 'Vente'
     };
-    if (previousOwners.length > 0) {
-      const lastOwner = previousOwners[previousOwners.length - 1];
-      if (lastOwner.startDate) newOwner.endDate = lastOwner.startDate;
-    }
-    setPreviousOwners([...previousOwners, newOwner]);
+    setPreviousOwners(prev => rechainPreviousOwners([...prev, newOwner], currentOwners[0]?.since));
     markDirty();
   };
 
   const removePreviousOwner = (index: number) => {
-    setPreviousOwners(previousOwners.filter((_, i) => i !== index));
+    setPreviousOwners(prev => rechainPreviousOwners(prev.filter((_, i) => i !== index), currentOwners[0]?.since));
     markDirty();
   };
 
@@ -431,13 +440,11 @@ export const useCCCFormState = ({
       const updated = [...prev];
       if (typeof field === 'string') {
         updated[index] = { ...updated[index], [field]: value };
-        if (field === 'startDate' && value && index < updated.length - 1) {
-          updated[index + 1] = { ...updated[index + 1], endDate: value };
-        }
       } else {
         updated[index] = { ...updated[index], ...field };
       }
-      return updated;
+      const touchedStart = typeof field === 'string' ? field === 'startDate' : 'startDate' in field;
+      return touchedStart ? rechainPreviousOwners(updated, currentOwners[0]?.since) : updated;
     });
   };
 
