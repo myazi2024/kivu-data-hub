@@ -31,6 +31,8 @@ export interface UseFormValidationParams {
   additionalConstructions: AdditionalConstruction[];
   soundEnvironment: string;
   nearbySoundSources: string;
+  /** Données du formulaire de litige (requises quand hasDispute === true). */
+  disputeFormData?: any;
 }
 
 const TAB_ORDER = ['general', 'location', 'history', 'obligations', 'market-value', 'review'];
@@ -41,7 +43,7 @@ export function useFormValidation(params: UseFormValidationParams) {
     permitMode, buildingPermits, parcelSides, taxRecords, hasMortgage, hasDispute,
     mortgageRecords, ownerDocFile, titleDocFiles, editingContributionId,
     roadSides, servitude, buildingShapes, constructionMode, additionalConstructions,
-    soundEnvironment, nearbySoundSources,
+    soundEnvironment, nearbySoundSources, disputeFormData,
   } = params;
 
   const missingFieldsList = useMemo<MissingField[]>(() => {
@@ -245,11 +247,50 @@ export function useFormValidation(params: UseFormValidationParams) {
     // HISTORY
     const hasValidPreviousOwner = previousOwners.some(o => o.name && o.name.trim() !== '');
     if (!hasValidPreviousOwner) missing.push({ field: 'previousOwner', label: 'Historique de propriété (au moins un ancien propriétaire)', tab: 'history' });
+    previousOwners.forEach((o, idx) => {
+      if (!o.name || o.name.trim() === '') return;
+      if (!o.startDate) {
+        missing.push({ field: `previousOwnerStart_${idx}`, label: `Date de début de propriété — Ancien #${idx + 1}`, tab: 'history' });
+      } else if (o.endDate && o.startDate > o.endDate) {
+        missing.push({ field: `previousOwnerDates_${idx}`, label: `Dates incohérentes — Ancien #${idx + 1} (début après fin)`, tab: 'history' });
+      }
+      if (!o.mutationType) {
+        missing.push({ field: `previousOwnerMutation_${idx}`, label: `Type de mutation — Ancien #${idx + 1}`, tab: 'history' });
+      }
+    });
 
     // OBLIGATIONS - TAXES
+    const PAID_TAX_STATUSES = ['Payé', 'Payé partiellement'];
     taxRecords.forEach((tax, idx) => {
-      if (tax.taxAmount && tax.taxYear && !tax.receiptFile && !tax.existingReceiptUrl) missing.push({ field: `taxReceipt_${idx}`, label: `Reçu de ${tax.taxType} ${tax.taxYear}`, tab: 'obligations' });
+      const isDeclared = Boolean(tax.taxAmount && tax.taxYear);
+      if (!isDeclared) return;
+      const isPaid = PAID_TAX_STATUSES.includes(tax.paymentStatus);
+      if (isPaid && !tax.receiptFile && !tax.existingReceiptUrl) {
+        missing.push({ field: `taxReceipt_${idx}`, label: `Reçu de ${tax.taxType} ${tax.taxYear}`, tab: 'obligations' });
+      }
+      if (isPaid && !tax.paymentDate) {
+        missing.push({ field: `taxPaymentDate_${idx}`, label: `Date de paiement — ${tax.taxType} ${tax.taxYear}`, tab: 'obligations' });
+      }
+      if (tax.paymentStatus === 'Payé partiellement') {
+        const remaining = parseFloat(tax.remainingAmount || '');
+        if (!tax.remainingAmount || Number.isNaN(remaining) || remaining <= 0) {
+          missing.push({ field: `taxRemaining_${idx}`, label: `Montant restant à payer — ${tax.taxType} ${tax.taxYear}`, tab: 'obligations' });
+        }
+      }
+      if (parseFloat(tax.taxAmount) <= 0) {
+        missing.push({ field: `taxAmount_${idx}`, label: `Montant invalide — ${tax.taxType} ${tax.taxYear}`, tab: 'obligations' });
+      }
+      const duplicate = taxRecords.some((other, otherIdx) =>
+        otherIdx < idx &&
+        other.taxType === tax.taxType &&
+        other.taxYear === tax.taxYear &&
+        (other.constructionRef || '') === (tax.constructionRef || '')
+      );
+      if (duplicate) {
+        missing.push({ field: `taxDuplicate_${idx}`, label: `Doublon : ${tax.taxType} ${tax.taxYear} déclaré deux fois`, tab: 'obligations' });
+      }
     });
+
 
     // OBLIGATIONS - IRL × Constructions en location
     const rentalRefs: string[] = [];
@@ -298,12 +339,21 @@ export function useFormValidation(params: UseFormValidationParams) {
       const hasValidMortgage = mortgageRecords.some(m => m.mortgageAmount && m.creditorName);
       if (!hasValidMortgage) missing.push({ field: 'mortgageDetails', label: "Détails de l'hypothèque (montant et créancier)", tab: 'obligations' });
       mortgageRecords.forEach((m, idx) => {
+        const isDeclared = Boolean(m.mortgageAmount || m.creditorName || m.contractDate);
+        if (!isDeclared) return;
+        if (!(parseFloat(m.mortgageAmount) > 0)) missing.push({ field: `mortgageAmount_${idx}`, label: `Montant de l'hypothèque #${idx + 1} (supérieur à 0)`, tab: 'obligations' });
+        if (!(parseInt(m.duration, 10) > 0)) missing.push({ field: `mortgageDuration_${idx}`, label: `Durée en mois de l'hypothèque #${idx + 1}`, tab: 'obligations' });
+        if (!m.creditorName || m.creditorName.trim() === '') missing.push({ field: `mortgageCreditor_${idx}`, label: `Créancier de l'hypothèque #${idx + 1}`, tab: 'obligations' });
+        if (!m.contractDate) missing.push({ field: `mortgageContractDate_${idx}`, label: `Date du contrat de l'hypothèque #${idx + 1}`, tab: 'obligations' });
         if (m.mortgageAmount && m.creditorName && !m.receiptFile && !m.existingReceiptUrl) missing.push({ field: `mortgageReceipt_${idx}`, label: `Document hypothèque #${idx + 1}`, tab: 'obligations' });
       });
     }
 
     // OBLIGATIONS - DISPUTE
     if (hasDispute === null) missing.push({ field: 'hasDispute', label: 'Statut litige foncier (Oui/Non)', tab: 'obligations' });
+    if (hasDispute === true && (!disputeFormData || Object.keys(disputeFormData || {}).length === 0)) {
+      missing.push({ field: 'disputeData', label: 'Détails du litige foncier (formulaire de signalement)', tab: 'obligations' });
+    }
 
     // LOCATION - ENTRANCE & SERVITUDE
     if (!isAppartement && roadSides.length > 0) {
@@ -449,7 +499,7 @@ export function useFormValidation(params: UseFormValidationParams) {
 
 
     return missing;
-  }, [formData, customTitleName, currentOwners, previousOwners, sectionType, permitMode, buildingPermits, parcelSides, taxRecords, hasMortgage, hasDispute, mortgageRecords, ownerDocFile, titleDocFiles, editingContributionId, roadSides, servitude, buildingShapes, constructionMode, additionalConstructions, soundEnvironment, nearbySoundSources]);
+  }, [formData, customTitleName, currentOwners, previousOwners, sectionType, permitMode, buildingPermits, parcelSides, taxRecords, hasMortgage, hasDispute, mortgageRecords, ownerDocFile, titleDocFiles, editingContributionId, roadSides, servitude, buildingShapes, constructionMode, additionalConstructions, soundEnvironment, nearbySoundSources, disputeFormData]);
 
   const getMissingFields = useCallback(() => missingFieldsList, [missingFieldsList]);
 

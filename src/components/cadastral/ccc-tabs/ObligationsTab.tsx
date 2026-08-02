@@ -354,6 +354,8 @@ const ObligationsTab: React.FC<ObligationsTabProps> = ({
                       <SelectContent className="rounded-xl">
                         <SelectItem value="Payé">Payé</SelectItem>
                         <SelectItem value="Payé partiellement">Payé partiellement</SelectItem>
+                        <SelectItem value="Impayé">Impayé</SelectItem>
+                        <SelectItem value="En retard">En retard</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -386,13 +388,17 @@ const ObligationsTab: React.FC<ObligationsTabProps> = ({
                   </div>
                 )}
 
-                <div className="space-y-1">
-                  <Label className="text-sm font-medium">Date paiement</Label>
-                  <Input type="date" max={new Date().toISOString().split('T')[0]} value={tax.paymentDate} onChange={(e) => updateTaxRecord(index, 'paymentDate', e.target.value)} className="h-10 text-sm rounded-xl" />
-                </div>
+                {['Payé', 'Payé partiellement'].includes(tax.paymentStatus) && (
+                  <div className="space-y-1">
+                    <Label className="text-sm font-medium">Date de paiement <span className="text-destructive">*</span></Label>
+                    <Input type="date" max={new Date().toISOString().split('T')[0]} value={tax.paymentDate} onChange={(e) => updateTaxRecord(index, 'paymentDate', e.target.value)} className="h-10 text-sm rounded-xl" />
+                  </div>
+                )}
 
                 <div className="space-y-1 pt-2 border-t border-border/50">
-                  <Label className="text-sm font-medium">Reçu (optionnel)</Label>
+                  <Label className="text-sm font-medium">
+                    Reçu {['Payé', 'Payé partiellement'].includes(tax.paymentStatus) ? <span className="text-destructive">*</span> : '(optionnel)'}
+                  </Label>
                   {!tax.receiptFile ? (
                     <Button type="button" variant="outline" size="sm" onClick={() => document.getElementById(`taxFile-${index}`)?.click()} className="gap-2 w-full text-sm h-9 rounded-xl border-dashed border-2">
                       <Plus className="h-4 w-4" /> Ajouter reçu
@@ -525,7 +531,7 @@ const ObligationsTab: React.FC<ObligationsTabProps> = ({
                     </div>
 
                     <div className="space-y-1 pt-2 border-t border-border/50">
-                      <Label className="text-sm font-medium">Justificatif (optionnel)</Label>
+                      <Label className="text-sm font-medium">Justificatif <span className="text-destructive">*</span></Label>
                       {!mortgage.receiptFile ? (
                         <Button type="button" variant="outline" size="sm" onClick={() => document.getElementById(`mortgageFile-${index}`)?.click()} className="gap-2 w-full text-sm h-9 rounded-xl border-dashed border-2">
                           <Plus className="h-4 w-4" /> Ajouter justificatif

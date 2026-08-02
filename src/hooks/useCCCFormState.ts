@@ -98,6 +98,7 @@ export const useCCCFormState = ({
   const [disputeFormData, setDisputeFormData] = useState<any>(null);
 
   const [previousOwners, setPreviousOwners] = useState<PreviousOwner[]>([{
+    id: crypto.randomUUID(),
     name: '', legalStatus: 'Personne physique', entityType: '', entitySubType: '',
     entitySubTypeOther: '', stateExploitedBy: '', startDate: '', endDate: '', mutationType: 'Vente'
   }]);
@@ -391,6 +392,18 @@ export const useCCCFormState = ({
   };
 
   // ─── CRUD: Previous owners ───
+  /**
+   * Recalcule la chaîne des dates de fin.
+   * La liste est ordonnée du plus récent (index 0) au plus ancien :
+   *  - Ancien #1 se termine à la date d'entrée du propriétaire actuel
+   *  - Ancien #N se termine à la date de début de l'ancien #N-1
+   */
+  const rechainPreviousOwners = (list: PreviousOwner[], firstOwnerSinceValue?: string): PreviousOwner[] =>
+    list.map((owner, i) => {
+      const expectedEnd = i === 0 ? (firstOwnerSinceValue || '') : (list[i - 1]?.startDate || '');
+      return owner.endDate === expectedEnd ? owner : { ...owner, endDate: expectedEnd };
+    });
+
   const addPreviousOwner = () => {
     const firstCurrentOwner = currentOwners[0];
     if (!firstCurrentOwner?.lastName || !firstCurrentOwner?.firstName) {
@@ -409,19 +422,16 @@ export const useCCCFormState = ({
     setShowPreviousOwnerWarning(false);
     setHighlightIncompletePreviousOwner(false);
     const newOwner: PreviousOwner = {
+      id: crypto.randomUUID(),
       name: '', legalStatus: 'Personne physique', entityType: '', entitySubType: '',
       entitySubTypeOther: '', stateExploitedBy: '', startDate: '', endDate: '', mutationType: 'Vente'
     };
-    if (previousOwners.length > 0) {
-      const lastOwner = previousOwners[previousOwners.length - 1];
-      if (lastOwner.startDate) newOwner.endDate = lastOwner.startDate;
-    }
-    setPreviousOwners([...previousOwners, newOwner]);
+    setPreviousOwners(prev => rechainPreviousOwners([...prev, newOwner], currentOwners[0]?.since));
     markDirty();
   };
 
   const removePreviousOwner = (index: number) => {
-    setPreviousOwners(previousOwners.filter((_, i) => i !== index));
+    setPreviousOwners(prev => rechainPreviousOwners(prev.filter((_, i) => i !== index), currentOwners[0]?.since));
     markDirty();
   };
 
@@ -431,13 +441,11 @@ export const useCCCFormState = ({
       const updated = [...prev];
       if (typeof field === 'string') {
         updated[index] = { ...updated[index], [field]: value };
-        if (field === 'startDate' && value && index < updated.length - 1) {
-          updated[index + 1] = { ...updated[index + 1], endDate: value };
-        }
       } else {
         updated[index] = { ...updated[index], ...field };
       }
-      return updated;
+      const touchedStart = typeof field === 'string' ? field === 'startDate' : 'startDate' in field;
+      return touchedStart ? rechainPreviousOwners(updated, currentOwners[0]?.since) : updated;
     });
   };
 
@@ -711,7 +719,7 @@ export const useCCCFormState = ({
     permitMode, buildingPermits, parcelSides, taxRecords, hasMortgage, hasDispute,
     mortgageRecords, ownerDocFile, titleDocFiles, editingContributionId,
     roadSides, servitude, buildingShapes, constructionMode, additionalConstructions,
-    soundEnvironment, nearbySoundSources,
+    soundEnvironment, nearbySoundSources, disputeFormData,
   });
 
   const handleNextTab = useCallback((currentTab: string, nextTab: string) => {
@@ -1002,7 +1010,7 @@ export const useCCCFormState = ({
     setOwnerDocFile(null); setTitleDocFiles([]);
     setSectionType(''); setSectionTypeAutoDetected(false); setActiveTab('general'); setHasShownConfetti(false); setShowExitConfirmation(false);
     setOwnershipMode('unique'); setLeaseYears(0);
-    setPreviousOwners([{ name: '', legalStatus: 'Personne physique', entityType: '', entitySubType: '', entitySubTypeOther: '', stateExploitedBy: '', startDate: '', endDate: '', mutationType: 'Vente' }]);
+    setPreviousOwners([{ id: crypto.randomUUID(), name: '', legalStatus: 'Personne physique', entityType: '', entitySubType: '', entitySubTypeOther: '', stateExploitedBy: '', startDate: '', endDate: '', mutationType: 'Vente' }]);
     setCurrentOwners([{ lastName: '', middleName: '', firstName: '', legalStatus: 'Personne physique', gender: '', entityType: '', entitySubType: '', entitySubTypeOther: '', stateExploitedBy: '', rightType: '', since: '', nationality: '', previousTitleType: '', previousTitleCustomName: '' }]);
     setHasMortgage(null);
     setHasDispute(null);
@@ -1153,7 +1161,7 @@ export const useCCCFormState = ({
 
         const ownerHistory = contrib.ownership_history as any[];
         if (ownerHistory && Array.isArray(ownerHistory) && ownerHistory.length > 0) {
-          setPreviousOwners(ownerHistory.map((o: any) => ({ name: o.owner_name || o.ownerName || '', legalStatus: o.legal_status || o.legalStatus || 'Personne physique', entityType: o.entity_type || o.entityType || '', entitySubType: o.entity_sub_type || o.entitySubType || '', entitySubTypeOther: o.entity_sub_type_other || o.entitySubTypeOther || '', stateExploitedBy: o.state_exploited_by || o.stateExploitedBy || '', startDate: o.ownership_start_date || o.startDate || '', endDate: o.ownership_end_date || o.endDate || '', mutationType: o.mutation_type || o.mutationType || 'Vente' })));
+          setPreviousOwners(ownerHistory.map((o: any) => ({ id: crypto.randomUUID(), name: o.owner_name || o.ownerName || '', legalStatus: o.legal_status || o.legalStatus || 'Personne physique', entityType: o.entity_type || o.entityType || '', entitySubType: o.entity_sub_type || o.entitySubType || '', entitySubTypeOther: o.entity_sub_type_other || o.entitySubTypeOther || '', stateExploitedBy: o.state_exploited_by || o.stateExploitedBy || '', startDate: o.ownership_start_date || o.startDate || '', endDate: o.ownership_end_date || o.endDate || '', mutationType: o.mutation_type || o.mutationType || 'Vente' })));
         }
 
         const gpsCoords = contrib.gps_coordinates as any[];
@@ -1232,24 +1240,17 @@ export const useCCCFormState = ({
     }
   }, [parcelNumber]);
 
-  // Sync LAST previous owner end date with current owner since (only if not manually set)
-  // FIX audit 3.5: dépendre uniquement de currentOwners[0]?.since (string) au lieu de
-  // l'array complet. Évite la ré-exécution à chaque frappe sur firstName/lastName/etc.
+  // Chaîne des dates de fin des anciens propriétaires.
+  // Ancien #1 (le plus récent) se termine à la date d'entrée du propriétaire actuel ;
+  // chaque ancien suivant se termine à la date de début du précédent.
   const firstOwnerSince = currentOwners[0]?.since;
   useEffect(() => {
     if (isLoadingFromDbRef.current) return;
-    if (firstOwnerSince && previousOwners.length > 0) {
-      const lastIdx = previousOwners.length - 1;
-      const lastPreviousOwner = previousOwners[lastIdx];
-      // Only auto-fill if endDate is empty (don't overwrite manual entries)
-      if (!lastPreviousOwner.endDate) {
-        setPreviousOwners(prev => {
-          const updated = [...prev];
-          updated[lastIdx] = { ...updated[lastIdx], endDate: firstOwnerSince };
-          return updated;
-        });
-      }
-    }
+    if (!firstOwnerSince) return;
+    setPreviousOwners(prev => {
+      const rechained = rechainPreviousOwners(prev, firstOwnerSince);
+      return rechained.some((o, i) => o !== prev[i]) ? rechained : prev;
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [firstOwnerSince]);
 
@@ -1423,6 +1424,7 @@ export const useCCCFormState = ({
 
   const resetPreviousOwnersBlock = useCallback(() => {
     setPreviousOwners([{
+      id: crypto.randomUUID(),
       name: '', legalStatus: 'Personne physique', entityType: '', entitySubType: '',
       entitySubTypeOther: '', stateExploitedBy: '', startDate: '', endDate: '', mutationType: 'Vente'
     }]);
@@ -1443,6 +1445,13 @@ export const useCCCFormState = ({
       mortgageAmount: '', duration: '', creditorName: '', creditorType: 'Banque',
       contractDate: '', mortgageStatus: 'Active', receiptFile: null
     }]);
+    markDirty();
+  }, []);
+
+  /** Bascule du statut litige : purge les données de litige quand on repasse à « Non ». */
+  const handleSetHasDispute = useCallback((value: boolean | null) => {
+    setHasDispute(value);
+    if (value !== true) setDisputeFormData(null);
     markDirty();
   }, []);
 
@@ -1486,7 +1495,7 @@ export const useCCCFormState = ({
     hasMortgage, setHasMortgage, mortgageRecords, setMortgageRecords,
     updateMortgageRecord, addMortgageRecord, removeMortgageRecord, handleMortgageFileChange, removeMortgageFile,
     showMortgageWarning, highlightIncompleteMortgage,
-    hasDispute, setHasDispute,
+    hasDispute, setHasDispute: handleSetHasDispute,
     disputeFormData, setDisputeFormData,
     // Validation
     highlightRequiredFields, setHighlightRequiredFields,
