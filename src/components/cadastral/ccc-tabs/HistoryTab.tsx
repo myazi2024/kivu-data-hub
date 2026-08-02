@@ -141,7 +141,7 @@ const HistoryTab: React.FC<HistoryTabProps> = ({
               <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-1">
                   <div className="flex items-center gap-1">
-                    <Label className="text-sm font-medium">Date début</Label>
+                    <Label className="text-sm font-medium">Date début <span className="text-destructive">*</span></Label>
                     {formData.isTitleInCurrentOwnerName === true && formData.titleIssueDate && index === 0 && (
                       <Popover>
                         <PopoverTrigger asChild>
@@ -168,7 +168,10 @@ const HistoryTab: React.FC<HistoryTabProps> = ({
                     <p className="text-xs text-destructive">⚠️ Date invalide : doit être ≤ {new Date(formData.titleIssueDate).toLocaleDateString('fr-FR')}</p>
                   )}
                   {owner.startDate && owner.endDate && owner.startDate > owner.endDate && (
-                    <p className="text-xs text-destructive">Début avant fin</p>
+                    <p className="text-xs text-destructive">La date de début doit précéder la date de fin</p>
+                  )}
+                  {owner.name && !owner.startDate && (
+                    <p className="text-xs text-destructive">Date de début requise (sinon cet ancien propriétaire ne sera pas enregistré)</p>
                   )}
                 </div>
                 <div className="space-y-1">
