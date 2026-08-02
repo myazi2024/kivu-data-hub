@@ -31,6 +31,8 @@ export interface UseFormValidationParams {
   additionalConstructions: AdditionalConstruction[];
   soundEnvironment: string;
   nearbySoundSources: string;
+  /** Données du formulaire de litige (requises quand hasDispute === true). */
+  disputeFormData?: any;
 }
 
 const TAB_ORDER = ['general', 'location', 'history', 'obligations', 'market-value', 'review'];
