@@ -1010,7 +1010,7 @@ export const useCCCFormState = ({
     setOwnerDocFile(null); setTitleDocFiles([]);
     setSectionType(''); setSectionTypeAutoDetected(false); setActiveTab('general'); setHasShownConfetti(false); setShowExitConfirmation(false);
     setOwnershipMode('unique'); setLeaseYears(0);
-    setPreviousOwners([{ name: '', legalStatus: 'Personne physique', entityType: '', entitySubType: '', entitySubTypeOther: '', stateExploitedBy: '', startDate: '', endDate: '', mutationType: 'Vente' }]);
+    setPreviousOwners([{ id: crypto.randomUUID(), name: '', legalStatus: 'Personne physique', entityType: '', entitySubType: '', entitySubTypeOther: '', stateExploitedBy: '', startDate: '', endDate: '', mutationType: 'Vente' }]);
     setCurrentOwners([{ lastName: '', middleName: '', firstName: '', legalStatus: 'Personne physique', gender: '', entityType: '', entitySubType: '', entitySubTypeOther: '', stateExploitedBy: '', rightType: '', since: '', nationality: '', previousTitleType: '', previousTitleCustomName: '' }]);
     setHasMortgage(null);
     setHasDispute(null);
@@ -1424,6 +1424,7 @@ export const useCCCFormState = ({
 
   const resetPreviousOwnersBlock = useCallback(() => {
     setPreviousOwners([{
+      id: crypto.randomUUID(),
       name: '', legalStatus: 'Personne physique', entityType: '', entitySubType: '',
       entitySubTypeOther: '', stateExploitedBy: '', startDate: '', endDate: '', mutationType: 'Vente'
     }]);
