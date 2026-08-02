@@ -531,7 +531,7 @@ const ObligationsTab: React.FC<ObligationsTabProps> = ({
                     </div>
 
                     <div className="space-y-1 pt-2 border-t border-border/50">
-                      <Label className="text-sm font-medium">Justificatif (optionnel)</Label>
+                      <Label className="text-sm font-medium">Justificatif <span className="text-destructive">*</span></Label>
                       {!mortgage.receiptFile ? (
                         <Button type="button" variant="outline" size="sm" onClick={() => document.getElementById(`mortgageFile-${index}`)?.click()} className="gap-2 w-full text-sm h-9 rounded-xl border-dashed border-2">
                           <Plus className="h-4 w-4" /> Ajouter justificatif
