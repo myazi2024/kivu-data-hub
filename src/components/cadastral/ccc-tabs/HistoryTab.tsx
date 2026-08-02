@@ -14,6 +14,8 @@ import SuggestivePicklist from '../SuggestivePicklist';
 import { CurrentOwner } from './GeneralTab';
 
 export interface PreviousOwner {
+  /** Identifiant stable pour les clés de liste React (optionnel pour compat brouillons). */
+  id?: string;
   name: string;
   legalStatus: string;
   entityType: string;
