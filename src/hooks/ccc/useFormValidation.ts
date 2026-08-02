@@ -339,12 +339,21 @@ export function useFormValidation(params: UseFormValidationParams) {
       const hasValidMortgage = mortgageRecords.some(m => m.mortgageAmount && m.creditorName);
       if (!hasValidMortgage) missing.push({ field: 'mortgageDetails', label: "Détails de l'hypothèque (montant et créancier)", tab: 'obligations' });
       mortgageRecords.forEach((m, idx) => {
+        const isDeclared = Boolean(m.mortgageAmount || m.creditorName || m.contractDate);
+        if (!isDeclared) return;
+        if (!(parseFloat(m.mortgageAmount) > 0)) missing.push({ field: `mortgageAmount_${idx}`, label: `Montant de l'hypothèque #${idx + 1} (supérieur à 0)`, tab: 'obligations' });
+        if (!(parseInt(m.duration, 10) > 0)) missing.push({ field: `mortgageDuration_${idx}`, label: `Durée en mois de l'hypothèque #${idx + 1}`, tab: 'obligations' });
+        if (!m.creditorName || m.creditorName.trim() === '') missing.push({ field: `mortgageCreditor_${idx}`, label: `Créancier de l'hypothèque #${idx + 1}`, tab: 'obligations' });
+        if (!m.contractDate) missing.push({ field: `mortgageContractDate_${idx}`, label: `Date du contrat de l'hypothèque #${idx + 1}`, tab: 'obligations' });
         if (m.mortgageAmount && m.creditorName && !m.receiptFile && !m.existingReceiptUrl) missing.push({ field: `mortgageReceipt_${idx}`, label: `Document hypothèque #${idx + 1}`, tab: 'obligations' });
       });
     }
 
     // OBLIGATIONS - DISPUTE
     if (hasDispute === null) missing.push({ field: 'hasDispute', label: 'Statut litige foncier (Oui/Non)', tab: 'obligations' });
+    if (hasDispute === true && (!disputeFormData || Object.keys(disputeFormData || {}).length === 0)) {
+      missing.push({ field: 'disputeData', label: 'Détails du litige foncier (formulaire de signalement)', tab: 'obligations' });
+    }
 
     // LOCATION - ENTRANCE & SERVITUDE
     if (!isAppartement && roadSides.length > 0) {
