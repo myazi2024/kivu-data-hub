@@ -271,9 +271,19 @@ export const ConstructionSection: React.FC<ConstructionSectionProps> = ({
           <Select value={formData.constructionYear?.toString() || ''} onValueChange={(value) => {
             const y = parseInt(value);
             handleInputChange('constructionYear', y);
-            if (formData.rentalStartDate && y) {
+            if (y) {
               const min = new Date(y, 0, 1);
-              if (new Date(formData.rentalStartDate) < min) handleInputChange('rentalStartDate', undefined);
+              if (formData.rentalStartDate && new Date(formData.rentalStartDate) < min) {
+                handleInputChange('rentalStartDate', undefined);
+              }
+              const units = formData.rentalUnits;
+              if (Array.isArray(units) && units.some((u: any) => u?.rentalStartDate && new Date(u.rentalStartDate) < min)) {
+                handleInputChange('rentalUnits', units.map((u: any) =>
+                  u?.rentalStartDate && new Date(u.rentalStartDate) < min
+                    ? { ...u, rentalStartDate: undefined }
+                    : u
+                ));
+              }
             }
           }}>
             <SelectTrigger className="h-10 rounded-xl text-sm"><SelectValue placeholder="Sélectionner l'année" /></SelectTrigger>
