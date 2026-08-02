@@ -20,8 +20,8 @@ import {
   LEASE_TYPE_LABELS,
   CONTACT_LABELS,
   STORAGE_PUBLIC_MARKER,
-  MIN_DATE,
-  TODAY,
+  getMinDate,
+  getToday,
   fmtUSD,
   subjectFor,
   pluralizeSubject,
@@ -127,7 +127,7 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
   const appraisedCurrency = (formData.appraisedValueCurrency || 'USD') as CurrencyCode;
   const appraisedAmount = formData.appraisedValueAmount;
   const appraisalOutOfWindow =
-    !!formData.appraisalDate && (formData.appraisalDate < MIN_DATE || formData.appraisalDate > TODAY);
+    !!formData.appraisalDate && (formData.appraisalDate < getMinDate() || formData.appraisalDate > getToday());
 
   const setHasAppraisal = (v: boolean) => {
     if (!v) {
@@ -578,7 +578,7 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
                     </Label>
                     <Input
                       type="date"
-                      max={TODAY}
+                      max={getToday()}
                       value={formData.appraisalDate || ''}
                       onChange={(e) => handleInputChange('appraisalDate', e.target.value || undefined)}
                       className={cn(

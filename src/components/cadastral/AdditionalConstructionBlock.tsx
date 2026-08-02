@@ -450,9 +450,16 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
               // Si l'année change et que la date saisie devient antérieure, l'effacer.
               const y = parseInt(v);
               const next: AdditionalConstruction = { ...data, constructionYear: y };
-              if (data.rentalStartDate && y) {
+              if (y) {
                 const min = new Date(y, 0, 1);
-                if (new Date(data.rentalStartDate) < min) next.rentalStartDate = undefined;
+                if (data.rentalStartDate && new Date(data.rentalStartDate) < min) next.rentalStartDate = undefined;
+                if (Array.isArray(data.rentalUnits)) {
+                  next.rentalUnits = data.rentalUnits.map((u: any) =>
+                    u?.rentalStartDate && new Date(u.rentalStartDate) < min
+                      ? { ...u, rentalStartDate: undefined }
+                      : u
+                  );
+                }
               }
               onChange(index, next);
             }}

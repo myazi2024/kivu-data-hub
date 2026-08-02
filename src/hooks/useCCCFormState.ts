@@ -1112,6 +1112,10 @@ export const useCCCFormState = ({
           declaredUsage: contrib.declared_usage || undefined, standing: contrib.standing || undefined,
           constructionYear: contrib.construction_year || undefined,
           rentalStartDate: (contrib as any).rental_start_date || undefined,
+          rentalConfiguration: (contrib as any).rental_configuration || undefined,
+          rentalUnitsCount: (contrib as any).rental_units_count ?? undefined,
+          monthlyRentUsd: (contrib as any).monthly_rent_usd != null ? Number((contrib as any).monthly_rent_usd) : undefined,
+          rentalUnits: Array.isArray((contrib as any).rental_units) ? (contrib as any).rental_units : undefined,
           isOccupied: (contrib as any).is_occupied ?? undefined,
           occupantCount: (contrib as any).occupant_count || undefined,
           hostingCapacity: (contrib as any).hosting_capacity || undefined,
@@ -1136,6 +1140,7 @@ export const useCCCFormState = ({
           appraisedValueUsd: (contrib as any).appraised_value_usd != null ? Number((contrib as any).appraised_value_usd) : undefined,
           appraisalReportUrl: (contrib as any).appraisal_report_url || undefined,
           marketListings: Array.isArray((contrib as any).market_listings) ? (contrib as any).market_listings : undefined,
+          saleListing: (contrib as any).sale_listing || undefined,
         }));
 
         const ownersDetails = contrib.current_owners_details as any[];

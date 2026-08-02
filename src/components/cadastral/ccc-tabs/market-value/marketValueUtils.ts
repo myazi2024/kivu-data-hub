@@ -62,13 +62,14 @@ export const pathFromPublicUrl = (url?: string | null): string | null => {
   return url.slice(i + STORAGE_PUBLIC_MARKER.length).split('?')[0] || null;
 };
 
-/** Bornes de dates pour les champs de date de disponibilité / expertise (±6 mois). */
-export const MIN_DATE = (() => {
+/** Bornes de dates pour les champs de date de disponibilité / expertise (±6 mois).
+ *  Calculées à l'appel pour rester exactes même sur une session très longue. */
+export const getMinDate = (): string => {
   const d = new Date();
   d.setMonth(d.getMonth() - 6);
   return d.toISOString().slice(0, 10);
-})();
-export const TODAY = new Date().toISOString().slice(0, 10);
+};
+export const getToday = (): string => new Date().toISOString().slice(0, 10);
 
 /** Formate un montant en USD selon la locale FR. */
 export const fmtUSD = (n?: number): string =>

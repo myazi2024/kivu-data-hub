@@ -271,9 +271,19 @@ export const ConstructionSection: React.FC<ConstructionSectionProps> = ({
           <Select value={formData.constructionYear?.toString() || ''} onValueChange={(value) => {
             const y = parseInt(value);
             handleInputChange('constructionYear', y);
-            if (formData.rentalStartDate && y) {
+            if (y) {
               const min = new Date(y, 0, 1);
-              if (new Date(formData.rentalStartDate) < min) handleInputChange('rentalStartDate', undefined);
+              if (formData.rentalStartDate && new Date(formData.rentalStartDate) < min) {
+                handleInputChange('rentalStartDate', undefined);
+              }
+              const units = formData.rentalUnits;
+              if (Array.isArray(units) && units.some((u: any) => u?.rentalStartDate && new Date(u.rentalStartDate) < min)) {
+                handleInputChange('rentalUnits', units.map((u: any) =>
+                  u?.rentalStartDate && new Date(u.rentalStartDate) < min
+                    ? { ...u, rentalStartDate: undefined }
+                    : u
+                ));
+              }
             }
           }}>
             <SelectTrigger className="h-10 rounded-xl text-sm"><SelectValue placeholder="Sélectionner l'année" /></SelectTrigger>
@@ -414,7 +424,7 @@ export const ConstructionSection: React.FC<ConstructionSectionProps> = ({
         {permitMode === 'existing' && (
           <div className="space-y-4 animate-fade-in">
             {buildingPermits.map((permit, index) => (
-              <div key={index} className={cn("border-2 rounded-2xl p-4 space-y-4 bg-card shadow-md", highlightIncompletePermit && index === buildingPermits.length - 1 && (!permit.permitNumber || !permit.issueDate) ? 'ring-2 ring-primary border-primary animate-pulse' : 'border-border')}>
+              <div key={permit.permitNumber ? `permit-${permit.permitNumber}` : `permit-idx-${index}`} className={cn("border-2 rounded-2xl p-4 space-y-4 bg-card shadow-md", highlightIncompletePermit && index === buildingPermits.length - 1 && (!permit.permitNumber || !permit.issueDate) ? 'ring-2 ring-primary border-primary animate-pulse' : 'border-border')}>
                 <div className="flex items-center justify-between pb-2 border-b border-border/50">
                   <div className="flex items-center gap-2">
                     <div className="h-7 w-7 rounded-xl bg-primary/10 flex items-center justify-center">
