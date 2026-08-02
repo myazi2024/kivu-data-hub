@@ -98,6 +98,7 @@ export const useCCCFormState = ({
   const [disputeFormData, setDisputeFormData] = useState<any>(null);
 
   const [previousOwners, setPreviousOwners] = useState<PreviousOwner[]>([{
+    id: crypto.randomUUID(),
     name: '', legalStatus: 'Personne physique', entityType: '', entitySubType: '',
     entitySubTypeOther: '', stateExploitedBy: '', startDate: '', endDate: '', mutationType: 'Vente'
   }]);
