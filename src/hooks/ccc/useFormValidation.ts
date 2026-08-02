@@ -43,7 +43,7 @@ export function useFormValidation(params: UseFormValidationParams) {
     permitMode, buildingPermits, parcelSides, taxRecords, hasMortgage, hasDispute,
     mortgageRecords, ownerDocFile, titleDocFiles, editingContributionId,
     roadSides, servitude, buildingShapes, constructionMode, additionalConstructions,
-    soundEnvironment, nearbySoundSources,
+    soundEnvironment, nearbySoundSources, disputeFormData,
   } = params;
 
   const missingFieldsList = useMemo<MissingField[]>(() => {
