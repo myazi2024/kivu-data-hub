@@ -1446,6 +1446,13 @@ export const useCCCFormState = ({
     markDirty();
   }, []);
 
+  /** Bascule du statut litige : purge les données de litige quand on repasse à « Non ». */
+  const handleSetHasDispute = useCallback((value: boolean | null) => {
+    setHasDispute(value);
+    if (value !== true) setDisputeFormData(null);
+    markDirty();
+  }, []);
+
   return {
     // Core hooks
     loading, uploading, user, toast, isMobile, mapConfig, mapConfigLoading,
