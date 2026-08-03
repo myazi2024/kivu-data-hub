@@ -580,7 +580,22 @@ interface ApartmentMeasurementsProps {
   handleInputChange: (field: keyof CadastralContributionData, value: any) => void;
 }
 
-const ApartmentMeasurements: React.FC<ApartmentMeasurementsProps> = ({ formData, handleInputChange }) => (
+const ApartmentMeasurements: React.FC<ApartmentMeasurementsProps> = ({ formData, handleInputChange }) => {
+  // Superficie de l'appartement = longueur × largeur (le croquis étant inapplicable,
+  // c'est la seule source de `areaSqm` pour un appartement).
+  const length = Number(formData.apartmentLength) || 0;
+  const width = Number(formData.apartmentWidth) || 0;
+  useEffect(() => {
+    if (length > 0 && width > 0) {
+      const computed = parseFloat((length * width).toFixed(2));
+      if (Number(formData.areaSqm) !== computed) handleInputChange('areaSqm', computed);
+    } else if (formData.areaSqm) {
+      handleInputChange('areaSqm', undefined);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [length, width]);
+
+  return (
   <div className="space-y-4">
     <div className="p-4 border border-border/50 rounded-xl bg-muted/30 text-center space-y-1">
       <p className="text-sm font-medium text-muted-foreground">
@@ -590,6 +605,7 @@ const ApartmentMeasurements: React.FC<ApartmentMeasurementsProps> = ({ formData,
         Les informations de localisation (étage, n° appartement) sont renseignées dans l'onglet Infos.
       </p>
     </div>
+
 
     <div className="p-4 border border-border/50 rounded-xl bg-background space-y-4">
       <h4 className="text-sm font-semibold flex items-center gap-2">
