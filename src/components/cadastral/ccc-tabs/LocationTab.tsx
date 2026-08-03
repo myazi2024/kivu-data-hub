@@ -298,8 +298,8 @@ const LocationTab: React.FC<LocationTabProps> = ({
         </div>
       )}
 
-      {/* Sound environment block — after map/limits */}
-      {sectionType && (
+      {/* Sound environment block — champ obligatoire, visible dès la province renseignée */}
+      {formData.province && (
         <SoundEnvironmentBlock
           soundEnvironment={soundEnvironment}
           onSoundEnvironmentChange={onSoundEnvironmentChange}
@@ -309,9 +309,10 @@ const LocationTab: React.FC<LocationTabProps> = ({
       )}
 
       {/* Apartment measurements */}
-      {sectionType && formData.propertyCategory === 'Appartement' && (
+      {formData.propertyCategory === 'Appartement' && (
         <ApartmentMeasurements formData={formData} handleInputChange={handleInputChange} />
       )}
+
 
       {/* Navigation buttons */}
       <div className="sticky bottom-0 z-10 bg-background/95 backdrop-blur-sm border-t pt-3 pb-3 px-1 -mx-1">
