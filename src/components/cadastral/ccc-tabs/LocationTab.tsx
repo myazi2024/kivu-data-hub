@@ -542,7 +542,7 @@ const RuralSection: React.FC<RuralSectionProps> = ({
 
       <div className="grid grid-cols-2 gap-2">
         <div className="space-y-1.5">
-          <Label htmlFor="groupement" className="text-sm">Groupement</Label>
+          <Label htmlFor="groupement" className="text-sm">Groupement *</Label>
           <Input
             id="groupement"
             className="h-9 text-sm rounded-xl"
@@ -552,12 +552,12 @@ const RuralSection: React.FC<RuralSectionProps> = ({
             disabled={!formData.collectivite}
           />
           <p className="text-xs text-muted-foreground">
-            {!formData.collectivite ? "Collectivité d'abord" : "Optionnel"}
+            {!formData.collectivite ? "Collectivité d'abord" : "Obligatoire"}
           </p>
         </div>
 
         <div className="space-y-1.5">
-          <Label htmlFor="village" className="text-sm">Village</Label>
+          <Label htmlFor="village" className="text-sm">Village *</Label>
           <Input
             id="village"
             className="h-9 text-sm rounded-xl"
@@ -567,10 +567,11 @@ const RuralSection: React.FC<RuralSectionProps> = ({
             disabled={!formData.collectivite}
           />
           <p className="text-xs text-muted-foreground">
-            {!formData.collectivite ? "Collectivité d'abord" : "Optionnel"}
+            {!formData.collectivite ? "Collectivité d'abord" : "Obligatoire"}
           </p>
         </div>
       </div>
+
     </CardContent>
   </Card>
 );
