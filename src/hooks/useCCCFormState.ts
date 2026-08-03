@@ -1409,6 +1409,14 @@ export const useCCCFormState = ({
     handleInputChange('groupement', undefined);
     handleInputChange('village', undefined);
     handleInputChange('areaSqm', undefined);
+    // Mesures d'appartement (le croquis ne s'applique pas dans ce cas)
+    handleInputChange('apartmentLength', undefined);
+    handleInputChange('apartmentWidth', undefined);
+    handleInputChange('apartmentHeight', undefined);
+    handleInputChange('apartmentOrientation', undefined);
+    // Type de section : conservé s'il a été auto-détecté depuis le n° de parcelle
+    setSectionType((prev) => (sectionTypeAutoDetected ? prev : ''));
+
     setGpsCoordinates([]);
     setParcelSides([
       { name: 'Côté Nord', length: '' }, { name: 'Côté Sud', length: '' },
