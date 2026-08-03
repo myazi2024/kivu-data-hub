@@ -236,9 +236,8 @@ const LocationTab: React.FC<LocationTabProps> = ({
 
       {/* Construction block (moved from Infos tab) — between admin block and map.
           Toujours visible : aucune dépendance fonctionnelle à la province. */}
-      {(
+      <ConstructionSection
 
-        <ConstructionSection
           formData={formData}
           handleInputChange={handleInputChange}
           PROPERTY_CATEGORY_OPTIONS={PROPERTY_CATEGORY_OPTIONS}
@@ -266,8 +265,8 @@ const LocationTab: React.FC<LocationTabProps> = ({
           getPicklistDependentOptions={getPicklistDependentOptions}
           toast={toast}
           resetConstructionBlock={resetConstructionBlock}
-        />
-      )}
+      />
+
 
 
       {/* Map preview (non-apartment) */}
@@ -298,8 +297,8 @@ const LocationTab: React.FC<LocationTabProps> = ({
         </div>
       )}
 
-      {/* Sound environment block — after map/limits */}
-      {sectionType && (
+      {/* Sound environment block — champ obligatoire, visible dès la province renseignée */}
+      {formData.province && (
         <SoundEnvironmentBlock
           soundEnvironment={soundEnvironment}
           onSoundEnvironmentChange={onSoundEnvironmentChange}
@@ -309,9 +308,10 @@ const LocationTab: React.FC<LocationTabProps> = ({
       )}
 
       {/* Apartment measurements */}
-      {sectionType && formData.propertyCategory === 'Appartement' && (
+      {formData.propertyCategory === 'Appartement' && (
         <ApartmentMeasurements formData={formData} handleInputChange={handleInputChange} />
       )}
+
 
       {/* Navigation buttons */}
       <div className="sticky bottom-0 z-10 bg-background/95 backdrop-blur-sm border-t pt-3 pb-3 px-1 -mx-1">
@@ -377,7 +377,16 @@ const UrbanSection: React.FC<UrbanSectionProps> = ({
               ))}
             </SelectContent>
           </Select>
+          {formData.province && availableVilles.length === 0 && (
+            <Input
+              className="h-9 text-sm rounded-xl mt-1"
+              placeholder="Saisir la ville"
+              value={formData.ville || ''}
+              onChange={(e) => handleInputChange('ville', e.target.value)}
+            />
+          )}
         </div>
+
 
         <div className="space-y-1.5">
           <Label htmlFor="commune" className="text-sm">Commune *</Label>
@@ -399,7 +408,16 @@ const UrbanSection: React.FC<UrbanSectionProps> = ({
               ))}
             </SelectContent>
           </Select>
+          {formData.ville && availableCommunes.length === 0 && (
+            <Input
+              className="h-9 text-sm rounded-xl mt-1"
+              placeholder="Saisir la commune"
+              value={formData.commune || ''}
+              onChange={(e) => handleInputChange('commune', e.target.value)}
+            />
+          )}
         </div>
+
       </div>
 
       <div className="grid grid-cols-2 gap-2">
@@ -515,7 +533,16 @@ const RuralSection: React.FC<RuralSectionProps> = ({
               ))}
             </SelectContent>
           </Select>
+          {formData.province && availableTerritoires.length === 0 && (
+            <Input
+              className="h-9 text-sm rounded-xl mt-1"
+              placeholder="Saisir le territoire"
+              value={formData.territoire || ''}
+              onChange={(e) => handleInputChange('territoire', e.target.value)}
+            />
+          )}
         </div>
+
 
         <div className="space-y-1.5">
           <Label htmlFor="collectivite" className="text-sm">Collectivité *</Label>
@@ -537,12 +564,21 @@ const RuralSection: React.FC<RuralSectionProps> = ({
               ))}
             </SelectContent>
           </Select>
+          {formData.territoire && availableCollectivites.length === 0 && (
+            <Input
+              className="h-9 text-sm rounded-xl mt-1"
+              placeholder="Saisir la collectivité"
+              value={formData.collectivite || ''}
+              onChange={(e) => handleInputChange('collectivite', e.target.value)}
+            />
+          )}
         </div>
+
       </div>
 
       <div className="grid grid-cols-2 gap-2">
         <div className="space-y-1.5">
-          <Label htmlFor="groupement" className="text-sm">Groupement</Label>
+          <Label htmlFor="groupement" className="text-sm">Groupement *</Label>
           <Input
             id="groupement"
             className="h-9 text-sm rounded-xl"
@@ -552,12 +588,12 @@ const RuralSection: React.FC<RuralSectionProps> = ({
             disabled={!formData.collectivite}
           />
           <p className="text-xs text-muted-foreground">
-            {!formData.collectivite ? "Collectivité d'abord" : "Optionnel"}
+            {!formData.collectivite ? "Collectivité d'abord" : "Obligatoire"}
           </p>
         </div>
 
         <div className="space-y-1.5">
-          <Label htmlFor="village" className="text-sm">Village</Label>
+          <Label htmlFor="village" className="text-sm">Village *</Label>
           <Input
             id="village"
             className="h-9 text-sm rounded-xl"
@@ -567,10 +603,11 @@ const RuralSection: React.FC<RuralSectionProps> = ({
             disabled={!formData.collectivite}
           />
           <p className="text-xs text-muted-foreground">
-            {!formData.collectivite ? "Collectivité d'abord" : "Optionnel"}
+            {!formData.collectivite ? "Collectivité d'abord" : "Obligatoire"}
           </p>
         </div>
       </div>
+
     </CardContent>
   </Card>
 );
@@ -580,7 +617,22 @@ interface ApartmentMeasurementsProps {
   handleInputChange: (field: keyof CadastralContributionData, value: any) => void;
 }
 
-const ApartmentMeasurements: React.FC<ApartmentMeasurementsProps> = ({ formData, handleInputChange }) => (
+const ApartmentMeasurements: React.FC<ApartmentMeasurementsProps> = ({ formData, handleInputChange }) => {
+  // Superficie de l'appartement = longueur × largeur (le croquis étant inapplicable,
+  // c'est la seule source de `areaSqm` pour un appartement).
+  const length = Number(formData.apartmentLength) || 0;
+  const width = Number(formData.apartmentWidth) || 0;
+  useEffect(() => {
+    if (length > 0 && width > 0) {
+      const computed = parseFloat((length * width).toFixed(2));
+      if (Number(formData.areaSqm) !== computed) handleInputChange('areaSqm', computed);
+    } else if (formData.areaSqm) {
+      handleInputChange('areaSqm', undefined);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [length, width]);
+
+  return (
   <div className="space-y-4">
     <div className="p-4 border border-border/50 rounded-xl bg-muted/30 text-center space-y-1">
       <p className="text-sm font-medium text-muted-foreground">
@@ -590,6 +642,7 @@ const ApartmentMeasurements: React.FC<ApartmentMeasurementsProps> = ({ formData,
         Les informations de localisation (étage, n° appartement) sont renseignées dans l'onglet Infos.
       </p>
     </div>
+
 
     <div className="p-4 border border-border/50 rounded-xl bg-background space-y-4">
       <h4 className="text-sm font-semibold flex items-center gap-2">
@@ -671,7 +724,9 @@ const ApartmentMeasurements: React.FC<ApartmentMeasurementsProps> = ({ formData,
       </div>
     </div>
   </div>
-);
+  );
+};
+
 
 /* ─── Sound Environment Block ───────────────────────────────── */
 
