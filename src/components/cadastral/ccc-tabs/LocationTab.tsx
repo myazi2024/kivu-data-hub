@@ -687,7 +687,9 @@ const ApartmentMeasurements: React.FC<ApartmentMeasurementsProps> = ({ formData,
       </div>
     </div>
   </div>
-);
+  );
+};
+
 
 /* ─── Sound Environment Block ───────────────────────────────── */
 
