@@ -12,6 +12,9 @@ import { TaxRecord, MortgageRecord } from './ObligationsTab';
 import { DISPUTE_NATURES_MAP, DECLARANT_QUALITIES_MAP, RESOLUTION_LEVELS } from '@/utils/disputeSharedTypes';
 import { SOUND_LABELS } from '@/constants/expertiseLabels';
 import ParcelSketchSVG from '../ParcelSketchSVG';
+import MarketValueSummary from './review/MarketValueSummary';
+import RentalSummary from './review/RentalSummary';
+
 
 interface ReviewTabProps {
   formData: CadastralContributionData;
