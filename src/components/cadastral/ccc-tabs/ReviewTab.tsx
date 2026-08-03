@@ -463,6 +463,11 @@ const ReviewTab: React.FC<ReviewTabProps> = ({
         </CardContent>
       </Card>
 
+      {/* ═══ VALEUR MARCHANDE ═══ */}
+      <MarketValueSummary formData={formData} handleTabChange={handleTabChange} />
+
+
+
       {/* ═══ DOCUMENTS ═══ */}
       <Card className="rounded-2xl shadow-sm border-border/50">
         <CardContent className="p-3 space-y-2">
