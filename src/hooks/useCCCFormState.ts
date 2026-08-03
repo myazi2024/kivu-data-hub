@@ -1428,7 +1428,8 @@ export const useCCCFormState = ({
     setSoundEnvironment('');
     setNearbySoundSources('');
     markDirty();
-  }, []);
+  }, [sectionTypeAutoDetected]);
+
 
   const resetPreviousOwnersBlock = useCallback(() => {
     setPreviousOwners([{
