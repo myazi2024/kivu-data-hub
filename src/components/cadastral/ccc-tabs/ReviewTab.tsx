@@ -367,6 +367,101 @@ const ReviewTab: React.FC<ReviewTabProps> = ({
         </CardContent>
       </Card>
 
+      {/* ═══ CONSTRUCTION ═══ */}
+      <Card className="rounded-2xl shadow-sm border-border/50">
+        <CardContent className="p-3 space-y-2">
+          <div className="flex items-center justify-between">
+            <h4 className="text-xs font-semibold flex items-center gap-1.5"><span>🏗️</span> Construction</h4>
+            <Button type="button" variant="ghost" size="sm" onClick={() => handleTabChange('location')} className="text-xs h-6 px-2">Modifier</Button>
+          </div>
+          <div className="space-y-1 text-xs">
+            {formData.propertyCategory && <ReviewLine label="Catégorie" value={formData.propertyCategory} />}
+            {formData.constructionType && <ReviewLine label="Type construction" value={formData.constructionType} />}
+            {formData.constructionNature && <ReviewLine label="Nature" value={`Construction ${formData.constructionNature.toLowerCase()}`} />}
+            {formData.constructionMaterials && <ReviewLine label="Matériaux" value={formData.constructionMaterials} />}
+            {formData.declaredUsage && <ReviewLine label="Usage" value={formData.declaredUsage} />}
+            {formData.standing && <ReviewLine label="Standing" value={formData.standing} />}
+            {formData.constructionYear && <ReviewLine label="Année construction" value={String(formData.constructionYear)} />}
+            {formData.isOccupied !== undefined && formData.isOccupied !== null && <ReviewLine label="Habité" value={formData.isOccupied ? 'Oui' : 'Non'} />}
+            {formData.isOccupied === true && formData.occupantCount && <ReviewLine label="Occupants" value={`${formData.occupantCount} personne(s)`} />}
+            {formData.hostingCapacity && <ReviewLine label="Capacité d'accueil" value={`${formData.hostingCapacity} personne(s)`} />}
+            {formData.floorNumber && <ReviewLine label="Nombre d'étages" value={formData.floorNumber} />}
+            {formData.apartmentNumber && <ReviewLine label="N° appartement" value={formData.apartmentNumber} />}
+            {formData.whatsappNumber && <ReviewLine label="WhatsApp" value={formData.whatsappNumber} />}
+
+            {/* Configuration locative (construction principale) */}
+            <RentalSummary
+              declaredUsage={formData.declaredUsage}
+              rentalStartDate={formData.rentalStartDate}
+              rentalConfiguration={formData.rentalConfiguration}
+              rentalUnitsCount={formData.rentalUnitsCount}
+              monthlyRentUsd={formData.monthlyRentUsd}
+              rentalUnits={formData.rentalUnits}
+            />
+
+            {/* Autorisation de bâtir */}
+            {formData.constructionType !== 'Terrain nu' && (
+              <div className="pt-1 border-t border-border/50">
+                <div className="font-medium">Autorisation de bâtir:</div>
+                {permitMode === 'existing' && buildingPermits.some(p => p.permitNumber) ? (
+                  buildingPermits.filter(p => p.permitNumber).map((permit) => (
+                    <div key={permit.permitNumber} className="ml-2 text-muted-foreground space-y-0.5">
+                      <div>• N° {permit.permitNumber} ({permit.permitType === 'regularization' ? 'Régularisation' : 'Construction'})</div>
+                      {permit.issueDate && <div className="ml-3 text-[11px]">Date: {new Date(permit.issueDate).toLocaleDateString('fr-FR')}</div>}
+                    </div>
+                  ))
+                ) : permitMode === 'request' ? (
+                  <div className="ml-2 text-muted-foreground flex items-center gap-1">
+                    <span className="text-amber-600 dark:text-amber-400">⚠</span> Pas de permis
+                    <span className="text-xs italic">(demande possible après soumission)</span>
+                  </div>
+                ) : (
+                  <div className="ml-2 text-destructive text-xs italic">Non renseigné</div>
+                )}
+              </div>
+            )}
+
+            {/* Constructions additionnelles */}
+            {constructionMode === 'multiple' && additionalConstructions.length > 0 && (
+              <div className="pt-1 border-t border-border/50">
+                <div className="font-medium">Constructions additionnelles ({additionalConstructions.length}):</div>
+                {additionalConstructions.map((c, idx) => (
+                  <div key={(c as any).id || idx} className="ml-2 mt-1 p-2 bg-muted/50 rounded-lg space-y-0.5">
+                    <div className="font-medium text-foreground">Construction #{idx + 2}</div>
+                    {c.propertyCategory && <div className="text-muted-foreground">Catégorie: {c.propertyCategory}</div>}
+                    {c.constructionType && <div className="text-muted-foreground">Type: {c.constructionType}</div>}
+                    {c.constructionNature && <div className="text-muted-foreground">Nature: Construction {c.constructionNature.toLowerCase()}</div>}
+                    {c.constructionMaterials && <div className="text-muted-foreground">Matériaux: {c.constructionMaterials}</div>}
+                    {c.declaredUsage && <div className="text-muted-foreground">Usage: {c.declaredUsage}</div>}
+                    {c.standing && <div className="text-muted-foreground">Standing: {c.standing}</div>}
+                    {c.constructionYear && <div className="text-muted-foreground">Année: {c.constructionYear}</div>}
+                    {c.permit?.permitNumber && <div className="text-muted-foreground">Permis: N° {c.permit.permitNumber}</div>}
+                    {c.isOccupied !== undefined && <div className="text-muted-foreground">Habité: {c.isOccupied ? 'Oui' : 'Non'}</div>}
+                    {c.isOccupied && c.occupantCount && <div className="text-muted-foreground">Occupants: {c.occupantCount}</div>}
+                    {c.hostingCapacity && <div className="text-muted-foreground">Capacité d'accueil: {c.hostingCapacity}</div>}
+                    <RentalSummary
+                      declaredUsage={c.declaredUsage}
+                      rentalStartDate={(c as any).rentalStartDate}
+                      rentalConfiguration={(c as any).rentalConfiguration}
+                      rentalUnitsCount={(c as any).rentalUnitsCount}
+                      monthlyRentUsd={(c as any).monthlyRentUsd}
+                      rentalUnits={(c as any).rentalUnits}
+                      title={`Mise en location — construction #${idx + 2}`}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {!formData.propertyCategory && !formData.constructionType && (
+              <div className="text-muted-foreground italic">Aucune construction renseignée</div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+
+
       {/* ═══ HISTORIQUE ═══ */}
       <Card className="rounded-2xl shadow-sm border-border/50">
         <CardContent className="p-3 space-y-2">
