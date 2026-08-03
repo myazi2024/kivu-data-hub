@@ -265,8 +265,8 @@ const LocationTab: React.FC<LocationTabProps> = ({
           getPicklistDependentOptions={getPicklistDependentOptions}
           toast={toast}
           resetConstructionBlock={resetConstructionBlock}
-        />
-      )}
+      />
+
 
 
       {/* Map preview (non-apartment) */}
