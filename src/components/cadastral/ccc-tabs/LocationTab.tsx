@@ -377,7 +377,16 @@ const UrbanSection: React.FC<UrbanSectionProps> = ({
               ))}
             </SelectContent>
           </Select>
+          {formData.province && availableVilles.length === 0 && (
+            <Input
+              className="h-9 text-sm rounded-xl mt-1"
+              placeholder="Saisir la ville"
+              value={formData.ville || ''}
+              onChange={(e) => handleInputChange('ville', e.target.value)}
+            />
+          )}
         </div>
+
 
         <div className="space-y-1.5">
           <Label htmlFor="commune" className="text-sm">Commune *</Label>
