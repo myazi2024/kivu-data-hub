@@ -515,7 +515,16 @@ const RuralSection: React.FC<RuralSectionProps> = ({
               ))}
             </SelectContent>
           </Select>
+          {formData.province && availableTerritoires.length === 0 && (
+            <Input
+              className="h-9 text-sm rounded-xl mt-1"
+              placeholder="Saisir le territoire"
+              value={formData.territoire || ''}
+              onChange={(e) => handleInputChange('territoire', e.target.value)}
+            />
+          )}
         </div>
+
 
         <div className="space-y-1.5">
           <Label htmlFor="collectivite" className="text-sm">Collectivité *</Label>
