@@ -17,6 +17,7 @@ import CCCBulkActions from './ccc/CCCBulkActions';
 import { CCCFilters } from './ccc/CCCFilters';
 import { CCCContributionsTable } from './ccc/CCCContributionsTable';
 import { calculateCCCCompleteness } from './ccc/cccCompleteness';
+import { parseRentalUnits, sumUnitsRent } from './ccc/cccConsistency';
 import { CCCDetailsDialog } from './ccc/CCCDetailsDialog';
 import { CCCTestDialog } from './ccc/CCCTestDialog';
 import type { Contribution, ContributionStats, ValidationResult, TestResult } from './ccc/types';
@@ -49,6 +50,9 @@ const AdminCCCContributions: React.FC = () => {
   const [showDocumentsDialog, setShowDocumentsDialog] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [userFilter, setUserFilter] = useState('');
+  const [provinceFilter, setProvinceFilter] = useState('all');
+  const [bulkRejectOpen, setBulkRejectOpen] = useState(false);
+  const [bulkRejectReason, setBulkRejectReason] = useState('');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkBusy, setBulkBusy] = useState(false);
 
@@ -389,10 +393,16 @@ const AdminCCCContributions: React.FC = () => {
         c.user_id?.toLowerCase().includes(query);
 
       const matchesUser = !userQ || c.user_id?.toLowerCase().includes(userQ);
+      const matchesProvince = provinceFilter === 'all' || c.province === provinceFilter;
 
-      return matchesTab && matchesSearch && matchesUser;
+      return matchesTab && matchesSearch && matchesUser && matchesProvince;
     });
-  }, [contributions, activeTab, searchQuery, userFilter]);
+  }, [contributions, activeTab, searchQuery, userFilter, provinceFilter]);
+
+  const provinceOptions = useMemo(
+    () => Array.from(new Set(contributions.map(c => c.province).filter(Boolean) as string[])).sort(),
+    [contributions],
+  );
 
   // Bulk actions
   const toggleSelect = (id: string) => {
@@ -408,17 +418,36 @@ const AdminCCCContributions: React.FC = () => {
     setBulkBusy(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
+      if (!user?.id) {
+        toast.error('Vous devez être connecté pour approuver des contributions');
+        return;
+      }
       const ids = Array.from(selectedIds);
-      const { error } = await supabase
-        .from('cadastral_contributions')
-        .update({ status: 'approved', reviewed_by: user?.id, reviewed_at: new Date().toISOString() })
-        .in('id', ids);
-      if (error) throw error;
-      await Promise.all(ids.map(id =>
-        logContributionAudit({ contributionId: id, action: 'bulk_approve', payload: { count: ids.length } })
-      ));
-      toast.success(`${ids.length} contribution(s) approuvée(s)`);
-      trackAdminAction({ module: 'ccc', action: 'bulk_approve', meta: { count: ids.length } });
+      const approved: string[] = [];
+      const skipped: string[] = [];
+      const warned: string[] = [];
+
+      // Même chemin que l'approbation unitaire : validation serveur puis
+      // création des historiques associés.
+      for (const id of ids) {
+        try {
+          const validation = await runServerValidation(id);
+          if (!validation?.valid) { skipped.push(id); continue; }
+          const outcome = await approveContributionCore(id, user.id);
+          if (!outcome.ok) { skipped.push(id); continue; }
+          if (outcome.warnings.length > 0) warned.push(id);
+          approved.push(id);
+          await logContributionAudit({ contributionId: id, action: 'bulk_approve', payload: { count: ids.length } });
+        } catch (e) {
+          console.error('Approbation en masse — échec sur', id, e);
+          skipped.push(id);
+        }
+      }
+
+      if (approved.length > 0) toast.success(`${approved.length} contribution(s) approuvée(s)`);
+      if (warned.length > 0) toast.warning(`${warned.length} contribution(s) approuvée(s) avec des historiques incomplets`);
+      if (skipped.length > 0) toast.error(`${skipped.length} contribution(s) ignorée(s) : validation échouée ou erreur`);
+      trackAdminAction({ module: 'ccc', action: 'bulk_approve', meta: { count: approved.length, skipped: skipped.length } });
       setSelectedIds(new Set());
       await fetchContributions();
     } catch (err: any) {
@@ -430,8 +459,8 @@ const AdminCCCContributions: React.FC = () => {
 
   const bulkReject = async () => {
     if (selectedIds.size === 0) return;
-    const reason = window.prompt('Motif du rejet (obligatoire et appliqué à toutes les contributions sélectionnées) :');
-    if (!reason || !reason.trim()) {
+    const reason = bulkRejectReason.trim();
+    if (!reason) {
       toast.error('Motif obligatoire pour rejeter');
       return;
     }
@@ -455,6 +484,8 @@ const AdminCCCContributions: React.FC = () => {
       ));
       toast.success(`${ids.length} contribution(s) rejetée(s)`);
       trackAdminAction({ module: 'ccc', action: 'bulk_reject', meta: { count: ids.length, reason } });
+      setBulkRejectOpen(false);
+      setBulkRejectReason('');
       setSelectedIds(new Set());
       await fetchContributions();
     } catch (err: any) {
@@ -488,18 +519,35 @@ const AdminCCCContributions: React.FC = () => {
   const handleExportCSV = () => {
     exportToCSV({
       filename: `contributions_ccc_${new Date().toISOString().split('T')[0]}.csv`,
-      headers: ['Numéro Parcelle', 'Statut', 'Suspect', 'Score Fraude', 'Province', 'Ville', 'Commune', 'Type Propriété', 'Date Création'],
-      data: filteredContributions.map(c => [
-        c.parcel_number,
-        c.status,
-        c.is_suspicious ? 'Oui' : 'Non',
-        c.fraud_score?.toString() || '0',
-        c.province || '',
-        c.ville || '',
-        c.commune || '',
-        c.property_title_type || '',
-        new Date(c.created_at).toLocaleDateString('fr-FR')
-      ])
+      headers: [
+        'Numéro Parcelle', 'Statut', 'Suspect', 'Score Fraude', 'Province', 'Ville', 'Commune',
+        'Type Propriété', 'Mode locatif', 'Nombre de locaux', 'Loyer mensuel total (USD)',
+        'Prix de revente (USD)', 'Expertise récente', 'Annonces', 'Score complétude (%)', 'Date Création',
+      ],
+      data: filteredContributions.map(c => {
+        const units = parseRentalUnits(c.rental_units);
+        const totalRent = c.rental_configuration === 'multi'
+          ? sumUnitsRent(units)
+          : Number(c.monthly_rent_usd ?? 0);
+        return [
+          c.parcel_number,
+          c.status,
+          c.is_suspicious ? 'Oui' : 'Non',
+          c.fraud_score?.toString() || '0',
+          c.province || '',
+          c.ville || '',
+          c.commune || '',
+          c.property_title_type || '',
+          c.rental_configuration === 'multi' ? 'Plusieurs locaux' : c.rental_configuration === 'single' ? 'Un seul local' : '',
+          c.rental_configuration === 'multi' ? String(c.rental_units_count ?? units.length) : '',
+          totalRent ? String(totalRent) : '',
+          c.resale_price_usd ? String(c.resale_price_usd) : '',
+          c.has_recent_appraisal ? 'Oui' : 'Non',
+          Array.isArray(c.market_listings) ? String(c.market_listings.length) : '0',
+          String(calculateCCCCompleteness(c)),
+          new Date(c.created_at).toLocaleDateString('fr-FR'),
+        ];
+      })
     });
     toast.success('Export CSV téléchargé');
   };
@@ -556,13 +604,16 @@ const AdminCCCContributions: React.FC = () => {
             onSearchQueryChange={setSearchQuery}
             userFilter={userFilter}
             onUserFilterChange={setUserFilter}
+            provinceFilter={provinceFilter}
+            onProvinceFilterChange={setProvinceFilter}
+            provinceOptions={provinceOptions}
           />
 
           <CCCBulkActions
             selectedCount={selectedIds.size}
             busy={bulkBusy}
             onApprove={bulkApprove}
-            onReject={bulkReject}
+            onReject={() => setBulkRejectOpen(true)}
             onClear={() => setSelectedIds(new Set())}
           />
 
