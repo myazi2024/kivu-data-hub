@@ -20,11 +20,9 @@ import { calculateCCCCompleteness } from './ccc/cccCompleteness';
 import { CCCDetailsDialog } from './ccc/CCCDetailsDialog';
 import { CCCTestDialog } from './ccc/CCCTestDialog';
 import type { Contribution, ContributionStats, ValidationResult, TestResult } from './ccc/types';
-import type {
-  OwnershipHistoryEntry, BoundaryHistoryEntry, BuildingPermitEntry,
-  MortgageHistoryEntry,
-} from './ccc/cccHelpers';
+import { approveContributionCore, validateContribution } from './ccc/cccApproval';
 import { useAdminAnalytics } from '@/lib/adminAnalytics';
+
 
 const AdminCCCContributions: React.FC = () => {
   const { trackAdminAction } = useAdminAnalytics();
