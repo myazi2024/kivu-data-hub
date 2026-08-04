@@ -123,15 +123,17 @@ export const CCCDetailsDialog: React.FC<CCCDetailsDialogProps> = ({
             </div>
 
             <Tabs defaultValue="general" className="w-full">
-              <TabsList className="grid w-full grid-cols-4 md:grid-cols-7 h-8 md:h-10">
+              <TabsList className="grid w-full grid-cols-4 md:grid-cols-8 h-8 md:h-10">
                 <TabsTrigger value="general" className="text-xs md:text-sm px-1 md:px-3">Général</TabsTrigger>
                 <TabsTrigger value="location" className="text-xs md:text-sm px-1 md:px-3">Localisation</TabsTrigger>
                 <TabsTrigger value="environment" className="text-xs md:text-sm px-1 md:px-3">Env. & Occup.</TabsTrigger>
+                <TabsTrigger value="market" className="text-xs md:text-sm px-1 md:px-3">Valeur</TabsTrigger>
                 <TabsTrigger value="permits" className="text-xs md:text-sm px-1 md:px-3">Permis</TabsTrigger>
                 <TabsTrigger value="history" className="text-xs md:text-sm px-1 md:px-3">Historiques</TabsTrigger>
                 <TabsTrigger value="obligations" className="text-xs md:text-sm px-1 md:px-3">Obligations</TabsTrigger>
                 <TabsTrigger value="documents" className="text-xs md:text-sm px-1 md:px-3">Documents</TabsTrigger>
               </TabsList>
+
 
               {/* Général */}
               <TabsContent value="general" className="space-y-2 md:space-y-3 mt-2">
