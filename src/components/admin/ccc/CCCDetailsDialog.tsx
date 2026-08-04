@@ -357,7 +357,13 @@ export const CCCDetailsDialog: React.FC<CCCDetailsDialogProps> = ({
                 )}
               </TabsContent>
 
+              {/* Valeur marchande */}
+              <TabsContent value="market" className="space-y-2 md:space-y-3 mt-2">
+                <CCCMarketValuePanel contribution={contribution} />
+              </TabsContent>
+
               {/* Permis */}
+
               <TabsContent value="permits" className="space-y-2 md:space-y-3 mt-2">
                 {contribution.building_permits && Array.isArray(contribution.building_permits) && contribution.building_permits.length > 0 ? (
                   <div>
