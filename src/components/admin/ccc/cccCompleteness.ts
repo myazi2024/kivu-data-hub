@@ -1,11 +1,13 @@
 /**
  * CCC contribution completeness score (0-100).
- * Counts 20 key fields filled in the contribution payload.
- * Aligned with the full CCC form (incl. environment & occupancy).
+ * Base : 20 champs structurels communs à toutes les contributions.
+ * Critères conditionnels : bloc locatif (si usage = location) et bloc valeur
+ * marchande — comptés uniquement quand ils sont applicables, afin de ne pas
+ * pénaliser les contributions auxquelles ils ne s'appliquent pas.
  */
 export const calculateCCCCompleteness = (contribution: any): number => {
   let filled = 0;
-  const total = 20;
+  let total = 20;
 
   if (contribution.property_title_type) filled++;
   if (contribution.current_owner_name || contribution.current_owners_details) filled++;
@@ -23,11 +25,47 @@ export const calculateCCCCompleteness = (contribution: any): number => {
   if (contribution.road_sides && Array.isArray(contribution.road_sides) && contribution.road_sides.length > 0) filled++;
   if (contribution.has_dispute !== null && contribution.has_dispute !== undefined) filled++;
   if (contribution.whatsapp_number) filled++;
-  // Nouveaux champs (alignés au formulaire CCC complet)
   if (contribution.sound_environment) filled++;
   if (contribution.is_occupied !== null && contribution.is_occupied !== undefined) filled++;
   if (contribution.declared_usage) filled++;
   if (contribution.construction_nature || contribution.construction_materials) filled++;
 
-  return Math.round((filled / total) * 100);
+  // ─── Bloc locatif (conditionnel : usage déclaré = location) ───
+  if (contribution.declared_usage === 'location') {
+    const units = Array.isArray(contribution.rental_units) ? contribution.rental_units : [];
+    total += 3;
+    if (contribution.rental_configuration) filled++;
+    if (contribution.rental_configuration === 'multi') {
+      if (units.length > 0) filled++;
+      if (units.length > 0 && units.every((u: any) => Number(u?.monthly_rent_usd ?? u?.monthlyRentUsd) > 0)) filled++;
+    } else {
+      if (Number(contribution.monthly_rent_usd) > 0) filled++;
+      if (contribution.rental_start_date) filled++;
+    }
+  }
+
+  // ─── Bloc valeur marchande (conditionnel : question posée) ───
+  if (contribution.would_sell_if_offered !== null && contribution.would_sell_if_offered !== undefined) {
+    total += 2;
+    filled++; // disposition renseignée
+    if (contribution.would_sell_if_offered === true) {
+      if (contribution.resale_price_usd) filled++;
+    } else {
+      filled++; // non applicable : ne pas pénaliser
+    }
+  }
+  if (contribution.has_recent_appraisal === true) {
+    total += 1;
+    if (contribution.appraisal_date) filled++;
+  }
+  const listings = Array.isArray(contribution.market_listings) ? contribution.market_listings : [];
+  if (listings.length > 0) {
+    total += 1;
+    const allWithCover = listings.every(
+      (l: any) => Array.isArray(l?.coverImageUrls) && l.coverImageUrls.length > 0,
+    );
+    if (allWithCover) filled++;
+  }
+
+  return Math.min(100, Math.round((filled / total) * 100));
 };
