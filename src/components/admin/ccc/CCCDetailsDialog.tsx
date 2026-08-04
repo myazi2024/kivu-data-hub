@@ -13,6 +13,10 @@ import {
 import { StatusBadge, StatusType } from '@/components/shared/StatusBadge';
 import { Contribution } from './types';
 import { readField as rr } from './cccHelpers';
+import { detectCCCInconsistencies } from './cccConsistency';
+import CCCRentalBlock from './CCCRentalBlock';
+import CCCMarketValuePanel from './CCCMarketValuePanel';
+
 
 interface CCCDetailsDialogProps {
   open: boolean;
@@ -75,6 +79,23 @@ export const CCCDetailsDialog: React.FC<CCCDetailsDialogProps> = ({
               </Alert>
             )}
 
+            {(() => {
+              const issues = detectCCCInconsistencies(contribution);
+              if (issues.length === 0) return null;
+              return (
+                <Alert className="py-2 border-destructive/50">
+                  <AlertTriangle className="h-3 w-3 md:h-4 md:w-4" />
+                  <AlertDescription className="text-xs md:text-sm">
+                    <strong>{issues.length} incohérence(s) détectée(s)</strong>
+                    <ul className="list-disc pl-4 mt-1 space-y-0.5">
+                      {issues.map((it, i) => <li key={i}>{it}</li>)}
+                    </ul>
+                  </AlertDescription>
+                </Alert>
+              );
+            })()}
+
+
             {/* Actions rapides */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-1 md:gap-2">
               {contribution.appeal_submitted && (
@@ -119,15 +140,17 @@ export const CCCDetailsDialog: React.FC<CCCDetailsDialogProps> = ({
             </div>
 
             <Tabs defaultValue="general" className="w-full">
-              <TabsList className="grid w-full grid-cols-4 md:grid-cols-7 h-8 md:h-10">
+              <TabsList className="grid w-full grid-cols-4 md:grid-cols-8 h-8 md:h-10">
                 <TabsTrigger value="general" className="text-xs md:text-sm px-1 md:px-3">Général</TabsTrigger>
                 <TabsTrigger value="location" className="text-xs md:text-sm px-1 md:px-3">Localisation</TabsTrigger>
                 <TabsTrigger value="environment" className="text-xs md:text-sm px-1 md:px-3">Env. & Occup.</TabsTrigger>
+                <TabsTrigger value="market" className="text-xs md:text-sm px-1 md:px-3">Valeur</TabsTrigger>
                 <TabsTrigger value="permits" className="text-xs md:text-sm px-1 md:px-3">Permis</TabsTrigger>
                 <TabsTrigger value="history" className="text-xs md:text-sm px-1 md:px-3">Historiques</TabsTrigger>
                 <TabsTrigger value="obligations" className="text-xs md:text-sm px-1 md:px-3">Obligations</TabsTrigger>
                 <TabsTrigger value="documents" className="text-xs md:text-sm px-1 md:px-3">Documents</TabsTrigger>
               </TabsList>
+
 
               {/* Général */}
               <TabsContent value="general" className="space-y-2 md:space-y-3 mt-2">
@@ -337,7 +360,10 @@ export const CCCDetailsDialog: React.FC<CCCDetailsDialogProps> = ({
                   <div>
                     <Label className="text-xs text-muted-foreground">Type de contribution</Label>
                     <p className="text-sm">{contribution.contribution_type === 'update' ? 'Mise à jour' : contribution.contribution_type || 'Initiale'}</p>
-                  </div>
+                </div>
+
+                <CCCRentalBlock contribution={contribution} />
+
                 </div>
 
                 {contribution.contribution_type === 'update' && (contribution.changed_fields || contribution.change_justification) && (
@@ -353,7 +379,13 @@ export const CCCDetailsDialog: React.FC<CCCDetailsDialogProps> = ({
                 )}
               </TabsContent>
 
+              {/* Valeur marchande */}
+              <TabsContent value="market" className="space-y-2 md:space-y-3 mt-2">
+                <CCCMarketValuePanel contribution={contribution} />
+              </TabsContent>
+
               {/* Permis */}
+
               <TabsContent value="permits" className="space-y-2 md:space-y-3 mt-2">
                 {contribution.building_permits && Array.isArray(contribution.building_permits) && contribution.building_permits.length > 0 ? (
                   <div>

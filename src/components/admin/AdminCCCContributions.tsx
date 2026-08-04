@@ -6,6 +6,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Gift, Play, Download } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { AppealManagementDialog } from './appeals/AppealManagementDialog';
 import { PermitRequestDialog } from './permits/PermitRequestDialog';
 import { DocumentsGalleryDialog } from './documents/DocumentsGalleryDialog';
@@ -17,14 +22,13 @@ import CCCBulkActions from './ccc/CCCBulkActions';
 import { CCCFilters } from './ccc/CCCFilters';
 import { CCCContributionsTable } from './ccc/CCCContributionsTable';
 import { calculateCCCCompleteness } from './ccc/cccCompleteness';
+import { parseRentalUnits, sumUnitsRent } from './ccc/cccConsistency';
 import { CCCDetailsDialog } from './ccc/CCCDetailsDialog';
 import { CCCTestDialog } from './ccc/CCCTestDialog';
 import type { Contribution, ContributionStats, ValidationResult, TestResult } from './ccc/types';
-import type {
-  OwnershipHistoryEntry, BoundaryHistoryEntry, BuildingPermitEntry,
-  MortgageHistoryEntry,
-} from './ccc/cccHelpers';
+import { approveContributionCore, validateContribution as runServerValidation } from './ccc/cccApproval';
 import { useAdminAnalytics } from '@/lib/adminAnalytics';
+
 
 const AdminCCCContributions: React.FC = () => {
   const { trackAdminAction } = useAdminAnalytics();
@@ -51,6 +55,9 @@ const AdminCCCContributions: React.FC = () => {
   const [showDocumentsDialog, setShowDocumentsDialog] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [userFilter, setUserFilter] = useState('');
+  const [provinceFilter, setProvinceFilter] = useState('all');
+  const [bulkRejectOpen, setBulkRejectOpen] = useState(false);
+  const [bulkRejectReason, setBulkRejectReason] = useState('');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkBusy, setBulkBusy] = useState(false);
 
@@ -160,16 +167,11 @@ const AdminCCCContributions: React.FC = () => {
   const handleApprove = async (contributionId: string) => {
     // Valider automatiquement si pas encore fait
     let validation = validationResult;
-    
+
     if (!validation) {
       setIsValidating(true);
       try {
-        const { data, error } = await supabase.rpc('validate_contribution_completeness', {
-          contribution_id: contributionId
-        });
-
-        if (error) throw error;
-        validation = data as unknown as ValidationResult;
+        validation = await runServerValidation(contributionId);
         setValidationResult(validation);
       } catch (error: any) {
         console.error('Erreur lors de la validation:', error);
@@ -181,232 +183,45 @@ const AdminCCCContributions: React.FC = () => {
       }
     }
 
-    // Vérifier s'il y a des erreurs critiques
     if (!validation?.valid) {
       toast.error('La contribution contient des erreurs critiques. Veuillez les corriger avant d\'approuver.');
       return;
     }
 
     try {
-      const contribution = contributions.find(c => c.id === contributionId);
-      if (!contribution) {
-        toast.error('Contribution non trouvée');
-        return;
-      }
-
       const { data: { user } } = await supabase.auth.getUser();
-      
       if (!user?.id) {
         toast.error('Vous devez être connecté pour approuver une contribution');
         return;
       }
 
-      console.log('Approbation de la contribution:', contributionId);
+      const outcome = await approveContributionCore(contributionId, user.id);
 
-      // 1. Mettre à jour le statut de la contribution
-      const { data: updatedContribution, error } = await supabase
-        .from('cadastral_contributions')
-        .update({ 
-          status: 'approved',
-          reviewed_by: user.id,
-          reviewed_at: new Date().toISOString(),
-          verified_by: user.id,
-          verified_at: new Date().toISOString()
-        })
-        .eq('id', contributionId)
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Erreur Supabase lors de l\'approbation:', error);
-        
-        // Messages d'erreur plus explicites
-        let errorMessage = 'Erreur lors de l\'approbation';
-        if (error.message) {
-          errorMessage += ': ' + error.message;
-        }
-        if (error.details) {
-          errorMessage += ' - ' + error.details;
-        }
-        if (error.hint) {
-          errorMessage += ' (Conseil: ' + error.hint + ')';
-        }
-        
-        toast.error(errorMessage);
+      if (!outcome.ok) {
+        toast.error(outcome.error || 'Erreur lors de l\'approbation');
+        await fetchContributions();
         return;
       }
 
-      console.log('Contribution approuvée avec succès:', updatedContribution);
-
-      // Vérifier si c'est une contribution de type "update" (mise à jour d'une parcelle existante)
-      const isUpdateContribution = updatedContribution.contribution_type === 'update' && updatedContribution.original_parcel_id;
-
-      let targetParcelId: string;
-
-      if (isUpdateContribution) {
-        // La parcelle existante est mise à jour automatiquement par
-        // le trigger DB `sync_contribution_to_parcel_trigger`.
-        targetParcelId = updatedContribution.original_parcel_id;
-        console.log('Contribution de mise à jour - parcelle synchronisée par trigger:', targetParcelId);
-      } else {
-        // Pour les nouvelles contributions, la parcelle est créée automatiquement
-        // par le trigger DB `trigger_create_parcel_on_approval`.
-        // On récupère son id pour chaîner les historiques associés.
-        const { data: createdParcel, error: parcelFetchError } = await supabase
-          .from('cadastral_parcels')
-          .select('id')
-          .eq('parcel_number', updatedContribution.parcel_number)
-          .maybeSingle();
-
-        if (parcelFetchError || !createdParcel) {
-          console.error('Erreur lors de la récupération de la parcelle créée:', parcelFetchError);
-          toast.error('Contribution approuvée mais parcelle introuvable. Vérifiez les logs.');
-          await fetchContributions();
-          return;
-        }
-
-        targetParcelId = createdParcel.id;
-
-        // Créer les historiques associés uniquement pour les nouvelles parcelles
-        const historyErrors: string[] = [];
-
-        if (updatedContribution.ownership_history && Array.isArray(updatedContribution.ownership_history)) {
-          for (const raw of updatedContribution.ownership_history) {
-            if (typeof raw === 'object' && raw !== null) {
-              const history = raw as OwnershipHistoryEntry;
-              const { error: ohError } = await supabase.from('cadastral_ownership_history').insert({
-                parcel_id: targetParcelId,
-                owner_name: history.owner_name,
-                legal_status: history.legal_status,
-                ownership_start_date: history.ownership_start_date,
-                ownership_end_date: history.ownership_end_date,
-                mutation_type: history.mutation_type,
-                ownership_document_url: history.ownership_document_url,
-              });
-              if (ohError) {
-                console.error('Erreur historique propriété:', ohError);
-                historyErrors.push('propriété');
-              }
-            }
-          }
-        }
-
-        if (updatedContribution.boundary_history && Array.isArray(updatedContribution.boundary_history)) {
-          for (const raw of updatedContribution.boundary_history) {
-            if (typeof raw === 'object' && raw !== null) {
-              const history = raw as BoundaryHistoryEntry;
-              const { error: bhError } = await supabase.from('cadastral_boundary_history').insert({
-                parcel_id: targetParcelId,
-                pv_reference_number: history.pv_reference_number,
-                boundary_purpose: history.boundary_purpose,
-                surveyor_name: history.surveyor_name,
-                survey_date: history.survey_date,
-                boundary_document_url: history.boundary_document_url,
-              });
-              if (bhError) {
-                console.error('Erreur historique bornage:', bhError);
-                historyErrors.push('bornage');
-              }
-            }
-          }
-        }
-
-        if (updatedContribution.tax_history && Array.isArray(updatedContribution.tax_history)) {
-          for (const history of updatedContribution.tax_history) {
-            if (typeof history === 'object' && history !== null) {
-              // Compatibility helper: CCC stores camelCase, services store snake_case
-              const rr = (obj: any, ...keys: string[]) => { for (const k of keys) { if (obj?.[k] !== undefined && obj[k] !== null) return obj[k]; } return null; };
-              const { error: thError } = await supabase.from('cadastral_tax_history').insert({
-                parcel_id: targetParcelId,
-                tax_year: Number(rr(history, 'tax_year', 'taxYear')),
-                amount_usd: Number(rr(history, 'amount_usd', 'amountUsd')) || 0,
-                payment_status: rr(history, 'payment_status', 'paymentStatus') || 'En attente',
-                payment_date: rr(history, 'payment_date', 'paymentDate'),
-                receipt_document_url: rr(history, 'receipt_document_url', 'receiptDocumentUrl'),
-              });
-              if (thError) {
-                console.error('Erreur historique taxes:', thError);
-                historyErrors.push('taxes');
-              }
-            }
-          }
-        }
-
-        if (updatedContribution.building_permits && Array.isArray(updatedContribution.building_permits)) {
-          for (const raw of updatedContribution.building_permits) {
-            if (typeof raw === 'object' && raw !== null) {
-              const permit = raw as BuildingPermitEntry;
-              const { error: bpError } = await supabase.from('cadastral_building_permits').insert({
-                parcel_id: targetParcelId,
-                permit_number: permit.permit_number,
-                issuing_service: permit.issuing_service,
-                issue_date: permit.issue_date,
-                validity_period_months: permit.validity_period_months,
-                administrative_status: permit.administrative_status,
-                is_current: permit.is_current,
-                issuing_service_contact: permit.issuing_service_contact,
-                permit_document_url: permit.permit_document_url,
-              });
-              if (bpError) {
-                console.error('Erreur autorisation de bâtir:', bpError);
-                historyErrors.push('permis');
-              }
-            }
-          }
-        }
-
-        if (historyErrors.length > 0) {
-          toast.warning(`Parcelle créée mais erreurs sur les historiques: ${historyErrors.join(', ')}`);
-        }
+      if (outcome.warnings.length > 0) {
+        toast.warning(`Parcelle traitée mais erreurs sur : ${outcome.warnings.join(', ')}`);
       }
 
-
-      // Traiter les hypothèques (pour les nouvelles contributions ET les mises à jour)
-      if (updatedContribution.mortgage_history && Array.isArray(updatedContribution.mortgage_history)) {
-        for (const raw of updatedContribution.mortgage_history) {
-          if (typeof raw === 'object' && raw !== null) {
-            const h = raw as MortgageHistoryEntry;
-            // Gérer les deux formats de champs (camelCase du formulaire CCC et snake_case)
-            const { error: mortgageError } = await supabase.from('cadastral_mortgages').insert({
-              parcel_id: targetParcelId,
-              mortgage_amount_usd: h.mortgage_amount_usd || h.mortgageAmountUsd || 0,
-              duration_months: h.duration_months || h.durationMonths || 0,
-              creditor_name: h.creditor_name || h.creditorName || 'Non spécifié',
-              creditor_type: h.creditor_type || h.creditorType || 'Banque',
-              contract_date: h.contract_date || h.contractDate || new Date().toISOString().split('T')[0],
-              mortgage_status: (h.mortgage_status || h.mortgageStatus || 'active').toLowerCase(),
-              // reference_number est généré automatiquement par le trigger SQL
-            });
-            
-            if (mortgageError) {
-              console.error('Erreur lors de la création de l\'hypothèque:', mortgageError);
-            }
-          }
-        }
-      }
-
-      // Le trigger auto_generate_ccc_code() va automatiquement :
-      // 1. Générer un code CCC unique
-      // 2. Calculer la valeur du code
-      // 3. Créer une notification pour l'utilisateur
-
-      const successMessage = isUpdateContribution 
+      // Le trigger auto_generate_ccc_code() génère le code CCC et la notification.
+      toast.success(outcome.isUpdateContribution
         ? 'Contribution approuvée et données ajoutées à la parcelle existante ! Le code CCC a été généré.'
-        : 'Contribution approuvée et parcelle créée ! Le code CCC a été généré.';
-      toast.success(successMessage);
-      await logContributionAudit({ contributionId, action: 'approve', payload: { isUpdateContribution } });
+        : 'Contribution approuvée et parcelle créée ! Le code CCC a été généré.');
+      await logContributionAudit({ contributionId, action: 'approve', payload: { isUpdateContribution: outcome.isUpdateContribution } });
       trackAdminAction({ module: 'ccc', action: 'approve', ref: { contribution_id: contributionId } });
       await fetchContributions();
       setIsDetailsOpen(false);
       setValidationResult(null);
     } catch (error: any) {
       console.error('Erreur inattendue lors de l\'approbation:', error);
-      const errorMessage = error?.message 
-        ? `Erreur lors de l'approbation: ${error.message}` 
-        : 'Erreur inattendue lors de l\'approbation';
-      toast.error(errorMessage);
+      toast.error(error?.message ? `Erreur lors de l'approbation: ${error.message}` : 'Erreur inattendue lors de l\'approbation');
     }
   };
+
 
   const handleReject = async (contributionId: string) => {
     if (!rejectionReason.trim()) {
@@ -583,10 +398,16 @@ const AdminCCCContributions: React.FC = () => {
         c.user_id?.toLowerCase().includes(query);
 
       const matchesUser = !userQ || c.user_id?.toLowerCase().includes(userQ);
+      const matchesProvince = provinceFilter === 'all' || c.province === provinceFilter;
 
-      return matchesTab && matchesSearch && matchesUser;
+      return matchesTab && matchesSearch && matchesUser && matchesProvince;
     });
-  }, [contributions, activeTab, searchQuery, userFilter]);
+  }, [contributions, activeTab, searchQuery, userFilter, provinceFilter]);
+
+  const provinceOptions = useMemo(
+    () => Array.from(new Set(contributions.map(c => c.province).filter(Boolean) as string[])).sort(),
+    [contributions],
+  );
 
   // Bulk actions
   const toggleSelect = (id: string) => {
@@ -602,17 +423,36 @@ const AdminCCCContributions: React.FC = () => {
     setBulkBusy(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
+      if (!user?.id) {
+        toast.error('Vous devez être connecté pour approuver des contributions');
+        return;
+      }
       const ids = Array.from(selectedIds);
-      const { error } = await supabase
-        .from('cadastral_contributions')
-        .update({ status: 'approved', reviewed_by: user?.id, reviewed_at: new Date().toISOString() })
-        .in('id', ids);
-      if (error) throw error;
-      await Promise.all(ids.map(id =>
-        logContributionAudit({ contributionId: id, action: 'bulk_approve', payload: { count: ids.length } })
-      ));
-      toast.success(`${ids.length} contribution(s) approuvée(s)`);
-      trackAdminAction({ module: 'ccc', action: 'bulk_approve', meta: { count: ids.length } });
+      const approved: string[] = [];
+      const skipped: string[] = [];
+      const warned: string[] = [];
+
+      // Même chemin que l'approbation unitaire : validation serveur puis
+      // création des historiques associés.
+      for (const id of ids) {
+        try {
+          const validation = await runServerValidation(id);
+          if (!validation?.valid) { skipped.push(id); continue; }
+          const outcome = await approveContributionCore(id, user.id);
+          if (!outcome.ok) { skipped.push(id); continue; }
+          if (outcome.warnings.length > 0) warned.push(id);
+          approved.push(id);
+          await logContributionAudit({ contributionId: id, action: 'bulk_approve', payload: { count: ids.length } });
+        } catch (e) {
+          console.error('Approbation en masse — échec sur', id, e);
+          skipped.push(id);
+        }
+      }
+
+      if (approved.length > 0) toast.success(`${approved.length} contribution(s) approuvée(s)`);
+      if (warned.length > 0) toast.warning(`${warned.length} contribution(s) approuvée(s) avec des historiques incomplets`);
+      if (skipped.length > 0) toast.error(`${skipped.length} contribution(s) ignorée(s) : validation échouée ou erreur`);
+      trackAdminAction({ module: 'ccc', action: 'bulk_approve', meta: { count: approved.length, skipped: skipped.length } });
       setSelectedIds(new Set());
       await fetchContributions();
     } catch (err: any) {
@@ -624,8 +464,8 @@ const AdminCCCContributions: React.FC = () => {
 
   const bulkReject = async () => {
     if (selectedIds.size === 0) return;
-    const reason = window.prompt('Motif du rejet (obligatoire et appliqué à toutes les contributions sélectionnées) :');
-    if (!reason || !reason.trim()) {
+    const reason = bulkRejectReason.trim();
+    if (!reason) {
       toast.error('Motif obligatoire pour rejeter');
       return;
     }
@@ -649,6 +489,8 @@ const AdminCCCContributions: React.FC = () => {
       ));
       toast.success(`${ids.length} contribution(s) rejetée(s)`);
       trackAdminAction({ module: 'ccc', action: 'bulk_reject', meta: { count: ids.length, reason } });
+      setBulkRejectOpen(false);
+      setBulkRejectReason('');
       setSelectedIds(new Set());
       await fetchContributions();
     } catch (err: any) {
@@ -682,18 +524,35 @@ const AdminCCCContributions: React.FC = () => {
   const handleExportCSV = () => {
     exportToCSV({
       filename: `contributions_ccc_${new Date().toISOString().split('T')[0]}.csv`,
-      headers: ['Numéro Parcelle', 'Statut', 'Suspect', 'Score Fraude', 'Province', 'Ville', 'Commune', 'Type Propriété', 'Date Création'],
-      data: filteredContributions.map(c => [
-        c.parcel_number,
-        c.status,
-        c.is_suspicious ? 'Oui' : 'Non',
-        c.fraud_score?.toString() || '0',
-        c.province || '',
-        c.ville || '',
-        c.commune || '',
-        c.property_title_type || '',
-        new Date(c.created_at).toLocaleDateString('fr-FR')
-      ])
+      headers: [
+        'Numéro Parcelle', 'Statut', 'Suspect', 'Score Fraude', 'Province', 'Ville', 'Commune',
+        'Type Propriété', 'Mode locatif', 'Nombre de locaux', 'Loyer mensuel total (USD)',
+        'Prix de revente (USD)', 'Expertise récente', 'Annonces', 'Score complétude (%)', 'Date Création',
+      ],
+      data: filteredContributions.map(c => {
+        const units = parseRentalUnits(c.rental_units);
+        const totalRent = c.rental_configuration === 'multi'
+          ? sumUnitsRent(units)
+          : Number(c.monthly_rent_usd ?? 0);
+        return [
+          c.parcel_number,
+          c.status,
+          c.is_suspicious ? 'Oui' : 'Non',
+          c.fraud_score?.toString() || '0',
+          c.province || '',
+          c.ville || '',
+          c.commune || '',
+          c.property_title_type || '',
+          c.rental_configuration === 'multi' ? 'Plusieurs locaux' : c.rental_configuration === 'single' ? 'Un seul local' : '',
+          c.rental_configuration === 'multi' ? String(c.rental_units_count ?? units.length) : '',
+          totalRent ? String(totalRent) : '',
+          c.resale_price_usd ? String(c.resale_price_usd) : '',
+          c.has_recent_appraisal ? 'Oui' : 'Non',
+          Array.isArray(c.market_listings) ? String(c.market_listings.length) : '0',
+          String(calculateCCCCompleteness(c)),
+          new Date(c.created_at).toLocaleDateString('fr-FR'),
+        ];
+      })
     });
     toast.success('Export CSV téléchargé');
   };
@@ -750,13 +609,16 @@ const AdminCCCContributions: React.FC = () => {
             onSearchQueryChange={setSearchQuery}
             userFilter={userFilter}
             onUserFilterChange={setUserFilter}
+            provinceFilter={provinceFilter}
+            onProvinceFilterChange={setProvinceFilter}
+            provinceOptions={provinceOptions}
           />
 
           <CCCBulkActions
             selectedCount={selectedIds.size}
             busy={bulkBusy}
             onApprove={bulkApprove}
-            onReject={bulkReject}
+            onReject={() => setBulkRejectOpen(true)}
             onClear={() => setSelectedIds(new Set())}
           />
 
@@ -815,6 +677,34 @@ const AdminCCCContributions: React.FC = () => {
         onOpenPermit={() => setShowPermitDialog(true)}
         onOpenDocuments={() => setShowDocumentsDialog(true)}
       />
+
+      {/* Rejet en masse */}
+      <AlertDialog open={bulkRejectOpen} onOpenChange={(o) => { setBulkRejectOpen(o); if (!o) setBulkRejectReason(''); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Rejeter {selectedIds.size} contribution(s)</AlertDialogTitle>
+            <AlertDialogDescription>
+              Le motif est obligatoire et sera appliqué à toutes les contributions sélectionnées.
+              Les contributeurs seront notifiés.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <Textarea
+            value={bulkRejectReason}
+            onChange={(e) => setBulkRejectReason(e.target.value)}
+            placeholder="Motif du rejet…"
+            className="min-h-24"
+          />
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={bulkBusy}>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={bulkBusy || !bulkRejectReason.trim()}
+              onClick={(e) => { e.preventDefault(); bulkReject(); }}
+            >
+              Confirmer le rejet
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Test Results Dialog */}
       <CCCTestDialog
