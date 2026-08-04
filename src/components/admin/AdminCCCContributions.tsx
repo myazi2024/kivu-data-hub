@@ -160,16 +160,11 @@ const AdminCCCContributions: React.FC = () => {
   const handleApprove = async (contributionId: string) => {
     // Valider automatiquement si pas encore fait
     let validation = validationResult;
-    
+
     if (!validation) {
       setIsValidating(true);
       try {
-        const { data, error } = await supabase.rpc('validate_contribution_completeness', {
-          contribution_id: contributionId
-        });
-
-        if (error) throw error;
-        validation = data as unknown as ValidationResult;
+        validation = await validateContribution(contributionId);
         setValidationResult(validation);
       } catch (error: any) {
         console.error('Erreur lors de la validation:', error);
@@ -181,232 +176,45 @@ const AdminCCCContributions: React.FC = () => {
       }
     }
 
-    // Vérifier s'il y a des erreurs critiques
     if (!validation?.valid) {
       toast.error('La contribution contient des erreurs critiques. Veuillez les corriger avant d\'approuver.');
       return;
     }
 
     try {
-      const contribution = contributions.find(c => c.id === contributionId);
-      if (!contribution) {
-        toast.error('Contribution non trouvée');
-        return;
-      }
-
       const { data: { user } } = await supabase.auth.getUser();
-      
       if (!user?.id) {
         toast.error('Vous devez être connecté pour approuver une contribution');
         return;
       }
 
-      console.log('Approbation de la contribution:', contributionId);
+      const outcome = await approveContributionCore(contributionId, user.id);
 
-      // 1. Mettre à jour le statut de la contribution
-      const { data: updatedContribution, error } = await supabase
-        .from('cadastral_contributions')
-        .update({ 
-          status: 'approved',
-          reviewed_by: user.id,
-          reviewed_at: new Date().toISOString(),
-          verified_by: user.id,
-          verified_at: new Date().toISOString()
-        })
-        .eq('id', contributionId)
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Erreur Supabase lors de l\'approbation:', error);
-        
-        // Messages d'erreur plus explicites
-        let errorMessage = 'Erreur lors de l\'approbation';
-        if (error.message) {
-          errorMessage += ': ' + error.message;
-        }
-        if (error.details) {
-          errorMessage += ' - ' + error.details;
-        }
-        if (error.hint) {
-          errorMessage += ' (Conseil: ' + error.hint + ')';
-        }
-        
-        toast.error(errorMessage);
+      if (!outcome.ok) {
+        toast.error(outcome.error || 'Erreur lors de l\'approbation');
+        await fetchContributions();
         return;
       }
 
-      console.log('Contribution approuvée avec succès:', updatedContribution);
-
-      // Vérifier si c'est une contribution de type "update" (mise à jour d'une parcelle existante)
-      const isUpdateContribution = updatedContribution.contribution_type === 'update' && updatedContribution.original_parcel_id;
-
-      let targetParcelId: string;
-
-      if (isUpdateContribution) {
-        // La parcelle existante est mise à jour automatiquement par
-        // le trigger DB `sync_contribution_to_parcel_trigger`.
-        targetParcelId = updatedContribution.original_parcel_id;
-        console.log('Contribution de mise à jour - parcelle synchronisée par trigger:', targetParcelId);
-      } else {
-        // Pour les nouvelles contributions, la parcelle est créée automatiquement
-        // par le trigger DB `trigger_create_parcel_on_approval`.
-        // On récupère son id pour chaîner les historiques associés.
-        const { data: createdParcel, error: parcelFetchError } = await supabase
-          .from('cadastral_parcels')
-          .select('id')
-          .eq('parcel_number', updatedContribution.parcel_number)
-          .maybeSingle();
-
-        if (parcelFetchError || !createdParcel) {
-          console.error('Erreur lors de la récupération de la parcelle créée:', parcelFetchError);
-          toast.error('Contribution approuvée mais parcelle introuvable. Vérifiez les logs.');
-          await fetchContributions();
-          return;
-        }
-
-        targetParcelId = createdParcel.id;
-
-        // Créer les historiques associés uniquement pour les nouvelles parcelles
-        const historyErrors: string[] = [];
-
-        if (updatedContribution.ownership_history && Array.isArray(updatedContribution.ownership_history)) {
-          for (const raw of updatedContribution.ownership_history) {
-            if (typeof raw === 'object' && raw !== null) {
-              const history = raw as OwnershipHistoryEntry;
-              const { error: ohError } = await supabase.from('cadastral_ownership_history').insert({
-                parcel_id: targetParcelId,
-                owner_name: history.owner_name,
-                legal_status: history.legal_status,
-                ownership_start_date: history.ownership_start_date,
-                ownership_end_date: history.ownership_end_date,
-                mutation_type: history.mutation_type,
-                ownership_document_url: history.ownership_document_url,
-              });
-              if (ohError) {
-                console.error('Erreur historique propriété:', ohError);
-                historyErrors.push('propriété');
-              }
-            }
-          }
-        }
-
-        if (updatedContribution.boundary_history && Array.isArray(updatedContribution.boundary_history)) {
-          for (const raw of updatedContribution.boundary_history) {
-            if (typeof raw === 'object' && raw !== null) {
-              const history = raw as BoundaryHistoryEntry;
-              const { error: bhError } = await supabase.from('cadastral_boundary_history').insert({
-                parcel_id: targetParcelId,
-                pv_reference_number: history.pv_reference_number,
-                boundary_purpose: history.boundary_purpose,
-                surveyor_name: history.surveyor_name,
-                survey_date: history.survey_date,
-                boundary_document_url: history.boundary_document_url,
-              });
-              if (bhError) {
-                console.error('Erreur historique bornage:', bhError);
-                historyErrors.push('bornage');
-              }
-            }
-          }
-        }
-
-        if (updatedContribution.tax_history && Array.isArray(updatedContribution.tax_history)) {
-          for (const history of updatedContribution.tax_history) {
-            if (typeof history === 'object' && history !== null) {
-              // Compatibility helper: CCC stores camelCase, services store snake_case
-              const rr = (obj: any, ...keys: string[]) => { for (const k of keys) { if (obj?.[k] !== undefined && obj[k] !== null) return obj[k]; } return null; };
-              const { error: thError } = await supabase.from('cadastral_tax_history').insert({
-                parcel_id: targetParcelId,
-                tax_year: Number(rr(history, 'tax_year', 'taxYear')),
-                amount_usd: Number(rr(history, 'amount_usd', 'amountUsd')) || 0,
-                payment_status: rr(history, 'payment_status', 'paymentStatus') || 'En attente',
-                payment_date: rr(history, 'payment_date', 'paymentDate'),
-                receipt_document_url: rr(history, 'receipt_document_url', 'receiptDocumentUrl'),
-              });
-              if (thError) {
-                console.error('Erreur historique taxes:', thError);
-                historyErrors.push('taxes');
-              }
-            }
-          }
-        }
-
-        if (updatedContribution.building_permits && Array.isArray(updatedContribution.building_permits)) {
-          for (const raw of updatedContribution.building_permits) {
-            if (typeof raw === 'object' && raw !== null) {
-              const permit = raw as BuildingPermitEntry;
-              const { error: bpError } = await supabase.from('cadastral_building_permits').insert({
-                parcel_id: targetParcelId,
-                permit_number: permit.permit_number,
-                issuing_service: permit.issuing_service,
-                issue_date: permit.issue_date,
-                validity_period_months: permit.validity_period_months,
-                administrative_status: permit.administrative_status,
-                is_current: permit.is_current,
-                issuing_service_contact: permit.issuing_service_contact,
-                permit_document_url: permit.permit_document_url,
-              });
-              if (bpError) {
-                console.error('Erreur autorisation de bâtir:', bpError);
-                historyErrors.push('permis');
-              }
-            }
-          }
-        }
-
-        if (historyErrors.length > 0) {
-          toast.warning(`Parcelle créée mais erreurs sur les historiques: ${historyErrors.join(', ')}`);
-        }
+      if (outcome.warnings.length > 0) {
+        toast.warning(`Parcelle traitée mais erreurs sur : ${outcome.warnings.join(', ')}`);
       }
 
-
-      // Traiter les hypothèques (pour les nouvelles contributions ET les mises à jour)
-      if (updatedContribution.mortgage_history && Array.isArray(updatedContribution.mortgage_history)) {
-        for (const raw of updatedContribution.mortgage_history) {
-          if (typeof raw === 'object' && raw !== null) {
-            const h = raw as MortgageHistoryEntry;
-            // Gérer les deux formats de champs (camelCase du formulaire CCC et snake_case)
-            const { error: mortgageError } = await supabase.from('cadastral_mortgages').insert({
-              parcel_id: targetParcelId,
-              mortgage_amount_usd: h.mortgage_amount_usd || h.mortgageAmountUsd || 0,
-              duration_months: h.duration_months || h.durationMonths || 0,
-              creditor_name: h.creditor_name || h.creditorName || 'Non spécifié',
-              creditor_type: h.creditor_type || h.creditorType || 'Banque',
-              contract_date: h.contract_date || h.contractDate || new Date().toISOString().split('T')[0],
-              mortgage_status: (h.mortgage_status || h.mortgageStatus || 'active').toLowerCase(),
-              // reference_number est généré automatiquement par le trigger SQL
-            });
-            
-            if (mortgageError) {
-              console.error('Erreur lors de la création de l\'hypothèque:', mortgageError);
-            }
-          }
-        }
-      }
-
-      // Le trigger auto_generate_ccc_code() va automatiquement :
-      // 1. Générer un code CCC unique
-      // 2. Calculer la valeur du code
-      // 3. Créer une notification pour l'utilisateur
-
-      const successMessage = isUpdateContribution 
+      // Le trigger auto_generate_ccc_code() génère le code CCC et la notification.
+      toast.success(outcome.isUpdateContribution
         ? 'Contribution approuvée et données ajoutées à la parcelle existante ! Le code CCC a été généré.'
-        : 'Contribution approuvée et parcelle créée ! Le code CCC a été généré.';
-      toast.success(successMessage);
-      await logContributionAudit({ contributionId, action: 'approve', payload: { isUpdateContribution } });
+        : 'Contribution approuvée et parcelle créée ! Le code CCC a été généré.');
+      await logContributionAudit({ contributionId, action: 'approve', payload: { isUpdateContribution: outcome.isUpdateContribution } });
       trackAdminAction({ module: 'ccc', action: 'approve', ref: { contribution_id: contributionId } });
       await fetchContributions();
       setIsDetailsOpen(false);
       setValidationResult(null);
     } catch (error: any) {
       console.error('Erreur inattendue lors de l\'approbation:', error);
-      const errorMessage = error?.message 
-        ? `Erreur lors de l'approbation: ${error.message}` 
-        : 'Erreur inattendue lors de l\'approbation';
-      toast.error(errorMessage);
+      toast.error(error?.message ? `Erreur lors de l'approbation: ${error.message}` : 'Erreur inattendue lors de l\'approbation');
     }
   };
+
 
   const handleReject = async (contributionId: string) => {
     if (!rejectionReason.trim()) {
