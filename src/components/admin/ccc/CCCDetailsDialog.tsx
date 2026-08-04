@@ -13,6 +13,10 @@ import {
 import { StatusBadge, StatusType } from '@/components/shared/StatusBadge';
 import { Contribution } from './types';
 import { readField as rr } from './cccHelpers';
+import { detectCCCInconsistencies } from './cccConsistency';
+import CCCRentalBlock from './CCCRentalBlock';
+import CCCMarketValuePanel from './CCCMarketValuePanel';
+
 
 interface CCCDetailsDialogProps {
   open: boolean;
