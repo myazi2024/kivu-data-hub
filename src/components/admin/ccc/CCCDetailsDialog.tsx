@@ -341,7 +341,10 @@ export const CCCDetailsDialog: React.FC<CCCDetailsDialogProps> = ({
                   <div>
                     <Label className="text-xs text-muted-foreground">Type de contribution</Label>
                     <p className="text-sm">{contribution.contribution_type === 'update' ? 'Mise à jour' : contribution.contribution_type || 'Initiale'}</p>
-                  </div>
+                </div>
+
+                <CCCRentalBlock contribution={contribution} />
+
                 </div>
 
                 {contribution.contribution_type === 'update' && (contribution.changed_fields || contribution.change_justification) && (
