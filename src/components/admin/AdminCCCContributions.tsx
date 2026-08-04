@@ -20,7 +20,7 @@ import { calculateCCCCompleteness } from './ccc/cccCompleteness';
 import { CCCDetailsDialog } from './ccc/CCCDetailsDialog';
 import { CCCTestDialog } from './ccc/CCCTestDialog';
 import type { Contribution, ContributionStats, ValidationResult, TestResult } from './ccc/types';
-import { approveContributionCore, validateContribution } from './ccc/cccApproval';
+import { approveContributionCore, validateContribution as runServerValidation } from './ccc/cccApproval';
 import { useAdminAnalytics } from '@/lib/adminAnalytics';
 
 
@@ -162,7 +162,7 @@ const AdminCCCContributions: React.FC = () => {
     if (!validation) {
       setIsValidating(true);
       try {
-        validation = await validateContribution(contributionId);
+        validation = await runServerValidation(contributionId);
         setValidationResult(validation);
       } catch (error: any) {
         console.error('Erreur lors de la validation:', error);
