@@ -11,6 +11,7 @@ import type {
   OwnershipHistoryEntry, BoundaryHistoryEntry, BuildingPermitEntry, MortgageHistoryEntry,
 } from './cccHelpers';
 import { readField as rr } from './cccHelpers';
+import type { ValidationResult } from './types';
 
 export interface ApproveOutcome {
   ok: boolean;
@@ -151,10 +152,10 @@ export const approveContributionCore = async (
 };
 
 /** Valide une contribution côté serveur avant approbation. */
-export const validateContribution = async (contributionId: string) => {
+export const validateContribution = async (contributionId: string): Promise<ValidationResult> => {
   const { data, error } = await supabase.rpc('validate_contribution_completeness', {
     contribution_id: contributionId,
   });
   if (error) throw error;
-  return data as unknown as { valid: boolean; errors: string[]; warnings: string[]; completeness_score: number };
+  return data as unknown as ValidationResult;
 };
