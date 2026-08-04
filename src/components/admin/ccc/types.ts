@@ -82,7 +82,27 @@ export interface Contribution {
   appeal_submission_date: string | null;
   contribution_type: string;
   original_parcel_id: string | null;
+  // ─── Configuration locative (mono / multi-locaux) ───
+  rental_configuration: 'single' | 'multi' | string | null;
+  rental_units_count: number | null;
+  monthly_rent_usd: number | null;
+  rental_units: any;
+  // ─── Valeur marchande ───
+  would_sell_if_offered: boolean | null;
+  resale_price_amount: number | null;
+  resale_price_currency: string | null;
+  resale_price_usd: number | null;
+  has_recent_appraisal: boolean | null;
+  appraisal_date: string | null;
+  appraiser_name: string | null;
+  appraised_value_amount: number | null;
+  appraised_value_currency: string | null;
+  appraised_value_usd: number | null;
+  appraisal_report_url: string | null;
+  market_listings: any;
+  sale_listing: any;
 }
+
 
 export interface ContributionStats {
   total: number;
