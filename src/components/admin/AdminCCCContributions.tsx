@@ -6,6 +6,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Gift, Play, Download } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { AppealManagementDialog } from './appeals/AppealManagementDialog';
 import { PermitRequestDialog } from './permits/PermitRequestDialog';
 import { DocumentsGalleryDialog } from './documents/DocumentsGalleryDialog';
@@ -672,6 +677,34 @@ const AdminCCCContributions: React.FC = () => {
         onOpenPermit={() => setShowPermitDialog(true)}
         onOpenDocuments={() => setShowDocumentsDialog(true)}
       />
+
+      {/* Rejet en masse */}
+      <AlertDialog open={bulkRejectOpen} onOpenChange={(o) => { setBulkRejectOpen(o); if (!o) setBulkRejectReason(''); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Rejeter {selectedIds.size} contribution(s)</AlertDialogTitle>
+            <AlertDialogDescription>
+              Le motif est obligatoire et sera appliqué à toutes les contributions sélectionnées.
+              Les contributeurs seront notifiés.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <Textarea
+            value={bulkRejectReason}
+            onChange={(e) => setBulkRejectReason(e.target.value)}
+            placeholder="Motif du rejet…"
+            className="min-h-24"
+          />
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={bulkBusy}>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={bulkBusy || !bulkRejectReason.trim()}
+              onClick={(e) => { e.preventDefault(); bulkReject(); }}
+            >
+              Confirmer le rejet
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Test Results Dialog */}
       <CCCTestDialog
