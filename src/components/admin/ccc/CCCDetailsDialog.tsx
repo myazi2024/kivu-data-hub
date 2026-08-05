@@ -11,11 +11,12 @@ import {
   Route, BrickWall, ExternalLink, RotateCcw,
 } from 'lucide-react';
 import { StatusBadge, StatusType } from '@/components/shared/StatusBadge';
-import { Contribution } from './types';
+import { Contribution, ValidationResult } from './types';
 import { readField as rr } from './cccHelpers';
-import { detectCCCInconsistencies } from './cccConsistency';
 import CCCRentalBlock from './CCCRentalBlock';
 import CCCMarketValuePanel from './CCCMarketValuePanel';
+import CCCValidationPanel from './CCCValidationPanel';
+import { buildValidationIssues, type CCCValidationTab } from './cccValidationRules';
 
 
 interface CCCDetailsDialogProps {
@@ -32,6 +33,9 @@ interface CCCDetailsDialogProps {
   onOpenAppeal: () => void;
   onOpenPermit: () => void;
   onOpenDocuments: () => void;
+  validationResult?: ValidationResult | null;
+  isValidating?: boolean;
+  onValidate?: (id: string) => void;
 }
 
 export const CCCDetailsDialog: React.FC<CCCDetailsDialogProps> = ({
@@ -48,7 +52,26 @@ export const CCCDetailsDialog: React.FC<CCCDetailsDialogProps> = ({
   onOpenAppeal,
   onOpenPermit,
   onOpenDocuments,
+  validationResult = null,
+  isValidating = false,
+  onValidate,
 }) => {
+  const [activeTab, setActiveTab] = React.useState<string>('general');
+
+  // Revient sur l'onglet Général à chaque nouvelle contribution ouverte.
+  React.useEffect(() => {
+    if (open) setActiveTab('general');
+  }, [open, contribution?.id]);
+
+  const issues = React.useMemo(() => {
+    const list = buildValidationIssues(contribution, validationResult);
+    const errorCount = list.filter((i) => i.severity === 'error').length;
+    return { list, errorCount, warningCount: list.length - errorCount };
+  }, [contribution, validationResult]);
+
+  const goToTab = (tab: CCCValidationTab) => setActiveTab(tab);
+
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto p-3 md:p-6">
