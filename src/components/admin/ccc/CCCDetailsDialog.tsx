@@ -102,21 +102,27 @@ export const CCCDetailsDialog: React.FC<CCCDetailsDialogProps> = ({
               </Alert>
             )}
 
-            {(() => {
-              const issues = detectCCCInconsistencies(contribution);
-              if (issues.length === 0) return null;
-              return (
-                <Alert className="py-2 border-destructive/50">
-                  <AlertTriangle className="h-3 w-3 md:h-4 md:w-4" />
-                  <AlertDescription className="text-xs md:text-sm">
-                    <strong>{issues.length} incohérence(s) détectée(s)</strong>
-                    <ul className="list-disc pl-4 mt-1 space-y-0.5">
-                      {issues.map((it, i) => <li key={i}>{it}</li>)}
-                    </ul>
-                  </AlertDescription>
-                </Alert>
-              );
-            })()}
+            {issues.list.length > 0 && (
+              <Alert className="py-2 border-destructive/50">
+                <AlertTriangle className="h-3 w-3 md:h-4 md:w-4" />
+                <AlertDescription className="text-xs md:text-sm flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
+                  <span>
+                    <strong>{issues.errorCount} erreur(s) bloquante(s)</strong>
+                    {' — '}
+                    {issues.warningCount} avertissement(s)
+                  </span>
+                  <Button
+                    variant="link"
+                    size="sm"
+                    className="h-auto p-0 text-xs md:text-sm"
+                    onClick={() => setActiveTab('validation')}
+                  >
+                    Voir le détail champ par champ
+                  </Button>
+                </AlertDescription>
+              </Alert>
+            )}
+
 
 
             {/* Actions rapides */}
