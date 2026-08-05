@@ -682,6 +682,10 @@ const AdminCCCContributions: React.FC = () => {
         onOpenAppeal={() => setShowAppealDialog(true)}
         onOpenPermit={() => setShowPermitDialog(true)}
         onOpenDocuments={() => setShowDocumentsDialog(true)}
+        validationResult={validationResult}
+        isValidating={isValidating}
+        onValidate={validateContribution}
+
       />
 
       {/* Rejet en masse */}
