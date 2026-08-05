@@ -139,8 +139,8 @@ export const CCCDetailsDialog: React.FC<CCCDetailsDialogProps> = ({
               </Button>
             </div>
 
-            <Tabs defaultValue="general" className="w-full">
-              <TabsList className="grid w-full grid-cols-4 md:grid-cols-8 h-8 md:h-10">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <TabsList className="grid w-full grid-cols-3 md:grid-cols-9 h-auto md:h-10">
                 <TabsTrigger value="general" className="text-xs md:text-sm px-1 md:px-3">Général</TabsTrigger>
                 <TabsTrigger value="location" className="text-xs md:text-sm px-1 md:px-3">Localisation</TabsTrigger>
                 <TabsTrigger value="environment" className="text-xs md:text-sm px-1 md:px-3">Env. & Occup.</TabsTrigger>
@@ -149,7 +149,14 @@ export const CCCDetailsDialog: React.FC<CCCDetailsDialogProps> = ({
                 <TabsTrigger value="history" className="text-xs md:text-sm px-1 md:px-3">Historiques</TabsTrigger>
                 <TabsTrigger value="obligations" className="text-xs md:text-sm px-1 md:px-3">Obligations</TabsTrigger>
                 <TabsTrigger value="documents" className="text-xs md:text-sm px-1 md:px-3">Documents</TabsTrigger>
+                <TabsTrigger value="validation" className="text-xs md:text-sm px-1 md:px-3 gap-1">
+                  Validation
+                  {issues.errorCount > 0 && (
+                    <Badge variant="destructive" className="text-[10px] px-1 py-0">{issues.errorCount}</Badge>
+                  )}
+                </TabsTrigger>
               </TabsList>
+
 
 
               {/* Général */}
