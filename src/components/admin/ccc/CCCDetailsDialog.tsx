@@ -11,11 +11,12 @@ import {
   Route, BrickWall, ExternalLink, RotateCcw,
 } from 'lucide-react';
 import { StatusBadge, StatusType } from '@/components/shared/StatusBadge';
-import { Contribution } from './types';
+import { Contribution, ValidationResult } from './types';
 import { readField as rr } from './cccHelpers';
-import { detectCCCInconsistencies } from './cccConsistency';
 import CCCRentalBlock from './CCCRentalBlock';
 import CCCMarketValuePanel from './CCCMarketValuePanel';
+import CCCValidationPanel from './CCCValidationPanel';
+import { buildValidationIssues, type CCCValidationTab } from './cccValidationRules';
 
 
 interface CCCDetailsDialogProps {
@@ -32,6 +33,9 @@ interface CCCDetailsDialogProps {
   onOpenAppeal: () => void;
   onOpenPermit: () => void;
   onOpenDocuments: () => void;
+  validationResult?: ValidationResult | null;
+  isValidating?: boolean;
+  onValidate?: (id: string) => void;
 }
 
 export const CCCDetailsDialog: React.FC<CCCDetailsDialogProps> = ({
@@ -48,7 +52,26 @@ export const CCCDetailsDialog: React.FC<CCCDetailsDialogProps> = ({
   onOpenAppeal,
   onOpenPermit,
   onOpenDocuments,
+  validationResult = null,
+  isValidating = false,
+  onValidate,
 }) => {
+  const [activeTab, setActiveTab] = React.useState<string>('general');
+
+  // Revient sur l'onglet Général à chaque nouvelle contribution ouverte.
+  React.useEffect(() => {
+    if (open) setActiveTab('general');
+  }, [open, contribution?.id]);
+
+  const issues = React.useMemo(() => {
+    const list = buildValidationIssues(contribution, validationResult);
+    const errorCount = list.filter((i) => i.severity === 'error').length;
+    return { list, errorCount, warningCount: list.length - errorCount };
+  }, [contribution, validationResult]);
+
+  const goToTab = (tab: CCCValidationTab) => setActiveTab(tab);
+
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto p-3 md:p-6">
@@ -79,21 +102,27 @@ export const CCCDetailsDialog: React.FC<CCCDetailsDialogProps> = ({
               </Alert>
             )}
 
-            {(() => {
-              const issues = detectCCCInconsistencies(contribution);
-              if (issues.length === 0) return null;
-              return (
-                <Alert className="py-2 border-destructive/50">
-                  <AlertTriangle className="h-3 w-3 md:h-4 md:w-4" />
-                  <AlertDescription className="text-xs md:text-sm">
-                    <strong>{issues.length} incohérence(s) détectée(s)</strong>
-                    <ul className="list-disc pl-4 mt-1 space-y-0.5">
-                      {issues.map((it, i) => <li key={i}>{it}</li>)}
-                    </ul>
-                  </AlertDescription>
-                </Alert>
-              );
-            })()}
+            {issues.list.length > 0 && (
+              <Alert className="py-2 border-destructive/50">
+                <AlertTriangle className="h-3 w-3 md:h-4 md:w-4" />
+                <AlertDescription className="text-xs md:text-sm flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
+                  <span>
+                    <strong>{issues.errorCount} erreur(s) bloquante(s)</strong>
+                    {' — '}
+                    {issues.warningCount} avertissement(s)
+                  </span>
+                  <Button
+                    variant="link"
+                    size="sm"
+                    className="h-auto p-0 text-xs md:text-sm"
+                    onClick={() => setActiveTab('validation')}
+                  >
+                    Voir le détail champ par champ
+                  </Button>
+                </AlertDescription>
+              </Alert>
+            )}
+
 
 
             {/* Actions rapides */}
@@ -139,8 +168,8 @@ export const CCCDetailsDialog: React.FC<CCCDetailsDialogProps> = ({
               </Button>
             </div>
 
-            <Tabs defaultValue="general" className="w-full">
-              <TabsList className="grid w-full grid-cols-4 md:grid-cols-8 h-8 md:h-10">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <TabsList className="grid w-full grid-cols-3 md:grid-cols-9 h-auto md:h-10">
                 <TabsTrigger value="general" className="text-xs md:text-sm px-1 md:px-3">Général</TabsTrigger>
                 <TabsTrigger value="location" className="text-xs md:text-sm px-1 md:px-3">Localisation</TabsTrigger>
                 <TabsTrigger value="environment" className="text-xs md:text-sm px-1 md:px-3">Env. & Occup.</TabsTrigger>
@@ -149,7 +178,14 @@ export const CCCDetailsDialog: React.FC<CCCDetailsDialogProps> = ({
                 <TabsTrigger value="history" className="text-xs md:text-sm px-1 md:px-3">Historiques</TabsTrigger>
                 <TabsTrigger value="obligations" className="text-xs md:text-sm px-1 md:px-3">Obligations</TabsTrigger>
                 <TabsTrigger value="documents" className="text-xs md:text-sm px-1 md:px-3">Documents</TabsTrigger>
+                <TabsTrigger value="validation" className="text-xs md:text-sm px-1 md:px-3 gap-1">
+                  Validation
+                  {issues.errorCount > 0 && (
+                    <Badge variant="destructive" className="text-[10px] px-1 py-0">{issues.errorCount}</Badge>
+                  )}
+                </TabsTrigger>
               </TabsList>
+
 
 
               {/* Général */}
@@ -567,6 +603,18 @@ export const CCCDetailsDialog: React.FC<CCCDetailsDialogProps> = ({
                   <p className="text-xs md:text-sm text-muted-foreground">Aucun document attaché</p>
                 )}
               </TabsContent>
+
+              {/* Validation détaillée */}
+              <TabsContent value="validation" className="space-y-2 md:space-y-3 mt-2">
+                <CCCValidationPanel
+                  contribution={contribution}
+                  validationResult={validationResult}
+                  isValidating={isValidating}
+                  onValidate={(id) => onValidate?.(id)}
+                  onNavigate={goToTab}
+                />
+              </TabsContent>
+
             </Tabs>
 
             {contribution.status === 'pending' && (

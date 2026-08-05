@@ -184,9 +184,15 @@ const AdminCCCContributions: React.FC = () => {
     }
 
     if (!validation?.valid) {
-      toast.error('La contribution contient des erreurs critiques. Veuillez les corriger avant d\'approuver.');
+      const firstErrors = (validation?.errors || []).slice(0, 3).join(' · ');
+      toast.error(
+        firstErrors
+          ? `Approbation bloquée — ${firstErrors}. Ouvrez l'onglet « Validation » pour le détail champ par champ.`
+          : 'La contribution contient des erreurs critiques. Consultez l\'onglet « Validation ».',
+      );
       return;
     }
+
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -676,6 +682,10 @@ const AdminCCCContributions: React.FC = () => {
         onOpenAppeal={() => setShowAppealDialog(true)}
         onOpenPermit={() => setShowPermitDialog(true)}
         onOpenDocuments={() => setShowDocumentsDialog(true)}
+        validationResult={validationResult}
+        isValidating={isValidating}
+        onValidate={validateContribution}
+
       />
 
       {/* Rejet en masse */}
