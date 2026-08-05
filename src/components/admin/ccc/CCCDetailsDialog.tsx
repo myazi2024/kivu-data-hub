@@ -603,6 +603,18 @@ export const CCCDetailsDialog: React.FC<CCCDetailsDialogProps> = ({
                   <p className="text-xs md:text-sm text-muted-foreground">Aucun document attaché</p>
                 )}
               </TabsContent>
+
+              {/* Validation détaillée */}
+              <TabsContent value="validation" className="space-y-2 md:space-y-3 mt-2">
+                <CCCValidationPanel
+                  contribution={contribution}
+                  validationResult={validationResult}
+                  isValidating={isValidating}
+                  onValidate={(id) => onValidate?.(id)}
+                  onNavigate={goToTab}
+                />
+              </TabsContent>
+
             </Tabs>
 
             {contribution.status === 'pending' && (
