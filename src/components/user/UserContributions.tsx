@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -8,7 +8,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import {
   FileText, CheckCircle, XCircle, Clock, AlertTriangle,
-  ChevronLeft, ChevronRight, Search, Plus, Pencil, Trash2, RotateCcw,
+  ChevronLeft, ChevronRight, Search, Plus, Pencil, Trash2, RotateCcw, MessageSquareWarning,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import CadastralContributionDialog from '@/components/cadastral/CadastralContributionDialog';
@@ -16,8 +16,10 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useUserContributions, type ContributionRowFull } from '@/hooks/useUserContributions';
 import { detectFormType, mapContributionToFormDraft } from '@/utils/contributionFormMapping';
 import { UserContributionDeleteDialog } from '@/components/user/contributions/UserContributionDeleteDialog';
+import { CorrectionRequestDialog } from '@/components/user/contributions/CorrectionRequestDialog';
 import { trackEvent } from '@/lib/analytics';
 import { CADASTRAL_MAP_ROUTE } from '@/utils/userDashboardLinks';
+
 
 type Contribution = ContributionRowFull;
 
