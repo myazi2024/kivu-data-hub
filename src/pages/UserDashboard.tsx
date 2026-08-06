@@ -230,6 +230,8 @@ const UserDashboard = () => {
             <TabsContent value="settings" className="mt-4 space-y-4">
               <UserPreferences />
               <UserAccountSecurity />
+              <UserDataControls />
+
             </TabsContent>
           </Tabs>
         </div>
