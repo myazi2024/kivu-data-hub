@@ -482,7 +482,15 @@ export const UserContributions: React.FC = () => {
         </DialogContent>
       </Dialog>
 
+      <CorrectionRequestDialog
+        open={!!correctionTarget}
+        onOpenChange={(o) => { if (!o) setCorrectionTarget(null); }}
+        parcelNumber={correctionTarget?.parcel_number ?? ''}
+        contributionId={correctionTarget?.id ?? ''}
+      />
+
       <UserContributionDeleteDialog
+
         open={isDeleteDialogOpen}
         onOpenChange={setIsDeleteDialogOpen}
         parcelNumber={contributionToDelete?.parcel_number}
