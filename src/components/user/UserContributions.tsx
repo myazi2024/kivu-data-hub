@@ -292,6 +292,21 @@ export const UserContributions: React.FC = () => {
                           </Button>
                         </div>
                       )}
+                      {contribution.status === 'approved' && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 w-7 p-0 text-muted-foreground hover:text-primary"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setCorrectionTarget(contribution);
+                          }}
+                          title="Demander une correction"
+                        >
+                          <MessageSquareWarning className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
+
                     </div>
                   </div>
                 );
