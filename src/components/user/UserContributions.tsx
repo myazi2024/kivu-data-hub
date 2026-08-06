@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -8,7 +8,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import {
   FileText, CheckCircle, XCircle, Clock, AlertTriangle,
-  ChevronLeft, ChevronRight, Search, Plus, Pencil, Trash2, RotateCcw,
+  ChevronLeft, ChevronRight, Search, Plus, Pencil, Trash2, RotateCcw, MessageSquareWarning,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import CadastralContributionDialog from '@/components/cadastral/CadastralContributionDialog';
@@ -16,8 +16,10 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useUserContributions, type ContributionRowFull } from '@/hooks/useUserContributions';
 import { detectFormType, mapContributionToFormDraft } from '@/utils/contributionFormMapping';
 import { UserContributionDeleteDialog } from '@/components/user/contributions/UserContributionDeleteDialog';
+import { CorrectionRequestDialog } from '@/components/user/contributions/CorrectionRequestDialog';
 import { trackEvent } from '@/lib/analytics';
 import { CADASTRAL_MAP_ROUTE } from '@/utils/userDashboardLinks';
+
 
 type Contribution = ContributionRowFull;
 
@@ -27,11 +29,22 @@ export const UserContributions: React.FC = () => {
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [contributionToEdit, setContributionToEdit] = useState<Contribution | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editFormType, setEditFormType] = useState<'ccc' | 'tax' | 'mortgage' | 'permit'>('ccc');
   const [contributionToDelete, setContributionToDelete] = useState<Contribution | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [correctionTarget, setCorrectionTarget] = useState<Contribution | null>(null);
+
+  // Recherche serveur (debounce) — évite le filtrage limité à la page courante.
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+      setCurrentPage(1);
+    }, 350);
+    return () => clearTimeout(t);
+  }, [searchQuery]);
 
   const {
     rows: contributions,
@@ -40,7 +53,8 @@ export const UserContributions: React.FC = () => {
     loading,
     deleteContribution,
     deleting,
-  } = useUserContributions(currentPage);
+  } = useUserContributions(currentPage, debouncedSearch);
+
 
   const cccCode = selectedContribution
     ? contributions.find(c => c.id === selectedContribution.id)?.ccc_code ?? null
@@ -131,17 +145,9 @@ export const UserContributions: React.FC = () => {
     }
   };
 
-  // Filter (client-side over current page only — server-paginated).
-  const filteredContributions = React.useMemo(() => {
-    if (!searchQuery.trim()) return contributions;
-    const q = searchQuery.toLowerCase();
-    return contributions.filter(c =>
-      c.parcel_number.toLowerCase().includes(q) ||
-      c.ville?.toLowerCase().includes(q) ||
-      c.province?.toLowerCase().includes(q) ||
-      c.current_owner_name?.toLowerCase().includes(q)
-    );
-  }, [contributions, searchQuery]);
+  // La recherche est appliquée côté serveur : la liste rendue est déjà filtrée.
+  const filteredContributions = contributions;
+
 
   const totalPages = Math.max(1, Math.ceil(total / itemsPerPage));
 
@@ -197,7 +203,7 @@ export const UserContributions: React.FC = () => {
           </Link>
         </div>
 
-        {contributions.length > 0 && (
+        {(contributions.length > 0 || searchQuery) && (
           <div className="px-3 pt-3">
             <div className="relative">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
@@ -286,6 +292,21 @@ export const UserContributions: React.FC = () => {
                           </Button>
                         </div>
                       )}
+                      {contribution.status === 'approved' && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 w-7 p-0 text-muted-foreground hover:text-primary"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setCorrectionTarget(contribution);
+                          }}
+                          title="Demander une correction"
+                        >
+                          <MessageSquareWarning className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
+
                     </div>
                   </div>
                 );
@@ -461,7 +482,15 @@ export const UserContributions: React.FC = () => {
         </DialogContent>
       </Dialog>
 
+      <CorrectionRequestDialog
+        open={!!correctionTarget}
+        onOpenChange={(o) => { if (!o) setCorrectionTarget(null); }}
+        parcelNumber={correctionTarget?.parcel_number ?? ''}
+        contributionId={correctionTarget?.id ?? ''}
+      />
+
       <UserContributionDeleteDialog
+
         open={isDeleteDialogOpen}
         onOpenChange={setIsDeleteDialogOpen}
         parcelNumber={contributionToDelete?.parcel_number}
