@@ -145,17 +145,9 @@ export const UserContributions: React.FC = () => {
     }
   };
 
-  // Filter (client-side over current page only — server-paginated).
-  const filteredContributions = React.useMemo(() => {
-    if (!searchQuery.trim()) return contributions;
-    const q = searchQuery.toLowerCase();
-    return contributions.filter(c =>
-      c.parcel_number.toLowerCase().includes(q) ||
-      c.ville?.toLowerCase().includes(q) ||
-      c.province?.toLowerCase().includes(q) ||
-      c.current_owner_name?.toLowerCase().includes(q)
-    );
-  }, [contributions, searchQuery]);
+  // La recherche est appliquée côté serveur : la liste rendue est déjà filtrée.
+  const filteredContributions = contributions;
+
 
   const totalPages = Math.max(1, Math.ceil(total / itemsPerPage));
 
