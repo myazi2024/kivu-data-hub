@@ -29,11 +29,22 @@ export const UserContributions: React.FC = () => {
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [contributionToEdit, setContributionToEdit] = useState<Contribution | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editFormType, setEditFormType] = useState<'ccc' | 'tax' | 'mortgage' | 'permit'>('ccc');
   const [contributionToDelete, setContributionToDelete] = useState<Contribution | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [correctionTarget, setCorrectionTarget] = useState<Contribution | null>(null);
+
+  // Recherche serveur (debounce) — évite le filtrage limité à la page courante.
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+      setCurrentPage(1);
+    }, 350);
+    return () => clearTimeout(t);
+  }, [searchQuery]);
 
   const {
     rows: contributions,
@@ -42,7 +53,8 @@ export const UserContributions: React.FC = () => {
     loading,
     deleteContribution,
     deleting,
-  } = useUserContributions(currentPage);
+  } = useUserContributions(currentPage, debouncedSearch);
+
 
   const cccCode = selectedContribution
     ? contributions.find(c => c.id === selectedContribution.id)?.ccc_code ?? null
