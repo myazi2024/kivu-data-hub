@@ -2,7 +2,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useTestEnvironment, applyTestFilter } from '@/hooks/useTestEnvironment';
+import { escapeIlike } from '@/utils/escapeIlike';
 import { useEffect } from 'react';
+
 
 export interface ContributionRowFull {
   id: string;
@@ -43,13 +45,14 @@ const PAGE_SIZE = 25;
  * Server-paginated fetch of user contributions with embedded CCC code (single
  * query instead of N+1). Powered by react-query for caching + invalidation.
  */
-export function useUserContributions(page: number = 1) {
+export function useUserContributions(page: number = 1, search: string = '') {
   const { user } = useAuth();
   const { isTestRoute } = useTestEnvironment();
   const queryClient = useQueryClient();
+  const term = search.trim();
 
   const query = useQuery({
-    queryKey: ['user-contributions', user?.id, page, isTestRoute],
+    queryKey: ['user-contributions', user?.id, page, isTestRoute, term],
     enabled: !!user?.id,
     staleTime: 30 * 1000,
     queryFn: async () => {
@@ -65,8 +68,16 @@ export function useUserContributions(page: number = 1) {
         .range(from, to);
       q = applyTestFilter(q as any, 'parcel_number', isTestRoute) as any;
 
+      if (term) {
+        const safe = `%${escapeIlike(term)}%`;
+        q = q.or(
+          `parcel_number.ilike.${safe},ville.ilike.${safe},province.ilike.${safe},current_owner_name.ilike.${safe}`,
+        ) as any;
+      }
+
       const { data, count, error } = await q;
       if (error) throw error;
+
 
       const rows: ContributionRowFull[] = (data || []).map((r: any) => ({
         ...r,
