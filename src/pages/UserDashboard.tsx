@@ -18,6 +18,12 @@ import { UserExpertiseRequests } from '@/components/user/UserExpertiseRequests';
 import { UserMutationRequests } from '@/components/user/UserMutationRequests';
 import { UserMortgageRequests } from '@/components/user/UserMortgageRequests';
 import { UserSubdivisionRequests } from '@/components/user/UserSubdivisionRequests';
+import { RentalUnitsPanel } from '@/components/user/assets/RentalUnitsPanel';
+import { ListingsPanel } from '@/components/user/assets/ListingsPanel';
+import { MarketValuePanel } from '@/components/user/assets/MarketValuePanel';
+import { TaxObligationsPanel } from '@/components/user/finance/TaxObligationsPanel';
+import { UserDataControls } from '@/components/user/data/UserDataControls';
+
 import { User, FileText, Building, CreditCard, Settings, ScrollText, Scale, FileSearch, FileEdit, Landmark, LayoutGrid } from 'lucide-react';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
 
