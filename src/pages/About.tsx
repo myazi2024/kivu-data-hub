@@ -44,6 +44,22 @@ const About = () => {
             <p className="text-muted-foreground leading-relaxed mb-6">
               Dans un contexte où l'insécurité foncière constitue l'une des principales sources de conflits sociaux et un frein majeur à l'investissement, le BIC ambitionne de devenir un point d'accès unique, fiable et structuré aux informations relatives aux parcelles, aux titres de propriété et aux transactions foncières sur l'ensemble du territoire national.
             </p>
+            <div className="rounded-lg border border-primary/20 bg-primary/5 p-5 mb-6">
+              <h3 className="font-semibold text-foreground mb-2 flex items-center gap-2">
+                <Users className="w-5 h-5 text-primary" />
+                D'où viennent les données du BIC ?
+              </h3>
+              <p className="text-muted-foreground leading-relaxed text-sm mb-3">
+                Les informations foncières et cadastrales publiées par le BIC sont <strong className="text-foreground">déclarées par les propriétaires eux-mêmes ou par leurs préposés dûment mandatés</strong>, au moyen d'un formulaire cadastral structuré. Chaque déclaration est ensuite soumise à des contrôles automatiques de cohérence puis à une revue administrative avant publication.
+              </p>
+              <p className="text-muted-foreground leading-relaxed text-sm">
+                Ce modèle participatif est encadré par le{' '}
+                <Link to="/about-ccc" className="text-primary underline underline-offset-2">
+                  Programme Contributeur Cadastral (CCC)
+                </Link>
+                , qui récompense les déclarants dont les informations enrichissent la base de données. Le déclarant reste responsable de l'exactitude des informations transmises et peut demander à tout moment la correction de ses données.
+              </p>
+            </div>
             <figure>
               <img
                 src={territorialMapIllustration}
@@ -53,6 +69,7 @@ const About = () => {
                 className="w-full rounded-lg shadow"
               />
             </figure>
+
           </section>
 
           {/* Notre mission */}
