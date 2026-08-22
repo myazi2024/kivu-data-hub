@@ -464,3 +464,23 @@ export const computeHostingCapacityTotal = (
   }
   return state.hostingCapacity;
 };
+
+/** Compute total occupants (somme des locaux occupés si multi, sinon la valeur globale). */
+export const computeOccupantCountTotal = (
+  state: RentalConfigurationState & { occupantCount?: number },
+): number | undefined => {
+  if (state.rentalConfiguration === 'multi') {
+    const sum = (state.rentalUnits || []).reduce((s, u) => s + (Number(u?.occupantCount) || 0), 0);
+    return sum > 0 ? sum : undefined;
+  }
+  return state.occupantCount;
+};
+
+/** Libellé lisible d'un emplacement de local ('RDC' → 'Rez-de-chaussée'). */
+export const formatFloorLabel = (value?: string | null): string => {
+  if (!value) return '';
+  const v = String(value).trim();
+  if (v.toUpperCase() === 'RDC' || v === '0') return 'Rez-de-chaussée';
+  if (v === '1') return '1er étage';
+  return /^\d+$/.test(v) ? `${v}e étage` : v;
+};
