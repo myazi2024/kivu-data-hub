@@ -56,6 +56,12 @@ const SlideWrapper: React.FC<{ bg?: string; overlay?: boolean; children: React.R
 );
 
 /* ── Slide 1: Couverture ── */
+const PitchLogo = () => {
+  const { config } = useAppAppearance();
+  if (!config.logo_url) return null;
+  return <img src={config.logo_url} alt={config.app_name || 'Logo'} className="h-20 md:h-28 mb-8 drop-shadow-xl" />;
+};
+
 const SlideCover = () => (
   <SlideWrapper bg={heroSkyline} overlay>
     <div className="flex-1 flex flex-col items-center justify-center px-6 text-center">
