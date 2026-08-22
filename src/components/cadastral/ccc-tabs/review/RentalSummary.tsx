@@ -1,9 +1,11 @@
 import React from 'react';
+import { formatFloorLabel } from '@/components/cadastral/RentalConfigurationFields';
 
 export interface RentalUnitLike {
   label?: string;
   monthlyRentUsd?: number;
   isOccupied?: boolean;
+  occupantCount?: number;
   hostingCapacity?: number;
   rentalStartDate?: string;
   floor?: string;
