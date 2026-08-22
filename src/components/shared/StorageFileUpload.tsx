@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { Upload, X, Loader2, FileText, ImageIcon } from 'lucide-react';
+import SignedStorageImage from '@/components/shared/SignedStorageImage';
 
 interface StorageFileUploadProps {
   bucket: string;
