@@ -38,6 +38,11 @@ export const StorageFileUpload = ({
     }
     setUploading(true);
     try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session?.user?.id) {
+        toast.error('Session expirée — reconnectez-vous pour joindre un fichier.');
+        return;
+      }
       const ext = file.name.split('.').pop();
       const filename = `${crypto.randomUUID()}.${ext}`;
       const path = pathPrefix ? `${pathPrefix}/${filename}` : filename;
