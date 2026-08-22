@@ -1174,7 +1174,7 @@ export const useCCCFormState = ({
         }
 
         const sides = contrib.parcel_sides as any[];
-        if (sides && Array.isArray(sides) && sides.length > 0) setParcelSides(sides.map((s: any) => ({ name: s.name || '', length: String(s.length || '') })));
+        if (sides && Array.isArray(sides) && sides.length > 0) setParcelSides(renumberParcelSides(sides.map((s: any) => ({ name: s.name || '', length: String(s.length || '') }))));
 
         const permits = contrib.building_permits as any[];
         if (permits && Array.isArray(permits) && permits.length > 0) {
