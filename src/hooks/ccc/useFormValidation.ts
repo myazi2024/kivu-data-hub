@@ -149,8 +149,7 @@ export function useFormValidation(params: UseFormValidationParams) {
     }
     additionalConstructions.forEach((c, idx) => {
       if (c.declaredUsage === 'Location') {
-        const isMulti = c.rentalConfiguration === 'multi';
-        if (!isMulti) {
+        if (c.rentalConfiguration === 'single') {
           if (!c.rentalStartDate) {
             missing.push({ field: `additionalRentalStartDate_${idx}`, label: `En location depuis quand ? (construction #${idx + 2})`, tab: 'location' });
           } else if (c.constructionYear) {
