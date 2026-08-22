@@ -2,6 +2,7 @@ import React from 'react';
 import { Building, FileText, CheckCircle2, XCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { SectionCard, DataGrid, DataField, DocTable } from '../primitives';
+import { rentalDateLabel } from '@/components/cadastral/RentalConfigurationFields';
 import { CadastralParcel } from '@/types/cadastral';
 import { BuildingPermit } from '@/hooks/useCadastralSearch';
 import DocumentAttachment from '../../DocumentAttachment';
@@ -30,7 +31,7 @@ const ConstructionSection: React.FC<ConstructionSectionProps> = ({ number, parce
           {parcel.construction_materials && <DataField label="Matériaux" value={parcel.construction_materials} />}
           {parcel.construction_year && <DataField label="Année" value={parcel.construction_year} />}
           {(parcel as any).declared_usage === 'Location' && (parcel as any).rental_start_date && (
-            <DataField label="En location depuis" value={formatDate((parcel as any).rental_start_date)} />
+            <DataField label={rentalDateLabel((parcel as any).is_occupied)} value={formatDate((parcel as any).rental_start_date)} />
           )}
         </DataGrid>
       )}

@@ -13,6 +13,8 @@ interface RentalStartDateFieldProps {
   onChange: (value: string | undefined) => void;
   constructionYear?: number;
   highlightRequired?: boolean;
+  /** Statut d'occupation : si false, le libellé devient « Inoccupé depuis quand ? ». */
+  isOccupied?: boolean | null;
 }
 
 /**
@@ -22,7 +24,7 @@ interface RentalStartDateFieldProps {
  * — Doit être ≤ aujourd'hui.
  */
 const RentalStartDateField: React.FC<RentalStartDateFieldProps> = ({
-  value, onChange, constructionYear, highlightRequired,
+  value, onChange, constructionYear, highlightRequired, isOccupied,
 }) => {
   const selected = value && isValid(parseISO(value)) ? parseISO(value) : undefined;
   const today = new Date();
@@ -39,7 +41,7 @@ const RentalStartDateField: React.FC<RentalStartDateFieldProps> = ({
       highlightRequired && !value && "ring-2 ring-destructive rounded-xl p-2 bg-destructive/5 animate-pulse"
     )}>
       <Label className="text-sm font-medium flex items-center gap-1">
-        En location depuis quand ?
+        {isOccupied === false ? 'Inoccupé depuis quand ?' : 'En location depuis quand ?'}
         {highlightRequired && !value && <span className="text-destructive text-xs font-semibold">*</span>}
       </Label>
       <Popover>

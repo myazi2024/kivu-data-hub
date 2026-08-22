@@ -1,5 +1,5 @@
 import React from 'react';
-import { formatFloorLabel } from '@/components/cadastral/RentalConfigurationFields';
+import { formatFloorLabel, rentalDateLabel } from '@/components/cadastral/RentalConfigurationFields';
 
 export interface RentalUnitLike {
   label?: string;
@@ -49,7 +49,7 @@ export const RentalSummary: React.FC<RentalSummaryProps> = ({
     <div className="pt-1 border-t border-border/50">
       <div className="font-medium">🏠 {title}:</div>
       <div className="ml-2 text-muted-foreground space-y-0.5">
-        {rentalStartDate && <div>En location depuis: {fmtDate(rentalStartDate)}</div>}
+        {rentalStartDate && <div>{rentalDateLabel()}: {fmtDate(rentalStartDate)}</div>}
         <div>
           Configuration:{' '}
           {rentalConfiguration
@@ -74,7 +74,7 @@ export const RentalSummary: React.FC<RentalSummaryProps> = ({
                 {u.isOccupied !== undefined && <div>Occupé: {u.isOccupied ? 'Oui' : 'Non (vacant)'}</div>}
                 {u.isOccupied === true && u.occupantCount ? <div>Occupants: {u.occupantCount} personne(s)</div> : null}
                 {u.hostingCapacity ? <div>Capacité d'accueil: {u.hostingCapacity} personne(s)</div> : null}
-                {u.rentalStartDate && <div>En location depuis: {fmtDate(u.rentalStartDate)}</div>}
+                {u.rentalStartDate && <div>{rentalDateLabel(u.isOccupied)}: {fmtDate(u.rentalStartDate)}</div>}
               </div>
             ))}
           </div>
