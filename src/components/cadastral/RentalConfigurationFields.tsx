@@ -11,6 +11,8 @@ export interface RentalUnit {
   label?: string;
   monthlyRentUsd?: number;
   isOccupied?: boolean;
+  /** Nombre de personnes vivant actuellement dans le local (si occupé). */
+  occupantCount?: number;
   hostingCapacity?: number;
   rentalStartDate?: string; // ISO yyyy-MM-dd
   floor?: string;           // 'RDC' | '1' | '2' …
