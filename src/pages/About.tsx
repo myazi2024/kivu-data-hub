@@ -15,7 +15,7 @@ const About = () => {
     <>
       <Helmet>
         <title>À propos | BIC - Bureau d'Informations Cadastrales</title>
-        <meta name="description" content="Découvrez le BIC, plateforme numérique dédiée à la transparence et l'accessibilité des données foncières en République Démocratique du Congo." />
+        <meta name="description" content="Le BIC centralise des données foncières déclarées par les propriétaires ou leurs préposés, vérifiées administrativement, pour plus de transparence en RDC." />
       </Helmet>
       <div className="min-h-dvh">
       <Navigation />
