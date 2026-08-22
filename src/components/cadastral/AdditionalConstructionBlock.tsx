@@ -496,17 +496,7 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
         />
       )}
 
-      {/* Date de mise en location — uniquement en mode « Un seul local », sous le sélecteur */}
-      {data.declaredUsage === 'Location' && data.rentalConfiguration === 'single' && (
-        <RentalStartDateField
-          value={data.rentalStartDate}
-          onChange={(v) => update('rentalStartDate', v)}
-          constructionYear={data.constructionYear}
-          isOccupied={data.isOccupied}
-        />
-      )}
-
-      {/* Capacité d'accueil — masqué en mode multi (saisi par local) */}
+      {/* Capacité d'accueil — avant la date de mise en location (le statut d'occupation détermine le libellé de la date) ; masqué en mode multi (saisi par local) */}
       {isNotTerrainNu && !(data.declaredUsage === 'Location' && data.rentalConfiguration === 'multi') && (
         <>
           <div className="border-t border-border/50 my-2" />
@@ -577,6 +567,16 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
             )}
           </div>
         </>
+      )}
+
+      {/* Date de mise en location — uniquement en mode « Un seul local », sous le sélecteur */}
+      {data.declaredUsage === 'Location' && data.rentalConfiguration === 'single' && (
+        <RentalStartDateField
+          value={data.rentalStartDate}
+          onChange={(v) => update('rentalStartDate', v)}
+          constructionYear={data.constructionYear}
+          isOccupied={data.isOccupied}
+        />
       )}
 
       {/* Loyer mensuel — après Capacité d'accueil, conditionnel si Location */}
