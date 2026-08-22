@@ -61,7 +61,11 @@ export const StorageFileUpload = ({
       toast.success('Fichier téléversé');
     } catch (e: any) {
       console.error(e);
-      toast.error(e.message || 'Erreur de téléversement');
+      const raw = String(e?.message || '');
+      const friendly = /row-level security|violates|unauthorized|403/i.test(raw)
+        ? "Permission refusée pour ce fichier. Reconnectez-vous puis réessayez."
+        : raw || 'Erreur de téléversement';
+      toast.error(friendly);
     } finally {
       setUploading(false);
     }
@@ -72,15 +76,15 @@ export const StorageFileUpload = ({
   return (
     <div className="space-y-2">
       {value && (
-        <div className="flex items-center gap-2 rounded-md border border-input p-2">
-          {isImage && isPublic ? (
-            <img src={value} alt="" className="h-12 w-12 rounded object-cover" />
+        <div className="flex items-center gap-2 rounded-md border border-input p-2 min-w-0">
+          {isImage ? (
+            <SignedStorageImage src={value} bucket={bucket} alt="" className="h-12 w-12 rounded object-cover shrink-0" />
           ) : (
-            <div className="flex h-12 w-12 items-center justify-center rounded bg-muted">
-              {isImage ? <ImageIcon className="h-5 w-5 text-muted-foreground" /> : <FileText className="h-5 w-5 text-muted-foreground" />}
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded bg-muted">
+              <FileText className="h-5 w-5 text-muted-foreground" />
             </div>
           )}
-          <div className="flex-1 truncate text-xs text-muted-foreground">{value}</div>
+          <div className="min-w-0 flex-1 truncate text-xs text-muted-foreground">{value}</div>
           <Button type="button" variant="ghost" size="sm" onClick={handleRemove}>
             <X className="h-4 w-4" />
           </Button>
