@@ -1170,7 +1170,7 @@ export const useCCCFormState = ({
 
         const gpsCoords = contrib.gps_coordinates as any[];
         if (gpsCoords && Array.isArray(gpsCoords) && gpsCoords.length > 0) {
-          setGpsCoordinates(gpsCoords.map((c: any) => ({ borne: c.borne || '', lat: String(c.lat || ''), lng: String(c.lng || ''), mode: 'manual' as const, detected: true, detecting: false })));
+          setGpsCoordinates(renumberGpsCoordinates(gpsCoords.map((c: any) => ({ borne: c.borne || '', lat: String(c.lat || ''), lng: String(c.lng || ''), mode: 'manual' as const, detected: true, detecting: false }))));
         }
 
         const sides = contrib.parcel_sides as any[];
