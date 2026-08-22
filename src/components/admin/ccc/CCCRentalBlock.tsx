@@ -3,7 +3,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Home, Layers } from 'lucide-react';
 import { parseRentalUnits, sumUnitsRent, sumUnitsCapacity } from './cccConsistency';
-import { formatFloorLabel } from '@/components/cadastral/RentalConfigurationFields';
+import { formatFloorLabel, rentalDateLabel } from '@/components/cadastral/RentalConfigurationFields';
 
 interface Props {
   contribution: any;
@@ -84,7 +84,7 @@ export const CCCRentalBlock: React.FC<Props> = ({ contribution }) => {
                     Loyer : {fmtUsd(u.monthlyRentUsd)}
                     {u.hostingCapacity ? ` · Capacité : ${u.hostingCapacity}` : ''}
                     {u.isOccupied === true && u.occupantCount ? ` · Occupants : ${u.occupantCount}` : ''}
-                    {u.rentalStartDate ? ` · Depuis le ${new Date(u.rentalStartDate).toLocaleDateString('fr-FR')}` : ''}
+                    {u.rentalStartDate ? ` · ${rentalDateLabel(u.isOccupied)} le ${new Date(u.rentalStartDate).toLocaleDateString('fr-FR')}` : ''}
                   </p>
                 </div>
               ))}
