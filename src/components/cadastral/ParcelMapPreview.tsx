@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import { toast } from 'sonner';
+import { isGenericSideName } from '@/utils/parcelSideNumbering';
 import { Card } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -342,14 +343,13 @@ export const ParcelMapPreview = ({
         parseFloat(next.lng)
       );
       
-      const currentBorneNum = parseInt(current.borne);
-      const existingSide = parcelSides.find(side => {
-        const match = side.name.match(/Côté (\d+)/);
-        return match && parseInt(match[1]) === currentBorneNum;
-      }) || parcelSides[i];
-      
+      // Le côté i relie la borne i à la borne i+1 : l'appariement est strictement
+      // positionnel. Un nom personnalisé (ex. « Côté Nord ») est conservé, un nom
+      // générique est renuméroté selon la position pour rester séquentiel.
+      const existingSide = parcelSides[i];
+
       updatedSides.push({
-        name: existingSide?.name || `Côté ${currentBorneNum}`,
+        name: isGenericSideName(existingSide?.name) ? `Côté ${i + 1}` : existingSide.name,
         length: distance.toFixed(2)
       });
     }

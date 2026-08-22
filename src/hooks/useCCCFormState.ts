@@ -18,6 +18,7 @@ import { CurrentOwner, BuildingPermit } from '@/components/cadastral/ccc-tabs/Ge
 import { PreviousOwner } from '@/components/cadastral/ccc-tabs/HistoryTab';
 import { TaxRecord, MortgageRecord } from '@/components/cadastral/ccc-tabs/ObligationsTab';
 import { resolveAvailableUsages } from '@/utils/constructionUsageResolver';
+import { renumberParcelSides, renumberGpsCoordinates, reindexRoadSidesAfterRemoval } from '@/utils/parcelSideNumbering';
 import { normalizeConstructionNature } from '@/utils/constructionNatureNormalizer';
 import {
   getAllProvinces,
@@ -638,13 +639,16 @@ export const useCCCFormState = ({
   const addGPSCoordinate = () => {
     const filledSides = parcelSides.filter(s => s.length && parseFloat(s.length) > 0);
     if (gpsCoordinates.length >= filledSides.length) return;
-    setGpsCoordinates([...gpsCoordinates, { borne: `Borne ${gpsCoordinates.length + 1}`, lat: '', lng: '', mode: 'auto', detected: false, detecting: false }]);
+    setGpsCoordinates(renumberGpsCoordinates([...gpsCoordinates, { borne: `Borne ${gpsCoordinates.length + 1}`, lat: '', lng: '', mode: 'auto', detected: false, detecting: false }]));
     markDirty();
   };
 
   const removeGPSCoordinate = (index: number) => {
-    setGpsCoordinates(gpsCoordinates.filter((_, i) => i !== index));
-    if (parcelSides.length > 2 && index < parcelSides.length) setParcelSides(parcelSides.filter((_, i) => i !== index));
+    setGpsCoordinates(renumberGpsCoordinates(gpsCoordinates.filter((_, i) => i !== index)));
+    if (parcelSides.length > 2 && index < parcelSides.length) {
+      setParcelSides(renumberParcelSides(parcelSides.filter((_, i) => i !== index)));
+      setRoadSides(prev => reindexRoadSidesAfterRemoval(prev, index));
+    }
     markDirty();
   };
 
@@ -689,16 +693,16 @@ export const useCCCFormState = ({
 
   // ─── Parcel sides ───
   const addParcelSide = () => {
-    const sideNumber = parcelSides.length + 1;
-    setParcelSides([...parcelSides, { name: `Côté ${sideNumber}`, length: '' }]);
-    setGpsCoordinates([...gpsCoordinates, { borne: `Borne ${gpsCoordinates.length + 1}`, lat: '', lng: '' }]);
+    setParcelSides(renumberParcelSides([...parcelSides, { name: `Côté ${parcelSides.length + 1}`, length: '' }]));
+    setGpsCoordinates(renumberGpsCoordinates([...gpsCoordinates, { borne: `Borne ${gpsCoordinates.length + 1}`, lat: '', lng: '' }]));
     markDirty();
   };
 
   const removeParcelSide = (index: number) => {
     if (parcelSides.length > 2) {
-      setParcelSides(parcelSides.filter((_, i) => i !== index));
-      if (index < gpsCoordinates.length) setGpsCoordinates(gpsCoordinates.filter((_, i) => i !== index));
+      setParcelSides(renumberParcelSides(parcelSides.filter((_, i) => i !== index)));
+      if (index < gpsCoordinates.length) setGpsCoordinates(renumberGpsCoordinates(gpsCoordinates.filter((_, i) => i !== index)));
+      setRoadSides(prev => reindexRoadSidesAfterRemoval(prev, index));
       markDirty();
     }
   };
@@ -1166,11 +1170,11 @@ export const useCCCFormState = ({
 
         const gpsCoords = contrib.gps_coordinates as any[];
         if (gpsCoords && Array.isArray(gpsCoords) && gpsCoords.length > 0) {
-          setGpsCoordinates(gpsCoords.map((c: any) => ({ borne: c.borne || '', lat: String(c.lat || ''), lng: String(c.lng || ''), mode: 'manual' as const, detected: true, detecting: false })));
+          setGpsCoordinates(renumberGpsCoordinates(gpsCoords.map((c: any) => ({ borne: c.borne || '', lat: String(c.lat || ''), lng: String(c.lng || ''), mode: 'manual' as const, detected: true, detecting: false }))));
         }
 
         const sides = contrib.parcel_sides as any[];
-        if (sides && Array.isArray(sides) && sides.length > 0) setParcelSides(sides.map((s: any) => ({ name: s.name || '', length: String(s.length || '') })));
+        if (sides && Array.isArray(sides) && sides.length > 0) setParcelSides(renumberParcelSides(sides.map((s: any) => ({ name: s.name || '', length: String(s.length || '') }))));
 
         const permits = contrib.building_permits as any[];
         if (permits && Array.isArray(permits) && permits.length > 0) {

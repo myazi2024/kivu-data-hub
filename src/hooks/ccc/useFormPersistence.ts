@@ -16,6 +16,7 @@ import type { CurrentOwner, BuildingPermit } from '@/components/cadastral/ccc-ta
 import type { PreviousOwner } from '@/components/cadastral/ccc-tabs/HistoryTab';
 import type { TaxRecord, MortgageRecord } from '@/components/cadastral/ccc-tabs/ObligationsTab';
 import type { AdditionalConstruction } from '@/components/cadastral/AdditionalConstructionBlock';
+import { renumberParcelSides, renumberGpsCoordinates } from '@/utils/parcelSideNumbering';
 
 const STORAGE_SCHEMA_VERSION = 2;
 const STORAGE_TTL_DAYS = 30;
@@ -198,8 +199,8 @@ export function useFormPersistence(params: UseFormPersistenceParams): UseFormPer
       if (parsed.permitMode) setPermitMode(parsed.permitMode);
       if (parsed.buildingPermits) setBuildingPermits(parsed.buildingPermits);
       if (parsed.permitRequest) setPermitRequest(parsed.permitRequest);
-      if (parsed.gpsCoordinates) setGpsCoordinates(parsed.gpsCoordinates);
-      if (parsed.parcelSides) setParcelSides(parsed.parcelSides);
+      if (parsed.gpsCoordinates) setGpsCoordinates(renumberGpsCoordinates(parsed.gpsCoordinates));
+      if (parsed.parcelSides) setParcelSides(renumberParcelSides(parsed.parcelSides));
       if (parsed.obligationType) setObligationType(parsed.obligationType);
       if (parsed.sectionType) setSectionType(parsed.sectionType);
       if (parsed.hasMortgage !== undefined) setHasMortgage(parsed.hasMortgage);
