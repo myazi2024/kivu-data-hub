@@ -2,16 +2,12 @@
  * Shared utility for computing available declared usages based on
  * construction type and nature. Used by both the main CCC form and
  * AdditionalConstructionBlock to guarantee identical results.
+ *
+ * NOTE : « Location » n'est plus un usage. La mise en location est un
+ * indicateur booléen distinct (voir `src/utils/rentalStatus.ts`).
  */
 
-const LOCATION_ELIGIBLE_KEYS = new Set([
-  'Résidentielle_Durable',
-  'Résidentielle_Semi-durable',
-  'Commerciale_Durable',
-  'Commerciale_Semi-durable',
-  'Industrielle_Durable',
-  'Industrielle_Semi-durable',
-]);
+export { isRentalEligible } from './rentalStatus';
 
 export function resolveAvailableUsages(
   constructionType: string,
@@ -24,10 +20,6 @@ export function resolveAvailableUsages(
   const specificKey = `${constructionType}_${constructionNature}`;
   const usages = [...(usageMap[specificKey] || usageMap[constructionNature] || [])];
 
-  // Inject 'Location' for eligible type+nature combinations
-  if (LOCATION_ELIGIBLE_KEYS.has(specificKey) && !usages.includes('Location')) {
-    usages.push('Location');
-  }
-
-  return usages;
+  // « Location » est désormais géré par la question dédiée « Ce bien est-il mis en location ? »
+  return usages.filter((u) => u !== 'Location');
 }
