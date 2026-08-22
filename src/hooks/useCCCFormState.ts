@@ -18,6 +18,7 @@ import { CurrentOwner, BuildingPermit } from '@/components/cadastral/ccc-tabs/Ge
 import { PreviousOwner } from '@/components/cadastral/ccc-tabs/HistoryTab';
 import { TaxRecord, MortgageRecord } from '@/components/cadastral/ccc-tabs/ObligationsTab';
 import { resolveAvailableUsages } from '@/utils/constructionUsageResolver';
+import { renumberParcelSides, renumberGpsCoordinates, reindexRoadSidesAfterRemoval } from '@/utils/parcelSideNumbering';
 import { normalizeConstructionNature } from '@/utils/constructionNatureNormalizer';
 import {
   getAllProvinces,
