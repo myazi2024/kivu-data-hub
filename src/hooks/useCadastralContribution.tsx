@@ -32,9 +32,11 @@ export interface CadastralContributionData {
   floorNumber?: string;
   standing?: string;
   constructionYear?: number;
-  rentalStartDate?: string; // ISO yyyy-MM-dd, requis si declaredUsage === 'Location'
+  /** Le bien est-il mis en location ? (remplace l'ancien usage « Location ») */
+  isRented?: boolean;
+  rentalStartDate?: string; // ISO yyyy-MM-dd, requis si isRented
 
-  // Configuration locative (si declaredUsage === 'Location')
+  // Configuration locative (si isRented)
   rentalConfiguration?: 'single' | 'multi';
   rentalUnitsCount?: number;
   monthlyRentUsd?: number;
@@ -168,6 +170,7 @@ export interface CadastralContributionData {
     constructionYear?: number;
     apartmentNumber?: string;
     floorNumber?: string;
+    isRented?: boolean;
     rentalStartDate?: string;
     rentalConfiguration?: 'single' | 'multi';
     rentalUnitsCount?: number;
@@ -378,6 +381,7 @@ export const useCadastralContribution = () => {
       occupant_count: blankNum(data.occupantCount),
       hosting_capacity: blankNum(data.hostingCapacity),
       declared_usage: blank(data.declaredUsage),
+      is_rented: data.isRented === true,
       standing: blank(data.standing),
       rental_start_date: blankDate(data.rentalStartDate),
       rental_configuration: data.rentalConfiguration ?? null,
