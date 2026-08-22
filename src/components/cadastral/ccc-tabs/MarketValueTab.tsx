@@ -247,7 +247,7 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
   );
 
   return (
-    <div className="space-y-4 sm:space-y-5 pt-2 sm:pt-3 animate-fade-in">
+    <div className="w-full min-w-0 overflow-x-hidden space-y-4 sm:space-y-5 pt-2 sm:pt-3 animate-fade-in">
       {/* ════════ BLOC 1 — VALEUR MARCHANDE DE LA PARCELLE ════════ */}
       <Card className="border-2 shadow-md rounded-2xl overflow-hidden">
         <CardContent className="p-3 sm:p-4 space-y-4">
@@ -303,7 +303,7 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
                   Après négociation, à quel prix raisonnable accepteriez-vous de vendre ?
                   <span className="text-destructive ml-1">*</span>
                 </Label>
-                <div className="flex gap-2">
+                <div className="flex gap-2 min-w-0">
                   <Select value={resaleCurrency} onValueChange={(v) => setResaleCurrency(v as CurrencyCode)}>
                     <SelectTrigger className="w-24 h-11 rounded-xl">
                       <SelectValue />
@@ -354,7 +354,7 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
 
                       {/* Images parcelle */}
                       <div className={cn(
-                        "space-y-2 rounded-xl border p-2.5",
+                        "min-w-0 space-y-2 rounded-xl border p-2 sm:p-2.5",
                         missingSaleImages ? "border-destructive ring-1 ring-destructive/30 bg-destructive/5" : "border-border bg-background",
                       )}>
                         <div className="flex items-center justify-between gap-2">
@@ -421,7 +421,7 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
                       </div>
 
                       {/* Modalités de prix */}
-                      <div className="rounded-xl border border-border bg-background p-2.5 space-y-2">
+                      <div className="min-w-0 rounded-xl border border-border bg-background p-2 sm:p-2.5 space-y-2">
                         <Label className="text-[11px] font-semibold text-foreground uppercase tracking-wide">Modalités de prix</Label>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                           <div className="space-y-1">
@@ -449,7 +449,7 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
                       </div>
 
                       {/* Disponibilité */}
-                      <div className="rounded-xl border border-border bg-background p-2.5 space-y-2">
+                      <div className="min-w-0 rounded-xl border border-border bg-background p-2 sm:p-2.5 space-y-2">
                         <Label className="text-[11px] font-semibold text-foreground uppercase tracking-wide">Disponibilité</Label>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                           <div className="space-y-1">
@@ -477,7 +477,7 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
                       </div>
 
                       {/* Description & contact */}
-                      <div className="rounded-xl border border-border bg-background p-2.5 space-y-2">
+                      <div className="min-w-0 rounded-xl border border-border bg-background p-2 sm:p-2.5 space-y-2">
                         <Label className="text-[11px] font-semibold text-foreground uppercase tracking-wide">Description & contact</Label>
                         <div className="space-y-1">
                           <Label className="text-[11px] font-medium text-foreground">Description (500 caractères max)</Label>
@@ -620,7 +620,7 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
                   <Label className="text-xs font-medium text-foreground">
                     Valeur vénale retenue<span className="text-destructive ml-1">*</span>
                   </Label>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 min-w-0">
                     <Select value={appraisedCurrency} onValueChange={(v) => setAppraisedCurrency(v as CurrencyCode)}>
                       <SelectTrigger className="w-24 h-11 rounded-xl">
                         <SelectValue />
@@ -683,7 +683,7 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
       {/* ════════ BLOC 2 — LOCAUX VACANTS À METTRE SUR LE MARCHÉ ════════ */}
       {showBlock2 && (
         <Card className="border-2 shadow-md rounded-2xl overflow-hidden">
-          <CardContent className="p-3 sm:p-4 space-y-3">
+          <CardContent className="p-2.5 sm:p-4 space-y-3 min-w-0">
             <div className="flex items-center gap-2">
               <div className="p-2 rounded-xl bg-primary/10 text-primary">
                 <Home className="h-4 w-4" />
@@ -717,11 +717,11 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
                       <div
                         key={t.ref}
                         className={cn(
-                          "rounded-2xl border-2 p-3 transition-all",
+                          "min-w-0 rounded-2xl border-2 p-2 sm:p-3 transition-all",
                           checked ? "border-primary/40 bg-primary/5 shadow-sm" : "border-border bg-background",
                         )}
                       >
-                        <div className="flex items-start gap-3">
+                        <div className="flex items-start gap-2 sm:gap-3 min-w-0">
                           <Checkbox
                             id={`listing-${t.ref}`}
                             checked={checked}
@@ -775,14 +775,14 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
                               return (
                                 <div className="space-y-3 pt-1 animate-fade-in">
                                   {/* Loyer & caution */}
-                                  <div className="rounded-xl border border-border bg-background p-2.5 space-y-2">
+                                  <div className="min-w-0 rounded-xl border border-border bg-background p-2 sm:p-2.5 space-y-2">
                                     <Label className="text-[11px] font-semibold text-foreground uppercase tracking-wide">Loyer & caution</Label>
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                       <div className="space-y-1">
                                         <Label className="text-[11px] font-medium text-foreground">Loyer mensuel souhaité</Label>
-                                        <div className="flex gap-2">
+                                        <div className="flex gap-2 min-w-0">
                                           <Select value={rentCur} onValueChange={(v) => updateListing(t.ref, { rentCurrency: v as 'USD' | 'CDF' }, { unitLabel: t.label })}>
-                                            <SelectTrigger className="w-20 h-10 rounded-xl text-sm"><SelectValue /></SelectTrigger>
+                                            <SelectTrigger className="w-16 sm:w-20 shrink-0 h-10 rounded-xl text-sm"><SelectValue /></SelectTrigger>
                                             <SelectContent>
                                               <SelectItem value="USD">USD</SelectItem>
                                               <SelectItem value="CDF">CDF</SelectItem>
@@ -796,7 +796,7 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
                                               const usd = n === undefined ? undefined : (rentCur === 'USD' ? n : n / cdfRate);
                                               updateListing(t.ref, { rentAmount: n, targetRentUsd: usd }, { unitLabel: t.label });
                                             }}
-                                            className="flex-1 h-10 rounded-xl text-sm"
+                                            className="flex-1 min-w-0 h-10 rounded-xl text-sm"
                                           />
                                         </div>
                                       </div>
@@ -813,7 +813,7 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
                                   </div>
 
                                   {/* Disponibilité & bail */}
-                                  <div className="rounded-xl border border-border bg-background p-2.5 space-y-2">
+                                  <div className="min-w-0 rounded-xl border border-border bg-background p-2 sm:p-2.5 space-y-2">
                                     <Label className="text-[11px] font-semibold text-foreground uppercase tracking-wide">Disponibilité & type de bail</Label>
                                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                                       <div className="space-y-1">
@@ -849,7 +849,7 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
                                   </div>
 
                                   {/* Charges incluses */}
-                                  <div className="rounded-xl border border-border bg-background p-2.5 space-y-2">
+                                  <div className="min-w-0 rounded-xl border border-border bg-background p-2 sm:p-2.5 space-y-2">
                                     <Label className="text-[11px] font-semibold text-foreground uppercase tracking-wide">Charges incluses dans le loyer</Label>
                                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                                       {([
@@ -872,7 +872,7 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
 
                                   {/* Images de couverture */}
                                   <div className={cn(
-                                    "space-y-2 rounded-xl border p-2.5",
+                                    "min-w-0 space-y-2 rounded-xl border p-2 sm:p-2.5",
                                     missingImages ? "border-destructive ring-1 ring-destructive/30 bg-destructive/5" : "border-border bg-background",
                                   )}>
                                     <div className="flex items-center justify-between gap-2">
@@ -953,7 +953,7 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
                                   </div>
 
                                   {/* Description & contact */}
-                                  <div className="rounded-xl border border-border bg-background p-2.5 space-y-2">
+                                  <div className="min-w-0 rounded-xl border border-border bg-background p-2 sm:p-2.5 space-y-2">
                                     <Label className="text-[11px] font-semibold text-foreground uppercase tracking-wide">Description & contact</Label>
                                     <div className="space-y-1">
                                       <Label className="text-[11px] font-medium text-foreground">Description de l'annonce (500 caractères max)</Label>
