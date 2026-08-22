@@ -476,15 +476,6 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
         </div>
       )}
 
-      {/* Date de mise en location — uniquement single (mode multi gère par local) */}
-      {data.declaredUsage === 'Location' && data.rentalConfiguration !== 'multi' && (
-        <RentalStartDateField
-          value={data.rentalStartDate}
-          onChange={(v) => update('rentalStartDate', v)}
-          constructionYear={data.constructionYear}
-        />
-      )}
-
       {/* Configuration locative : mono-local vs multi-locaux */}
       {data.declaredUsage === 'Location' && (
         <RentalConfigurationSelector
@@ -494,9 +485,24 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
             monthlyRentUsd: data.monthlyRentUsd,
             rentalUnits: data.rentalUnits,
           }}
-          onPatch={(patch) => onChange(index, { ...data, ...patch })}
+          onPatch={(patch) => {
+            const next = { ...data, ...patch };
+            // Purge de la date globale au passage single → multi (saisie par local)
+            if ((patch as any).rentalConfiguration === 'multi') next.rentalStartDate = undefined;
+            onChange(index, next);
+          }}
           propertyCategory={data.propertyCategory}
           constructionType={data.constructionType}
+        />
+      )}
+
+      {/* Date de mise en location — uniquement en mode « Un seul local », sous le sélecteur */}
+      {data.declaredUsage === 'Location' && data.rentalConfiguration === 'single' && (
+        <RentalStartDateField
+          value={data.rentalStartDate}
+          onChange={(v) => update('rentalStartDate', v)}
+          constructionYear={data.constructionYear}
+          isOccupied={data.isOccupied}
         />
       )}
 
