@@ -130,7 +130,7 @@ export const RentalUnitsPanel: React.FC = () => {
                               {[
                                 u.floor ? formatFloorLabel(u.floor) : null,
                                 u.hostingCapacity ? `${u.hostingCapacity} pers.` : null,
-                                u.isOccupied === false && u.occupantCount ? `${u.occupantCount} occupant(s)` : null,
+                                u.isOccupied === true && u.occupantCount ? `${u.occupantCount} occupant(s)` : null,
                                 u.rentalStartDate ? `${rentalDateLabel(u.isOccupied)} ${formatDateFr(u.rentalStartDate)}` : null,
                               ]
                                 .filter(Boolean)
