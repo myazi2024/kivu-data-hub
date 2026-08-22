@@ -427,7 +427,7 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
                           <div className="space-y-1">
                             <Label className="text-[11px] font-medium text-foreground">Prix</Label>
                             <Select value={sale.priceNegotiable === undefined ? '' : (sale.priceNegotiable ? 'negotiable' : 'firm')} onValueChange={(v) => updateSale({ priceNegotiable: v === 'negotiable' })}>
-                              <SelectTrigger className="h-10 rounded-xl text-sm"><SelectValue placeholder="Ferme / Négociable" /></SelectTrigger>
+                              <SelectTrigger className="h-10 w-full min-w-0 rounded-xl text-sm"><SelectValue placeholder="Ferme / Négociable" /></SelectTrigger>
                               <SelectContent>
                                 <SelectItem value="firm">Prix ferme</SelectItem>
                                 <SelectItem value="negotiable">Négociable</SelectItem>
@@ -437,7 +437,7 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
                           <div className="space-y-1">
                             <Label className="text-[11px] font-medium text-foreground">Modalités de paiement <span className="text-destructive">*</span></Label>
                             <Select value={sale.paymentTerms || ''} onValueChange={(v) => updateSale({ paymentTerms: v as any })}>
-                              <SelectTrigger className="h-10 rounded-xl text-sm"><SelectValue placeholder="Choisir…" /></SelectTrigger>
+                              <SelectTrigger className="h-10 w-full min-w-0 rounded-xl text-sm"><SelectValue placeholder="Choisir…" /></SelectTrigger>
                               <SelectContent>
                                 <SelectItem value="cash">Cash</SelectItem>
                                 <SelectItem value="installments">Échelonné</SelectItem>
@@ -455,7 +455,7 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
                           <div className="space-y-1">
                             <Label className="text-[11px] font-medium text-foreground">Disponible <span className="text-destructive">*</span></Label>
                             <Select value={sale.availability || ''} onValueChange={(v) => updateSale({ availability: v as any })}>
-                              <SelectTrigger className="h-10 rounded-xl text-sm"><SelectValue placeholder="Choisir…" /></SelectTrigger>
+                              <SelectTrigger className="h-10 w-full min-w-0 rounded-xl text-sm"><SelectValue placeholder="Choisir…" /></SelectTrigger>
                               <SelectContent>
                                 <SelectItem value="immediate">Immédiatement</SelectItem>
                                 <SelectItem value="conditional">Sous conditions</SelectItem>
@@ -469,7 +469,7 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
                                 type="text" placeholder="Ex. après récolte 2026"
                                 value={sale.availabilityNote || ''}
                                 onChange={(e) => updateSale({ availabilityNote: e.target.value || undefined })}
-                                className="h-10 rounded-xl text-sm"
+                                className="h-10 w-full min-w-0 rounded-xl text-sm"
                               />
                             </div>
                           )}
@@ -501,7 +501,7 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
                               updateSale(patch);
                             }}>
 
-                              <SelectTrigger className="h-10 rounded-xl text-sm"><SelectValue placeholder="Choisir…" /></SelectTrigger>
+                              <SelectTrigger className="h-10 w-full min-w-0 rounded-xl text-sm"><SelectValue placeholder="Choisir…" /></SelectTrigger>
                               <SelectContent>
                                 {Object.entries(CONTACT_LABELS).map(([k, l]) => (
                                   <SelectItem key={k} value={k}>{l}</SelectItem>
@@ -516,7 +516,7 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
                               placeholder={sale.contactChannel === 'email' ? 'email@exemple.com' : '+243 …'}
                               value={sale.contactValue || ''}
                               onChange={(e) => updateSale({ contactValue: e.target.value || undefined })}
-                              className="h-10 rounded-xl text-sm"
+                              className="h-10 w-full min-w-0 rounded-xl text-sm"
                             />
                           </div>
                         </div>
@@ -527,7 +527,7 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
                             placeholder="Ex. Lun-Ven 9h-17h, Sam matin"
                             value={sale.visitSlots || ''}
                             onChange={(e) => updateSale({ visitSlots: e.target.value || undefined })}
-                            className="h-10 rounded-xl text-sm"
+                            className="h-10 w-full min-w-0 rounded-xl text-sm"
                           />
                         </div>
                       </div>
@@ -806,7 +806,7 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
                                           type="number" inputMode="numeric" min={0} max={12} step="1" placeholder="Ex. 2"
                                           value={entry?.depositMonths ?? ''}
                                           onChange={(e) => updateListing(t.ref, { depositMonths: e.target.value === '' ? undefined : Number(e.target.value) }, { unitLabel: t.label })}
-                                          className="h-10 rounded-xl text-sm"
+                                          className="h-10 w-full min-w-0 rounded-xl text-sm"
                                         />
                                       </div>
                                     </div>
@@ -822,7 +822,7 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
                                           type="date"
                                           value={entry?.availableFrom || ''}
                                           onChange={(e) => updateListing(t.ref, { availableFrom: e.target.value || undefined }, { unitLabel: t.label })}
-                                          className="h-10 rounded-xl text-sm"
+                                          className="h-10 w-full min-w-0 rounded-xl text-sm"
                                         />
                                       </div>
                                       <div className="space-y-1">
@@ -831,13 +831,13 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
                                           type="number" inputMode="numeric" min={1} max={120} step="1" placeholder="Ex. 12"
                                           value={entry?.minLeaseMonths ?? ''}
                                           onChange={(e) => updateListing(t.ref, { minLeaseMonths: e.target.value === '' ? undefined : Number(e.target.value) }, { unitLabel: t.label })}
-                                          className="h-10 rounded-xl text-sm"
+                                          className="h-10 w-full min-w-0 rounded-xl text-sm"
                                         />
                                       </div>
                                       <div className="space-y-1">
                                         <Label className="text-[11px] font-medium text-foreground">Type de location</Label>
                                         <Select value={entry?.leaseType || ''} onValueChange={(v) => updateListing(t.ref, { leaseType: v as any }, { unitLabel: t.label })}>
-                                          <SelectTrigger className="h-10 rounded-xl text-sm"><SelectValue placeholder="Choisir…" /></SelectTrigger>
+                                          <SelectTrigger className="h-10 w-full min-w-0 rounded-xl text-sm"><SelectValue placeholder="Choisir…" /></SelectTrigger>
                                           <SelectContent>
                                             {Object.entries(LEASE_TYPE_LABELS).map(([k, l]) => (
                                               <SelectItem key={k} value={k}>{l}</SelectItem>
@@ -978,7 +978,7 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
                                           updateListing(t.ref, patch, { unitLabel: t.label });
                                         }}>
 
-                                          <SelectTrigger className="h-10 rounded-xl text-sm"><SelectValue placeholder="Choisir…" /></SelectTrigger>
+                                          <SelectTrigger className="h-10 w-full min-w-0 rounded-xl text-sm"><SelectValue placeholder="Choisir…" /></SelectTrigger>
                                           <SelectContent>
                                             {Object.entries(CONTACT_LABELS).map(([k, l]) => (
                                               <SelectItem key={k} value={k}>{l}</SelectItem>
@@ -993,7 +993,7 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
                                           placeholder={entry?.contactChannel === 'email' ? 'email@exemple.com' : '+243 …'}
                                           value={entry?.contactValue || ''}
                                           onChange={(e) => updateListing(t.ref, { contactValue: e.target.value || undefined }, { unitLabel: t.label })}
-                                          className="h-10 rounded-xl text-sm"
+                                          className="h-10 w-full min-w-0 rounded-xl text-sm"
                                         />
                                       </div>
                                     </div>
@@ -1004,7 +1004,7 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
                                         placeholder="Ex. Lun-Ven 9h-17h, Sam matin"
                                         value={entry?.visitSlots || ''}
                                         onChange={(e) => updateListing(t.ref, { visitSlots: e.target.value || undefined }, { unitLabel: t.label })}
-                                        className="h-10 rounded-xl text-sm"
+                                        className="h-10 w-full min-w-0 rounded-xl text-sm"
                                       />
                                     </div>
                                   </div>
