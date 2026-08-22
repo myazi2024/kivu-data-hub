@@ -133,6 +133,10 @@ const About = () => {
                 <span className="mt-1.5 w-2 h-2 rounded-full bg-primary flex-shrink-0" />
                 <span><strong className="text-foreground">Suivi des litiges fonciers</strong> — Déclarez et suivez les litiges fonciers (conflits de limites, double attribution, contestation de propriété) avec un système de référencement structuré.</span>
               </li>
+              <li className="flex items-start gap-2">
+                <span className="mt-1.5 w-2 h-2 rounded-full bg-primary flex-shrink-0" />
+                <span><strong className="text-foreground">Autorisation de construire et lotissement</strong> — Constituez et suivez en ligne vos demandes d'autorisation de construire ou de lotissement, avec estimation des frais applicables.</span>
+              </li>
             </ul>
           </section>
 
@@ -140,41 +144,42 @@ const About = () => {
           <section className="mb-12">
             <h2 className="text-2xl font-semibold text-foreground mb-4">Notre méthode</h2>
             <p className="text-muted-foreground leading-relaxed mb-4">
-              La fiabilité des données constitue le fondement de notre démarche. Pour produire des diagnostics cadastraux complets et vérifiables, le BIC s'appuie sur une méthodologie rigoureuse articulée autour de cinq piliers :
+              Le BIC ne réalise ni relevés topographiques, ni enquêtes de terrain, ni numérisation d'archives administratives. Notre démarche repose sur la déclaration encadrée et la vérification structurée de l'information transmise par les propriétaires ou leurs préposés, articulée autour de cinq étapes :
             </p>
             <div className="space-y-4 ml-4">
               <div>
-                <h3 className="font-medium text-foreground mb-1">1. Collecte et numérisation des archives cadastrales</h3>
+                <h3 className="font-medium text-foreground mb-1">1. Déclaration par le propriétaire ou son préposé</h3>
                 <p className="text-muted-foreground leading-relaxed text-sm">
-                  Les données existantes auprès des conservations foncières, des bureaux du cadastre et des services des titres immobiliers sont collectées, numérisées et structurées dans une base de données unifiée. Ce travail de fond permet de reconstituer l'historique foncier de chaque parcelle référencée.
+                  Le déclarant renseigne un formulaire cadastral structuré : identification de la parcelle, localisation administrative, superficie, type de titre, historique des propriétaires, construction et usage, mise en location, obligations fiscales. Il joint les pièces justificatives disponibles et positionne lui-même la parcelle sur la carte, avec un croquis des limites.
                 </p>
               </div>
               <div>
-                <h3 className="font-medium text-foreground mb-1">2. Enquêtes terrain et remontées communautaires</h3>
+                <h3 className="font-medium text-foreground mb-1">2. Contrôles automatiques de complétude et de cohérence</h3>
                 <p className="text-muted-foreground leading-relaxed text-sm">
-                  Des agents de terrain complètent les données numériques par des vérifications in situ : identification des bornes, relevés GPS, entretiens avec les propriétaires et les riverains. Les contributions communautaires permettent d'enrichir et de corriger les informations en continu.
+                  Le système applique des règles de validation à chaque champ, calcule un score de complétude du dossier et signale les incohérences : superficie incompatible avec le croquis, dates contradictoires, doublon de numéro de parcelle, pièces manquantes ou informations financières improbables.
                 </p>
               </div>
               <div>
-                <h3 className="font-medium text-foreground mb-1">3. Cartographie interactive et imagerie satellite</h3>
+                <h3 className="font-medium text-foreground mb-1">3. Revue administrative avant publication</h3>
                 <p className="text-muted-foreground leading-relaxed text-sm">
-                  Les parcelles sont géolocalisées et superposées sur des fonds de carte OpenStreetMap et Mapbox. L'imagerie satellite permet de vérifier la cohérence entre les données déclarées et la réalité physique du terrain (occupation du sol, constructions, limites visibles).
+                  Aucune déclaration n'est publiée automatiquement. Nos équipes examinent chaque dossier, champ par champ, et décident de l'approuver, de le rejeter avec motif ou de demander une correction au déclarant. Chaque décision est tracée et notifiée.
                 </p>
               </div>
               <div>
-                <h3 className="font-medium text-foreground mb-1">4. Modélisation statistique et croisement de sources</h3>
+                <h3 className="font-medium text-foreground mb-1">4. Cartographie et représentation spatiale</h3>
                 <p className="text-muted-foreground leading-relaxed text-sm">
-                  Les données collectées sont croisées entre plusieurs sources pour détecter les incohérences, les doublons ou les cas suspects de fraude (double attribution, superficie déclarée aberrante). Des indicateurs statistiques par province et par commune permettent de mesurer la couverture cadastrale et l'intensité des litiges.
+                  Les parcelles validées sont représentées sur des fonds de carte OpenStreetMap et Mapbox, avec les limites administratives et des indicateurs de densité. Cette représentation est indicative : elle traduit la position déclarée et ne constitue pas un mesurage officiel opposable.
                 </p>
               </div>
               <div>
-                <h3 className="font-medium text-foreground mb-1">5. Vérification juridique</h3>
+                <h3 className="font-medium text-foreground mb-1">5. Mise à jour continue et historisation</h3>
                 <p className="text-muted-foreground leading-relaxed text-sm">
-                  Chaque donnée relative aux titres de propriété, aux hypothèques et aux mutations fait l'objet d'une vérification juridique : conformité du titre, validité des actes de transfert, existence de charges ou de servitudes. Cette étape garantit la fiabilité des informations mises à disposition des utilisateurs.
+                  Les déclarants peuvent mettre à jour leurs données ou demander une correction après approbation. Chaque modification est historisée, ce qui permet de suivre l'évolution d'une parcelle dans le temps. Les vérifications approfondies (expertise de valeur, contrôle de titre, hypothèques, mutation) relèvent de services dédiés, réalisés sur demande et facturés séparément.
                 </p>
               </div>
             </div>
           </section>
+
 
           {/* Notre engagement */}
           <section className="mb-12">
