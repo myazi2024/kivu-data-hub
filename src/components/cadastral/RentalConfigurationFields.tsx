@@ -68,7 +68,7 @@ const resizeUnits = (units: RentalUnit[] | undefined, count: number): RentalUnit
 };
 
 const floorLabel = (i: number): string => {
-  if (i === 0) return 'RDC';
+  if (i === 0) return 'Rez-de-chaussée';
   if (i === 1) return '1er étage';
   return `${i}e étage`;
 };
