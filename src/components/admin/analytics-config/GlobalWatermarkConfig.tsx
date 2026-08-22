@@ -79,11 +79,14 @@ export const GlobalWatermarkConfig: React.FC<GlobalWatermarkConfigProps> = ({ ch
       <div className="relative border rounded-lg bg-muted/30 h-32 flex items-center justify-center overflow-hidden">
         <span className="text-xs text-muted-foreground">Aperçu</span>
         {logoSrc ? (
-        <img src={logoSrc} alt="" className="absolute pointer-events-none"
-          style={{ width: size, height: size, objectFit: 'contain', opacity,
-            filter: 'brightness(0) sepia(1) saturate(5) hue-rotate(185deg)',
-            ...posStyles[position] || posStyles['center'],
-          }} />
+          <img src={logoSrc} alt="" className="absolute pointer-events-none"
+            style={{ width: size, height: size, objectFit: 'contain', opacity,
+              filter: 'brightness(0) sepia(1) saturate(5) hue-rotate(185deg)',
+              ...posStyles[position] || posStyles['center'],
+            }} />
+        ) : (
+          <span className="absolute bottom-2 text-[10px] text-muted-foreground">Aucun logo configuré</span>
+        )}
       </div>
     </div>
   );
