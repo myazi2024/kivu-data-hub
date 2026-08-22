@@ -1,3 +1,4 @@
+import { isConstructionRented } from '@/utils/rentalStatus';
 import React from 'react';
 import { formatFloorLabel, rentalDateLabel } from '@/components/cadastral/RentalConfigurationFields';
 
@@ -13,6 +14,7 @@ export interface RentalUnitLike {
 
 interface RentalSummaryProps {
   declaredUsage?: string;
+  isRented?: boolean;
   rentalStartDate?: string;
   rentalConfiguration?: 'single' | 'multi';
   rentalUnitsCount?: number;
@@ -30,6 +32,7 @@ const fmtDate = (d?: string) => (d ? new Date(d).toLocaleDateString('fr-FR') : '
  */
 export const RentalSummary: React.FC<RentalSummaryProps> = ({
   declaredUsage,
+  isRented,
   rentalStartDate,
   rentalConfiguration,
   rentalUnitsCount,
@@ -37,7 +40,7 @@ export const RentalSummary: React.FC<RentalSummaryProps> = ({
   rentalUnits,
   title = 'Mise en location',
 }) => {
-  if (declaredUsage !== 'Location') return null;
+  if (!isConstructionRented({ declaredUsage, isRented })) return null;
 
   const isMulti = rentalConfiguration === 'multi';
   const units = isMulti ? (rentalUnits || []) : [];

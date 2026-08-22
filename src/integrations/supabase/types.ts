@@ -1004,6 +1004,7 @@ export type Database = {
           house_number: string | null
           id: string
           is_occupied: boolean | null
+          is_rented: boolean
           is_suspicious: boolean | null
           is_title_in_current_owner_name: boolean | null
           lease_type: string | null
@@ -1103,6 +1104,7 @@ export type Database = {
           house_number?: string | null
           id?: string
           is_occupied?: boolean | null
+          is_rented?: boolean
           is_suspicious?: boolean | null
           is_title_in_current_owner_name?: boolean | null
           lease_type?: string | null
@@ -1202,6 +1204,7 @@ export type Database = {
           house_number?: string | null
           id?: string
           is_occupied?: boolean | null
+          is_rented?: boolean
           is_suspicious?: boolean | null
           is_title_in_current_owner_name?: boolean | null
           lease_type?: string | null

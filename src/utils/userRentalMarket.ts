@@ -5,6 +5,7 @@
  * les parsers de `cccConsistency` sont réutilisés pour éviter toute divergence
  * de logique entre les trois surfaces.
  */
+import { isConstructionRented } from '@/utils/rentalStatus';
 import {
   parseRentalUnits,
   parseMarketListings,
@@ -103,8 +104,7 @@ const buildRentalAsset = (
   constructionRef: string,
   label: string,
 ): RentalAsset | null => {
-  const usage = readAny(source, 'declared_usage', 'declaredUsage');
-  if (usage !== 'Location') return null;
+  if (!isConstructionRented(source)) return null;
 
   const configuration =
     (readAny(source, 'rental_configuration', 'rentalConfiguration') as 'single' | 'multi') || 'single';

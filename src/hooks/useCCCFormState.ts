@@ -1,3 +1,4 @@
+import { isConstructionRented } from '@/utils/rentalStatus';
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useFormPersistence } from '@/hooks/ccc/useFormPersistence';
 import { useGeographicCascade } from '@/hooks/ccc/useGeographicCascade';
@@ -513,9 +514,9 @@ export const useCCCFormState = ({
             .map(t => t.constructionRef as string)
         );
         const available: string[] = [];
-        if (formData.declaredUsage === 'Location') available.push('main');
+        if (isConstructionRented(formData as any)) available.push('main');
         additionalConstructions.forEach((c, idx) => {
-          if (c.declaredUsage === 'Location') available.push(`additional:${idx}`);
+          if (isConstructionRented(c as any)) available.push(`additional:${idx}`);
         });
         const free = available.find(r => !usedRefs.has(r));
         if (free && !updated[index].constructionRef) {
@@ -1061,9 +1062,9 @@ export const useCCCFormState = ({
   // Purge / nettoyage des IRL orphelins quand l'usage des constructions change
   useEffect(() => {
     const validRefs = new Set<string>();
-    if (formData.declaredUsage === 'Location') validRefs.add('main');
+    if (isConstructionRented(formData as any)) validRefs.add('main');
     additionalConstructions.forEach((c, idx) => {
-      if (c.declaredUsage === 'Location') validRefs.add(`additional:${idx}`);
+      if (isConstructionRented(c as any)) validRefs.add(`additional:${idx}`);
     });
 
     const orphans = taxRecords.filter(t =>

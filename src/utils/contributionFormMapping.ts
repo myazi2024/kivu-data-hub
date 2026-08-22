@@ -1,3 +1,4 @@
+import { isConstructionRented, deduceRealUsage } from '@/utils/rentalStatus';
 /**
  * Pure mapping utilities for cadastral contributions.
  * Converts snake_case DB rows to the camelCase draft shape consumed by
@@ -31,6 +32,7 @@ export interface ContributionRow {
   title_issue_date?: string | null;
   lease_type?: string | null;
   declared_usage?: string | null;
+  is_rented?: boolean | null;
   construction_nature?: string | null;
   construction_type?: string | null;
   construction_year?: number | null;
@@ -94,7 +96,10 @@ export function mapContributionToFormDraft(c: ContributionRow) {
       titleReferenceNumber: c.title_reference_number ?? '',
       titleIssueDate: c.title_issue_date ?? '',
       leaseType: c.lease_type ?? '',
-      declaredUsage: c.declared_usage ?? '',
+      declaredUsage: c.declared_usage === 'Location'
+        ? deduceRealUsage(c.construction_type)
+        : (c.declared_usage ?? ''),
+      isRented: isConstructionRented(c as any),
       constructionNature: c.construction_nature ?? '',
       constructionType: c.construction_type ?? '',
       constructionYear: c.construction_year ?? undefined,

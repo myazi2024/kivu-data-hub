@@ -1,3 +1,4 @@
+import { isConstructionRented } from '@/utils/rentalStatus';
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -330,6 +331,7 @@ const ReviewTab: React.FC<ReviewTabProps> = ({
             {/* Configuration locative (construction principale) */}
             <RentalSummary
               declaredUsage={formData.declaredUsage}
+              isRented={formData.isRented}
               rentalStartDate={formData.rentalStartDate}
               rentalConfiguration={formData.rentalConfiguration}
               rentalUnitsCount={formData.rentalUnitsCount}
@@ -379,6 +381,7 @@ const ReviewTab: React.FC<ReviewTabProps> = ({
                     {c.hostingCapacity && <div className="text-muted-foreground">Capacité d'accueil: {c.hostingCapacity}</div>}
                     <RentalSummary
                       declaredUsage={c.declaredUsage}
+                      isRented={(c as any).isRented}
                       rentalStartDate={(c as any).rentalStartDate}
                       rentalConfiguration={(c as any).rentalConfiguration}
                       rentalUnitsCount={(c as any).rentalUnitsCount}
@@ -609,7 +612,7 @@ const ReviewLine: React.FC<{ label: string; value: string }> = ({ label, value }
 const TaxSummary: React.FC<{ taxRecords: TaxRecord[]; formData: CadastralContributionData; additionalConstructions?: AdditionalConstruction[] }> = ({ taxRecords, formData, additionalConstructions = [] }) => {
   const currentYear = new Date().getFullYear();
   const requiredYears = [currentYear - 1, currentYear - 2, currentYear - 3];
-  const hasLocationUsage = formData.declaredUsage === 'Location' || additionalConstructions.some(c => c.declaredUsage === 'Location');
+  const hasLocationUsage = isConstructionRented(formData as any) || additionalConstructions.some(c => isConstructionRented(c as any));
   const requiredTaxTypes = ['Impôt foncier annuel', ...(hasLocationUsage ? ['Impôt sur les revenus locatifs'] : [])];
   
   const taxStatusByYearType: { year: number; taxType: string; paid: boolean; amount?: string; status?: string }[] = [];
@@ -625,11 +628,11 @@ const TaxSummary: React.FC<{ taxRecords: TaxRecord[]; formData: CadastralContrib
 
   // Cohérence IRL : 1 IRL par construction en location
   const rentalRefs: { ref: string; label: string }[] = [];
-  if (formData.declaredUsage === 'Location') {
+  if (isConstructionRented(formData as any)) {
     rentalRefs.push({ ref: 'main', label: 'Construction principale' });
   }
   additionalConstructions.forEach((c, idx) => {
-    if (c.declaredUsage === 'Location') {
+    if (isConstructionRented(c as any)) {
       const parts = [c.propertyCategory || c.constructionType || 'Construction', c.constructionYear ? String(c.constructionYear) : null].filter(Boolean);
       rentalRefs.push({ ref: `additional:${idx}`, label: `Construction #${idx + 2} (${parts.join(', ')})` });
     }

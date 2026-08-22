@@ -1,3 +1,4 @@
+import { isConstructionRented } from '@/utils/rentalStatus';
 import React from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -33,15 +34,16 @@ export interface TaxRecord {
  * Helpers IRL : libellé d'une construction et liste des refs en Location.
  */
 export const buildRentalConstructionRefs = (
-  declaredUsage: string | undefined,
-  additionalConstructions: Array<{ declaredUsage?: string; propertyCategory?: string; constructionType?: string; constructionYear?: number }> = []
+  main: { declaredUsage?: string; isRented?: boolean } | string | undefined,
+  additionalConstructions: Array<{ declaredUsage?: string; isRented?: boolean; propertyCategory?: string; constructionType?: string; constructionYear?: number }> = []
 ): { ref: string; label: string }[] => {
   const refs: { ref: string; label: string }[] = [];
-  if (declaredUsage === 'Location') {
+  const mainLike = typeof main === 'string' ? { declaredUsage: main } : main;
+  if (isConstructionRented(mainLike)) {
     refs.push({ ref: 'main', label: 'Construction principale' });
   }
   additionalConstructions.forEach((c, idx) => {
-    if (c?.declaredUsage === 'Location') {
+    if (isConstructionRented(c)) {
       const parts = [
         c.propertyCategory || c.constructionType || 'Construction',
         c.constructionYear ? String(c.constructionYear) : null,
@@ -175,7 +177,7 @@ const ObligationsTab: React.FC<ObligationsTabProps> = ({
                       <SelectContent className="rounded-xl">
                         {(() => {
                           const additional = additionalConstructions ?? (Array.isArray((formData as any).additionalConstructions) ? (formData as any).additionalConstructions : []);
-                          const hasAnyRental = formData.declaredUsage === 'Location' || additional.some((c: any) => c?.declaredUsage === 'Location');
+                          const hasAnyRental = isConstructionRented(formData as any) || additional.some((c: any) => isConstructionRented(c));
                           return ['Impôt foncier annuel', ...(hasAnyRental ? ['Impôt sur les revenus locatifs'] : [])].map(opt => (
                             <SelectItem key={opt} value={opt}>{opt}</SelectItem>
                           ));
@@ -212,7 +214,7 @@ const ObligationsTab: React.FC<ObligationsTabProps> = ({
                 {/* IRL : sélecteur de la construction concernée (1 IRL ↔ 1 construction Location) */}
                 {tax.taxType === 'Impôt sur les revenus locatifs' && (() => {
                   const allRefs = buildRentalConstructionRefs(
-                    formData.declaredUsage,
+                    formData as any,
                     Array.isArray(additionalConstructions) ? additionalConstructions : []
                   );
                   const usedRefs = new Set(

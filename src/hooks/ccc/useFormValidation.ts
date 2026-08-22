@@ -1,3 +1,4 @@
+import { isConstructionRented } from '@/utils/rentalStatus';
 import { useMemo, useCallback } from 'react';
 import { CadastralContributionData } from '@/hooks/useCadastralContribution';
 import { CurrentOwner, BuildingPermit } from '@/components/cadastral/ccc-tabs/GeneralTab';
@@ -89,7 +90,7 @@ export function useFormValidation(params: UseFormValidationParams) {
     if (!formData.constructionType) missing.push({ field: 'constructionType', label: 'Type de construction', tab: 'location' });
     if (!isTerrainNu && !formData.constructionNature) missing.push({ field: 'constructionNature', label: 'Nature de construction', tab: 'location' });
     if (!isTerrainNu && !formData.declaredUsage) missing.push({ field: 'declaredUsage', label: 'Usage déclaré', tab: 'location' });
-    if (formData.declaredUsage === 'Location') {
+    if (isConstructionRented(formData as any)) {
       // Date globale de mise en location : requise uniquement en mode « single »
       if (formData.rentalConfiguration === 'single') {
         if (!formData.rentalStartDate) {
@@ -148,7 +149,7 @@ export function useFormValidation(params: UseFormValidationParams) {
       }
     }
     additionalConstructions.forEach((c, idx) => {
-      if (c.declaredUsage === 'Location') {
+      if (isConstructionRented(c as any)) {
         if (c.rentalConfiguration === 'single') {
           if (!c.rentalStartDate) {
             missing.push({ field: `additionalRentalStartDate_${idx}`, label: `En location depuis quand ? (construction #${idx + 2})`, tab: 'location' });
@@ -307,12 +308,12 @@ export function useFormValidation(params: UseFormValidationParams) {
     // OBLIGATIONS - IRL × Constructions en location
     const rentalRefs: string[] = [];
     const rentalLabels: Record<string, string> = {};
-    if (formData.declaredUsage === 'Location') {
+    if (isConstructionRented(formData as any)) {
       rentalRefs.push('main');
       rentalLabels['main'] = 'Construction principale';
     }
     additionalConstructions.forEach((c, idx) => {
-      if (c.declaredUsage === 'Location') {
+      if (isConstructionRented(c as any)) {
         const ref = `additional:${idx}`;
         rentalRefs.push(ref);
         const parts = [c.propertyCategory || c.constructionType || 'Construction', c.constructionYear ? String(c.constructionYear) : null].filter(Boolean);

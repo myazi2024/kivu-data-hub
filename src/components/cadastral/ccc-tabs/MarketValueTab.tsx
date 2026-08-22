@@ -1,3 +1,4 @@
+import { isConstructionRented } from '@/utils/rentalStatus';
 import React, { useMemo, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -231,8 +232,8 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cdfRate]);
 
-  const showBlock2 = formData.declaredUsage === 'Location'
-    || additionalConstructions.some(c => c.declaredUsage === 'Location');
+  const showBlock2 = isConstructionRented(formData as any)
+    || additionalConstructions.some(c => isConstructionRented(c as any));
 
   const totalSubject = vacantTargets[0]?.subject || 'bien';
   const subjectLabel = pluralizeSubject(totalSubject, vacantTargets.length);

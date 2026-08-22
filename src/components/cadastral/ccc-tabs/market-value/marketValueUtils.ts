@@ -2,6 +2,7 @@
  * Constants et helpers purs extraits de MarketValueTab.tsx (modularisation P1).
  * Aucune logique React ici — utilisables depuis le tab ou de futurs sous-blocs.
  */
+import { isConstructionRented } from '@/utils/rentalStatus';
 import type { CadastralContributionData } from '@/hooks/useCadastralContribution';
 import type { AdditionalConstruction } from '@/components/cadastral/AdditionalConstructionBlock';
 
@@ -121,7 +122,7 @@ export const buildVacantTargets = (
     nature: string | undefined,
     materials: string | undefined,
     standing: string | undefined,
-    declaredUsage: string | undefined,
+    rented: boolean,
     isOccupied: boolean | undefined,
     hostingCapacity: number | undefined,
     rentalConfiguration: 'single' | 'multi' | undefined,
@@ -130,7 +131,7 @@ export const buildVacantTargets = (
     constructionYear: number | undefined,
     suffix: string,
   ) => {
-    if (declaredUsage !== 'Location') return;
+    if (!rented) return;
     const subj = subjectFor(cat, type);
     if (rentalConfiguration === 'multi' && Array.isArray(rentalUnits) && rentalUnits.length > 0) {
       rentalUnits.forEach((u, i) => {
@@ -181,7 +182,7 @@ export const buildVacantTargets = (
     formData.constructionNature,
     formData.constructionMaterials,
     formData.standing,
-    formData.declaredUsage,
+    isConstructionRented(formData as any),
     formData.isOccupied,
     formData.hostingCapacity,
     formData.rentalConfiguration,
@@ -198,7 +199,7 @@ export const buildVacantTargets = (
       c.constructionNature,
       c.constructionMaterials,
       c.standing,
-      c.declaredUsage,
+      isConstructionRented(c as any),
       c.isOccupied,
       c.hostingCapacity,
       c.rentalConfiguration as 'single' | 'multi' | undefined,
