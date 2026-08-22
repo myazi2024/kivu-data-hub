@@ -70,8 +70,9 @@ export const RentalSummary: React.FC<RentalSummaryProps> = ({
                   {u.label ? ` — ${u.label}` : ''}
                 </div>
                 <div>Loyer: {u.monthlyRentUsd ? `${Number(u.monthlyRentUsd).toFixed(2)} USD` : 'Non renseigné'}</div>
-                {u.floor && <div>Emplacement: {u.floor}</div>}
+                {u.floor && <div>Emplacement: {formatFloorLabel(u.floor)}</div>}
                 {u.isOccupied !== undefined && <div>Occupé: {u.isOccupied ? 'Oui' : 'Non (vacant)'}</div>}
+                {u.isOccupied === true && u.occupantCount ? <div>Occupants: {u.occupantCount} personne(s)</div> : null}
                 {u.hostingCapacity ? <div>Capacité d'accueil: {u.hostingCapacity} personne(s)</div> : null}
                 {u.rentalStartDate && <div>En location depuis: {fmtDate(u.rentalStartDate)}</div>}
               </div>
