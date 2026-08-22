@@ -732,7 +732,7 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
                             <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
                               {t.currentRentUsd ? <span>Loyer actuel : {fmtUSD(t.currentRentUsd)}/mois</span> : null}
                               {t.hostingCapacity ? <span>Capacité : {t.hostingCapacity} pers.</span> : null}
-                              {t.floor ? <span>Étage : {t.floor === 'RDC' ? 'RDC' : `${t.floor}e`}</span> : null}
+                              {t.floor ? <span>Emplacement : {formatFloorLabel(t.floor)}</span> : null}
                               {t.constructionType ? <span>Type : {t.constructionType}</span> : null}
                               {t.constructionNature ? <span>Nature : {t.constructionNature}</span> : null}
                               {t.constructionMaterials ? <span>Matériaux : {t.constructionMaterials}</span> : null}
