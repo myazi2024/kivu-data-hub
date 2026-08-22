@@ -3,8 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
-import { X, Loader2, FileText } from 'lucide-react';
-import SignedStorageImage from '@/components/shared/SignedStorageImage';
+import { Upload, X, Loader2, FileText, ImageIcon } from 'lucide-react';
 
 interface StorageFileUploadProps {
   bucket: string;
@@ -39,11 +38,6 @@ export const StorageFileUpload = ({
     }
     setUploading(true);
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      if (!sessionData.session?.user?.id) {
-        toast.error('Session expirée — reconnectez-vous pour joindre un fichier.');
-        return;
-      }
       const ext = file.name.split('.').pop();
       const filename = `${crypto.randomUUID()}.${ext}`;
       const path = pathPrefix ? `${pathPrefix}/${filename}` : filename;
@@ -62,11 +56,7 @@ export const StorageFileUpload = ({
       toast.success('Fichier téléversé');
     } catch (e: any) {
       console.error(e);
-      const raw = String(e?.message || '');
-      const friendly = /row-level security|violates|unauthorized|403/i.test(raw)
-        ? "Permission refusée pour ce fichier. Reconnectez-vous puis réessayez."
-        : raw || 'Erreur de téléversement';
-      toast.error(friendly);
+      toast.error(e.message || 'Erreur de téléversement');
     } finally {
       setUploading(false);
     }
@@ -77,15 +67,15 @@ export const StorageFileUpload = ({
   return (
     <div className="space-y-2">
       {value && (
-        <div className="flex items-center gap-2 rounded-md border border-input p-2 min-w-0">
-          {isImage ? (
-            <SignedStorageImage src={value} bucket={bucket} alt="" className="h-12 w-12 rounded object-cover shrink-0" />
+        <div className="flex items-center gap-2 rounded-md border border-input p-2">
+          {isImage && isPublic ? (
+            <img src={value} alt="" className="h-12 w-12 rounded object-cover" />
           ) : (
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded bg-muted">
-              <FileText className="h-5 w-5 text-muted-foreground" />
+            <div className="flex h-12 w-12 items-center justify-center rounded bg-muted">
+              {isImage ? <ImageIcon className="h-5 w-5 text-muted-foreground" /> : <FileText className="h-5 w-5 text-muted-foreground" />}
             </div>
           )}
-          <div className="min-w-0 flex-1 truncate text-xs text-muted-foreground">{value}</div>
+          <div className="flex-1 truncate text-xs text-muted-foreground">{value}</div>
           <Button type="button" variant="ghost" size="sm" onClick={handleRemove}>
             <X className="h-4 w-4" />
           </Button>

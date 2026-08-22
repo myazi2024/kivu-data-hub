@@ -7,7 +7,6 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useUserAssets } from '@/hooks/useUserAssets';
 import { formatUsd, formatDateFr } from '@/utils/userRentalMarket';
-import SignedStorageImage from '@/components/shared/SignedStorageImage';
 
 const CHARGE_LABELS: Record<string, string> = {
   water: 'Eau',
@@ -96,7 +95,7 @@ export const ListingsPanel: React.FC = () => {
             <div className="flex gap-3 p-3">
               <div className="h-20 w-20 rounded-xl overflow-hidden bg-muted flex items-center justify-center shrink-0">
                 {cover ? (
-                  <SignedStorageImage
+                  <img
                     src={cover}
                     alt={`Annonce ${l.unitLabel || l.parcelNumber}`}
                     className="h-full w-full object-cover"
