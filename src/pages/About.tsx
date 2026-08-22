@@ -188,14 +188,19 @@ const About = () => {
               Notre engagement
             </h2>
             <p className="text-muted-foreground leading-relaxed mb-4">
-              Le BIC s'engage à maintenir une stricte neutralité dans le traitement et la diffusion des données cadastrales. Nous ne représentons aucune partie dans les transactions foncières et n'émettons aucun avis juridique. Notre rôle est de fournir une information factuelle, structurée et vérifiable.
+              Le BIC s'engage à maintenir une stricte neutralité dans le traitement et la diffusion des données cadastrales. Nous ne représentons aucune partie dans les transactions foncières et n'émettons aucun avis juridique. Notre rôle est de structurer, de vérifier et de rendre accessible une information déclarée.
             </p>
             <p className="text-muted-foreground leading-relaxed mb-4">
-              La protection des données personnelles des utilisateurs constitue une priorité. Les informations sensibles sont traitées conformément aux principes de confidentialité et ne sont accessibles qu'aux personnes autorisées. Les systèmes de vérification et de détection de fraude intégrés à la plateforme visent à préserver l'intégrité de la base de données.
+              <strong className="text-foreground">Caractère déclaratif des données.</strong> Les informations diffusées proviennent des propriétaires ou de leurs préposés et sont contrôlées quant à leur complétude et à leur cohérence, non quant à la validité juridique des droits invoqués. Elles n'ont pas de valeur officielle opposable aux tiers et ne remplacent pas les registres de l'administration foncière. Le déclarant demeure responsable de l'exactitude des données qu'il transmet ; toute personne concernée peut demander une correction ou contester une information publiée.
+            </p>
+            <p className="text-muted-foreground leading-relaxed mb-4">
+              La protection des données personnelles constitue une priorité. Les informations sensibles ne sont accessibles qu'aux personnes autorisées, conformément à nos{' '}
+              <Link to="/legal" className="text-primary underline underline-offset-2">mentions légales</Link>. Les contrôles de cohérence et les mécanismes de détection de fraude intégrés à la plateforme visent à préserver l'intégrité de la base de données.
             </p>
             <p className="text-muted-foreground leading-relaxed">
               Enfin, le BIC s'engage en faveur de l'accessibilité numérique : la plateforme est conçue pour être utilisable sur tout type d'appareil, y compris les smartphones, afin de toucher le plus grand nombre d'utilisateurs à travers le territoire congolais.
             </p>
+
           </section>
         </div>
       </main>
