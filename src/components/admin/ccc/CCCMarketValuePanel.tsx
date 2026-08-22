@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { Label } from '@/components/ui/label';
+import SignedStorageImage from '@/components/shared/SignedStorageImage';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ExternalLink, TrendingUp, Megaphone, FileSearch } from 'lucide-react';
@@ -171,7 +172,7 @@ export const CCCMarketValuePanel: React.FC<Props> = ({ contribution }) => {
                   <div className="flex flex-wrap gap-1.5">
                     {l.coverImageUrls.map((url, j) => (
                       <a key={j} href={url} target="_blank" rel="noopener noreferrer" className="relative">
-                        <img
+                        <SignedStorageImage
                           src={url}
                           alt={`Photo ${j + 1} de l'annonce ${l.unitLabel || i + 1}`}
                           loading="lazy"
