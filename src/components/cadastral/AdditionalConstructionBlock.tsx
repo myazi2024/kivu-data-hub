@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils';
 import { BuildingPermitIssuingServiceSelect } from './BuildingPermitIssuingServiceSelect';
 import { useToast } from '@/hooks/use-toast';
 import { resolveAvailableUsages } from '@/utils/constructionUsageResolver';
+import { isConstructionRented, isRentalEligible } from '@/utils/rentalStatus';
 import RentalStartDateField from './RentalStartDateField';
 import { RentalConfigurationSelector, MonthlyRentFields } from './RentalConfigurationFields';
 
@@ -29,10 +30,12 @@ export interface AdditionalConstruction {
   declaredUsage: string;
   standing: string;
   constructionYear?: number;
-  rentalStartDate?: string; // ISO yyyy-MM-dd, requis si declaredUsage === 'Location'
+  /** Le bien est-il mis en location ? (remplace l'ancien usage « Location ») */
+  isRented?: boolean;
+  rentalStartDate?: string; // ISO yyyy-MM-dd, requis si isRented
   apartmentNumber?: string;
   floorNumber?: string;
-  // Configuration locative (si declaredUsage === 'Location')
+  // Configuration locative (si isRented)
   rentalConfiguration?: 'single' | 'multi';
   rentalUnitsCount?: number;
   monthlyRentUsd?: number;
@@ -205,9 +208,29 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
     }
   }, [availableUsages.join('|')]);
 
+  const isRented = isConstructionRented(data as any);
+  const rentalEligible = isRentalEligible(data.constructionType, data.constructionNature);
+
+  // Réinitialisation si la combinaison type/nature n'est plus éligible à la location
+  useEffect(() => {
+    if (!rentalEligible && (data.isRented || data.declaredUsage === 'Location')) {
+      onChange(index, {
+        ...data,
+        isRented: false,
+        declaredUsage: data.declaredUsage === 'Location' ? '' : data.declaredUsage,
+        rentalStartDate: undefined,
+        rentalConfiguration: undefined,
+        rentalUnitsCount: undefined,
+        monthlyRentUsd: undefined,
+        rentalUnits: undefined,
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rentalEligible]);
+
   // Agrégation auto : en mode multi-locaux, capacité globale = Σ capacités des locaux.
   useEffect(() => {
-    if (data.declaredUsage === 'Location' && data.rentalConfiguration === 'multi') {
+    if (isRented && data.rentalConfiguration === 'multi') {
       const sum = (data.rentalUnits || []).reduce((s, u: any) => s + (Number(u?.hostingCapacity) || 0), 0);
       const next = sum > 0 ? sum : undefined;
       if (next !== data.hostingCapacity) {
@@ -215,7 +238,7 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data.declaredUsage, data.rentalConfiguration, JSON.stringify(data.rentalUnits)]);
+  }, [isRented, data.rentalConfiguration, JSON.stringify(data.rentalUnits)]);
 
   // Permit type restrictions (simplified for additional block)
   const getPermitTypeRestrictions = () => {
@@ -326,20 +349,7 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
             </Popover>
           </div>
           <Select value={data.declaredUsage} onValueChange={(v) => {
-            // Vider toute la config locative si on quitte "Location"
-            if (v !== 'Location') {
-              onChange(index, {
-                ...data,
-                declaredUsage: v,
-                rentalStartDate: undefined,
-                rentalConfiguration: undefined,
-                rentalUnitsCount: undefined,
-                monthlyRentUsd: undefined,
-                rentalUnits: undefined,
-              });
-            } else {
-              update('declaredUsage', v);
-            }
+            update('declaredUsage', v);
           }} disabled={!data.constructionType || !data.constructionNature}>
             <SelectTrigger className="h-10 rounded-xl text-sm">
               <SelectValue placeholder={!data.constructionType || !data.constructionNature ? "Type et nature d'abord" : "Sélectionner"} />
@@ -476,8 +486,39 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
         </div>
       )}
 
+      {/* Mise en location */}
+      {rentalEligible && (
+        <div className="space-y-1.5">
+          <Label className="text-sm font-medium">
+            Ce{data.propertyCategory === 'Maison' || data.propertyCategory === 'Villa' ? 'tte ' : ' '}
+            {data.propertyCategory?.toLowerCase() || 'bien'} est-il mis en location ?
+          </Label>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => update('isRented', true)}
+              className={cn("flex-1 py-3 px-4 rounded-2xl text-sm font-semibold transition-all", isRented ? 'bg-primary text-primary-foreground shadow-lg' : 'bg-muted text-muted-foreground hover:bg-muted/80')}
+            >Oui</button>
+            <button
+              type="button"
+              onClick={() => onChange(index, {
+                ...data,
+                isRented: false,
+                declaredUsage: data.declaredUsage === 'Location' ? '' : data.declaredUsage,
+                rentalStartDate: undefined,
+                rentalConfiguration: undefined,
+                rentalUnitsCount: undefined,
+                monthlyRentUsd: undefined,
+                rentalUnits: undefined,
+              })}
+              className={cn("flex-1 py-3 px-4 rounded-2xl text-sm font-semibold transition-all", data.isRented === false && data.declaredUsage !== 'Location' ? 'bg-primary text-primary-foreground shadow-lg' : 'bg-muted text-muted-foreground hover:bg-muted/80')}
+            >Non</button>
+          </div>
+        </div>
+      )}
+
       {/* Configuration locative : mono-local vs multi-locaux */}
-      {data.declaredUsage === 'Location' && (
+      {isRented && (
         <RentalConfigurationSelector
           state={{
             rentalConfiguration: data.rentalConfiguration,
@@ -497,7 +538,7 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
       )}
 
       {/* Capacité d'accueil — avant la date de mise en location (le statut d'occupation détermine le libellé de la date) ; masqué en mode multi (saisi par local) */}
-      {isNotTerrainNu && !(data.declaredUsage === 'Location' && data.rentalConfiguration === 'multi') && (
+      {isNotTerrainNu && !(isRented && data.rentalConfiguration === 'multi') && (
         <>
           <div className="border-t border-border/50 my-2" />
           <div className="flex items-start gap-2 mb-2">
@@ -570,7 +611,7 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
       )}
 
       {/* Date de mise en location — uniquement en mode « Un seul local », sous le sélecteur */}
-      {data.declaredUsage === 'Location' && data.rentalConfiguration === 'single' && (
+      {isRented && data.rentalConfiguration === 'single' && (
         <RentalStartDateField
           value={data.rentalStartDate}
           onChange={(v) => update('rentalStartDate', v)}
@@ -579,8 +620,8 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
         />
       )}
 
-      {/* Loyer mensuel — après Capacité d'accueil, conditionnel si Location */}
-      {data.declaredUsage === 'Location' && (
+      {/* Loyer mensuel — après Capacité d'accueil, conditionnel si mis en location */}
+      {isRented && (
         <>
           <div className="border-t border-border/50 my-2" />
           <MonthlyRentFields
