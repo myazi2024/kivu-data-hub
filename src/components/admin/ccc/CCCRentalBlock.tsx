@@ -3,6 +3,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Home, Layers } from 'lucide-react';
 import { parseRentalUnits, sumUnitsRent, sumUnitsCapacity } from './cccConsistency';
+import { formatFloorLabel } from '@/components/cadastral/RentalConfigurationFields';
 
 interface Props {
   contribution: any;
@@ -73,7 +74,7 @@ export const CCCRentalBlock: React.FC<Props> = ({ contribution }) => {
                   <div className="flex items-center justify-between gap-2">
                     <span className="font-medium">{u.label || `Local ${i + 1}`}</span>
                     <div className="flex items-center gap-1">
-                      {u.floor && <Badge variant="outline" className="text-[9px]">Étage {u.floor}</Badge>}
+                      {u.floor && <Badge variant="outline" className="text-[9px]">{formatFloorLabel(u.floor)}</Badge>}
                       <Badge variant={u.isOccupied ? 'default' : 'outline'} className="text-[9px]">
                         {u.isOccupied ? 'Occupé' : 'Vacant'}
                       </Badge>
@@ -82,6 +83,7 @@ export const CCCRentalBlock: React.FC<Props> = ({ contribution }) => {
                   <p className="text-muted-foreground">
                     Loyer : {fmtUsd(u.monthlyRentUsd)}
                     {u.hostingCapacity ? ` · Capacité : ${u.hostingCapacity}` : ''}
+                    {u.isOccupied === true && u.occupantCount ? ` · Occupants : ${u.occupantCount}` : ''}
                     {u.rentalStartDate ? ` · Depuis le ${new Date(u.rentalStartDate).toLocaleDateString('fr-FR')}` : ''}
                   </p>
                 </div>

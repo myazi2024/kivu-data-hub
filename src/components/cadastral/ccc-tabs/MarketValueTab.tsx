@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import StorageFileUpload from '@/components/shared/StorageFileUpload';
 import { InputWithPopover } from '@/components/cadastral/InputWithPopover';
+import { formatFloorLabel } from '@/components/cadastral/RentalConfigurationFields';
 import { useCurrencyConfig, type CurrencyCode } from '@/hooks/useCurrencyConfig';
 
 import { CadastralContributionData } from '@/hooks/useCadastralContribution';
