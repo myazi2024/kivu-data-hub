@@ -5,6 +5,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Home, AlertTriangle, ChevronDown, ChevronRight, Users, Layers } from 'lucide-react';
 import { useUserAssets } from '@/hooks/useUserAssets';
 import { formatUsd, formatDateFr } from '@/utils/userRentalMarket';
+import { formatFloorLabel } from '@/components/cadastral/RentalConfigurationFields';
 
 /** Vue « Locations » : locaux déclarés, loyers, occupation, capacité. */
 export const RentalUnitsPanel: React.FC = () => {
@@ -127,8 +128,9 @@ export const RentalUnitsPanel: React.FC = () => {
                             <p className="font-medium truncate">{u.label || `Local ${i + 1}`}</p>
                             <p className="text-[10px] text-muted-foreground">
                               {[
-                                u.floor ? `Étage ${u.floor}` : null,
+                                u.floor ? formatFloorLabel(u.floor) : null,
                                 u.hostingCapacity ? `${u.hostingCapacity} pers.` : null,
+                                u.isOccupied === true && u.occupantCount ? `${u.occupantCount} occupant(s)` : null,
                                 u.rentalStartDate ? `Depuis ${formatDateFr(u.rentalStartDate)}` : null,
                               ]
                                 .filter(Boolean)

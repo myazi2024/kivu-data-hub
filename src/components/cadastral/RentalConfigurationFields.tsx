@@ -11,6 +11,8 @@ export interface RentalUnit {
   label?: string;
   monthlyRentUsd?: number;
   isOccupied?: boolean;
+  /** Nombre de personnes vivant actuellement dans le local (si occupé). */
+  occupantCount?: number;
   hostingCapacity?: number;
   rentalStartDate?: string; // ISO yyyy-MM-dd
   floor?: string;           // 'RDC' | '1' | '2' …
@@ -66,7 +68,7 @@ const resizeUnits = (units: RentalUnit[] | undefined, count: number): RentalUnit
 };
 
 const floorLabel = (i: number): string => {
-  if (i === 0) return 'RDC';
+  if (i === 0) return 'Rez-de-chaussée';
   if (i === 1) return '1er étage';
   return `${i}e étage`;
 };
@@ -268,6 +270,9 @@ export const MonthlyRentFields: React.FC<CommonProps> = ({
             const missingRent = highlightRequired && !unit.monthlyRentUsd;
             const missingOccupied = highlightRequired && unit.isOccupied === undefined;
             const missingCapacity = highlightRequired && unit.isOccupied !== undefined && !unit.hostingCapacity;
+            const missingOccupants = highlightRequired && unit.isOccupied === true && !unit.occupantCount;
+            const occupantsOverCapacity =
+              !!unit.occupantCount && !!unit.hostingCapacity && unit.occupantCount > unit.hostingCapacity;
             const missingDate = highlightRequired && !unit.rentalStartDate;
             const missingFloor = highlightRequired && showFloorSelect && !unit.floor;
             return (
@@ -337,7 +342,7 @@ export const MonthlyRentFields: React.FC<CommonProps> = ({
                       </button>
                       <button
                         type="button"
-                        onClick={() => updateUnit(idx, { isOccupied: false })}
+                        onClick={() => updateUnit(idx, { isOccupied: false, occupantCount: undefined })}
                         className={cn(
                           'flex-1 h-9 rounded-xl text-xs font-semibold transition-all border-2',
                           unit.isOccupied === false
@@ -349,6 +354,27 @@ export const MonthlyRentFields: React.FC<CommonProps> = ({
                       </button>
                     </div>
                   </div>
+
+                  {unit.isOccupied === true && (
+                    <div className="space-y-1">
+                      <Label className={cn('text-xs font-medium', (missingOccupants || occupantsOverCapacity) ? 'text-destructive' : 'text-muted-foreground')}>
+                        Combien de personnes y vivent ? {missingOccupants && <span className="text-destructive">*</span>}
+                      </Label>
+                      <Input
+                        type="number"
+                        min={1}
+                        value={unit.occupantCount ?? ''}
+                        onChange={(e) => updateUnit(idx, { occupantCount: e.target.value ? Math.max(1, parseInt(e.target.value)) : undefined })}
+                        placeholder="Ex: 3"
+                        className={cn('h-9 rounded-xl text-sm', (missingOccupants || occupantsOverCapacity) && 'border-destructive ring-1 ring-destructive/40')}
+                      />
+                      {occupantsOverCapacity && (
+                        <p className="text-[11px] text-destructive">
+                          Le nombre d'occupants ne peut pas dépasser la capacité d'accueil du local ({unit.hostingCapacity}).
+                        </p>
+                      )}
+                    </div>
+                  )}
 
                   {unit.isOccupied !== undefined && (
                     <div className="space-y-1">
@@ -437,4 +463,24 @@ export const computeHostingCapacityTotal = (
     return sum > 0 ? sum : undefined;
   }
   return state.hostingCapacity;
+};
+
+/** Compute total occupants (somme des locaux occupés si multi, sinon la valeur globale). */
+export const computeOccupantCountTotal = (
+  state: RentalConfigurationState & { occupantCount?: number },
+): number | undefined => {
+  if (state.rentalConfiguration === 'multi') {
+    const sum = (state.rentalUnits || []).reduce((s, u) => s + (Number(u?.occupantCount) || 0), 0);
+    return sum > 0 ? sum : undefined;
+  }
+  return state.occupantCount;
+};
+
+/** Libellé lisible d'un emplacement de local ('RDC' → 'Rez-de-chaussée'). */
+export const formatFloorLabel = (value?: string | null): string => {
+  if (!value) return '';
+  const v = String(value).trim();
+  if (v.toUpperCase() === 'RDC' || v === '0') return 'Rez-de-chaussée';
+  if (v === '1') return '1er étage';
+  return /^\d+$/.test(v) ? `${v}e étage` : v;
 };

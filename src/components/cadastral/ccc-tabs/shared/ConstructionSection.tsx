@@ -69,14 +69,27 @@ export const ConstructionSection: React.FC<ConstructionSectionProps> = ({
     );
   }, [formData.rentalConfiguration, formData.rentalUnits]);
 
+  // Idem pour le nombre d'occupants : Σ des occupants déclarés dans chaque local occupé.
+  const rentalUnitsOccupantsSum = React.useMemo(() => {
+    if (formData.rentalConfiguration !== 'multi') return 0;
+    return (formData.rentalUnits || []).reduce(
+      (s, u: any) => s + (u?.isOccupied === true ? Number(u?.occupantCount) || 0 : 0),
+      0,
+    );
+  }, [formData.rentalConfiguration, formData.rentalUnits]);
+
   React.useEffect(() => {
     if (formData.declaredUsage === 'Location' && formData.rentalConfiguration === 'multi') {
       const next = rentalUnitsCapacitySum > 0 ? rentalUnitsCapacitySum : undefined;
       if (next !== formData.hostingCapacity) {
         handleInputChange('hostingCapacity', next);
       }
+      const nextOccupants = rentalUnitsOccupantsSum > 0 ? rentalUnitsOccupantsSum : undefined;
+      if (nextOccupants !== formData.occupantCount) {
+        handleInputChange('occupantCount', nextOccupants);
+      }
     }
-  }, [formData.declaredUsage, formData.rentalConfiguration, rentalUnitsCapacitySum, formData.hostingCapacity, handleInputChange]);
+  }, [formData.declaredUsage, formData.rentalConfiguration, rentalUnitsCapacitySum, rentalUnitsOccupantsSum, formData.hostingCapacity, formData.occupantCount, handleInputChange]);
 
   return (
   <Card className="max-w-[360px] mx-auto rounded-2xl shadow-md border-border/50 overflow-hidden">
