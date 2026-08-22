@@ -60,6 +60,13 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
   removeUploadedPath,
 }) => {
   const { currencies, convertFromUsd } = useCurrencyConfig();
+  const { user } = useAuth();
+  // RLS bucket privé `cadastral-documents` : le PREMIER segment du chemin doit être auth.uid().
+  const uidPrefix = user?.id || null;
+  const uploadPrefix = useCallback(
+    (folder: string) => (uidPrefix ? `${uidPrefix}/${folder}` : folder),
+    [uidPrefix],
+  );
   const dropImage = useCallback((url?: string | null) => {
     const p = pathFromPublicUrl(url);
     if (p && removeUploadedPath) void removeUploadedPath(p);
