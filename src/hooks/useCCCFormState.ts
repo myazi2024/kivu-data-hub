@@ -693,16 +693,16 @@ export const useCCCFormState = ({
 
   // ─── Parcel sides ───
   const addParcelSide = () => {
-    const sideNumber = parcelSides.length + 1;
-    setParcelSides([...parcelSides, { name: `Côté ${sideNumber}`, length: '' }]);
-    setGpsCoordinates([...gpsCoordinates, { borne: `Borne ${gpsCoordinates.length + 1}`, lat: '', lng: '' }]);
+    setParcelSides(renumberParcelSides([...parcelSides, { name: `Côté ${parcelSides.length + 1}`, length: '' }]));
+    setGpsCoordinates(renumberGpsCoordinates([...gpsCoordinates, { borne: `Borne ${gpsCoordinates.length + 1}`, lat: '', lng: '' }]));
     markDirty();
   };
 
   const removeParcelSide = (index: number) => {
     if (parcelSides.length > 2) {
-      setParcelSides(parcelSides.filter((_, i) => i !== index));
-      if (index < gpsCoordinates.length) setGpsCoordinates(gpsCoordinates.filter((_, i) => i !== index));
+      setParcelSides(renumberParcelSides(parcelSides.filter((_, i) => i !== index)));
+      if (index < gpsCoordinates.length) setGpsCoordinates(renumberGpsCoordinates(gpsCoordinates.filter((_, i) => i !== index)));
+      setRoadSides(prev => reindexRoadSidesAfterRemoval(prev, index));
       markDirty();
     }
   };
