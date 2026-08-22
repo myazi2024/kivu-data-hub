@@ -11,6 +11,7 @@ export interface AdminRentalUnit {
   label: string | null;
   monthlyRentUsd: number | null;
   isOccupied: boolean | null;
+  occupantCount: number | null;
   hostingCapacity: number | null;
   rentalStartDate: string | null;
   floor: string | null;
@@ -49,6 +50,7 @@ export const parseRentalUnits = (raw: unknown): AdminRentalUnit[] => {
       label: rr(u, 'label', 'name'),
       monthlyRentUsd: num(rr(u, 'monthly_rent_usd', 'monthlyRentUsd')),
       isOccupied: (rr(u, 'is_occupied', 'isOccupied') as boolean | null) ?? null,
+      occupantCount: num(rr(u, 'occupant_count', 'occupantCount')),
       hostingCapacity: num(rr(u, 'hosting_capacity', 'hostingCapacity')),
       rentalStartDate: rr(u, 'rental_start_date', 'rentalStartDate'),
       floor: rr(u, 'floor'),
