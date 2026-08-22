@@ -198,8 +198,8 @@ export function useFormPersistence(params: UseFormPersistenceParams): UseFormPer
       if (parsed.permitMode) setPermitMode(parsed.permitMode);
       if (parsed.buildingPermits) setBuildingPermits(parsed.buildingPermits);
       if (parsed.permitRequest) setPermitRequest(parsed.permitRequest);
-      if (parsed.gpsCoordinates) setGpsCoordinates(parsed.gpsCoordinates);
-      if (parsed.parcelSides) setParcelSides(parsed.parcelSides);
+      if (parsed.gpsCoordinates) setGpsCoordinates(renumberGpsCoordinates(parsed.gpsCoordinates));
+      if (parsed.parcelSides) setParcelSides(renumberParcelSides(parsed.parcelSides));
       if (parsed.obligationType) setObligationType(parsed.obligationType);
       if (parsed.sectionType) setSectionType(parsed.sectionType);
       if (parsed.hasMortgage !== undefined) setHasMortgage(parsed.hasMortgage);
