@@ -93,13 +93,18 @@ const About = () => {
               Ce que nous faisons
             </h2>
             <p className="text-muted-foreground leading-relaxed mb-4">
-              La plateforme BIC offre une gamme complète de services numériques conçus pour couvrir les principaux besoins en matière d'information et de procédures cadastrales :
+              La plateforme BIC met à disposition des services numériques couvrant l'accès à l'information déclarée et l'initiation des principales procédures foncières. Les données consultables proviennent des déclarations des propriétaires ou de leurs préposés, après vérification administrative : elles ne se substituent pas aux registres officiels de l'administration foncière.
             </p>
             <ul className="space-y-3 text-muted-foreground ml-4">
               <li className="flex items-start gap-2">
                 <span className="mt-1.5 w-2 h-2 rounded-full bg-primary flex-shrink-0" />
-                <span><strong className="text-foreground">Recherche cadastrale en ligne</strong> — Interrogez notre base de données par numéro de parcelle pour obtenir les informations disponibles : localisation, superficie, type de titre, propriétaire déclaré, usage et historique.</span>
+                <span><strong className="text-foreground">Déclaration cadastrale en ligne</strong> — Déclarez votre parcelle (identification, localisation, superficie, titre, usage, construction, mise en location, obligations fiscales) et faites-la valider par nos équipes dans le cadre du Programme Contributeur Cadastral.</span>
               </li>
+              <li className="flex items-start gap-2">
+                <span className="mt-1.5 w-2 h-2 rounded-full bg-primary flex-shrink-0" />
+                <span><strong className="text-foreground">Recherche cadastrale en ligne</strong> — Interrogez la base par numéro de parcelle pour consulter les informations déclarées et validées : localisation, superficie, type de titre, propriétaire déclaré, usage et historique connu.</span>
+              </li>
+
               <li className="flex items-start gap-2">
                 <span className="mt-1.5 w-2 h-2 rounded-full bg-primary flex-shrink-0" />
                 <span><strong className="text-foreground">Carte interactive</strong> — Visualisez les parcelles géolocalisées sur une carte dynamique intégrant les données OpenStreetMap et Mapbox, avec superposition des limites administratives et des zones de densité cadastrale.</span>
