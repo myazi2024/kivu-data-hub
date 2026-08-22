@@ -15,6 +15,7 @@ import { RentalConfigurationSelector, MonthlyRentFields } from '../../RentalConf
 import AdditionalConstructionBlock, { AdditionalConstruction } from '../../AdditionalConstructionBlock';
 import { BuildingPermitIssuingServiceSelect } from '../../BuildingPermitIssuingServiceSelect';
 import type { BuildingPermit } from '../GeneralTab';
+import { isConstructionRented, isRentalEligible } from '@/utils/rentalStatus';
 
 export interface ConstructionSectionProps {
   formData: CadastralContributionData;
@@ -60,6 +61,28 @@ export const ConstructionSection: React.FC<ConstructionSectionProps> = ({
   getPicklistDependentOptions, toast,
   resetConstructionBlock
 }) => {
+  const isRented = isConstructionRented(formData as any);
+  const rentalEligible = isRentalEligible(formData.constructionType, formData.constructionNature);
+
+  const purgeRentalData = React.useCallback(() => {
+    if (formData.rentalStartDate) handleInputChange('rentalStartDate', undefined);
+    if (formData.rentalConfiguration) handleInputChange('rentalConfiguration', undefined);
+    if (formData.rentalUnitsCount) handleInputChange('rentalUnitsCount', undefined);
+    if (formData.monthlyRentUsd) handleInputChange('monthlyRentUsd', undefined);
+    if (formData.rentalUnits) handleInputChange('rentalUnits', undefined);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData.rentalStartDate, formData.rentalConfiguration, formData.rentalUnitsCount, formData.monthlyRentUsd, formData.rentalUnits, handleInputChange]);
+
+  // Si la combinaison type/nature n'est plus éligible à la location, on réinitialise
+  React.useEffect(() => {
+    if (!rentalEligible && (formData.isRented || formData.declaredUsage === 'Location')) {
+      handleInputChange('isRented', false);
+      if (formData.declaredUsage === 'Location') handleInputChange('declaredUsage', undefined);
+      purgeRentalData();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rentalEligible]);
+
   // Agrégation auto : en mode multi-locaux, la capacité d'accueil globale = Σ capacités des locaux.
   const rentalUnitsCapacitySum = React.useMemo(() => {
     if (formData.rentalConfiguration !== 'multi') return 0;
@@ -79,7 +102,7 @@ export const ConstructionSection: React.FC<ConstructionSectionProps> = ({
   }, [formData.rentalConfiguration, formData.rentalUnits]);
 
   React.useEffect(() => {
-    if (formData.declaredUsage === 'Location' && formData.rentalConfiguration === 'multi') {
+    if (isRented && formData.rentalConfiguration === 'multi') {
       const next = rentalUnitsCapacitySum > 0 ? rentalUnitsCapacitySum : undefined;
       if (next !== formData.hostingCapacity) {
         handleInputChange('hostingCapacity', next);
@@ -89,7 +112,7 @@ export const ConstructionSection: React.FC<ConstructionSectionProps> = ({
         handleInputChange('occupantCount', nextOccupants);
       }
     }
-  }, [formData.declaredUsage, formData.rentalConfiguration, rentalUnitsCapacitySum, rentalUnitsOccupantsSum, formData.hostingCapacity, formData.occupantCount, handleInputChange]);
+  }, [isRented, formData.rentalConfiguration, rentalUnitsCapacitySum, rentalUnitsOccupantsSum, formData.hostingCapacity, formData.occupantCount, handleInputChange]);
 
   return (
   <Card className="max-w-[360px] mx-auto rounded-2xl shadow-md border-border/50 overflow-hidden">
@@ -197,13 +220,6 @@ export const ConstructionSection: React.FC<ConstructionSectionProps> = ({
           </div>
           <Select value={formData.declaredUsage || ''} onValueChange={(value) => {
             handleInputChange('declaredUsage', value);
-            if (value !== 'Location') {
-              if (formData.rentalStartDate) handleInputChange('rentalStartDate', undefined);
-              if (formData.rentalConfiguration) handleInputChange('rentalConfiguration', undefined);
-              if (formData.rentalUnitsCount) handleInputChange('rentalUnitsCount', undefined);
-              if (formData.monthlyRentUsd) handleInputChange('monthlyRentUsd', undefined);
-              if (formData.rentalUnits) handleInputChange('rentalUnits', undefined);
-            }
             setHighlightRequiredFields(false);
           }} disabled={!formData.constructionType || !formData.constructionNature}>
             <SelectTrigger className="h-10 rounded-xl text-sm"><SelectValue placeholder={!formData.constructionType || !formData.constructionNature ? "Type et nature d'abord" : "Sélectionner"} /></SelectTrigger>
@@ -309,8 +325,34 @@ export const ConstructionSection: React.FC<ConstructionSectionProps> = ({
         </div>
       )}
 
+      {/* Mise en location — remplace l'ancienne valeur « Location » du picklist Usage */}
+      {rentalEligible && (
+        <div className="space-y-1.5">
+          <Label className="text-sm font-medium">
+            Ce{formData.propertyCategory === 'Maison' || formData.propertyCategory === 'Villa' ? 'tte ' : ' '}
+            {formData.propertyCategory?.toLowerCase() || 'bien'} est-il mis en location ?
+          </Label>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => handleInputChange('isRented', true)}
+              className={cn("flex-1 py-3 px-4 rounded-2xl text-sm font-semibold transition-all", isRented ? 'bg-primary text-primary-foreground shadow-lg' : 'bg-muted text-muted-foreground hover:bg-muted/80')}
+            >Oui</button>
+            <button
+              type="button"
+              onClick={() => {
+                handleInputChange('isRented', false);
+                if (formData.declaredUsage === 'Location') handleInputChange('declaredUsage', undefined);
+                purgeRentalData();
+              }}
+              className={cn("flex-1 py-3 px-4 rounded-2xl text-sm font-semibold transition-all", formData.isRented === false && formData.declaredUsage !== 'Location' ? 'bg-primary text-primary-foreground shadow-lg' : 'bg-muted text-muted-foreground hover:bg-muted/80')}
+            >Non</button>
+          </div>
+        </div>
+      )}
+
       {/* Configuration locative */}
-      {formData.declaredUsage === 'Location' && (
+      {isRented && (
         <RentalConfigurationSelector
           state={{
             rentalConfiguration: formData.rentalConfiguration,
@@ -332,7 +374,7 @@ export const ConstructionSection: React.FC<ConstructionSectionProps> = ({
       )}
 
       {/* Capacité d'accueil — avant la date de mise en location (le statut d'occupation détermine le libellé de la date) */}
-      {formData.propertyCategory && formData.propertyCategory !== 'Terrain nu' && formData.constructionType && formData.constructionType !== 'Terrain nu' && !(formData.declaredUsage === 'Location' && formData.rentalConfiguration === 'multi') && (
+      {formData.propertyCategory && formData.propertyCategory !== 'Terrain nu' && formData.constructionType && formData.constructionType !== 'Terrain nu' && !(isRented && formData.rentalConfiguration === 'multi') && (
         <>
           <div className="border-t border-border/50 my-2" />
           <div className="flex items-start gap-2 mb-2">
@@ -369,7 +411,7 @@ export const ConstructionSection: React.FC<ConstructionSectionProps> = ({
       )}
 
       {/* Date de mise en location — UNIQUEMENT en mode « Un seul local », sous le sélecteur */}
-      {formData.declaredUsage === 'Location' && formData.rentalConfiguration === 'single' && (
+      {isRented && formData.rentalConfiguration === 'single' && (
         <RentalStartDateField
           value={formData.rentalStartDate}
           onChange={(v) => handleInputChange('rentalStartDate', v)}
@@ -380,7 +422,7 @@ export const ConstructionSection: React.FC<ConstructionSectionProps> = ({
       )}
 
       {/* Loyer mensuel */}
-      {formData.declaredUsage === 'Location' && (
+      {isRented && (
         <>
           <div className="border-t border-border/50 my-2" />
           <MonthlyRentFields
