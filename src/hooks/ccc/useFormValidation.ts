@@ -127,6 +127,13 @@ export function useFormValidation(params: UseFormValidationParams) {
           } else if (!u.hostingCapacity || Number(u.hostingCapacity) <= 0) {
             missing.push({ field: `rentalUnitCapacity_${i}`, label: `Local #${i + 1} : capacité d'accueil`, tab: 'location' });
           }
+          if (u && u.isOccupied === true) {
+            if (!u.occupantCount || Number(u.occupantCount) <= 0) {
+              missing.push({ field: `rentalUnitOccupants_${i}`, label: `Local #${i + 1} : nombre de personnes qui y vivent`, tab: 'location' });
+            } else if (u.hostingCapacity && Number(u.occupantCount) > Number(u.hostingCapacity)) {
+              missing.push({ field: `rentalUnitOccupants_${i}`, label: `Local #${i + 1} : occupants > capacité d'accueil`, tab: 'location' });
+            }
+          }
           if (!u || !u.rentalStartDate) {
             missing.push({ field: `rentalUnitDate_${i}`, label: `Local #${i + 1} : date de mise en location`, tab: 'location' });
           } else if (formData.constructionYear) {
@@ -178,6 +185,13 @@ export function useFormValidation(params: UseFormValidationParams) {
               missing.push({ field: `additionalRentalUnitOccupied_${idx}_${i}`, label: `Local #${i + 1} : occupation (construction #${idx + 2})`, tab: 'location' });
             } else if (!u.hostingCapacity || Number(u.hostingCapacity) <= 0) {
               missing.push({ field: `additionalRentalUnitCapacity_${idx}_${i}`, label: `Local #${i + 1} : capacité (construction #${idx + 2})`, tab: 'location' });
+            }
+            if (u && u.isOccupied === true) {
+              if (!u.occupantCount || Number(u.occupantCount) <= 0) {
+                missing.push({ field: `additionalRentalUnitOccupants_${idx}_${i}`, label: `Local #${i + 1} : nombre d'occupants (construction #${idx + 2})`, tab: 'location' });
+              } else if (u.hostingCapacity && Number(u.occupantCount) > Number(u.hostingCapacity)) {
+                missing.push({ field: `additionalRentalUnitOccupants_${idx}_${i}`, label: `Local #${i + 1} : occupants > capacité (construction #${idx + 2})`, tab: 'location' });
+              }
             }
             if (!u || !u.rentalStartDate) {
               missing.push({ field: `additionalRentalUnitDate_${idx}_${i}`, label: `Local #${i + 1} : date de mise en location (construction #${idx + 2})`, tab: 'location' });
