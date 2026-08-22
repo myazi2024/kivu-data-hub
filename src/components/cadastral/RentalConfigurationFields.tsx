@@ -355,20 +355,6 @@ export const MonthlyRentFields: React.FC<CommonProps> = ({
                     </div>
                   </div>
 
-                  <div className="space-y-1">
-                    <Label className={cn('text-xs font-medium', missingDate ? 'text-destructive' : 'text-muted-foreground')}>
-                      {unit.isOccupied === false ? 'Inoccupé depuis le' : 'En location depuis le'} {missingDate && <span className="text-destructive">*</span>}
-                    </Label>
-                    <Input
-                      type="date"
-                      min={minRentalDate}
-                      max={TODAY}
-                      value={unit.rentalStartDate ?? ''}
-                      onChange={(e) => updateUnit(idx, { rentalStartDate: e.target.value || undefined })}
-                      className={cn('h-9 rounded-xl text-sm', missingDate && 'border-destructive ring-1 ring-destructive/40')}
-                    />
-                  </div>
-
                   {unit.isOccupied === true && (
                     <div className="space-y-1">
                       <Label className={cn('text-xs font-medium', (missingOccupants || occupantsOverCapacity) ? 'text-destructive' : 'text-muted-foreground')}>
@@ -405,6 +391,20 @@ export const MonthlyRentFields: React.FC<CommonProps> = ({
                       />
                     </div>
                   )}
+
+                  <div className="space-y-1">
+                    <Label className={cn('text-xs font-medium', missingDate ? 'text-destructive' : 'text-muted-foreground')}>
+                      {unit.isOccupied === false ? 'Inoccupé depuis le' : 'En location depuis le'} {missingDate && <span className="text-destructive">*</span>}
+                    </Label>
+                    <Input
+                      type="date"
+                      min={minRentalDate}
+                      max={TODAY}
+                      value={unit.rentalStartDate ?? ''}
+                      onChange={(e) => updateUnit(idx, { rentalStartDate: e.target.value || undefined })}
+                      className={cn('h-9 rounded-xl text-sm', missingDate && 'border-destructive ring-1 ring-destructive/40')}
+                    />
+                  </div>
 
                   <div className="space-y-1">
                     <Label className={cn('text-xs font-medium', missingRent ? 'text-destructive' : 'text-muted-foreground')}>
