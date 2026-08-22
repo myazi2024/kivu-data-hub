@@ -1,9 +1,11 @@
 import React from 'react';
 import { Helmet } from 'react-helmet';
+import { Link } from 'react-router-dom';
 import Navigation from '@/components/ui/navigation';
 import Footer from '@/components/Footer';
 import territorialMapIllustration from '@/assets/territorial-map-illustration.webp';
-import { Target, Briefcase, Layers, ShieldCheck } from 'lucide-react';
+import { Target, Briefcase, Layers, ShieldCheck, Users } from 'lucide-react';
+
 import { useAppAppearance } from '@/hooks/useAppAppearance';
 
 const About = () => {
