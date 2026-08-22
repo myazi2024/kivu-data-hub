@@ -1,9 +1,11 @@
 import React from 'react';
 import { Helmet } from 'react-helmet';
+import { Link } from 'react-router-dom';
 import Navigation from '@/components/ui/navigation';
 import Footer from '@/components/Footer';
 import territorialMapIllustration from '@/assets/territorial-map-illustration.webp';
-import { Target, Briefcase, Layers, ShieldCheck } from 'lucide-react';
+import { Target, Briefcase, Layers, ShieldCheck, Users } from 'lucide-react';
+
 import { useAppAppearance } from '@/hooks/useAppAppearance';
 
 const About = () => {
@@ -13,7 +15,7 @@ const About = () => {
     <>
       <Helmet>
         <title>À propos | BIC - Bureau d'Informations Cadastrales</title>
-        <meta name="description" content="Découvrez le BIC, plateforme numérique dédiée à la transparence et l'accessibilité des données foncières en République Démocratique du Congo." />
+        <meta name="description" content="Le BIC centralise des données foncières déclarées par les propriétaires ou leurs préposés, vérifiées administrativement, pour plus de transparence en RDC." />
       </Helmet>
       <div className="min-h-dvh">
       <Navigation />
@@ -42,6 +44,22 @@ const About = () => {
             <p className="text-muted-foreground leading-relaxed mb-6">
               Dans un contexte où l'insécurité foncière constitue l'une des principales sources de conflits sociaux et un frein majeur à l'investissement, le BIC ambitionne de devenir un point d'accès unique, fiable et structuré aux informations relatives aux parcelles, aux titres de propriété et aux transactions foncières sur l'ensemble du territoire national.
             </p>
+            <div className="rounded-lg border border-primary/20 bg-primary/5 p-5 mb-6">
+              <h3 className="font-semibold text-foreground mb-2 flex items-center gap-2">
+                <Users className="w-5 h-5 text-primary" />
+                D'où viennent les données du BIC ?
+              </h3>
+              <p className="text-muted-foreground leading-relaxed text-sm mb-3">
+                Les informations foncières et cadastrales publiées par le BIC sont <strong className="text-foreground">déclarées par les propriétaires eux-mêmes ou par leurs préposés dûment mandatés</strong>, au moyen d'un formulaire cadastral structuré. Chaque déclaration est ensuite soumise à des contrôles automatiques de cohérence puis à une revue administrative avant publication.
+              </p>
+              <p className="text-muted-foreground leading-relaxed text-sm">
+                Ce modèle participatif est encadré par le{' '}
+                <Link to="/about-ccc" className="text-primary underline underline-offset-2">
+                  Programme Contributeur Cadastral (CCC)
+                </Link>
+                , qui récompense les déclarants dont les informations enrichissent la base de données. Le déclarant reste responsable de l'exactitude des informations transmises et peut demander à tout moment la correction de ses données.
+              </p>
+            </div>
             <figure>
               <img
                 src={territorialMapIllustration}
@@ -51,6 +69,7 @@ const About = () => {
                 className="w-full rounded-lg shadow"
               />
             </figure>
+
           </section>
 
           {/* Notre mission */}
@@ -74,13 +93,18 @@ const About = () => {
               Ce que nous faisons
             </h2>
             <p className="text-muted-foreground leading-relaxed mb-4">
-              La plateforme BIC offre une gamme complète de services numériques conçus pour couvrir les principaux besoins en matière d'information et de procédures cadastrales :
+              La plateforme BIC met à disposition des services numériques couvrant l'accès à l'information déclarée et l'initiation des principales procédures foncières. Les données consultables proviennent des déclarations des propriétaires ou de leurs préposés, après vérification administrative : elles ne se substituent pas aux registres officiels de l'administration foncière.
             </p>
             <ul className="space-y-3 text-muted-foreground ml-4">
               <li className="flex items-start gap-2">
                 <span className="mt-1.5 w-2 h-2 rounded-full bg-primary flex-shrink-0" />
-                <span><strong className="text-foreground">Recherche cadastrale en ligne</strong> — Interrogez notre base de données par numéro de parcelle pour obtenir les informations disponibles : localisation, superficie, type de titre, propriétaire déclaré, usage et historique.</span>
+                <span><strong className="text-foreground">Déclaration cadastrale en ligne</strong> — Déclarez votre parcelle (identification, localisation, superficie, titre, usage, construction, mise en location, obligations fiscales) et faites-la valider par nos équipes dans le cadre du Programme Contributeur Cadastral.</span>
               </li>
+              <li className="flex items-start gap-2">
+                <span className="mt-1.5 w-2 h-2 rounded-full bg-primary flex-shrink-0" />
+                <span><strong className="text-foreground">Recherche cadastrale en ligne</strong> — Interrogez la base par numéro de parcelle pour consulter les informations déclarées et validées : localisation, superficie, type de titre, propriétaire déclaré, usage et historique connu.</span>
+              </li>
+
               <li className="flex items-start gap-2">
                 <span className="mt-1.5 w-2 h-2 rounded-full bg-primary flex-shrink-0" />
                 <span><strong className="text-foreground">Carte interactive</strong> — Visualisez les parcelles géolocalisées sur une carte dynamique intégrant les données OpenStreetMap et Mapbox, avec superposition des limites administratives et des zones de densité cadastrale.</span>
@@ -109,6 +133,10 @@ const About = () => {
                 <span className="mt-1.5 w-2 h-2 rounded-full bg-primary flex-shrink-0" />
                 <span><strong className="text-foreground">Suivi des litiges fonciers</strong> — Déclarez et suivez les litiges fonciers (conflits de limites, double attribution, contestation de propriété) avec un système de référencement structuré.</span>
               </li>
+              <li className="flex items-start gap-2">
+                <span className="mt-1.5 w-2 h-2 rounded-full bg-primary flex-shrink-0" />
+                <span><strong className="text-foreground">Autorisation de construire et lotissement</strong> — Constituez et suivez en ligne vos demandes d'autorisation de construire ou de lotissement, avec estimation des frais applicables.</span>
+              </li>
             </ul>
           </section>
 
@@ -116,41 +144,42 @@ const About = () => {
           <section className="mb-12">
             <h2 className="text-2xl font-semibold text-foreground mb-4">Notre méthode</h2>
             <p className="text-muted-foreground leading-relaxed mb-4">
-              La fiabilité des données constitue le fondement de notre démarche. Pour produire des diagnostics cadastraux complets et vérifiables, le BIC s'appuie sur une méthodologie rigoureuse articulée autour de cinq piliers :
+              Le BIC ne réalise ni relevés topographiques, ni enquêtes de terrain, ni numérisation d'archives administratives. Notre démarche repose sur la déclaration encadrée et la vérification structurée de l'information transmise par les propriétaires ou leurs préposés, articulée autour de cinq étapes :
             </p>
             <div className="space-y-4 ml-4">
               <div>
-                <h3 className="font-medium text-foreground mb-1">1. Collecte et numérisation des archives cadastrales</h3>
+                <h3 className="font-medium text-foreground mb-1">1. Déclaration par le propriétaire ou son préposé</h3>
                 <p className="text-muted-foreground leading-relaxed text-sm">
-                  Les données existantes auprès des conservations foncières, des bureaux du cadastre et des services des titres immobiliers sont collectées, numérisées et structurées dans une base de données unifiée. Ce travail de fond permet de reconstituer l'historique foncier de chaque parcelle référencée.
+                  Le déclarant renseigne un formulaire cadastral structuré : identification de la parcelle, localisation administrative, superficie, type de titre, historique des propriétaires, construction et usage, mise en location, obligations fiscales. Il joint les pièces justificatives disponibles et positionne lui-même la parcelle sur la carte, avec un croquis des limites.
                 </p>
               </div>
               <div>
-                <h3 className="font-medium text-foreground mb-1">2. Enquêtes terrain et remontées communautaires</h3>
+                <h3 className="font-medium text-foreground mb-1">2. Contrôles automatiques de complétude et de cohérence</h3>
                 <p className="text-muted-foreground leading-relaxed text-sm">
-                  Des agents de terrain complètent les données numériques par des vérifications in situ : identification des bornes, relevés GPS, entretiens avec les propriétaires et les riverains. Les contributions communautaires permettent d'enrichir et de corriger les informations en continu.
+                  Le système applique des règles de validation à chaque champ, calcule un score de complétude du dossier et signale les incohérences : superficie incompatible avec le croquis, dates contradictoires, doublon de numéro de parcelle, pièces manquantes ou informations financières improbables.
                 </p>
               </div>
               <div>
-                <h3 className="font-medium text-foreground mb-1">3. Cartographie interactive et imagerie satellite</h3>
+                <h3 className="font-medium text-foreground mb-1">3. Revue administrative avant publication</h3>
                 <p className="text-muted-foreground leading-relaxed text-sm">
-                  Les parcelles sont géolocalisées et superposées sur des fonds de carte OpenStreetMap et Mapbox. L'imagerie satellite permet de vérifier la cohérence entre les données déclarées et la réalité physique du terrain (occupation du sol, constructions, limites visibles).
+                  Aucune déclaration n'est publiée automatiquement. Nos équipes examinent chaque dossier, champ par champ, et décident de l'approuver, de le rejeter avec motif ou de demander une correction au déclarant. Chaque décision est tracée et notifiée.
                 </p>
               </div>
               <div>
-                <h3 className="font-medium text-foreground mb-1">4. Modélisation statistique et croisement de sources</h3>
+                <h3 className="font-medium text-foreground mb-1">4. Cartographie et représentation spatiale</h3>
                 <p className="text-muted-foreground leading-relaxed text-sm">
-                  Les données collectées sont croisées entre plusieurs sources pour détecter les incohérences, les doublons ou les cas suspects de fraude (double attribution, superficie déclarée aberrante). Des indicateurs statistiques par province et par commune permettent de mesurer la couverture cadastrale et l'intensité des litiges.
+                  Les parcelles validées sont représentées sur des fonds de carte OpenStreetMap et Mapbox, avec les limites administratives et des indicateurs de densité. Cette représentation est indicative : elle traduit la position déclarée et ne constitue pas un mesurage officiel opposable.
                 </p>
               </div>
               <div>
-                <h3 className="font-medium text-foreground mb-1">5. Vérification juridique</h3>
+                <h3 className="font-medium text-foreground mb-1">5. Mise à jour continue et historisation</h3>
                 <p className="text-muted-foreground leading-relaxed text-sm">
-                  Chaque donnée relative aux titres de propriété, aux hypothèques et aux mutations fait l'objet d'une vérification juridique : conformité du titre, validité des actes de transfert, existence de charges ou de servitudes. Cette étape garantit la fiabilité des informations mises à disposition des utilisateurs.
+                  Les déclarants peuvent mettre à jour leurs données ou demander une correction après approbation. Chaque modification est historisée, ce qui permet de suivre l'évolution d'une parcelle dans le temps. Les vérifications approfondies (expertise de valeur, contrôle de titre, hypothèques, mutation) relèvent de services dédiés, réalisés sur demande et facturés séparément.
                 </p>
               </div>
             </div>
           </section>
+
 
           {/* Notre engagement */}
           <section className="mb-12">
@@ -159,14 +188,19 @@ const About = () => {
               Notre engagement
             </h2>
             <p className="text-muted-foreground leading-relaxed mb-4">
-              Le BIC s'engage à maintenir une stricte neutralité dans le traitement et la diffusion des données cadastrales. Nous ne représentons aucune partie dans les transactions foncières et n'émettons aucun avis juridique. Notre rôle est de fournir une information factuelle, structurée et vérifiable.
+              Le BIC s'engage à maintenir une stricte neutralité dans le traitement et la diffusion des données cadastrales. Nous ne représentons aucune partie dans les transactions foncières et n'émettons aucun avis juridique. Notre rôle est de structurer, de vérifier et de rendre accessible une information déclarée.
             </p>
             <p className="text-muted-foreground leading-relaxed mb-4">
-              La protection des données personnelles des utilisateurs constitue une priorité. Les informations sensibles sont traitées conformément aux principes de confidentialité et ne sont accessibles qu'aux personnes autorisées. Les systèmes de vérification et de détection de fraude intégrés à la plateforme visent à préserver l'intégrité de la base de données.
+              <strong className="text-foreground">Caractère déclaratif des données.</strong> Les informations diffusées proviennent des propriétaires ou de leurs préposés et sont contrôlées quant à leur complétude et à leur cohérence, non quant à la validité juridique des droits invoqués. Elles n'ont pas de valeur officielle opposable aux tiers et ne remplacent pas les registres de l'administration foncière. Le déclarant demeure responsable de l'exactitude des données qu'il transmet ; toute personne concernée peut demander une correction ou contester une information publiée.
+            </p>
+            <p className="text-muted-foreground leading-relaxed mb-4">
+              La protection des données personnelles constitue une priorité. Les informations sensibles ne sont accessibles qu'aux personnes autorisées, conformément à nos{' '}
+              <Link to="/legal" className="text-primary underline underline-offset-2">mentions légales</Link>. Les contrôles de cohérence et les mécanismes de détection de fraude intégrés à la plateforme visent à préserver l'intégrité de la base de données.
             </p>
             <p className="text-muted-foreground leading-relaxed">
               Enfin, le BIC s'engage en faveur de l'accessibilité numérique : la plateforme est conçue pour être utilisable sur tout type d'appareil, y compris les smartphones, afin de toucher le plus grand nombre d'utilisateurs à travers le territoire congolais.
             </p>
+
           </section>
         </div>
       </main>
