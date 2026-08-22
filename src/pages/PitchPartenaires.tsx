@@ -18,7 +18,6 @@ import {
   Rocket, Flag, Globe2, User, Cpu, ShieldCheck, DollarSign, CreditCard, Activity,
   LogIn, MousePointerClick, ScanLine, Timer
 } from 'lucide-react';
-import bicLogoFallback from '@/assets/bic-logo.png';
 import { useAppAppearance } from '@/hooks/useAppAppearance';
 import heroSkyline from '@/assets/hero-skyline.webp';
 import mapViz from '@/assets/bic-map-screenshot.jpg';
@@ -57,11 +56,17 @@ const SlideWrapper: React.FC<{ bg?: string; overlay?: boolean; children: React.R
 );
 
 /* ── Slide 1: Couverture ── */
+const PitchLogo = () => {
+  const { config } = useAppAppearance();
+  if (!config.logo_url) return null;
+  return <img src={config.logo_url} alt={config.app_name || 'Logo'} className="h-20 md:h-28 mb-8 drop-shadow-xl" />;
+};
+
 const SlideCover = () => (
   <SlideWrapper bg={heroSkyline} overlay>
     <div className="flex-1 flex flex-col items-center justify-center px-6 text-center">
       <AnimateIn variant="scale-in" delay={100}>
-        <img src={bicLogoFallback} alt="Logo BIC" className="h-20 md:h-28 mb-8 drop-shadow-xl" />
+        <PitchLogo />
       </AnimateIn>
       <AnimateIn delay={300}>
         <span className="inline-block mb-4 px-5 py-1.5 rounded-full bg-white/15 backdrop-blur text-white text-sm font-medium border border-white/20">

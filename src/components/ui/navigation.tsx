@@ -14,7 +14,6 @@ import {
   NavigationMenuList,
   NavigationMenuTrigger,
 } from '@/components/ui/navigation-menu';
-import bicLogoFallback from '@/assets/bic-logo.png';
 import { useAppAppearance } from '@/hooks/useAppAppearance';
 
 const mediaColumns = [
@@ -51,7 +50,7 @@ const Navigation = () => {
   const { user, profile, signOut, loading } = useAuth();
   const { isTestRoute } = useTestEnvironment();
   const { config: appearanceConfig } = useAppAppearance();
-  const logoSrc = appearanceConfig.logo_url || bicLogoFallback;
+  const logoSrc = appearanceConfig.logo_url;
   const displayName = appearanceConfig.app_name || 'BIC';
   const displayTagline = appearanceConfig.app_tagline || "Bureau d'Informations Cadastrales";
 
@@ -72,7 +71,7 @@ const Navigation = () => {
         <div className="flex justify-between items-center h-14 sm:h-16 md:h-18">
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2 sm:space-x-3 flex-shrink-0">
-            <img src={logoSrc} alt={`${displayName} Logo`} className="h-8 w-8 sm:h-10 sm:w-10" />
+            {logoSrc && <img src={logoSrc} alt={`${displayName} Logo`} className="h-8 w-8 sm:h-10 sm:w-10" />}
             <div className="flex flex-col">
               <span className="text-base sm:text-lg font-bold text-foreground">{displayName}</span>
               <span className="text-xs text-muted-foreground hidden sm:block">{displayTagline}</span>
@@ -102,7 +101,7 @@ const Navigation = () => {
                     <div className="w-[550px]">
                       {/* Branding banner */}
                       <div className="flex items-center gap-3 px-4 py-3 bg-muted/50 border-b border-border rounded-t-md">
-                        <img src={logoSrc} alt={`${displayName} Logo`} className="h-8 w-8 shrink-0" />
+                        {logoSrc && <img src={logoSrc} alt={`${displayName} Logo`} className="h-8 w-8 shrink-0" />}
                         <div className="flex flex-col">
                           <span className="text-sm font-semibold text-foreground">{displayName}</span>
                           <span className="text-xs text-muted-foreground">{displayTagline}</span>

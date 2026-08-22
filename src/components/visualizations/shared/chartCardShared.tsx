@@ -95,9 +95,10 @@ export const LogoWatermark: React.FC = () => {
     'bottom-left': { bottom: '24px', left: '8px' },
     'bottom-right': { bottom: '24px', right: '8px' },
   };
+  if (!config.logoUrl) return null;
   return (
     <img
-      src={config.logoUrl || '/bic-logo.png'}
+      src={config.logoUrl}
       alt=""
       className="absolute pointer-events-none select-none"
       style={{

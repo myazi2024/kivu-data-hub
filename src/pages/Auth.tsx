@@ -11,7 +11,6 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, ArrowLeft, Smartphone } from "lucide-react";
 import { useAppAppearance } from '@/hooks/useAppAppearance';
-import bicLogoFallback from '@/assets/bic-logo.png';
 import { Checkbox } from "@/components/ui/checkbox";
 import { Link } from "react-router-dom";
 import { FcGoogle } from "react-icons/fc";
@@ -19,7 +18,7 @@ import { FaFacebook, FaApple } from "react-icons/fa";
 
 const Auth = () => {
   const { config: appConfig } = useAppAppearance();
-  const logoSrc = (appConfig.logo_url as string) || bicLogoFallback;
+  const logoSrc = appConfig.logo_url as string | undefined;
   const appName = (appConfig.app_tagline as string) || "Bureau d'Informations Cadastrales";
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState("");
@@ -268,9 +267,11 @@ const Auth = () => {
 
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="flex items-center justify-center mb-4">
-            <img src={logoSrc} alt={appName} className="h-12 w-12 object-contain" />
-          </div>
+          {logoSrc && (
+            <div className="flex items-center justify-center mb-4">
+              <img src={logoSrc} alt={appName} className="h-12 w-12 object-contain" />
+            </div>
+          )}
           <h1 className="text-2xl font-bold text-foreground">{appName}</h1>
           <p className="text-muted-foreground mt-2">Connectez-vous à votre espace</p>
         </div>
