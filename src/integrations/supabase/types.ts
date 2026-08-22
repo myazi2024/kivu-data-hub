@@ -5343,6 +5343,114 @@ export type Database = {
           },
         ]
       }
+      rate_limit_bans: {
+        Row: {
+          action_key: string
+          banned_until: string
+          created_at: string
+          key: string
+          reason: string | null
+          violation_count: number
+        }
+        Insert: {
+          action_key: string
+          banned_until: string
+          created_at?: string
+          key: string
+          reason?: string | null
+          violation_count?: number
+        }
+        Update: {
+          action_key?: string
+          banned_until?: string
+          created_at?: string
+          key?: string
+          reason?: string | null
+          violation_count?: number
+        }
+        Relationships: []
+      }
+      rate_limit_buckets: {
+        Row: {
+          action_key: string
+          count: number
+          key: string
+          window_start: string
+        }
+        Insert: {
+          action_key: string
+          count?: number
+          key: string
+          window_start: string
+        }
+        Update: {
+          action_key?: string
+          count?: number
+          key?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
+      rate_limit_config: {
+        Row: {
+          action_key: string
+          ban_after_violations: number
+          ban_seconds: number
+          created_at: string
+          description: string | null
+          enabled: boolean
+          max_requests: number
+          updated_at: string
+          violation_window_seconds: number
+          window_seconds: number
+        }
+        Insert: {
+          action_key: string
+          ban_after_violations?: number
+          ban_seconds?: number
+          created_at?: string
+          description?: string | null
+          enabled?: boolean
+          max_requests: number
+          updated_at?: string
+          violation_window_seconds?: number
+          window_seconds: number
+        }
+        Update: {
+          action_key?: string
+          ban_after_violations?: number
+          ban_seconds?: number
+          created_at?: string
+          description?: string | null
+          enabled?: boolean
+          max_requests?: number
+          updated_at?: string
+          violation_window_seconds?: number
+          window_seconds?: number
+        }
+        Relationships: []
+      }
+      rate_limit_violations: {
+        Row: {
+          action_key: string
+          id: number
+          key: string
+          occurred_at: string
+        }
+        Insert: {
+          action_key: string
+          id?: number
+          key: string
+          occurred_at?: string
+        }
+        Update: {
+          action_key?: string
+          id?: number
+          key?: string
+          occurred_at?: string
+        }
+        Relationships: []
+      }
       real_estate_expertise_requests: {
         Row: {
           accessibility: string | null
@@ -7873,6 +7981,10 @@ export type Database = {
         Args: { p_parcel_number: string; p_user_id: string }
         Returns: boolean
       }
+      check_and_consume_rate_limit: {
+        Args: { _action: string; _key: string }
+        Returns: Json
+      }
       check_contribution_abuse: {
         Args: { p_parcel_id?: string; p_user_id: string }
         Returns: {
@@ -7885,6 +7997,7 @@ export type Database = {
       cleanup_all_test_data: { Args: never; Returns: Json }
       cleanup_all_test_data_auto: { Args: never; Returns: Json }
       cleanup_expired_data: { Args: never; Returns: undefined }
+      cleanup_rate_limits: { Args: never; Returns: undefined }
       cleanup_test_data_chunk: {
         Args: { p_limit?: number; p_step: string }
         Returns: number
@@ -7980,6 +8093,10 @@ export type Database = {
           is_suspicious: boolean
           reasons: string[]
         }[]
+      }
+      enforce_rate_limit: {
+        Args: { _action: string; _key: string }
+        Returns: undefined
       }
       escalate_expertise_request: {
         Args: { p_reason?: string; p_request_id: string }
