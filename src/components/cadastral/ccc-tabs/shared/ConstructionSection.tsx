@@ -309,17 +309,6 @@ export const ConstructionSection: React.FC<ConstructionSectionProps> = ({
         </div>
       )}
 
-      {/* Date de mise en location — UNIQUEMENT en mode single */}
-      {formData.declaredUsage === 'Location' && formData.rentalConfiguration !== 'multi' && (
-        <RentalStartDateField
-          value={formData.rentalStartDate}
-          onChange={(v) => handleInputChange('rentalStartDate', v)}
-          constructionYear={formData.constructionYear}
-          highlightRequired={highlightRequiredFields}
-          isOccupied={formData.isOccupied}
-        />
-      )}
-
       {/* Configuration locative */}
       {formData.declaredUsage === 'Location' && (
         <RentalConfigurationSelector
@@ -331,10 +320,25 @@ export const ConstructionSection: React.FC<ConstructionSectionProps> = ({
           }}
           onPatch={(patch) => {
             Object.entries(patch).forEach(([k, v]) => handleInputChange(k as any, v));
+            // Purge de la date globale au passage single → multi (saisie par local)
+            if ((patch as any).rentalConfiguration === 'multi' && formData.rentalStartDate) {
+              handleInputChange('rentalStartDate', undefined);
+            }
           }}
           propertyCategory={formData.propertyCategory}
           constructionType={formData.constructionType}
           highlightRequired={highlightRequiredFields}
+        />
+      )}
+
+      {/* Date de mise en location — UNIQUEMENT en mode « Un seul local », sous le sélecteur */}
+      {formData.declaredUsage === 'Location' && formData.rentalConfiguration === 'single' && (
+        <RentalStartDateField
+          value={formData.rentalStartDate}
+          onChange={(v) => handleInputChange('rentalStartDate', v)}
+          constructionYear={formData.constructionYear}
+          highlightRequired={highlightRequiredFields}
+          isOccupied={formData.isOccupied}
         />
       )}
 
