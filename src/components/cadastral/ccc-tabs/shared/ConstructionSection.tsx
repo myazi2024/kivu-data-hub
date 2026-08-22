@@ -316,6 +316,7 @@ export const ConstructionSection: React.FC<ConstructionSectionProps> = ({
           onChange={(v) => handleInputChange('rentalStartDate', v)}
           constructionYear={formData.constructionYear}
           highlightRequired={highlightRequiredFields}
+          isOccupied={formData.isOccupied}
         />
       )}
 
