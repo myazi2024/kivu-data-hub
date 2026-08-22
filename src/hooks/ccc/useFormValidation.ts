@@ -90,9 +90,8 @@ export function useFormValidation(params: UseFormValidationParams) {
     if (!isTerrainNu && !formData.constructionNature) missing.push({ field: 'constructionNature', label: 'Nature de construction', tab: 'location' });
     if (!isTerrainNu && !formData.declaredUsage) missing.push({ field: 'declaredUsage', label: 'Usage déclaré', tab: 'location' });
     if (formData.declaredUsage === 'Location') {
-      const isMulti = formData.rentalConfiguration === 'multi';
-      // Date globale de mise en location : requise uniquement en mode single
-      if (!isMulti) {
+      // Date globale de mise en location : requise uniquement en mode « single »
+      if (formData.rentalConfiguration === 'single') {
         if (!formData.rentalStartDate) {
           missing.push({ field: 'rentalStartDate', label: 'En location depuis quand ? (construction principale)', tab: 'location' });
         } else if (formData.constructionYear) {
