@@ -331,18 +331,7 @@ export const ConstructionSection: React.FC<ConstructionSectionProps> = ({
         />
       )}
 
-      {/* Date de mise en location — UNIQUEMENT en mode « Un seul local », sous le sélecteur */}
-      {formData.declaredUsage === 'Location' && formData.rentalConfiguration === 'single' && (
-        <RentalStartDateField
-          value={formData.rentalStartDate}
-          onChange={(v) => handleInputChange('rentalStartDate', v)}
-          constructionYear={formData.constructionYear}
-          highlightRequired={highlightRequiredFields}
-          isOccupied={formData.isOccupied}
-        />
-      )}
-
-      {/* Hosting capacity sub-block */}
+      {/* Capacité d'accueil — avant la date de mise en location (le statut d'occupation détermine le libellé de la date) */}
       {formData.propertyCategory && formData.propertyCategory !== 'Terrain nu' && formData.constructionType && formData.constructionType !== 'Terrain nu' && !(formData.declaredUsage === 'Location' && formData.rentalConfiguration === 'multi') && (
         <>
           <div className="border-t border-border/50 my-2" />
@@ -377,6 +366,17 @@ export const ConstructionSection: React.FC<ConstructionSectionProps> = ({
             )}
           </div>
         </>
+      )}
+
+      {/* Date de mise en location — UNIQUEMENT en mode « Un seul local », sous le sélecteur */}
+      {formData.declaredUsage === 'Location' && formData.rentalConfiguration === 'single' && (
+        <RentalStartDateField
+          value={formData.rentalStartDate}
+          onChange={(v) => handleInputChange('rentalStartDate', v)}
+          constructionYear={formData.constructionYear}
+          highlightRequired={highlightRequiredFields}
+          isOccupied={formData.isOccupied}
+        />
       )}
 
       {/* Loyer mensuel */}
