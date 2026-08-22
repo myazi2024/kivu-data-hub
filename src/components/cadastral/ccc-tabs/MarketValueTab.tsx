@@ -373,7 +373,7 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
                               const isMain = url === saleMain;
                               return (
                                 <div key={`${url}-${i}`} className={cn("relative group aspect-square rounded-lg overflow-hidden border bg-muted", isMain ? "border-primary ring-2 ring-primary" : "border-border")}>
-                                  <img src={url} alt={`Parcelle - photo ${i + 1}`} className="w-full h-full object-cover" />
+                                  <SignedStorageImage src={url} alt={`Parcelle - photo ${i + 1}`} className="w-full h-full object-cover" />
                                   <button type="button" onClick={() => updateSale({ coverImageMainUrl: url })} className={cn("absolute top-1 left-1 h-6 px-1.5 inline-flex items-center justify-center rounded-full text-[10px] font-medium shadow", isMain ? "bg-primary text-primary-foreground" : "bg-background/90 text-foreground hover:bg-primary/20")}>
                                     {isMain ? '⭐ Principale' : '⭐'}
                                   </button>
@@ -410,7 +410,7 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
                             isPublic={true}
                             label="Ajouter une image"
                             maxSizeMB={5}
-                            pathPrefix="sale-listings"
+                            pathPrefix={uploadPrefix('sale-listings')}
                           />
                         ) : (
                           <p className="text-[10px] text-muted-foreground italic">Maximum 10 images atteint.</p>
@@ -670,7 +670,7 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
                       isPublic={true}
                       label="Rapport d'expertise"
                       maxSizeMB={10}
-                      pathPrefix="appraisal-reports"
+                      pathPrefix={uploadPrefix('appraisal-reports')}
                     />
                   </div>
                 </div>
@@ -893,7 +893,7 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
                                           const isMain = url === mainUrl;
                                           return (
                                             <div key={`${url}-${imgIdx}`} className={cn("relative group aspect-square rounded-lg overflow-hidden border bg-muted", isMain ? "border-primary ring-2 ring-primary" : "border-border")}>
-                                              <img src={url} alt={`Local ${t.label} - photo ${imgIdx + 1}`} className="w-full h-full object-cover" />
+                                              <SignedStorageImage src={url} alt={`Local ${t.label} - photo ${imgIdx + 1}`} className="w-full h-full object-cover" />
                                               <button
                                                 type="button"
                                                 aria-label={isMain ? "Photo principale" : "Définir comme photo principale"}
@@ -941,7 +941,7 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
                                         isPublic={true}
                                         label="Ajouter une image"
                                         maxSizeMB={5}
-                                        pathPrefix="market-listings"
+                                        pathPrefix={uploadPrefix('market-listings')}
                                       />
                                     ) : (
                                       <p className="text-[10px] text-muted-foreground italic">Maximum 10 images atteint.</p>
