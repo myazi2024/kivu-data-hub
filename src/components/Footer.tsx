@@ -1,7 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { MapPin, Phone, Mail, Globe, Cookie } from 'lucide-react';
-import bicLogoFallback from '@/assets/bic-logo.png';
 import { useAppAppearance } from '@/hooks/useAppAppearance';
 import { useCookies } from '@/hooks/useCookies';
 import { useCatalogConfig } from '@/hooks/useCatalogConfig';
@@ -11,7 +10,7 @@ const Footer = () => {
   const { reopenBanner } = useCookies();
   const { config: catalogConfig } = useCatalogConfig();
   const provincesCount = (catalogConfig.available_provinces || []).length || 26;
-  const logoSrc = config.logo_url || bicLogoFallback;
+  const logoSrc = config.logo_url;
   const appName = config.app_name || 'BIC';
   const appTagline = config.app_tagline || "Bureau d'Informations Cadastrales";
   const currentYear = new Date().getFullYear();
@@ -37,7 +36,7 @@ const Footer = () => {
           {/* Company Info */}
           <div className="lg:col-span-2">
             <div className="flex items-center space-x-2 mb-2">
-              <img src={logoSrc} alt={appName} className="h-6 w-6 brightness-0 invert" />
+              {logoSrc && <img src={logoSrc} alt={appName} className="h-6 w-6 brightness-0 invert" />}
               <div>
                 <h3 className="text-sm font-bold leading-tight">{appTagline}</h3>
               </div>
