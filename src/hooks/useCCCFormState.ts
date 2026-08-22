@@ -639,13 +639,16 @@ export const useCCCFormState = ({
   const addGPSCoordinate = () => {
     const filledSides = parcelSides.filter(s => s.length && parseFloat(s.length) > 0);
     if (gpsCoordinates.length >= filledSides.length) return;
-    setGpsCoordinates([...gpsCoordinates, { borne: `Borne ${gpsCoordinates.length + 1}`, lat: '', lng: '', mode: 'auto', detected: false, detecting: false }]);
+    setGpsCoordinates(renumberGpsCoordinates([...gpsCoordinates, { borne: `Borne ${gpsCoordinates.length + 1}`, lat: '', lng: '', mode: 'auto', detected: false, detecting: false }]));
     markDirty();
   };
 
   const removeGPSCoordinate = (index: number) => {
-    setGpsCoordinates(gpsCoordinates.filter((_, i) => i !== index));
-    if (parcelSides.length > 2 && index < parcelSides.length) setParcelSides(parcelSides.filter((_, i) => i !== index));
+    setGpsCoordinates(renumberGpsCoordinates(gpsCoordinates.filter((_, i) => i !== index)));
+    if (parcelSides.length > 2 && index < parcelSides.length) {
+      setParcelSides(renumberParcelSides(parcelSides.filter((_, i) => i !== index)));
+      setRoadSides(prev => reindexRoadSidesAfterRemoval(prev, index));
+    }
     markDirty();
   };
 
