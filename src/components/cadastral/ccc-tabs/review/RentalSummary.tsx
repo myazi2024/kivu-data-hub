@@ -36,6 +36,7 @@ export const RentalSummary: React.FC<RentalSummaryProps> = ({
   declaredUsage,
   isRented,
   isOccupied,
+  rentalStartDate,
   rentalConfiguration,
   rentalUnitsCount,
   monthlyRentUsd,
