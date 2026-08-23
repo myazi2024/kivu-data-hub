@@ -355,7 +355,7 @@ export const MonthlyRentFields: React.FC<CommonProps> = ({
 
                   {unit.isOccupied === true && (
                     <div className="space-y-1">
-                      <Label className={cn('text-xs font-medium', (missingOccupants || occupantsOverCapacity) ? 'text-destructive' : 'text-muted-foreground')}>
+                      <Label className={cn('text-xs font-medium', missingOccupants ? 'text-destructive' : 'text-muted-foreground')}>
                         Combien de personnes y vivent ? {missingOccupants && <span className="text-destructive">*</span>}
                       </Label>
                       <Input
@@ -364,13 +364,8 @@ export const MonthlyRentFields: React.FC<CommonProps> = ({
                         value={unit.occupantCount ?? ''}
                         onChange={(e) => updateUnit(idx, { occupantCount: e.target.value ? Math.max(1, parseInt(e.target.value)) : undefined })}
                         placeholder="Ex: 3"
-                        className={cn('h-9 rounded-xl text-sm', (missingOccupants || occupantsOverCapacity) && 'border-destructive ring-1 ring-destructive/40')}
+                        className={cn('h-9 rounded-xl text-sm', missingOccupants && 'border-destructive ring-1 ring-destructive/40')}
                       />
-                      {occupantsOverCapacity && (
-                        <p className="text-[11px] text-destructive">
-                          Le nombre d'occupants ne peut pas dépasser la capacité d'accueil du local ({unit.hostingCapacity}).
-                        </p>
-                      )}
                     </div>
                   )}
 
