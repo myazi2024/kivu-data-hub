@@ -43,6 +43,9 @@ interface LandDisputeReportFormProps {
   onOpenChange: (open: boolean) => void;
   embedded?: boolean;
   onDisputeDataChange?: (data: any) => void;
+  /** Mode contrôlé (CCC) : les fichiers vivent dans l'état parent pour survivre au démontage de l'onglet. */
+  documents?: File[];
+  onDocumentsChange?: (files: File[]) => void;
 }
 
 interface Party {
@@ -60,7 +63,9 @@ const LandDisputeReportForm: React.FC<LandDisputeReportFormProps> = ({
   open,
   onOpenChange,
   embedded = false,
-  onDisputeDataChange
+  onDisputeDataChange,
+  documents: controlledDocuments,
+  onDocumentsChange
 }) => {
   const { user, profile } = useAuth();
   const [step, setStep] = useState<Step>('form');
@@ -84,7 +89,14 @@ const LandDisputeReportForm: React.FC<LandDisputeReportFormProps> = ({
   const [declarantQuality, setDeclarantQuality] = useState('proprietaire');
   
   const [parties, setParties] = useState<Party[]>([{ name: '', phone: '', role: 'defendeur', relationship: '' }]);
-  const [documents, setDocuments] = useState<File[]>([]);
+  const [internalDocuments, setInternalDocuments] = useState<File[]>([]);
+  const isDocumentsControlled = controlledDocuments !== undefined && !!onDocumentsChange;
+  const documents = isDocumentsControlled ? (controlledDocuments as File[]) : internalDocuments;
+  const setDocuments = (updater: File[] | ((prev: File[]) => File[])) => {
+    const next = typeof updater === 'function' ? (updater as (prev: File[]) => File[])(documents) : updater;
+    if (isDocumentsControlled) onDocumentsChange!(next);
+    else setInternalDocuments(next);
+  };
   const [certifyAccuracy, setCertifyAccuracy] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
