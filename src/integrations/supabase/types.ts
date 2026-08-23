@@ -1842,6 +1842,7 @@ export type Database = {
           current_owner_legal_status: string | null
           current_owner_name: string
           current_owner_since: string
+          current_owners_details: Json | null
           declared_usage: string | null
           deleted_at: string | null
           dispute_data: Json | null
@@ -1920,6 +1921,7 @@ export type Database = {
           current_owner_legal_status?: string | null
           current_owner_name: string
           current_owner_since?: string
+          current_owners_details?: Json | null
           declared_usage?: string | null
           deleted_at?: string | null
           dispute_data?: Json | null
@@ -1998,6 +2000,7 @@ export type Database = {
           current_owner_legal_status?: string | null
           current_owner_name?: string
           current_owner_since?: string
+          current_owners_details?: Json | null
           declared_usage?: string | null
           deleted_at?: string | null
           dispute_data?: Json | null
@@ -8573,6 +8576,10 @@ export type Database = {
       }
       next_passthrough_invoice_number: {
         Args: { p_period_start: string }
+        Returns: string
+      }
+      normalize_declared_usage: {
+        Args: { p_construction_type: string; p_usage: string }
         Returns: string
       }
       process_mutation_decision: {
