@@ -131,8 +131,6 @@ export function useFormValidation(params: UseFormValidationParams) {
           if (u && u.isOccupied === true) {
             if (!u.occupantCount || Number(u.occupantCount) <= 0) {
               missing.push({ field: `rentalUnitOccupants_${i}`, label: `Local #${i + 1} : nombre de personnes qui y vivent`, tab: 'location' });
-            } else if (u.hostingCapacity && Number(u.occupantCount) > Number(u.hostingCapacity)) {
-              missing.push({ field: `rentalUnitOccupants_${i}`, label: `Local #${i + 1} : occupants > capacité d'accueil`, tab: 'location' });
             }
           }
           if (!u || !u.rentalStartDate) {
@@ -189,8 +187,6 @@ export function useFormValidation(params: UseFormValidationParams) {
             if (u && u.isOccupied === true) {
               if (!u.occupantCount || Number(u.occupantCount) <= 0) {
                 missing.push({ field: `additionalRentalUnitOccupants_${idx}_${i}`, label: `Local #${i + 1} : nombre d'occupants (construction #${idx + 2})`, tab: 'location' });
-              } else if (u.hostingCapacity && Number(u.occupantCount) > Number(u.hostingCapacity)) {
-                missing.push({ field: `additionalRentalUnitOccupants_${idx}_${i}`, label: `Local #${i + 1} : occupants > capacité (construction #${idx + 2})`, tab: 'location' });
               }
             }
             if (!u || !u.rentalStartDate) {
