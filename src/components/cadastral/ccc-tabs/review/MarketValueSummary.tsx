@@ -91,7 +91,6 @@ export const MarketValueSummary: React.FC<MarketValueSummaryProps> = ({ formData
               <div className="ml-2 text-muted-foreground space-y-0.5">
                 <div>Photos: {sale.coverImageUrls?.length || 0}{sale.coverImageMainUrl ? ' (couverture définie)' : ''}</div>
                 <div>Prix: {sale.priceNegotiable ? 'Négociable' : 'Ferme'}</div>
-                {sale.paymentTerms && <div>Modalités: {PAYMENT_TERMS_LABELS[sale.paymentTerms] || sale.paymentTerms}</div>}
                 {sale.availability && (
                   <div>Disponibilité: {AVAILABILITY_LABELS[sale.availability] || sale.availability}
                     {sale.availabilityNote ? ` — ${sale.availabilityNote}` : ''}</div>
