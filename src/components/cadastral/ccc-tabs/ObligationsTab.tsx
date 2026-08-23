@@ -287,8 +287,10 @@ const ObligationsTab: React.FC<ObligationsTabProps> = ({
                         </SelectContent>
                       </Select>
                       <p className="text-[11px] text-muted-foreground">
-                        L'IRL est rattaché à une construction louée précise. 1 IRL par construction en location.
+                        L'IRL est rattaché à une construction louée précise (1 IRL par construction en location).
+                        Cette déclaration est recommandée mais facultative.
                       </p>
+
 
                       {rentalCtx && rentalCtx.config && (
                         <div className="mt-2 rounded-xl bg-muted/40 p-2 space-y-1">
