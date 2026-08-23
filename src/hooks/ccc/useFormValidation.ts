@@ -104,17 +104,17 @@ export function useFormValidation(params: UseFormValidationParams) {
     if (!firstOwner?.nationality) missing.push({ field: 'ownerNationality', label: 'Nationalité du propriétaire', tab: 'general' });
 
     if (formData.isTitleInCurrentOwnerName === false && formData.titleIssueDate) {
-      if (firstOwner?.since && new Date(firstOwner.since) < new Date(formData.titleIssueDate)) missing.push({ field: 'ownerSinceDate', label: 'Date "Propriétaire depuis" doit être ≥ date de délivrance', tab: 'general' });
+      if (isBefore(firstOwner?.since, formData.titleIssueDate)) missing.push({ field: 'ownerSinceDate', label: 'Date "Propriétaire depuis" doit être ≥ date de délivrance', tab: 'general' });
     }
     if (formData.isTitleInCurrentOwnerName === true && formData.titleIssueDate) {
-      if (firstOwner?.since && new Date(firstOwner.since) < new Date(formData.titleIssueDate) && !firstOwner.previousTitleType) {
+      if (isBefore(firstOwner?.since, formData.titleIssueDate) && !firstOwner?.previousTitleType) {
         missing.push({ field: 'previousTitleType', label: 'Titre de propriété antérieur', tab: 'general' });
       }
       if (firstOwner?.previousTitleType === 'Autre' && !firstOwner.previousTitleCustomName?.trim()) {
         missing.push({ field: 'previousTitleCustomName', label: 'Nom du titre antérieur', tab: 'general' });
       }
       const firstPreviousOwner = previousOwners[0];
-      if (firstPreviousOwner?.startDate && new Date(firstPreviousOwner.startDate) > new Date(formData.titleIssueDate)) missing.push({ field: 'previousOwnerStartDate', label: `Date début Ancien #1 doit être ≤ date de ${formData.leaseType === 'renewal' ? 'renouvellement' : 'délivrance'}`, tab: 'history' });
+      if (isAfter(firstPreviousOwner?.startDate, formData.titleIssueDate)) missing.push({ field: 'previousOwnerStartDate', label: `Date début Ancien #1 doit être ≤ date de ${formData.leaseType === 'renewal' ? 'renouvellement' : 'délivrance'}`, tab: 'history' });
     }
 
     if (!formData.propertyCategory) missing.push({ field: 'propertyCategory', label: 'Catégorie de bien', tab: 'location' });
