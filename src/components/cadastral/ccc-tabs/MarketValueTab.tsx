@@ -129,6 +129,8 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
   const setResaleAmount = (raw: string) => {
     const n = raw === '' ? undefined : Number(raw);
     handleInputChange('resalePriceAmount', n);
+    // Persiste la devise affichée (USD par défaut) pour éviter une paire montant/devise incohérente.
+    if (n !== undefined && !formData.resalePriceCurrency) handleInputChange('resalePriceCurrency', resaleCurrency);
     handleInputChange('resalePriceUsd', toUsd(n, resaleCurrency));
   };
   const setResaleCurrency = (cur: CurrencyCode) => {
