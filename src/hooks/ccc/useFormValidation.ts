@@ -39,6 +39,36 @@ export interface UseFormValidationParams {
 
 const TAB_ORDER = ['general', 'location', 'history', 'obligations', 'market-value', 'review'];
 
+/**
+ * Parse sûr d'une date de formulaire : renvoie null pour une valeur vide,
+ * non-chaîne ou invalide. Évite les comparaisons silencieusement fausses
+ * (`new Date('')` produit un Invalid Date dont toute comparaison est `false`).
+ */
+const safeDate = (value?: string | null): Date | null => {
+  if (!value || typeof value !== 'string' || value.trim() === '') return null;
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? null : d;
+};
+
+/** Comparaison sûre : `true` seulement si les deux dates sont valides et a < b. */
+const isBefore = (a?: string | null, b?: string | null): boolean => {
+  const da = safeDate(a); const db = safeDate(b);
+  return !!da && !!db && da.getTime() < db.getTime();
+};
+
+/** Comparaison sûre : `true` seulement si les deux dates sont valides et a > b. */
+const isAfter = (a?: string | null, b?: string | null): boolean => {
+  const da = safeDate(a); const db = safeDate(b);
+  return !!da && !!db && da.getTime() > db.getTime();
+};
+
+/** `true` si la date est valide et antérieure au 01/01/`year`. */
+const isBeforeConstructionYear = (value: string | undefined, year?: number): boolean => {
+  const d = safeDate(value);
+  if (!d || !year) return false;
+  return d.getTime() < new Date(year, 0, 1).getTime();
+};
+
 export function useFormValidation(params: UseFormValidationParams) {
   const {
     formData, customTitleName, currentOwners, previousOwners, sectionType,
@@ -74,17 +104,17 @@ export function useFormValidation(params: UseFormValidationParams) {
     if (!firstOwner?.nationality) missing.push({ field: 'ownerNationality', label: 'Nationalité du propriétaire', tab: 'general' });
 
     if (formData.isTitleInCurrentOwnerName === false && formData.titleIssueDate) {
-      if (firstOwner?.since && new Date(firstOwner.since) < new Date(formData.titleIssueDate)) missing.push({ field: 'ownerSinceDate', label: 'Date "Propriétaire depuis" doit être ≥ date de délivrance', tab: 'general' });
+      if (isBefore(firstOwner?.since, formData.titleIssueDate)) missing.push({ field: 'ownerSinceDate', label: 'Date "Propriétaire depuis" doit être ≥ date de délivrance', tab: 'general' });
     }
     if (formData.isTitleInCurrentOwnerName === true && formData.titleIssueDate) {
-      if (firstOwner?.since && new Date(firstOwner.since) < new Date(formData.titleIssueDate) && !firstOwner.previousTitleType) {
+      if (isBefore(firstOwner?.since, formData.titleIssueDate) && !firstOwner?.previousTitleType) {
         missing.push({ field: 'previousTitleType', label: 'Titre de propriété antérieur', tab: 'general' });
       }
       if (firstOwner?.previousTitleType === 'Autre' && !firstOwner.previousTitleCustomName?.trim()) {
         missing.push({ field: 'previousTitleCustomName', label: 'Nom du titre antérieur', tab: 'general' });
       }
       const firstPreviousOwner = previousOwners[0];
-      if (firstPreviousOwner?.startDate && new Date(firstPreviousOwner.startDate) > new Date(formData.titleIssueDate)) missing.push({ field: 'previousOwnerStartDate', label: `Date début Ancien #1 doit être ≤ date de ${formData.leaseType === 'renewal' ? 'renouvellement' : 'délivrance'}`, tab: 'history' });
+      if (isAfter(firstPreviousOwner?.startDate, formData.titleIssueDate)) missing.push({ field: 'previousOwnerStartDate', label: `Date début Ancien #1 doit être ≤ date de ${formData.leaseType === 'renewal' ? 'renouvellement' : 'délivrance'}`, tab: 'history' });
     }
 
     if (!formData.propertyCategory) missing.push({ field: 'propertyCategory', label: 'Catégorie de bien', tab: 'location' });
@@ -96,11 +126,8 @@ export function useFormValidation(params: UseFormValidationParams) {
       if (formData.rentalConfiguration === 'single') {
         if (!formData.rentalStartDate) {
           missing.push({ field: 'rentalStartDate', label: 'En location depuis quand ? (construction principale)', tab: 'location' });
-        } else if (formData.constructionYear) {
-          const min = new Date(formData.constructionYear, 0, 1);
-          if (new Date(formData.rentalStartDate) < min) {
-            missing.push({ field: 'rentalStartDate', label: `Date de mise en location < 01/01/${formData.constructionYear}`, tab: 'location' });
-          }
+        } else if (isBeforeConstructionYear(formData.rentalStartDate, formData.constructionYear)) {
+          missing.push({ field: 'rentalStartDate', label: `Date de mise en location < 01/01/${formData.constructionYear}`, tab: 'location' });
         }
       }
       if (!formData.rentalConfiguration) {
@@ -108,6 +135,16 @@ export function useFormValidation(params: UseFormValidationParams) {
       } else if (formData.rentalConfiguration === 'single') {
         if (!formData.monthlyRentUsd || Number(formData.monthlyRentUsd) <= 0) {
           missing.push({ field: 'monthlyRentUsd', label: 'Loyer mensuel actuel (USD)', tab: 'location' });
+        }
+        // Symétrie avec le mode multi : occupation et capacité sont requises
+        if (formData.isOccupied === undefined || formData.isOccupied === null) {
+          missing.push({ field: 'isOccupied', label: "Statut d'occupation du local", tab: 'location' });
+        }
+        if (!formData.hostingCapacity || Number(formData.hostingCapacity) <= 0) {
+          missing.push({ field: 'hostingCapacity', label: "Capacité d'accueil", tab: 'location' });
+        }
+        if (formData.isOccupied === true && (!formData.occupantCount || Number(formData.occupantCount) <= 0)) {
+          missing.push({ field: 'occupantCount', label: 'Nombre de personnes qui y vivent', tab: 'location' });
         }
       } else if (formData.rentalConfiguration === 'multi') {
         const count = Number(formData.rentalUnitsCount) || 0;
@@ -135,11 +172,8 @@ export function useFormValidation(params: UseFormValidationParams) {
           }
           if (!u || !u.rentalStartDate) {
             missing.push({ field: `rentalUnitDate_${i}`, label: `Local #${i + 1} : date de mise en location`, tab: 'location' });
-          } else if (formData.constructionYear) {
-            const min = new Date(formData.constructionYear, 0, 1);
-            if (new Date(u.rentalStartDate) < min) {
-              missing.push({ field: `rentalUnitDate_${i}`, label: `Local #${i + 1} : date < 01/01/${formData.constructionYear}`, tab: 'location' });
-            }
+          } else if (isBeforeConstructionYear(u.rentalStartDate, formData.constructionYear)) {
+            missing.push({ field: `rentalUnitDate_${i}`, label: `Local #${i + 1} : date < 01/01/${formData.constructionYear}`, tab: 'location' });
           }
           if (showFloor && (!u || !u.floor)) {
             missing.push({ field: `rentalUnitFloor_${i}`, label: `Local #${i + 1} : emplacement (étage)`, tab: 'location' });
@@ -152,11 +186,8 @@ export function useFormValidation(params: UseFormValidationParams) {
         if (c.rentalConfiguration === 'single') {
           if (!c.rentalStartDate) {
             missing.push({ field: `additionalRentalStartDate_${idx}`, label: `En location depuis quand ? (construction #${idx + 2})`, tab: 'location' });
-          } else if (c.constructionYear) {
-            const min = new Date(c.constructionYear, 0, 1);
-            if (new Date(c.rentalStartDate) < min) {
-              missing.push({ field: `additionalRentalStartDate_${idx}`, label: `Date de mise en location < 01/01/${c.constructionYear} (construction #${idx + 2})`, tab: 'location' });
-            }
+          } else if (isBeforeConstructionYear(c.rentalStartDate, Number(c.constructionYear) || undefined)) {
+            missing.push({ field: `additionalRentalStartDate_${idx}`, label: `Date de mise en location < 01/01/${c.constructionYear} (construction #${idx + 2})`, tab: 'location' });
           }
         }
         if (!c.rentalConfiguration) {
@@ -164,6 +195,15 @@ export function useFormValidation(params: UseFormValidationParams) {
         } else if (c.rentalConfiguration === 'single') {
           if (!c.monthlyRentUsd || Number(c.monthlyRentUsd) <= 0) {
             missing.push({ field: `additionalMonthlyRent_${idx}`, label: `Loyer mensuel (construction #${idx + 2})`, tab: 'location' });
+          }
+          if ((c as any).isOccupied === undefined || (c as any).isOccupied === null) {
+            missing.push({ field: `additionalIsOccupied_${idx}`, label: `Statut d'occupation (construction #${idx + 2})`, tab: 'location' });
+          }
+          if (!(c as any).hostingCapacity || Number((c as any).hostingCapacity) <= 0) {
+            missing.push({ field: `additionalHostingCapacity_${idx}`, label: `Capacité d'accueil (construction #${idx + 2})`, tab: 'location' });
+          }
+          if ((c as any).isOccupied === true && (!(c as any).occupantCount || Number((c as any).occupantCount) <= 0)) {
+            missing.push({ field: `additionalOccupantCount_${idx}`, label: `Nombre d'occupants (construction #${idx + 2})`, tab: 'location' });
           }
         } else if (c.rentalConfiguration === 'multi') {
           const count = Number(c.rentalUnitsCount) || 0;
@@ -191,11 +231,8 @@ export function useFormValidation(params: UseFormValidationParams) {
             }
             if (!u || !u.rentalStartDate) {
               missing.push({ field: `additionalRentalUnitDate_${idx}_${i}`, label: `Local #${i + 1} : date de mise en location (construction #${idx + 2})`, tab: 'location' });
-            } else if (c.constructionYear) {
-              const min = new Date(c.constructionYear, 0, 1);
-              if (new Date(u.rentalStartDate) < min) {
-                missing.push({ field: `additionalRentalUnitDate_${idx}_${i}`, label: `Local #${i + 1} : date < 01/01/${c.constructionYear} (construction #${idx + 2})`, tab: 'location' });
-              }
+            } else if (isBeforeConstructionYear(u.rentalStartDate, Number(c.constructionYear) || undefined)) {
+              missing.push({ field: `additionalRentalUnitDate_${idx}_${i}`, label: `Local #${i + 1} : date < 01/01/${c.constructionYear} (construction #${idx + 2})`, tab: 'location' });
             }
             if (showFloor && (!u || !u.floor)) {
               missing.push({ field: `additionalRentalUnitFloor_${idx}_${i}`, label: `Local #${i + 1} : emplacement (construction #${idx + 2})`, tab: 'location' });

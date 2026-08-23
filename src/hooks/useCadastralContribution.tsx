@@ -439,15 +439,25 @@ export const useCadastralContribution = () => {
       appraised_value_currency: data.appraisedValueCurrency ?? null,
       appraised_value_usd: blankNum(data.appraisedValueUsd),
       appraisal_report_url: blank(data.appraisalReportUrl),
-      market_listings: Array.isArray(data.marketListings) && data.marketListings.length > 0
-        ? data.marketListings
-        : [],
+      // Annonces : on écarte celles rattachées à une construction supprimée
+      // (références `additional:<idx>` hors bornes) pour éviter les fantômes.
+      market_listings: (() => {
+        const listings = Array.isArray(data.marketListings) ? data.marketListings : [];
+        if (listings.length === 0) return [];
+        const additionalCount = Array.isArray(data.additionalConstructions) ? data.additionalConstructions.length : 0;
+        return listings.filter((l: any) => {
+          const ref = l?.constructionRef;
+          if (!ref || typeof ref !== 'string' || !ref.startsWith('additional:')) return true;
+          const n = parseInt(ref.slice('additional:'.length).split(':')[0], 10);
+          return Number.isFinite(n) && n < additionalCount;
+        });
+      })(),
       sale_listing: data.saleListing && data.wouldSellIfOffered === true ? data.saleListing : null,
     };
 
-    if (data.permitRequest) {
-      payload.permit_request_data = data.permitRequest;
-    }
+    // Toujours présent : sinon retirer une demande d'autorisation lors d'une
+    // modification laisserait l'ancienne valeur en base.
+    payload.permit_request_data = data.permitRequest ?? null;
 
     return payload;
   };

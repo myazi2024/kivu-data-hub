@@ -30,8 +30,9 @@ export const calculateCCCCompleteness = (contribution: any): number => {
   if (contribution.declared_usage) filled++;
   if (contribution.construction_nature || contribution.construction_materials) filled++;
 
-  // ─── Bloc locatif (conditionnel : usage déclaré = location) ───
-  if (contribution.declared_usage === 'location') {
+  // ─── Bloc locatif (conditionnel : is_rented, avec repli historique) ───
+  const isRented = contribution.is_rented === true || contribution.declared_usage === 'location';
+  if (isRented) {
     const units = Array.isArray(contribution.rental_units) ? contribution.rental_units : [];
     total += 3;
     if (contribution.rental_configuration) filled++;

@@ -15,6 +15,8 @@ export interface RentalUnitLike {
 interface RentalSummaryProps {
   declaredUsage?: string;
   isRented?: boolean;
+  /** Statut d'occupation global (mode « un seul local ») */
+  isOccupied?: boolean;
   rentalStartDate?: string;
   rentalConfiguration?: 'single' | 'multi';
   rentalUnitsCount?: number;
@@ -33,6 +35,7 @@ const fmtDate = (d?: string) => (d ? new Date(d).toLocaleDateString('fr-FR') : '
 export const RentalSummary: React.FC<RentalSummaryProps> = ({
   declaredUsage,
   isRented,
+  isOccupied,
   rentalStartDate,
   rentalConfiguration,
   rentalUnitsCount,
@@ -52,7 +55,7 @@ export const RentalSummary: React.FC<RentalSummaryProps> = ({
     <div className="pt-1 border-t border-border/50">
       <div className="font-medium">🏠 {title}:</div>
       <div className="ml-2 text-muted-foreground space-y-0.5">
-        {rentalStartDate && <div>{rentalDateLabel()}: {fmtDate(rentalStartDate)}</div>}
+        {rentalStartDate && <div>{rentalDateLabel(isOccupied)}: {fmtDate(rentalStartDate)}</div>}
         <div>
           Configuration:{' '}
           {rentalConfiguration

@@ -14,7 +14,7 @@ import { Link } from 'react-router-dom';
 import CadastralContributionDialog from '@/components/cadastral/CadastralContributionDialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useUserContributions, type ContributionRowFull } from '@/hooks/useUserContributions';
-import { detectFormType, mapContributionToFormDraft } from '@/utils/contributionFormMapping';
+import { detectFormType } from '@/utils/contributionFormMapping';
 import { UserContributionDeleteDialog } from '@/components/user/contributions/UserContributionDeleteDialog';
 import { CorrectionRequestDialog } from '@/components/user/contributions/CorrectionRequestDialog';
 import { trackEvent } from '@/lib/analytics';
@@ -114,17 +114,11 @@ export const UserContributions: React.FC = () => {
     const formType = detectFormType(contribution);
     setEditFormType(formType);
 
-    if (formType === 'ccc') {
-      const STORAGE_KEY = `cadastral_contribution_${contribution.parcel_number}`;
-      try {
-        const draft = mapContributionToFormDraft(contribution);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(draft));
-      } catch (error) {
-        console.error('Error saving contribution for edit:', error);
-        toast.error('Erreur lors de la préparation de la modification');
-        return;
-      }
-    }
+    // Note : en mode édition, le formulaire CCC charge les données depuis la base.
+    // On n'écrit plus de brouillon localStorage ici (format incompatible), ce qui
+    // écrasait silencieusement un brouillon valide de la même parcelle.
+
+
 
     trackEvent('user_contribution_edit_open', { id: contribution.id, formType });
     setContributionToEdit(contribution);

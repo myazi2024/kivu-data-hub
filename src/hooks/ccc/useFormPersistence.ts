@@ -264,13 +264,21 @@ export function useFormPersistence(params: UseFormPersistenceParams): UseFormPer
 
   const removeUploadedPath = useCallback(async (path: string) => {
     if (!path) return;
-    submitUploadedPathsRef.current = submitUploadedPathsRef.current.filter(p => p !== path);
     try {
-      await supabase.storage.from('cadastral-documents').remove([path]);
+      const { error } = await supabase.storage.from('cadastral-documents').remove([path]);
+      if (error) throw error;
+      // Succès seulement : sinon on garde le chemin dans le tracker pour que le
+      // rollback de fin de soumission puisse réessayer (pas de fichier orphelin).
+      submitUploadedPathsRef.current = submitUploadedPathsRef.current.filter(p => p !== path);
     } catch (e) {
-      console.warn('Suppression Storage échouée (best-effort):', path, e);
+      console.warn('Suppression Storage échouée:', path, e);
+      toast({
+        title: 'Suppression du fichier incomplète',
+        description: "Le fichier a été retiré du formulaire mais n'a pas pu être supprimé du stockage. Un nouvel essai aura lieu à l'envoi.",
+        variant: 'destructive',
+      });
     }
-  }, []);
+  }, [toast]);
 
   return {
     saveFormDataToStorage,

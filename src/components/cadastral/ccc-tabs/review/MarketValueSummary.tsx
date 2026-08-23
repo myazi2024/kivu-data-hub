@@ -30,7 +30,16 @@ const LEASE_TYPE_LABELS: Record<string, string> = {
 
 /** Bloc « Valeur marchande » du récapitulatif (revente, expertise, annonces). */
 export const MarketValueSummary: React.FC<MarketValueSummaryProps> = ({ formData, handleTabChange }) => {
-  const listings = formData.marketListings || [];
+  // On masque les annonces rattachées à une construction supprimée entre-temps.
+  const additionalCount = Array.isArray((formData as any).additionalConstructions)
+    ? (formData as any).additionalConstructions.length
+    : 0;
+  const listings = (formData.marketListings || []).filter((l: any) => {
+    const ref = l?.constructionRef;
+    if (!ref || typeof ref !== 'string' || !ref.startsWith('additional:')) return true;
+    const n = parseInt(ref.slice('additional:'.length).split(':')[0], 10);
+    return Number.isFinite(n) && n < additionalCount;
+  });
   const sale = formData.saleListing;
 
   return (
