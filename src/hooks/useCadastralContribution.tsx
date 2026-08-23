@@ -348,6 +348,8 @@ export const useCadastralContribution = () => {
     })) || null;
 
     const payload: any = {
+      // Traçabilité du formulaire d'origine (lue par detectFormType).
+      source_form_type: 'ccc',
       parcel_number: data.parcelNumber,
       parcel_type: data.parcelType,
       property_title_type: data.propertyTitleType,
@@ -534,6 +536,27 @@ export const useCadastralContribution = () => {
         variant: "destructive",
       });
       return { allowed: false, isSuspicious: false, fraudScore: 0, fraudReasons: [] };
+    }
+
+    // Garde-fou anti-abus (3 contributions/parcelle/24h, 10 contributions/24h)
+    const { data: abuseCheck, error: abuseError } = await supabase
+      .rpc('check_contribution_abuse', {
+        p_user_id: authenticatedUserId,
+        p_parcel_id: null,
+      });
+
+    if (abuseError) {
+      console.error('Erreur vérification anti-abus:', abuseError);
+    } else {
+      const abuse = Array.isArray(abuseCheck) && abuseCheck.length > 0 ? abuseCheck[0] : null;
+      if (abuse?.is_abuse) {
+        toast({
+          title: "Limite de contributions atteinte",
+          description: abuse.reason || "Vous avez atteint la limite de contributions autorisées sur 24 heures.",
+          variant: "destructive",
+        });
+        return { allowed: false, isSuspicious: false, fraudScore: 0, fraudReasons: [] };
+      }
     }
 
     // Fraud detection
