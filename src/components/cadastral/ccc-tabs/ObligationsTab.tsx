@@ -466,9 +466,9 @@ const ObligationsTab: React.FC<ObligationsTabProps> = ({
 
             <div className="border-2 rounded-2xl p-3 space-y-3 bg-card shadow-sm">
               <Label className="text-sm font-medium">Y a-t-il une hypothèque active sur cette parcelle ?</Label>
-              <div className="grid grid-cols-2 gap-2">
-                <Button type="button" variant={hasMortgage === true ? "default" : "outline"} onClick={() => setHasMortgage(true)} className={`h-10 text-sm rounded-xl transition-all ${hasMortgage === true ? "bg-primary text-primary-foreground shadow-md" : "hover:bg-primary/10"}`}>Oui</Button>
-                <Button type="button" variant={hasMortgage === false ? "default" : "outline"} onClick={() => { setHasMortgage(false); setMortgageRecords([{ mortgageAmount: '', duration: '', creditorName: '', creditorType: 'Banque', contractDate: '', mortgageStatus: 'Active', receiptFile: null }]); }} className={`h-10 text-sm rounded-xl transition-all ${hasMortgage === false ? "bg-primary text-primary-foreground shadow-md" : "hover:bg-primary/10"}`}>Non</Button>
+              <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Hypothèque active">
+                <Button type="button" role="radio" aria-checked={hasMortgage === true} variant={hasMortgage === true ? "default" : "outline"} onClick={() => setHasMortgage(true)} className={`h-10 text-sm rounded-xl transition-all ${hasMortgage === true ? "bg-primary text-primary-foreground shadow-md" : "hover:bg-primary/10"}`}>Oui</Button>
+                <Button type="button" role="radio" aria-checked={hasMortgage === false} variant={hasMortgage === false ? "default" : "outline"} onClick={() => { setHasMortgage(false); setMortgageRecords([{ mortgageAmount: '', duration: '', creditorName: '', creditorType: 'Banque', contractDate: '', mortgageStatus: 'Active', receiptFile: null }]); }} className={`h-10 text-sm rounded-xl transition-all ${hasMortgage === false ? "bg-primary text-primary-foreground shadow-md" : "hover:bg-primary/10"}`}>Non</Button>
               </div>
               {hasMortgage === false && (
                 <div className="bg-green-50 dark:bg-green-950/50 border border-green-200 dark:border-green-800 rounded-xl p-2 flex items-center gap-2">
@@ -582,9 +582,9 @@ const ObligationsTab: React.FC<ObligationsTabProps> = ({
 
             <div className="border-2 rounded-2xl p-3 space-y-3 bg-card shadow-sm">
               <Label className="text-sm font-medium">Y a-t-il un litige foncier en cours sur cette parcelle ?</Label>
-              <div className="grid grid-cols-2 gap-2">
-                <Button type="button" variant={hasDispute === true ? "default" : "outline"} onClick={() => setHasDispute(true)} className={`h-10 text-sm rounded-xl transition-all ${hasDispute === true ? "bg-primary text-primary-foreground shadow-md" : "hover:bg-primary/10"}`}>Oui</Button>
-                <Button type="button" variant={hasDispute === false ? "default" : "outline"} onClick={() => setHasDispute(false)} className={`h-10 text-sm rounded-xl transition-all ${hasDispute === false ? "bg-primary text-primary-foreground shadow-md" : "hover:bg-primary/10"}`}>Non</Button>
+              <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Litige foncier en cours">
+                <Button type="button" role="radio" aria-checked={hasDispute === true} variant={hasDispute === true ? "default" : "outline"} onClick={() => setHasDispute(true)} className={`h-10 text-sm rounded-xl transition-all ${hasDispute === true ? "bg-primary text-primary-foreground shadow-md" : "hover:bg-primary/10"}`}>Oui</Button>
+                <Button type="button" role="radio" aria-checked={hasDispute === false} variant={hasDispute === false ? "default" : "outline"} onClick={() => setHasDispute(false)} className={`h-10 text-sm rounded-xl transition-all ${hasDispute === false ? "bg-primary text-primary-foreground shadow-md" : "hover:bg-primary/10"}`}>Non</Button>
               </div>
               {hasDispute === false && (
                 <div className="bg-green-50 dark:bg-green-950/50 border border-green-200 dark:border-green-800 rounded-xl p-2 flex items-center gap-2">

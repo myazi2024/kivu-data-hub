@@ -263,6 +263,7 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
           variant="ghost"
           size="sm"
           onClick={() => onRemove(index)}
+          aria-label={`Supprimer la construction ${index + 1}`}
           className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10 rounded-lg"
         >
           <Trash2 className="h-4 w-4" />
@@ -875,6 +876,7 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
                         variant="ghost"
                         size="sm"
                         onClick={() => updatePermitField('attachmentFile', null)}
+                        aria-label="Retirer la pièce jointe du permis"
                         className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10 rounded-lg"
                       >
                         <X className="h-4 w-4" />

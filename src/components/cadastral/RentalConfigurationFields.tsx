@@ -1,7 +1,11 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils';
 import { Home, Building2, DollarSign } from 'lucide-react';
 
@@ -83,7 +87,13 @@ export const RentalConfigurationSelector: React.FC<CommonProps> = ({
   const subject = buildSubject(propertyCategory, constructionType);
   const isMissing = highlightRequired && !state.rentalConfiguration;
 
+  /** Locaux qui seraient supprimés par une réduction du nombre de locaux. */
+  const [pendingCount, setPendingCount] = useState<number | null>(null);
+
   const selectMode = (mode: RentalConfiguration) => {
+    // Garde-fou : recliquer sur le mode déjà actif ne doit rien effacer.
+    if (mode === state.rentalConfiguration) return;
+
     // Reset explicite de l'occupation globale : évite qu'une valeur héritée du
     // mode précédent ne subsiste transitoirement (l'agrégation multi la
     // recalculera à partir des locaux, le mode single la fera ressaisir).
@@ -118,13 +128,28 @@ export const RentalConfigurationSelector: React.FC<CommonProps> = ({
     }
   };
 
-  const setCount = (raw: string) => {
-    const n = clampCount(parseInt(raw, 10) || MIN_UNITS);
+  const applyCount = (n: number) => {
     onPatch({
       rentalUnitsCount: n,
       rentalUnits: resizeUnits(state.rentalUnits, n),
     });
   };
+
+  /** Locaux au-delà du nouveau total contenant des données saisies. */
+  const droppedFilledUnits = (n: number) =>
+    (state.rentalUnits || [])
+      .map((u, i) => ({ u, i }))
+      .filter(({ u, i }) => i >= n && u && Object.values(u).some((v) => v !== undefined && v !== '' && v !== null));
+
+  const setCount = (raw: string) => {
+    const n = clampCount(parseInt(raw, 10) || MIN_UNITS);
+    if (droppedFilledUnits(n).length > 0) {
+      setPendingCount(n);
+      return;
+    }
+    applyCount(n);
+  };
+
 
   return (
     <div className="space-y-2 animate-fade-in">
@@ -136,9 +161,11 @@ export const RentalConfigurationSelector: React.FC<CommonProps> = ({
         {subject} est-il loué comme un seul local à un unique locataire, ou divisé en plusieurs locaux loués séparément ?
       </p>
 
-      <div className="grid grid-cols-1 gap-2">
+      <div className="grid grid-cols-1 gap-2" role="radiogroup" aria-label="Mode de mise en location">
         <button
           type="button"
+          role="radio"
+          aria-checked={state.rentalConfiguration === 'single'}
           onClick={() => selectMode('single')}
           className={cn(
             'flex items-start gap-2 rounded-2xl border-2 p-3 text-left transition-all',
@@ -158,6 +185,8 @@ export const RentalConfigurationSelector: React.FC<CommonProps> = ({
 
         <button
           type="button"
+          role="radio"
+          aria-checked={state.rentalConfiguration === 'multi'}
           onClick={() => selectMode('multi')}
           className={cn(
             'flex items-start gap-2 rounded-2xl border-2 p-3 text-left transition-all',
@@ -190,6 +219,33 @@ export const RentalConfigurationSelector: React.FC<CommonProps> = ({
           />
         </div>
       )}
+
+      <AlertDialog open={pendingCount !== null} onOpenChange={(o) => { if (!o) setPendingCount(null); }}>
+        <AlertDialogContent className="rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Supprimer des locaux déjà renseignés ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {pendingCount !== null && (
+                <>
+                  Réduire à {pendingCount} local(aux) supprimera définitivement les données saisies pour :{' '}
+                  {droppedFilledUnits(pendingCount)
+                    .map(({ u, i }) => u.label?.trim() || `Local #${i + 1}`)
+                    .join(', ')}
+                  . Cette action est irréversible.
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setPendingCount(null)}>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => { if (pendingCount !== null) applyCount(pendingCount); setPendingCount(null); }}
+            >
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
@@ -325,9 +381,11 @@ export const MonthlyRentFields: React.FC<CommonProps> = ({
                     <Label className={cn('text-xs font-medium', missingOccupied ? 'text-destructive' : 'text-muted-foreground')}>
                       Ce local est-il actuellement occupé ? {missingOccupied && <span className="text-destructive">*</span>}
                     </Label>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2" role="radiogroup" aria-label={`Local ${idx + 1} : occupation`}>
                       <button
                         type="button"
+                        role="radio"
+                        aria-checked={unit.isOccupied === true}
                         onClick={() => updateUnit(idx, { isOccupied: true })}
                         className={cn(
                           'flex-1 h-9 rounded-xl text-xs font-semibold transition-all border-2',
@@ -340,6 +398,8 @@ export const MonthlyRentFields: React.FC<CommonProps> = ({
                       </button>
                       <button
                         type="button"
+                        role="radio"
+                        aria-checked={unit.isOccupied === false}
                         onClick={() => updateUnit(idx, { isOccupied: false, occupantCount: undefined })}
                         className={cn(
                           'flex-1 h-9 rounded-xl text-xs font-semibold transition-all border-2',

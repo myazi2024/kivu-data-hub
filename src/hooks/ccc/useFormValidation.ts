@@ -328,7 +328,7 @@ export function useFormValidation(params: UseFormValidationParams) {
         missing.push({ field: `taxAmount_${idx}`, label: `Montant invalide — ${tax.taxType} ${tax.taxYear}`, tab: 'obligations' });
       }
       const duplicate = taxRecords.some((other, otherIdx) =>
-        otherIdx < idx &&
+        otherIdx !== idx &&
         other.taxType === tax.taxType &&
         other.taxYear === tax.taxYear &&
         (other.constructionRef || '') === (tax.constructionRef || '')

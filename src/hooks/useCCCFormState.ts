@@ -256,6 +256,13 @@ export const useCCCFormState = ({
       ville: undefined, commune: undefined, quartier: undefined, avenue: undefined,
       territoire: undefined, collectivite: undefined, groupement: undefined, village: undefined
     }));
+    // Recalcul complet des listes dépendantes : la cascade ne se rejoue pas ici
+    // (elle dépend de province/ville/…, pas de sectionType).
+    const province = formData.province;
+    setAvailableVilles(province ? getVillesForProvince(province) : []);
+    setAvailableTerritoires(province ? getTerritoiresForProvince(province) : []);
+    setAvailableCommunes([]);
+    setAvailableCollectivites([]);
     setAvailableQuartiers([]);
     setAvailableAvenues([]);
   };
