@@ -92,6 +92,35 @@ export const pluralizeSubject = (subject: string, count: number): string => {
   return `${base}s`;
 };
 
+/**
+ * Phrase d'introduction du bloc « Mise sur le marché des locaux vacants ».
+ * Utilise les libellés réels saisis par l'utilisateur (et non la catégorie du bien).
+ */
+export const formatVacantTargetsSentence = (
+  labels: string[],
+): { intro: string; action: string } => {
+  const clean = labels.map(l => (l || '').trim()).filter(Boolean);
+  const n = clean.length;
+  if (n === 0) return { intro: '', action: '' };
+
+  const quoted = clean.map(l => `« ${l} »`);
+  if (n === 1) {
+    return {
+      intro: `Vous avez indiqué dans l'onglet Localisation que ${quoted[0]} n'est pas occupé.`,
+      action: 'Cochez-le ci-dessous si vous souhaitez le proposer à la location.',
+    };
+  }
+
+  const shown = quoted.slice(0, 3).join(', ');
+  const rest = n - 3;
+  const list = rest > 0 ? `${shown}, et ${rest} autre${rest > 1 ? 's' : ''}` : shown;
+  return {
+    intro: `Vous avez indiqué dans l'onglet Localisation que ${n} locaux ne sont pas occupés : ${list}.`,
+    action: 'Cochez ci-dessous ceux que vous souhaitez proposer à la location.',
+  };
+};
+
+
 export type VacantTarget = {
   ref: string; // unique
   constructionRef: 'main' | `additional:${number}`;
