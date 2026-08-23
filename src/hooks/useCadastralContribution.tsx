@@ -445,9 +445,9 @@ export const useCadastralContribution = () => {
       sale_listing: data.saleListing && data.wouldSellIfOffered === true ? data.saleListing : null,
     };
 
-    if (data.permitRequest) {
-      payload.permit_request_data = data.permitRequest;
-    }
+    // Toujours présent : sinon retirer une demande d'autorisation lors d'une
+    // modification laisserait l'ancienne valeur en base.
+    payload.permit_request_data = data.permitRequest ?? null;
 
     return payload;
   };
