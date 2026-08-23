@@ -168,14 +168,14 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
   // ─── 2 — Locaux vacants ───
   // C3 — deps ciblées (évite recomputation à chaque frappe)
   const vacantTargets = useMemo(
-    () => buildVacantTargets(formData, additionalConstructions),
+    () => buildVacantTargets(formData, additionalConstructions, soundEnvironment),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [
       formData.declaredUsage, formData.propertyCategory, formData.constructionType,
       formData.constructionNature, formData.constructionMaterials, formData.standing,
       formData.isOccupied, formData.hostingCapacity, formData.rentalConfiguration,
       formData.monthlyRentUsd, formData.rentalUnits, formData.constructionYear,
-      formData.soundEnvironment,
+      soundEnvironment,
       additionalConstructions,
     ],
   );
@@ -408,7 +408,7 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
                             }}
 
                             accept="image/jpeg,image/png,image/webp"
-                            isPublic={true}
+                            isPublic={false}
                             label="Ajouter une image"
                             maxSizeMB={5}
                             pathPrefix={uploadPrefix('sale-listings')}
@@ -640,7 +640,7 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
                         handleInputChange('appraisalReportUrl', url || undefined);
                       }}
                       accept="application/pdf,image/jpeg,image/png"
-                      isPublic={true}
+                      isPublic={false}
                       label="Rapport d'expertise"
                       maxSizeMB={10}
                       pathPrefix={uploadPrefix('appraisal-reports')}
@@ -669,14 +669,14 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
 
             {vacantTargets.length === 0 ? (
               <div className="rounded-xl border border-dashed border-border p-3 text-xs text-muted-foreground">
-                Aucun local n'a été déclaré comme inoccupé dans l'onglet « Infos ».
-                Si vous souhaitez signaler un local disponible, retournez dans l'onglet « Infos » et indiquez que la
+                Aucun local n'a été déclaré comme inoccupé dans l'onglet « Localisation ».
+                Si vous souhaitez signaler un local disponible, retournez dans l'onglet « Localisation » et indiquez que la
                 catégorie de bien <strong>n'est pas habitée</strong>.
               </div>
             ) : (
               <>
                 <div className="rounded-xl bg-primary/5 border border-primary/20 p-3 text-xs sm:text-sm text-foreground leading-relaxed">
-                  Vous avez indiqué dans l'onglet <strong>Infos</strong> que{' '}
+                  Vous avez indiqué dans l'onglet <strong>Localisation</strong> que{' '}
                   <strong>{vacantTargets.length} {subjectLabel}</strong>{' '}
                   {vacantTargets.length > 1 ? 'ne sont pas actuellement occupés' : "n'est pas actuellement occupé"}.
                   Souhaitez-vous les proposer à la location ?
@@ -723,8 +723,8 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
                               {t.constructionYear ? (
                                 <span>Année : {t.constructionYear}</span>
                               ) : (
-                                <button type="button" onClick={() => handleTabChange('general')} className="text-amber-700 dark:text-amber-300 hover:underline">
-                                  Année : — compléter dans Infos
+                                <button type="button" onClick={() => handleTabChange('location')} className="text-amber-700 dark:text-amber-300 hover:underline">
+                                  Année : — compléter dans Localisation
                                 </button>
                               )}
                               {t.soundEnvironment ? (
@@ -911,7 +911,7 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
                                         }}
 
                                         accept="image/jpeg,image/png,image/webp"
-                                        isPublic={true}
+                                        isPublic={false}
                                         label="Ajouter une image"
                                         maxSizeMB={5}
                                         pathPrefix={uploadPrefix('market-listings')}
