@@ -59,8 +59,10 @@ export const STORAGE_PUBLIC_MARKER = '/storage/v1/object/public/cadastral-docume
 export const pathFromPublicUrl = (url?: string | null): string | null => {
   if (!url) return null;
   const i = url.indexOf(STORAGE_PUBLIC_MARKER);
-  if (i === -1) return null;
-  return url.slice(i + STORAGE_PUBLIC_MARKER.length).split('?')[0] || null;
+  if (i !== -1) return url.slice(i + STORAGE_PUBLIC_MARKER.length).split('?')[0] || null;
+  // Chemin Storage brut (nouveau format) : `<uid>/dossier/fichier`
+  if (/^https?:\/\//i.test(url)) return null;
+  return url.replace(/^\/+/, '') || null;
 };
 
 /** Bornes de dates pour les champs de date de disponibilité / expertise (±6 mois).
@@ -111,9 +113,11 @@ export type VacantTarget = {
 export const buildVacantTargets = (
   formData: CadastralContributionData,
   additional: AdditionalConstruction[],
+  /** L'environnement sonore est géré hors `formData` (état dédié de l'onglet Localisation). */
+  soundEnvironment?: string,
 ): VacantTarget[] => {
   const out: VacantTarget[] = [];
-  const sharedSound = formData.soundEnvironment;
+  const sharedSound = soundEnvironment || (formData as any).soundEnvironment;
 
   const pushFor = (
     base: 'main' | `additional:${number}`,

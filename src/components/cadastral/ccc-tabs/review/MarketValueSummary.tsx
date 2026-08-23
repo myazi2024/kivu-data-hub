@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { CheckCircle2 } from 'lucide-react';
 import type { CadastralContributionData } from '@/hooks/useCadastralContribution';
+import { openSignedStorageFile } from '@/utils/storageSignedUrl';
 
 interface MarketValueSummaryProps {
   formData: CadastralContributionData;
@@ -73,7 +74,16 @@ export const MarketValueSummary: React.FC<MarketValueSummaryProps> = ({ formData
                   <div>Valeur expertisée: {Number(formData.appraisedValueAmount).toLocaleString('fr-FR')} {formData.appraisedValueCurrency || ''}</div>
                 ) : null}
                 {formData.appraisalReportUrl && (
-                  <div className="flex items-center gap-1 text-foreground"><CheckCircle2 className="h-3 w-3 text-primary" /> Rapport d'expertise joint</div>
+                  <div className="flex items-center gap-1 text-foreground">
+                    <CheckCircle2 className="h-3 w-3 text-primary" />
+                    <button
+                      type="button"
+                      className="underline underline-offset-2 hover:text-primary"
+                      onClick={() => { void openSignedStorageFile(formData.appraisalReportUrl); }}
+                    >
+                      Rapport d'expertise joint
+                    </button>
+                  </div>
                 )}
               </div>
             )}

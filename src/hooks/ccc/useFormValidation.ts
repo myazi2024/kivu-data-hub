@@ -6,6 +6,7 @@ import { PreviousOwner } from '@/components/cadastral/ccc-tabs/HistoryTab';
 import { TaxRecord, MortgageRecord } from '@/components/cadastral/ccc-tabs/ObligationsTab';
 import { AdditionalConstruction } from '@/components/cadastral/AdditionalConstructionBlock';
 import { normalizeConstructionNature } from '@/utils/constructionNatureNormalizer';
+import { buildVacantTargets } from '@/components/cadastral/ccc-tabs/market-value/marketValueUtils';
 
 export type MissingField = { field: string; label: string; tab: string };
 
@@ -435,9 +436,6 @@ export function useFormValidation(params: UseFormValidationParams) {
       if (saleImgs.length < 1) {
         missing.push({ field: 'saleListingImages', label: "Au moins une photo de la parcelle est requise pour l'annonce de vente", tab: 'market-value' });
       }
-      if (!sale.paymentTerms) {
-        missing.push({ field: 'saleListingPaymentTerms', label: "Modalités de paiement (annonce de vente)", tab: 'market-value' });
-      }
       if (!sale.availability) {
         missing.push({ field: 'saleListingAvailability', label: "Disponibilité (annonce de vente)", tab: 'market-value' });
       }
@@ -481,7 +479,13 @@ export function useFormValidation(params: UseFormValidationParams) {
 
     // Loyer cible positif si saisi + au moins 1 image par local proposé
     if (Array.isArray(formData.marketListings)) {
+      // Seules les annonces rattachées à un local réellement vacant sont validées
+      // (une annonce orpheline n'a plus de bloc affiché : elle ne doit pas bloquer l'envoi).
+      const vacantRefs = new Set(
+        buildVacantTargets(formData, additionalConstructions, soundEnvironment).map(t => t.ref),
+      );
       formData.marketListings.forEach((l: any, i: number) => {
+        if (!vacantRefs.has(l?.constructionRef)) return;
         if (l?.listForRent && l.targetRentUsd !== undefined && l.targetRentUsd !== null && Number(l.targetRentUsd) < 0) {
           missing.push({ field: `marketListingRent_${i}`, label: `Loyer cible du local "${l.unitLabel || i + 1}" invalide`, tab: 'market-value' });
         }
