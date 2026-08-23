@@ -421,10 +421,8 @@ export function useFormValidation(params: UseFormValidationParams) {
       if (!hasAmt) {
         missing.push({ field: 'resalePriceAmount', label: 'Prix de revente proposé', tab: 'market-value' });
       }
-      if (!hasCur) {
-        missing.push({ field: 'resalePriceCurrency', label: 'Devise du prix de revente', tab: 'market-value' });
-      }
-      if (hasAmt !== hasCur) {
+      // Une devise sélectionnée sans montant est incohérente ; un montant sans devise explicite vaut USD.
+      if (hasCur && !hasAmt) {
         missing.push({ field: 'resalePricePair', label: 'Indiquez à la fois la devise et le montant du prix de revente', tab: 'market-value' });
       }
       const sale = formData.saleListing || {};
