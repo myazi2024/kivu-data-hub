@@ -1822,6 +1822,12 @@ export type Database = {
         Row: {
           additional_constructions: Json | null
           apartment_number: string | null
+          appraisal_date: string | null
+          appraisal_report_url: string | null
+          appraised_value_amount: number | null
+          appraised_value_currency: string | null
+          appraised_value_usd: number | null
+          appraiser_name: string | null
           area_hectares: number | null
           area_sqm: number
           avenue: string | null
@@ -1843,10 +1849,12 @@ export type Database = {
           gps_coordinates: Json | null
           groupement: string | null
           has_dispute: boolean | null
+          has_recent_appraisal: boolean | null
           hosting_capacity: number | null
           house_number: string | null
           id: string
           is_occupied: boolean | null
+          is_rented: boolean | null
           is_subdivided: boolean | null
           is_title_in_current_owner_name: boolean | null
           latitude: number | null
@@ -1854,6 +1862,7 @@ export type Database = {
           lease_years: number | null
           location: string
           longitude: number | null
+          market_listings: Json | null
           monthly_rent_usd: number | null
           nearby_noise_sources: string | null
           nombre_bornes: number | null
@@ -1871,6 +1880,9 @@ export type Database = {
           rental_start_date: string | null
           rental_units: Json | null
           rental_units_count: number | null
+          resale_price_amount: number | null
+          resale_price_currency: string | null
+          resale_price_usd: number | null
           road_sides: Json | null
           servitude_data: Json | null
           sound_environment: string | null
@@ -1883,10 +1895,17 @@ export type Database = {
           village: string | null
           ville: string | null
           whatsapp_number: string | null
+          would_sell_if_offered: boolean | null
         }
         Insert: {
           additional_constructions?: Json | null
           apartment_number?: string | null
+          appraisal_date?: string | null
+          appraisal_report_url?: string | null
+          appraised_value_amount?: number | null
+          appraised_value_currency?: string | null
+          appraised_value_usd?: number | null
+          appraiser_name?: string | null
           area_hectares?: number | null
           area_sqm?: number
           avenue?: string | null
@@ -1908,10 +1927,12 @@ export type Database = {
           gps_coordinates?: Json | null
           groupement?: string | null
           has_dispute?: boolean | null
+          has_recent_appraisal?: boolean | null
           hosting_capacity?: number | null
           house_number?: string | null
           id?: string
           is_occupied?: boolean | null
+          is_rented?: boolean | null
           is_subdivided?: boolean | null
           is_title_in_current_owner_name?: boolean | null
           latitude?: number | null
@@ -1919,6 +1940,7 @@ export type Database = {
           lease_years?: number | null
           location: string
           longitude?: number | null
+          market_listings?: Json | null
           monthly_rent_usd?: number | null
           nearby_noise_sources?: string | null
           nombre_bornes?: number | null
@@ -1936,6 +1958,9 @@ export type Database = {
           rental_start_date?: string | null
           rental_units?: Json | null
           rental_units_count?: number | null
+          resale_price_amount?: number | null
+          resale_price_currency?: string | null
+          resale_price_usd?: number | null
           road_sides?: Json | null
           servitude_data?: Json | null
           sound_environment?: string | null
@@ -1948,10 +1973,17 @@ export type Database = {
           village?: string | null
           ville?: string | null
           whatsapp_number?: string | null
+          would_sell_if_offered?: boolean | null
         }
         Update: {
           additional_constructions?: Json | null
           apartment_number?: string | null
+          appraisal_date?: string | null
+          appraisal_report_url?: string | null
+          appraised_value_amount?: number | null
+          appraised_value_currency?: string | null
+          appraised_value_usd?: number | null
+          appraiser_name?: string | null
           area_hectares?: number | null
           area_sqm?: number
           avenue?: string | null
@@ -1973,10 +2005,12 @@ export type Database = {
           gps_coordinates?: Json | null
           groupement?: string | null
           has_dispute?: boolean | null
+          has_recent_appraisal?: boolean | null
           hosting_capacity?: number | null
           house_number?: string | null
           id?: string
           is_occupied?: boolean | null
+          is_rented?: boolean | null
           is_subdivided?: boolean | null
           is_title_in_current_owner_name?: boolean | null
           latitude?: number | null
@@ -1984,6 +2018,7 @@ export type Database = {
           lease_years?: number | null
           location?: string
           longitude?: number | null
+          market_listings?: Json | null
           monthly_rent_usd?: number | null
           nearby_noise_sources?: string | null
           nombre_bornes?: number | null
@@ -2001,6 +2036,9 @@ export type Database = {
           rental_start_date?: string | null
           rental_units?: Json | null
           rental_units_count?: number | null
+          resale_price_amount?: number | null
+          resale_price_currency?: string | null
+          resale_price_usd?: number | null
           road_sides?: Json | null
           servitude_data?: Json | null
           sound_environment?: string | null
@@ -2013,6 +2051,7 @@ export type Database = {
           village?: string | null
           ville?: string | null
           whatsapp_number?: string | null
+          would_sell_if_offered?: boolean | null
         }
         Relationships: []
       }
