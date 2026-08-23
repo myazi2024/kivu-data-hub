@@ -381,9 +381,11 @@ export const MonthlyRentFields: React.FC<CommonProps> = ({
                     <Label className={cn('text-xs font-medium', missingOccupied ? 'text-destructive' : 'text-muted-foreground')}>
                       Ce local est-il actuellement occupé ? {missingOccupied && <span className="text-destructive">*</span>}
                     </Label>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2" role="radiogroup" aria-label={`Local ${idx + 1} : occupation`}>
                       <button
                         type="button"
+                        role="radio"
+                        aria-checked={unit.isOccupied === true}
                         onClick={() => updateUnit(idx, { isOccupied: true })}
                         className={cn(
                           'flex-1 h-9 rounded-xl text-xs font-semibold transition-all border-2',
@@ -396,6 +398,8 @@ export const MonthlyRentFields: React.FC<CommonProps> = ({
                       </button>
                       <button
                         type="button"
+                        role="radio"
+                        aria-checked={unit.isOccupied === false}
                         onClick={() => updateUnit(idx, { isOccupied: false, occupantCount: undefined })}
                         className={cn(
                           'flex-1 h-9 rounded-xl text-xs font-semibold transition-all border-2',
