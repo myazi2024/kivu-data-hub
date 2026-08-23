@@ -252,8 +252,8 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
   const showBlock2 = isConstructionRented(formData as any)
     || additionalConstructions.some(c => isConstructionRented(c as any));
 
-  const totalSubject = vacantTargets[0]?.subject || 'bien';
-  const subjectLabel = pluralizeSubject(totalSubject, vacantTargets.length);
+  const vacantSentence = formatVacantTargetsSentence(vacantTargets.map(t => t.label));
+
 
 
   // ─── Validation locale (UI seulement) ───
