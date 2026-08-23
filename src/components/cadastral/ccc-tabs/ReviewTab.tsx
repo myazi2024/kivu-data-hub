@@ -332,6 +332,7 @@ const ReviewTab: React.FC<ReviewTabProps> = ({
             <RentalSummary
               declaredUsage={formData.declaredUsage}
               isRented={formData.isRented}
+              isOccupied={formData.isOccupied}
               rentalStartDate={formData.rentalStartDate}
               rentalConfiguration={formData.rentalConfiguration}
               rentalUnitsCount={formData.rentalUnitsCount}
@@ -382,6 +383,7 @@ const ReviewTab: React.FC<ReviewTabProps> = ({
                     <RentalSummary
                       declaredUsage={c.declaredUsage}
                       isRented={(c as any).isRented}
+                      isOccupied={(c as any).isOccupied}
                       rentalStartDate={(c as any).rentalStartDate}
                       rentalConfiguration={(c as any).rentalConfiguration}
                       rentalUnitsCount={(c as any).rentalUnitsCount}
