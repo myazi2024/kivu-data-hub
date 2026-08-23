@@ -784,7 +784,7 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
                                             onChange={(e) => {
                                               const n = e.target.value === '' ? undefined : Number(e.target.value);
                                               const usd = n === undefined ? undefined : (rentCur === 'USD' ? n : n / cdfRate);
-                                              updateListing(t.ref, { rentAmount: n, targetRentUsd: usd }, { unitLabel: t.label });
+                                              updateListing(t.ref, { rentAmount: n, targetRentUsd: usd, rentCurrency: n === undefined ? entry?.rentCurrency : (entry?.rentCurrency || rentCur) }, { unitLabel: t.label });
                                             }}
                                             className="flex-1 min-w-0 h-10 rounded-xl text-sm"
                                           />
