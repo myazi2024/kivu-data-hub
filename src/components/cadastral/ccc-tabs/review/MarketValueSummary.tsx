@@ -11,11 +11,6 @@ interface MarketValueSummaryProps {
 
 const fmtDate = (d?: string) => (d ? new Date(d).toLocaleDateString('fr-FR') : '');
 
-const PAYMENT_TERMS_LABELS: Record<string, string> = {
-  cash: 'Comptant',
-  installments: 'Échelonné',
-  both: 'Comptant ou échelonné',
-};
 const AVAILABILITY_LABELS: Record<string, string> = {
   immediate: 'Immédiate',
   conditional: 'Sous conditions',
