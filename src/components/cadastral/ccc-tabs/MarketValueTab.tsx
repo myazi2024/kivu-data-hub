@@ -40,6 +40,8 @@ interface MarketValueTabProps {
   formData: CadastralContributionData;
   handleInputChange: (field: keyof CadastralContributionData, value: any) => void;
   additionalConstructions: AdditionalConstruction[];
+  /** État dédié de l'onglet Localisation (hors formData). */
+  soundEnvironment?: string;
   handleTabChange: (tab: string) => void;
   handleNextTab: (current: string, next: string) => void;
   highlightRequiredFields?: boolean;
@@ -54,6 +56,7 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
   formData,
   handleInputChange,
   additionalConstructions,
+  soundEnvironment,
   handleTabChange,
   handleNextTab,
   highlightRequiredFields,
@@ -184,6 +187,18 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
     () => Array.isArray(formData.marketListings) ? formData.marketListings as MarketListingEntry[] : [],
     [formData.marketListings],
   );
+
+  // Purge des annonces « fantômes » : locaux qui ne sont plus vacants / plus loués.
+  useEffect(() => {
+    if (!Array.isArray(formData.marketListings) || formData.marketListings.length === 0) return;
+    const validRefs = new Set(vacantTargets.map(t => t.ref));
+    const orphans = (formData.marketListings as MarketListingEntry[]).filter(l => !validRefs.has(l.constructionRef));
+    if (orphans.length === 0) return;
+    orphans.forEach(o => (o.coverImageUrls || []).forEach(u => dropImage(u)));
+    const next = (formData.marketListings as MarketListingEntry[]).filter(l => validRefs.has(l.constructionRef));
+    handleInputChange('marketListings', next.length > 0 ? next : undefined);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [vacantTargets, formData.marketListings]);
 
   const updateListing = (ref: string, patch: Partial<MarketListingEntry>, defaults: Partial<MarketListingEntry>) => {
     const next = [...listings];
