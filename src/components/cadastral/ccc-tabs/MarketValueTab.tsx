@@ -522,7 +522,7 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
               </div>
               <div className="flex-1 space-y-1">
                 <Label className="text-sm font-medium text-foreground">
-                  Valeur vénale — une expertise immobilière a-t-elle été réalisée au cours des 6 derniers mois ?
+                  Une expertise immobilière a-t-elle été réalisée au cours des 6 derniers mois ?
                   <span className="text-destructive ml-1">*</span>
                 </Label>
                 <p className="text-xs text-muted-foreground">Joignez le rapport pour appuyer la valeur déclarée.</p>
