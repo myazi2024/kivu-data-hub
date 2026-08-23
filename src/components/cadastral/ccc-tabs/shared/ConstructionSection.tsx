@@ -627,7 +627,16 @@ export const ConstructionSection: React.FC<ConstructionSectionProps> = ({
               )}
               <div className="flex gap-3">
                 <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="radio" name="constructionMode" checked={constructionMode === 'unique'} onChange={() => { setConstructionMode('unique'); setAdditionalConstructions([]); }} className="accent-primary h-4 w-4" />
+                  <input type="radio" name="constructionMode" checked={constructionMode === 'unique'} onChange={() => {
+                    setConstructionMode('unique');
+                    if (removeAdditionalConstruction) {
+                      // Retirer du dernier au premier pour que le remappage des
+                      // références `additional:<idx>` (IRL, annonces) reste correct.
+                      for (let i = additionalConstructions.length - 1; i >= 0; i--) removeAdditionalConstruction(i);
+                    } else {
+                      setAdditionalConstructions([]);
+                    }
+                  }} className="accent-primary h-4 w-4" />
                   <span className="text-sm">Construction unique</span>
                 </label>
                 <label className={`flex items-center gap-2 ${isFirstConstructionComplete ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'}`}>
