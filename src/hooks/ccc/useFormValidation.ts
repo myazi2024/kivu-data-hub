@@ -39,6 +39,36 @@ export interface UseFormValidationParams {
 
 const TAB_ORDER = ['general', 'location', 'history', 'obligations', 'market-value', 'review'];
 
+/**
+ * Parse sûr d'une date de formulaire : renvoie null pour une valeur vide,
+ * non-chaîne ou invalide. Évite les comparaisons silencieusement fausses
+ * (`new Date('')` produit un Invalid Date dont toute comparaison est `false`).
+ */
+const safeDate = (value?: string | null): Date | null => {
+  if (!value || typeof value !== 'string' || value.trim() === '') return null;
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? null : d;
+};
+
+/** Comparaison sûre : `true` seulement si les deux dates sont valides et a < b. */
+const isBefore = (a?: string | null, b?: string | null): boolean => {
+  const da = safeDate(a); const db = safeDate(b);
+  return !!da && !!db && da.getTime() < db.getTime();
+};
+
+/** Comparaison sûre : `true` seulement si les deux dates sont valides et a > b. */
+const isAfter = (a?: string | null, b?: string | null): boolean => {
+  const da = safeDate(a); const db = safeDate(b);
+  return !!da && !!db && da.getTime() > db.getTime();
+};
+
+/** `true` si la date est valide et antérieure au 01/01/`year`. */
+const isBeforeConstructionYear = (value: string | undefined, year?: number): boolean => {
+  const d = safeDate(value);
+  if (!d || !year) return false;
+  return d.getTime() < new Date(year, 0, 1).getTime();
+};
+
 export function useFormValidation(params: UseFormValidationParams) {
   const {
     formData, customTitleName, currentOwners, previousOwners, sectionType,
