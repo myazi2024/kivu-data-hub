@@ -186,11 +186,8 @@ export function useFormValidation(params: UseFormValidationParams) {
         if (c.rentalConfiguration === 'single') {
           if (!c.rentalStartDate) {
             missing.push({ field: `additionalRentalStartDate_${idx}`, label: `En location depuis quand ? (construction #${idx + 2})`, tab: 'location' });
-          } else if (c.constructionYear) {
-            const min = new Date(c.constructionYear, 0, 1);
-            if (new Date(c.rentalStartDate) < min) {
-              missing.push({ field: `additionalRentalStartDate_${idx}`, label: `Date de mise en location < 01/01/${c.constructionYear} (construction #${idx + 2})`, tab: 'location' });
-            }
+          } else if (isBeforeConstructionYear(c.rentalStartDate, Number(c.constructionYear) || undefined)) {
+            missing.push({ field: `additionalRentalStartDate_${idx}`, label: `Date de mise en location < 01/01/${c.constructionYear} (construction #${idx + 2})`, tab: 'location' });
           }
         }
         if (!c.rentalConfiguration) {
@@ -198,6 +195,15 @@ export function useFormValidation(params: UseFormValidationParams) {
         } else if (c.rentalConfiguration === 'single') {
           if (!c.monthlyRentUsd || Number(c.monthlyRentUsd) <= 0) {
             missing.push({ field: `additionalMonthlyRent_${idx}`, label: `Loyer mensuel (construction #${idx + 2})`, tab: 'location' });
+          }
+          if ((c as any).isOccupied === undefined || (c as any).isOccupied === null) {
+            missing.push({ field: `additionalIsOccupied_${idx}`, label: `Statut d'occupation (construction #${idx + 2})`, tab: 'location' });
+          }
+          if (!(c as any).hostingCapacity || Number((c as any).hostingCapacity) <= 0) {
+            missing.push({ field: `additionalHostingCapacity_${idx}`, label: `Capacité d'accueil (construction #${idx + 2})`, tab: 'location' });
+          }
+          if ((c as any).isOccupied === true && (!(c as any).occupantCount || Number((c as any).occupantCount) <= 0)) {
+            missing.push({ field: `additionalOccupantCount_${idx}`, label: `Nombre d'occupants (construction #${idx + 2})`, tab: 'location' });
           }
         } else if (c.rentalConfiguration === 'multi') {
           const count = Number(c.rentalUnitsCount) || 0;
