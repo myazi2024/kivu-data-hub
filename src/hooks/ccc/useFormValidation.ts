@@ -126,11 +126,8 @@ export function useFormValidation(params: UseFormValidationParams) {
       if (formData.rentalConfiguration === 'single') {
         if (!formData.rentalStartDate) {
           missing.push({ field: 'rentalStartDate', label: 'En location depuis quand ? (construction principale)', tab: 'location' });
-        } else if (formData.constructionYear) {
-          const min = new Date(formData.constructionYear, 0, 1);
-          if (new Date(formData.rentalStartDate) < min) {
-            missing.push({ field: 'rentalStartDate', label: `Date de mise en location < 01/01/${formData.constructionYear}`, tab: 'location' });
-          }
+        } else if (isBeforeConstructionYear(formData.rentalStartDate, formData.constructionYear)) {
+          missing.push({ field: 'rentalStartDate', label: `Date de mise en location < 01/01/${formData.constructionYear}`, tab: 'location' });
         }
       }
       if (!formData.rentalConfiguration) {
@@ -138,6 +135,16 @@ export function useFormValidation(params: UseFormValidationParams) {
       } else if (formData.rentalConfiguration === 'single') {
         if (!formData.monthlyRentUsd || Number(formData.monthlyRentUsd) <= 0) {
           missing.push({ field: 'monthlyRentUsd', label: 'Loyer mensuel actuel (USD)', tab: 'location' });
+        }
+        // Symétrie avec le mode multi : occupation et capacité sont requises
+        if (formData.isOccupied === undefined || formData.isOccupied === null) {
+          missing.push({ field: 'isOccupied', label: "Statut d'occupation du local", tab: 'location' });
+        }
+        if (!formData.hostingCapacity || Number(formData.hostingCapacity) <= 0) {
+          missing.push({ field: 'hostingCapacity', label: "Capacité d'accueil", tab: 'location' });
+        }
+        if (formData.isOccupied === true && (!formData.occupantCount || Number(formData.occupantCount) <= 0)) {
+          missing.push({ field: 'occupantCount', label: 'Nombre de personnes qui y vivent', tab: 'location' });
         }
       } else if (formData.rentalConfiguration === 'multi') {
         const count = Number(formData.rentalUnitsCount) || 0;
