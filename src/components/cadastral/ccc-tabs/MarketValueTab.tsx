@@ -1026,8 +1026,8 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
                 toast.error("Ajoutez au moins une photo de la parcelle pour l'annonce de vente.");
                 return;
               }
-              if (!sale.paymentTerms || !sale.availability) {
-                toast.error("Renseignez les modalités de paiement et la disponibilité de la parcelle.");
+              if (!sale.availability) {
+                toast.error("Renseignez la disponibilité de la parcelle.");
                 return;
               }
             }
