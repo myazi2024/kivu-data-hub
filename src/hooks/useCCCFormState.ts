@@ -1392,8 +1392,26 @@ export const useCCCFormState = ({
     handleInputChange('hostingCapacity', undefined);
     handleInputChange('floorNumber', undefined);
     handleInputChange('apartmentNumber', undefined);
+    // Bloc locatif dépendant : purge explicite pour éviter des données orphelines
+    handleInputChange('isRented', undefined);
+    handleInputChange('rentalConfiguration', undefined);
+    handleInputChange('rentalUnitsCount', undefined);
+    handleInputChange('rentalUnits', undefined);
+    handleInputChange('rentalStartDate', undefined);
+    handleInputChange('monthlyRentUsd', undefined);
     setConstructionMode('unique');
     setAdditionalConstructions([]);
+    // Références descendantes : les IRL et annonces rattachés à une construction
+    // supprimée doivent être détachés/purgés (sinon validation bloquante ou
+    // annonces fantômes envoyées en base).
+    setTaxRecords(prev => prev.map(t => (
+      t.constructionRef ? { ...t, constructionRef: undefined } : t
+    )));
+    setFormData(prev => {
+      const listings = Array.isArray(prev.marketListings) ? prev.marketListings : [];
+      if (listings.length === 0) return prev;
+      return { ...prev, marketListings: [] };
+    });
     setBuildingPermits([{
       permitType: 'construction', permitNumber: '', issueDate: '',
       validityMonths: '36', administrativeStatus: 'En attente', issuingService: '', attachmentFile: null
