@@ -612,8 +612,8 @@ const ObligationsTab: React.FC<ObligationsTabProps> = ({
           <Button type="button" variant="outline" onClick={() => { if (obligationType === 'disputes') setObligationType('mortgages'); else if (obligationType === 'mortgages') setObligationType('taxes'); else handleTabChange('history'); }} className="gap-2 rounded-xl h-10 text-sm">
             <ChevronLeft className="h-4 w-4" /> Précédent
           </Button>
-          <Button type="button" onClick={() => { if (obligationType === 'taxes') setObligationType('mortgages'); else if (obligationType === 'mortgages') setObligationType('disputes'); else handleNextTab('obligations', 'review'); }} className="gap-2 rounded-xl h-10 text-sm shadow-md hover:shadow-lg transition-all">
-            {obligationType === 'disputes' ? 'Reviser' : 'Suivant'} <ChevronRight className="h-4 w-4" />
+          <Button type="button" onClick={() => { if (obligationType === 'taxes') setObligationType('mortgages'); else if (obligationType === 'mortgages') setObligationType('disputes'); else handleNextTab('obligations', 'market-value'); }} className="gap-2 rounded-xl h-10 text-sm shadow-md hover:shadow-lg transition-all">
+            Suivant <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
       </div>
