@@ -421,34 +421,6 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
                         )}
                       </div>
 
-                      {/* Modalités de prix */}
-                      <div className="min-w-0 rounded-xl border border-border bg-background p-2 sm:p-2.5 space-y-2">
-                        <Label className="text-[11px] font-semibold text-foreground uppercase tracking-wide">Modalités de prix</Label>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                          <div className="space-y-1">
-                            <Label className="text-[11px] font-medium text-foreground">Prix</Label>
-                            <Select value={sale.priceNegotiable === undefined ? '' : (sale.priceNegotiable ? 'negotiable' : 'firm')} onValueChange={(v) => updateSale({ priceNegotiable: v === 'negotiable' })}>
-                              <SelectTrigger className="h-10 w-full min-w-0 rounded-xl text-sm"><SelectValue placeholder="Ferme / Négociable" /></SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="firm">Prix ferme</SelectItem>
-                                <SelectItem value="negotiable">Négociable</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div className="space-y-1">
-                            <Label className="text-[11px] font-medium text-foreground">Modalités de paiement <span className="text-destructive">*</span></Label>
-                            <Select value={sale.paymentTerms || ''} onValueChange={(v) => updateSale({ paymentTerms: v as any })}>
-                              <SelectTrigger className="h-10 w-full min-w-0 rounded-xl text-sm"><SelectValue placeholder="Choisir…" /></SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="cash">Cash</SelectItem>
-                                <SelectItem value="installments">Échelonné</SelectItem>
-                                <SelectItem value="both">Cash ou échelonné</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        </div>
-                      </div>
-
                       {/* Disponibilité */}
                       <div className="min-w-0 rounded-xl border border-border bg-background p-2 sm:p-2.5 space-y-2">
                         <Label className="text-[11px] font-semibold text-foreground uppercase tracking-wide">Disponibilité</Label>
