@@ -231,11 +231,8 @@ export function useFormValidation(params: UseFormValidationParams) {
             }
             if (!u || !u.rentalStartDate) {
               missing.push({ field: `additionalRentalUnitDate_${idx}_${i}`, label: `Local #${i + 1} : date de mise en location (construction #${idx + 2})`, tab: 'location' });
-            } else if (c.constructionYear) {
-              const min = new Date(c.constructionYear, 0, 1);
-              if (new Date(u.rentalStartDate) < min) {
-                missing.push({ field: `additionalRentalUnitDate_${idx}_${i}`, label: `Local #${i + 1} : date < 01/01/${c.constructionYear} (construction #${idx + 2})`, tab: 'location' });
-              }
+            } else if (isBeforeConstructionYear(u.rentalStartDate, Number(c.constructionYear) || undefined)) {
+              missing.push({ field: `additionalRentalUnitDate_${idx}_${i}`, label: `Local #${i + 1} : date < 01/01/${c.constructionYear} (construction #${idx + 2})`, tab: 'location' });
             }
             if (showFloor && (!u || !u.floor)) {
               missing.push({ field: `additionalRentalUnitFloor_${idx}_${i}`, label: `Local #${i + 1} : emplacement (construction #${idx + 2})`, tab: 'location' });
