@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ExternalLink, TrendingUp, Megaphone, FileSearch } from 'lucide-react';
 import { parseMarketListings } from './cccConsistency';
+import { openSignedStorageFile } from '@/utils/storageSignedUrl';
 
 interface Props {
   contribution: any;
@@ -113,10 +114,13 @@ export const CCCMarketValuePanel: React.FC<Props> = ({ contribution }) => {
             <div>
               <Label className="text-xs text-muted-foreground">Rapport</Label>
               {contribution.appraisal_report_url ? (
-                <Button variant="link" size="sm" className="h-6 px-0 text-xs" asChild>
-                  <a href={contribution.appraisal_report_url} target="_blank" rel="noopener noreferrer">
-                    Ouvrir le rapport <ExternalLink className="h-3 w-3 ml-1" />
-                  </a>
+                <Button
+                  variant="link"
+                  size="sm"
+                  className="h-6 px-0 text-xs"
+                  onClick={() => { void openSignedStorageFile(contribution.appraisal_report_url); }}
+                >
+                  Ouvrir le rapport <ExternalLink className="h-3 w-3 ml-1" />
                 </Button>
               ) : (
                 <p className="text-sm">Non fourni</p>

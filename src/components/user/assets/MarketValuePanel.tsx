@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { TrendingUp, FileSearch, ExternalLink, AlertTriangle } from 'lucide-react';
 import { useUserAssets } from '@/hooks/useUserAssets';
+import { openSignedStorageFile } from '@/utils/storageSignedUrl';
 import { formatUsd, formatDateFr } from '@/utils/userRentalMarket';
 
 /** Vue « Valeur & expertise » : prix de revente et expertises déclarées. */
@@ -84,11 +85,14 @@ export const MarketValuePanel: React.FC = () => {
           </div>
 
           {m.appraisalReportUrl && (
-            <Button variant="outline" size="sm" className="h-7 text-xs gap-1" asChild>
-              <a href={m.appraisalReportUrl} target="_blank" rel="noopener noreferrer">
-                <ExternalLink className="h-3 w-3" />
-                Rapport d'expertise
-              </a>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 text-xs gap-1"
+              onClick={() => { void openSignedStorageFile(m.appraisalReportUrl); }}
+            >
+              <ExternalLink className="h-3 w-3" />
+              Rapport d'expertise
             </Button>
           )}
         </div>
