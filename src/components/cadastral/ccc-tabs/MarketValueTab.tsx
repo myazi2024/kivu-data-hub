@@ -28,7 +28,7 @@ import {
   getToday,
   fmtUSD,
   subjectFor,
-  pluralizeSubject,
+  formatVacantTargetsSentence,
   pathFromPublicUrl,
   buildVacantTargets,
   type MarketListingEntry,
