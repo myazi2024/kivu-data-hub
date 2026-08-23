@@ -98,6 +98,12 @@ export const useCCCFormState = ({
   const [servitude, setServitude] = useState<{ hasServitude: boolean; width?: number }>({ hasServitude: false });
   const [buildingShapes, setBuildingShapes] = useState<any[]>([]);
   const [disputeFormData, setDisputeFormData] = useState<any>(null);
+  /**
+   * Pièces jointes du litige : conservées ici (état parent) car l'onglet Obligations
+   * est démonté par Radix Tabs au changement d'onglet — l'état local du sous-formulaire
+   * serait perdu (et les fichiers n'étaient jamais envoyés à la soumission).
+   */
+  const [disputeDocuments, setDisputeDocuments] = useState<File[]>([]);
 
   const [previousOwners, setPreviousOwners] = useState<PreviousOwner[]>([{
     id: crypto.randomUUID(),
@@ -931,6 +937,19 @@ export const useCCCFormState = ({
         return { mortgageAmountUsd: parsedAmount, durationMonths: parsedDuration, creditorName: mortgage.creditorName, creditorType: mortgage.creditorType, contractDate: mortgage.contractDate, mortgageStatus: mortgage.mortgageStatus, receiptUrl: receiptUrl || mortgage.existingReceiptUrl || undefined };
       }))).filter(Boolean);
 
+      // Pièces jointes du litige (uploadées via uploadFile → suivi pour rollback)
+      let disputeDataFinal: any = undefined;
+      if (hasDispute === true && disputeFormData) {
+        const existingDocs: string[] = Array.isArray(disputeFormData.documents) ? disputeFormData.documents : [];
+        const newDocUrls: string[] = [];
+        for (const file of disputeDocuments) {
+          const url = await uploadFile(file, 'dispute-documents');
+          if (!url) { await rollbackUploadedFiles(); uploadFailToast("un document du litige"); setUploading(false); return; }
+          newDocUrls.push(url);
+        }
+        disputeDataFinal = { ...disputeFormData, documents: [...existingDocs, ...newDocUrls] };
+      }
+
       let buildingPermitsDataFinal = undefined;
       let permitRequestData = undefined;
       if (permitMode === 'existing') {
@@ -984,7 +1003,7 @@ export const useCCCFormState = ({
         roadSides: roadSides.length > 0 ? roadSides : undefined,
         servitudeData: servitude.hasServitude ? servitude : undefined,
         hasDispute: hasDispute ?? undefined,
-        disputeData: disputeFormData || undefined,
+        disputeData: disputeDataFinal,
         buildingShapes: buildingShapes.length > 0 ? buildingShapes : undefined,
         soundEnvironment: soundEnvironment || undefined,
         nearbySoundSources: nearbySoundSources || undefined,
@@ -1036,6 +1055,7 @@ export const useCCCFormState = ({
     setServitude({ hasServitude: false });
     setBuildingShapes([]);
     setDisputeFormData(null);
+    setDisputeDocuments([]);
     setPermitMode(null);
     setBuildingPermits([{ permitType: 'construction', permitNumber: '', issueDate: '', validityMonths: '36', administrativeStatus: 'En attente', issuingService: '', attachmentFile: null }]);
     setPermitRequest({ permitType: 'construction', hasExistingConstruction: false, constructionDescription: '', plannedUsage: '', estimatedArea: '', applicantName: '', applicantPhone: '', applicantEmail: '', selectedOwnerIndex: -1, numberOfFloors: '', buildingMaterials: '', architecturalPlanImages: [], constructionYear: '', regularizationReason: '', originalPermitNumber: '', previousPermitNumber: '', constructionPhotos: [] });
@@ -1490,7 +1510,7 @@ export const useCCCFormState = ({
   /** Bascule du statut litige : purge les données de litige quand on repasse à « Non ». */
   const handleSetHasDispute = useCallback((value: boolean | null) => {
     setHasDispute(value);
-    if (value !== true) setDisputeFormData(null);
+    if (value !== true) { setDisputeFormData(null); setDisputeDocuments([]); }
     markDirty();
   }, []);
 
@@ -1536,6 +1556,7 @@ export const useCCCFormState = ({
     showMortgageWarning, highlightIncompleteMortgage,
     hasDispute, setHasDispute: handleSetHasDispute,
     disputeFormData, setDisputeFormData,
+    disputeDocuments, setDisputeDocuments,
     // Validation
     highlightRequiredFields, setHighlightRequiredFields,
     getMissingFields, isFormValidForSubmission, calculateCCCValue,
