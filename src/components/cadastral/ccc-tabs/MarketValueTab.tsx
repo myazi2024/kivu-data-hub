@@ -257,7 +257,7 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
               <DollarSign className="h-4 w-4" />
             </div>
             <div className="flex-1">
-              <h3 className="text-sm font-semibold text-foreground">Valeur marchande de la parcelle</h3>
+              <h3 className="text-sm font-semibold text-foreground">Nous souhaitons connaître votre avis sur cette parcelle</h3>
               <p className="text-xs text-muted-foreground">Estimation commerciale et expertise éventuelle</p>
             </div>
           </div>
