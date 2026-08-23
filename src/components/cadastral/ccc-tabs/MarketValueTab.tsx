@@ -693,11 +693,10 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
             ) : (
               <>
                 <div className="rounded-xl bg-primary/5 border border-primary/20 p-3 text-xs sm:text-sm text-foreground leading-relaxed">
-                  Vous avez indiqué dans l'onglet <strong>Localisation</strong> que{' '}
-                  <strong>{vacantTargets.length} {subjectLabel}</strong>{' '}
-                  {vacantTargets.length > 1 ? 'ne sont pas actuellement occupés' : "n'est pas actuellement occupé"}.
-                  Souhaitez-vous les proposer à la location ?
+                  {vacantSentence.intro}{' '}
+                  <strong>{vacantSentence.action}</strong>
                 </div>
+
 
                 <div className="space-y-2">
                   {vacantTargets.map((t) => {
