@@ -87,7 +87,13 @@ export const RentalConfigurationSelector: React.FC<CommonProps> = ({
   const subject = buildSubject(propertyCategory, constructionType);
   const isMissing = highlightRequired && !state.rentalConfiguration;
 
+  /** Locaux qui seraient supprimés par une réduction du nombre de locaux. */
+  const [pendingCount, setPendingCount] = useState<number | null>(null);
+
   const selectMode = (mode: RentalConfiguration) => {
+    // Garde-fou : recliquer sur le mode déjà actif ne doit rien effacer.
+    if (mode === state.rentalConfiguration) return;
+
     // Reset explicite de l'occupation globale : évite qu'une valeur héritée du
     // mode précédent ne subsiste transitoirement (l'agrégation multi la
     // recalculera à partir des locaux, le mode single la fera ressaisir).
@@ -122,13 +128,28 @@ export const RentalConfigurationSelector: React.FC<CommonProps> = ({
     }
   };
 
-  const setCount = (raw: string) => {
-    const n = clampCount(parseInt(raw, 10) || MIN_UNITS);
+  const applyCount = (n: number) => {
     onPatch({
       rentalUnitsCount: n,
       rentalUnits: resizeUnits(state.rentalUnits, n),
     });
   };
+
+  /** Locaux au-delà du nouveau total contenant des données saisies. */
+  const droppedFilledUnits = (n: number) =>
+    (state.rentalUnits || [])
+      .map((u, i) => ({ u, i }))
+      .filter(({ u, i }) => i >= n && u && Object.values(u).some((v) => v !== undefined && v !== '' && v !== null));
+
+  const setCount = (raw: string) => {
+    const n = clampCount(parseInt(raw, 10) || MIN_UNITS);
+    if (droppedFilledUnits(n).length > 0) {
+      setPendingCount(n);
+      return;
+    }
+    applyCount(n);
+  };
+
 
   return (
     <div className="space-y-2 animate-fade-in">
