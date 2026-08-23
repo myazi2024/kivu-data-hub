@@ -11,11 +11,6 @@ interface MarketValueSummaryProps {
 
 const fmtDate = (d?: string) => (d ? new Date(d).toLocaleDateString('fr-FR') : '');
 
-const PAYMENT_TERMS_LABELS: Record<string, string> = {
-  cash: 'Comptant',
-  installments: 'Échelonné',
-  both: 'Comptant ou échelonné',
-};
 const AVAILABILITY_LABELS: Record<string, string> = {
   immediate: 'Immédiate',
   conditional: 'Sous conditions',
@@ -91,7 +86,6 @@ export const MarketValueSummary: React.FC<MarketValueSummaryProps> = ({ formData
               <div className="ml-2 text-muted-foreground space-y-0.5">
                 <div>Photos: {sale.coverImageUrls?.length || 0}{sale.coverImageMainUrl ? ' (couverture définie)' : ''}</div>
                 <div>Prix: {sale.priceNegotiable ? 'Négociable' : 'Ferme'}</div>
-                {sale.paymentTerms && <div>Modalités: {PAYMENT_TERMS_LABELS[sale.paymentTerms] || sale.paymentTerms}</div>}
                 {sale.availability && (
                   <div>Disponibilité: {AVAILABILITY_LABELS[sale.availability] || sale.availability}
                     {sale.availabilityNote ? ` — ${sale.availabilityNote}` : ''}</div>

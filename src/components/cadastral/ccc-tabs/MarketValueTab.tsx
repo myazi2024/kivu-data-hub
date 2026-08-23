@@ -257,7 +257,7 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
               <DollarSign className="h-4 w-4" />
             </div>
             <div className="flex-1">
-              <h3 className="text-sm font-semibold text-foreground">Valeur marchande de la parcelle</h3>
+              <h3 className="text-sm font-semibold text-foreground">Nous souhaitons connaître votre avis sur cette parcelle</h3>
               <p className="text-xs text-muted-foreground">Estimation commerciale et expertise éventuelle</p>
             </div>
           </div>
@@ -421,34 +421,6 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
                         )}
                       </div>
 
-                      {/* Modalités de prix */}
-                      <div className="min-w-0 rounded-xl border border-border bg-background p-2 sm:p-2.5 space-y-2">
-                        <Label className="text-[11px] font-semibold text-foreground uppercase tracking-wide">Modalités de prix</Label>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                          <div className="space-y-1">
-                            <Label className="text-[11px] font-medium text-foreground">Prix</Label>
-                            <Select value={sale.priceNegotiable === undefined ? '' : (sale.priceNegotiable ? 'negotiable' : 'firm')} onValueChange={(v) => updateSale({ priceNegotiable: v === 'negotiable' })}>
-                              <SelectTrigger className="h-10 w-full min-w-0 rounded-xl text-sm"><SelectValue placeholder="Ferme / Négociable" /></SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="firm">Prix ferme</SelectItem>
-                                <SelectItem value="negotiable">Négociable</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div className="space-y-1">
-                            <Label className="text-[11px] font-medium text-foreground">Modalités de paiement <span className="text-destructive">*</span></Label>
-                            <Select value={sale.paymentTerms || ''} onValueChange={(v) => updateSale({ paymentTerms: v as any })}>
-                              <SelectTrigger className="h-10 w-full min-w-0 rounded-xl text-sm"><SelectValue placeholder="Choisir…" /></SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="cash">Cash</SelectItem>
-                                <SelectItem value="installments">Échelonné</SelectItem>
-                                <SelectItem value="both">Cash ou échelonné</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        </div>
-                      </div>
-
                       {/* Disponibilité */}
                       <div className="min-w-0 rounded-xl border border-border bg-background p-2 sm:p-2.5 space-y-2">
                         <Label className="text-[11px] font-semibold text-foreground uppercase tracking-wide">Disponibilité</Label>
@@ -479,7 +451,7 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
 
                       {/* Description & contact */}
                       <div className="min-w-0 rounded-xl border border-border bg-background p-2 sm:p-2.5 space-y-2">
-                        <Label className="text-[11px] font-semibold text-foreground uppercase tracking-wide">Description & contact</Label>
+                        <Label className="text-[11px] font-semibold text-foreground uppercase tracking-wide">Comment décririez-vous cette propriété en quelques mots ?</Label>
                         <div className="space-y-1">
                           <Label className="text-[11px] font-medium text-foreground">Description (500 caractères max)</Label>
                           <Textarea
@@ -550,7 +522,7 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
               </div>
               <div className="flex-1 space-y-1">
                 <Label className="text-sm font-medium text-foreground">
-                  Valeur vénale — une expertise immobilière a-t-elle été réalisée au cours des 6 derniers mois ?
+                  Une expertise immobilière a-t-elle été réalisée au cours des 6 derniers mois ?
                   <span className="text-destructive ml-1">*</span>
                 </Label>
                 <p className="text-xs text-muted-foreground">Joignez le rapport pour appuyer la valeur déclarée.</p>
@@ -955,7 +927,7 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
 
                                   {/* Description & contact */}
                                   <div className="min-w-0 rounded-xl border border-border bg-background p-2 sm:p-2.5 space-y-2">
-                                    <Label className="text-[11px] font-semibold text-foreground uppercase tracking-wide">Description & contact</Label>
+                                    <Label className="text-[11px] font-semibold text-foreground uppercase tracking-wide">Comment décririez-vous cette propriété en quelques mots ?</Label>
                                     <div className="space-y-1">
                                       <Label className="text-[11px] font-medium text-foreground">Description de l'annonce (500 caractères max)</Label>
                                       <Textarea
