@@ -322,10 +322,8 @@ export function useFormValidation(params: UseFormValidationParams) {
       const irlRecords = taxRecords.filter(t => t.taxType === 'Impôt sur les revenus locatifs' && t.taxAmount && t.taxYear);
       const irlRefs = irlRecords.map(t => t.constructionRef).filter(Boolean) as string[];
 
-      const missingRefs = rentalRefs.filter(r => !irlRefs.includes(r));
-      missingRefs.forEach(r => {
-        missing.push({ field: `irlMissing_${r}`, label: `IRL manquant pour : ${rentalLabels[r]}`, tab: 'obligations' });
-      });
+      // La déclaration IRL est facultative : aucune erreur si elle est absente.
+
 
       const orphanRefs = irlRefs.filter(r => !rentalRefs.includes(r));
       orphanRefs.forEach(r => {
