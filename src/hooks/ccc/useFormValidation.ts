@@ -421,10 +421,8 @@ export function useFormValidation(params: UseFormValidationParams) {
       if (!hasAmt) {
         missing.push({ field: 'resalePriceAmount', label: 'Prix de revente proposé', tab: 'market-value' });
       }
-      if (!hasCur) {
-        missing.push({ field: 'resalePriceCurrency', label: 'Devise du prix de revente', tab: 'market-value' });
-      }
-      if (hasAmt !== hasCur) {
+      // Une devise sélectionnée sans montant est incohérente ; un montant sans devise explicite vaut USD.
+      if (hasCur && !hasAmt) {
         missing.push({ field: 'resalePricePair', label: 'Indiquez à la fois la devise et le montant du prix de revente', tab: 'market-value' });
       }
       const sale = formData.saleListing || {};
@@ -495,8 +493,9 @@ export function useFormValidation(params: UseFormValidationParams) {
           }
           const hasAmt = l.rentAmount !== undefined && l.rentAmount !== null && l.rentAmount !== '';
           const hasCur = !!l.rentCurrency;
-          if (hasAmt !== hasCur) {
-            missing.push({ field: `marketListingRentPair_${i}`, label: `Loyer du local "${l.unitLabel || i + 1}" : indiquez à la fois la devise et le montant`, tab: 'market-value' });
+          // Devise choisie sans montant = incomplet ; montant sans devise explicite = USD par défaut.
+          if (hasCur && !hasAmt) {
+            missing.push({ field: `marketListingRentPair_${i}`, label: `Loyer du local "${l.unitLabel || i + 1}" : indiquez le montant du loyer`, tab: 'market-value' });
           }
           if (l.contactValue) {
             const v = String(l.contactValue).trim();

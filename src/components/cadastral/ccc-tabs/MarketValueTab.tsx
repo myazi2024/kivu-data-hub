@@ -129,6 +129,8 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
   const setResaleAmount = (raw: string) => {
     const n = raw === '' ? undefined : Number(raw);
     handleInputChange('resalePriceAmount', n);
+    // Persiste la devise affichée (USD par défaut) pour éviter une paire montant/devise incohérente.
+    if (n !== undefined && !formData.resalePriceCurrency) handleInputChange('resalePriceCurrency', resaleCurrency);
     handleInputChange('resalePriceUsd', toUsd(n, resaleCurrency));
   };
   const setResaleCurrency = (cur: CurrencyCode) => {
@@ -263,7 +265,7 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
   );
 
   return (
-    <div className="w-full min-w-0 overflow-x-hidden space-y-4 sm:space-y-5 pt-2 sm:pt-3 animate-fade-in">
+    <div className="w-full min-w-0 space-y-4 sm:space-y-5 pt-2 sm:pt-3 animate-fade-in">
       {/* ════════ BLOC 1 — VALEUR MARCHANDE DE LA PARCELLE ════════ */}
       <Card className="border-2 shadow-md rounded-2xl overflow-hidden">
         <CardContent className="p-3 sm:p-4 space-y-4">
@@ -782,7 +784,7 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
                                             onChange={(e) => {
                                               const n = e.target.value === '' ? undefined : Number(e.target.value);
                                               const usd = n === undefined ? undefined : (rentCur === 'USD' ? n : n / cdfRate);
-                                              updateListing(t.ref, { rentAmount: n, targetRentUsd: usd }, { unitLabel: t.label });
+                                              updateListing(t.ref, { rentAmount: n, targetRentUsd: usd, rentCurrency: n === undefined ? entry?.rentCurrency : (entry?.rentCurrency || rentCur) }, { unitLabel: t.label });
                                             }}
                                             className="flex-1 min-w-0 h-10 rounded-xl text-sm"
                                           />
