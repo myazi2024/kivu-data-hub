@@ -1011,52 +1011,55 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
         </Card>
       )}
 
-      {/* ════════ NAVIGATION ════════ */}
-      <div className="flex items-center justify-between gap-2 pt-2">
-        <Button
-          type="button"
-          variant="outline"
-          className="h-10 rounded-xl"
-          onClick={() => handleTabChange('obligations')}
-        >
-          <ChevronLeft className="h-4 w-4 mr-1" /> Précédent
-        </Button>
-        <Button
-          type="button"
-          className="h-10 rounded-xl"
-          onClick={() => {
-            const incomplete = listings.find((l: any) => {
-              if (!l?.listForRent) return false;
-              const imgs = Array.isArray(l.coverImageUrls) ? l.coverImageUrls.filter(Boolean) : [];
-              return imgs.length < 1;
-            });
-            if (incomplete) {
-              toast.error("Ajoutez au moins une image de couverture pour chaque local proposé à la location.");
-              return;
-            }
-            if (wouldSell === true) {
-              const sale = formData.saleListing || {};
-              const saleImgs = Array.isArray(sale.coverImageUrls) ? sale.coverImageUrls.filter(Boolean) : [];
-              if (saleImgs.length < 1) {
-                toast.error("Ajoutez au moins une photo de la parcelle pour l'annonce de vente.");
+      {/* Navigation */}
+      <div className="sticky bottom-0 z-10 bg-background/95 backdrop-blur-sm border-t pt-3 pb-3 px-1 -mx-1">
+        <div className="flex justify-between">
+          <Button
+            type="button"
+            variant="outline"
+            className="gap-2 rounded-xl h-10 text-sm"
+            onClick={() => handleTabChange('obligations')}
+          >
+            <ChevronLeft className="h-4 w-4" /> Précédent
+          </Button>
+          <Button
+            type="button"
+            className="gap-2 rounded-xl h-10 text-sm shadow-md hover:shadow-lg transition-all"
+            onClick={() => {
+              const incomplete = listings.find((l: any) => {
+                if (!l?.listForRent) return false;
+                const imgs = Array.isArray(l.coverImageUrls) ? l.coverImageUrls.filter(Boolean) : [];
+                return imgs.length < 1;
+              });
+              if (incomplete) {
+                toast.error("Ajoutez au moins une image de couverture pour chaque local proposé à la location.");
                 return;
               }
-              if (!sale.availability) {
-                toast.error("Renseignez la disponibilité de la parcelle.");
+              if (wouldSell === true) {
+                const sale = formData.saleListing || {};
+                const saleImgs = Array.isArray(sale.coverImageUrls) ? sale.coverImageUrls.filter(Boolean) : [];
+                if (saleImgs.length < 1) {
+                  toast.error("Ajoutez au moins une photo de la parcelle pour l'annonce de vente.");
+                  return;
+                }
+                if (!sale.availability) {
+                  toast.error("Renseignez la disponibilité de la parcelle.");
+                  return;
+                }
+              }
+              const tooLongDesc = (listings as any[]).find(l => (l?.description || '').length > 500);
+              if (tooLongDesc) {
+                toast.error("Une description de local dépasse 500 caractères.");
                 return;
               }
-            }
-            const tooLongDesc = (listings as any[]).find(l => (l?.description || '').length > 500);
-            if (tooLongDesc) {
-              toast.error("Une description de local dépasse 500 caractères.");
-              return;
-            }
-            handleNextTab('market-value', 'review');
-          }}
-        >
-          Suivant <ChevronRight className="h-4 w-4 ml-1" />
-        </Button>
+              handleNextTab('market-value', 'review');
+            }}
+          >
+            Suivant <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
+
     </div>
   );
 };
