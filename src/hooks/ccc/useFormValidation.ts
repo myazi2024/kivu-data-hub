@@ -172,11 +172,8 @@ export function useFormValidation(params: UseFormValidationParams) {
           }
           if (!u || !u.rentalStartDate) {
             missing.push({ field: `rentalUnitDate_${i}`, label: `Local #${i + 1} : date de mise en location`, tab: 'location' });
-          } else if (formData.constructionYear) {
-            const min = new Date(formData.constructionYear, 0, 1);
-            if (new Date(u.rentalStartDate) < min) {
-              missing.push({ field: `rentalUnitDate_${i}`, label: `Local #${i + 1} : date < 01/01/${formData.constructionYear}`, tab: 'location' });
-            }
+          } else if (isBeforeConstructionYear(u.rentalStartDate, formData.constructionYear)) {
+            missing.push({ field: `rentalUnitDate_${i}`, label: `Local #${i + 1} : date < 01/01/${formData.constructionYear}`, tab: 'location' });
           }
           if (showFloor && (!u || !u.floor)) {
             missing.push({ field: `rentalUnitFloor_${i}`, label: `Local #${i + 1} : emplacement (étage)`, tab: 'location' });
