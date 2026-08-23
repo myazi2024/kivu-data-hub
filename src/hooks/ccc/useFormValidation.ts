@@ -131,8 +131,6 @@ export function useFormValidation(params: UseFormValidationParams) {
           if (u && u.isOccupied === true) {
             if (!u.occupantCount || Number(u.occupantCount) <= 0) {
               missing.push({ field: `rentalUnitOccupants_${i}`, label: `Local #${i + 1} : nombre de personnes qui y vivent`, tab: 'location' });
-            } else if (u.hostingCapacity && Number(u.occupantCount) > Number(u.hostingCapacity)) {
-              missing.push({ field: `rentalUnitOccupants_${i}`, label: `Local #${i + 1} : occupants > capacité d'accueil`, tab: 'location' });
             }
           }
           if (!u || !u.rentalStartDate) {
