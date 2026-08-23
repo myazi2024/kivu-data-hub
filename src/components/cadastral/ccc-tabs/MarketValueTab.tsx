@@ -927,7 +927,7 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
 
                                   {/* Description & contact */}
                                   <div className="min-w-0 rounded-xl border border-border bg-background p-2 sm:p-2.5 space-y-2">
-                                    <Label className="text-[11px] font-semibold text-foreground uppercase tracking-wide">Description & contact</Label>
+                                    <Label className="text-[11px] font-semibold text-foreground uppercase tracking-wide">Comment décririez-vous cette propriété en quelques mots ?</Label>
                                     <div className="space-y-1">
                                       <Label className="text-[11px] font-medium text-foreground">Description de l'annonce (500 caractères max)</Label>
                                       <Textarea
