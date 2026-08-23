@@ -55,7 +55,7 @@ export const RentalSummary: React.FC<RentalSummaryProps> = ({
     <div className="pt-1 border-t border-border/50">
       <div className="font-medium">🏠 {title}:</div>
       <div className="ml-2 text-muted-foreground space-y-0.5">
-        {rentalStartDate && <div>{rentalDateLabel()}: {fmtDate(rentalStartDate)}</div>}
+        {rentalStartDate && <div>{rentalDateLabel(isOccupied)}: {fmtDate(rentalStartDate)}</div>}
         <div>
           Configuration:{' '}
           {rentalConfiguration
