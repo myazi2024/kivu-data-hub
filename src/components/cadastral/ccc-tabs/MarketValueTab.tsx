@@ -424,6 +424,7 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
                       {/* Disponibilité */}
                       <div className="min-w-0 rounded-xl border border-border bg-background p-2 sm:p-2.5 space-y-2">
                         <Label className="text-[11px] font-semibold text-foreground uppercase tracking-wide">Disponibilité</Label>
+                        <span className="hidden" />
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                           <div className="space-y-1">
                             <Label className="text-[11px] font-medium text-foreground">Disponible <span className="text-destructive">*</span></Label>
