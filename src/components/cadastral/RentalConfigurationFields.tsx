@@ -271,8 +271,6 @@ export const MonthlyRentFields: React.FC<CommonProps> = ({
             const missingOccupied = highlightRequired && unit.isOccupied === undefined;
             const missingCapacity = highlightRequired && unit.isOccupied !== undefined && !unit.hostingCapacity;
             const missingOccupants = highlightRequired && unit.isOccupied === true && !unit.occupantCount;
-            const occupantsOverCapacity =
-              !!unit.occupantCount && !!unit.hostingCapacity && unit.occupantCount > unit.hostingCapacity;
             const missingDate = highlightRequired && !unit.rentalStartDate;
             const missingFloor = highlightRequired && showFloorSelect && !unit.floor;
             return (
