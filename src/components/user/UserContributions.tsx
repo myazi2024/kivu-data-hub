@@ -14,7 +14,7 @@ import { Link } from 'react-router-dom';
 import CadastralContributionDialog from '@/components/cadastral/CadastralContributionDialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useUserContributions, type ContributionRowFull } from '@/hooks/useUserContributions';
-import { detectFormType, mapContributionToFormDraft } from '@/utils/contributionFormMapping';
+import { detectFormType } from '@/utils/contributionFormMapping';
 import { UserContributionDeleteDialog } from '@/components/user/contributions/UserContributionDeleteDialog';
 import { CorrectionRequestDialog } from '@/components/user/contributions/CorrectionRequestDialog';
 import { trackEvent } from '@/lib/analytics';
