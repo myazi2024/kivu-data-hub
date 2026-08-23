@@ -261,6 +261,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                   formData={state.formData}
                   handleInputChange={state.handleInputChange}
                   additionalConstructions={state.additionalConstructions}
+                  soundEnvironment={state.soundEnvironment}
                   handleTabChange={state.handleTabChange}
                   handleNextTab={state.handleNextTab}
                   highlightRequiredFields={state.highlightRequiredFields}
