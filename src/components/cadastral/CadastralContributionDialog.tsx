@@ -34,15 +34,20 @@ interface CadastralContributionDialogProps {
   onOpenChange: (open: boolean) => void;
   parcelNumber: string;
   editingContributionId?: string;
+  /** N° de titre préchargé quand la recherche cadastrale s'est faite par numéro de titre. */
+  initialTitleReferenceNumber?: string;
+  /** Origine de la recherche ayant ouvert le formulaire. */
+  searchOrigin?: 'parcel' | 'title';
 }
 
 const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = ({
-  open, onOpenChange, parcelNumber, editingContributionId
+  open, onOpenChange, parcelNumber, editingContributionId, initialTitleReferenceNumber, searchOrigin
 }) => {
   const dialogContentRef = useRef<HTMLDivElement>(null);
 
   const state = useCCCFormState({
-    open, onOpenChange, parcelNumber, editingContributionId, dialogContentRef
+    open, onOpenChange, parcelNumber, editingContributionId, dialogContentRef,
+    initialTitleReferenceNumber, searchOrigin
   });
 
   /**
@@ -116,7 +121,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
         >
           <DialogHeader className="px-3 sm:px-4 pt-2 sm:pt-3 pb-1.5 sm:pb-2 border-b bg-gradient-to-r from-primary/5 to-transparent rounded-t-2xl">
             <DialogTitle className="text-sm sm:text-base font-semibold leading-tight flex items-center gap-2 justify-center sm:justify-start">
-              <Badge variant="secondary" className="text-[10px] sm:text-xs font-medium px-1.5 py-0.5 rounded-lg">{parcelNumber}</Badge>
+              <Badge variant="secondary" className="text-[10px] sm:text-xs font-medium px-1.5 py-0.5 rounded-lg">{state.formData.parcelNumber || parcelNumber || 'Nouvelle parcelle'}</Badge>
               <span className="text-xs sm:text-sm text-muted-foreground">Contribution CCC</span>
             </DialogTitle>
           </DialogHeader>
@@ -191,7 +196,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                   availableTerritoires={state.availableTerritoires} availableCollectivites={state.availableCollectivites}
                   availableQuartiers={state.availableQuartiers} availableAvenues={state.availableAvenues}
                   gpsCoordinates={state.gpsCoordinates} onCoordinatesUpdate={state.setGpsCoordinates}
-                  mapConfig={state.mapConfig} parcelNumber={parcelNumber}
+                  mapConfig={state.mapConfig} parcelNumber={state.formData.parcelNumber || parcelNumber}
                   roadSides={state.roadSides} onRoadSidesChange={state.setRoadSides}
                   parcelSides={state.parcelSides} onParcelSidesUpdate={state.setParcelSides}
                   servitude={state.servitude} onServitudeChange={state.setServitude}
