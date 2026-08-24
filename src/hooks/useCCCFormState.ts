@@ -40,6 +40,10 @@ interface UseCCCFormStateProps {
   parcelNumber: string;
   editingContributionId?: string;
   dialogContentRef: React.RefObject<HTMLDivElement>;
+  /** N° de titre foncier préchargé depuis une recherche cadastrale infructueuse. */
+  initialTitleReferenceNumber?: string;
+  /** Mode de recherche ayant ouvert le formulaire ('parcel' par défaut). */
+  searchOrigin?: 'parcel' | 'title';
 }
 
 export const useCCCFormState = ({
@@ -48,6 +52,8 @@ export const useCCCFormState = ({
   parcelNumber,
   editingContributionId,
   dialogContentRef,
+  initialTitleReferenceNumber,
+  searchOrigin = 'parcel',
 }: UseCCCFormStateProps) => {
   const { submitContribution, updateContribution, loading } = useCadastralContribution();
   const { getConfig } = useContributionConfig();
@@ -174,7 +180,12 @@ export const useCCCFormState = ({
   const [availableConstructionMaterials, setAvailableConstructionMaterials] = useState<string[]>([]);
   const [availableStandings, setAvailableStandings] = useState<string[]>([]);
 
-  const [formData, setFormData] = useState<CadastralContributionData>({ parcelNumber });
+  const [formData, setFormData] = useState<CadastralContributionData>({
+    parcelNumber,
+    ...(searchOrigin === 'title' && initialTitleReferenceNumber
+      ? { titleReferenceNumber: initialTitleReferenceNumber }
+      : {}),
+  });
 
   const [parcelSides, setParcelSides] = useState<Array<{ name: string; length: string }>>([
     { name: 'Côté 1', length: '' }, { name: 'Côté 2', length: '' }, { name: 'Côté 3', length: '' }
@@ -278,7 +289,7 @@ export const useCCCFormState = ({
   const [soundEnvironment, setSoundEnvironment] = useState('');
   const [nearbySoundSources, setNearbySoundSources] = useState('');
 
-  const STORAGE_KEY = `cadastral_contribution_${parcelNumber}`;
+  const STORAGE_KEY = `cadastral_contribution_${parcelNumber || 'draft'}`;
 
   const {
     saveFormDataToStorage,
@@ -1036,7 +1047,12 @@ export const useCCCFormState = ({
     formDirtyRef.current = false;
     isClosingAfterSuccessRef.current = false;
     setCustomTitleName('');
-    setFormData({ parcelNumber });
+    setFormData({
+      parcelNumber,
+      ...(searchOrigin === 'title' && initialTitleReferenceNumber
+        ? { titleReferenceNumber: initialTitleReferenceNumber }
+        : {}),
+    });
     setShowSuccess(false); setShowQuickAuth(false); setPendingSubmission(false); setUploading(false);
     setOwnerDocFile(null); setTitleDocFiles([]);
     setSectionType(''); setSectionTypeAutoDetected(false); setActiveTab('general'); setHasShownConfetti(false); setShowExitConfirmation(false);
@@ -1262,15 +1278,16 @@ export const useCCCFormState = ({
 
   // Auto-save debounced: géré dans useFormPersistence
 
-  // Auto-detect section type from parcel number
+  // Auto-detect section type from parcel number (prop initial OU saisie manuelle).
+  // Les boutons SU/SR ne sont verrouillés que si le numéro provient réellement
+  // d'une recherche par numéro de parcelle (prop non vide).
   useEffect(() => {
-    if (parcelNumber) {
-      const upper = parcelNumber.toUpperCase().trim();
-      if (upper.startsWith('SU')) { setSectionType('urbaine'); setSectionTypeAutoDetected(true); }
-      else if (upper.startsWith('SR')) { setSectionType('rurale'); setSectionTypeAutoDetected(true); }
-      else { setSectionType(''); setSectionTypeAutoDetected(false); }
-    }
-  }, [parcelNumber]);
+    const upper = (formData.parcelNumber || '').toUpperCase().trim();
+    const lockable = !!parcelNumber?.trim();
+    if (upper.startsWith('SU')) { setSectionType('urbaine'); setSectionTypeAutoDetected(lockable); }
+    else if (upper.startsWith('SR')) { setSectionType('rurale'); setSectionTypeAutoDetected(lockable); }
+    else { setSectionTypeAutoDetected(false); }
+  }, [formData.parcelNumber, parcelNumber]);
 
   // Chaîne des dates de fin des anciens propriétaires.
   // Ancien #1 (le plus récent) se termine à la date d'entrée du propriétaire actuel ;

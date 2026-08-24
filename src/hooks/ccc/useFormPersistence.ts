@@ -117,7 +117,7 @@ export function useFormPersistence(params: UseFormPersistenceParams): UseFormPer
     setSoundEnvironment, setNearbySoundSources,
   } = params;
 
-  const STORAGE_KEY = `cadastral_contribution_${parcelNumber}`;
+  const STORAGE_KEY = `cadastral_contribution_${parcelNumber || 'draft'}`;
   const submitUploadedPathsRef = useRef<string[]>([]);
   const [hasRestoredDraft, setHasRestoredDraft] = useState(false);
 
@@ -232,7 +232,7 @@ export function useFormPersistence(params: UseFormPersistenceParams): UseFormPer
 
   // Effet: sauvegarde debounced sur changement d'état pertinent
   useEffect(() => {
-    if (open && formData.parcelNumber && !editingContributionId && !isLoadingFromDbRef.current) {
+    if (open && (formData.parcelNumber || formData.titleReferenceNumber) && !editingContributionId && !isLoadingFromDbRef.current) {
       const timeoutId = setTimeout(() => saveFormDataToStorage(), DEBOUNCE_MS);
       return () => clearTimeout(timeoutId);
     }
