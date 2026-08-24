@@ -325,21 +325,35 @@ const CadastralMap = () => {
         >
           <div className="bg-background/95 backdrop-blur-md rounded-2xl shadow-[0_10px_40px_-8px_rgba(0,0,0,0.9),0_4px_16px_-4px_rgba(0,0,0,0.6)] border border-border/50 overflow-hidden">
             <div className="p-2.5">
+              {!(selectedParcel && isMobile) && (
+                <CadastralSearchModeToggle
+                  mode={searchMode}
+                  onModeChange={(m) => {
+                    setSearchMode(m);
+                    setHasUserInteracted(true);
+                    void trackEvent('cadastral_map_search_mode', { mode: m });
+                  }}
+                  className="mb-2"
+                />
+              )}
               <div className="flex items-center gap-2">
                 <div className="relative flex-1">
                   <div className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground z-10">
                     <Search className="h-full w-full" />
                   </div>
                   <Input
-                    placeholder={searchBarConfig.placeholder.map_default}
+                    placeholder={searchMode === 'title' ? 'N° du titre de propriété...' : searchBarConfig.placeholder.map_default}
                     value={searchQuery}
                     onChange={(e) => {
                       const inputValue = e.target.value;
                       const normalizedValue = inputValue.toUpperCase();
-                      const invalidRegex = buildAllowedRegex();
+                      // Title numbers are free-form: only the parcel mode enforces the strict SU/SR charset.
+                      const invalidRegex = searchMode === 'title'
+                        ? /[^A-Z0-9./\- ]/
+                        : buildAllowedRegex();
                       const hasInvalidChars = invalidRegex.test(normalizedValue);
 
-                      if (hasInvalidChars) {
+                      if (hasInvalidChars && searchMode === 'parcel') {
                         if (searchBarConfig.feedback.sound_enabled) {
                           playFeedbackBeep(searchBarConfig.feedback.sound_frequency, searchBarConfig.feedback.sound_duration);
                         }
@@ -364,13 +378,15 @@ const CadastralMap = () => {
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && searchQuery.trim()) {
                         searchHistory.addToHistory(searchQuery);
-                        void trackEvent('cadastral_map_search', { query: searchQuery });
+                        void trackEvent('cadastral_map_search', { query: searchQuery, search_mode: searchMode });
                       }
                     }}
                     type="text"
                     inputMode="text"
+                    aria-label={searchMode === 'title' ? 'Rechercher par numéro du titre de propriété' : 'Rechercher par numéro de parcelle'}
                     className={`h-10 text-sm pl-9 pr-8 rounded-${searchBarConfig.appearance.border_radius} border-0 bg-muted/50 focus-visible:ring-1 focus-visible:ring-${searchBarConfig.appearance.accent_color}/50 transition-all ${isShaking ? 'animate-shake border-destructive' : ''}`}
                   />
+
 
                   {searchQuery && (
                     <Button
