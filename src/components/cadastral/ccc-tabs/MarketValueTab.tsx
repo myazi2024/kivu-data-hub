@@ -63,7 +63,7 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
   trackUploadedPath,
   removeUploadedPath,
 }) => {
-  const { currencies, getRate, loading: currenciesLoading } = useCurrencyConfig();
+  const { getRate, loading: currenciesLoading } = useCurrencyConfig();
   const { user } = useAuth();
   // RLS bucket privé `cadastral-documents` : le PREMIER segment du chemin doit être auth.uid().
   const uidPrefix = user?.id || null;
