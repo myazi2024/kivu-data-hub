@@ -816,9 +816,12 @@ const CadastralMap = () => {
         <CadastralContributionDialog
           open={showContributionDialog}
           onOpenChange={setShowContributionDialog}
-          parcelNumber={selectedParcel?.parcel_number || searchQuery}
+          parcelNumber={selectedParcel?.parcel_number || (searchMode === 'title' ? '' : searchQuery)}
+          initialTitleReferenceNumber={!selectedParcel && searchMode === 'title' ? searchQuery : undefined}
+          searchOrigin={searchMode}
         />
       )}
+
 
       <LandTitleTermsDialog
         open={showLandTitleTermsDialog}
