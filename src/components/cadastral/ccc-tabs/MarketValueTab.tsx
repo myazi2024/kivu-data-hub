@@ -63,7 +63,7 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
   trackUploadedPath,
   removeUploadedPath,
 }) => {
-  const { currencies, convertFromUsd } = useCurrencyConfig();
+  const { getRate, loading: currenciesLoading } = useCurrencyConfig();
   const { user } = useAuth();
   // RLS bucket privé `cadastral-documents` : le PREMIER segment du chemin doit être auth.uid().
   const uidPrefix = user?.id || null;
@@ -75,10 +75,7 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
     const p = pathFromPublicUrl(url);
     if (p && removeUploadedPath) void removeUploadedPath(p);
   }, [removeUploadedPath]);
-  const cdfRate = useMemo(() => {
-    const c = currencies.find(x => x.currency_code === 'CDF');
-    return c?.exchange_rate_to_usd ?? 2850;
-  }, [currencies]);
+  const cdfRate = useMemo(() => getRate('CDF') ?? 2850, [getRate]);
 
   // ─── Helpers de conversion ───
   const toUsd = useCallback(
@@ -86,21 +83,25 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
       if (amount === undefined || amount === null || !Number.isFinite(Number(amount))) return undefined;
       const cur = currency || 'USD';
       if (cur === 'USD') return Number(amount);
-      const rate = currencies.find(c => c.currency_code === cur)?.exchange_rate_to_usd ?? cdfRate;
+      const rate = getRate(cur) ?? cdfRate;
       return rate > 0 ? Number(amount) / rate : undefined;
     },
-    [currencies, cdfRate],
+    [getRate, cdfRate],
   );
 
   const equivalent = (amount: number | undefined, currency: CurrencyCode | undefined): string => {
     if (!amount || !currency) return '';
+    // Tant que les taux ne sont pas chargés, ne pas afficher d'équivalent potentiellement faux
+    if (currenciesLoading && !getRate('CDF')) return '';
     if (currency === 'USD') {
-      const cdf = convertFromUsd(amount, 'CDF');
+      const cdf = Number(amount) * cdfRate;
       return `≈ ${cdf.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} CDF`;
     }
-    const usd = toUsd(amount, currency) ?? 0;
+    const usd = toUsd(amount, currency);
+    if (usd === undefined) return '';
     return `≈ ${usd.toLocaleString('fr-FR', { maximumFractionDigits: 2 })} USD`;
   };
+
 
 
   // ─── 1.1 — Valeur de revente ───
