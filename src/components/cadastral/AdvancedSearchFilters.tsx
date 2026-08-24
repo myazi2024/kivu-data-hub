@@ -465,6 +465,15 @@ const AdvancedSearchFilters: React.FC<AdvancedSearchFiltersProps> = ({
                         </SelectContent>
                       </Select>
                     </div>
+                    <div className="space-y-1.5 col-span-2">
+                      <Label className="text-sm text-muted-foreground">Numéro du titre</Label>
+                      <Input
+                        value={filters.titleReferenceNumber || ''}
+                        onChange={(e) => onFiltersChange({ titleReferenceNumber: e.target.value || undefined })}
+                        placeholder="N° du titre de propriété"
+                        className="h-10 text-sm rounded-xl font-mono"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
