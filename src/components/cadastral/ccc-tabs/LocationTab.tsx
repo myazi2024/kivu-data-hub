@@ -105,8 +105,10 @@ const LocationTab: React.FC<LocationTabProps> = ({
   getPicklistDependentOptions, toast, resetConstructionBlock,
   handleTabChange, handleNextTab, resetLocationBlock
 }) => {
-  const isTerrainNu = formData.propertyCategory === 'Terrain nu' || formData.constructionType === 'Terrain nu';
+  const isTerrainNu = formData.propertyCategory === 'Terrain nu' || formData.constructionType === 'Terrain nu'
+    || formData.constructionNature === 'Non bâti';
   const requiredBuildingCount = isTerrainNu ? 0 : (constructionMode === 'multiple' ? 1 + additionalConstructions.length : 1);
+
   
   // Build labels for each construction
   const constructionLabels = React.useMemo(() => {

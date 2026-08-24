@@ -63,6 +63,10 @@ export const ConstructionSection: React.FC<ConstructionSectionProps> = ({
 }) => {
   const isRented = isConstructionRented(formData as any);
   const rentalEligible = isRentalEligible(formData.constructionType, formData.constructionNature);
+  /** Terrain nu : Nature et Usage ne sont pas des champs obligatoires. */
+  const isTerrainNu =
+    formData.propertyCategory === 'Terrain nu' || formData.constructionType === 'Terrain nu';
+
 
   const purgeRentalData = React.useCallback(() => {
     if (formData.rentalStartDate) handleInputChange('rentalStartDate', undefined);
@@ -193,22 +197,23 @@ export const ConstructionSection: React.FC<ConstructionSectionProps> = ({
 
       {/* Nature (auto-remplie) & Usage */}
       <div className="grid grid-cols-2 gap-2">
-        <div className={`space-y-1.5 ${highlightRequiredFields && !formData.constructionNature ? 'ring-2 ring-destructive rounded-xl p-2 bg-destructive/5 animate-pulse' : ''}`}>
+        <div className={`space-y-1.5 ${highlightRequiredFields && !isTerrainNu && !formData.constructionNature ? 'ring-2 ring-destructive rounded-xl p-2 bg-destructive/5 animate-pulse' : ''}`}>
           <Label className="text-sm font-medium flex items-center gap-1">
             Nature
-            {highlightRequiredFields && !formData.constructionNature && <span className="text-destructive text-xs font-semibold">*</span>}
+            {highlightRequiredFields && !isTerrainNu && !formData.constructionNature && <span className="text-destructive text-xs font-semibold">*</span>}
           </Label>
           <div className="h-10 px-3 flex items-center text-sm rounded-xl border-2 bg-muted text-muted-foreground">
-            {formData.constructionNature ? `Construction ${formData.constructionNature.toLowerCase()}` : (formData.constructionMaterials ? '—' : "Matériaux d'abord")}
+            {formData.constructionNature ? `Construction ${formData.constructionNature.toLowerCase()}` : (isTerrainNu ? 'Non bâti' : (formData.constructionMaterials ? '—' : "Matériaux d'abord"))}
           </div>
         </div>
 
-        <div className={`space-y-1.5 ${highlightRequiredFields && !formData.declaredUsage ? 'ring-2 ring-destructive rounded-xl p-2 bg-destructive/5 animate-pulse' : ''}`}>
+        <div className={`space-y-1.5 ${highlightRequiredFields && !isTerrainNu && !formData.declaredUsage ? 'ring-2 ring-destructive rounded-xl p-2 bg-destructive/5 animate-pulse' : ''}`}>
           <div className="flex items-center gap-1">
             <Label className="text-sm font-medium flex items-center gap-1">
               Usage
-              {highlightRequiredFields && !formData.declaredUsage && <span className="text-destructive text-xs font-semibold">*</span>}
+              {highlightRequiredFields && !isTerrainNu && !formData.declaredUsage && <span className="text-destructive text-xs font-semibold">*</span>}
             </Label>
+
             <Popover>
               <PopoverTrigger asChild>
                 <Button variant="ghost" size="sm" className="h-4 w-4 p-0 rounded-full"><Info className="h-3 w-3 text-muted-foreground" /></Button>

@@ -125,7 +125,16 @@ export function useConstructionCascade({
   useEffect(() => {
     if (!formData.constructionMaterials || !formData.constructionType) {
       if (!formData.constructionMaterials) {
-        handleInputChange('constructionNature', undefined);
+        // Ne pas effacer une nature non bâtie (Terrain nu, Agricole non bâti) :
+        // elle est auto-sélectionnée et n'a par définition aucun matériau.
+        const natureMap = getPicklistDependentOptions('picklist_construction_nature');
+        const natures = formData.constructionType ? (natureMap[formData.constructionType] || []) : [];
+        const isUnbuilt =
+          formData.constructionNature === 'Non bâti' ||
+          (natures.length === 1 && natures[0] === 'Non bâti');
+        if (!isUnbuilt) {
+          handleInputChange('constructionNature', undefined);
+        }
         setAvailableStandings([]);
         handleInputChange('standing', undefined);
       }
@@ -141,6 +150,7 @@ export function useConstructionCascade({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData.constructionMaterials, formData.constructionType, getPicklistDependentOptions, buildMaterialToNatureMap]);
+
 
   // Type + Nature → Declared usages (shared resolver)
   useEffect(() => {

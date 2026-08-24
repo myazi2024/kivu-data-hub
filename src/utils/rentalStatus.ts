@@ -33,7 +33,11 @@ const RENTAL_ELIGIBLE_KEYS = new Set([
   'Commerciale_Semi-durable',
   'Industrielle_Durable',
   'Industrielle_Semi-durable',
+  // Biens non bâtis pouvant être loués (parking, terrain agricole)
+  'Terrain nu_Non bâti',
+  'Agricole_Non bâti',
 ]);
+
 
 export function isRentalEligible(
   constructionType?: string | null,
