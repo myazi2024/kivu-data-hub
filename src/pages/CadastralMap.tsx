@@ -411,11 +411,12 @@ const CadastralMap = () => {
                     setHasUserInteracted(true);
                   }}
                   disabled={!!selectedParcel}
-                  className={`h-10 w-10 shrink-0 rounded-xl ${showAdvancedSearch ? 'bg-primary/10 text-primary' : 'bg-muted/50'} hover:bg-muted transition-colors`}
+                  className={`h-10 shrink-0 rounded-xl gap-1.5 px-2.5 ${showAdvancedSearch ? 'bg-primary/10 text-primary' : 'bg-muted/50'} hover:bg-muted transition-colors`}
                   aria-label="Recherche avancée"
                   title="Recherche avancée"
                 >
                   <Settings2 className={`h-4 w-4 transition-transform duration-300 ${showAdvancedSearch ? 'rotate-90' : ''}`} />
+                  {!isMobile && <span className="text-[11px] font-medium">Avancée</span>}
                 </Button>
 
                 {/* Land title button (state-machine driven) */}
