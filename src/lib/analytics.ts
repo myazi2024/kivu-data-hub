@@ -9,6 +9,7 @@ export type AnalyticsEvent =
   | 'hero_cta_click'
   | 'partner_logo_click'
   | 'cadastral_map_search'
+  | 'cadastral_map_search_mode'
   | 'cadastral_map_parcel_select'
   | 'cadastral_map_geolocate'
   | 'cadastral_map_whatsapp_click'
