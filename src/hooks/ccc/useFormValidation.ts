@@ -243,9 +243,12 @@ export function useFormValidation(params: UseFormValidationParams) {
     });
     const normalizedNature = formData.constructionNature ? normalizeConstructionNature(formData.constructionNature) : '';
     const isPrecaireOrUnbuilt = normalizedNature === 'Précaire' || normalizedNature === 'Non bâti';
+    // Un bien non bâti (terrain nu, terrain agricole) n'a ni matériaux, ni standing, ni année de construction.
+    const isUnbuilt = isTerrainNu || normalizedNature === 'Non bâti';
     if (!isTerrainNu && formData.constructionNature && !isPrecaireOrUnbuilt && !formData.constructionMaterials) missing.push({ field: 'constructionMaterials', label: 'Matériaux de construction', tab: 'location' });
     if (!isTerrainNu && formData.constructionNature && !isPrecaireOrUnbuilt && !formData.standing) missing.push({ field: 'standing', label: 'Standing', tab: 'location' });
-    if (!isTerrainNu && formData.propertyCategory && !formData.constructionYear) missing.push({ field: 'constructionYear', label: 'Année de construction', tab: 'location' });
+    if (!isUnbuilt && formData.propertyCategory && !formData.constructionYear) missing.push({ field: 'constructionYear', label: 'Année de construction', tab: 'location' });
+
     if (isAppartement) {
       if (!formData.apartmentNumber) missing.push({ field: 'apartmentNumber', label: "Numéro de l'appartement", tab: 'location' });
       if (!formData.floorNumber) missing.push({ field: 'floorNumber', label: "Numéro de l'étage", tab: 'location' });
