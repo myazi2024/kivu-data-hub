@@ -21,6 +21,7 @@ export interface SearchFilters {
   areaSqmMax?: number;
   parcelType?: string;
   titleType?: string;
+  titleReferenceNumber?: string;
   hasBuildingPermit?: boolean;
   hasMortgage?: boolean;
   hasTaxArrears?: boolean;
