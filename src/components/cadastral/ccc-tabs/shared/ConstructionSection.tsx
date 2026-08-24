@@ -63,6 +63,10 @@ export const ConstructionSection: React.FC<ConstructionSectionProps> = ({
 }) => {
   const isRented = isConstructionRented(formData as any);
   const rentalEligible = isRentalEligible(formData.constructionType, formData.constructionNature);
+  /** Terrain nu : Nature et Usage ne sont pas des champs obligatoires. */
+  const isTerrainNu =
+    formData.propertyCategory === 'Terrain nu' || formData.constructionType === 'Terrain nu';
+
 
   const purgeRentalData = React.useCallback(() => {
     if (formData.rentalStartDate) handleInputChange('rentalStartDate', undefined);
