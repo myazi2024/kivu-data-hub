@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useTestEnvironment, applyTestFilter } from '@/hooks/useTestEnvironment';
+import { escapeIlike } from '@/utils/escapeIlike';
 
 export interface SearchFilters {
   province?: string;
