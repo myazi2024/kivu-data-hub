@@ -176,7 +176,11 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
   // Auto-fill nature when materials changes
   useEffect(() => {
     if (!data.constructionMaterials) {
-      if (data.constructionNature) {
+      // Ne pas effacer une nature non bâtie : elle n'a par définition aucun matériau.
+      const isUnbuilt =
+        data.constructionNature === 'Non bâti' ||
+        (availableNatures.length === 1 && availableNatures[0] === 'Non bâti');
+      if (data.constructionNature && !isUnbuilt) {
         onChange(index, { ...data, constructionNature: '', declaredUsage: '', standing: '' });
       }
       return;
@@ -186,6 +190,7 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
       onChange(index, { ...data, constructionNature: deducedNature, declaredUsage: '', standing: '' });
     }
   }, [data.constructionMaterials]);
+
 
   // Reset materials when type changes
   useEffect(() => {
