@@ -15,6 +15,7 @@ import CCCIntroDialog from '@/components/cadastral/CCCIntroDialog';
 import CadastralContributionDialog from '@/components/cadastral/CadastralContributionDialog';
 import AdvancedSearchFilters from '@/components/cadastral/AdvancedSearchFilters';
 import SearchHistory from '@/components/cadastral/SearchHistory';
+import CadastralSearchModeToggle, { type CadastralSearchMode } from '@/components/cadastral/CadastralSearchModeToggle';
 import ParcelActionsDropdown from '@/components/cadastral/ParcelActionsDropdown';
 import LandTitleRequestDialog from '@/components/cadastral/LandTitleRequestDialog';
 import LandTitleTermsDialog from '@/components/cadastral/LandTitleTermsDialog';
