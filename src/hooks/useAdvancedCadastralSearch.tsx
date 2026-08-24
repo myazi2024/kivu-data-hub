@@ -145,6 +145,10 @@ export const useAdvancedCadastralSearch = () => {
     if (activeFilters.titleType) {
       query = query.eq('property_title_type', activeFilters.titleType);
     }
+    if (activeFilters.titleReferenceNumber) {
+      query = query.ilike('title_reference_number', `%${escapeIlike(activeFilters.titleReferenceNumber)}%`);
+    }
+
 
     // Pagination
     const from = pageNum * PAGE_SIZE;
