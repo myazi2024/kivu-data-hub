@@ -71,6 +71,8 @@ const CadastralMap = () => {
 
   // Search UI state
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchMode, setSearchMode] = useState<CadastralSearchMode>('parcel');
+  const [titleMatchIds, setTitleMatchIds] = useState<Set<string>>(new Set());
   const [searchSuggestions, setSearchSuggestions] = useState<ParcelData[]>([]);
   const [showIntroDialog, setShowIntroDialog] = useState(false);
   const [showContributionDialog, setShowContributionDialog] = useState(false);
