@@ -175,11 +175,15 @@ const CadastralMap = () => {
 
   const handleSelectParcel = useCallback((parcel: ParcelData) => {
     setSelectedParcel(parcel);
-    setSearchQuery(parcel.parcel_number);
+    setSearchQuery(
+      searchMode === 'title' && parcel.title_reference_number
+        ? parcel.title_reference_number
+        : parcel.parcel_number
+    );
     setSearchSuggestions([]);
     centerOnParcel(parcel, 19);
-    void trackEvent('cadastral_map_parcel_select', { parcel_number: parcel.parcel_number });
-  }, [centerOnParcel]);
+    void trackEvent('cadastral_map_parcel_select', { parcel_number: parcel.parcel_number, search_mode: searchMode });
+  }, [centerOnParcel, searchMode]);
 
   const handleClearSearch = () => {
     setSearchQuery('');
