@@ -15,6 +15,7 @@ import CCCIntroDialog from '@/components/cadastral/CCCIntroDialog';
 import CadastralContributionDialog from '@/components/cadastral/CadastralContributionDialog';
 import AdvancedSearchFilters from '@/components/cadastral/AdvancedSearchFilters';
 import SearchHistory from '@/components/cadastral/SearchHistory';
+import CadastralSearchModeToggle, { type CadastralSearchMode } from '@/components/cadastral/CadastralSearchModeToggle';
 import ParcelActionsDropdown from '@/components/cadastral/ParcelActionsDropdown';
 import LandTitleRequestDialog from '@/components/cadastral/LandTitleRequestDialog';
 import LandTitleTermsDialog from '@/components/cadastral/LandTitleTermsDialog';
@@ -71,6 +72,8 @@ const CadastralMap = () => {
 
   // Search UI state
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchMode, setSearchMode] = useState<CadastralSearchMode>('parcel');
+  const [titleMatchIds, setTitleMatchIds] = useState<Set<string>>(new Set());
   const [searchSuggestions, setSearchSuggestions] = useState<ParcelData[]>([]);
   const [showIntroDialog, setShowIntroDialog] = useState(false);
   const [showContributionDialog, setShowContributionDialog] = useState(false);
@@ -123,18 +126,25 @@ const CadastralMap = () => {
   // Sync filteredParcels with base data
   useEffect(() => { setFilteredParcels(parcels); }, [parcels]);
 
-  // Predictive search
+  // Predictive search — parcel number (SU/SR) or property title number
   useEffect(() => {
     if (!searchQuery.trim()) {
       setSearchSuggestions([]);
       setFilteredParcels(parcels);
       return;
     }
-    const q = searchQuery.toLowerCase();
-    const filtered = parcels.filter(p => p.parcel_number.toLowerCase().includes(q));
+    const q = searchQuery.toLowerCase().trim();
+    const byParcel = parcels.filter(p => p.parcel_number?.toLowerCase().includes(q));
+    const byTitle = parcels.filter(
+      p => (p.title_reference_number || '').toLowerCase().includes(q) && !byParcel.some(bp => bp.id === p.id)
+    );
+    // Mode chooses which match is prioritised; the other is always kept as fallback.
+    const filtered = searchMode === 'title' ? [...byTitle, ...byParcel] : [...byParcel, ...byTitle];
+    setTitleMatchIds(new Set(byTitle.map(p => p.id)));
     setSearchSuggestions(filtered.slice(0, 5));
     setFilteredParcels(filtered);
-  }, [searchQuery, parcels]);
+  }, [searchQuery, parcels, searchMode]);
+
 
   // Render layers (incremental diff inside the hook)
   useEffect(() => {
@@ -165,11 +175,15 @@ const CadastralMap = () => {
 
   const handleSelectParcel = useCallback((parcel: ParcelData) => {
     setSelectedParcel(parcel);
-    setSearchQuery(parcel.parcel_number);
+    setSearchQuery(
+      searchMode === 'title' && parcel.title_reference_number
+        ? parcel.title_reference_number
+        : parcel.parcel_number
+    );
     setSearchSuggestions([]);
     centerOnParcel(parcel, 19);
-    void trackEvent('cadastral_map_parcel_select', { parcel_number: parcel.parcel_number });
-  }, [centerOnParcel]);
+    void trackEvent('cadastral_map_parcel_select', { parcel_number: parcel.parcel_number, search_mode: searchMode });
+  }, [centerOnParcel, searchMode]);
 
   const handleClearSearch = () => {
     setSearchQuery('');
@@ -204,7 +218,10 @@ const CadastralMap = () => {
   const handleSelectFromHistory = (query: string) => {
     setSearchQuery(query);
     setShowAdvancedSearch(false);
-    setFilteredParcels(parcels.filter(p => p.parcel_number.toLowerCase().includes(query.toLowerCase())));
+    const q = query.toLowerCase();
+    setFilteredParcels(parcels.filter(p =>
+      p.parcel_number?.toLowerCase().includes(q) || (p.title_reference_number || '').toLowerCase().includes(q)
+    ));
   };
 
   const handleSelectFromFavorites = (parcelNumber: string) => {
@@ -311,21 +328,35 @@ const CadastralMap = () => {
         >
           <div className="bg-background/95 backdrop-blur-md rounded-2xl shadow-[0_10px_40px_-8px_rgba(0,0,0,0.9),0_4px_16px_-4px_rgba(0,0,0,0.6)] border border-border/50 overflow-hidden">
             <div className="p-2.5">
+              {!(selectedParcel && isMobile) && (
+                <CadastralSearchModeToggle
+                  mode={searchMode}
+                  onModeChange={(m) => {
+                    setSearchMode(m);
+                    setHasUserInteracted(true);
+                    void trackEvent('cadastral_map_search_mode', { mode: m });
+                  }}
+                  className="mb-2"
+                />
+              )}
               <div className="flex items-center gap-2">
                 <div className="relative flex-1">
                   <div className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground z-10">
                     <Search className="h-full w-full" />
                   </div>
                   <Input
-                    placeholder={searchBarConfig.placeholder.map_default}
+                    placeholder={searchMode === 'title' ? 'N° du titre de propriété...' : searchBarConfig.placeholder.map_default}
                     value={searchQuery}
                     onChange={(e) => {
                       const inputValue = e.target.value;
                       const normalizedValue = inputValue.toUpperCase();
-                      const invalidRegex = buildAllowedRegex();
+                      // Title numbers are free-form: only the parcel mode enforces the strict SU/SR charset.
+                      const invalidRegex = searchMode === 'title'
+                        ? /[^A-Z0-9./\- ]/
+                        : buildAllowedRegex();
                       const hasInvalidChars = invalidRegex.test(normalizedValue);
 
-                      if (hasInvalidChars) {
+                      if (hasInvalidChars && searchMode === 'parcel') {
                         if (searchBarConfig.feedback.sound_enabled) {
                           playFeedbackBeep(searchBarConfig.feedback.sound_frequency, searchBarConfig.feedback.sound_duration);
                         }
@@ -350,13 +381,15 @@ const CadastralMap = () => {
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && searchQuery.trim()) {
                         searchHistory.addToHistory(searchQuery);
-                        void trackEvent('cadastral_map_search', { query: searchQuery });
+                        void trackEvent('cadastral_map_search', { query: searchQuery, search_mode: searchMode });
                       }
                     }}
                     type="text"
                     inputMode="text"
+                    aria-label={searchMode === 'title' ? 'Rechercher par numéro du titre de propriété' : 'Rechercher par numéro de parcelle'}
                     className={`h-10 text-sm pl-9 pr-8 rounded-${searchBarConfig.appearance.border_radius} border-0 bg-muted/50 focus-visible:ring-1 focus-visible:ring-${searchBarConfig.appearance.accent_color}/50 transition-all ${isShaking ? 'animate-shake border-destructive' : ''}`}
                   />
+
 
                   {searchQuery && (
                     <Button
@@ -381,11 +414,12 @@ const CadastralMap = () => {
                     setHasUserInteracted(true);
                   }}
                   disabled={!!selectedParcel}
-                  className={`h-10 w-10 shrink-0 rounded-xl ${showAdvancedSearch ? 'bg-primary/10 text-primary' : 'bg-muted/50'} hover:bg-muted transition-colors`}
+                  className={`h-10 shrink-0 rounded-xl gap-1.5 px-2.5 ${showAdvancedSearch ? 'bg-primary/10 text-primary' : 'bg-muted/50'} hover:bg-muted transition-colors`}
                   aria-label="Recherche avancée"
                   title="Recherche avancée"
                 >
                   <Settings2 className={`h-4 w-4 transition-transform duration-300 ${showAdvancedSearch ? 'rotate-90' : ''}`} />
+                  {!isMobile && <span className="text-[11px] font-medium">Avancée</span>}
                 </Button>
 
                 {/* Land title button (state-machine driven) */}
@@ -485,19 +519,34 @@ const CadastralMap = () => {
               {/* Suggestions */}
               {searchSuggestions.length > 0 && !(selectedParcel && isMobile) && !showAdvancedSearch && (
                 <div className="mt-2 rounded-xl bg-muted/30 overflow-hidden max-h-36 overflow-y-auto">
-                  {searchSuggestions.map((parcel, index) => (
-                    <button
-                      key={parcel.id}
-                      onClick={() => handleSelectParcel(parcel)}
-                      className={`w-full text-left px-3 py-2 hover:bg-primary/5 transition-colors flex items-center justify-between ${index !== searchSuggestions.length - 1 ? 'border-b border-border/30' : ''}`}
-                    >
-                      <div>
-                        <div className="font-mono font-bold text-xs text-primary">{parcel.parcel_number}</div>
-                        <div className="text-[10px] text-muted-foreground">{parcel.ville || parcel.province}</div>
-                      </div>
-                      <MapPin className="h-3 w-3 text-muted-foreground" />
-                    </button>
-                  ))}
+                  {searchSuggestions.map((parcel, index) => {
+                    const isTitleMatch = titleMatchIds.has(parcel.id);
+                    return (
+                      <button
+                        key={parcel.id}
+                        onClick={() => handleSelectParcel(parcel)}
+                        className={`w-full text-left px-3 py-2 hover:bg-primary/5 transition-colors flex items-center justify-between gap-2 ${index !== searchSuggestions.length - 1 ? 'border-b border-border/30' : ''}`}
+                      >
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-mono font-bold text-xs text-primary truncate">{parcel.parcel_number}</span>
+                            {isTitleMatch && (
+                              <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-primary/10 text-primary shrink-0">Titre</span>
+                            )}
+                          </div>
+                          {isTitleMatch && parcel.title_reference_number && (
+                            <div className="text-[10px] font-mono text-foreground/80 truncate">
+                              {parcel.property_title_type ? `${parcel.property_title_type} — ` : ''}{parcel.title_reference_number}
+                            </div>
+                          )}
+                          <div className="text-[10px] text-muted-foreground truncate">
+                            {[parcel.current_owner_name, parcel.ville || parcel.province].filter(Boolean).join(' — ')}
+                          </div>
+                        </div>
+                        <MapPin className="h-3 w-3 text-muted-foreground shrink-0" />
+                      </button>
+                    );
+                  })}
                 </div>
               )}
 

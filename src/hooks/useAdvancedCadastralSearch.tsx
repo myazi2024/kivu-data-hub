@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useTestEnvironment, applyTestFilter } from '@/hooks/useTestEnvironment';
+import { escapeIlike } from '@/utils/escapeIlike';
 
 export interface SearchFilters {
   province?: string;
@@ -21,6 +22,7 @@ export interface SearchFilters {
   areaSqmMax?: number;
   parcelType?: string;
   titleType?: string;
+  titleReferenceNumber?: string;
   hasBuildingPermit?: boolean;
   hasMortgage?: boolean;
   hasTaxArrears?: boolean;
@@ -144,6 +146,10 @@ export const useAdvancedCadastralSearch = () => {
     if (activeFilters.titleType) {
       query = query.eq('property_title_type', activeFilters.titleType);
     }
+    if (activeFilters.titleReferenceNumber) {
+      query = query.ilike('title_reference_number', `%${escapeIlike(activeFilters.titleReferenceNumber)}%`);
+    }
+
 
     // Pagination
     const from = pageNum * PAGE_SIZE;
