@@ -63,12 +63,19 @@ export const useCurrencyConfig = () => {
     return found?.exchange_rate_to_usd ?? 1;
   }, [currencies, selectedCurrency]);
 
+  /** Taux de conversion 1 USD -> devise, ou undefined si la devise n'est pas (encore) chargée. */
+  const getRate = useCallback((currency: CurrencyCode): number | undefined => {
+    const found = currencies.find(c => c.currency_code === currency);
+    return found && found.exchange_rate_to_usd > 0 ? found.exchange_rate_to_usd : undefined;
+  }, [currencies]);
+
   const convertFromUsd = useCallback((amountUsd: number, currency?: CurrencyCode): number => {
     const code = currency || selectedCurrency;
     const found = currencies.find(c => c.currency_code === code);
     const rate = found?.exchange_rate_to_usd ?? 1;
     return amountUsd * rate;
   }, [currencies, selectedCurrency]);
+
 
   const currentCurrencyInfo = useMemo(() => {
     return currencies.find(c => c.currency_code === selectedCurrency) || currencies[0];
