@@ -123,18 +123,25 @@ const CadastralMap = () => {
   // Sync filteredParcels with base data
   useEffect(() => { setFilteredParcels(parcels); }, [parcels]);
 
-  // Predictive search
+  // Predictive search — parcel number (SU/SR) or property title number
   useEffect(() => {
     if (!searchQuery.trim()) {
       setSearchSuggestions([]);
       setFilteredParcels(parcels);
       return;
     }
-    const q = searchQuery.toLowerCase();
-    const filtered = parcels.filter(p => p.parcel_number.toLowerCase().includes(q));
+    const q = searchQuery.toLowerCase().trim();
+    const byParcel = parcels.filter(p => p.parcel_number?.toLowerCase().includes(q));
+    const byTitle = parcels.filter(
+      p => (p.title_reference_number || '').toLowerCase().includes(q) && !byParcel.some(bp => bp.id === p.id)
+    );
+    // Mode chooses which match is prioritised; the other is always kept as fallback.
+    const filtered = searchMode === 'title' ? [...byTitle, ...byParcel] : [...byParcel, ...byTitle];
+    setTitleMatchIds(new Set(byTitle.map(p => p.id)));
     setSearchSuggestions(filtered.slice(0, 5));
     setFilteredParcels(filtered);
-  }, [searchQuery, parcels]);
+  }, [searchQuery, parcels, searchMode]);
+
 
   // Render layers (incremental diff inside the hook)
   useEffect(() => {
