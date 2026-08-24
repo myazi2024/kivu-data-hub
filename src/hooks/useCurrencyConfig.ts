@@ -87,7 +87,9 @@ export const useCurrencyConfig = () => {
     setSelectedCurrency,
     exchangeRate,
     convertFromUsd,
+    getRate,
     currentCurrencyInfo,
     loading,
   };
 };
+
