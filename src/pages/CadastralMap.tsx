@@ -515,19 +515,34 @@ const CadastralMap = () => {
               {/* Suggestions */}
               {searchSuggestions.length > 0 && !(selectedParcel && isMobile) && !showAdvancedSearch && (
                 <div className="mt-2 rounded-xl bg-muted/30 overflow-hidden max-h-36 overflow-y-auto">
-                  {searchSuggestions.map((parcel, index) => (
-                    <button
-                      key={parcel.id}
-                      onClick={() => handleSelectParcel(parcel)}
-                      className={`w-full text-left px-3 py-2 hover:bg-primary/5 transition-colors flex items-center justify-between ${index !== searchSuggestions.length - 1 ? 'border-b border-border/30' : ''}`}
-                    >
-                      <div>
-                        <div className="font-mono font-bold text-xs text-primary">{parcel.parcel_number}</div>
-                        <div className="text-[10px] text-muted-foreground">{parcel.ville || parcel.province}</div>
-                      </div>
-                      <MapPin className="h-3 w-3 text-muted-foreground" />
-                    </button>
-                  ))}
+                  {searchSuggestions.map((parcel, index) => {
+                    const isTitleMatch = titleMatchIds.has(parcel.id);
+                    return (
+                      <button
+                        key={parcel.id}
+                        onClick={() => handleSelectParcel(parcel)}
+                        className={`w-full text-left px-3 py-2 hover:bg-primary/5 transition-colors flex items-center justify-between gap-2 ${index !== searchSuggestions.length - 1 ? 'border-b border-border/30' : ''}`}
+                      >
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-mono font-bold text-xs text-primary truncate">{parcel.parcel_number}</span>
+                            {isTitleMatch && (
+                              <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-primary/10 text-primary shrink-0">Titre</span>
+                            )}
+                          </div>
+                          {isTitleMatch && parcel.title_reference_number && (
+                            <div className="text-[10px] font-mono text-foreground/80 truncate">
+                              {parcel.property_title_type ? `${parcel.property_title_type} — ` : ''}{parcel.title_reference_number}
+                            </div>
+                          )}
+                          <div className="text-[10px] text-muted-foreground truncate">
+                            {[parcel.current_owner_name, parcel.ville || parcel.province].filter(Boolean).join(' — ')}
+                          </div>
+                        </div>
+                        <MapPin className="h-3 w-3 text-muted-foreground shrink-0" />
+                      </button>
+                    );
+                  })}
                 </div>
               )}
 
