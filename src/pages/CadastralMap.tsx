@@ -218,7 +218,10 @@ const CadastralMap = () => {
   const handleSelectFromHistory = (query: string) => {
     setSearchQuery(query);
     setShowAdvancedSearch(false);
-    setFilteredParcels(parcels.filter(p => p.parcel_number.toLowerCase().includes(query.toLowerCase())));
+    const q = query.toLowerCase();
+    setFilteredParcels(parcels.filter(p =>
+      p.parcel_number?.toLowerCase().includes(q) || (p.title_reference_number || '').toLowerCase().includes(q)
+    ));
   };
 
   const handleSelectFromFavorites = (parcelNumber: string) => {
