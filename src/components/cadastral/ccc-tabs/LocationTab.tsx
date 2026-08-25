@@ -210,7 +210,19 @@ const LocationTab: React.FC<LocationTabProps> = ({
                   Type auto-détecté depuis le numéro
                 </p>
               )}
+
+              {/* Numéro de la parcelle — dépendant du choix SU / SR */}
+              {sectionType && (
+                <ParcelNumberField
+                  sectionType={sectionType}
+                  value={formData.parcelNumber || ''}
+                  onChange={(v) => handleInputChange('parcelNumber', v)}
+                  locked={sectionTypeAutoDetected}
+                  highlight={highlightRequiredFields}
+                />
+              )}
             </div>
+
           )}
         </CardContent>
       </Card>
