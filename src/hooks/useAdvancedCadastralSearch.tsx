@@ -17,12 +17,11 @@ export interface SearchFilters {
   groupement?: string;
   village?: string;
   // Autres critères
-  ownerName?: string;
   areaSqmMin?: number;
   areaSqmMax?: number;
   parcelType?: string;
   titleType?: string;
-  titleReferenceNumber?: string;
+
   hasBuildingPermit?: boolean;
   hasMortgage?: boolean;
   hasTaxArrears?: boolean;
@@ -126,10 +125,7 @@ export const useAdvancedCadastralSearch = () => {
       query = query.ilike('village', `%${activeFilters.village}%`);
     }
 
-    // Filtres de propriétaire
-    if (activeFilters.ownerName) {
-      query = query.ilike('current_owner_name', `%${activeFilters.ownerName}%`);
-    }
+
 
     // Filtres de superficie — ne pas appliquer si 0 ou undefined
     if (activeFilters.areaSqmMin !== undefined && activeFilters.areaSqmMin > 0) {
@@ -145,9 +141,6 @@ export const useAdvancedCadastralSearch = () => {
     }
     if (activeFilters.titleType) {
       query = query.eq('property_title_type', activeFilters.titleType);
-    }
-    if (activeFilters.titleReferenceNumber) {
-      query = query.ilike('title_reference_number', `%${escapeIlike(activeFilters.titleReferenceNumber)}%`);
     }
 
 

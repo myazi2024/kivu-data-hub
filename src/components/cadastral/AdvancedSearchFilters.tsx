@@ -404,16 +404,8 @@ const AdvancedSearchFilters: React.FC<AdvancedSearchFiltersProps> = ({
                   <Label className="text-sm font-semibold">Critères</Label>
                 </div>
                 <div className="space-y-2.5">
-                  <div className="space-y-1.5">
-                    <Label className="text-sm text-muted-foreground">Propriétaire</Label>
-                    <Input
-                      placeholder="Nom du propriétaire..."
-                      value={filters.ownerName || ''}
-                      onChange={(e) => onFiltersChange({ ownerName: e.target.value || undefined })}
-                      className="h-10 text-sm rounded-xl"
-                    />
-                  </div>
                   <div className="grid grid-cols-2 gap-2.5">
+
                     <div className="space-y-1.5">
                       <Label className="text-sm text-muted-foreground">Surface min (m²)</Label>
                       <Input
