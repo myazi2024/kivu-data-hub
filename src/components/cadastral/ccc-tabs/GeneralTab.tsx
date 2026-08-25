@@ -106,6 +106,16 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
         onCustomTitleNameChange={setCustomTitleName}
       />
 
+      {/* Numéro de titre préchargé depuis une recherche cadastrale par n° de titre */}
+      {!formData.propertyTitleType && formData.titleReferenceNumber?.trim() && (
+        <p className="max-w-[360px] mx-auto text-xs text-muted-foreground text-center animate-fade-in">
+          Le numéro « <span className="font-mono text-foreground">{formData.titleReferenceNumber}</span> » issu de votre
+          recherche a été conservé. Sélectionnez le type de titre correspondant pour l'afficher et le compléter.
+        </p>
+      )}
+
+
+
       {/* Title reference card (non-Autre) */}
       {formData.propertyTitleType && formData.propertyTitleType !== 'Autre' && (
         <Card className="max-w-[360px] mx-auto rounded-2xl shadow-md border-border/50 overflow-hidden animate-fade-in">
