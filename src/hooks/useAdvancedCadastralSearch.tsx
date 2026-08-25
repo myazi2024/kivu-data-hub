@@ -125,10 +125,7 @@ export const useAdvancedCadastralSearch = () => {
       query = query.ilike('village', `%${activeFilters.village}%`);
     }
 
-    // Filtres de propriétaire
-    if (activeFilters.ownerName) {
-      query = query.ilike('current_owner_name', `%${activeFilters.ownerName}%`);
-    }
+
 
     // Filtres de superficie — ne pas appliquer si 0 ou undefined
     if (activeFilters.areaSqmMin !== undefined && activeFilters.areaSqmMin > 0) {
