@@ -19,6 +19,7 @@ import SuggestivePicklist from '../SuggestivePicklist';
 import SectionHelpPopover from '../SectionHelpPopover';
 import { SOUND_LABELS } from '@/constants/expertiseLabels';
 import { ConstructionSection } from './shared/ConstructionSection';
+import ParcelNumberField from './shared/ParcelNumberField';
 import type { AdditionalConstruction } from '../AdditionalConstructionBlock';
 import type { BuildingPermit } from './GeneralTab';
 
@@ -210,7 +211,19 @@ const LocationTab: React.FC<LocationTabProps> = ({
                   Type auto-détecté depuis le numéro
                 </p>
               )}
+
+              {/* Numéro de la parcelle — dépendant du choix SU / SR */}
+              {sectionType && (
+                <ParcelNumberField
+                  sectionType={sectionType}
+                  value={formData.parcelNumber || ''}
+                  onChange={(v) => handleInputChange('parcelNumber', v)}
+                  locked={sectionTypeAutoDetected}
+                  highlight={highlightRequiredFields}
+                />
+              )}
             </div>
+
           )}
         </CardContent>
       </Card>
