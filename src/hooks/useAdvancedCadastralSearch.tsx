@@ -17,12 +17,11 @@ export interface SearchFilters {
   groupement?: string;
   village?: string;
   // Autres critères
-  ownerName?: string;
   areaSqmMin?: number;
   areaSqmMax?: number;
   parcelType?: string;
   titleType?: string;
-  titleReferenceNumber?: string;
+
   hasBuildingPermit?: boolean;
   hasMortgage?: boolean;
   hasTaxArrears?: boolean;
