@@ -19,6 +19,7 @@ import SuggestivePicklist from '../SuggestivePicklist';
 import SectionHelpPopover from '../SectionHelpPopover';
 import { SOUND_LABELS } from '@/constants/expertiseLabels';
 import { ConstructionSection } from './shared/ConstructionSection';
+import ParcelNumberField from './shared/ParcelNumberField';
 import type { AdditionalConstruction } from '../AdditionalConstructionBlock';
 import type { BuildingPermit } from './GeneralTab';
 

@@ -117,6 +117,16 @@ export function useFormValidation(params: UseFormValidationParams) {
       if (isAfter(firstPreviousOwner?.startDate, formData.titleIssueDate)) missing.push({ field: 'previousOwnerStartDate', label: `Date début Ancien #1 doit être ≤ date de ${formData.leaseType === 'renewal' ? 'renouvellement' : 'délivrance'}`, tab: 'history' });
     }
 
+    // Numéro de parcelle : saisissable dans le bloc « Localisation de la parcelle »
+    const parcelNum = (formData.parcelNumber || '').trim().toUpperCase();
+    if (parcelNum.length < 3) {
+      missing.push({ field: 'parcelNumber', label: 'Numéro de la parcelle (SU/SR)', tab: 'location' });
+    } else if (sectionType === 'urbaine' && !parcelNum.startsWith('SU')) {
+      missing.push({ field: 'parcelNumber', label: 'Le numéro de parcelle doit commencer par SU (zone urbaine)', tab: 'location' });
+    } else if (sectionType === 'rurale' && !parcelNum.startsWith('SR')) {
+      missing.push({ field: 'parcelNumber', label: 'Le numéro de parcelle doit commencer par SR (zone rurale)', tab: 'location' });
+    }
+
     if (!formData.propertyCategory) missing.push({ field: 'propertyCategory', label: 'Catégorie de bien', tab: 'location' });
     if (!formData.constructionType) missing.push({ field: 'constructionType', label: 'Type de construction', tab: 'location' });
     if (!isTerrainNu && !formData.constructionNature) missing.push({ field: 'constructionNature', label: 'Nature de construction', tab: 'location' });
