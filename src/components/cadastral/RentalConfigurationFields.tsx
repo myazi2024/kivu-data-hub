@@ -112,6 +112,7 @@ export const RentalConfigurationSelector: React.FC<CommonProps> = ({
   state, onPatch, propertyCategory, constructionType, highlightRequired,
 }) => {
   const subject = buildSubject(propertyCategory, constructionType);
+  const vocab = unitVocab(propertyCategory, constructionType);
   const isMissing = highlightRequired && !state.rentalConfiguration;
 
   /** Locaux qui seraient supprimés par une réduction du nombre de locaux. */
