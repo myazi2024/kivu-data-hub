@@ -64,8 +64,9 @@ export const ConstructionSection: React.FC<ConstructionSectionProps> = ({
   const isRented = isConstructionRented(formData as any);
   const rentalEligible = isRentalEligible(formData.constructionType, formData.constructionNature);
   /** Terrain nu : Nature et Usage ne sont pas des champs obligatoires. */
-  const isTerrainNu =
-    formData.propertyCategory === 'Terrain nu' || formData.constructionType === 'Terrain nu';
+  const isTerrainNu = isTerrainNuCategory(formData);
+  /** Non bâti au sens large (terrain nu ou nature « Non bâti »). */
+  const isUnbuilt = isUnbuiltLand(formData);
   /** Usages proposés pour un terrain nu si la liste dépendante n'est pas encore résolue. */
   const TERRAIN_NU_USAGES = ['Parking', "Espace d'entreposage", 'Aucun'];
 
