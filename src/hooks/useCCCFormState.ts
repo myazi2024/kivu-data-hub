@@ -741,6 +741,19 @@ export const useCCCFormState = ({
     const updated = [...parcelSides]; updated[index] = { ...updated[index], [field]: value }; setParcelSides(updated); markDirty();
   };
 
+  // ─── Règle métier : une parcelle avec n° SU/SR ne peut pas être « Fiche parcellaire » ───
+  // Source de vérité unique partagée par l'affichage (LocationTab) et la validation.
+  const hasSuSrParcelNumber = useMemo(
+    () => hasSuSrReference(formData.parcelNumber, searchOrigin, parcelNumber),
+    [formData.parcelNumber, searchOrigin, parcelNumber],
+  );
+
+  /** Le champ n° SU/SR est-il demandé dans l'onglet Localisation ? */
+  const isParcelNumberRequired = computeParcelNumberRequired(
+    formData.propertyTitleType,
+    hasSuSrParcelNumber,
+  );
+
   // ─── Validation (extrait dans useFormValidation) ───
   const {
     getMissingFields,
@@ -754,6 +767,7 @@ export const useCCCFormState = ({
     mortgageRecords, ownerDocFile, titleDocFiles, editingContributionId,
     roadSides, servitude, buildingShapes, constructionMode, additionalConstructions,
     soundEnvironment, nearbySoundSources, disputeFormData,
+    parcelNumberRequired: isParcelNumberRequired,
   });
 
   const handleNextTab = useCallback((currentTab: string, nextTab: string) => {
