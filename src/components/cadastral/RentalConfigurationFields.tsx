@@ -59,6 +59,33 @@ const buildSubject = (cat?: string, type?: string): string => {
   return 'Ce bien';
 };
 
+/** Terrain nu : le vocabulaire « local » n'est pas pertinent. */
+export const isTerrainNuCategory = (cat?: string, type?: string): boolean =>
+  (cat || '').trim() === 'Terrain nu' || (type || '').trim() === 'Terrain nu';
+
+/** Vocabulaire d'unité locative selon la catégorie de bien. */
+const unitVocab = (cat?: string, type?: string) => {
+  const terrain = isTerrainNuCategory(cat, type);
+  return {
+    isTerrainNu: terrain,
+    singular: terrain ? 'terrain' : 'local',
+    plural: terrain ? 'terrains' : 'locaux',
+    cardTitle: terrain ? 'Terrain' : 'Local',
+    singleOption: terrain ? 'Un seul terrain nu' : 'Un seul local',
+    singleHelp: terrain
+      ? "Le terrain est loué en entier à un seul locataire."
+      : 'Le bien est loué comme une unique construction à un seul locataire.',
+    multiOption: terrain ? 'Divisé en plusieurs terrains' : 'Divisé en plusieurs locaux',
+    multiHelp: terrain
+      ? 'Chaque terrain est loué séparément à un locataire distinct.'
+      : 'Chaque local est loué séparément à un locataire distinct.',
+    introQuestion: terrain
+      ? "est-il loué en entier à un unique locataire, ou divisé en plusieurs terrains loués séparément ?"
+      : 'est-il loué comme un seul local à un unique locataire, ou divisé en plusieurs locaux loués séparément ?',
+  };
+};
+
+
 const MIN_UNITS = 2;
 const MAX_UNITS = 50;
 
