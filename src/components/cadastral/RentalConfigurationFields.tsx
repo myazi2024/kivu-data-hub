@@ -186,7 +186,7 @@ export const RentalConfigurationSelector: React.FC<CommonProps> = ({
         {isMissing && <span className="text-destructive ml-1">*</span>}
       </Label>
       <p className="text-[11px] text-muted-foreground leading-snug">
-        {subject} est-il loué comme un seul local à un unique locataire, ou divisé en plusieurs locaux loués séparément ?
+        {subject} {vocab.introQuestion}
       </p>
 
       <div className="grid grid-cols-1 gap-2" role="radiogroup" aria-label="Mode de mise en location">
