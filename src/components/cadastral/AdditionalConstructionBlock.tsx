@@ -215,6 +215,9 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
 
   const isRented = isConstructionRented(data as any);
   const rentalEligible = isRentalEligible(data.constructionType, data.constructionNature);
+  /** Terrain nu : pas de matériaux, usage déverrouillé. */
+  const isTerrainNuBlock = data.propertyCategory === 'Terrain nu' || data.constructionType === 'Terrain nu';
+  const TERRAIN_NU_USAGES = ['Parking', "Espace d'entreposage", 'Aucun'];
 
   // Réinitialisation si la combinaison type/nature n'est plus éligible à la location
   useEffect(() => {
