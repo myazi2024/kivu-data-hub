@@ -35,6 +35,11 @@ export interface UseFormValidationParams {
   nearbySoundSources: string;
   /** Données du formulaire de litige (requises quand hasDispute === true). */
   disputeFormData?: any;
+  /**
+   * Le n° SU/SR est-il demandé ? Calculé en amont (origine de la recherche
+   * cadastrale incluse) pour rester aligné avec l'affichage du champ.
+   */
+  parcelNumberRequired?: boolean;
 }
 
 const TAB_ORDER = ['general', 'location', 'history', 'obligations', 'market-value', 'review'];
