@@ -206,8 +206,9 @@ export const RentalConfigurationSelector: React.FC<CommonProps> = ({
             <Home className="h-4 w-4 text-primary" />
           </div>
           <div className="flex-1 min-w-0">
-            <div className="text-sm font-semibold text-foreground">Un seul local</div>
-            <div className="text-[11px] text-muted-foreground">Le bien est loué comme une unique construction à un seul locataire.</div>
+            <div className="text-sm font-semibold text-foreground">{vocab.singleOption}</div>
+            <div className="text-[11px] text-muted-foreground">{vocab.singleHelp}</div>
+
           </div>
         </button>
 
