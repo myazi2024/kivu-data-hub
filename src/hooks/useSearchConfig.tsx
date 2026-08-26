@@ -18,10 +18,12 @@ export const useSearchConfig = () => {
 
   const fetchConfigs = async () => {
     try {
-      const { data, error } = await supabase
-        .from('cadastral_search_config')
-        .select('*')
-        .order('config_key');
+      const { data, error } = await withSupabaseRetry(() =>
+        supabase
+          .from('cadastral_search_config')
+          .select('*')
+          .order('config_key')
+      );
 
       if (error) throw error;
       setConfigs(data || []);
