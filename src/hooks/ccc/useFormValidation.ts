@@ -6,6 +6,7 @@ import { PreviousOwner } from '@/components/cadastral/ccc-tabs/HistoryTab';
 import { TaxRecord, MortgageRecord } from '@/components/cadastral/ccc-tabs/ObligationsTab';
 import { AdditionalConstruction } from '@/components/cadastral/AdditionalConstructionBlock';
 import { normalizeConstructionNature } from '@/utils/constructionNatureNormalizer';
+import { isTerrainNuCategory, isUnbuiltLand, computeParcelNumberRequired } from '@/utils/cccPredicates';
 import { buildVacantTargets } from '@/components/cadastral/ccc-tabs/market-value/marketValueUtils';
 
 export type MissingField = { field: string; label: string; tab: string };
@@ -35,6 +36,11 @@ export interface UseFormValidationParams {
   nearbySoundSources: string;
   /** Données du formulaire de litige (requises quand hasDispute === true). */
   disputeFormData?: any;
+  /**
+   * Le n° SU/SR est-il demandé ? Calculé en amont (origine de la recherche
+   * cadastrale incluse) pour rester aligné avec l'affichage du champ.
+   */
+  parcelNumberRequired?: boolean;
 }
 
 const TAB_ORDER = ['general', 'location', 'history', 'obligations', 'market-value', 'review'];
@@ -75,14 +81,12 @@ export function useFormValidation(params: UseFormValidationParams) {
     permitMode, buildingPermits, parcelSides, taxRecords, hasMortgage, hasDispute,
     mortgageRecords, ownerDocFile, titleDocFiles, editingContributionId,
     roadSides, servitude, buildingShapes, constructionMode, additionalConstructions,
-    soundEnvironment, nearbySoundSources, disputeFormData,
+    soundEnvironment, nearbySoundSources, disputeFormData, parcelNumberRequired: parcelNumberRequiredParam,
   } = params;
 
   const missingFieldsList = useMemo<MissingField[]>(() => {
     const missing: MissingField[] = [];
-    const isTerrainNu =
-      formData.constructionType === 'Terrain nu' ||
-      formData.propertyCategory === 'Terrain nu';
+    const isTerrainNu = isTerrainNuCategory(formData);
     const isAppartement = formData.propertyCategory === 'Appartement';
 
     // GENERAL
@@ -120,8 +124,12 @@ export function useFormValidation(params: UseFormValidationParams) {
     // Numéro de parcelle : saisissable dans le bloc « Localisation de la parcelle ».
     // Non demandé pour « Fiche parcellaire » → le numéro du titre sert de référence.
     const parcelNum = (formData.parcelNumber || '').trim().toUpperCase();
-    // Critère unique : le n° SU/SR n'est pas demandé pour « Fiche parcellaire » sans numéro connu.
-    const parcelNumberRequired = !(formData.propertyTitleType === 'Fiche parcellaire' && parcelNum.length < 3);
+    // Source de vérité unique : le drapeau calculé en amont (origine de recherche
+    // incluse) ; repli local pour les usages sans paramètre.
+    const parcelNumberRequired = parcelNumberRequiredParam ?? computeParcelNumberRequired(
+      formData.propertyTitleType,
+      parcelNum.length >= 3,
+    );
     if (!parcelNumberRequired) {
       if (!formData.titleReferenceNumber?.trim()) {
         missing.push({ field: 'titleReferenceNumber', label: 'Numéro du titre (Fiche parcellaire)', tab: 'general' });
@@ -271,7 +279,7 @@ export function useFormValidation(params: UseFormValidationParams) {
     const normalizedNature = formData.constructionNature ? normalizeConstructionNature(formData.constructionNature) : '';
     const isPrecaireOrUnbuilt = normalizedNature === 'Précaire' || normalizedNature === 'Non bâti';
     // Un bien non bâti (terrain nu, terrain agricole) n'a ni matériaux, ni standing, ni année de construction.
-    const isUnbuilt = isTerrainNu || normalizedNature === 'Non bâti';
+    const isUnbuilt = isUnbuiltLand(formData);
     if (!isTerrainNu && formData.constructionNature && !isPrecaireOrUnbuilt && !formData.constructionMaterials) missing.push({ field: 'constructionMaterials', label: 'Matériaux de construction', tab: 'location' });
     if (!isTerrainNu && formData.constructionNature && !isPrecaireOrUnbuilt && !formData.standing) missing.push({ field: 'standing', label: 'Standing', tab: 'location' });
     if (!isUnbuilt && formData.propertyCategory && !formData.constructionYear) missing.push({ field: 'constructionYear', label: 'Année de construction', tab: 'location' });
@@ -490,14 +498,9 @@ export function useFormValidation(params: UseFormValidationParams) {
       if (hasCur && !hasAmt) {
         missing.push({ field: 'resalePricePair', label: 'Indiquez à la fois la devise et le montant du prix de revente', tab: 'market-value' });
       }
+      // L'onglet Valeur est un recueil d'avis : photos et disponibilité de
+      // l'annonce restent facultatives et ne bloquent pas la soumission.
       const sale = formData.saleListing || {};
-      const saleImgs = Array.isArray(sale.coverImageUrls) ? sale.coverImageUrls.filter(Boolean) : [];
-      if (saleImgs.length < 1) {
-        missing.push({ field: 'saleListingImages', label: "Au moins une photo de la parcelle est requise pour l'annonce de vente", tab: 'market-value' });
-      }
-      if (!sale.availability) {
-        missing.push({ field: 'saleListingAvailability', label: "Disponibilité (annonce de vente)", tab: 'market-value' });
-      }
       if ((sale.description || '').length > 500) {
         missing.push({ field: 'saleListingDescription', label: "Description de la vente : 500 caractères max", tab: 'market-value' });
       }
@@ -576,7 +579,7 @@ export function useFormValidation(params: UseFormValidationParams) {
 
 
     return missing;
-  }, [formData, customTitleName, currentOwners, previousOwners, sectionType, permitMode, buildingPermits, parcelSides, taxRecords, hasMortgage, hasDispute, mortgageRecords, ownerDocFile, titleDocFiles, editingContributionId, roadSides, servitude, buildingShapes, constructionMode, additionalConstructions, soundEnvironment, nearbySoundSources, disputeFormData]);
+  }, [formData, customTitleName, currentOwners, previousOwners, sectionType, permitMode, buildingPermits, parcelSides, taxRecords, hasMortgage, hasDispute, mortgageRecords, ownerDocFile, titleDocFiles, editingContributionId, roadSides, servitude, buildingShapes, constructionMode, additionalConstructions, soundEnvironment, nearbySoundSources, disputeFormData, parcelNumberRequiredParam]);
 
   const getMissingFields = useCallback(() => missingFieldsList, [missingFieldsList]);
 

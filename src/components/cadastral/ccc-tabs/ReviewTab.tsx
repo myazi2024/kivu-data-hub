@@ -15,6 +15,7 @@ import { SOUND_LABELS } from '@/constants/expertiseLabels';
 import ParcelSketchSVG from '../ParcelSketchSVG';
 import MarketValueSummary from './review/MarketValueSummary';
 import RentalSummary from './review/RentalSummary';
+import { isTerrainNuCategory, isUnbuiltLand } from '@/utils/cccPredicates';
 
 
 interface ReviewTabProps {
@@ -340,8 +341,8 @@ const ReviewTab: React.FC<ReviewTabProps> = ({
               rentalUnits={formData.rentalUnits}
             />
 
-            {/* Autorisation de bâtir */}
-            {formData.constructionType !== 'Terrain nu' && (
+            {/* Autorisation de bâtir — sans objet pour un terrain non bâti */}
+            {!isUnbuiltLand(formData) && (
               <div className="pt-1 border-t border-border/50">
                 <div className="font-medium">Autorisation de bâtir:</div>
                 {permitMode === 'existing' && buildingPermits.some(p => p.permitNumber) ? (

@@ -22,6 +22,7 @@ import { resolveAvailableUsages } from '@/utils/constructionUsageResolver';
 import { renumberParcelSides, renumberGpsCoordinates, reindexRoadSidesAfterRemoval } from '@/utils/parcelSideNumbering';
 import { normalizeConstructionNature } from '@/utils/constructionNatureNormalizer';
 import { composeParcelNumber, stripParcelPrefix } from '@/components/cadastral/ccc-tabs/shared/ParcelNumberField';
+import { hasSuSrReference, computeParcelNumberRequired } from '@/utils/cccPredicates';
 import {
   getAllProvinces,
   getVillesForProvince,
@@ -741,6 +742,19 @@ export const useCCCFormState = ({
     const updated = [...parcelSides]; updated[index] = { ...updated[index], [field]: value }; setParcelSides(updated); markDirty();
   };
 
+  // ─── Règle métier : une parcelle avec n° SU/SR ne peut pas être « Fiche parcellaire » ───
+  // Source de vérité unique partagée par l'affichage (LocationTab) et la validation.
+  const hasSuSrParcelNumber = useMemo(
+    () => hasSuSrReference(formData.parcelNumber, searchOrigin, parcelNumber),
+    [formData.parcelNumber, searchOrigin, parcelNumber],
+  );
+
+  /** Le champ n° SU/SR est-il demandé dans l'onglet Localisation ? */
+  const isParcelNumberRequired = computeParcelNumberRequired(
+    formData.propertyTitleType,
+    hasSuSrParcelNumber,
+  );
+
   // ─── Validation (extrait dans useFormValidation) ───
   const {
     getMissingFields,
@@ -754,6 +768,7 @@ export const useCCCFormState = ({
     mortgageRecords, ownerDocFile, titleDocFiles, editingContributionId,
     roadSides, servitude, buildingShapes, constructionMode, additionalConstructions,
     soundEnvironment, nearbySoundSources, disputeFormData,
+    parcelNumberRequired: isParcelNumberRequired,
   });
 
   const handleNextTab = useCallback((currentTab: string, nextTab: string) => {
@@ -1495,6 +1510,10 @@ export const useCCCFormState = ({
     handleInputChange('apartmentOrientation', undefined);
     // Type de section : conservé s'il a été auto-détecté depuis le n° de parcelle
     setSectionType((prev) => (sectionTypeAutoDetected ? prev : ''));
+    // N° de parcelle : effacé sauf s'il provient d'une recherche cadastrale (verrouillé)
+    if (!(searchOrigin === 'parcel' && parcelNumber?.trim())) {
+      handleInputChange('parcelNumber', undefined);
+    }
 
     setGpsCoordinates([]);
     setParcelSides([
@@ -1507,7 +1526,7 @@ export const useCCCFormState = ({
     setSoundEnvironment('');
     setNearbySoundSources('');
     markDirty();
-  }, [sectionTypeAutoDetected]);
+  }, [sectionTypeAutoDetected, searchOrigin, parcelNumber]);
 
 
   const resetPreviousOwnersBlock = useCallback(() => {
@@ -1543,19 +1562,10 @@ export const useCCCFormState = ({
     markDirty();
   }, []);
 
-  // ─── Règle métier : une parcelle avec n° SU/SR ne peut pas être « Fiche parcellaire » ───
-  // L'origine de la recherche fait foi : un formulaire ouvert depuis une recherche
-  // « N° parcelle (SU/SR) » porte un numéro SU/SR même si l'utilisateur n'a pas tapé le préfixe.
-  const hasSuSrParcelNumber = useMemo(() => {
-    const raw = (formData.parcelNumber || '').trim();
-    const fromParcelSearch = searchOrigin === 'parcel' && !!parcelNumber?.trim();
-    return fromParcelSearch || /^S\s*[UR]\s*[0-9]/i.test(raw);
-  }, [formData.parcelNumber, searchOrigin, parcelNumber]);
+  // (hasSuSrParcelNumber / isParcelNumberRequired sont calculés plus haut,
+  // avant la validation, pour garantir une source de vérité unique.)
 
 
-  /** Le champ n° SU/SR est-il demandé dans l'onglet Localisation ? */
-  const isParcelNumberRequired =
-    formData.propertyTitleType !== 'Fiche parcellaire' || hasSuSrParcelNumber;
 
   // Efface une sélection « Fiche parcellaire » devenue incompatible (hors mode édition).
   useEffect(() => {
