@@ -80,6 +80,8 @@ const PropertyTitleTypeSelect: React.FC<PropertyTitleTypeSelectProps> = ({
   disabledReason,
 }) => {
   const [openPopoverId, setOpenPopoverId] = React.useState<string | null>(null);
+  const [ficheAttempt, setFicheAttempt] = React.useState(false);
+  const ficheDisabled = (disabledValues || []).includes('Fiche parcellaire');
   
   const selectedType = PROPERTY_TITLE_TYPES.find(t => t.value === value);
   const showLeaseTypeOption = selectedType?.isRenewable;
@@ -114,7 +116,12 @@ const PropertyTitleTypeSelect: React.FC<PropertyTitleTypeSelectProps> = ({
         </div>
         
         {/* Select */}
-        <Select value={value} onValueChange={onValueChange} disabled={disabled}>
+        <Select
+          value={value}
+          onValueChange={(v) => { setFicheAttempt(false); onValueChange(v); }}
+          onOpenChange={(open) => { if (open) setFicheAttempt(false); }}
+          disabled={disabled}
+        >
           <SelectTrigger className={`h-10 rounded-xl text-sm ${disabled ? 'cursor-not-allowed opacity-70' : ''}`}>
             <SelectValue placeholder="Sélectionner le type de titre" />
           </SelectTrigger>
