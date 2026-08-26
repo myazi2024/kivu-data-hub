@@ -1542,14 +1542,17 @@ export const useCCCFormState = ({
   }, []);
 
   // ─── Règle métier : une parcelle avec n° SU/SR ne peut pas être « Fiche parcellaire » ───
+  // L'origine de la recherche fait foi : un formulaire ouvert depuis une recherche
+  // « N° parcelle (SU/SR) » porte un numéro SU/SR même si l'utilisateur n'a pas tapé le préfixe.
   const hasSuSrParcelNumber = useMemo(() => {
     const raw = (formData.parcelNumber || '').trim();
-    return sectionTypeAutoDetected || /^S\s*[UR]\s*[0-9]/i.test(raw);
-  }, [formData.parcelNumber, sectionTypeAutoDetected]);
+    const fromParcelSearch = searchOrigin === 'parcel' && !!parcelNumber?.trim();
+    return fromParcelSearch || sectionTypeAutoDetected || /^S\s*[UR]\s*[0-9]/i.test(raw);
+  }, [formData.parcelNumber, sectionTypeAutoDetected, searchOrigin, parcelNumber]);
 
   /** Le champ n° SU/SR est-il demandé dans l'onglet Localisation ? */
   const isParcelNumberRequired =
-    formData.propertyTitleType !== 'Fiche parcellaire' || sectionTypeAutoDetected;
+    formData.propertyTitleType !== 'Fiche parcellaire' || hasSuSrParcelNumber;
 
   // Efface une sélection « Fiche parcellaire » devenue incompatible (hors mode édition).
   useEffect(() => {
