@@ -91,16 +91,28 @@ const CadastralMap = () => {
   const inactivityTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const notificationDismissedRef = useRef(false);
 
-  // Viewport height for responsive positioning
-  const [viewportHeight, setViewportHeight] = useState(typeof window !== 'undefined' ? window.innerHeight : 800);
+  // Container-relative sizing for the desktop search bar position.
+  // The search overlay lives inside <main> (height = 100dvh - 4rem), so we must
+  // measure the container's real height (not window.innerHeight) to avoid the
+  // bar drifting below the visible area and being clipped by overflow-hidden.
+  const searchCardRef = useRef<HTMLDivElement>(null);
+  const [mapContainerHeight, setMapContainerHeight] = useState(0);
+  const [searchCardHeight, setSearchCardHeight] = useState(0);
   useEffect(() => {
-    let timeout: ReturnType<typeof setTimeout>;
-    const handleResize = () => {
-      clearTimeout(timeout);
-      timeout = setTimeout(() => setViewportHeight(window.innerHeight), 150);
-    };
-    window.addEventListener('resize', handleResize);
-    return () => { window.removeEventListener('resize', handleResize); clearTimeout(timeout); };
+    const mapEl = mapContainerRef.current;
+    const cardEl = searchCardRef.current;
+    if (!mapEl) return;
+    const mapObs = new ResizeObserver((entries) => {
+      const h = entries[0]?.contentRect.height;
+      if (h && h > 0) setMapContainerHeight(h);
+    });
+    mapObs.observe(mapEl);
+    const cardObs = new ResizeObserver((entries) => {
+      const h = entries[0]?.borderBoxSize?.[0]?.blockSize ?? entries[0]?.contentRect.height;
+      if (h && h > 0) setSearchCardHeight(h);
+    });
+    if (cardEl) cardObs.observe(cardEl);
+    return () => { mapObs.disconnect(); cardObs.disconnect(); };
   }, []);
 
   const advancedSearch = useAdvancedCadastralSearch();
