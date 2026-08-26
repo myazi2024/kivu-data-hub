@@ -312,7 +312,7 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
           )}
         </div>
 
-        {availableMaterials.length > 0 ? (
+        {!isTerrainNuBlock && availableMaterials.length > 0 ? (
           <div className="space-y-1.5">
             <Label className="text-sm font-medium">Matériaux</Label>
             <Select value={data.constructionMaterials} onValueChange={(v) => update('constructionMaterials', v)} disabled={availableMaterials.length === 0}>
