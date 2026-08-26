@@ -1549,8 +1549,9 @@ export const useCCCFormState = ({
   const hasSuSrParcelNumber = useMemo(() => {
     const raw = (formData.parcelNumber || '').trim();
     const fromParcelSearch = searchOrigin === 'parcel' && !!parcelNumber?.trim();
-    return fromParcelSearch || sectionTypeAutoDetected || /^S\s*[UR]\s*[0-9]/i.test(raw);
-  }, [formData.parcelNumber, sectionTypeAutoDetected, searchOrigin, parcelNumber]);
+    return fromParcelSearch || /^S\s*[UR]\s*[0-9]/i.test(raw);
+  }, [formData.parcelNumber, searchOrigin, parcelNumber]);
+
 
   /** Le champ n° SU/SR est-il demandé dans l'onglet Localisation ? */
   const isParcelNumberRequired =
