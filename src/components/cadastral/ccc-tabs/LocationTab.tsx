@@ -28,6 +28,8 @@ interface LocationTabProps {
   handleInputChange: (field: keyof CadastralContributionData, value: any) => void;
   sectionType: 'urbaine' | 'rurale' | '';
   sectionTypeAutoDetected: boolean;
+  /** Le n° SU/SR est-il demandé (dépend du type de titre) ? */
+  isParcelNumberRequired: boolean;
   handleSectionTypeChange: (type: 'urbaine' | 'rurale') => void;
   // Geographic dropdowns
   availableVilles: string[];
