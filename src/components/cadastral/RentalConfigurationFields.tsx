@@ -228,15 +228,15 @@ export const RentalConfigurationSelector: React.FC<CommonProps> = ({
             <Building2 className="h-4 w-4 text-primary" />
           </div>
           <div className="flex-1 min-w-0">
-            <div className="text-sm font-semibold text-foreground">Divisé en plusieurs locaux</div>
-            <div className="text-[11px] text-muted-foreground">Chaque local est loué séparément à un locataire distinct.</div>
+            <div className="text-sm font-semibold text-foreground">{vocab.multiOption}</div>
+            <div className="text-[11px] text-muted-foreground">{vocab.multiHelp}</div>
           </div>
         </button>
       </div>
 
       {state.rentalConfiguration === 'multi' && (
         <div className="space-y-1.5 pt-1 animate-fade-in">
-          <Label className="text-sm font-medium">Nombre de locaux mis en location</Label>
+          <Label className="text-sm font-medium">Nombre de {vocab.plural} mis en location</Label>
           <Input
             type="number"
             min={MIN_UNITS}
@@ -252,14 +252,15 @@ export const RentalConfigurationSelector: React.FC<CommonProps> = ({
       <AlertDialog open={pendingCount !== null} onOpenChange={(o) => { if (!o) setPendingCount(null); }}>
         <AlertDialogContent className="rounded-2xl">
           <AlertDialogHeader>
-            <AlertDialogTitle>Supprimer des locaux déjà renseignés ?</AlertDialogTitle>
+            <AlertDialogTitle>Supprimer des {vocab.plural} déjà renseignés ?</AlertDialogTitle>
             <AlertDialogDescription>
               {pendingCount !== null && (
                 <>
-                  Réduire à {pendingCount} local(aux) supprimera définitivement les données saisies pour :{' '}
+                  Réduire à {pendingCount} {vocab.singular}(aux) supprimera définitivement les données saisies pour :{' '}
                   {droppedFilledUnits(pendingCount)
-                    .map(({ u, i }) => u.label?.trim() || `Local #${i + 1}`)
+                    .map(({ u, i }) => u.label?.trim() || `${vocab.cardTitle} #${i + 1}`)
                     .join(', ')}
+
                   . Cette action est irréversible.
                 </>
               )}
@@ -296,7 +297,8 @@ export const MonthlyRentFields: React.FC<CommonProps> = ({
     return `${constructionYear}-01-01`;
   }, [constructionYear]);
 
-  const showFloorSelect = Number(numberOfFloors) >= 1;
+  const vocab = unitVocab(propertyCategory, constructionType);
+  const showFloorSelect = !vocab.isTerrainNu && Number(numberOfFloors) >= 1;
   const floorOptions = useMemo(() => {
     const max = Math.max(0, Math.min(50, Number(numberOfFloors) || 0));
     return Array.from({ length: max + 1 }, (_, i) => ({ value: floorValue(i), label: floorLabel(i) }));
@@ -353,9 +355,9 @@ export const MonthlyRentFields: React.FC<CommonProps> = ({
         <div className="space-y-2 pl-1">
           {resizeUnits(state.rentalUnits, state.rentalUnitsCount ?? MIN_UNITS).map((unit, idx) => {
             const missingRent = highlightRequired && !unit.monthlyRentUsd;
-            const missingOccupied = highlightRequired && unit.isOccupied === undefined;
-            const missingCapacity = highlightRequired && unit.isOccupied !== undefined && !unit.hostingCapacity;
-            const missingOccupants = highlightRequired && unit.isOccupied === true && !unit.occupantCount;
+            const missingOccupied = !vocab.isTerrainNu && highlightRequired && unit.isOccupied === undefined;
+            const missingCapacity = !vocab.isTerrainNu && highlightRequired && unit.isOccupied !== undefined && !unit.hostingCapacity;
+            const missingOccupants = !vocab.isTerrainNu && highlightRequired && unit.isOccupied === true && !unit.occupantCount;
             const missingDate = highlightRequired && !unit.rentalStartDate;
             const missingFloor = highlightRequired && showFloorSelect && !unit.floor;
             return (
@@ -364,7 +366,7 @@ export const MonthlyRentFields: React.FC<CommonProps> = ({
                 className="rounded-2xl border-2 border-border bg-card shadow-sm p-3 space-y-2 animate-fade-in"
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-semibold text-foreground">Local #{idx + 1}</span>
+                  <span className="text-sm font-semibold text-foreground">{vocab.cardTitle} #{idx + 1}</span>
                   {unit.monthlyRentUsd ? (
                     <span className="text-[11px] text-muted-foreground">
                       {Number(unit.monthlyRentUsd).toFixed(2)} USD/mois
@@ -375,12 +377,12 @@ export const MonthlyRentFields: React.FC<CommonProps> = ({
                 <div className="grid grid-cols-1 gap-2">
                   <div className="space-y-1">
                     <Label className="text-xs font-medium text-muted-foreground">
-                      Nom du local (optionnel)
+                      Nom du {vocab.singular} (optionnel)
                     </Label>
                     <Input
                       value={unit.label ?? ''}
                       onChange={(e) => updateUnit(idx, { label: e.target.value })}
-                      placeholder={`Ex: Appartement A${idx + 1}`}
+                      placeholder={vocab.isTerrainNu ? `Ex: Terrain T${idx + 1}` : `Ex: Appartement A${idx + 1}`}
                       className="h-9 rounded-xl text-sm"
                     />
                   </div>
@@ -406,6 +408,7 @@ export const MonthlyRentFields: React.FC<CommonProps> = ({
                     </div>
                   )}
 
+                  {!vocab.isTerrainNu && (
                   <div className="space-y-1">
                     <Label className={cn('text-xs font-medium', missingOccupied ? 'text-destructive' : 'text-muted-foreground')}>
                       Ce local est-il actuellement occupé ? {missingOccupied && <span className="text-destructive">*</span>}
@@ -441,8 +444,9 @@ export const MonthlyRentFields: React.FC<CommonProps> = ({
                       </button>
                     </div>
                   </div>
+                  )}
 
-                  {unit.isOccupied === true && (
+                  {!vocab.isTerrainNu && unit.isOccupied === true && (
                     <div className="space-y-1">
                       <Label className={cn('text-xs font-medium', missingOccupants ? 'text-destructive' : 'text-muted-foreground')}>
                         Combien de personnes y vivent ? {missingOccupants && <span className="text-destructive">*</span>}
@@ -458,7 +462,7 @@ export const MonthlyRentFields: React.FC<CommonProps> = ({
                     </div>
                   )}
 
-                  {unit.isOccupied !== undefined && (
+                  {!vocab.isTerrainNu && unit.isOccupied !== undefined && (
                     <div className="space-y-1">
                       <Label className={cn('text-xs font-medium', missingCapacity ? 'text-destructive' : 'text-muted-foreground')}>
                         Capacité d'accueil (personnes) {missingCapacity && <span className="text-destructive">*</span>}
@@ -476,7 +480,7 @@ export const MonthlyRentFields: React.FC<CommonProps> = ({
 
                   <div className="space-y-1">
                     <Label className={cn('text-xs font-medium', missingDate ? 'text-destructive' : 'text-muted-foreground')}>
-                      {unit.isOccupied === false ? 'Inoccupé depuis le' : 'En location depuis le'} {missingDate && <span className="text-destructive">*</span>}
+                      {!vocab.isTerrainNu && unit.isOccupied === false ? 'Inoccupé depuis le' : 'En location depuis le'} {missingDate && <span className="text-destructive">*</span>}
                     </Label>
                     <Input
                       type="date"
