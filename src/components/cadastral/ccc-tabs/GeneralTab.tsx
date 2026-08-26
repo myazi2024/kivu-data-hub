@@ -96,7 +96,7 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
     <div className="space-y-4 sm:space-y-6 mt-4 sm:mt-6 animate-fade-in">
       <PropertyTitleTypeSelect 
         disabledValues={disallowFicheParcellaire ? ['Fiche parcellaire'] : undefined}
-        disabledReason="« Fiche parcellaire » n'est pas disponible : une parcelle portant un numéro SU/SR est couverte par un certificat d'enregistrement ou un contrat de location."
+        disabledReason="Lors de votre recherche dans la barre de recherche cadastrale, vous avez sélectionné une recherche par numéro parcellaire (SU ou SR). Une parcelle détenant ce type de numéro est couverte soit par un certificat d'enregistrement, soit par un contrat de location. C'est la raison pour laquelle « Fiche parcellaire » est exclue de vos choix. Toutefois, vous pouvez fermer ce formulaire et lancer une recherche avec le numéro du titre pour débloquer la « Fiche parcellaire » dans le type de titre de propriété."
         value={formData.propertyTitleType || ''}
         onValueChange={(value) => {
           handleInputChange('propertyTitleType', value);

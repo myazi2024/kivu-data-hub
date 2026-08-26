@@ -80,6 +80,8 @@ const PropertyTitleTypeSelect: React.FC<PropertyTitleTypeSelectProps> = ({
   disabledReason,
 }) => {
   const [openPopoverId, setOpenPopoverId] = React.useState<string | null>(null);
+  const [ficheAttempt, setFicheAttempt] = React.useState(false);
+  const ficheDisabled = (disabledValues || []).includes('Fiche parcellaire');
   
   const selectedType = PROPERTY_TITLE_TYPES.find(t => t.value === value);
   const showLeaseTypeOption = selectedType?.isRenewable;
@@ -114,7 +116,12 @@ const PropertyTitleTypeSelect: React.FC<PropertyTitleTypeSelectProps> = ({
         </div>
         
         {/* Select */}
-        <Select value={value} onValueChange={onValueChange} disabled={disabled}>
+        <Select
+          value={value}
+          onValueChange={(v) => { setFicheAttempt(false); onValueChange(v); }}
+          onOpenChange={(open) => { if (open) setFicheAttempt(false); }}
+          disabled={disabled}
+        >
           <SelectTrigger className={`h-10 rounded-xl text-sm ${disabled ? 'cursor-not-allowed opacity-70' : ''}`}>
             <SelectValue placeholder="Sélectionner le type de titre" />
           </SelectTrigger>
@@ -122,7 +129,12 @@ const PropertyTitleTypeSelect: React.FC<PropertyTitleTypeSelectProps> = ({
             {PROPERTY_TITLE_TYPES.map((type) => {
               const isOptionDisabled = (disabledValues || []).includes(type.value) && type.value !== value;
               return (
-              <div key={type.value} className="flex items-center justify-between group">
+              <div
+                key={type.value}
+                className="flex items-center justify-between group"
+                onMouseEnter={() => { if (isOptionDisabled && type.value === 'Fiche parcellaire') setFicheAttempt(true); }}
+                onClick={() => { if (isOptionDisabled && type.value === 'Fiche parcellaire') setFicheAttempt(true); }}
+              >
                 <SelectItem value={type.value} className="flex-1 pr-2" disabled={isOptionDisabled}>
                   <span className={`font-medium text-sm ${isOptionDisabled ? 'text-muted-foreground line-through' : ''}`}>{type.label}</span>
                 </SelectItem>
@@ -171,10 +183,10 @@ const PropertyTitleTypeSelect: React.FC<PropertyTitleTypeSelectProps> = ({
           </SelectContent>
         </Select>
 
-        {disabledReason && (disabledValues?.length ?? 0) > 0 && (
-          <p className="text-xs text-muted-foreground bg-muted/50 rounded-lg p-2">
+        {disabledReason && ficheDisabled && ficheAttempt && (
+          <div className="text-xs text-amber-900 dark:text-amber-100 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-2 space-y-1 animate-fade-in">
             {disabledReason}
-          </p>
+          </div>
         )}
 
         {!isAutre && (
