@@ -270,6 +270,10 @@ export const useCCCFormState = ({
     setSectionType(type);
     setFormData(prev => ({
       ...prev,
+      // Le préfixe SU/SR suit le choix de zone ; la partie numérique est conservée.
+      parcelNumber: prev.parcelNumber
+        ? composeParcelNumber(type, stripParcelPrefix(prev.parcelNumber))
+        : prev.parcelNumber,
       ville: undefined, commune: undefined, quartier: undefined, avenue: undefined,
       territoire: undefined, collectivite: undefined, groupement: undefined, village: undefined
     }));
