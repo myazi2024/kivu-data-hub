@@ -36,7 +36,7 @@ const CCCIntroDialog = ({ open, onOpenChange, onContinue }: CCCIntroDialogProps)
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[320px] max-h-[85vh] overflow-hidden p-0 rounded-2xl z-[9999]">
+      <DialogContent className="flex flex-col w-[calc(100%-1rem)] max-w-[320px] max-h-[85vh] overflow-hidden p-0 rounded-2xl z-[9999] sm:left-auto sm:right-0 sm:top-0 sm:translate-x-0 sm:translate-y-0 sm:h-dvh sm:max-h-none sm:w-[368px] sm:max-w-none sm:rounded-none sm:rounded-l-2xl sm:data-[state=open]:slide-in-from-right sm:data-[state=closed]:slide-out-to-right">
         <div className="px-4 pt-8 pb-2">
           <DialogHeader className="space-y-1">
             <DialogTitle className="text-lg font-bold text-center text-primary">
@@ -51,7 +51,7 @@ const CCCIntroDialog = ({ open, onOpenChange, onContinue }: CCCIntroDialogProps)
         <div 
           ref={contentRef}
           onScroll={handleScroll}
-          className="space-y-2.5 px-3 pb-28 overflow-y-auto max-h-[calc(90vh-180px)]"
+          className="flex-1 min-h-0 space-y-2.5 px-3 pb-28 overflow-y-auto"
         >
           {/* Temps estimé */}
           <Card className="p-3 rounded-xl border-primary/20 bg-primary/5 shadow-sm">
@@ -141,7 +141,7 @@ const CCCIntroDialog = ({ open, onOpenChange, onContinue }: CCCIntroDialogProps)
         </div>
 
         {/* Bouton fixé en bas */}
-        <div className="sticky bottom-0 left-0 right-0 bg-gradient-to-t from-background via-background to-background/80 backdrop-blur-sm border-t border-border/20 p-3 space-y-2 rounded-b-2xl">
+        <div className="mt-auto bg-gradient-to-t from-background via-background to-background/80 backdrop-blur-sm border-t border-border/20 p-3 space-y-2 sm:rounded-bl-2xl">
           <Button 
             onClick={onContinue}
             disabled={!hasScrolledToBottom}
