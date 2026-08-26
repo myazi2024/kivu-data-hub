@@ -59,6 +59,33 @@ const buildSubject = (cat?: string, type?: string): string => {
   return 'Ce bien';
 };
 
+/** Terrain nu : le vocabulaire « local » n'est pas pertinent. */
+export const isTerrainNuCategory = (cat?: string, type?: string): boolean =>
+  (cat || '').trim() === 'Terrain nu' || (type || '').trim() === 'Terrain nu';
+
+/** Vocabulaire d'unité locative selon la catégorie de bien. */
+const unitVocab = (cat?: string, type?: string) => {
+  const terrain = isTerrainNuCategory(cat, type);
+  return {
+    isTerrainNu: terrain,
+    singular: terrain ? 'terrain' : 'local',
+    plural: terrain ? 'terrains' : 'locaux',
+    cardTitle: terrain ? 'Terrain' : 'Local',
+    singleOption: terrain ? 'Un seul terrain nu' : 'Un seul local',
+    singleHelp: terrain
+      ? "Le terrain est loué en entier à un seul locataire."
+      : 'Le bien est loué comme une unique construction à un seul locataire.',
+    multiOption: terrain ? 'Divisé en plusieurs terrains' : 'Divisé en plusieurs locaux',
+    multiHelp: terrain
+      ? 'Chaque terrain est loué séparément à un locataire distinct.'
+      : 'Chaque local est loué séparément à un locataire distinct.',
+    introQuestion: terrain
+      ? "est-il loué en entier à un unique locataire, ou divisé en plusieurs terrains loués séparément ?"
+      : 'est-il loué comme un seul local à un unique locataire, ou divisé en plusieurs locaux loués séparément ?',
+  };
+};
+
+
 const MIN_UNITS = 2;
 const MAX_UNITS = 50;
 
@@ -85,6 +112,7 @@ export const RentalConfigurationSelector: React.FC<CommonProps> = ({
   state, onPatch, propertyCategory, constructionType, highlightRequired,
 }) => {
   const subject = buildSubject(propertyCategory, constructionType);
+  const vocab = unitVocab(propertyCategory, constructionType);
   const isMissing = highlightRequired && !state.rentalConfiguration;
 
   /** Locaux qui seraient supprimés par une réduction du nombre de locaux. */
@@ -158,7 +186,7 @@ export const RentalConfigurationSelector: React.FC<CommonProps> = ({
         {isMissing && <span className="text-destructive ml-1">*</span>}
       </Label>
       <p className="text-[11px] text-muted-foreground leading-snug">
-        {subject} est-il loué comme un seul local à un unique locataire, ou divisé en plusieurs locaux loués séparément ?
+        {subject} {vocab.introQuestion}
       </p>
 
       <div className="grid grid-cols-1 gap-2" role="radiogroup" aria-label="Mode de mise en location">
@@ -178,8 +206,9 @@ export const RentalConfigurationSelector: React.FC<CommonProps> = ({
             <Home className="h-4 w-4 text-primary" />
           </div>
           <div className="flex-1 min-w-0">
-            <div className="text-sm font-semibold text-foreground">Un seul local</div>
-            <div className="text-[11px] text-muted-foreground">Le bien est loué comme une unique construction à un seul locataire.</div>
+            <div className="text-sm font-semibold text-foreground">{vocab.singleOption}</div>
+            <div className="text-[11px] text-muted-foreground">{vocab.singleHelp}</div>
+
           </div>
         </button>
 
