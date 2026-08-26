@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { withSupabaseRetry } from '@/lib/supabaseRetry';
 import { toast } from 'sonner';
 import { DeducedLandTitle } from '@/utils/landTitleDeduction';
 
@@ -89,12 +90,14 @@ export const useLandTitleDynamicFees = () => {
       setLoading(true);
       setError(null);
       
-      const { data, error: fetchError } = await supabase
-        .from('land_title_fees_by_type')
-        .select('*')
-        .eq('is_active', true)
-        .order('title_type')
-        .order('display_order', { ascending: true });
+      const { data, error: fetchError } = await withSupabaseRetry(() =>
+        supabase
+          .from('land_title_fees_by_type')
+          .select('*')
+          .eq('is_active', true)
+          .order('title_type')
+          .order('display_order', { ascending: true })
+      );
 
       if (fetchError) throw fetchError;
       setAllFees((data || []) as LandTitleFeeByType[]);

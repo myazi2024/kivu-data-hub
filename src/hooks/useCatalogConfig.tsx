@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { withSupabaseRetry } from '@/lib/supabaseRetry';
 
 interface CatalogConfig {
   search_animated_examples: string[];
@@ -68,24 +69,14 @@ export const useCatalogConfig = () => {
   const [loading, setLoading] = useState(true);
 
   const loadConfig = async () => {
-    const delays = [500, 1000, 2000];
-    let attempt = 0;
     try {
-      let data: any = null;
-      let error: any = null;
-      // Silent retry loop on transient PostgREST schema cache errors (PGRST002)
-      // eslint-disable-next-line no-constant-condition
-      while (true) {
-        const result = await supabase
+      // Réessai silencieux sur erreurs transitoires (session non prête, cache de schéma)
+      const { data, error } = await withSupabaseRetry(() =>
+        supabase
           .from('catalog_config')
           .select('config_key, config_value')
-          .eq('is_active', true);
-        data = result.data;
-        error = result.error;
-        if (!error || error.code !== 'PGRST002' || attempt >= delays.length) break;
-        await new Promise((r) => setTimeout(r, delays[attempt]));
-        attempt++;
-      }
+          .eq('is_active', true)
+      );
 
       if (error) throw error;
 

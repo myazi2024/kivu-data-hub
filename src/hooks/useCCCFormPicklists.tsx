@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { withSupabaseRetry } from '@/lib/supabaseRetry';
 
 /**
  * Definitions of all static picklist keys used in the CCC form.
@@ -158,10 +159,12 @@ export const useCCCFormPicklists = () => {
   const fetchPicklists = useCallback(async () => {
     try {
       const keys = Object.keys(CCC_STATIC_PICKLIST_REGISTRY);
-      const { data: rows, error } = await supabase
-        .from('cadastral_contribution_config')
-        .select('config_key, config_value, is_active')
-        .in('config_key', keys);
+      const { data: rows, error } = await withSupabaseRetry(() =>
+        supabase
+          .from('cadastral_contribution_config')
+          .select('config_key, config_value, is_active')
+          .in('config_key', keys)
+      );
 
       if (error) throw error;
 
