@@ -123,12 +123,14 @@ export const useMapConfig = () => {
 
   const fetchMapConfig = async () => {
     try {
-      const { data, error } = await supabase
-        .from('cadastral_contribution_config')
-        .select('config_value')
-        .eq('config_key', 'map_preview_settings')
-        .eq('is_active', true)
-        .maybeSingle();
+      const { data, error } = await withSupabaseRetry(() =>
+        supabase
+          .from('cadastral_contribution_config')
+          .select('config_value')
+          .eq('config_key', 'map_preview_settings')
+          .eq('is_active', true)
+          .maybeSingle()
+      );
 
       if (error) {
         console.error('Erreur lors de la récupération de la config carte:', error);
