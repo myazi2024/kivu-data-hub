@@ -215,6 +215,9 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
 
   const isRented = isConstructionRented(data as any);
   const rentalEligible = isRentalEligible(data.constructionType, data.constructionNature);
+  /** Terrain nu : pas de matériaux, usage déverrouillé. */
+  const isTerrainNuBlock = data.propertyCategory === 'Terrain nu' || data.constructionType === 'Terrain nu';
+  const TERRAIN_NU_USAGES = ['Parking', "Espace d'entreposage", 'Aucun'];
 
   // Réinitialisation si la combinaison type/nature n'est plus éligible à la location
   useEffect(() => {
@@ -312,7 +315,7 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
           )}
         </div>
 
-        {availableMaterials.length > 0 ? (
+        {!isTerrainNuBlock && availableMaterials.length > 0 ? (
           <div className="space-y-1.5">
             <Label className="text-sm font-medium">Matériaux</Label>
             <Select value={data.constructionMaterials} onValueChange={(v) => update('constructionMaterials', v)} disabled={availableMaterials.length === 0}>
@@ -356,12 +359,12 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
           </div>
           <Select value={data.declaredUsage} onValueChange={(v) => {
             update('declaredUsage', v);
-          }} disabled={!data.constructionType || !data.constructionNature}>
+          }} disabled={!data.constructionType || (!isTerrainNuBlock && !data.constructionNature)}>
             <SelectTrigger className="h-10 rounded-xl text-sm">
-              <SelectValue placeholder={!data.constructionType || !data.constructionNature ? "Type et nature d'abord" : "Sélectionner"} />
+              <SelectValue placeholder={!data.constructionType ? "Type d'abord" : (!isTerrainNuBlock && !data.constructionNature ? "Nature d'abord" : 'Sélectionner')} />
             </SelectTrigger>
             <SelectContent className="rounded-xl">
-              {availableUsages.map(u => (
+              {(availableUsages.length > 0 ? availableUsages : (isTerrainNuBlock ? TERRAIN_NU_USAGES : [])).map(u => (
                 <SelectItem key={u} value={u}>{u}</SelectItem>
               ))}
             </SelectContent>

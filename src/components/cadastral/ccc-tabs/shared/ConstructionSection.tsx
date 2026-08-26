@@ -66,6 +66,8 @@ export const ConstructionSection: React.FC<ConstructionSectionProps> = ({
   /** Terrain nu : Nature et Usage ne sont pas des champs obligatoires. */
   const isTerrainNu =
     formData.propertyCategory === 'Terrain nu' || formData.constructionType === 'Terrain nu';
+  /** Usages proposés pour un terrain nu si la liste dépendante n'est pas encore résolue. */
+  const TERRAIN_NU_USAGES = ['Parking', "Espace d'entreposage", 'Aucun'];
 
 
   const purgeRentalData = React.useCallback(() => {
@@ -182,7 +184,7 @@ export const ConstructionSection: React.FC<ConstructionSectionProps> = ({
           )}
         </div>
 
-        {availableConstructionMaterials.length > 0 ? (
+        {!isTerrainNu && availableConstructionMaterials.length > 0 ? (
           <div className="space-y-1.5">
             <Label className="text-sm font-medium">Matériaux</Label>
             <Select value={formData.constructionMaterials || ''} onValueChange={(value) => handleInputChange('constructionMaterials', value)} disabled={availableConstructionMaterials.length === 0}>
@@ -226,12 +228,13 @@ export const ConstructionSection: React.FC<ConstructionSectionProps> = ({
           <Select value={formData.declaredUsage || ''} onValueChange={(value) => {
             handleInputChange('declaredUsage', value);
             setHighlightRequiredFields(false);
-          }} disabled={!formData.constructionType || !formData.constructionNature}>
-            <SelectTrigger className="h-10 rounded-xl text-sm"><SelectValue placeholder={!formData.constructionType || !formData.constructionNature ? "Type et nature d'abord" : "Sélectionner"} /></SelectTrigger>
+          }} disabled={!formData.constructionType || (!isTerrainNu && !formData.constructionNature)}>
+            <SelectTrigger className="h-10 rounded-xl text-sm"><SelectValue placeholder={!formData.constructionType ? "Type d'abord" : (!isTerrainNu && !formData.constructionNature ? "Nature d'abord" : 'Sélectionner')} /></SelectTrigger>
             <SelectContent className="rounded-xl">
-              {availableDeclaredUsages.map(usage => <SelectItem key={usage} value={usage}>{usage}</SelectItem>)}
+              {(availableDeclaredUsages.length > 0 ? availableDeclaredUsages : (isTerrainNu ? TERRAIN_NU_USAGES : [])).map(usage => <SelectItem key={usage} value={usage}>{usage}</SelectItem>)}
             </SelectContent>
           </Select>
+
         </div>
 
         {/* Apartment fields */}
