@@ -829,10 +829,12 @@ const CadastralMap = () => {
         onAccept={() => setShowLandTitleDialog(true)}
       />
 
-      <LandTitleRequestDialog
-        open={showLandTitleDialog}
-        onOpenChange={setShowLandTitleDialog}
-      />
+      {showLandTitleDialog && (
+        <LandTitleRequestDialog
+          open={showLandTitleDialog}
+          onOpenChange={setShowLandTitleDialog}
+        />
+      )}
 
       {cadastralSearch.searchResult && (
         <CadastralResultsDialog
