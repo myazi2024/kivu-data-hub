@@ -1600,6 +1600,7 @@ export const useCCCFormState = ({
     getPermitTypeRestrictions, showPermitWarning, highlightIncompletePermit,
     // Location
     sectionType, sectionTypeAutoDetected, handleSectionTypeChange,
+    hasSuSrParcelNumber, isParcelNumberRequired,
     availableVilles, availableCommunes, availableTerritoires, availableCollectivites, availableQuartiers, availableAvenues,
     gpsCoordinates, setGpsCoordinates, parcelSides, setParcelSides,
     roadSides, setRoadSides, servitude, setServitude,
