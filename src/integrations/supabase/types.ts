@@ -1041,6 +1041,7 @@ export type Database = {
           reviewed_at: string | null
           reviewed_by: string | null
           road_sides: Json | null
+          sale_listing: Json | null
           servitude_data: Json | null
           sound_environment: string | null
           source_form_type: string | null
@@ -1141,6 +1142,7 @@ export type Database = {
           reviewed_at?: string | null
           reviewed_by?: string | null
           road_sides?: Json | null
+          sale_listing?: Json | null
           servitude_data?: Json | null
           sound_environment?: string | null
           source_form_type?: string | null
@@ -1241,6 +1243,7 @@ export type Database = {
           reviewed_at?: string | null
           reviewed_by?: string | null
           road_sides?: Json | null
+          sale_listing?: Json | null
           servitude_data?: Json | null
           sound_environment?: string | null
           source_form_type?: string | null
@@ -1872,6 +1875,7 @@ export type Database = {
           parcel_number: string
           parcel_sides: Json | null
           parcel_type: string
+          permit_request_data: Json | null
           property_category: string | null
           property_title_document_url: string | null
           property_title_type: string
@@ -1885,6 +1889,7 @@ export type Database = {
           resale_price_currency: string | null
           resale_price_usd: number | null
           road_sides: Json | null
+          sale_listing: Json | null
           servitude_data: Json | null
           sound_environment: string | null
           standing: string | null
@@ -1951,6 +1956,7 @@ export type Database = {
           parcel_number: string
           parcel_sides?: Json | null
           parcel_type: string
+          permit_request_data?: Json | null
           property_category?: string | null
           property_title_document_url?: string | null
           property_title_type?: string
@@ -1964,6 +1970,7 @@ export type Database = {
           resale_price_currency?: string | null
           resale_price_usd?: number | null
           road_sides?: Json | null
+          sale_listing?: Json | null
           servitude_data?: Json | null
           sound_environment?: string | null
           standing?: string | null
@@ -2030,6 +2037,7 @@ export type Database = {
           parcel_number?: string
           parcel_sides?: Json | null
           parcel_type?: string
+          permit_request_data?: Json | null
           property_category?: string | null
           property_title_document_url?: string | null
           property_title_type?: string
@@ -2043,6 +2051,7 @@ export type Database = {
           resale_price_currency?: string | null
           resale_price_usd?: number | null
           road_sides?: Json | null
+          sale_listing?: Json | null
           servitude_data?: Json | null
           sound_environment?: string | null
           standing?: string | null
