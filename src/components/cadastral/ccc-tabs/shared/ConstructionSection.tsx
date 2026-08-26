@@ -16,6 +16,7 @@ import AdditionalConstructionBlock, { AdditionalConstruction } from '../../Addit
 import { BuildingPermitIssuingServiceSelect } from '../../BuildingPermitIssuingServiceSelect';
 import type { BuildingPermit } from '../GeneralTab';
 import { isConstructionRented, isRentalEligible } from '@/utils/rentalStatus';
+import { isTerrainNuCategory, isUnbuiltLand } from '@/utils/cccPredicates';
 
 export interface ConstructionSectionProps {
   formData: CadastralContributionData;

@@ -15,6 +15,7 @@ import { SOUND_LABELS } from '@/constants/expertiseLabels';
 import ParcelSketchSVG from '../ParcelSketchSVG';
 import MarketValueSummary from './review/MarketValueSummary';
 import RentalSummary from './review/RentalSummary';
+import { isTerrainNuCategory, isUnbuiltLand } from '@/utils/cccPredicates';
 
 
 interface ReviewTabProps {

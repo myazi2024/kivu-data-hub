@@ -22,6 +22,7 @@ import { ConstructionSection } from './shared/ConstructionSection';
 import ParcelNumberField from './shared/ParcelNumberField';
 import type { AdditionalConstruction } from '../AdditionalConstructionBlock';
 import type { BuildingPermit } from './GeneralTab';
+import { isTerrainNuCategory, isUnbuiltLand } from '@/utils/cccPredicates';
 
 interface LocationTabProps {
   formData: CadastralContributionData;
