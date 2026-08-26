@@ -6,6 +6,7 @@ import { PreviousOwner } from '@/components/cadastral/ccc-tabs/HistoryTab';
 import { TaxRecord, MortgageRecord } from '@/components/cadastral/ccc-tabs/ObligationsTab';
 import { AdditionalConstruction } from '@/components/cadastral/AdditionalConstructionBlock';
 import { normalizeConstructionNature } from '@/utils/constructionNatureNormalizer';
+import { isTerrainNuCategory, isUnbuiltLand, computeParcelNumberRequired } from '@/utils/cccPredicates';
 import { buildVacantTargets } from '@/components/cadastral/ccc-tabs/market-value/marketValueUtils';
 
 export type MissingField = { field: string; label: string; tab: string };
