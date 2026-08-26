@@ -585,12 +585,10 @@ const CadastralMap = () => {
               </div>
             </div>
           )}
-        </div>
 
-        {/* Manual contribution CTA when no result */}
-        {searchQuery && filteredParcels.length === 0 && !selectedParcel && (
-          <div className={`absolute z-[890] animate-fade-in ${isMobile ? 'left-1/2 -translate-x-1/2 bottom-[28rem]' : 'left-3 top-[8.5rem]'}`} style={isMobile ? {} : { width: '24rem' }}>
-            <div className="relative">
+          {/* Manual contribution CTA when no result — rendered inside the search overlay so it sits directly below the bar and stays accessible on both desktop and mobile */}
+          {searchQuery && filteredParcels.length === 0 && !selectedParcel && (
+            <div className="mt-2 animate-fade-in">
               <Button
                 variant="default"
                 size="lg"
@@ -618,8 +616,8 @@ const CadastralMap = () => {
                 </div>
               )}
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
         {/* Selected parcel panel */}
         {selectedParcel && (
