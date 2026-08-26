@@ -193,4 +193,13 @@ export function useConstructionCascade({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData.constructionNature, getPicklistDependentOptions]);
+
+  // Terrain non bâti → purge des données de construction devenues sans objet
+  // (année de construction et matériaux restaient sinon dans la charge utile).
+  useEffect(() => {
+    if (!isUnbuiltLand(formData)) return;
+    if (formData.constructionYear) handleInputChange('constructionYear', undefined);
+    if (formData.constructionMaterials) handleInputChange('constructionMaterials', undefined);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData.propertyCategory, formData.constructionType, formData.constructionNature, formData.constructionYear, formData.constructionMaterials]);
 }
