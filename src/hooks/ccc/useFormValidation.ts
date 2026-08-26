@@ -124,8 +124,12 @@ export function useFormValidation(params: UseFormValidationParams) {
     // Numéro de parcelle : saisissable dans le bloc « Localisation de la parcelle ».
     // Non demandé pour « Fiche parcellaire » → le numéro du titre sert de référence.
     const parcelNum = (formData.parcelNumber || '').trim().toUpperCase();
-    // Critère unique : le n° SU/SR n'est pas demandé pour « Fiche parcellaire » sans numéro connu.
-    const parcelNumberRequired = !(formData.propertyTitleType === 'Fiche parcellaire' && parcelNum.length < 3);
+    // Source de vérité unique : le drapeau calculé en amont (origine de recherche
+    // incluse) ; repli local pour les usages sans paramètre.
+    const parcelNumberRequired = parcelNumberRequiredParam ?? computeParcelNumberRequired(
+      formData.propertyTitleType,
+      parcelNum.length >= 3,
+    );
     if (!parcelNumberRequired) {
       if (!formData.titleReferenceNumber?.trim()) {
         missing.push({ field: 'titleReferenceNumber', label: 'Numéro du titre (Fiche parcellaire)', tab: 'general' });
