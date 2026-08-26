@@ -212,8 +212,9 @@ const LocationTab: React.FC<LocationTabProps> = ({
                 </p>
               )}
 
-              {/* Numéro de la parcelle — dépendant du choix SU / SR */}
-              {sectionType && (
+              {/* Numéro de la parcelle — dépendant du choix SU / SR et du type de titre.
+                  « Fiche parcellaire » : non demandé (sauf si déjà identifié par une recherche). */}
+              {sectionType && (formData.propertyTitleType !== 'Fiche parcellaire' || sectionTypeAutoDetected) && (
                 <ParcelNumberField
                   sectionType={sectionType}
                   value={formData.parcelNumber || ''}
