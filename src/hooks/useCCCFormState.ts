@@ -1003,8 +1003,9 @@ export const useCCCFormState = ({
         leaseYears: leaseYears > 0 ? leaseYears : undefined,
         propertyTitleType: getEffectiveTitleName(formData.propertyTitleType, customTitleName) || formData.propertyTitleType,
         // « Fiche parcellaire » : pas de n° SU/SR demandé → le n° du titre sert de référence.
+        // Le repli ne doit jamais être préfixé SU/SR (contradiction avec le type de titre).
         parcelNumber: (formData.propertyTitleType === 'Fiche parcellaire' && !formData.parcelNumber?.trim())
-          ? (formData.titleReferenceNumber || '').trim()
+          ? (formData.titleReferenceNumber || '').trim().replace(/^\s*S\s*[UR]\s*/i, '')
           : formData.parcelNumber,
         parcelType: sectionType === 'urbaine' ? 'SU' as const : sectionType === 'rurale' ? 'SR' as const : undefined,
         currentOwners: currentOwners.filter(o => o.lastName && (o.firstName || o.legalStatus === 'Personne morale')),
