@@ -102,7 +102,7 @@ export const CCC_STATIC_PICKLIST_REGISTRY: Record<string, {
       'Agricole_Durable': ['Agriculture', 'Habitation'],
       'Agricole_Semi-durable': ['Agriculture', 'Habitation'],
       'Agricole_Précaire': ['Agriculture', 'Habitation'],
-      'Terrain nu_Non bâti': ['Terrain vacant', 'Agriculture', 'Parking'],
+      'Terrain nu_Non bâti': ['Parking', "Espace d'entreposage", 'Aucun'],
     },
   },
   picklist_mutation_type: {
