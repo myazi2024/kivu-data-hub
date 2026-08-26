@@ -426,7 +426,7 @@ const CadastralMap = () => {
                     setHasUserInteracted(true);
                   }}
                   disabled={!!selectedParcel}
-                  className={`h-10 shrink-0 rounded-xl gap-1.5 px-2.5 ${showAdvancedSearch ? 'bg-primary/10 text-primary' : 'bg-muted/50'} hover:bg-muted transition-colors`}
+                  className={`h-10 shrink-0 rounded-full gap-1.5 px-3 ${showAdvancedSearch ? 'bg-red-600 text-white' : 'bg-red-500 text-white'} hover:bg-red-700 transition-colors shadow-sm`}
                   aria-label="Recherche avancée"
                   title="Recherche avancée"
                 >
