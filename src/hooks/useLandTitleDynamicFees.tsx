@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { withSupabaseRetry } from '@/lib/supabaseRetry';
 import { toast } from 'sonner';
 import { DeducedLandTitle } from '@/utils/landTitleDeduction';
 
