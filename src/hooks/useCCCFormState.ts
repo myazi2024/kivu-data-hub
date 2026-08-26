@@ -1510,6 +1510,10 @@ export const useCCCFormState = ({
     handleInputChange('apartmentOrientation', undefined);
     // Type de section : conservé s'il a été auto-détecté depuis le n° de parcelle
     setSectionType((prev) => (sectionTypeAutoDetected ? prev : ''));
+    // N° de parcelle : effacé sauf s'il provient d'une recherche cadastrale (verrouillé)
+    if (!(searchOrigin === 'parcel' && parcelNumber?.trim())) {
+      handleInputChange('parcelNumber', undefined);
+    }
 
     setGpsCoordinates([]);
     setParcelSides([
