@@ -226,12 +226,13 @@ export const ConstructionSection: React.FC<ConstructionSectionProps> = ({
           <Select value={formData.declaredUsage || ''} onValueChange={(value) => {
             handleInputChange('declaredUsage', value);
             setHighlightRequiredFields(false);
-          }} disabled={!formData.constructionType || !formData.constructionNature}>
-            <SelectTrigger className="h-10 rounded-xl text-sm"><SelectValue placeholder={!formData.constructionType || !formData.constructionNature ? "Type et nature d'abord" : "Sélectionner"} /></SelectTrigger>
+          }} disabled={!formData.constructionType || (!isTerrainNu && !formData.constructionNature)}>
+            <SelectTrigger className="h-10 rounded-xl text-sm"><SelectValue placeholder={!formData.constructionType ? "Type d'abord" : (!isTerrainNu && !formData.constructionNature ? "Nature d'abord" : 'Sélectionner')} /></SelectTrigger>
             <SelectContent className="rounded-xl">
-              {availableDeclaredUsages.map(usage => <SelectItem key={usage} value={usage}>{usage}</SelectItem>)}
+              {(availableDeclaredUsages.length > 0 ? availableDeclaredUsages : (isTerrainNu ? TERRAIN_NU_USAGES : [])).map(usage => <SelectItem key={usage} value={usage}>{usage}</SelectItem>)}
             </SelectContent>
           </Select>
+
         </div>
 
         {/* Apartment fields */}
