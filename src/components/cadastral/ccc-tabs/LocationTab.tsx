@@ -109,8 +109,8 @@ const LocationTab: React.FC<LocationTabProps> = ({
   getPicklistDependentOptions, toast, resetConstructionBlock,
   handleTabChange, handleNextTab, resetLocationBlock
 }) => {
-  const isTerrainNu = formData.propertyCategory === 'Terrain nu' || formData.constructionType === 'Terrain nu'
-    || formData.constructionNature === 'Non bâti';
+  // Prédicat partagé : terrain nu explicite ou nature « Non bâti ».
+  const isTerrainNu = isUnbuiltLand(formData);
   const requiredBuildingCount = isTerrainNu ? 0 : (constructionMode === 'multiple' ? 1 + additionalConstructions.length : 1);
 
   
