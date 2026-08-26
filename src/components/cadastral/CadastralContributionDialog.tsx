@@ -184,6 +184,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                   getPicklistOptions={state.getPicklistOptions}
                   handleNextTab={state.handleNextTab}
                   resetTitleBlock={state.resetTitleBlock} resetOwnersBlock={state.resetOwnersBlock}
+                  disallowFicheParcellaire={state.hasSuSrParcelNumber && !editingContributionId}
                 />
               </TabsContent>
 
@@ -191,6 +192,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                 <LocationTab
                   formData={state.formData} handleInputChange={state.handleInputChange}
                   sectionType={state.sectionType} sectionTypeAutoDetected={state.sectionTypeAutoDetected}
+                  isParcelNumberRequired={state.isParcelNumberRequired}
                   handleSectionTypeChange={state.handleSectionTypeChange}
                   availableVilles={state.availableVilles} availableCommunes={state.availableCommunes}
                   availableTerritoires={state.availableTerritoires} availableCollectivites={state.availableCollectivites}

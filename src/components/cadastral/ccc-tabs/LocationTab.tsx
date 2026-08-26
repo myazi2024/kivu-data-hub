@@ -28,6 +28,8 @@ interface LocationTabProps {
   handleInputChange: (field: keyof CadastralContributionData, value: any) => void;
   sectionType: 'urbaine' | 'rurale' | '';
   sectionTypeAutoDetected: boolean;
+  /** Le n° SU/SR est-il demandé (dépend du type de titre) ? */
+  isParcelNumberRequired: boolean;
   handleSectionTypeChange: (type: 'urbaine' | 'rurale') => void;
   // Geographic dropdowns
   availableVilles: string[];
@@ -88,7 +90,7 @@ interface LocationTabProps {
 
 const LocationTab: React.FC<LocationTabProps> = ({
   formData, handleInputChange,
-  sectionType, sectionTypeAutoDetected, handleSectionTypeChange,
+  sectionType, sectionTypeAutoDetected, isParcelNumberRequired, handleSectionTypeChange,
   availableVilles, availableCommunes, availableTerritoires, availableCollectivites, availableQuartiers, availableAvenues,
   gpsCoordinates, onCoordinatesUpdate, mapConfig, parcelNumber,
   roadSides, onRoadSidesChange, parcelSides, onParcelSidesUpdate,
@@ -214,7 +216,7 @@ const LocationTab: React.FC<LocationTabProps> = ({
 
               {/* Numéro de la parcelle — dépendant du choix SU / SR et du type de titre.
                   « Fiche parcellaire » : non demandé (sauf si déjà identifié par une recherche). */}
-              {sectionType && (formData.propertyTitleType !== 'Fiche parcellaire' || sectionTypeAutoDetected) && (
+              {sectionType && isParcelNumberRequired && (
                 <ParcelNumberField
                   sectionType={sectionType}
                   value={formData.parcelNumber || ''}

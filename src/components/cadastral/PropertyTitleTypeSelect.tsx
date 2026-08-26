@@ -60,6 +60,10 @@ interface PropertyTitleTypeSelectProps {
   disabled?: boolean;
   customTitleName?: string;
   onCustomTitleNameChange?: (name: string) => void;
+  /** Valeurs non sélectionnables (règles métier), ex. « Fiche parcellaire » avec un n° SU/SR. */
+  disabledValues?: string[];
+  /** Explication affichée sous le select lorsque des valeurs sont désactivées. */
+  disabledReason?: string;
 }
 
 const PropertyTitleTypeSelect: React.FC<PropertyTitleTypeSelectProps> = ({ 
@@ -72,6 +76,8 @@ const PropertyTitleTypeSelect: React.FC<PropertyTitleTypeSelectProps> = ({
   disabled = false,
   customTitleName,
   onCustomTitleNameChange,
+  disabledValues,
+  disabledReason,
 }) => {
   const [openPopoverId, setOpenPopoverId] = React.useState<string | null>(null);
   
@@ -113,10 +119,12 @@ const PropertyTitleTypeSelect: React.FC<PropertyTitleTypeSelectProps> = ({
             <SelectValue placeholder="Sélectionner le type de titre" />
           </SelectTrigger>
           <SelectContent className="max-h-[400px] rounded-xl">
-            {PROPERTY_TITLE_TYPES.map((type) => (
+            {PROPERTY_TITLE_TYPES.map((type) => {
+              const isOptionDisabled = (disabledValues || []).includes(type.value) && type.value !== value;
+              return (
               <div key={type.value} className="flex items-center justify-between group">
-                <SelectItem value={type.value} className="flex-1 pr-2">
-                  <span className="font-medium text-sm">{type.label}</span>
+                <SelectItem value={type.value} className="flex-1 pr-2" disabled={isOptionDisabled}>
+                  <span className={`font-medium text-sm ${isOptionDisabled ? 'text-muted-foreground line-through' : ''}`}>{type.label}</span>
                 </SelectItem>
                 <Popover 
                   open={openPopoverId === type.value} 
@@ -158,10 +166,17 @@ const PropertyTitleTypeSelect: React.FC<PropertyTitleTypeSelectProps> = ({
                   </PopoverContent>
                 </Popover>
               </div>
-            ))}
+              );
+            })}
           </SelectContent>
         </Select>
-        
+
+        {disabledReason && (disabledValues?.length ?? 0) > 0 && (
+          <p className="text-xs text-muted-foreground bg-muted/50 rounded-lg p-2">
+            {disabledReason}
+          </p>
+        )}
+
         {!isAutre && (
           <p className="text-xs text-muted-foreground">
             Sélectionnez dans la liste le document administratif ou le titre foncier attestant l'enregistrement d'un droit sur cette parcelle, qu'il soit établi au nom du propriétaire actuel ou non.

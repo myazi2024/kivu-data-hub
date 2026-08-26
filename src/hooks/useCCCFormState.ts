@@ -1003,8 +1003,9 @@ export const useCCCFormState = ({
         leaseYears: leaseYears > 0 ? leaseYears : undefined,
         propertyTitleType: getEffectiveTitleName(formData.propertyTitleType, customTitleName) || formData.propertyTitleType,
         // « Fiche parcellaire » : pas de n° SU/SR demandé → le n° du titre sert de référence.
+        // Le repli ne doit jamais être préfixé SU/SR (contradiction avec le type de titre).
         parcelNumber: (formData.propertyTitleType === 'Fiche parcellaire' && !formData.parcelNumber?.trim())
-          ? (formData.titleReferenceNumber || '').trim()
+          ? (formData.titleReferenceNumber || '').trim().replace(/^\s*S\s*[UR]\s*/i, '')
           : formData.parcelNumber,
         parcelType: sectionType === 'urbaine' ? 'SU' as const : sectionType === 'rurale' ? 'SR' as const : undefined,
         currentOwners: currentOwners.filter(o => o.lastName && (o.firstName || o.legalStatus === 'Personne morale')),
@@ -1540,6 +1541,37 @@ export const useCCCFormState = ({
     markDirty();
   }, []);
 
+  // ─── Règle métier : une parcelle avec n° SU/SR ne peut pas être « Fiche parcellaire » ───
+  const hasSuSrParcelNumber = useMemo(() => {
+    const raw = (formData.parcelNumber || '').trim();
+    return sectionTypeAutoDetected || /^S\s*[UR]\s*[0-9]/i.test(raw);
+  }, [formData.parcelNumber, sectionTypeAutoDetected]);
+
+  /** Le champ n° SU/SR est-il demandé dans l'onglet Localisation ? */
+  const isParcelNumberRequired =
+    formData.propertyTitleType !== 'Fiche parcellaire' || sectionTypeAutoDetected;
+
+  // Efface une sélection « Fiche parcellaire » devenue incompatible (hors mode édition).
+  useEffect(() => {
+    if (!open || editingContributionId) return;
+    if (hasSuSrParcelNumber && formData.propertyTitleType === 'Fiche parcellaire') {
+      handleInputChange('propertyTitleType', undefined);
+      toast({
+        title: 'Type de titre à préciser',
+        description:
+          "Cette parcelle porte un numéro SU/SR : sélectionnez un certificat d'enregistrement, un contrat de location ou « Autre ».",
+      });
+    }
+  }, [open, editingContributionId, hasSuSrParcelNumber, formData.propertyTitleType, handleInputChange]);
+
+  // Purge un numéro de parcelle résiduel quand le champ n'est pas demandé.
+  useEffect(() => {
+    if (!open || editingContributionId) return;
+    if (!isParcelNumberRequired && !hasSuSrParcelNumber && (formData.parcelNumber || '').trim()) {
+      handleInputChange('parcelNumber', '');
+    }
+  }, [open, editingContributionId, isParcelNumberRequired, hasSuSrParcelNumber, formData.parcelNumber, handleInputChange]);
+
   return {
     // Core hooks
     loading, uploading, user, toast, isMobile, mapConfig, mapConfigLoading,
@@ -1568,6 +1600,7 @@ export const useCCCFormState = ({
     getPermitTypeRestrictions, showPermitWarning, highlightIncompletePermit,
     // Location
     sectionType, sectionTypeAutoDetected, handleSectionTypeChange,
+    hasSuSrParcelNumber, isParcelNumberRequired,
     availableVilles, availableCommunes, availableTerritoires, availableCollectivites, availableQuartiers, availableAvenues,
     gpsCoordinates, setGpsCoordinates, parcelSides, setParcelSides,
     roadSides, setRoadSides, servitude, setServitude,
