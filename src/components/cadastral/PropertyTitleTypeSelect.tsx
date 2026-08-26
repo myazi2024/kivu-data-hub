@@ -76,6 +76,8 @@ const PropertyTitleTypeSelect: React.FC<PropertyTitleTypeSelectProps> = ({
   disabled = false,
   customTitleName,
   onCustomTitleNameChange,
+  disabledValues,
+  disabledReason,
 }) => {
   const [openPopoverId, setOpenPopoverId] = React.useState<string | null>(null);
   
