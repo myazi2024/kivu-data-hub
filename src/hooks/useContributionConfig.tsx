@@ -22,10 +22,12 @@ export const useContributionConfig = () => {
   const fetchConfigs = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('cadastral_contribution_config')
-        .select('*')
-        .order('config_key');
+      const { data, error } = await withSupabaseRetry(() =>
+        supabase
+          .from('cadastral_contribution_config')
+          .select('*')
+          .order('config_key')
+      );
 
       if (error) throw error;
 
