@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { withSupabaseRetry } from '@/lib/supabaseRetry';
 
 /**
  * Definitions of all static picklist keys used in the CCC form.
