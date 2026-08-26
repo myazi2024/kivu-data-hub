@@ -88,13 +88,15 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
   highlightRequiredFields,
   getPicklistOptions,
   handleNextTab,
-  resetTitleBlock, resetOwnersBlock
+  resetTitleBlock, resetOwnersBlock,
+  disallowFicheParcellaire = false,
 }) => {
-
 
   return (
     <div className="space-y-4 sm:space-y-6 mt-4 sm:mt-6 animate-fade-in">
       <PropertyTitleTypeSelect 
+        disabledValues={disallowFicheParcellaire ? ['Fiche parcellaire'] : undefined}
+        disabledReason="« Fiche parcellaire » n'est pas disponible : une parcelle portant un numéro SU/SR est couverte par un certificat d'enregistrement ou un contrat de location."
         value={formData.propertyTitleType || ''}
         onValueChange={(value) => {
           handleInputChange('propertyTitleType', value);
