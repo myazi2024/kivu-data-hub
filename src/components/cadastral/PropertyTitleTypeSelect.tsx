@@ -119,10 +119,12 @@ const PropertyTitleTypeSelect: React.FC<PropertyTitleTypeSelectProps> = ({
             <SelectValue placeholder="Sélectionner le type de titre" />
           </SelectTrigger>
           <SelectContent className="max-h-[400px] rounded-xl">
-            {PROPERTY_TITLE_TYPES.map((type) => (
+            {PROPERTY_TITLE_TYPES.map((type) => {
+              const isOptionDisabled = (disabledValues || []).includes(type.value) && type.value !== value;
+              return (
               <div key={type.value} className="flex items-center justify-between group">
-                <SelectItem value={type.value} className="flex-1 pr-2">
-                  <span className="font-medium text-sm">{type.label}</span>
+                <SelectItem value={type.value} className="flex-1 pr-2" disabled={isOptionDisabled}>
+                  <span className={`font-medium text-sm ${isOptionDisabled ? 'text-muted-foreground line-through' : ''}`}>{type.label}</span>
                 </SelectItem>
                 <Popover 
                   open={openPopoverId === type.value} 
