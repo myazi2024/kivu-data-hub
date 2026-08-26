@@ -91,16 +91,28 @@ const CadastralMap = () => {
   const inactivityTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const notificationDismissedRef = useRef(false);
 
-  // Viewport height for responsive positioning
-  const [viewportHeight, setViewportHeight] = useState(typeof window !== 'undefined' ? window.innerHeight : 800);
+  // Container-relative sizing for the desktop search bar position.
+  // The search overlay lives inside <main> (height = 100dvh - 4rem), so we must
+  // measure the container's real height (not window.innerHeight) to avoid the
+  // bar drifting below the visible area and being clipped by overflow-hidden.
+  const searchCardRef = useRef<HTMLDivElement>(null);
+  const [mapContainerHeight, setMapContainerHeight] = useState(0);
+  const [searchCardHeight, setSearchCardHeight] = useState(0);
   useEffect(() => {
-    let timeout: ReturnType<typeof setTimeout>;
-    const handleResize = () => {
-      clearTimeout(timeout);
-      timeout = setTimeout(() => setViewportHeight(window.innerHeight), 150);
-    };
-    window.addEventListener('resize', handleResize);
-    return () => { window.removeEventListener('resize', handleResize); clearTimeout(timeout); };
+    const mapEl = mapContainerRef.current;
+    const cardEl = searchCardRef.current;
+    if (!mapEl) return;
+    const mapObs = new ResizeObserver((entries) => {
+      const h = entries[0]?.contentRect.height;
+      if (h && h > 0) setMapContainerHeight(h);
+    });
+    mapObs.observe(mapEl);
+    const cardObs = new ResizeObserver((entries) => {
+      const h = entries[0]?.borderBoxSize?.[0]?.blockSize ?? entries[0]?.contentRect.height;
+      if (h && h > 0) setSearchCardHeight(h);
+    });
+    if (cardEl) cardObs.observe(cardEl);
+    return () => { mapObs.disconnect(); cardObs.disconnect(); };
   }, []);
 
   const advancedSearch = useAdvancedCadastralSearch();
@@ -323,10 +335,10 @@ const CadastralMap = () => {
           className={`absolute left-3 z-[900] ${isMobile ? 'right-3 top-3' : 'w-[min(24rem,calc(100vw-1.5rem))]'} transform-gpu`}
           style={!isMobile ? {
             transition: 'top 0.3s ease, transform 0.3s ease',
-            top: isSearchBarActive || selectedParcel ? '0.75rem' : `${Math.max(viewportHeight - 180, 12)}px`,
+            top: isSearchBarActive || selectedParcel ? '0.75rem' : `${Math.max(mapContainerHeight - (searchCardHeight || 160) - 24, 12)}px`,
           } : undefined}
         >
-          <div className="bg-background/95 backdrop-blur-md rounded-2xl shadow-[0_10px_40px_-8px_rgba(0,0,0,0.9),0_4px_16px_-4px_rgba(0,0,0,0.6)] border border-border/50 overflow-hidden">
+          <div ref={searchCardRef} className="bg-background/95 backdrop-blur-md rounded-2xl shadow-[0_10px_40px_-8px_rgba(0,0,0,0.9),0_4px_16px_-4px_rgba(0,0,0,0.6)] border border-border/50 overflow-hidden">
             <div className="p-2.5">
               {!(selectedParcel && isMobile) && (
                 <CadastralSearchModeToggle
