@@ -27,14 +27,14 @@ const CadastralSearchModeToggle: React.FC<CadastralSearchModeToggleProps> = ({ m
       role="radiogroup"
       aria-label="Type de recherche"
       className={cn(
-        'relative flex items-center gap-1 rounded-xl bg-muted/60 p-1 border border-border/40',
+        'relative flex items-center gap-1 rounded-full bg-muted/60 p-1 border border-border/40',
         'shadow-inner',
         className
       )}
     >
       {/* Sliding yellow indicator */}
       <div
-        className="absolute top-1 bottom-1 left-1 rounded-lg bg-gradient-to-br from-yellow-300 to-yellow-400 shadow-md ring-1 ring-yellow-500/30 pointer-events-none"
+        className="absolute top-1 bottom-1 left-1 rounded-full bg-gradient-to-br from-yellow-300 to-yellow-400 shadow-md ring-1 ring-yellow-500/30 pointer-events-none"
         style={{
           width: 'calc(50% - 0.25rem)',
           transform: `translateX(${activeIndex * 100}%)`,
