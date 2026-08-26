@@ -54,7 +54,7 @@ const CadastralSearchModeToggle: React.FC<CadastralSearchModeToggleProps> = ({ m
             aria-label={opt.aria}
             onClick={() => onModeChange(opt.value)}
             className={cn(
-              'relative z-10 flex-1 min-h-9 rounded-lg px-2 text-[11px] font-semibold transition-colors duration-200 select-none',
+              'relative z-10 flex-1 min-h-9 rounded-full px-3 text-[11px] font-semibold transition-colors duration-200 select-none',
               'flex items-center justify-center gap-1.5',
               active
                 ? 'text-yellow-950'
