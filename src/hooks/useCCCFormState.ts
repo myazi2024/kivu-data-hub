@@ -21,6 +21,7 @@ import { TaxRecord, MortgageRecord } from '@/components/cadastral/ccc-tabs/Oblig
 import { resolveAvailableUsages } from '@/utils/constructionUsageResolver';
 import { renumberParcelSides, renumberGpsCoordinates, reindexRoadSidesAfterRemoval } from '@/utils/parcelSideNumbering';
 import { normalizeConstructionNature } from '@/utils/constructionNatureNormalizer';
+import { composeParcelNumber, stripParcelPrefix } from '@/components/cadastral/ccc-tabs/shared/ParcelNumberField';
 import {
   getAllProvinces,
   getVillesForProvince,
