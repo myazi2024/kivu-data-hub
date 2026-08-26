@@ -1289,15 +1289,17 @@ export const useCCCFormState = ({
   // Auto-save debounced: géré dans useFormPersistence
 
   // Auto-detect section type from parcel number (prop initial OU saisie manuelle).
-  // Les boutons SU/SR ne sont verrouillés que si le numéro provient réellement
-  // d'une recherche par numéro de parcelle (prop non vide).
+  // Les boutons SU/SR ne sont verrouillés que si le numéro REÇU de la recherche
+  // portait réellement un préfixe SU/SR (sinon le préfixe appliqué automatiquement
+  // par le choix de zone verrouillerait à tort ce choix).
   useEffect(() => {
     const upper = (formData.parcelNumber || '').toUpperCase().trim();
-    const lockable = !!parcelNumber?.trim();
+    const lockable = /^S\s*[UR]/i.test((parcelNumber || '').trim());
     if (upper.startsWith('SU')) { setSectionType('urbaine'); setSectionTypeAutoDetected(lockable); }
     else if (upper.startsWith('SR')) { setSectionType('rurale'); setSectionTypeAutoDetected(lockable); }
     else { setSectionTypeAutoDetected(false); }
   }, [formData.parcelNumber, parcelNumber]);
+
 
   // Chaîne des dates de fin des anciens propriétaires.
   // Ancien #1 (le plus récent) se termine à la date d'entrée du propriétaire actuel ;
@@ -1547,8 +1549,9 @@ export const useCCCFormState = ({
   const hasSuSrParcelNumber = useMemo(() => {
     const raw = (formData.parcelNumber || '').trim();
     const fromParcelSearch = searchOrigin === 'parcel' && !!parcelNumber?.trim();
-    return fromParcelSearch || sectionTypeAutoDetected || /^S\s*[UR]\s*[0-9]/i.test(raw);
-  }, [formData.parcelNumber, sectionTypeAutoDetected, searchOrigin, parcelNumber]);
+    return fromParcelSearch || /^S\s*[UR]\s*[0-9]/i.test(raw);
+  }, [formData.parcelNumber, searchOrigin, parcelNumber]);
+
 
   /** Le champ n° SU/SR est-il demandé dans l'onglet Localisation ? */
   const isParcelNumberRequired =
