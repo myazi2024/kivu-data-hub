@@ -1,3 +1,4 @@
+import { isUnbuiltLand } from '@/utils/cccPredicates';
 import { useCallback, useEffect } from 'react';
 import { resolveAvailableUsages } from '@/utils/constructionUsageResolver';
 import type { CadastralContributionData } from '@/hooks/useCadastralContribution';
