@@ -498,14 +498,9 @@ export function useFormValidation(params: UseFormValidationParams) {
       if (hasCur && !hasAmt) {
         missing.push({ field: 'resalePricePair', label: 'Indiquez à la fois la devise et le montant du prix de revente', tab: 'market-value' });
       }
+      // L'onglet Valeur est un recueil d'avis : photos et disponibilité de
+      // l'annonce restent facultatives et ne bloquent pas la soumission.
       const sale = formData.saleListing || {};
-      const saleImgs = Array.isArray(sale.coverImageUrls) ? sale.coverImageUrls.filter(Boolean) : [];
-      if (saleImgs.length < 1) {
-        missing.push({ field: 'saleListingImages', label: "Au moins une photo de la parcelle est requise pour l'annonce de vente", tab: 'market-value' });
-      }
-      if (!sale.availability) {
-        missing.push({ field: 'saleListingAvailability', label: "Disponibilité (annonce de vente)", tab: 'market-value' });
-      }
       if ((sale.description || '').length > 500) {
         missing.push({ field: 'saleListingDescription', label: "Description de la vente : 500 caractères max", tab: 'market-value' });
       }
