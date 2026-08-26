@@ -80,14 +80,12 @@ export function useFormValidation(params: UseFormValidationParams) {
     permitMode, buildingPermits, parcelSides, taxRecords, hasMortgage, hasDispute,
     mortgageRecords, ownerDocFile, titleDocFiles, editingContributionId,
     roadSides, servitude, buildingShapes, constructionMode, additionalConstructions,
-    soundEnvironment, nearbySoundSources, disputeFormData,
+    soundEnvironment, nearbySoundSources, disputeFormData, parcelNumberRequired: parcelNumberRequiredParam,
   } = params;
 
   const missingFieldsList = useMemo<MissingField[]>(() => {
     const missing: MissingField[] = [];
-    const isTerrainNu =
-      formData.constructionType === 'Terrain nu' ||
-      formData.propertyCategory === 'Terrain nu';
+    const isTerrainNu = isTerrainNuCategory(formData);
     const isAppartement = formData.propertyCategory === 'Appartement';
 
     // GENERAL
