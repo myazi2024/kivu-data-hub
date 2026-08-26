@@ -184,7 +184,7 @@ export const ConstructionSection: React.FC<ConstructionSectionProps> = ({
           )}
         </div>
 
-        {availableConstructionMaterials.length > 0 ? (
+        {!isTerrainNu && availableConstructionMaterials.length > 0 ? (
           <div className="space-y-1.5">
             <Label className="text-sm font-medium">Matériaux</Label>
             <Select value={formData.constructionMaterials || ''} onValueChange={(value) => handleInputChange('constructionMaterials', value)} disabled={availableConstructionMaterials.length === 0}>
