@@ -108,6 +108,7 @@ export const ConstructionSection: React.FC<ConstructionSectionProps> = ({
   }, [formData.rentalConfiguration, formData.rentalUnits]);
 
   React.useEffect(() => {
+    if (isTerrainNu) return;
     if (isRented && formData.rentalConfiguration === 'multi') {
       const next = rentalUnitsCapacitySum > 0 ? rentalUnitsCapacitySum : undefined;
       if (next !== formData.hostingCapacity) {
@@ -118,7 +119,17 @@ export const ConstructionSection: React.FC<ConstructionSectionProps> = ({
         handleInputChange('occupantCount', nextOccupants);
       }
     }
-  }, [isRented, formData.rentalConfiguration, rentalUnitsCapacitySum, rentalUnitsOccupantsSum, formData.hostingCapacity, formData.occupantCount, handleInputChange]);
+  }, [isTerrainNu, isRented, formData.rentalConfiguration, rentalUnitsCapacitySum, rentalUnitsOccupantsSum, formData.hostingCapacity, formData.occupantCount, handleInputChange]);
+
+  // Terrain nu : les données d'occupation ne sont pas pertinentes → nettoyage.
+  React.useEffect(() => {
+    if (!isTerrainNu) return;
+    if (formData.isOccupied !== undefined && formData.isOccupied !== null) handleInputChange('isOccupied', undefined);
+    if (formData.hostingCapacity !== undefined) handleInputChange('hostingCapacity', undefined);
+    if (formData.occupantCount !== undefined) handleInputChange('occupantCount', undefined);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isTerrainNu, formData.isOccupied, formData.hostingCapacity, formData.occupantCount]);
+
 
   return (
   <Card className="max-w-[360px] mx-auto rounded-2xl shadow-md border-border/50 overflow-hidden">

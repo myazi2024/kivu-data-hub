@@ -238,6 +238,12 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
 
   // Agrégation auto : en mode multi-locaux, capacité globale = Σ capacités des locaux.
   useEffect(() => {
+    if (isTerrainNuBlock) {
+      if (data.isOccupied !== undefined || data.hostingCapacity !== undefined || data.occupantCount !== undefined) {
+        onChange(index, { ...data, isOccupied: undefined, hostingCapacity: undefined, occupantCount: undefined });
+      }
+      return;
+    }
     if (isRented && data.rentalConfiguration === 'multi') {
       const sum = (data.rentalUnits || []).reduce((s, u: any) => s + (Number(u?.hostingCapacity) || 0), 0);
       const next = sum > 0 ? sum : undefined;
@@ -246,7 +252,8 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isRented, data.rentalConfiguration, JSON.stringify(data.rentalUnits)]);
+  }, [isTerrainNuBlock, isRented, data.rentalConfiguration, JSON.stringify(data.rentalUnits), data.isOccupied, data.hostingCapacity, data.occupantCount]);
+
 
   // Permit type restrictions (simplified for additional block)
   const getPermitTypeRestrictions = () => {
