@@ -21,6 +21,7 @@ import { TaxRecord, MortgageRecord } from '@/components/cadastral/ccc-tabs/Oblig
 import { resolveAvailableUsages } from '@/utils/constructionUsageResolver';
 import { renumberParcelSides, renumberGpsCoordinates, reindexRoadSidesAfterRemoval } from '@/utils/parcelSideNumbering';
 import { normalizeConstructionNature } from '@/utils/constructionNatureNormalizer';
+import { composeParcelNumber, stripParcelPrefix } from '@/components/cadastral/ccc-tabs/shared/ParcelNumberField';
 import {
   getAllProvinces,
   getVillesForProvince,
@@ -270,6 +271,10 @@ export const useCCCFormState = ({
     setSectionType(type);
     setFormData(prev => ({
       ...prev,
+      // Le préfixe SU/SR suit le choix de zone ; la partie numérique est conservée.
+      parcelNumber: prev.parcelNumber
+        ? composeParcelNumber(type, stripParcelPrefix(prev.parcelNumber))
+        : prev.parcelNumber,
       ville: undefined, commune: undefined, quartier: undefined, avenue: undefined,
       territoire: undefined, collectivite: undefined, groupement: undefined, village: undefined
     }));
@@ -997,6 +1002,10 @@ export const useCCCFormState = ({
         ...formData,
         leaseYears: leaseYears > 0 ? leaseYears : undefined,
         propertyTitleType: getEffectiveTitleName(formData.propertyTitleType, customTitleName) || formData.propertyTitleType,
+        // « Fiche parcellaire » : pas de n° SU/SR demandé → le n° du titre sert de référence.
+        parcelNumber: (formData.propertyTitleType === 'Fiche parcellaire' && !formData.parcelNumber?.trim())
+          ? (formData.titleReferenceNumber || '').trim()
+          : formData.parcelNumber,
         parcelType: sectionType === 'urbaine' ? 'SU' as const : sectionType === 'rurale' ? 'SR' as const : undefined,
         currentOwners: currentOwners.filter(o => o.lastName && (o.firstName || o.legalStatus === 'Personne morale')),
         ownershipHistory: ownershipHistoryData.length > 0 ? ownershipHistoryData as any : undefined,
