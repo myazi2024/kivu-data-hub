@@ -359,12 +359,12 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
           </div>
           <Select value={data.declaredUsage} onValueChange={(v) => {
             update('declaredUsage', v);
-          }} disabled={!data.constructionType || !data.constructionNature}>
+          }} disabled={!data.constructionType || (!isTerrainNuBlock && !data.constructionNature)}>
             <SelectTrigger className="h-10 rounded-xl text-sm">
-              <SelectValue placeholder={!data.constructionType || !data.constructionNature ? "Type et nature d'abord" : "Sélectionner"} />
+              <SelectValue placeholder={!data.constructionType ? "Type d'abord" : (!isTerrainNuBlock && !data.constructionNature ? "Nature d'abord" : 'Sélectionner')} />
             </SelectTrigger>
             <SelectContent className="rounded-xl">
-              {availableUsages.map(u => (
+              {(availableUsages.length > 0 ? availableUsages : (isTerrainNuBlock ? TERRAIN_NU_USAGES : [])).map(u => (
                 <SelectItem key={u} value={u}>{u}</SelectItem>
               ))}
             </SelectContent>
