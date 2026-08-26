@@ -60,6 +60,10 @@ interface PropertyTitleTypeSelectProps {
   disabled?: boolean;
   customTitleName?: string;
   onCustomTitleNameChange?: (name: string) => void;
+  /** Valeurs non sélectionnables (règles métier), ex. « Fiche parcellaire » avec un n° SU/SR. */
+  disabledValues?: string[];
+  /** Explication affichée sous le select lorsque des valeurs sont désactivées. */
+  disabledReason?: string;
 }
 
 const PropertyTitleTypeSelect: React.FC<PropertyTitleTypeSelectProps> = ({ 
