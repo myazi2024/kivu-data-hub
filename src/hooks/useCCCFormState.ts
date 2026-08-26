@@ -22,6 +22,7 @@ import { resolveAvailableUsages } from '@/utils/constructionUsageResolver';
 import { renumberParcelSides, renumberGpsCoordinates, reindexRoadSidesAfterRemoval } from '@/utils/parcelSideNumbering';
 import { normalizeConstructionNature } from '@/utils/constructionNatureNormalizer';
 import { composeParcelNumber, stripParcelPrefix } from '@/components/cadastral/ccc-tabs/shared/ParcelNumberField';
+import { hasSuSrReference, computeParcelNumberRequired } from '@/utils/cccPredicates';
 import {
   getAllProvinces,
   getVillesForProvince,
