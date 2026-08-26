@@ -66,6 +66,8 @@ export const ConstructionSection: React.FC<ConstructionSectionProps> = ({
   /** Terrain nu : Nature et Usage ne sont pas des champs obligatoires. */
   const isTerrainNu =
     formData.propertyCategory === 'Terrain nu' || formData.constructionType === 'Terrain nu';
+  /** Usages proposés pour un terrain nu si la liste dépendante n'est pas encore résolue. */
+  const TERRAIN_NU_USAGES = ['Parking', "Espace d'entreposage", 'Aucun'];
 
 
   const purgeRentalData = React.useCallback(() => {
