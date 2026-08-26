@@ -166,10 +166,17 @@ const PropertyTitleTypeSelect: React.FC<PropertyTitleTypeSelectProps> = ({
                   </PopoverContent>
                 </Popover>
               </div>
-            ))}
+              );
+            })}
           </SelectContent>
         </Select>
-        
+
+        {disabledReason && (disabledValues?.length ?? 0) > 0 && (
+          <p className="text-xs text-muted-foreground bg-muted/50 rounded-lg p-2">
+            {disabledReason}
+          </p>
+        )}
+
         {!isAutre && (
           <p className="text-xs text-muted-foreground">
             Sélectionnez dans la liste le document administratif ou le titre foncier attestant l'enregistrement d'un droit sur cette parcelle, qu'il soit établi au nom du propriétaire actuel ou non.
