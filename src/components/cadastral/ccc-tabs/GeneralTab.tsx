@@ -74,6 +74,8 @@ interface GeneralTabProps {
   // Reset handlers
   resetTitleBlock: () => void;
   resetOwnersBlock: () => void;
+  /** Vrai quand la parcelle porte déjà un n° SU/SR : « Fiche parcellaire » devient impossible. */
+  disallowFicheParcellaire?: boolean;
 }
 
 const GeneralTab: React.FC<GeneralTabProps> = ({
