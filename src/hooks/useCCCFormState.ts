@@ -1526,7 +1526,7 @@ export const useCCCFormState = ({
     setSoundEnvironment('');
     setNearbySoundSources('');
     markDirty();
-  }, [sectionTypeAutoDetected]);
+  }, [sectionTypeAutoDetected, searchOrigin, parcelNumber]);
 
 
   const resetPreviousOwnersBlock = useCallback(() => {
