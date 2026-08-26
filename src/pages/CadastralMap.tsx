@@ -338,7 +338,7 @@ const CadastralMap = () => {
             top: isSearchBarActive || selectedParcel ? '0.75rem' : `${Math.max(mapContainerHeight - (searchCardHeight || 160) - 24, 12)}px`,
           } : undefined}
         >
-          <div className="bg-background/95 backdrop-blur-md rounded-2xl shadow-[0_10px_40px_-8px_rgba(0,0,0,0.9),0_4px_16px_-4px_rgba(0,0,0,0.6)] border border-border/50 overflow-hidden">
+          <div ref={searchCardRef} className="bg-background/95 backdrop-blur-md rounded-2xl shadow-[0_10px_40px_-8px_rgba(0,0,0,0.9),0_4px_16px_-4px_rgba(0,0,0,0.6)] border border-border/50 overflow-hidden">
             <div className="p-2.5">
               {!(selectedParcel && isMobile) && (
                 <CadastralSearchModeToggle
