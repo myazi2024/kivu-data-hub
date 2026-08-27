@@ -93,6 +93,18 @@ export const ConstructionSection: React.FC<ConstructionSectionProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rentalEligible]);
 
+  // Catégorie à location unique (Appartement, Local commercial, Entrepôt/Hangar) :
+  // le mode est implicitement « un seul local » — on force le mode single et on
+  // purge les données multi-locaux dès que le bien est déclaré en location.
+  React.useEffect(() => {
+    if (isSingleUnitRental && isRented && formData.rentalConfiguration !== 'single') {
+      handleInputChange('rentalConfiguration', 'single');
+      handleInputChange('rentalUnitsCount', undefined);
+      handleInputChange('rentalUnits', undefined);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSingleUnitRental, isRented, formData.rentalConfiguration]);
+
   // Agrégation auto : en mode multi-locaux, la capacité d'accueil globale = Σ capacités des locaux.
   const rentalUnitsCapacitySum = React.useMemo(() => {
     if (formData.rentalConfiguration !== 'multi') return 0;
