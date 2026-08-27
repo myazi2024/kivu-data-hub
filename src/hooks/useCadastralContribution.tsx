@@ -513,21 +513,44 @@ export const useCadastralContribution = () => {
     fraudScore: number;
     fraudReasons: string[];
   }> => {
-    // Check if user is blocked
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('is_blocked, blocked_reason, fraud_strikes')
-      .eq('user_id', authenticatedUserId)
-      .maybeSingle();
+    // Check if user is blocked (avec réessais sur erreurs transitoires de session/JWT)
+    const readProfile = () =>
+      supabase
+        .from('profiles')
+        .select('is_blocked, blocked_reason, fraud_strikes')
+        .eq('user_id', authenticatedUserId)
+        .maybeSingle();
+
+    let { data: profile, error: profileError } = await withSupabaseRetry(readProfile);
+
+    // Dernière chance : rafraîchir la session puis réessayer une fois
+    if (profileError && isTransientSupabaseError(profileError)) {
+      try {
+        await supabase.auth.refreshSession();
+      } catch {
+        // ignoré : on retente quand même
+      }
+      const retry = await readProfile();
+      profile = retry.data;
+      profileError = retry.error;
+    }
 
     if (profileError) {
+      const code = (profileError as any).code || 'inconnu';
       console.error('Erreur lors de la vérification du profil:', profileError);
-      toast({
-        title: "Erreur de vérification",
-        description: "Impossible de vérifier votre profil. Veuillez réessayer.",
-        variant: "destructive",
-      });
-      return { allowed: false, isSuspicious: false, fraudScore: 0, fraudReasons: [] };
+
+      // Erreur transitoire persistante : on ne bloque pas la soumission.
+      // Le blocage de compte reste appliqué côté base (RLS + déclencheurs).
+      if (isTransientSupabaseError(profileError)) {
+        console.warn('Vérification du profil ignorée (erreur transitoire):', code);
+      } else {
+        toast({
+          title: "Erreur de vérification",
+          description: `Impossible de vérifier votre profil (${code}${profileError.message ? ` : ${profileError.message}` : ''}). Veuillez réessayer.`,
+          variant: "destructive",
+        });
+        return { allowed: false, isSuspicious: false, fraudScore: 0, fraudReasons: [] };
+      }
     }
 
     if (profile?.is_blocked) {
