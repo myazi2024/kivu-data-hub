@@ -47,6 +47,23 @@ export function isRentalEligible(
   return RENTAL_ELIGIBLE_KEYS.has(`${constructionType}_${constructionNature}`);
 }
 
+/**
+ * Catégories de bien louées individuellement comme une construction unique
+ * à un seul locataire. Pour ces catégories, la question
+ * « Comment ce bien est-il mis en location ? » (mono/multi) n'a pas de sens :
+ * le mode est implicitement « un seul local ».
+ */
+const SINGLE_UNIT_RENTAL_CATEGORIES = new Set([
+  'Appartement',
+  'Local commercial',
+  'Entrepôt/Hangar',
+]);
+
+export function isSingleUnitRentalCategory(propertyCategory?: string | null): boolean {
+  if (!propertyCategory) return false;
+  return SINGLE_UNIT_RENTAL_CATEGORIES.has(propertyCategory.trim());
+}
+
 /** Usage réel déduit du type de construction (migration des anciennes valeurs « Location »). */
 export function deduceRealUsage(constructionType?: string | null): string {
   switch (constructionType) {
