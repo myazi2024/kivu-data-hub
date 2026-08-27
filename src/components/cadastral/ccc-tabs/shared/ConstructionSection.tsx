@@ -370,7 +370,10 @@ export const ConstructionSection: React.FC<ConstructionSectionProps> = ({
           <div className="flex gap-2">
             <button
               type="button"
-              onClick={() => handleInputChange('isRented', true)}
+              onClick={() => {
+                handleInputChange('isRented', true);
+                if (isSingleUnitRental) handleInputChange('rentalConfiguration', 'single');
+              }}
               className={cn("flex-1 py-3 px-4 rounded-2xl text-sm font-semibold transition-all", isRented ? 'bg-primary text-primary-foreground shadow-lg' : 'bg-muted text-muted-foreground hover:bg-muted/80')}
             >Oui</button>
             <button
