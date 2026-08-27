@@ -386,8 +386,8 @@ export const ConstructionSection: React.FC<ConstructionSectionProps> = ({
         </div>
       )}
 
-      {/* Configuration locative */}
-      {isRented && (
+      {/* Configuration locative — masquée pour les catégories à location unique (implicitement « un seul local ») */}
+      {isRented && !isSingleUnitRental && (
         <RentalConfigurationSelector
           state={{
             rentalConfiguration: formData.rentalConfiguration,
