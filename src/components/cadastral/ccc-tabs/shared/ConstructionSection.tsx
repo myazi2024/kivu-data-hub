@@ -15,7 +15,7 @@ import { RentalConfigurationSelector, MonthlyRentFields } from '../../RentalConf
 import AdditionalConstructionBlock, { AdditionalConstruction } from '../../AdditionalConstructionBlock';
 import { BuildingPermitIssuingServiceSelect } from '../../BuildingPermitIssuingServiceSelect';
 import type { BuildingPermit } from '../GeneralTab';
-import { isConstructionRented, isRentalEligible } from '@/utils/rentalStatus';
+import { isConstructionRented, isRentalEligible, isSingleUnitRentalCategory } from '@/utils/rentalStatus';
 import { isTerrainNuCategory, isUnbuiltLand } from '@/utils/cccPredicates';
 
 export interface ConstructionSectionProps {
