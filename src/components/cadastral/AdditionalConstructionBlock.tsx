@@ -529,7 +529,10 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
           <div className="flex gap-2">
             <button
               type="button"
-              onClick={() => update('isRented', true)}
+              onClick={() => {
+                update('isRented', true);
+                if (isSingleUnitRental) update('rentalConfiguration', 'single');
+              }}
               className={cn("flex-1 py-3 px-4 rounded-2xl text-sm font-semibold transition-all", isRented ? 'bg-primary text-primary-foreground shadow-lg' : 'bg-muted text-muted-foreground hover:bg-muted/80')}
             >Oui</button>
             <button
@@ -550,8 +553,8 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
         </div>
       )}
 
-      {/* Configuration locative : mono-local vs multi-locaux */}
-      {isRented && (
+      {/* Configuration locative — masquée pour les catégories à location unique (implicitement « un seul local ») */}
+      {isRented && !isSingleUnitRental && (
         <RentalConfigurationSelector
           state={{
             rentalConfiguration: data.rentalConfiguration,
