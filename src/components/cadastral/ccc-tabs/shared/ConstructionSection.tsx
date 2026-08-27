@@ -15,7 +15,7 @@ import { RentalConfigurationSelector, MonthlyRentFields } from '../../RentalConf
 import AdditionalConstructionBlock, { AdditionalConstruction } from '../../AdditionalConstructionBlock';
 import { BuildingPermitIssuingServiceSelect } from '../../BuildingPermitIssuingServiceSelect';
 import type { BuildingPermit } from '../GeneralTab';
-import { isConstructionRented, isRentalEligible } from '@/utils/rentalStatus';
+import { isConstructionRented, isRentalEligible, isSingleUnitRentalCategory } from '@/utils/rentalStatus';
 import { isTerrainNuCategory, isUnbuiltLand } from '@/utils/cccPredicates';
 
 export interface ConstructionSectionProps {
@@ -64,6 +64,8 @@ export const ConstructionSection: React.FC<ConstructionSectionProps> = ({
 }) => {
   const isRented = isConstructionRented(formData as any);
   const rentalEligible = isRentalEligible(formData.constructionType, formData.constructionNature);
+  /** Catégorie louée individuellement comme une construction unique (un seul locataire). */
+  const isSingleUnitRental = isSingleUnitRentalCategory(formData.propertyCategory);
   /** Terrain nu : Nature et Usage ne sont pas des champs obligatoires. */
   const isTerrainNu = isTerrainNuCategory(formData);
   /** Non bâti au sens large (terrain nu ou nature « Non bâti »). */
@@ -90,6 +92,18 @@ export const ConstructionSection: React.FC<ConstructionSectionProps> = ({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rentalEligible]);
+
+  // Catégorie à location unique (Appartement, Local commercial, Entrepôt/Hangar) :
+  // le mode est implicitement « un seul local » — on force le mode single et on
+  // purge les données multi-locaux dès que le bien est déclaré en location.
+  React.useEffect(() => {
+    if (isSingleUnitRental && isRented && formData.rentalConfiguration !== 'single') {
+      handleInputChange('rentalConfiguration', 'single');
+      handleInputChange('rentalUnitsCount', undefined);
+      handleInputChange('rentalUnits', undefined);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSingleUnitRental, isRented, formData.rentalConfiguration]);
 
   // Agrégation auto : en mode multi-locaux, la capacité d'accueil globale = Σ capacités des locaux.
   const rentalUnitsCapacitySum = React.useMemo(() => {
@@ -356,7 +370,10 @@ export const ConstructionSection: React.FC<ConstructionSectionProps> = ({
           <div className="flex gap-2">
             <button
               type="button"
-              onClick={() => handleInputChange('isRented', true)}
+              onClick={() => {
+                handleInputChange('isRented', true);
+                if (isSingleUnitRental) handleInputChange('rentalConfiguration', 'single');
+              }}
               className={cn("flex-1 py-3 px-4 rounded-2xl text-sm font-semibold transition-all", isRented ? 'bg-primary text-primary-foreground shadow-lg' : 'bg-muted text-muted-foreground hover:bg-muted/80')}
             >Oui</button>
             <button
@@ -372,8 +389,8 @@ export const ConstructionSection: React.FC<ConstructionSectionProps> = ({
         </div>
       )}
 
-      {/* Configuration locative */}
-      {isRented && (
+      {/* Configuration locative — masquée pour les catégories à location unique (implicitement « un seul local ») */}
+      {isRented && !isSingleUnitRental && (
         <RentalConfigurationSelector
           state={{
             rentalConfiguration: formData.rentalConfiguration,
