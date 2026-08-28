@@ -1,4 +1,4 @@
-import { isConstructionRented } from '@/utils/rentalStatus';
+import { isConstructionRented, isNonResidentialCategory } from '@/utils/rentalStatus';
 import { useMemo, useCallback } from 'react';
 import { CadastralContributionData } from '@/hooks/useCadastralContribution';
 import { CurrentOwner, BuildingPermit } from '@/components/cadastral/ccc-tabs/GeneralTab';
