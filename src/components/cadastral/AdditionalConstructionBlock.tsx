@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils';
 import { BuildingPermitIssuingServiceSelect } from './BuildingPermitIssuingServiceSelect';
 import { useToast } from '@/hooks/use-toast';
 import { resolveAvailableUsages } from '@/utils/constructionUsageResolver';
-import { isConstructionRented, isRentalEligible, isSingleUnitRentalCategory } from '@/utils/rentalStatus';
+import { isConstructionRented, isRentalEligible, isSingleUnitRentalCategory, isNonResidentialCategory } from '@/utils/rentalStatus';
 import RentalStartDateField from './RentalStartDateField';
 import { RentalConfigurationSelector, MonthlyRentFields } from './RentalConfigurationFields';
 
