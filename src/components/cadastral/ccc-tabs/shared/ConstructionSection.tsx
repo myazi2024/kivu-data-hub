@@ -148,6 +148,18 @@ export const ConstructionSection: React.FC<ConstructionSectionProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isTerrainNu, formData.isOccupied, formData.hostingCapacity, formData.occupantCount]);
 
+  // Catégorie non résidentielle (Local commercial, Entrepôt/Hangar) :
+  // la capacité d'accueil et les indicateurs d'occupation ne sont pas
+  // pertinents (ces biens ne logent pas de personnes) → nettoyage pour
+  // éviter de biaiser les statistiques Analytics de densité / occupation.
+  React.useEffect(() => {
+    if (!isNonResidential) return;
+    if (formData.isOccupied !== undefined && formData.isOccupied !== null) handleInputChange('isOccupied', undefined);
+    if (formData.hostingCapacity !== undefined) handleInputChange('hostingCapacity', undefined);
+    if (formData.occupantCount !== undefined) handleInputChange('occupantCount', undefined);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isNonResidential, formData.isOccupied, formData.hostingCapacity, formData.occupantCount]);
+
 
   return (
   <Card className="max-w-[360px] mx-auto rounded-2xl shadow-md border-border/50 overflow-hidden">
