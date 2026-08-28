@@ -575,8 +575,8 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
         />
       )}
 
-      {/* Capacité d'accueil — avant la date de mise en location (le statut d'occupation détermine le libellé de la date) ; masqué en mode multi (saisi par local) */}
-      {isNotTerrainNu && !(isRented && data.rentalConfiguration === 'multi') && (
+      {/* Capacité d'accueil — avant la date de mise en location (le statut d'occupation détermine le libellé de la date) ; masqué en mode multi (saisi par local) ; masqué pour les catégories non résidentielles (Local commercial, Entrepôt/Hangar) qui ne logent pas de personnes */}
+      {isNotTerrainNu && !isNonResidential && !(isRented && data.rentalConfiguration === 'multi') && (
         <>
           <div className="border-t border-border/50 my-2" />
           <div className="flex items-start gap-2 mb-2">
