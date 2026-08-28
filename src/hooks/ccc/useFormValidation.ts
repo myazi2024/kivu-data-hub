@@ -161,8 +161,8 @@ export function useFormValidation(params: UseFormValidationParams) {
           missing.push({ field: 'monthlyRentUsd', label: 'Loyer mensuel actuel (USD)', tab: 'location' });
         }
         // Symétrie avec le mode multi : occupation et capacité sont requises
-        // (non pertinent pour un terrain nu)
-        if (!isTerrainNu) {
+        // (non pertinent pour un terrain nu ni pour une catégorie non résidentielle)
+        if (!isTerrainNu && !isNonResidential) {
           if (formData.isOccupied === undefined || formData.isOccupied === null) {
             missing.push({ field: 'isOccupied', label: "Statut d'occupation du local", tab: 'location' });
           }
