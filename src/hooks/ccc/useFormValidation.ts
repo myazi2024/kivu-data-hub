@@ -214,6 +214,7 @@ export function useFormValidation(params: UseFormValidationParams) {
     additionalConstructions.forEach((c, idx) => {
       const cIsTerrainNu =
         (c as any).propertyCategory === 'Terrain nu' || c.constructionType === 'Terrain nu';
+      const cIsNonResidential = isNonResidentialCategory((c as any).propertyCategory);
       if (isConstructionRented(c as any)) {
         if (c.rentalConfiguration === 'single') {
           if (!c.rentalStartDate) {
