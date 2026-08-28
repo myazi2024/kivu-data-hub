@@ -66,6 +66,8 @@ export const ConstructionSection: React.FC<ConstructionSectionProps> = ({
   const rentalEligible = isRentalEligible(formData.constructionType, formData.constructionNature);
   /** Catégorie louée individuellement comme une construction unique (un seul locataire). */
   const isSingleUnitRental = isSingleUnitRentalCategory(formData.propertyCategory);
+  /** Catégorie non résidentielle (Local commercial, Entrepôt/Hangar) : capacité d'accueil non pertinente. */
+  const isNonResidential = isNonResidentialCategory(formData.propertyCategory);
   /** Terrain nu : Nature et Usage ne sont pas des champs obligatoires. */
   const isTerrainNu = isTerrainNuCategory(formData);
   /** Non bâti au sens large (terrain nu ou nature « Non bâti »). */
