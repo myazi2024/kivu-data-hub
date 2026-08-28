@@ -229,7 +229,7 @@ export function useFormValidation(params: UseFormValidationParams) {
           if (!c.monthlyRentUsd || Number(c.monthlyRentUsd) <= 0) {
             missing.push({ field: `additionalMonthlyRent_${idx}`, label: `Loyer mensuel (construction #${idx + 2})`, tab: 'location' });
           }
-          if (!cIsTerrainNu) {
+          if (!cIsTerrainNu && !cIsNonResidential) {
             if ((c as any).isOccupied === undefined || (c as any).isOccupied === null) {
               missing.push({ field: `additionalIsOccupied_${idx}`, label: `Statut d'occupation (construction #${idx + 2})`, tab: 'location' });
             }
