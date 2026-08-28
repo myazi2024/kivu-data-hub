@@ -1,4 +1,4 @@
-import { isConstructionRented } from '@/utils/rentalStatus';
+import { isConstructionRented, isNonResidentialCategory } from '@/utils/rentalStatus';
 import { useMemo, useCallback } from 'react';
 import { CadastralContributionData } from '@/hooks/useCadastralContribution';
 import { CurrentOwner, BuildingPermit } from '@/components/cadastral/ccc-tabs/GeneralTab';
@@ -88,6 +88,9 @@ export function useFormValidation(params: UseFormValidationParams) {
     const missing: MissingField[] = [];
     const isTerrainNu = isTerrainNuCategory(formData);
     const isAppartement = formData.propertyCategory === 'Appartement';
+    // Catégorie non résidentielle (Local commercial, Entrepôt/Hangar) :
+    // la capacité d'accueil et l'occupation ne sont pas pertinentes.
+    const isNonResidential = isNonResidentialCategory(formData.propertyCategory);
 
     // GENERAL
     if (!formData.propertyTitleType || formData.propertyTitleType.trim() === '') missing.push({ field: 'propertyTitleType', label: 'Type de titre de propriété', tab: 'general' });
@@ -158,8 +161,8 @@ export function useFormValidation(params: UseFormValidationParams) {
           missing.push({ field: 'monthlyRentUsd', label: 'Loyer mensuel actuel (USD)', tab: 'location' });
         }
         // Symétrie avec le mode multi : occupation et capacité sont requises
-        // (non pertinent pour un terrain nu)
-        if (!isTerrainNu) {
+        // (non pertinent pour un terrain nu ni pour une catégorie non résidentielle)
+        if (!isTerrainNu && !isNonResidential) {
           if (formData.isOccupied === undefined || formData.isOccupied === null) {
             missing.push({ field: 'isOccupied', label: "Statut d'occupation du local", tab: 'location' });
           }
@@ -211,6 +214,7 @@ export function useFormValidation(params: UseFormValidationParams) {
     additionalConstructions.forEach((c, idx) => {
       const cIsTerrainNu =
         (c as any).propertyCategory === 'Terrain nu' || c.constructionType === 'Terrain nu';
+      const cIsNonResidential = isNonResidentialCategory((c as any).propertyCategory);
       if (isConstructionRented(c as any)) {
         if (c.rentalConfiguration === 'single') {
           if (!c.rentalStartDate) {
@@ -225,7 +229,7 @@ export function useFormValidation(params: UseFormValidationParams) {
           if (!c.monthlyRentUsd || Number(c.monthlyRentUsd) <= 0) {
             missing.push({ field: `additionalMonthlyRent_${idx}`, label: `Loyer mensuel (construction #${idx + 2})`, tab: 'location' });
           }
-          if (!cIsTerrainNu) {
+          if (!cIsTerrainNu && !cIsNonResidential) {
             if ((c as any).isOccupied === undefined || (c as any).isOccupied === null) {
               missing.push({ field: `additionalIsOccupied_${idx}`, label: `Statut d'occupation (construction #${idx + 2})`, tab: 'location' });
             }

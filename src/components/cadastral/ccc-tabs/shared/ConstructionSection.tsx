@@ -15,7 +15,7 @@ import { RentalConfigurationSelector, MonthlyRentFields } from '../../RentalConf
 import AdditionalConstructionBlock, { AdditionalConstruction } from '../../AdditionalConstructionBlock';
 import { BuildingPermitIssuingServiceSelect } from '../../BuildingPermitIssuingServiceSelect';
 import type { BuildingPermit } from '../GeneralTab';
-import { isConstructionRented, isRentalEligible, isSingleUnitRentalCategory } from '@/utils/rentalStatus';
+import { isConstructionRented, isRentalEligible, isSingleUnitRentalCategory, isNonResidentialCategory } from '@/utils/rentalStatus';
 import { isTerrainNuCategory, isUnbuiltLand } from '@/utils/cccPredicates';
 
 export interface ConstructionSectionProps {
@@ -66,6 +66,8 @@ export const ConstructionSection: React.FC<ConstructionSectionProps> = ({
   const rentalEligible = isRentalEligible(formData.constructionType, formData.constructionNature);
   /** Catégorie louée individuellement comme une construction unique (un seul locataire). */
   const isSingleUnitRental = isSingleUnitRentalCategory(formData.propertyCategory);
+  /** Catégorie non résidentielle (Local commercial, Entrepôt/Hangar) : capacité d'accueil non pertinente. */
+  const isNonResidential = isNonResidentialCategory(formData.propertyCategory);
   /** Terrain nu : Nature et Usage ne sont pas des champs obligatoires. */
   const isTerrainNu = isTerrainNuCategory(formData);
   /** Non bâti au sens large (terrain nu ou nature « Non bâti »). */
@@ -145,6 +147,18 @@ export const ConstructionSection: React.FC<ConstructionSectionProps> = ({
     if (formData.occupantCount !== undefined) handleInputChange('occupantCount', undefined);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isTerrainNu, formData.isOccupied, formData.hostingCapacity, formData.occupantCount]);
+
+  // Catégorie non résidentielle (Local commercial, Entrepôt/Hangar) :
+  // la capacité d'accueil et les indicateurs d'occupation ne sont pas
+  // pertinents (ces biens ne logent pas de personnes) → nettoyage pour
+  // éviter de biaiser les statistiques Analytics de densité / occupation.
+  React.useEffect(() => {
+    if (!isNonResidential) return;
+    if (formData.isOccupied !== undefined && formData.isOccupied !== null) handleInputChange('isOccupied', undefined);
+    if (formData.hostingCapacity !== undefined) handleInputChange('hostingCapacity', undefined);
+    if (formData.occupantCount !== undefined) handleInputChange('occupantCount', undefined);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isNonResidential, formData.isOccupied, formData.hostingCapacity, formData.occupantCount]);
 
 
   return (
@@ -411,8 +425,8 @@ export const ConstructionSection: React.FC<ConstructionSectionProps> = ({
         />
       )}
 
-      {/* Capacité d'accueil — avant la date de mise en location (le statut d'occupation détermine le libellé de la date) */}
-      {formData.propertyCategory && formData.propertyCategory !== 'Terrain nu' && formData.constructionType && formData.constructionType !== 'Terrain nu' && !(isRented && formData.rentalConfiguration === 'multi') && (
+      {/* Capacité d'accueil — avant la date de mise en location (le statut d'occupation détermine le libellé de la date) ; masqué en mode multi (saisie par local) ; masqué pour les catégories non résidentielles (Local commercial, Entrepôt/Hangar) qui ne logent pas de personnes */}
+      {formData.propertyCategory && formData.propertyCategory !== 'Terrain nu' && !isNonResidential && formData.constructionType && formData.constructionType !== 'Terrain nu' && !(isRented && formData.rentalConfiguration === 'multi') && (
         <>
           <div className="border-t border-border/50 my-2" />
           <div className="flex items-start gap-2 mb-2">

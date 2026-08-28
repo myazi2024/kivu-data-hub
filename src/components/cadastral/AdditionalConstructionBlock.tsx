@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils';
 import { BuildingPermitIssuingServiceSelect } from './BuildingPermitIssuingServiceSelect';
 import { useToast } from '@/hooks/use-toast';
 import { resolveAvailableUsages } from '@/utils/constructionUsageResolver';
-import { isConstructionRented, isRentalEligible, isSingleUnitRentalCategory } from '@/utils/rentalStatus';
+import { isConstructionRented, isRentalEligible, isSingleUnitRentalCategory, isNonResidentialCategory } from '@/utils/rentalStatus';
 import RentalStartDateField from './RentalStartDateField';
 import { RentalConfigurationSelector, MonthlyRentFields } from './RentalConfigurationFields';
 
@@ -217,6 +217,8 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
   const rentalEligible = isRentalEligible(data.constructionType, data.constructionNature);
   /** Catégorie louée individuellement comme une construction unique (un seul locataire). */
   const isSingleUnitRental = isSingleUnitRentalCategory(data.propertyCategory);
+  /** Catégorie non résidentielle (Local commercial, Entrepôt/Hangar) : capacité d'accueil non pertinente. */
+  const isNonResidential = isNonResidentialCategory(data.propertyCategory);
   /** Terrain nu : pas de matériaux, usage déverrouillé. */
   const isTerrainNuBlock = data.propertyCategory === 'Terrain nu' || data.constructionType === 'Terrain nu';
   const TERRAIN_NU_USAGES = ['Parking', "Espace d'entreposage", 'Aucun'];
@@ -255,7 +257,7 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
 
   // Agrégation auto : en mode multi-locaux, capacité globale = Σ capacités des locaux.
   useEffect(() => {
-    if (isTerrainNuBlock) {
+    if (isTerrainNuBlock || isNonResidential) {
       if (data.isOccupied !== undefined || data.hostingCapacity !== undefined || data.occupantCount !== undefined) {
         onChange(index, { ...data, isOccupied: undefined, hostingCapacity: undefined, occupantCount: undefined });
       }
@@ -269,7 +271,7 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isTerrainNuBlock, isRented, data.rentalConfiguration, JSON.stringify(data.rentalUnits), data.isOccupied, data.hostingCapacity, data.occupantCount]);
+  }, [isTerrainNuBlock, isNonResidential, isRented, data.rentalConfiguration, JSON.stringify(data.rentalUnits), data.isOccupied, data.hostingCapacity, data.occupantCount]);
 
 
   // Permit type restrictions (simplified for additional block)
@@ -573,8 +575,8 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
         />
       )}
 
-      {/* Capacité d'accueil — avant la date de mise en location (le statut d'occupation détermine le libellé de la date) ; masqué en mode multi (saisi par local) */}
-      {isNotTerrainNu && !(isRented && data.rentalConfiguration === 'multi') && (
+      {/* Capacité d'accueil — avant la date de mise en location (le statut d'occupation détermine le libellé de la date) ; masqué en mode multi (saisi par local) ; masqué pour les catégories non résidentielles (Local commercial, Entrepôt/Hangar) qui ne logent pas de personnes */}
+      {isNotTerrainNu && !isNonResidential && !(isRented && data.rentalConfiguration === 'multi') && (
         <>
           <div className="border-t border-border/50 my-2" />
           <div className="flex items-start gap-2 mb-2">

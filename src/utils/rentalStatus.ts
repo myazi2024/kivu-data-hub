@@ -64,6 +64,24 @@ export function isSingleUnitRentalCategory(propertyCategory?: string | null): bo
   return SINGLE_UNIT_RENTAL_CATEGORIES.has(propertyCategory.trim());
 }
 
+/**
+ * Catégories de bien non conçues pour loger des personnes (Local commercial,
+ * Entrepôt/Hangar). Pour ces catégories, la « Capacité d'accueil » et les
+ * indicateurs d'occupation (habitants, occupants) ne sont pas pertinents :
+ * leur collecte biaiserait les statistiques de densité / taux d'occupation
+ * calculées dans Analytics. Les champs correspondants sont masqués et
+ * exemptés de la validation.
+ */
+const NON_RESIDENTIAL_CATEGORIES = new Set([
+  'Local commercial',
+  'Entrepôt/Hangar',
+]);
+
+export function isNonResidentialCategory(propertyCategory?: string | null): boolean {
+  if (!propertyCategory) return false;
+  return NON_RESIDENTIAL_CATEGORIES.has(propertyCategory.trim());
+}
+
 /** Usage réel déduit du type de construction (migration des anciennes valeurs « Location »). */
 export function deduceRealUsage(constructionType?: string | null): string {
   switch (constructionType) {
