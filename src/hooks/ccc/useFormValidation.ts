@@ -88,6 +88,9 @@ export function useFormValidation(params: UseFormValidationParams) {
     const missing: MissingField[] = [];
     const isTerrainNu = isTerrainNuCategory(formData);
     const isAppartement = formData.propertyCategory === 'Appartement';
+    // Catégorie non résidentielle (Local commercial, Entrepôt/Hangar) :
+    // la capacité d'accueil et l'occupation ne sont pas pertinentes.
+    const isNonResidential = isNonResidentialCategory(formData.propertyCategory);
 
     // GENERAL
     if (!formData.propertyTitleType || formData.propertyTitleType.trim() === '') missing.push({ field: 'propertyTitleType', label: 'Type de titre de propriété', tab: 'general' });
