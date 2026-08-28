@@ -425,8 +425,8 @@ export const ConstructionSection: React.FC<ConstructionSectionProps> = ({
         />
       )}
 
-      {/* Capacité d'accueil — avant la date de mise en location (le statut d'occupation détermine le libellé de la date) */}
-      {formData.propertyCategory && formData.propertyCategory !== 'Terrain nu' && formData.constructionType && formData.constructionType !== 'Terrain nu' && !(isRented && formData.rentalConfiguration === 'multi') && (
+      {/* Capacité d'accueil — avant la date de mise en location (le statut d'occupation détermine le libellé de la date) ; masqué en mode multi (saisie par local) ; masqué pour les catégories non résidentielles (Local commercial, Entrepôt/Hangar) qui ne logent pas de personnes */}
+      {formData.propertyCategory && formData.propertyCategory !== 'Terrain nu' && !isNonResidential && formData.constructionType && formData.constructionType !== 'Terrain nu' && !(isRented && formData.rentalConfiguration === 'multi') && (
         <>
           <div className="border-t border-border/50 my-2" />
           <div className="flex items-start gap-2 mb-2">
