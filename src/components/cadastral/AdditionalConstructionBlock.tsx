@@ -217,6 +217,8 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
   const rentalEligible = isRentalEligible(data.constructionType, data.constructionNature);
   /** Catégorie louée individuellement comme une construction unique (un seul locataire). */
   const isSingleUnitRental = isSingleUnitRentalCategory(data.propertyCategory);
+  /** Catégorie non résidentielle (Local commercial, Entrepôt/Hangar) : capacité d'accueil non pertinente. */
+  const isNonResidential = isNonResidentialCategory(data.propertyCategory);
   /** Terrain nu : pas de matériaux, usage déverrouillé. */
   const isTerrainNuBlock = data.propertyCategory === 'Terrain nu' || data.constructionType === 'Terrain nu';
   const TERRAIN_NU_USAGES = ['Parking', "Espace d'entreposage", 'Aucun'];
