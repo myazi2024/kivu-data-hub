@@ -257,7 +257,7 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
 
   // Agrégation auto : en mode multi-locaux, capacité globale = Σ capacités des locaux.
   useEffect(() => {
-    if (isTerrainNuBlock) {
+    if (isTerrainNuBlock || isNonResidential) {
       if (data.isOccupied !== undefined || data.hostingCapacity !== undefined || data.occupantCount !== undefined) {
         onChange(index, { ...data, isOccupied: undefined, hostingCapacity: undefined, occupantCount: undefined });
       }
@@ -271,7 +271,7 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isTerrainNuBlock, isRented, data.rentalConfiguration, JSON.stringify(data.rentalUnits), data.isOccupied, data.hostingCapacity, data.occupantCount]);
+  }, [isTerrainNuBlock, isNonResidential, isRented, data.rentalConfiguration, JSON.stringify(data.rentalUnits), data.isOccupied, data.hostingCapacity, data.occupantCount]);
 
 
   // Permit type restrictions (simplified for additional block)
