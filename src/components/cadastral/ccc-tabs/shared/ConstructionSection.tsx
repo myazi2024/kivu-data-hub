@@ -125,8 +125,18 @@ export const ConstructionSection: React.FC<ConstructionSectionProps> = ({
     );
   }, [formData.rentalConfiguration, formData.rentalUnits]);
 
+  // Source unique pour capacité d'accueil / occupation : un seul effet avec des
+  // branches mutuellement exclusives, pour ne plus dépendre de l'ordre des hooks.
+  // - Terrain nu ou catégorie non résidentielle (Local commercial, Entrepôt/Hangar) :
+  //   données non pertinentes (biais des statistiques Analytics) → purge.
+  // - Multi-locaux : agrégation Σ des locaux.
   React.useEffect(() => {
-    if (isTerrainNu) return;
+    if (isTerrainNu || isNonResidential) {
+      if (formData.isOccupied !== undefined && formData.isOccupied !== null) handleInputChange('isOccupied', undefined);
+      if (formData.hostingCapacity !== undefined) handleInputChange('hostingCapacity', undefined);
+      if (formData.occupantCount !== undefined) handleInputChange('occupantCount', undefined);
+      return;
+    }
     if (isRented && formData.rentalConfiguration === 'multi') {
       const next = rentalUnitsCapacitySum > 0 ? rentalUnitsCapacitySum : undefined;
       if (next !== formData.hostingCapacity) {
@@ -137,28 +147,9 @@ export const ConstructionSection: React.FC<ConstructionSectionProps> = ({
         handleInputChange('occupantCount', nextOccupants);
       }
     }
-  }, [isTerrainNu, isRented, formData.rentalConfiguration, rentalUnitsCapacitySum, rentalUnitsOccupantsSum, formData.hostingCapacity, formData.occupantCount, handleInputChange]);
-
-  // Terrain nu : les données d'occupation ne sont pas pertinentes → nettoyage.
-  React.useEffect(() => {
-    if (!isTerrainNu) return;
-    if (formData.isOccupied !== undefined && formData.isOccupied !== null) handleInputChange('isOccupied', undefined);
-    if (formData.hostingCapacity !== undefined) handleInputChange('hostingCapacity', undefined);
-    if (formData.occupantCount !== undefined) handleInputChange('occupantCount', undefined);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isTerrainNu, formData.isOccupied, formData.hostingCapacity, formData.occupantCount]);
+  }, [isTerrainNu, isNonResidential, isRented, formData.rentalConfiguration, rentalUnitsCapacitySum, rentalUnitsOccupantsSum, formData.isOccupied, formData.hostingCapacity, formData.occupantCount]);
 
-  // Catégorie non résidentielle (Local commercial, Entrepôt/Hangar) :
-  // la capacité d'accueil et les indicateurs d'occupation ne sont pas
-  // pertinents (ces biens ne logent pas de personnes) → nettoyage pour
-  // éviter de biaiser les statistiques Analytics de densité / occupation.
-  React.useEffect(() => {
-    if (!isNonResidential) return;
-    if (formData.isOccupied !== undefined && formData.isOccupied !== null) handleInputChange('isOccupied', undefined);
-    if (formData.hostingCapacity !== undefined) handleInputChange('hostingCapacity', undefined);
-    if (formData.occupantCount !== undefined) handleInputChange('occupantCount', undefined);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isNonResidential, formData.isOccupied, formData.hostingCapacity, formData.occupantCount]);
 
 
   return (
