@@ -961,7 +961,11 @@ export type Database = {
       cadastral_contributions: {
         Row: {
           additional_constructions: Json | null
+          apartment_height: number | null
+          apartment_length: number | null
           apartment_number: string | null
+          apartment_orientation: string | null
+          apartment_width: number | null
           appeal_data: Json | null
           appeal_status: string | null
           appeal_submission_date: string | null
@@ -1062,7 +1066,11 @@ export type Database = {
         }
         Insert: {
           additional_constructions?: Json | null
+          apartment_height?: number | null
+          apartment_length?: number | null
           apartment_number?: string | null
+          apartment_orientation?: string | null
+          apartment_width?: number | null
           appeal_data?: Json | null
           appeal_status?: string | null
           appeal_submission_date?: string | null
@@ -1163,7 +1171,11 @@ export type Database = {
         }
         Update: {
           additional_constructions?: Json | null
+          apartment_height?: number | null
+          apartment_length?: number | null
           apartment_number?: string | null
+          apartment_orientation?: string | null
+          apartment_width?: number | null
           appeal_data?: Json | null
           appeal_status?: string | null
           appeal_submission_date?: string | null
@@ -1824,7 +1836,11 @@ export type Database = {
       cadastral_parcels: {
         Row: {
           additional_constructions: Json | null
+          apartment_height: number | null
+          apartment_length: number | null
           apartment_number: string | null
+          apartment_orientation: string | null
+          apartment_width: number | null
           appraisal_date: string | null
           appraisal_report_url: string | null
           appraised_value_amount: number | null
@@ -1905,7 +1921,11 @@ export type Database = {
         }
         Insert: {
           additional_constructions?: Json | null
+          apartment_height?: number | null
+          apartment_length?: number | null
           apartment_number?: string | null
+          apartment_orientation?: string | null
+          apartment_width?: number | null
           appraisal_date?: string | null
           appraisal_report_url?: string | null
           appraised_value_amount?: number | null
@@ -1986,7 +2006,11 @@ export type Database = {
         }
         Update: {
           additional_constructions?: Json | null
+          apartment_height?: number | null
+          apartment_length?: number | null
           apartment_number?: string | null
+          apartment_orientation?: string | null
+          apartment_width?: number | null
           appraisal_date?: string | null
           appraisal_report_url?: string | null
           appraised_value_amount?: number | null
