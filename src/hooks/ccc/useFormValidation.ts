@@ -1,4 +1,4 @@
-import { isConstructionRented, isNonResidentialCategory } from '@/utils/rentalStatus';
+import { isConstructionRented, isNonResidentialCategory, isSingleUnitRentalCategory } from '@/utils/rentalStatus';
 import { useMemo, useCallback } from 'react';
 import { CadastralContributionData } from '@/hooks/useCadastralContribution';
 import { CurrentOwner, BuildingPermit } from '@/components/cadastral/ccc-tabs/GeneralTab';
@@ -154,7 +154,9 @@ export function useFormValidation(params: UseFormValidationParams) {
           missing.push({ field: 'rentalStartDate', label: `Date de mise en location < 01/01/${formData.constructionYear}`, tab: 'location' });
         }
       }
-      if (!formData.rentalConfiguration) {
+      // Catégories louées comme un local unique : le sélecteur est masqué,
+      // le mode « single » est implicite — ne pas exiger le champ.
+      if (!formData.rentalConfiguration && !isSingleUnitRentalCategory(formData.propertyCategory)) {
         missing.push({ field: 'rentalConfiguration', label: 'Configuration locative (un seul local ou plusieurs locaux)', tab: 'location' });
       } else if (formData.rentalConfiguration === 'single') {
         if (!formData.monthlyRentUsd || Number(formData.monthlyRentUsd) <= 0) {
@@ -223,7 +225,7 @@ export function useFormValidation(params: UseFormValidationParams) {
             missing.push({ field: `additionalRentalStartDate_${idx}`, label: `Date de mise en location < 01/01/${c.constructionYear} (construction #${idx + 2})`, tab: 'location' });
           }
         }
-        if (!c.rentalConfiguration) {
+        if (!c.rentalConfiguration && !isSingleUnitRentalCategory((c as any).propertyCategory)) {
           missing.push({ field: `additionalRentalConfig_${idx}`, label: `Configuration locative (construction #${idx + 2})`, tab: 'location' });
         } else if (c.rentalConfiguration === 'single') {
           if (!c.monthlyRentUsd || Number(c.monthlyRentUsd) <= 0) {
