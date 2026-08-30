@@ -144,14 +144,17 @@ describe('useConstructionCascade — natures, matériaux, usages, standing', () 
     expect(result.current.standings).toEqual(['Moyen standing']);
   });
 
-  it('un usage devenu invalide est effacé quand la nature change', () => {
+  it('un usage devenu invalide est remplacé quand la nature change', () => {
     const { result } = renderCascade({ propertyCategory: 'Villa' });
     act(() => { result.current.handleInputChange('constructionMaterials', 'Béton armé'); });
     act(() => { result.current.handleInputChange('declaredUsage', 'Bureau'); });
     expect(result.current.formData.declaredUsage).toBe('Bureau');
     act(() => { result.current.handleInputChange('constructionMaterials', 'Semi-dur'); });
-    expect(result.current.formData.declaredUsage).toBeUndefined();
+    // Semi-durable n'offre que « Habitation » : l'usage invalide est effacé puis auto-sélectionné
+    expect(result.current.usages).toEqual(['Habitation']);
+    expect(result.current.formData.declaredUsage).toBe('Habitation');
   });
+
 
   it('auto-sélectionne l’usage quand une seule option existe (Industrielle Durable)', () => {
     const { result } = renderCascade({ propertyCategory: 'Local commercial' });
