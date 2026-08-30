@@ -126,16 +126,19 @@ export function useConstructionCascade({
   useEffect(() => {
     if (!formData.constructionMaterials || !formData.constructionType) {
       if (!formData.constructionMaterials) {
-        // Ne pas effacer une nature non bâtie (Terrain nu, Agricole non bâti) :
-        // elle est auto-sélectionnée et n'a par définition aucun matériau.
+        // Ne pas effacer une nature auto-sélectionnée : nature non bâtie
+        // (Terrain nu, Agricole non bâti) ou type n'offrant qu'une seule
+        // nature (ex. Industrielle → Durable). Elles n'ont pas encore de
+        // matériau au moment où l'utilisateur choisit le type.
         const natureMap = getPicklistDependentOptions('picklist_construction_nature');
         const natures = formData.constructionType ? (natureMap[formData.constructionType] || []) : [];
-        const isUnbuilt =
+        const isAutoSelected =
           formData.constructionNature === 'Non bâti' ||
-          (natures.length === 1 && natures[0] === 'Non bâti');
-        if (!isUnbuilt) {
+          natures.length === 1;
+        if (!isAutoSelected) {
           handleInputChange('constructionNature', undefined);
         }
+
         setAvailableStandings([]);
         handleInputChange('standing', undefined);
       }
