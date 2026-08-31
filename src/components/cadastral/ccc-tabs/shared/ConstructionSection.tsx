@@ -743,6 +743,8 @@ export const ConstructionSection: React.FC<ConstructionSectionProps> = ({
                       }
                     }}
                     getPicklistDependentOptions={getPicklistDependentOptions}
+                    buildingShapes={buildingShapes}
+                    onBuildingShapesChange={onBuildingShapesChange}
                   />
                 ))}
                 <Button type="button" variant="outline" size="sm" onClick={() => setAdditionalConstructions(prev => [...prev, { propertyCategory: '', constructionType: '', constructionNature: '', constructionMaterials: '', declaredUsage: '', standing: '' }])} className="w-full rounded-xl gap-2">
