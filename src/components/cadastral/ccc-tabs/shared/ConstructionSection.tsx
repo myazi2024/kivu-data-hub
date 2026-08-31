@@ -17,6 +17,8 @@ import { BuildingPermitIssuingServiceSelect } from '../../BuildingPermitIssuingS
 import type { BuildingPermit } from '../GeneralTab';
 import { isConstructionRented, isRentalEligible, isSingleUnitRentalCategory, isNonResidentialCategory } from '@/utils/rentalStatus';
 import { isTerrainNuCategory, isUnbuiltLand } from '@/utils/cccPredicates';
+import BuildingHeightField from '@/components/cadastral/BuildingHeightField';
+import { getShapeForConstructionIndex, withShapeHeight } from '@/utils/buildingShapes';
 
 export interface ConstructionSectionProps {
   formData: CadastralContributionData;
@@ -46,6 +48,8 @@ export interface ConstructionSectionProps {
   getPicklistDependentOptions: any;
   toast: (opts: any) => void;
   resetConstructionBlock: () => void;
+  buildingShapes?: any[]; // Formes du croquis — la hauteur y est stockée (heightM), liée via linkedIndex
+  onBuildingShapesChange?: (shapes: any[]) => void;
 }
 
 export const ConstructionSection: React.FC<ConstructionSectionProps> = ({
