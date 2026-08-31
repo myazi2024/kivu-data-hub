@@ -307,6 +307,23 @@ export const ConstructionSection: React.FC<ConstructionSectionProps> = ({
         )}
       </div>
 
+      {/* Hauteur — déplacée du croquis vers le bloc Construction (avant Standing) */}
+      {showHeightField && (
+        isApartmentCategory ? (
+          <BuildingHeightField
+            value={formData.apartmentHeight}
+            onChange={(v) => handleInputChange('apartmentHeight', v)}
+          />
+        ) : (
+          <BuildingHeightField
+            value={mainBuildingShape?.heightM}
+            onChange={(v) => mainBuildingShape && updateShapeHeight(mainBuildingShape.id, v)}
+            disabled={!mainBuildingShape}
+            disabledHint="Tracez d'abord la construction dans le croquis ci-dessous pour renseigner sa hauteur."
+          />
+        )
+      )}
+
       {/* Standing + Nombre d'étages */}
       {formData.constructionNature && formData.constructionNature !== 'Non bâti' && availableStandings.length > 0 && (
         <div className={`grid gap-3 ${formData.propertyCategory !== 'Appartement' ? 'grid-cols-2' : 'grid-cols-1'}`}>
