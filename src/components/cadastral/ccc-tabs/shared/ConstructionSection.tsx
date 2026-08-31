@@ -80,6 +80,24 @@ export const ConstructionSection: React.FC<ConstructionSectionProps> = ({
   /** Usages proposés pour un terrain nu si la liste dépendante n'est pas encore résolue. */
   const TERRAIN_NU_USAGES = ['Parking', "Espace d'entreposage", 'Aucun'];
 
+  /** Hauteur : visible dès qu'une nature bâtie est choisie (avant Standing). */
+  const showHeightField = !!formData.constructionNature && formData.constructionNature !== 'Non bâti';
+  const isApartmentCategory = formData.propertyCategory === 'Appartement';
+  /** Forme du croquis liée à la construction principale (linkedIndex 0). */
+  const mainBuildingShape = React.useMemo(
+    () => (buildingShapes ? getShapeForConstructionIndex(buildingShapes, 0) : undefined),
+    [buildingShapes],
+  );
+  const updateShapeHeight = React.useCallback(
+    (shapeId: string, heightM: number | undefined) => {
+      if (!buildingShapes || !onBuildingShapesChange) return;
+      onBuildingShapesChange(withShapeHeight(buildingShapes, shapeId, heightM));
+    },
+    [buildingShapes, onBuildingShapesChange],
+  );
+
+
+
 
   const purgeRentalData = React.useCallback(() => {
     if (formData.rentalStartDate) handleInputChange('rentalStartDate', undefined);
