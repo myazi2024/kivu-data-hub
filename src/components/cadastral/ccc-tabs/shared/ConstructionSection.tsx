@@ -64,7 +64,8 @@ export const ConstructionSection: React.FC<ConstructionSectionProps> = ({
   getPermitTypeRestrictions, showPermitWarning, highlightIncompletePermit,
   highlightRequiredFields, setHighlightRequiredFields,
   getPicklistDependentOptions, toast,
-  resetConstructionBlock
+  resetConstructionBlock,
+  buildingShapes, onBuildingShapesChange
 }) => {
   const isRented = isConstructionRented(formData as any);
   const rentalEligible = isRentalEligible(formData.constructionType, formData.constructionNature);
