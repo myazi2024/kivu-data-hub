@@ -108,6 +108,13 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
   const permit = data.permit || { permitType: 'construction', permitNumber: '', issueDate: '', issuingService: '' };
   const permitMode = data.permitMode || 'existing';
 
+  /** Forme du croquis liée à cette construction additionnelle (linkedIndex = index + 1). */
+  const linkedShape = useMemo(
+    () => (buildingShapes ? getShapeForConstructionIndex(buildingShapes, index + 1) : undefined),
+    [buildingShapes, index],
+  );
+  const showHeightField = !!data.constructionNature && data.constructionNature !== 'Non bâti';
+
   const updatePermitField = (field: keyof AdditionalConstructionPermit, value: any) => {
     onChange(index, { ...data, permit: { ...permit, [field]: value } });
   };
@@ -427,6 +434,19 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
           </>
         )}
       </div>
+
+      {/* Hauteur — déplacée du croquis vers ce bloc (avant Standing) */}
+      {showHeightField && (
+        <BuildingHeightField
+          value={linkedShape?.heightM}
+          onChange={(v) => {
+            if (!linkedShape || !buildingShapes || !onBuildingShapesChange) return;
+            onBuildingShapesChange(withShapeHeight(buildingShapes, linkedShape.id, v));
+          }}
+          disabled={!linkedShape}
+          disabledHint="Tracez d'abord cette construction dans le croquis pour renseigner sa hauteur."
+        />
+      )}
 
       {/* Standing & Nombre d'étages */}
       {data.constructionNature && data.constructionNature !== 'Non bâti' && availableStandings.length > 0 && (
