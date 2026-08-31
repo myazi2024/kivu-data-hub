@@ -17,6 +17,8 @@ import { BuildingPermitIssuingServiceSelect } from '../../BuildingPermitIssuingS
 import type { BuildingPermit } from '../GeneralTab';
 import { isConstructionRented, isRentalEligible, isSingleUnitRentalCategory, isNonResidentialCategory } from '@/utils/rentalStatus';
 import { isTerrainNuCategory, isUnbuiltLand } from '@/utils/cccPredicates';
+import BuildingHeightField from '@/components/cadastral/BuildingHeightField';
+import { getShapeForConstructionIndex, withShapeHeight } from '@/utils/buildingShapes';
 
 export interface ConstructionSectionProps {
   formData: CadastralContributionData;
@@ -46,6 +48,8 @@ export interface ConstructionSectionProps {
   getPicklistDependentOptions: any;
   toast: (opts: any) => void;
   resetConstructionBlock: () => void;
+  buildingShapes?: any[]; // Formes du croquis — la hauteur y est stockée (heightM), liée via linkedIndex
+  onBuildingShapesChange?: (shapes: any[]) => void;
 }
 
 export const ConstructionSection: React.FC<ConstructionSectionProps> = ({
@@ -60,7 +64,8 @@ export const ConstructionSection: React.FC<ConstructionSectionProps> = ({
   getPermitTypeRestrictions, showPermitWarning, highlightIncompletePermit,
   highlightRequiredFields, setHighlightRequiredFields,
   getPicklistDependentOptions, toast,
-  resetConstructionBlock
+  resetConstructionBlock,
+  buildingShapes, onBuildingShapesChange
 }) => {
   const isRented = isConstructionRented(formData as any);
   const rentalEligible = isRentalEligible(formData.constructionType, formData.constructionNature);
@@ -74,6 +79,24 @@ export const ConstructionSection: React.FC<ConstructionSectionProps> = ({
   const isUnbuilt = isUnbuiltLand(formData);
   /** Usages proposés pour un terrain nu si la liste dépendante n'est pas encore résolue. */
   const TERRAIN_NU_USAGES = ['Parking', "Espace d'entreposage", 'Aucun'];
+
+  /** Hauteur : visible dès qu'une nature bâtie est choisie (avant Standing). */
+  const showHeightField = !!formData.constructionNature && formData.constructionNature !== 'Non bâti';
+  const isApartmentCategory = formData.propertyCategory === 'Appartement';
+  /** Forme du croquis liée à la construction principale (linkedIndex 0). */
+  const mainBuildingShape = React.useMemo(
+    () => (buildingShapes ? getShapeForConstructionIndex(buildingShapes, 0) : undefined),
+    [buildingShapes],
+  );
+  const updateShapeHeight = React.useCallback(
+    (shapeId: string, heightM: number | undefined) => {
+      if (!buildingShapes || !onBuildingShapesChange) return;
+      onBuildingShapesChange(withShapeHeight(buildingShapes, shapeId, heightM));
+    },
+    [buildingShapes, onBuildingShapesChange],
+  );
+
+
 
 
   const purgeRentalData = React.useCallback(() => {
@@ -283,6 +306,23 @@ export const ConstructionSection: React.FC<ConstructionSectionProps> = ({
           </>
         )}
       </div>
+
+      {/* Hauteur — déplacée du croquis vers le bloc Construction (avant Standing) */}
+      {showHeightField && (
+        isApartmentCategory ? (
+          <BuildingHeightField
+            value={formData.apartmentHeight}
+            onChange={(v) => handleInputChange('apartmentHeight', v)}
+          />
+        ) : (
+          <BuildingHeightField
+            value={mainBuildingShape?.heightM}
+            onChange={(v) => mainBuildingShape && updateShapeHeight(mainBuildingShape.id, v)}
+            disabled={!mainBuildingShape}
+            disabledHint="Tracez d'abord la construction dans le croquis ci-dessous pour renseigner sa hauteur."
+          />
+        )
+      )}
 
       {/* Standing + Nombre d'étages */}
       {formData.constructionNature && formData.constructionNature !== 'Non bâti' && availableStandings.length > 0 && (
@@ -703,6 +743,8 @@ export const ConstructionSection: React.FC<ConstructionSectionProps> = ({
                       }
                     }}
                     getPicklistDependentOptions={getPicklistDependentOptions}
+                    buildingShapes={buildingShapes}
+                    onBuildingShapesChange={onBuildingShapesChange}
                   />
                 ))}
                 <Button type="button" variant="outline" size="sm" onClick={() => setAdditionalConstructions(prev => [...prev, { propertyCategory: '', constructionType: '', constructionNature: '', constructionMaterials: '', declaredUsage: '', standing: '' }])} className="w-full rounded-xl gap-2">

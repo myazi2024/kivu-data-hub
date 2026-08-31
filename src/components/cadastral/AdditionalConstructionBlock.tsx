@@ -13,6 +13,8 @@ import { resolveAvailableUsages } from '@/utils/constructionUsageResolver';
 import { isConstructionRented, isRentalEligible, isSingleUnitRentalCategory, isNonResidentialCategory } from '@/utils/rentalStatus';
 import RentalStartDateField from './RentalStartDateField';
 import { RentalConfigurationSelector, MonthlyRentFields } from './RentalConfigurationFields';
+import BuildingHeightField from './BuildingHeightField';
+import { getShapeForConstructionIndex, withShapeHeight } from '@/utils/buildingShapes';
 
 export interface AdditionalConstructionPermit {
   permitType: 'construction' | 'regularization';
@@ -88,10 +90,14 @@ interface Props {
   onChange: (index: number, data: AdditionalConstruction) => void;
   onRemove: (index: number) => void;
   getPicklistDependentOptions: (key: string) => Record<string, string[]>;
+  /** Formes du croquis — la hauteur y est stockée (heightM), liée via linkedIndex = index + 1. */
+  buildingShapes?: any[];
+  onBuildingShapesChange?: (shapes: any[]) => void;
 }
 
 const AdditionalConstructionBlock: React.FC<Props> = ({
   index, data, onChange, onRemove, getPicklistDependentOptions,
+  buildingShapes, onBuildingShapesChange,
 }) => {
   const { toast } = useToast();
 
@@ -101,6 +107,13 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
 
   const permit = data.permit || { permitType: 'construction', permitNumber: '', issueDate: '', issuingService: '' };
   const permitMode = data.permitMode || 'existing';
+
+  /** Forme du croquis liée à cette construction additionnelle (linkedIndex = index + 1). */
+  const linkedShape = useMemo(
+    () => (buildingShapes ? getShapeForConstructionIndex(buildingShapes, index + 1) : undefined),
+    [buildingShapes, index],
+  );
+  const showHeightField = !!data.constructionNature && data.constructionNature !== 'Non bâti';
 
   const updatePermitField = (field: keyof AdditionalConstructionPermit, value: any) => {
     onChange(index, { ...data, permit: { ...permit, [field]: value } });
@@ -421,6 +434,19 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
           </>
         )}
       </div>
+
+      {/* Hauteur — déplacée du croquis vers ce bloc (avant Standing) */}
+      {showHeightField && (
+        <BuildingHeightField
+          value={linkedShape?.heightM}
+          onChange={(v) => {
+            if (!linkedShape || !buildingShapes || !onBuildingShapesChange) return;
+            onBuildingShapesChange(withShapeHeight(buildingShapes, linkedShape.id, v));
+          }}
+          disabled={!linkedShape}
+          disabledHint="Tracez d'abord cette construction dans le croquis pour renseigner sa hauteur."
+        />
+      )}
 
       {/* Standing & Nombre d'étages */}
       {data.constructionNature && data.constructionNature !== 'Non bâti' && availableStandings.length > 0 && (
