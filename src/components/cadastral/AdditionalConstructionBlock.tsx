@@ -13,6 +13,8 @@ import { resolveAvailableUsages } from '@/utils/constructionUsageResolver';
 import { isConstructionRented, isRentalEligible, isSingleUnitRentalCategory, isNonResidentialCategory } from '@/utils/rentalStatus';
 import RentalStartDateField from './RentalStartDateField';
 import { RentalConfigurationSelector, MonthlyRentFields } from './RentalConfigurationFields';
+import BuildingHeightField from './BuildingHeightField';
+import { getShapeForConstructionIndex, withShapeHeight } from '@/utils/buildingShapes';
 
 export interface AdditionalConstructionPermit {
   permitType: 'construction' | 'regularization';
@@ -88,10 +90,14 @@ interface Props {
   onChange: (index: number, data: AdditionalConstruction) => void;
   onRemove: (index: number) => void;
   getPicklistDependentOptions: (key: string) => Record<string, string[]>;
+  /** Formes du croquis — la hauteur y est stockée (heightM), liée via linkedIndex = index + 1. */
+  buildingShapes?: any[];
+  onBuildingShapesChange?: (shapes: any[]) => void;
 }
 
 const AdditionalConstructionBlock: React.FC<Props> = ({
   index, data, onChange, onRemove, getPicklistDependentOptions,
+  buildingShapes, onBuildingShapesChange,
 }) => {
   const { toast } = useToast();
 
