@@ -20,7 +20,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { AlertCircle, MapPin, AlertTriangle, Info, Move, Hand, Plus, Trash2, Target, Pencil, Check, Navigation, Eye, Building2, Layers, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, X, RotateCw, RotateCcw, Compass } from 'lucide-react';
+import { AlertCircle, MapPin, AlertTriangle, Info, Move, Hand, Plus, Trash2, Target, Pencil, Check, Navigation, Eye, Building2, Layers, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, X, RotateCw, RotateCcw, Compass, Copy } from 'lucide-react';
 import { BoundaryConflictDialog } from './BoundaryConflictDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useTestEnvironment, applyTestFilter } from '@/hooks/useTestEnvironment';
@@ -1763,7 +1763,41 @@ export const ParcelMapPreview = ({
     toast.success(`${label} ajoutée: ${newShape.areaSqm} m², ${newShape.perimeterM} m de périmètre`);
   }, [buildingVertices, buildingShapes, onBuildingShapesChange, cancelDrawingBuilding, constructionLabels, selectedBuildingTarget]);
 
+  // Calquer la construction sur l'emprise exacte de la parcelle
+  const traceBuildingFromParcel = useCallback(() => {
+    if (!onBuildingShapesChange) return;
+    const verts = validCoords.map(c => ({ lat: parseFloat(c.lat), lng: parseFloat(c.lng) }));
+    if (verts.length < 3) return;
+
+    const sides: { name: string; length: string }[] = [];
+    let perimeter = 0;
+    for (let i = 0; i < verts.length; i++) {
+      const next = verts[(i + 1) % verts.length];
+      const dist = calculateDistance(verts[i].lat, verts[i].lng, next.lat, next.lng);
+      sides.push({ name: `Côté ${i + 1}`, length: dist.toFixed(2) });
+      perimeter += dist;
+    }
+
+    const areaSqm = calculateBuildingArea(verts);
+    const targetIdx = selectedBuildingTarget ?? buildingShapes.length;
+
+    const newShape: BuildingShape = {
+      id: `building-${Date.now()}`,
+      vertices: verts,
+      sides,
+      areaSqm: Math.round(areaSqm * 100) / 100,
+      perimeterM: Math.round(perimeter * 100) / 100,
+      linkedIndex: targetIdx,
+    };
+
+    const label = constructionLabels[targetIdx] || `Construction ${targetIdx + 1}`;
+    onBuildingShapesChange([...buildingShapes, newShape]);
+    cancelDrawingBuilding();
+    toast.success(`${label} calquée sur la parcelle: ${newShape.areaSqm} m², ${newShape.perimeterM} m de périmètre`);
+  }, [validCoords, buildingShapes, onBuildingShapesChange, cancelDrawingBuilding, constructionLabels, selectedBuildingTarget]);
+
   // Supprimer le dernier sommet en cours de tracé
+
   const removeLastBuildingVertex = useCallback(() => {
     setBuildingVertices(prev => prev.slice(0, -1));
   }, []);
@@ -2486,6 +2520,29 @@ export const ParcelMapPreview = ({
             }
             return btn;
           })()}
+
+          {/* Calquer la construction sur la parcelle — visible uniquement en mode tracé */}
+          {isParcelComplete && onBuildingShapesChange && isDrawingBuilding && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={traceBuildingFromParcel}
+                  className="h-8 w-8 p-0 rounded-xl shadow-md bg-white hover:bg-gray-50"
+                  aria-label="Calquer sur la parcelle"
+                >
+                  <Copy className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="max-w-[260px] text-xs text-center">
+                Calquer sur la parcelle : trace automatiquement la construction avec les mêmes dimensions et la même forme que la parcelle.
+              </TooltipContent>
+            </Tooltip>
+          )}
+
+
           
           {/* Sélecteur de construction cible */}
           {showBuildingTargetSelector && !isDrawingBuilding && (() => {
