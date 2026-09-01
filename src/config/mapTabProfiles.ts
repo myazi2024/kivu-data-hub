@@ -478,6 +478,36 @@ const taxesProfile: MapTabProfile = {
   },
 };
 
+
+/** Rental & market value profile — from CCC declarative market indicators. */
+const rentalMarketProfile: MapTabProfile = {
+  tabKey: 'rental-market',
+  label: 'Location & Valeur',
+  legendTitle: 'Biens en location',
+  tiers: makeTiers([5, 20, 60], PALETTES.teal),
+  palette: PALETTES.teal,
+  adaptiveUnit: 'biens',
+  dataSource: 'cadastral_contributions',
+  hasData: ({ analytics, provinceName }) => filterProv(analytics.contributions as any[], provinceName).length > 0,
+  metric: ({ analytics, provinceName }) =>
+    filterProv(analytics.contributions as any[], provinceName).filter((c: any) => c.is_rented === true).length,
+  tooltipLines: ({ analytics, provinceName }) => {
+    const c = filterProv(analytics.contributions as any[], provinceName);
+    const rented = c.filter((r: any) => r.is_rented === true);
+    const rents = rented.map((r: any) => Number(r.monthly_rent_usd || 0)).filter((n: number) => n > 0);
+    const avgRent = rents.length ? rents.reduce((s, n) => s + n, 0) / rents.length : 0;
+    const sellers = c.filter((r: any) => r.would_sell_if_offered === true);
+    const prices = c.map((r: any) => Number(r.resale_price_usd || 0)).filter((n: number) => n > 0);
+    const avgPrice = prices.length ? prices.reduce((s, n) => s + n, 0) / prices.length : 0;
+    return [
+      { label: 'En location',   value: fmtN(rented.length),                     color: 'text-emerald-600' },
+      { label: 'Loyer moyen',   value: rents.length ? fmtUsd(avgRent) : '—',    color: 'text-primary' },
+      { label: 'À vendre',      value: fmtN(sellers.length),                    color: 'text-amber-600' },
+      { label: 'Prix revente',  value: prices.length ? fmtUsd(avgPrice) : '—',  color: 'text-blue-600' },
+    ];
+  },
+};
+
 /** Default map profile — choropleth by total parcels (existing behavior). */
 const rdcMapProfile: MapTabProfile = {
   tabKey: 'rdc-map',
@@ -510,6 +540,7 @@ export const MAP_TAB_PROFILES: Record<string, MapTabProfile> = {
   'invoices': invoicesProfile,
   'building-permits': buildingPermitsProfile,
   'taxes': taxesProfile,
+  'rental-market': rentalMarketProfile,
 };
 
 /** Default profile (parcels density) — exported for explicit fallback usage */
