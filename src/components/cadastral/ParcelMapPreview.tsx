@@ -142,6 +142,7 @@ export const ParcelMapPreview = ({
   const segmentLayersRef = useRef<any[]>([]);
   const neighborLayersRef = useRef<any[]>([]);
   const buildingLayersRef = useRef<any[]>([]);
+  const buildingPolygonsRef = useRef<Map<string, any>>(new Map());
   const mapControlsRef = useRef<any[]>([]);
   const userLocationLayersRef = useRef<any[]>([]);
 
@@ -199,6 +200,16 @@ export const ParcelMapPreview = ({
   const [editingBorneCoords, setEditingBorneCoords] = useState<{ lat: string; lng: string }>({ lat: '', lng: '' });
   const [editingBuildingVertex, setEditingBuildingVertex] = useState<{ shapeId: string; vertexIdx: number } | null>(null);
   const [editingBuildingVertexCoords, setEditingBuildingVertexCoords] = useState<{ lat: string; lng: string }>({ lat: '', lng: '' });
+  const [hoveredBuildingId, setHoveredBuildingId] = useState<string | null>(null);
+  const [pendingBuildingDeletion, setPendingBuildingDeletion] = useState<string | null>(null);
+
+  // Signature compacte des constructions : évite les redraws inutiles pendant
+  // le pan/zoom tout en garantissant un redraw à chaque changement réel.
+  const buildingShapesSignature = useMemo(
+    () => buildingShapes.map(s => `${s.id}:${s.linkedIndex ?? ''}:${s.heightM ?? ''}:${s.vertices.map(v => `${v.lat.toFixed(7)},${v.lng.toFixed(7)}`).join('|')}`).join(';'),
+    [buildingShapes],
+  );
+
   
   // Charger la configuration depuis Supabase
   const { config: dbConfig, loading: configLoading } = useMapConfig();
@@ -814,17 +825,6 @@ export const ParcelMapPreview = ({
         });
         segmentLayersRef.current = [];
 
-        // Ne pas détruire les markers de construction pendant un drag actif
-        if (!bvDragActiveRef.current) {
-          buildingLayersRef.current.forEach(layer => {
-            try {
-              if (layer && map.hasLayer(layer)) map.removeLayer(layer);
-            } catch (e) {
-              console.error('remove building layer error', e);
-            }
-          });
-          buildingLayersRef.current = [];
-        }
 
         const latLngs: [number, number][] = [];
         const markerColor = mapConfig.markerColor || '#3b82f6';
@@ -1045,6 +1045,51 @@ export const ParcelMapPreview = ({
           lastParcelSidesLengthRef.current = '';
         }
 
+      } catch (err) {
+        console.error('ParcelMapPreview updateMap error:', err);
+      }
+    };
+
+    // Utiliser requestAnimationFrame pour éviter les mises à jour trop rapides
+    const rafId = requestAnimationFrame(() => {
+      updateMap();
+    });
+
+    return () => {
+      cancelAnimationFrame(rafId);
+      cancelled = true;
+    };
+  }, [isMapReady, validCoords, roadSides, mapConfig, isGroupDragMode, isDrawingMode, selectedBorne, isDrawingBuilding, buildingVertices]);
+
+  // Effet dédié au rendu des constructions (formes validées + tracé en cours).
+  // Isolé du rendu des bornes pour que toute modification de `buildingShapes`
+  // (ajout, suppression, édition d'un sommet, changement de libellé) redessine
+  // immédiatement la carte.
+  useEffect(() => {
+    if (!isMapReady || !mapInstanceRef.current) return;
+
+    let cancelled = false;
+    const mapHandlers: [string, (e: any) => void][] = [];
+
+    const clearBuildingLayers = (map: any) => {
+      buildingLayersRef.current.forEach(layer => {
+        try { if (layer && map.hasLayer(layer)) map.removeLayer(layer); } catch (e) { console.error('remove building layer error', e); }
+      });
+      buildingLayersRef.current = [];
+      buildingPolygonsRef.current.clear();
+    };
+
+    const drawBuildings = async () => {
+      try {
+        const L = await import('leaflet');
+        if (cancelled) return;
+        const map = mapInstanceRef.current;
+        if (!map) return;
+
+        // Ne pas détruire les couches pendant un drag de sommet actif
+        if (bvDragActiveRef.current) return;
+        clearBuildingLayers(map);
+
         // Dessiner les constructions validées (polygones à partir de vertices)
         buildingShapes.forEach((shape, idx) => {
           if (!shape.vertices || shape.vertices.length < 3) return;
@@ -1063,6 +1108,7 @@ export const ParcelMapPreview = ({
               <span>Périmètre: ${shape.perimeterM.toFixed(1)} m</span>
             </div>
           `);
+          buildingPolygonsRef.current.set(shape.id, bldPolygon);
           buildingLayersRef.current.push(bldPolygon);
           
           // Marqueurs interactifs sur chaque sommet (double-clic = éditer GPS)
@@ -1177,6 +1223,7 @@ export const ParcelMapPreview = ({
             vertexMarker.on('mouseout', () => { if (bvDragActiveRef.current) return; cancelBvLongPress(); });
             map.on('mousemove', moveBvDrag);
             map.on('touchmove', touchMoveBvDrag);
+            mapHandlers.push(['mousemove', moveBvDrag], ['touchmove', touchMoveBvDrag]);
 
             buildingLayersRef.current.push(vertexMarker);
           });
@@ -1277,20 +1324,37 @@ export const ParcelMapPreview = ({
           }
         }
       } catch (err) {
-        console.error('ParcelMapPreview updateMap error:', err);
+        console.error('ParcelMapPreview drawBuildings error:', err);
       }
     };
 
-    // Utiliser requestAnimationFrame pour éviter les mises à jour trop rapides
-    const rafId = requestAnimationFrame(() => {
-      updateMap();
-    });
+    const rafId = requestAnimationFrame(() => { drawBuildings(); });
 
     return () => {
       cancelAnimationFrame(rafId);
       cancelled = true;
+      const map = mapInstanceRef.current;
+      if (map) {
+        mapHandlers.forEach(([evt, fn]) => { try { map.off(evt, fn); } catch {} });
+        if (!bvDragActiveRef.current) clearBuildingLayers(map);
+      }
     };
-  }, [isMapReady, validCoords, roadSides, mapConfig, isGroupDragMode, isDrawingMode, selectedBorne, isDrawingBuilding, buildingVertices]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isMapReady, buildingShapesSignature, buildingVertices, isDrawingBuilding, isDrawingMode, isGroupDragMode, constructionLabels]);
+
+  // Surbrillance de la construction survolée dans la liste sous la carte
+  useEffect(() => {
+    buildingPolygonsRef.current.forEach((poly, id) => {
+      try {
+        poly.setStyle(
+          id === hoveredBuildingId
+            ? { color: '#facc15', fillColor: '#facc15', fillOpacity: 0.45, weight: 3 }
+            : { color: '#dc2626', fillColor: '#dc2626', fillOpacity: 0.3, weight: 2 },
+        );
+      } catch {}
+    });
+  }, [hoveredBuildingId, buildingShapesSignature]);
+
 
   // Pendant le tracé d'une construction : forcer l'activation du drag/zoom de la carte
   // après chaque redraw, et désactiver explicitement le drag des marqueurs de bornes
@@ -1312,9 +1376,27 @@ export const ParcelMapPreview = ({
   // Supprimer une construction par ID (préserve les linkedIndex des autres)
   const removeBuildingById = useCallback((buildingId: string) => {
     if (!onBuildingShapesChange) return;
+    const removed = buildingShapes.find(s => s.id === buildingId);
+    if (!removed) return;
+    const removedIdx = buildingShapes.findIndex(s => s.id === buildingId);
     const remaining = buildingShapes.filter(s => s.id !== buildingId);
+    // Fermer l'éditeur de sommet s'il visait cette construction
+    setEditingBuildingVertex(prev => (prev && prev.shapeId === buildingId ? null : prev));
+    setHoveredBuildingId(prev => (prev === buildingId ? null : prev));
     onBuildingShapesChange(remaining);
-  }, [buildingShapes, onBuildingShapesChange]);
+    const label = constructionLabels[removed.linkedIndex ?? removedIdx] || 'Construction';
+    toast.success(`${label} supprimée`, {
+      action: {
+        label: 'Annuler',
+        onClick: () => {
+          const restored = [...buildingShapesRef.current];
+          restored.splice(Math.min(removedIdx, restored.length), 0, removed);
+          onBuildingShapesChange(restored);
+        },
+      },
+    });
+  }, [buildingShapes, onBuildingShapesChange, constructionLabels]);
+
 
   // Réattribuer le linkedIndex d'une construction tracée
   const reassignBuildingLinkedIndex = useCallback((buildingId: string, newLinkedIndex: number) => {
@@ -2826,7 +2908,13 @@ export const ParcelMapPreview = ({
               {buildingShapes.map((shape, idx) => {
                 const label = constructionLabels[shape.linkedIndex ?? idx] || `Construction ${idx + 1}`;
                 return (
-                    <div key={shape.id} className="space-y-1.5 text-xs bg-background/60 rounded-lg px-2 py-1.5 border border-border/30">
+                    <div
+                      key={shape.id}
+                      onMouseEnter={() => setHoveredBuildingId(shape.id)}
+                      onMouseLeave={() => setHoveredBuildingId(prev => (prev === shape.id ? null : prev))}
+                      className={`space-y-1.5 text-xs bg-background/60 rounded-lg px-2 py-1.5 border transition-colors ${hoveredBuildingId === shape.id ? 'border-primary/60 bg-primary/5' : 'border-border/30'}`}
+                    >
+
                       <div className="flex items-center justify-between gap-1.5">
                         <div className="flex items-center gap-1.5 min-w-0 flex-1">
                           <Layers className="h-3 w-3 text-primary flex-shrink-0" />
@@ -2857,9 +2945,10 @@ export const ParcelMapPreview = ({
                             {heightInputExternal && shape.heightM != null && ` · H: ${shape.heightM} m`}
                           </span>
                         </div>
-                        <Button type="button" variant="ghost" size="sm" onClick={() => removeBuildingById(shape.id)} className="h-6 w-6 p-0 text-destructive hover:bg-destructive/10 flex-shrink-0">
+                        <Button type="button" variant="ghost" size="sm" onClick={() => setPendingBuildingDeletion(shape.id)} title="Supprimer cette construction" className="h-6 w-6 p-0 text-destructive hover:bg-destructive/10 flex-shrink-0">
                           <Trash2 className="h-3 w-3" />
                         </Button>
+
                       </div>
                       {!heightInputExternal && (
                       <div className="flex flex-col gap-0.5 pl-4">
@@ -2894,6 +2983,30 @@ export const ParcelMapPreview = ({
           )}
         </Card>
       )}
+
+      {/* Confirmation de suppression d'une construction */}
+      <AlertDialog open={!!pendingBuildingDeletion} onOpenChange={(open) => { if (!open) setPendingBuildingDeletion(null); }}>
+        <AlertDialogContent className="rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Supprimer cette construction ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Le tracé sera retiré de la carte. Les autres constructions et la hauteur saisie dans le bloc Construction sont conservées. Vous pourrez annuler juste après la suppression.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (pendingBuildingDeletion) removeBuildingById(pendingBuildingDeletion);
+                setPendingBuildingDeletion(null);
+              }}
+            >
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {isTerrainNu && buildingShapes.length > 0 && (
         <Card className="p-3 bg-red-50 dark:bg-red-950/20 rounded-2xl shadow-sm border-red-200/50">
           <div className="flex items-center justify-between">
