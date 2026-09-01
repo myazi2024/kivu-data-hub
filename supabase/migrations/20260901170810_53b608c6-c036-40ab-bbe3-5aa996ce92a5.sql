@@ -1,0 +1,1 @@
+ALTER TABLE public.parcel_actions_config ADD COLUMN IF NOT EXISTS detailed_description TEXT;
