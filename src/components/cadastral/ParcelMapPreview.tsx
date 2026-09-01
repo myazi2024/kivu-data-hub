@@ -76,6 +76,8 @@ interface ParcelMapPreviewProps {
   isTerrainNu?: boolean;
   requiredBuildingCount?: number;
   constructionLabels?: string[];
+  /** true = la hauteur se saisit dans le bloc Construction (CCC) : l'input du croquis est masqué. */
+  heightInputExternal?: boolean;
 }
 
 // Calculer la surface d'un polygone à partir de sommets GPS (Shoelace formula en mètres)
@@ -128,6 +130,7 @@ export const ParcelMapPreview = ({
   isTerrainNu = false,
   requiredBuildingCount = 0,
   constructionLabels = [],
+  heightInputExternal = false,
 }: ParcelMapPreviewProps) => {
   const { isTestRoute } = useTestEnvironment();
   const mapRef = useRef<HTMLDivElement>(null);
@@ -2792,12 +2795,16 @@ export const ParcelMapPreview = ({
                           ) : (
                             <span className="font-medium truncate">{label}</span>
                           )}
-                          <span className="text-muted-foreground flex-shrink-0">{shape.areaSqm.toFixed(1)} m²</span>
+                          <span className="text-muted-foreground flex-shrink-0">
+                            {shape.areaSqm.toFixed(1)} m²
+                            {heightInputExternal && shape.heightM != null && ` · H: ${shape.heightM} m`}
+                          </span>
                         </div>
                         <Button type="button" variant="ghost" size="sm" onClick={() => removeBuildingById(shape.id)} className="h-6 w-6 p-0 text-destructive hover:bg-destructive/10 flex-shrink-0">
                           <Trash2 className="h-3 w-3" />
                         </Button>
                       </div>
+                      {!heightInputExternal && (
                       <div className="flex flex-col gap-0.5 pl-4">
                         <div className="flex items-center gap-1.5">
                           <label className="text-muted-foreground whitespace-nowrap">Hauteur :</label>
@@ -2822,6 +2829,7 @@ export const ParcelMapPreview = ({
                           <p className="text-[10px] text-destructive">Hauteur minimale : 3 m</p>
                         )}
                       </div>
+                      )}
                     </div>
                 );
               })}
