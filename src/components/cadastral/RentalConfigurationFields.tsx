@@ -8,6 +8,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils';
 import { Home, Building2, DollarSign } from 'lucide-react';
+import { isTerrainNuCategory as isTerrainNuCategoryShared } from '@/utils/cccPredicates';
 
 export type RentalConfiguration = 'single' | 'multi';
 

@@ -97,7 +97,6 @@ export interface UseFormPersistenceResult {
   /** Suppression granulaire d'un fichier Storage (best-effort, retire aussi du tracker). */
   removeUploadedPath: (path: string) => Promise<void>;
   /** Indique si un brouillon a été restauré au montage. */
-  hasRestoredDraft: boolean;
 }
 
 export function useFormPersistence(params: UseFormPersistenceParams): UseFormPersistenceResult {
@@ -119,7 +118,6 @@ export function useFormPersistence(params: UseFormPersistenceParams): UseFormPer
 
   const STORAGE_KEY = `cadastral_contribution_${parcelNumber || 'draft'}`;
   const submitUploadedPathsRef = useRef<string[]>([]);
-  const [hasRestoredDraft, setHasRestoredDraft] = useState(false);
 
   // ─── Save (manual + debounced) ───
   const saveFormDataToStorage = useCallback(() => {
@@ -217,7 +215,6 @@ export function useFormPersistence(params: UseFormPersistenceParams): UseFormPer
       if (parsed.soundEnvironment) setSoundEnvironment(parsed.soundEnvironment);
       if (parsed.nearbySoundSources) setNearbySoundSources(parsed.nearbySoundSources);
       if (parsed.isOccupied !== undefined) setFormData(prev => ({ ...prev, isOccupied: parsed.isOccupied, occupantCount: parsed.occupantCount, hostingCapacity: parsed.hostingCapacity }));
-      setHasRestoredDraft(true);
       toast({ title: "Données restaurées", description: "Vos données précédentes ont été restaurées." });
     } catch (error) {
       console.error('Erreur chargement:', error);
@@ -287,7 +284,6 @@ export function useFormPersistence(params: UseFormPersistenceParams): UseFormPer
     rollbackUploadedFiles,
     resetUploadedTracker,
     removeUploadedPath,
-    hasRestoredDraft,
   };
 }
 
