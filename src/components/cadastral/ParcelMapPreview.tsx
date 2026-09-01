@@ -200,6 +200,16 @@ export const ParcelMapPreview = ({
   const [editingBorneCoords, setEditingBorneCoords] = useState<{ lat: string; lng: string }>({ lat: '', lng: '' });
   const [editingBuildingVertex, setEditingBuildingVertex] = useState<{ shapeId: string; vertexIdx: number } | null>(null);
   const [editingBuildingVertexCoords, setEditingBuildingVertexCoords] = useState<{ lat: string; lng: string }>({ lat: '', lng: '' });
+  const [hoveredBuildingId, setHoveredBuildingId] = useState<string | null>(null);
+  const [pendingBuildingDeletion, setPendingBuildingDeletion] = useState<string | null>(null);
+
+  // Signature compacte des constructions : évite les redraws inutiles pendant
+  // le pan/zoom tout en garantissant un redraw à chaque changement réel.
+  const buildingShapesSignature = useMemo(
+    () => buildingShapes.map(s => `${s.id}:${s.linkedIndex ?? ''}:${s.heightM ?? ''}:${s.vertices.map(v => `${v.lat.toFixed(7)},${v.lng.toFixed(7)}`).join('|')}`).join(';'),
+    [buildingShapes],
+  );
+
   
   // Charger la configuration depuis Supabase
   const { config: dbConfig, loading: configLoading } = useMapConfig();
