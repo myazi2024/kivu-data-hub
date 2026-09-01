@@ -315,3 +315,49 @@ export function buildFilterLabel(filter: AnalyticsFilter): string {
   parts.push(loc.join(' › '));
   return parts.join(' · ');
 }
+
+/**
+ * Declared building height in metres for a CCC record.
+ * Prefers sketch shape heights (`building_shapes[].heightM`), falling back to the
+ * height declared in the Construction block (`building_height` / `apartment_height`).
+ * Returns null when no usable height exists.
+ */
+export function recordBuildingHeightM(record: any): number | null {
+  const shapes = record?.building_shapes;
+  if (Array.isArray(shapes)) {
+    const heights = shapes
+      .map((s: any) => Number(s?.heightM ?? s?.height_m ?? 0))
+      .filter((h: number) => h > 0);
+    if (heights.length > 0) return heights.reduce((s, h) => s + h, 0) / heights.length;
+  }
+  const declared = Number(record?.building_height || record?.apartment_height || 0);
+  return declared > 0 ? declared : null;
+}
+
+/**
+ * Average a numeric metric grouped by a geographic (or any string) field.
+ * Skips records with an empty group label or no usable value, sorts descending
+ * and keeps the `topN` first groups.
+ */
+export function averageBy(
+  records: any[],
+  field: string,
+  valueFn: (record: any) => number | null,
+  topN = 12,
+): { name: string; value: number; count: number }[] {
+  const acc = new Map<string, { sum: number; count: number }>();
+  records.forEach(r => {
+    const key = (r?.[field] ?? '').toString().trim();
+    if (!key) return;
+    const value = valueFn(r);
+    if (value === null || !Number.isFinite(value) || value <= 0) return;
+    const entry = acc.get(key) ?? { sum: 0, count: 0 };
+    entry.sum += value;
+    entry.count += 1;
+    acc.set(key, entry);
+  });
+  return Array.from(acc.entries())
+    .map(([name, { sum, count }]) => ({ name, value: Math.round((sum / count) * 100) / 100, count }))
+    .sort((a, b) => b.value - a.value)
+    .slice(0, topN);
+}
