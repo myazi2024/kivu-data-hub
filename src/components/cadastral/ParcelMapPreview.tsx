@@ -1352,9 +1352,27 @@ export const ParcelMapPreview = ({
   // Supprimer une construction par ID (préserve les linkedIndex des autres)
   const removeBuildingById = useCallback((buildingId: string) => {
     if (!onBuildingShapesChange) return;
+    const removed = buildingShapes.find(s => s.id === buildingId);
+    if (!removed) return;
+    const removedIdx = buildingShapes.findIndex(s => s.id === buildingId);
     const remaining = buildingShapes.filter(s => s.id !== buildingId);
+    // Fermer l'éditeur de sommet s'il visait cette construction
+    setEditingBuildingVertex(prev => (prev && prev.shapeId === buildingId ? null : prev));
+    setHoveredBuildingId(prev => (prev === buildingId ? null : prev));
     onBuildingShapesChange(remaining);
-  }, [buildingShapes, onBuildingShapesChange]);
+    const label = constructionLabels[removed.linkedIndex ?? removedIdx] || 'Construction';
+    toast.success(`${label} supprimée`, {
+      action: {
+        label: 'Annuler',
+        onClick: () => {
+          const restored = [...buildingShapesRef.current];
+          restored.splice(Math.min(removedIdx, restored.length), 0, removed);
+          onBuildingShapesChange(restored);
+        },
+      },
+    });
+  }, [buildingShapes, onBuildingShapesChange, constructionLabels]);
+
 
   // Réattribuer le linkedIndex d'une construction tracée
   const reassignBuildingLinkedIndex = useCallback((buildingId: string, newLinkedIndex: number) => {
