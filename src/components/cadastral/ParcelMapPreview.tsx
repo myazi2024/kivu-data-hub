@@ -2983,6 +2983,30 @@ export const ParcelMapPreview = ({
           )}
         </Card>
       )}
+
+      {/* Confirmation de suppression d'une construction */}
+      <AlertDialog open={!!pendingBuildingDeletion} onOpenChange={(open) => { if (!open) setPendingBuildingDeletion(null); }}>
+        <AlertDialogContent className="rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Supprimer cette construction ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Le tracé sera retiré de la carte. Les autres constructions et la hauteur saisie dans le bloc Construction sont conservées. Vous pourrez annuler juste après la suppression.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (pendingBuildingDeletion) removeBuildingById(pendingBuildingDeletion);
+                setPendingBuildingDeletion(null);
+              }}
+            >
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {isTerrainNu && buildingShapes.length > 0 && (
         <Card className="p-3 bg-red-50 dark:bg-red-950/20 rounded-2xl shadow-sm border-red-200/50">
           <div className="flex items-center justify-between">
