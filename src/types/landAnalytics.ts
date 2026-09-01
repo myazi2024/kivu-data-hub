@@ -76,12 +76,13 @@ export interface ParcelRecord extends GeoFields, CccMarketFields {
 }
 
 
-export interface ContributionRecord extends GeoFields {
+export interface ContributionRecord extends GeoFields, CccMarketFields {
   id: string;
   parcel_number: string;
   property_title_type?: string | null;
   current_owner_legal_status?: string | null;
   current_owners_details?: any;
+  current_owner_since?: string | null;
   declared_usage?: string | null;
   construction_type?: string | null;
   construction_nature?: string | null;
@@ -114,7 +115,17 @@ export interface ContributionRecord extends GeoFields {
   has_dispute?: boolean | null;
   is_title_in_current_owner_name?: boolean | null;
   title_issue_date?: string | null;
+  gps_coordinates?: any;
+  parcel_sides?: any;
+  road_sides?: any;
+  servitude_data?: any;
+  dispute_data?: any;
+  ownership_history?: any;
+  boundary_history?: any;
+  tax_history?: any;
+  mortgage_history?: any;
 }
+
 
 export interface TitleRequestRecord extends GeoFields {
   id: string;
