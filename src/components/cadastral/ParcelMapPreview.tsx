@@ -2638,6 +2638,28 @@ export const ParcelMapPreview = ({
             );
           })()}
         </div>
+
+        {/* Calquer la construction sur la parcelle — bouton libellé distinct, séparé de la pile d'icônes (visible uniquement en mode tracé) */}
+        {isParcelComplete && onBuildingShapesChange && isDrawingBuilding && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                size="sm"
+                onClick={traceBuildingFromParcel}
+                className="absolute top-12 right-2 z-[1000] gap-1.5 px-3 h-8 rounded-xl shadow-md bg-primary text-primary-foreground hover:bg-primary/90 text-xs"
+                aria-label="Calquer sur la parcelle"
+              >
+                <Copy className="h-4 w-4" />
+                Calquer sur la parcelle
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="max-w-[260px] text-xs text-center">
+              Calquer sur la parcelle : trace automatiquement la construction avec les mêmes dimensions et la même forme que la parcelle.
+            </TooltipContent>
+          </Tooltip>
+        )}
+
         
         {/* Mode Dessin indicateur */}
         {isDrawingMode && (
