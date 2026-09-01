@@ -357,6 +357,7 @@ export const ConstructionSection: React.FC<ConstructionSectionProps> = ({
                   ) : (
                     <BuildingHeightField
                       value={formData.buildingHeight ?? mainBuildingShape?.heightM}
+                      floorCount={formData.floorNumber ? parseInt(formData.floorNumber, 10) : undefined}
                       onChange={(v) => {
                         handleInputChange('buildingHeight', v);
                         if (mainBuildingShape) updateShapeHeight(mainBuildingShape.id, v);
