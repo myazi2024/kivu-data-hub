@@ -372,3 +372,57 @@ describe('useFormValidation — accessibilité des onglets', () => {
     expect(result.current.isFormValidForSubmission()).toBe(true);
   });
 });
+
+describe('useFormValidation — cohérence étages / hauteur', () => {
+  it('2 étages + hauteur 4 m : bloquant', () => {
+    const f = fields(build('Villa', {
+      formData: { floorNumber: '2', buildingHeight: 4 } as any,
+      buildingShapes: [{ id: 's1', linkedIndex: 0, heightM: 4 }],
+    }));
+    expect(f).toContain('buildingHeightMin');
+  });
+
+  it('2 étages + hauteur 6 m : OK', () => {
+    const f = fields(build('Villa', {
+      formData: { floorNumber: '2', buildingHeight: 6 } as any,
+      buildingShapes: [{ id: 's1', linkedIndex: 0, heightM: 6 }],
+    }));
+    expect(f).not.toContain('buildingHeightMin');
+  });
+
+  it('3 étages + hauteur 8 m : bloquant ; 9 m : OK', () => {
+    const low = fields(build('Villa', {
+      formData: { floorNumber: '3', buildingHeight: 8 } as any,
+      buildingShapes: [{ id: 's1', linkedIndex: 0, heightM: 8 }],
+    }));
+    expect(low).toContain('buildingHeightMin');
+    const ok = fields(build('Villa', {
+      formData: { floorNumber: '3', buildingHeight: 9 } as any,
+      buildingShapes: [{ id: 's1', linkedIndex: 0, heightM: 9 }],
+    }));
+    expect(ok).not.toContain('buildingHeightMin');
+  });
+
+  it('construction additionnelle : 2 étages + hauteur 5 m : bloquant', () => {
+    const f = fields(build('Villa', {
+      constructionMode: 'multiple',
+      additionalConstructions: [{
+        propertyCategory: 'Villa',
+        constructionType: 'Résidentielle',
+        constructionNature: 'Durable',
+        constructionMaterials: 'Béton armé',
+        standing: 'Moyen standing',
+        declaredUsage: 'Habitation',
+        constructionYear: 2015,
+        floorNumber: '2',
+        heightM: 5,
+      } as any],
+      buildingShapes: [
+        { id: 's1', linkedIndex: 0, heightM: 4 },
+        { id: 's2', linkedIndex: 1, heightM: 5 },
+      ],
+    }));
+    expect(f).toContain('buildingHeightMin');
+  });
+});
+

@@ -485,6 +485,7 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
                 {showHeightField && (
                   <BuildingHeightField
                     value={data.heightM ?? linkedShape?.heightM}
+                    floorCount={data.floorNumber ? parseInt(data.floorNumber, 10) : undefined}
                     onChange={(v) => {
                       update('heightM', v);
                       if (linkedShape && buildingShapes && onBuildingShapesChange) {

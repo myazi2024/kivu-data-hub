@@ -1,4 +1,5 @@
 import { isConstructionRented, isNonResidentialCategory, isSingleUnitRentalCategory } from '@/utils/rentalStatus';
+import { minHeightForFloors } from '@/utils/buildingShapes';
 import { useMemo, useCallback } from 'react';
 import { CadastralContributionData } from '@/hooks/useCadastralContribution';
 import { CurrentOwner, BuildingPermit } from '@/components/cadastral/ccc-tabs/GeneralTab';
@@ -329,13 +330,31 @@ export function useFormValidation(params: UseFormValidationParams) {
       if (buildingShapes.length > 0 && missingHeight) {
         missing.push({ field: 'buildingHeight', label: 'Hauteur de construction manquante', tab: 'location' });
       }
-      const tooShort = buildingShapes.some((s: any) => s.heightM != null && s.heightM > 0 && s.heightM < 3);
+      // Hauteur minimale dynamique : 3 m/étage (min. 3 m) selon le nombre d'étages de chaque construction.
+      const mainMin = minHeightForFloors(formData.floorNumber);
+      const shapeTooShort = buildingShapes.some((s: any) => {
+        const idx = s.linkedIndex ?? 0;
+        const minH = idx === 0 ? mainMin : minHeightForFloors(additionalConstructions[idx - 1]?.floorNumber);
+        return s.heightM != null && s.heightM > 0 && s.heightM < minH;
+      });
       // Hauteurs saisies dans le bloc Construction en attendant le tracé du croquis.
       const pendingTooShort =
-        (formData.buildingHeight != null && formData.buildingHeight > 0 && formData.buildingHeight < 3) ||
-        additionalConstructions.some((c: any) => c.heightM != null && c.heightM > 0 && c.heightM < 3);
-      if ((buildingShapes.length > 0 && tooShort) || pendingTooShort) {
-        missing.push({ field: 'buildingHeightMin', label: 'Hauteur de construction inférieure à 3 m (minimum requis)', tab: 'location' });
+        (formData.buildingHeight != null && formData.buildingHeight > 0 && formData.buildingHeight < mainMin) ||
+        additionalConstructions.some((c: any) => {
+          const minH = minHeightForFloors(c.floorNumber);
+          return c.heightM != null && c.heightM > 0 && c.heightM < minH;
+        });
+      if ((buildingShapes.length > 0 && shapeTooShort) || pendingTooShort) {
+        const worstMin = Math.max(mainMin, ...additionalConstructions.map((c: any) => minHeightForFloors(c.floorNumber)));
+        const worstFloors = Math.max(
+          formData.floorNumber ? parseInt(formData.floorNumber, 10) || 0 : 0,
+          ...additionalConstructions.map((c: any) => (c.floorNumber ? parseInt(c.floorNumber, 10) || 0 : 0)),
+        );
+        missing.push({
+          field: 'buildingHeightMin',
+          label: `Hauteur de construction insuffisante (minimum ${worstMin} m pour ${worstFloors} étage(s))`,
+          tab: 'location',
+        });
       }
     }
 
