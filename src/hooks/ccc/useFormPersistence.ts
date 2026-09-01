@@ -8,7 +8,7 @@
  *  - même debounce (1500ms)
  *  - mêmes toasts
  */
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import type { CadastralContributionData } from '@/hooks/useCadastralContribution';
