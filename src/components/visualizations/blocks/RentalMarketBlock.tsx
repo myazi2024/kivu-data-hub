@@ -275,7 +275,7 @@ export const RentalMarketBlock: React.FC<Props> = memo(({ data }) => {
     { key: 'evolution', el: () => <ChartCard title={ct('evolution', 'Évolution des déclarations marchandes')} icon={TrendingUp} data={trend} type={ty('evolution', 'area')} colorIndex={0} colSpan={2} hidden={trend.length === 0}
       insight={generateInsight(trend, 'area', 'les déclarations locatives et de vente')} /> },
   ].filter(d => v(d.key)).sort((a, b) => ord(a.key) - ord(b.key)),
-  [filtered, rented, rentalStatusData, rentalModeData, rentDistribution, rentByCategory, rentalSeniority, sellIntentData, resaleDistribution, currencyData, appraisalData, appraisedDistribution, listingsData, trend, v, ct, cx, ty, ord]);
+  [filtered, rented, rentalStatusData, rentalModeData, rentDistribution, rentByCategory, rentalSeniority, sellIntentData, resaleDistribution, currencyData, appraisalData, appraisedDistribution, listingsData, avgRentByCommune, avgRentByQuartier, avgHeightByCommune, avgHeightByQuartier, trend, v, ct, cx, ty, ord]);
 
   return (
     <FilterLabelContext.Provider value={filterLabel}>
