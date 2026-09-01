@@ -31,7 +31,7 @@ import { useAppAppearance } from '@/hooks/useAppAppearance';
 
 import { useCadastralMapData, useParcelHistory, type ParcelData } from '@/hooks/useCadastralMapData';
 import { useStripeReturnHandler } from '@/hooks/useStripeReturnHandler';
-import { useLandTitleNotificationFlow } from '@/hooks/useLandTitleNotificationFlow';
+import { useSearchHintFlow } from '@/hooks/useSearchHintFlow';
 import { useLeafletMap } from '@/hooks/useLeafletMap';
 import { playFeedbackBeep } from '@/lib/feedbackAudio';
 import { trackEvent } from '@/lib/analytics';
@@ -142,7 +142,8 @@ const CadastralMap = () => {
   const { polling: stripePolling, pollProgress } = useStripeReturnHandler();
 
   // Land title notification state machine (replaces 4 setTimeout cascades)
-  const landTitle = useLandTitleNotificationFlow(hasUserInteracted);
+  // Infobulles contextuelles par mode de recherche (masquées dès la première saisie/sélection)
+  const searchHint = useSearchHintFlow(searchMode, searchQuery.trim().length > 0 || !!selectedParcel);
 
   // Leaflet map (init + tiles via provider + on-demand geo + incremental render)
   const { mapReady, renderLayers, requestUserLocation, centerOnParcel } = useLeafletMap({
