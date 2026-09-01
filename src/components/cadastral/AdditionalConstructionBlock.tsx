@@ -489,7 +489,7 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
                     onChange={(v) => {
                       update('heightM', v);
                       if (linkedShape && buildingShapes && onBuildingShapesChange) {
-                        onBuildingBuildingShapesChange(buildingShapes, linkedShape.id, v));
+                        onBuildingShapesChange(withShapeHeight(buildingShapes, linkedShape.id, v));
                       }
                     }}
                   />
