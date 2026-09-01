@@ -1,6 +1,6 @@
 import React, { useMemo, memo } from 'react';
 import { AnalyticsFilters } from '../filters/AnalyticsFilters';
-import { countBy, trendByMonth, surfaceDistribution, yearDecadeDistribution } from '@/utils/analyticsHelpers';
+import { countBy, trendByMonth, surfaceDistribution, yearDecadeDistribution, recordBuildingHeightM } from '@/utils/analyticsHelpers';
 import { pct } from '@/utils/analyticsConstants';
 import { LandAnalyticsData } from '@/hooks/useLandDataAnalytics';
 import { Building, TrendingUp, Clock, ShieldCheck, Maximize, ArrowUpFromLine, Volume2, Ear, Home, Layers, Users, Gauge } from 'lucide-react';
@@ -107,8 +107,10 @@ export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
         });
       }
       // Declared height (Construction block) when the sketch carries none
-      const declared = Number((c as any).building_height || (c as any).apartment_height || 0);
-      if (!fromSketch && declared > 0) push(declared);
+      if (!fromSketch) {
+        const declared = recordBuildingHeightM(c);
+        if (declared) push(declared);
+      }
     });
     return counts.filter(c => c.value > 0).map(({ name, value }) => ({ name, value }));
   }, [filteredContribs]);
