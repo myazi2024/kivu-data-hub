@@ -41,7 +41,7 @@ export function withoutShapeHeights<T extends BuildingShapeLike>(shapes: T[]): T
  * Règle : 3 m par étage, avec un minimum légal de 3 m (RDC seul = 3 m).
  *   0 → 3 m, 1 → 3 m, 2 → 6 m, 3 → 9 m, n → max(3, n×3) m.
  */
-export function minHeightForFloors(floorCount: number | undefined | null): number {
+export function minHeightForFloors(floorCount: number | string | undefined | null): number {
   const n = Math.max(0, Math.floor(Number(floorCount) || 0));
   return Math.max(3, n * 3);
 }
