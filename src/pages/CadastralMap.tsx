@@ -123,6 +123,17 @@ const CadastralMap = () => {
   const advancedSearch = useAdvancedCadastralSearch();
   const searchHistory = useSearchHistory();
   const { config: searchBarConfig, buildAllowedRegex } = useSearchBarConfig();
+
+  /** Jeu de caractères interdits selon le mode de recherche. */
+  const modeRegex = useCallback(
+    (mode: CadastralSearchMode) => (mode === 'title' ? /[^A-Z0-9./\- ]/ : buildAllowedRegex()),
+    [buildAllowedRegex]
+  );
+  const sanitizeForMode = useCallback(
+    (value: string, mode: CadastralSearchMode) =>
+      value.toUpperCase().replace(new RegExp(modeRegex(mode).source, 'g'), ''),
+    [modeRegex]
+  );
   const { config: mapConfig } = useMapConfig();
   const { config: appearance } = useAppAppearance();
   const cadastralSearch = useCadastralSearch();
