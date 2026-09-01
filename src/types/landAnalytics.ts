@@ -15,11 +15,36 @@ export interface GeoFields {
   section_type?: string | null;
 }
 
-export interface ParcelRecord extends GeoFields {
+/** Market / rental indicators declared through the CCC form (shared by parcels & contributions) */
+export interface CccMarketFields {
+  is_rented?: boolean | null;
+  rental_configuration?: string | null;
+  rental_units?: any;
+  rental_units_count?: number | null;
+  monthly_rent_usd?: number | null;
+  rental_start_date?: string | null;
+  would_sell_if_offered?: boolean | null;
+  resale_price_amount?: number | null;
+  resale_price_currency?: string | null;
+  resale_price_usd?: number | null;
+  has_recent_appraisal?: boolean | null;
+  appraisal_date?: string | null;
+  appraised_value_usd?: number | null;
+  market_listings?: any;
+  sale_listing?: any;
+  building_height?: number | null;
+  apartment_length?: number | null;
+  apartment_width?: number | null;
+  apartment_height?: number | null;
+  apartment_orientation?: string | null;
+}
+
+export interface ParcelRecord extends GeoFields, CccMarketFields {
   id: string;
   parcel_number: string;
   property_title_type: string;
   current_owner_legal_status?: string | null;
+  current_owner_since?: string | null;
   declared_usage?: string | null;
   construction_type?: string | null;
   construction_nature?: string | null;
@@ -38,10 +63,18 @@ export interface ParcelRecord extends GeoFields {
   occupant_count?: number | null;
   hosting_capacity?: number | null;
   floor_number?: string | null;
+  apartment_number?: string | null;
   additional_constructions?: any;
+  building_shapes?: any;
+  sound_environment?: string | null;
+  nearby_noise_sources?: string | null;
+  parcel_sides?: any;
+  road_sides?: any;
+  servitude_data?: any;
   title_issue_date?: string | null;
   created_at: string;
 }
+
 
 export interface ContributionRecord extends GeoFields {
   id: string;
