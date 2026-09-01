@@ -271,15 +271,9 @@ export const useCCCFormState = ({
     // et les hauteurs attribuées à la mauvaise construction.
     const removedLinked = removedIdx + 1;
     setBuildingShapes(prev => {
-      if (!Array.isArray(prev) || prev.length === 0) return prev;
-      const next = prev
-        .filter((s: any) => (s.linkedIndex ?? 0) !== removedLinked)
-        .map((s: any) => {
-          const idx = s.linkedIndex ?? 0;
-          return idx > removedLinked ? { ...s, linkedIndex: idx - 1 } : s;
-        });
+      const next = reindexShapesAfterRemoval(prev as any[], removedLinked);
       if (next.length === prev.length && next.every((s: any, i: number) => s === prev[i])) return prev;
-      return next;
+      return next as any;
     });
 
     markDirty();
