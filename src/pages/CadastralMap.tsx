@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils';
 
 import { MapPin, Loader2, Search, X, MessageCircle, AlertTriangle, Settings2, Star, Sparkles, HelpCircle, MapPinPlus, FileCheck2, AlertCircle, LocateFixed } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useDebounce } from '@/hooks/useDebounce';
 import { toast } from 'sonner';
 import CCCIntroDialog from '@/components/cadastral/CCCIntroDialog';
 import CadastralContributionDialog from '@/components/cadastral/CadastralContributionDialog';
@@ -72,9 +73,13 @@ const CadastralMap = () => {
 
   // Search UI state
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedQuery = useDebounce(searchQuery, 250);
   const [searchMode, setSearchMode] = useState<CadastralSearchMode>('parcel');
   const [titleMatchIds, setTitleMatchIds] = useState<Set<string>>(new Set());
   const [searchSuggestions, setSearchSuggestions] = useState<ParcelData[]>([]);
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
+  /** True tant qu'un jeu de résultats provient de la recherche avancée. */
+  const [advancedFiltersApplied, setAdvancedFiltersApplied] = useState(false);
   const [showIntroDialog, setShowIntroDialog] = useState(false);
   const [showContributionDialog, setShowContributionDialog] = useState(false);
   const [actionsExpanded, setActionsExpanded] = useState(false);
@@ -138,14 +143,17 @@ const CadastralMap = () => {
   // Sync filteredParcels with base data
   useEffect(() => { setFilteredParcels(parcels); }, [parcels]);
 
-  // Predictive search — parcel number (SU/SR) or property title number
+  // Predictive search — parcel number (SU/SR) or property title number.
+  // Debounced so a fast typist doesn't re-filter 2000 parcels and redraw all
+  // Leaflet layers on every keystroke.
   useEffect(() => {
-    if (!searchQuery.trim()) {
+    if (!debouncedQuery.trim()) {
       setSearchSuggestions([]);
-      setFilteredParcels(parcels);
+      setHighlightedIndex(-1);
+      if (!advancedFiltersApplied) setFilteredParcels(parcels);
       return;
     }
-    const q = searchQuery.toLowerCase().trim();
+    const q = debouncedQuery.toLowerCase().trim();
     const byParcel = parcels.filter(p => p.parcel_number?.toLowerCase().includes(q));
     const byTitle = parcels.filter(
       p => (p.title_reference_number || '').toLowerCase().includes(q) && !byParcel.some(bp => bp.id === p.id)
@@ -154,8 +162,9 @@ const CadastralMap = () => {
     const filtered = searchMode === 'title' ? [...byTitle, ...byParcel] : [...byParcel, ...byTitle];
     setTitleMatchIds(new Set(byTitle.map(p => p.id)));
     setSearchSuggestions(filtered.slice(0, 5));
+    setHighlightedIndex(-1);
     setFilteredParcels(filtered);
-  }, [searchQuery, parcels, searchMode]);
+  }, [debouncedQuery, parcels, searchMode, advancedFiltersApplied]);
 
 
   // Render layers (incremental diff inside the hook)
@@ -164,13 +173,17 @@ const CadastralMap = () => {
     renderLayers({ parcels: filteredParcels, subdivisionLots });
   }, [mapReady, filteredParcels, subdivisionLots, renderLayers]);
 
+  /** Recherche stabilisée : le débounce est passé et les parcelles sont chargées. */
+  const searchSettled = !loading && debouncedQuery === searchQuery;
+  const noResult = !!searchQuery.trim() && searchSettled && filteredParcels.length === 0;
+
   // Manual-search notification timer
   useEffect(() => {
-    if (searchQuery && filteredParcels.length === 0 && !showManualSearchNotification && !notificationDismissedRef.current) {
+    if (noResult && !showManualSearchNotification && !notificationDismissedRef.current) {
       inactivityTimerRef.current = setTimeout(() => setShowManualSearchNotification(true), 5000);
     }
     return () => { if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current); };
-  }, [searchQuery, filteredParcels.length, showManualSearchNotification]);
+  }, [noResult, showManualSearchNotification]);
 
   useEffect(() => { notificationDismissedRef.current = false; }, [searchQuery]);
 
@@ -186,20 +199,24 @@ const CadastralMap = () => {
   }, []);
 
   const handleSelectParcel = useCallback((parcel: ParcelData) => {
+    const label = searchMode === 'title' && parcel.title_reference_number
+      ? parcel.title_reference_number
+      : parcel.parcel_number;
     setSelectedParcel(parcel);
-    setSearchQuery(
-      searchMode === 'title' && parcel.title_reference_number
-        ? parcel.title_reference_number
-        : parcel.parcel_number
-    );
+    setSearchQuery(label);
     setSearchSuggestions([]);
+    setHighlightedIndex(-1);
+    searchHistory.addToHistory(label);
     centerOnParcel(parcel, 19);
     void trackEvent('cadastral_map_parcel_select', { parcel_number: parcel.parcel_number, search_mode: searchMode });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [centerOnParcel, searchMode]);
 
   const handleClearSearch = () => {
     setSearchQuery('');
     setSearchSuggestions([]);
+    setHighlightedIndex(-1);
+    setAdvancedFiltersApplied(false);
     setFilteredParcels(parcels);
     setSelectedParcel(null);
   };
@@ -211,15 +228,23 @@ const CadastralMap = () => {
     setShowIntroDialog(true);
   }, []);
 
-  const handleApplyFilters = async () => {
-    const results = await advancedSearch.searchParcels();
+  const applyAdvancedFilters = async (filters?: typeof advancedSearch.filters) => {
+    const results = await advancedSearch.searchParcels(filters);
     if (results.length > 0) {
+      setSearchQuery('');
+      setSearchSuggestions([]);
+      setAdvancedFiltersApplied(true);
       setFilteredParcels(results as any);
       toast.success(`${results.length} parcelle(s) trouvée(s)`);
       setShowAdvancedSearch(false);
     } else {
       toast.error('Aucune parcelle ne correspond aux critères');
     }
+    return results;
+  };
+
+  const handleApplyFilters = async () => {
+    await applyAdvancedFilters();
     const filterSummary = Object.entries(advancedSearch.filters)
       .filter(([, v]) => v !== undefined && v !== '')
       .map(([k, v]) => `${k}:${v}`)
@@ -228,12 +253,21 @@ const CadastralMap = () => {
   };
 
   const handleSelectFromHistory = (query: string) => {
-    setSearchQuery(query);
     setShowAdvancedSearch(false);
-    const q = query.toLowerCase();
-    setFilteredParcels(parcels.filter(p =>
-      p.parcel_number?.toLowerCase().includes(q) || (p.title_reference_number || '').toLowerCase().includes(q)
-    ));
+    // Une entrée « Filtres: ... » n'est pas un texte recherchable : on rejoue les
+    // filtres avancés mémorisés au lieu de l'injecter dans la barre standard.
+    const item = searchHistory.history.find(h => h.query === query);
+    if (query.startsWith('Filtres:') || (item?.filters && Object.keys(item.filters).length > 0)) {
+      if (item?.filters) {
+        advancedSearch.updateFilters(item.filters);
+        void applyAdvancedFilters(item.filters);
+      } else {
+        toast.error('Ces filtres ne sont plus disponibles');
+      }
+      return;
+    }
+    setAdvancedFiltersApplied(false);
+    setSearchQuery(query);
   };
 
   const handleSelectFromFavorites = (parcelNumber: string) => {
