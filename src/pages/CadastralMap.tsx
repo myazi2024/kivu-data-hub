@@ -644,8 +644,10 @@ const CadastralMap = () => {
 
               {!(selectedParcel && isMobile) && !showAdvancedSearch && (
                 <div className="mt-2 flex items-center justify-between">
-                  <span className="text-[10px] text-muted-foreground font-medium">
-                    {searchQuery ? `${filteredParcels.length} résultat(s)` : `${parcels.length} parcelles`}
+                  <span className="text-[10px] text-muted-foreground font-medium" aria-live="polite">
+                    {searchQuery
+                      ? (searchSettled ? `${filteredParcels.length} résultat(s)` : 'Recherche…')
+                      : `${parcels.length} parcelles`}
                   </span>
                 </div>
               )}
