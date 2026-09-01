@@ -669,7 +669,7 @@ const CadastralMap = () => {
           )}
 
           {/* Manual contribution CTA when no result — rendered inside the search overlay so it sits directly below the bar and stays accessible on both desktop and mobile */}
-          {searchQuery && filteredParcels.length === 0 && !selectedParcel && (
+          {noResult && !selectedParcel && (
             <div className="mt-2 animate-fade-in">
               <Button
                 variant="default"
