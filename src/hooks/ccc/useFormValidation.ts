@@ -330,7 +330,11 @@ export function useFormValidation(params: UseFormValidationParams) {
         missing.push({ field: 'buildingHeight', label: 'Hauteur de construction manquante', tab: 'location' });
       }
       const tooShort = buildingShapes.some((s: any) => s.heightM != null && s.heightM > 0 && s.heightM < 3);
-      if (buildingShapes.length > 0 && tooShort) {
+      // Hauteurs saisies dans le bloc Construction en attendant le tracé du croquis.
+      const pendingTooShort =
+        (formData.buildingHeight != null && formData.buildingHeight > 0 && formData.buildingHeight < 3) ||
+        additionalConstructions.some((c: any) => c.heightM != null && c.heightM > 0 && c.heightM < 3);
+      if ((buildingShapes.length > 0 && tooShort) || pendingTooShort) {
         missing.push({ field: 'buildingHeightMin', label: 'Hauteur de construction inférieure à 3 m (minimum requis)', tab: 'location' });
       }
     }
