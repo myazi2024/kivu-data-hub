@@ -2945,9 +2945,10 @@ export const ParcelMapPreview = ({
                             {heightInputExternal && shape.heightM != null && ` · H: ${shape.heightM} m`}
                           </span>
                         </div>
-                        <Button type="button" variant="ghost" size="sm" onClick={() => removeBuildingById(shape.id)} className="h-6 w-6 p-0 text-destructive hover:bg-destructive/10 flex-shrink-0">
+                        <Button type="button" variant="ghost" size="sm" onClick={() => setPendingBuildingDeletion(shape.id)} title="Supprimer cette construction" className="h-6 w-6 p-0 text-destructive hover:bg-destructive/10 flex-shrink-0">
                           <Trash2 className="h-3 w-3" />
                         </Button>
+
                       </div>
                       {!heightInputExternal && (
                       <div className="flex flex-col gap-0.5 pl-4">
