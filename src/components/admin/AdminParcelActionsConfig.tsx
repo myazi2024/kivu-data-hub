@@ -298,6 +298,19 @@ const AdminParcelActionsConfig: React.FC = () => {
                   </div>
 
                   <div className="space-y-2">
+                    <Label className="text-xs">Explication détaillée</Label>
+                    <Textarea
+                      value={selectedAction.detailedDescription ?? ''}
+                      onChange={(e) => updateAction(selectedAction.id, { detailedDescription: e.target.value })}
+                      placeholder="Explication complète dépliable via « En savoir plus » dans le menu actions"
+                      className="h-24 resize-none text-sm"
+                    />
+                    <p className="text-[10px] text-muted-foreground">
+                      Affichée dans le menu actions de la carte cadastrale quand l'utilisateur déplie « En savoir plus ». Laisser vide pour masquer l'option.
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
                     <Label className="text-xs">Badge</Label>
                     <Select
                       value={selectedAction.badge.type}

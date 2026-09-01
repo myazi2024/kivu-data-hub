@@ -4238,6 +4238,7 @@ export type Database = {
           category: string
           created_at: string
           description: string
+          detailed_description: string | null
           display_order: number
           icon_name: string | null
           id: string
@@ -4255,6 +4256,7 @@ export type Database = {
           category?: string
           created_at?: string
           description?: string
+          detailed_description?: string | null
           display_order?: number
           icon_name?: string | null
           id?: string
@@ -4272,6 +4274,7 @@ export type Database = {
           category?: string
           created_at?: string
           description?: string
+          detailed_description?: string | null
           display_order?: number
           icon_name?: string | null
           id?: string

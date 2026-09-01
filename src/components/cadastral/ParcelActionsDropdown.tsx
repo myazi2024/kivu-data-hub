@@ -1,7 +1,7 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Sparkles, Clock, Beaker, Tag, FileText, ArrowRightLeft, Landmark, ShieldCheck, Calculator, LayoutGrid, AlertTriangle, Award, ScrollText } from 'lucide-react';
+import { Sparkles, Clock, Beaker, Tag, FileText, ArrowRightLeft, Landmark, ShieldCheck, Calculator, LayoutGrid, AlertTriangle, Award, ScrollText, ChevronDown } from 'lucide-react';
 import { useParcelActionsConfig, ParcelAction } from '@/hooks/useParcelActionsConfig';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -97,6 +97,15 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
   const [showSubdivisionDialog, setShowSubdivisionDialog] = useState(false);
   const [showExpertiseDialog, setShowExpertiseDialog] = useState(false);
   const [showLandDisputeDialog, setShowLandDisputeDialog] = useState(false);
+  // Explications détaillées dépliées (par id d'action)
+  const [expandedDetails, setExpandedDetails] = useState<Set<string>>(new Set());
+  const toggleDetails = useCallback((actionId: string) => {
+    setExpandedDetails(prev => {
+      const next = new Set(prev);
+      if (next.has(actionId)) next.delete(actionId); else next.add(actionId);
+      return next;
+    });
+  }, []);
 
   const lastFocusedIndexRef = useRef<number | null>(null);
   const handleMenuItemFocus = useCallback((index: number) => {
@@ -193,6 +202,27 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
                         <ActionBadge badge={action.badge} />
                       </div>
                       <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{action.description}</p>
+                      {action.detailedDescription && (
+                        <div className="mt-1">
+                          <span
+                            role="button"
+                            tabIndex={0}
+                            aria-expanded={expandedDetails.has(action.id)}
+                            aria-label={expandedDetails.has(action.id) ? `Réduire l'explication de ${action.label}` : `En savoir plus sur ${action.label}`}
+                            onClick={(e) => { e.stopPropagation(); toggleDetails(action.id); }}
+                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); toggleDetails(action.id); } }}
+                            className="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:text-primary/80 transition-colors cursor-pointer select-none rounded focus-visible-ring"
+                          >
+                            {expandedDetails.has(action.id) ? 'Réduire' : 'En savoir plus'}
+                            <ChevronDown className={`h-3 w-3 transition-transform duration-200 ${expandedDetails.has(action.id) ? 'rotate-180' : ''}`} />
+                          </span>
+                          {expandedDetails.has(action.id) && (
+                            <p className="text-xs text-muted-foreground leading-relaxed mt-1.5 pr-1">
+                              {action.detailedDescription}
+                            </p>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </button>
                 );
