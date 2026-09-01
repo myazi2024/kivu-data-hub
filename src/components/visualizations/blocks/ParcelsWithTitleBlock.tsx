@@ -93,20 +93,56 @@ export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
       { label: '> 15m', min: 15, max: Infinity },
     ];
     const counts = buckets.map(b => ({ name: b.label, value: 0, min: b.min, max: b.max }));
+    const push = (h: number) => {
+      const bucket = counts.find(b => h >= b.min && h < b.max);
+      if (bucket) bucket.value++;
+    };
     filteredContribs.forEach(c => {
       const shapes = c.building_shapes;
+      let fromSketch = false;
       if (Array.isArray(shapes)) {
         shapes.forEach((s: any) => {
           const h = s?.heightM ?? s?.height_m;
-          if (h != null && h > 0) {
-            const bucket = counts.find(b => h >= b.min && h < b.max);
-            if (bucket) bucket.value++;
-          }
+          if (h != null && h > 0) { push(Number(h)); fromSketch = true; }
         });
       }
+      // Declared height (Construction block) when the sketch carries none
+      const declared = Number((c as any).building_height || (c as any).apartment_height || 0);
+      if (!fromSketch && declared > 0) push(declared);
     });
     return counts.filter(c => c.value > 0).map(({ name, value }) => ({ name, value }));
   }, [filteredContribs]);
+
+  /** Apartment footprint (length × width) declared in the Construction block */
+  const apartmentSizeData = useMemo(() => {
+    const buckets = [
+      { name: '< 30 m²', min: 0, max: 30 },
+      { name: '30-60 m²', min: 30, max: 60 },
+      { name: '60-100 m²', min: 60, max: 100 },
+      { name: '100-150 m²', min: 100, max: 150 },
+      { name: '> 150 m²', min: 150, max: Infinity },
+    ];
+    const counts = buckets.map(b => ({ ...b, value: 0 }));
+    filteredContribs.forEach((c: any) => {
+      const area = Number(c.apartment_length || 0) * Number(c.apartment_width || 0);
+      if (area <= 0) return;
+      const bucket = counts.find(b => area >= b.min && area < b.max);
+      if (bucket) bucket.value++;
+    });
+    return counts.filter(c => c.value > 0).map(({ name, value }) => ({ name, value }));
+  }, [filteredContribs]);
+
+  /** Apartment orientation declared in the Construction block */
+  const apartmentOrientationData = useMemo(() => {
+    const map = new Map<string, number>();
+    filteredContribs.forEach((c: any) => {
+      if (!c.apartment_orientation) return;
+      const k = String(c.apartment_orientation);
+      map.set(k, (map.get(k) || 0) + 1);
+    });
+    return Array.from(map.entries()).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
+  }, [filteredContribs]);
+
 
   const soundEnvData = useMemo(() => {
     const map = new Map<string, number>();
