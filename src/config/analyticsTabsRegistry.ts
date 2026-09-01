@@ -49,6 +49,8 @@ export const ANALYTICS_TABS_REGISTRY: Record<string, { label: string; charts: Ch
       { tab_key: 'parcels-titled', item_key: 'permit-type', item_type: 'chart', is_visible: true, display_order: 8, custom_title: 'Autorisation de bâtir', chart_type: 'donut' },
       { tab_key: 'parcels-titled', item_key: 'building-size', item_type: 'chart', is_visible: true, display_order: 9, custom_title: 'Taille construction', chart_type: 'bar-v' },
       { tab_key: 'parcels-titled', item_key: 'building-height', item_type: 'chart', is_visible: true, display_order: 10, custom_title: 'Hauteur construction', chart_type: 'bar-v' },
+      { tab_key: 'parcels-titled', item_key: 'apartment-size', item_type: 'chart', is_visible: true, display_order: 19, custom_title: 'Surface des appartements', chart_type: 'bar-v' },
+      { tab_key: 'parcels-titled', item_key: 'apartment-orientation', item_type: 'chart', is_visible: true, display_order: 20, custom_title: 'Orientation des appartements', chart_type: 'donut' },
       { tab_key: 'parcels-titled', item_key: 'occupation', item_type: 'chart', is_visible: true, display_order: 11, custom_title: 'Occupation', chart_type: 'pie' },
       { tab_key: 'parcels-titled', item_key: 'floor-dist', item_type: 'chart', is_visible: true, display_order: 12, custom_title: 'Étages', chart_type: 'bar-v' },
       { tab_key: 'parcels-titled', item_key: 'hosting-capacity', item_type: 'chart', is_visible: true, display_order: 13, custom_title: "Capacité d'accueil", chart_type: 'bar-v' },
