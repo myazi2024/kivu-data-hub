@@ -265,6 +265,23 @@ export const useCCCFormState = ({
           nextListings.every((l: any, i: number) => l === listings[i])) return prev;
       return { ...prev, marketListings: nextListings };
     });
+
+    // Croquis : purger la forme liée à la construction supprimée et
+    // décaler les linkedIndex supérieurs pour éviter les formes fantômes
+    // et les hauteurs attribuées à la mauvaise construction.
+    const removedLinked = removedIdx + 1;
+    setBuildingShapes(prev => {
+      if (!Array.isArray(prev) || prev.length === 0) return prev;
+      const next = prev
+        .filter((s: any) => (s.linkedIndex ?? 0) !== removedLinked)
+        .map((s: any) => {
+          const idx = s.linkedIndex ?? 0;
+          return idx > removedLinked ? { ...s, linkedIndex: idx - 1 } : s;
+        });
+      if (next.length === prev.length && next.every((s: any, i: number) => s === prev[i])) return prev;
+      return next;
+    });
+
     markDirty();
   }, [markDirty]);
 
