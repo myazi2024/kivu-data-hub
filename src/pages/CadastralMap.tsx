@@ -601,14 +601,23 @@ const CadastralMap = () => {
 
               {/* Suggestions */}
               {searchSuggestions.length > 0 && !(selectedParcel && isMobile) && !showAdvancedSearch && (
-                <div className="mt-2 rounded-xl bg-muted/30 overflow-hidden max-h-36 overflow-y-auto">
+                <div
+                  id="cadastral-search-suggestions"
+                  role="listbox"
+                  className="mt-2 rounded-xl bg-muted/30 overflow-hidden max-h-36 overflow-y-auto"
+                >
                   {searchSuggestions.map((parcel, index) => {
                     const isTitleMatch = titleMatchIds.has(parcel.id);
+                    const isHighlighted = index === highlightedIndex;
                     return (
                       <button
                         key={parcel.id}
+                        id={`cadastral-suggestion-${index}`}
+                        role="option"
+                        aria-selected={isHighlighted}
+                        onMouseEnter={() => setHighlightedIndex(index)}
                         onClick={() => handleSelectParcel(parcel)}
-                        className={`w-full text-left px-3 py-2 hover:bg-primary/5 transition-colors flex items-center justify-between gap-2 ${index !== searchSuggestions.length - 1 ? 'border-b border-border/30' : ''}`}
+                        className={`w-full text-left px-3 py-2 hover:bg-primary/5 transition-colors flex items-center justify-between gap-2 ${isHighlighted ? 'bg-primary/10' : ''} ${index !== searchSuggestions.length - 1 ? 'border-b border-border/30' : ''}`}
                       >
                         <div className="min-w-0">
                           <div className="flex items-center gap-1.5">
