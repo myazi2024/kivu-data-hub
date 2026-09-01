@@ -31,7 +31,7 @@ import { useAppAppearance } from '@/hooks/useAppAppearance';
 
 import { useCadastralMapData, useParcelHistory, type ParcelData } from '@/hooks/useCadastralMapData';
 import { useStripeReturnHandler } from '@/hooks/useStripeReturnHandler';
-import { useLandTitleNotificationFlow } from '@/hooks/useLandTitleNotificationFlow';
+import { useSearchHintFlow } from '@/hooks/useSearchHintFlow';
 import { useLeafletMap } from '@/hooks/useLeafletMap';
 import { playFeedbackBeep } from '@/lib/feedbackAudio';
 import { trackEvent } from '@/lib/analytics';
@@ -142,7 +142,8 @@ const CadastralMap = () => {
   const { polling: stripePolling, pollProgress } = useStripeReturnHandler();
 
   // Land title notification state machine (replaces 4 setTimeout cascades)
-  const landTitle = useLandTitleNotificationFlow(hasUserInteracted);
+  // Infobulles contextuelles par mode de recherche (masquées dès la première saisie/sélection)
+  const searchHint = useSearchHintFlow(searchMode, searchQuery.trim().length > 0 || !!selectedParcel);
 
   // Leaflet map (init + tiles via provider + on-demand geo + incremental render)
   const { mapReady, renderLayers, requestUserLocation, centerOnParcel } = useLeafletMap({
@@ -505,74 +506,46 @@ const CadastralMap = () => {
                   {!isMobile && <span className="text-[11px] font-medium">Avancée</span>}
                 </Button>
 
-                {/* Land title button (state-machine driven) */}
-                {landTitle.showButton && (isMobile ? (
+                {/* Land title button — la demande détaillée vit dans le Dropdown actions */}
+                {isMobile ? (
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <span className="inline-flex">
-                        <Popover open={landTitle.showNotification} onOpenChange={(o) => { if (!o) landTitle.dismiss(); }}>
-                          <PopoverTrigger asChild>
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              onClick={() => {
-                                if (selectedParcel) return;
-                                landTitle.dismiss();
-                                setShowLandTitleTermsDialog(true);
-                                setHasUserInteracted(true);
-                              }}
-                              disabled={!!selectedParcel}
-                              className="h-10 w-10 shrink-0 rounded-xl transition-colors relative"
-                              aria-label="Demander un titre foncier"
-                            >
-                              <FileCheck2 className="h-4 w-4" />
-                              {landTitle.showNotification && (
-                                <span className="absolute -top-1 -right-1 h-3 w-3 bg-yellow-400 rounded-full animate-pulse shadow-lg border border-yellow-300" aria-hidden="true" />
-                              )}
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent side="top" align="end" sideOffset={10} className={cn('w-[320px] rounded-xl border border-destructive/30 bg-destructive text-destructive-foreground p-3 shadow-lg text-xs leading-relaxed')}>
-                            <div className="flex items-start gap-2">
-                              <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" />
-                              <span>Le numéro parcellaire (SU/SR) figure sur le titre foncier. Si vous n'avez pas encore de titre foncier, cliquez ici pour faire votre demande.</span>
-                            </div>
-                          </PopoverContent>
-                        </Popover>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => {
+                            if (selectedParcel) return;
+                            setShowLandTitleTermsDialog(true);
+                            setHasUserInteracted(true);
+                          }}
+                          disabled={!!selectedParcel}
+                          className="h-10 w-10 shrink-0 rounded-xl transition-colors"
+                          aria-label="Demander un titre foncier"
+                        >
+                          <FileCheck2 className="h-4 w-4" />
+                        </Button>
                       </span>
                     </TooltipTrigger>
                     <TooltipContent side="top" sideOffset={8}>Demander un titre foncier</TooltipContent>
                   </Tooltip>
                 ) : (
-                  <Popover open={landTitle.showNotification} onOpenChange={(o) => { if (!o) landTitle.dismiss(); }}>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => {
-                          if (selectedParcel) return;
-                          landTitle.dismiss();
-                          setShowLandTitleTermsDialog(true);
-                          setHasUserInteracted(true);
-                        }}
-                        disabled={!!selectedParcel}
-                        className={`h-9 w-9 shrink-0 rounded-xl transition-all duration-300 ease-in-out relative gap-1.5 text-xs font-medium overflow-hidden px-0 ${selectedParcel ? '' : 'hover:w-auto group hover:px-3'}`}
-                        aria-label="Demander un titre foncier"
-                      >
-                        <FileCheck2 className="h-4 w-4 shrink-0" />
-                        <span className="max-w-0 overflow-hidden whitespace-nowrap opacity-0 group-hover:max-w-[200px] group-hover:opacity-100 transition-all duration-300 ease-in-out">Demander un titre foncier</span>
-                        {landTitle.showNotification && (
-                          <span className="absolute -top-1 -right-1 h-3 w-3 bg-yellow-400 rounded-full animate-pulse shadow-lg border border-yellow-300" aria-hidden="true" />
-                        )}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent side="top" align="end" sideOffset={10} className={cn('w-[320px] rounded-xl border border-destructive/30 bg-destructive text-destructive-foreground p-3 shadow-lg text-xs leading-relaxed')}>
-                      <div className="flex items-start gap-2">
-                        <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" />
-                        <span>Le numéro parcellaire (SU/SR) figure sur le titre foncier. Si vous n'avez pas encore de titre foncier, cliquez ici pour faire votre demande.</span>
-                      </div>
-                    </PopoverContent>
-                  </Popover>
-                ))}
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => {
+                      if (selectedParcel) return;
+                      setShowLandTitleTermsDialog(true);
+                      setHasUserInteracted(true);
+                    }}
+                    disabled={!!selectedParcel}
+                    className={`h-9 w-9 shrink-0 rounded-xl transition-all duration-300 ease-in-out gap-1.5 text-xs font-medium overflow-hidden px-0 ${selectedParcel ? '' : 'hover:w-auto group hover:px-3'}`}
+                    aria-label="Demander un titre foncier"
+                  >
+                    <FileCheck2 className="h-4 w-4 shrink-0" />
+                    <span className="max-w-0 overflow-hidden whitespace-nowrap opacity-0 group-hover:max-w-[200px] group-hover:opacity-100 transition-all duration-300 ease-in-out">Demander un titre foncier</span>
+                  </Button>
+                )}
               </div>
 
               {/* Advanced search */}
