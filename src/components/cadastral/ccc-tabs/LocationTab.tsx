@@ -114,12 +114,13 @@ const LocationTab: React.FC<LocationTabProps> = ({
   const isTerrainNu = isUnbuiltLand(formData);
   const requiredBuildingCount = isTerrainNu ? 0 : (constructionMode === 'multiple' ? 1 + additionalConstructions.length : 1);
 
-  // Purge des hauteurs du croquis quand le bien devient non bâti (Terrain nu / nature « Non bâti »).
+  // Purge des hauteurs quand le bien devient non bâti (Terrain nu / nature « Non bâti »).
   useEffect(() => {
     if (!isTerrainNu) return;
     if (buildingShapes.some((s: any) => s.heightM != null)) {
       onBuildingShapesChange(withoutShapeHeights(buildingShapes));
     }
+    if (formData.buildingHeight != null) handleInputChange('buildingHeight', undefined);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isTerrainNu]);
 

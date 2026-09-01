@@ -96,6 +96,15 @@ export const ConstructionSection: React.FC<ConstructionSectionProps> = ({
     [buildingShapes, onBuildingShapesChange],
   );
 
+  // Répercute la hauteur saisie sur la forme du croquis dès qu'elle est tracée.
+  React.useEffect(() => {
+    if (!mainBuildingShape) return;
+    if (formData.buildingHeight != null && mainBuildingShape.heightM !== formData.buildingHeight) {
+      updateShapeHeight(mainBuildingShape.id, formData.buildingHeight);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mainBuildingShape?.id, formData.buildingHeight]);
+
 
 
 
@@ -316,10 +325,11 @@ export const ConstructionSection: React.FC<ConstructionSectionProps> = ({
           />
         ) : (
           <BuildingHeightField
-            value={mainBuildingShape?.heightM}
-            onChange={(v) => mainBuildingShape && updateShapeHeight(mainBuildingShape.id, v)}
-            disabled={!mainBuildingShape}
-            disabledHint="Tracez d'abord la construction dans le croquis ci-dessous pour renseigner sa hauteur."
+            value={formData.buildingHeight ?? mainBuildingShape?.heightM}
+            onChange={(v) => {
+              handleInputChange('buildingHeight', v);
+              if (mainBuildingShape) updateShapeHeight(mainBuildingShape.id, v);
+            }}
           />
         )
       )}

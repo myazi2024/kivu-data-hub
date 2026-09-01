@@ -53,6 +53,8 @@ export interface AdditionalConstruction {
   isOccupied?: boolean;
   occupantCount?: number;
   hostingCapacity?: number;
+  /** Hauteur (m) — saisie indépendante du tracé, répercutée sur la forme liée du croquis. */
+  heightM?: number;
   // Autorisation de bâtir
   permitMode?: 'existing' | 'request';
   permit?: AdditionalConstructionPermit;
@@ -114,6 +116,15 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
     [buildingShapes, index],
   );
   const showHeightField = !!data.constructionNature && data.constructionNature !== 'Non bâti';
+
+  // Répercute la hauteur saisie sur la forme du croquis dès qu'elle est tracée.
+  useEffect(() => {
+    if (!linkedShape || !buildingShapes || !onBuildingShapesChange) return;
+    if (data.heightM != null && linkedShape.heightM !== data.heightM) {
+      onBuildingShapesChange(withShapeHeight(buildingShapes, linkedShape.id, data.heightM));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [linkedShape?.id, data.heightM]);
 
   const updatePermitField = (field: keyof AdditionalConstructionPermit, value: any) => {
     onChange(index, { ...data, permit: { ...permit, [field]: value } });
@@ -435,16 +446,16 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
         )}
       </div>
 
-      {/* Hauteur — déplacée du croquis vers ce bloc (avant Standing) */}
+      {/* Hauteur — déplacée du croquis vers ce bloc (avant Standing), saisissable sans tracé */}
       {showHeightField && (
         <BuildingHeightField
-          value={linkedShape?.heightM}
+          value={data.heightM ?? linkedShape?.heightM}
           onChange={(v) => {
-            if (!linkedShape || !buildingShapes || !onBuildingShapesChange) return;
-            onBuildingShapesChange(withShapeHeight(buildingShapes, linkedShape.id, v));
+            update('heightM', v);
+            if (linkedShape && buildingShapes && onBuildingShapesChange) {
+              onBuildingShapesChange(withShapeHeight(buildingShapes, linkedShape.id, v));
+            }
           }}
-          disabled={!linkedShape}
-          disabledHint="Tracez d'abord cette construction dans le croquis pour renseigner sa hauteur."
         />
       )}
 

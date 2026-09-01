@@ -89,6 +89,9 @@ export interface CadastralContributionData {
   apartmentLength?: number;
   apartmentWidth?: number;
   apartmentHeight?: number;
+  /** Hauteur de la construction principale (m) — saisie dans le bloc Construction,
+   *  indépendante du tracé ; répercutée sur la forme du croquis dès qu'elle existe. */
+  buildingHeight?: number;
   apartmentOrientation?: string;
   
   // Limites et entrées
