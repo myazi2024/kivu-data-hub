@@ -2603,7 +2603,6 @@ export const ParcelMapPreview = ({
             return btn;
           })()}
 
-          {/* Calquer la construction sur la parcelle — visible uniquement en mode tracé */}
 
 
           
