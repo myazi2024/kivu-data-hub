@@ -14,6 +14,8 @@ export interface ParcelAction {
   key: string;
   label: string;
   description: string;
+  /** Explication détaillée dépliable dans le dropdown d'actions. */
+  detailedDescription?: string;
   isActive: boolean;
   isVisible: boolean;
   displayOrder: number;
@@ -32,6 +34,7 @@ const DEFAULT_ACTIONS: ParcelAction[] = [
     key: 'expertise',
     label: 'Expertise immobilière',
     description: 'Obtenir un certificat de valeur vénale',
+    detailedDescription: 'Faites évaluer la valeur vénale de cette parcelle par un expert immobilier agréé : demande descriptive du bien, pièces justificatives, paiement des frais, puis réception d\'un certificat d\'expertise téléchargeable.',
     isActive: true,
     isVisible: true,
     displayOrder: 1,
@@ -44,6 +47,7 @@ const DEFAULT_ACTIONS: ParcelAction[] = [
     key: 'mutation',
     label: 'Demander Mutation',
     description: 'Transfert de propriété',
+    detailedDescription: 'Déclarez le transfert de propriété vers un nouvel acquéreur (vente, donation, héritage) : identité des parties, pièces requises, paiement des frais, validation administrative et certificat de mutation.',
     isActive: true,
     isVisible: true,
     displayOrder: 2,
@@ -56,6 +60,7 @@ const DEFAULT_ACTIONS: ParcelAction[] = [
     key: 'mortgage_management',
     label: 'Gestion Hypothèque',
     description: 'Ajouter ou retirer une hypothèque',
+    detailedDescription: 'Gérez les hypothèques de cette parcelle : enregistrement d\'une garantie (créancier, montant, échéances), suivi des remboursements et demande de mainlevée une fois le crédit soldé.',
     isActive: true,
     isVisible: true,
     displayOrder: 3,
@@ -68,6 +73,7 @@ const DEFAULT_ACTIONS: ParcelAction[] = [
     key: 'land_title_request',
     label: 'Demander un titre foncier',
     description: 'Soumettre une demande de titre foncier',
+    detailedDescription: 'Déposez une demande de titre foncier : justification du droit, pièces à l\'appui, paiement des frais, puis suivi de l\'instruction jusqu\'à la délivrance du certificat d\'enregistrement ou du contrat de location.',
     isActive: true,
     isVisible: true,
     displayOrder: 4,
@@ -80,6 +86,7 @@ const DEFAULT_ACTIONS: ParcelAction[] = [
     key: 'permit_add',
     label: 'Ajouter une autorisation',
     description: 'Enregistrer un permis existant sur cette parcelle',
+    detailedDescription: 'Enregistrez une autorisation de bâtir existante ou régularisez une construction : numéro, date, autorité émettrice, nature des travaux et document téléversé, rattachés au dossier de la parcelle.',
     isActive: true,
     isVisible: true,
     displayOrder: 5,
@@ -92,6 +99,7 @@ const DEFAULT_ACTIONS: ParcelAction[] = [
     key: 'tax',
     label: 'Taxe foncière',
     description: 'Calculer et déclarer une taxe',
+    detailedDescription: 'Calculez et déclarez l\'impôt foncier de cette parcelle : montant calculé selon les caractéristiques du bien et les barèmes en vigueur, déclaration, paiement et historique des quittances.',
     isActive: true,
     isVisible: true,
     displayOrder: 7,
@@ -104,6 +112,7 @@ const DEFAULT_ACTIONS: ParcelAction[] = [
     key: 'permit_request',
     label: 'Demander une autorisation',
     description: 'Soumettre une nouvelle demande de permis',
+    detailedDescription: 'Déposez une nouvelle demande d\'autorisation de bâtir (construction, extension, surélévation, démolition) : description du projet, plans exigés, frais d\'instruction et suivi jusqu\'à la décision.',
     isActive: true,
     isVisible: true,
     displayOrder: 8,
@@ -116,6 +125,7 @@ const DEFAULT_ACTIONS: ParcelAction[] = [
     key: 'subdivision',
     label: 'Demander un lotissement',
     description: 'Diviser cette parcelle en lots',
+    detailedDescription: 'Demandez le lotissement de cette parcelle : nombre de lots, usages, voirie et espaces communs, plan de lotissement soumis aux règles d\'urbanisme, puis numéros cadastraux propres à chaque lot après approbation.',
     isActive: true,
     isVisible: true,
     displayOrder: 9,
@@ -128,6 +138,7 @@ const DEFAULT_ACTIONS: ParcelAction[] = [
     key: 'land_dispute',
     label: 'Litige foncier',
     description: 'Signaler ou lever un litige foncier',
+    detailedDescription: 'Signalez un litige (limites, double vente, occupation illégale, héritage) ou demandez sa levée : description des faits, parties concernées, preuves jointes et suivi jusqu\'à résolution.',
     isActive: true,
     isVisible: true,
     displayOrder: 10,
@@ -143,6 +154,7 @@ const mapDbToParcelAction = (dbRow: any): ParcelAction => ({
   key: dbRow.action_key,
   label: dbRow.label,
   description: dbRow.description || '',
+  detailedDescription: dbRow.detailed_description || undefined,
   isActive: dbRow.is_active,
   isVisible: dbRow.is_visible,
   displayOrder: dbRow.display_order,
@@ -162,6 +174,7 @@ const mapParcelActionToDb = (action: ParcelAction) => ({
   action_key: action.key,
   label: action.label,
   description: action.description,
+  detailed_description: action.detailedDescription ?? null,
   is_active: action.isActive,
   is_visible: action.isVisible,
   display_order: action.displayOrder,
@@ -255,6 +268,7 @@ export const useParcelActionsConfig = () => {
           id: action.id,
           label: dbData.label,
           description: dbData.description,
+          detailed_description: dbData.detailed_description,
           is_active: dbData.is_active,
           is_visible: dbData.is_visible,
           display_order: dbData.display_order,

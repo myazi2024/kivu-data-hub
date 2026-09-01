@@ -1,7 +1,7 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Sparkles, Clock, Beaker, Tag, FileText, ArrowRightLeft, Landmark, ShieldCheck, Calculator, LayoutGrid, AlertTriangle, Award, ScrollText } from 'lucide-react';
+import { Sparkles, Clock, Beaker, Tag, FileText, ArrowRightLeft, Landmark, ShieldCheck, Calculator, LayoutGrid, AlertTriangle, Award, ScrollText, ChevronDown } from 'lucide-react';
 import { useParcelActionsConfig, ParcelAction } from '@/hooks/useParcelActionsConfig';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -97,6 +97,15 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
   const [showSubdivisionDialog, setShowSubdivisionDialog] = useState(false);
   const [showExpertiseDialog, setShowExpertiseDialog] = useState(false);
   const [showLandDisputeDialog, setShowLandDisputeDialog] = useState(false);
+  // Explications détaillées dépliées (par id d'action)
+  const [expandedDetails, setExpandedDetails] = useState<Set<string>>(new Set());
+  const toggleDetails = useCallback((actionId: string) => {
+    setExpandedDetails(prev => {
+      const next = new Set(prev);
+      if (next.has(actionId)) next.delete(actionId); else next.add(actionId);
+      return next;
+    });
+  }, []);
 
   const lastFocusedIndexRef = useRef<number | null>(null);
   const handleMenuItemFocus = useCallback((index: number) => {
