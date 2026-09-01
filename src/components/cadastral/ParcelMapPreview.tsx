@@ -142,6 +142,7 @@ export const ParcelMapPreview = ({
   const segmentLayersRef = useRef<any[]>([]);
   const neighborLayersRef = useRef<any[]>([]);
   const buildingLayersRef = useRef<any[]>([]);
+  const buildingPolygonsRef = useRef<Map<string, any>>(new Map());
   const mapControlsRef = useRef<any[]>([]);
   const userLocationLayersRef = useRef<any[]>([]);
 
@@ -814,17 +815,6 @@ export const ParcelMapPreview = ({
         });
         segmentLayersRef.current = [];
 
-        // Ne pas détruire les markers de construction pendant un drag actif
-        if (!bvDragActiveRef.current) {
-          buildingLayersRef.current.forEach(layer => {
-            try {
-              if (layer && map.hasLayer(layer)) map.removeLayer(layer);
-            } catch (e) {
-              console.error('remove building layer error', e);
-            }
-          });
-          buildingLayersRef.current = [];
-        }
 
         const latLngs: [number, number][] = [];
         const markerColor = mapConfig.markerColor || '#3b82f6';
@@ -1045,6 +1035,51 @@ export const ParcelMapPreview = ({
           lastParcelSidesLengthRef.current = '';
         }
 
+      } catch (err) {
+        console.error('ParcelMapPreview updateMap error:', err);
+      }
+    };
+
+    // Utiliser requestAnimationFrame pour éviter les mises à jour trop rapides
+    const rafId = requestAnimationFrame(() => {
+      updateMap();
+    });
+
+    return () => {
+      cancelAnimationFrame(rafId);
+      cancelled = true;
+    };
+  }, [isMapReady, validCoords, roadSides, mapConfig, isGroupDragMode, isDrawingMode, selectedBorne, isDrawingBuilding, buildingVertices]);
+
+  // Effet dédié au rendu des constructions (formes validées + tracé en cours).
+  // Isolé du rendu des bornes pour que toute modification de `buildingShapes`
+  // (ajout, suppression, édition d'un sommet, changement de libellé) redessine
+  // immédiatement la carte.
+  useEffect(() => {
+    if (!isMapReady || !mapInstanceRef.current) return;
+
+    let cancelled = false;
+    const mapHandlers: [string, (e: any) => void][] = [];
+
+    const clearBuildingLayers = (map: any) => {
+      buildingLayersRef.current.forEach(layer => {
+        try { if (layer && map.hasLayer(layer)) map.removeLayer(layer); } catch (e) { console.error('remove building layer error', e); }
+      });
+      buildingLayersRef.current = [];
+      buildingPolygonsRef.current.clear();
+    };
+
+    const drawBuildings = async () => {
+      try {
+        const L = await import('leaflet');
+        if (cancelled) return;
+        const map = mapInstanceRef.current;
+        if (!map) return;
+
+        // Ne pas détruire les couches pendant un drag de sommet actif
+        if (bvDragActiveRef.current) return;
+        clearBuildingLayers(map);
+
         // Dessiner les constructions validées (polygones à partir de vertices)
         buildingShapes.forEach((shape, idx) => {
           if (!shape.vertices || shape.vertices.length < 3) return;
@@ -1063,6 +1098,7 @@ export const ParcelMapPreview = ({
               <span>Périmètre: ${shape.perimeterM.toFixed(1)} m</span>
             </div>
           `);
+          buildingPolygonsRef.current.set(shape.id, bldPolygon);
           buildingLayersRef.current.push(bldPolygon);
           
           // Marqueurs interactifs sur chaque sommet (double-clic = éditer GPS)
@@ -1177,6 +1213,7 @@ export const ParcelMapPreview = ({
             vertexMarker.on('mouseout', () => { if (bvDragActiveRef.current) return; cancelBvLongPress(); });
             map.on('mousemove', moveBvDrag);
             map.on('touchmove', touchMoveBvDrag);
+            mapHandlers.push(['mousemove', moveBvDrag], ['touchmove', touchMoveBvDrag]);
 
             buildingLayersRef.current.push(vertexMarker);
           });
@@ -1277,20 +1314,23 @@ export const ParcelMapPreview = ({
           }
         }
       } catch (err) {
-        console.error('ParcelMapPreview updateMap error:', err);
+        console.error('ParcelMapPreview drawBuildings error:', err);
       }
     };
 
-    // Utiliser requestAnimationFrame pour éviter les mises à jour trop rapides
-    const rafId = requestAnimationFrame(() => {
-      updateMap();
-    });
+    const rafId = requestAnimationFrame(() => { drawBuildings(); });
 
     return () => {
       cancelAnimationFrame(rafId);
       cancelled = true;
+      const map = mapInstanceRef.current;
+      if (map) {
+        mapHandlers.forEach(([evt, fn]) => { try { map.off(evt, fn); } catch {} });
+        if (!bvDragActiveRef.current) clearBuildingLayers(map);
+      }
     };
-  }, [isMapReady, validCoords, roadSides, mapConfig, isGroupDragMode, isDrawingMode, selectedBorne, isDrawingBuilding, buildingVertices]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isMapReady, buildingShapesSignature, buildingVertices, isDrawingBuilding, isDrawingMode, isGroupDragMode, constructionLabels]);
 
   // Pendant le tracé d'une construction : forcer l'activation du drag/zoom de la carte
   // après chaque redraw, et désactiver explicitement le drag des marqueurs de bornes
