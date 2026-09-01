@@ -367,13 +367,13 @@ export const useCadastralContribution = () => {
         : null,
       current_owner_name: data.currentOwners && data.currentOwners.length > 0 
         ? data.currentOwners.map(o => `${o.lastName}${o.middleName ? ' ' + o.middleName : ''} ${o.firstName}`).join('; ')
-        : undefined,
+        : null,
       current_owner_legal_status: data.currentOwners && data.currentOwners.length > 0 
         ? data.currentOwners[0].legalStatus 
-        : undefined,
+        : null,
       current_owner_since: data.currentOwners && data.currentOwners.length > 0 
         ? blankDate(data.currentOwners[0].since)
-        : undefined,
+        : null,
       area_sqm: blankNum(data.areaSqm),
       parcel_sides: data.parcelSides,
       property_category: blank(data.propertyCategory),
@@ -383,6 +383,8 @@ export const useCadastralContribution = () => {
       apartment_height: data.apartmentHeight ?? null,
       apartment_orientation: blank(data.apartmentOrientation),
       floor_number: blank(data.floorNumber),
+      // Hauteur de la construction principale (m) — miroir de buildingShapes[0].heightM.
+      building_height: blankNum(data.buildingHeight),
       construction_type: blank(data.constructionType),
       construction_nature: blank(data.constructionNature),
       construction_materials: blank(data.constructionMaterials),

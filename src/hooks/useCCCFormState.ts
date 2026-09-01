@@ -1201,6 +1201,7 @@ export const useCCCFormState = ({
           occupantCount: (contrib as any).occupant_count || undefined,
           hostingCapacity: (contrib as any).hosting_capacity || undefined,
           apartmentNumber: (contrib as any).apartment_number || undefined, floorNumber: (contrib as any).floor_number || undefined,
+          buildingHeight: (contrib as any).building_height != null ? Number((contrib as any).building_height) : undefined,
           areaSqm: contrib.area_sqm || undefined, province: contrib.province || undefined,
           ville: contrib.ville || undefined, commune: contrib.commune || undefined,
           quartier: contrib.quartier || undefined, avenue: contrib.avenue || undefined,
