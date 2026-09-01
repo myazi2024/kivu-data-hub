@@ -1763,7 +1763,41 @@ export const ParcelMapPreview = ({
     toast.success(`${label} ajoutée: ${newShape.areaSqm} m², ${newShape.perimeterM} m de périmètre`);
   }, [buildingVertices, buildingShapes, onBuildingShapesChange, cancelDrawingBuilding, constructionLabels, selectedBuildingTarget]);
 
+  // Calquer la construction sur l'emprise exacte de la parcelle
+  const traceBuildingFromParcel = useCallback(() => {
+    if (!onBuildingShapesChange) return;
+    const verts = validCoords.map(c => ({ lat: parseFloat(c.lat), lng: parseFloat(c.lng) }));
+    if (verts.length < 3) return;
+
+    const sides: { name: string; length: string }[] = [];
+    let perimeter = 0;
+    for (let i = 0; i < verts.length; i++) {
+      const next = verts[(i + 1) % verts.length];
+      const dist = calculateDistance(verts[i].lat, verts[i].lng, next.lat, next.lng);
+      sides.push({ name: `Côté ${i + 1}`, length: dist.toFixed(2) });
+      perimeter += dist;
+    }
+
+    const areaSqm = calculateBuildingArea(verts);
+    const targetIdx = selectedBuildingTarget ?? buildingShapes.length;
+
+    const newShape: BuildingShape = {
+      id: `building-${Date.now()}`,
+      vertices: verts,
+      sides,
+      areaSqm: Math.round(areaSqm * 100) / 100,
+      perimeterM: Math.round(perimeter * 100) / 100,
+      linkedIndex: targetIdx,
+    };
+
+    const label = constructionLabels[targetIdx] || `Construction ${targetIdx + 1}`;
+    onBuildingShapesChange([...buildingShapes, newShape]);
+    cancelDrawingBuilding();
+    toast.success(`${label} calquée sur la parcelle: ${newShape.areaSqm} m², ${newShape.perimeterM} m de périmètre`);
+  }, [validCoords, buildingShapes, onBuildingShapesChange, cancelDrawingBuilding, constructionLabels, selectedBuildingTarget]);
+
   // Supprimer le dernier sommet en cours de tracé
+
   const removeLastBuildingVertex = useCallback(() => {
     setBuildingVertices(prev => prev.slice(0, -1));
   }, []);
