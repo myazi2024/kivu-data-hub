@@ -23,6 +23,7 @@ import ParcelNumberField from './shared/ParcelNumberField';
 import type { AdditionalConstruction } from '../AdditionalConstructionBlock';
 import type { BuildingPermit } from './GeneralTab';
 import { isTerrainNuCategory, isUnbuiltLand } from '@/utils/cccPredicates';
+import { withoutShapeHeights } from '@/utils/buildingShapes';
 
 interface LocationTabProps {
   formData: CadastralContributionData;
@@ -112,6 +113,24 @@ const LocationTab: React.FC<LocationTabProps> = ({
   // Prédicat partagé : terrain nu explicite ou nature « Non bâti ».
   const isTerrainNu = isUnbuiltLand(formData);
   const requiredBuildingCount = isTerrainNu ? 0 : (constructionMode === 'multiple' ? 1 + additionalConstructions.length : 1);
+
+  // Purge des hauteurs du croquis quand le bien devient non bâti (Terrain nu / nature « Non bâti »).
+  useEffect(() => {
+    if (!isTerrainNu) return;
+    if (buildingShapes.some((s: any) => s.heightM != null)) {
+      onBuildingShapesChange(withoutShapeHeights(buildingShapes));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isTerrainNu]);
+
+  // Purge de la hauteur d'appartement quand la catégorie quitte « Appartement ».
+  useEffect(() => {
+    if (formData.propertyCategory !== 'Appartement' && formData.apartmentHeight != null) {
+      handleInputChange('apartmentHeight', undefined);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData.propertyCategory]);
+
 
   
   // Build labels for each construction
@@ -284,6 +303,8 @@ const LocationTab: React.FC<LocationTabProps> = ({
           getPicklistDependentOptions={getPicklistDependentOptions}
           toast={toast}
           resetConstructionBlock={resetConstructionBlock}
+          buildingShapes={buildingShapes}
+          onBuildingShapesChange={onBuildingShapesChange}
       />
 
 
@@ -312,6 +333,7 @@ const LocationTab: React.FC<LocationTabProps> = ({
             isTerrainNu={isTerrainNu}
             requiredBuildingCount={requiredBuildingCount}
             constructionLabels={constructionLabels}
+            heightInputExternal
           />
         </div>
       )}
@@ -669,7 +691,7 @@ const ApartmentMeasurements: React.FC<ApartmentMeasurementsProps> = ({ formData,
         Mesures et orientation de l'appartement
       </h4>
 
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1">
           <Label className="text-xs">Longueur (m)</Label>
           <Input
@@ -688,16 +710,10 @@ const ApartmentMeasurements: React.FC<ApartmentMeasurementsProps> = ({ formData,
             className="h-9 text-xs"
           />
         </div>
-        <div className="space-y-1">
-          <Label className="text-xs">Hauteur (m)</Label>
-          <Input
-            type="number" min="0" step="0.1" placeholder="Ex: 3"
-            value={formData.apartmentHeight || ''}
-            onChange={(e) => handleInputChange('apartmentHeight', parseFloat(e.target.value) || undefined)}
-            className="h-9 text-xs"
-          />
-        </div>
       </div>
+      <p className="text-[10px] text-muted-foreground italic">
+        La hauteur se renseigne dans le bloc Construction, avant le Standing.
+      </p>
 
       {formData.apartmentLength && formData.apartmentWidth && (
         <div className="grid grid-cols-2 gap-3">
