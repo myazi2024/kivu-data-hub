@@ -326,6 +326,9 @@ const ReviewTab: React.FC<ReviewTabProps> = ({
             {formData.isOccupied === true && formData.occupantCount && <ReviewLine label="Occupants" value={`${formData.occupantCount} personne(s)`} />}
             {formData.hostingCapacity && <ReviewLine label="Capacité d'accueil" value={`${formData.hostingCapacity} personne(s)`} />}
             {formData.floorNumber && <ReviewLine label="Nombre d'étages" value={formData.floorNumber} />}
+            {formData.buildingHeight != null && formData.buildingHeight > 0 && (
+              <ReviewLine label="Hauteur de la construction" value={`${formData.buildingHeight} m`} />
+            )}
             {formData.apartmentNumber && <ReviewLine label="N° appartement" value={formData.apartmentNumber} />}
             {formData.whatsappNumber && <ReviewLine label="WhatsApp" value={formData.whatsappNumber} />}
 

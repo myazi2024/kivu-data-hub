@@ -1,3 +1,4 @@
+import { reindexShapesAfterRemoval } from '@/utils/buildingShapes';
 import { isConstructionRented } from '@/utils/rentalStatus';
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useFormPersistence } from '@/hooks/ccc/useFormPersistence';
@@ -265,6 +266,17 @@ export const useCCCFormState = ({
           nextListings.every((l: any, i: number) => l === listings[i])) return prev;
       return { ...prev, marketListings: nextListings };
     });
+
+    // Croquis : purger la forme liée à la construction supprimée et
+    // décaler les linkedIndex supérieurs pour éviter les formes fantômes
+    // et les hauteurs attribuées à la mauvaise construction.
+    const removedLinked = removedIdx + 1;
+    setBuildingShapes(prev => {
+      const next = reindexShapesAfterRemoval(prev as any[], removedLinked);
+      if (next.length === prev.length && next.every((s: any, i: number) => s === prev[i])) return prev;
+      return next as any;
+    });
+
     markDirty();
   }, [markDirty]);
 
@@ -1201,6 +1213,7 @@ export const useCCCFormState = ({
           occupantCount: (contrib as any).occupant_count || undefined,
           hostingCapacity: (contrib as any).hosting_capacity || undefined,
           apartmentNumber: (contrib as any).apartment_number || undefined, floorNumber: (contrib as any).floor_number || undefined,
+          buildingHeight: (contrib as any).building_height != null ? Number((contrib as any).building_height) : undefined,
           areaSqm: contrib.area_sqm || undefined, province: contrib.province || undefined,
           ville: contrib.ville || undefined, commune: contrib.commune || undefined,
           quartier: contrib.quartier || undefined, avenue: contrib.avenue || undefined,

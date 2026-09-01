@@ -45,3 +45,21 @@ export function minHeightForFloors(floorCount: number | string | undefined | nul
   const n = Math.max(0, Math.floor(Number(floorCount) || 0));
   return Math.max(3, n * 3);
 }
+
+/**
+ * Supprime la forme liée à une construction additionnelle retirée et décale
+ * les `linkedIndex` supérieurs (évite formes fantômes et hauteurs décalées).
+ * @param removedConstructionIndex index 1+ (0 = construction principale)
+ */
+export function reindexShapesAfterRemoval<T extends BuildingShapeLike>(
+  shapes: T[],
+  removedConstructionIndex: number,
+): T[] {
+  if (!Array.isArray(shapes) || shapes.length === 0) return shapes;
+  return shapes
+    .filter((s) => (s.linkedIndex ?? 0) !== removedConstructionIndex)
+    .map((s) => {
+      const idx = s.linkedIndex ?? 0;
+      return idx > removedConstructionIndex ? { ...s, linkedIndex: idx - 1 } : s;
+    });
+}

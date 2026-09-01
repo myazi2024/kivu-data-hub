@@ -8,6 +8,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils';
 import { Home, Building2, DollarSign } from 'lucide-react';
+import { isTerrainNuCategory as isTerrainNuCategoryShared } from '@/utils/cccPredicates';
 
 export type RentalConfiguration = 'single' | 'multi';
 
@@ -59,9 +60,9 @@ const buildSubject = (cat?: string, type?: string): string => {
   return 'Ce bien';
 };
 
-/** Terrain nu : le vocabulaire « local » n'est pas pertinent. */
+/** Terrain nu : le vocabulaire « local » n'est pas pertinent. Délègue au prédicat canonique. */
 export const isTerrainNuCategory = (cat?: string, type?: string): boolean =>
-  (cat || '').trim() === 'Terrain nu' || (type || '').trim() === 'Terrain nu';
+  isTerrainNuCategoryShared({ propertyCategory: cat, constructionType: type });
 
 /** Vocabulaire d'unité locative selon la catégorie de bien. */
 const unitVocab = (cat?: string, type?: string) => {

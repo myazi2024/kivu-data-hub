@@ -112,7 +112,12 @@ const LocationTab: React.FC<LocationTabProps> = ({
 }) => {
   // Prédicat partagé : terrain nu explicite ou nature « Non bâti ».
   const isTerrainNu = isUnbuiltLand(formData);
-  const requiredBuildingCount = isTerrainNu ? 0 : (constructionMode === 'multiple' ? 1 + additionalConstructions.length : 1);
+  // Un appartement se situe dans un immeuble : aucun tracé de construction n'est
+  // attendu dans le croquis (aligné sur useFormValidation).
+  const isAppartement = formData.propertyCategory === 'Appartement';
+  const requiredBuildingCount = (isTerrainNu || isAppartement)
+    ? 0
+    : (constructionMode === 'multiple' ? 1 + additionalConstructions.length : 1);
 
   // Purge des hauteurs quand le bien devient non bâti (Terrain nu / nature « Non bâti »).
   useEffect(() => {
