@@ -736,7 +736,6 @@ export const useCadastralContribution = () => {
       // Clean localStorage
       try {
         localStorage.removeItem(`cadastral_contribution_${data.parcelNumber}`);
-        localStorage.removeItem('ccc_form_draft');
       } catch (storageError) {
         console.warn('Impossible de nettoyer le localStorage:', storageError);
       }
@@ -899,7 +898,6 @@ export const useCadastralContribution = () => {
       // Clean localStorage
       try {
         localStorage.removeItem(`cadastral_contribution_${data.parcelNumber}`);
-        localStorage.removeItem(`ccc_form_draft_${data.parcelNumber}`);
       } catch (storageError) {
         console.warn('Impossible de nettoyer le localStorage:', storageError);
       }
