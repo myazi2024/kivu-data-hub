@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { untypedTables } from '@/integrations/supabase/untyped';
 import { useTestEnvironment, applyTestFilter } from '@/hooks/useTestEnvironment';
 import { escapeIlike } from '@/utils/escapeIlike';
 
@@ -33,7 +34,8 @@ export interface SearchFilters {
 export interface ParcelSearchResult {
   id: string;
   parcel_number: string;
-  current_owner_name: string;
+  /** PII payante : absente de la vue publique. */
+  current_owner_name?: string | null;
   area_sqm: number;
   parcel_type: string;
   property_title_type: string;
@@ -77,10 +79,11 @@ export const useAdvancedCadastralSearch = () => {
   };
 
   const buildQuery = (activeFilters: SearchFilters, pageNum: number) => {
-    let query = supabase
-      .from('cadastral_parcels')
+    // Vue publique : la table `cadastral_parcels` est réservée aux admins par RLS.
+    // La vue exclut déjà les parcelles supprimées et les PII (nom du propriétaire).
+    let query = untypedTables
+      .generic('cadastral_parcels_public')
       .select('*', { count: 'exact' })
-      .is('deleted_at', null)
       .order('created_at', { ascending: false });
 
     // Test/production filter

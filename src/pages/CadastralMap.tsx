@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils';
 
 import { MapPin, Loader2, Search, X, MessageCircle, AlertTriangle, Settings2, Star, Sparkles, HelpCircle, MapPinPlus, FileCheck2, AlertCircle, LocateFixed } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useDebounce } from '@/hooks/useDebounce';
 import { toast } from 'sonner';
 import CCCIntroDialog from '@/components/cadastral/CCCIntroDialog';
 import CadastralContributionDialog from '@/components/cadastral/CadastralContributionDialog';
@@ -72,9 +73,13 @@ const CadastralMap = () => {
 
   // Search UI state
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedQuery = useDebounce(searchQuery, 250);
   const [searchMode, setSearchMode] = useState<CadastralSearchMode>('parcel');
   const [titleMatchIds, setTitleMatchIds] = useState<Set<string>>(new Set());
   const [searchSuggestions, setSearchSuggestions] = useState<ParcelData[]>([]);
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
+  /** True tant qu'un jeu de résultats provient de la recherche avancée. */
+  const [advancedFiltersApplied, setAdvancedFiltersApplied] = useState(false);
   const [showIntroDialog, setShowIntroDialog] = useState(false);
   const [showContributionDialog, setShowContributionDialog] = useState(false);
   const [actionsExpanded, setActionsExpanded] = useState(false);
@@ -118,6 +123,17 @@ const CadastralMap = () => {
   const advancedSearch = useAdvancedCadastralSearch();
   const searchHistory = useSearchHistory();
   const { config: searchBarConfig, buildAllowedRegex } = useSearchBarConfig();
+
+  /** Jeu de caractères interdits selon le mode de recherche. */
+  const modeRegex = useCallback(
+    (mode: CadastralSearchMode) => (mode === 'title' ? /[^A-Z0-9./\- ]/ : buildAllowedRegex()),
+    [buildAllowedRegex]
+  );
+  const sanitizeForMode = useCallback(
+    (value: string, mode: CadastralSearchMode) =>
+      value.toUpperCase().replace(new RegExp(modeRegex(mode).source, 'g'), ''),
+    [modeRegex]
+  );
   const { config: mapConfig } = useMapConfig();
   const { config: appearance } = useAppAppearance();
   const cadastralSearch = useCadastralSearch();
@@ -138,14 +154,17 @@ const CadastralMap = () => {
   // Sync filteredParcels with base data
   useEffect(() => { setFilteredParcels(parcels); }, [parcels]);
 
-  // Predictive search — parcel number (SU/SR) or property title number
+  // Predictive search — parcel number (SU/SR) or property title number.
+  // Debounced so a fast typist doesn't re-filter 2000 parcels and redraw all
+  // Leaflet layers on every keystroke.
   useEffect(() => {
-    if (!searchQuery.trim()) {
+    if (!debouncedQuery.trim()) {
       setSearchSuggestions([]);
-      setFilteredParcels(parcels);
+      setHighlightedIndex(-1);
+      if (!advancedFiltersApplied) setFilteredParcels(parcels);
       return;
     }
-    const q = searchQuery.toLowerCase().trim();
+    const q = debouncedQuery.toLowerCase().trim();
     const byParcel = parcels.filter(p => p.parcel_number?.toLowerCase().includes(q));
     const byTitle = parcels.filter(
       p => (p.title_reference_number || '').toLowerCase().includes(q) && !byParcel.some(bp => bp.id === p.id)
@@ -154,8 +173,9 @@ const CadastralMap = () => {
     const filtered = searchMode === 'title' ? [...byTitle, ...byParcel] : [...byParcel, ...byTitle];
     setTitleMatchIds(new Set(byTitle.map(p => p.id)));
     setSearchSuggestions(filtered.slice(0, 5));
+    setHighlightedIndex(-1);
     setFilteredParcels(filtered);
-  }, [searchQuery, parcels, searchMode]);
+  }, [debouncedQuery, parcels, searchMode, advancedFiltersApplied]);
 
 
   // Render layers (incremental diff inside the hook)
@@ -164,13 +184,17 @@ const CadastralMap = () => {
     renderLayers({ parcels: filteredParcels, subdivisionLots });
   }, [mapReady, filteredParcels, subdivisionLots, renderLayers]);
 
+  /** Recherche stabilisée : le débounce est passé et les parcelles sont chargées. */
+  const searchSettled = !loading && debouncedQuery === searchQuery;
+  const noResult = !!searchQuery.trim() && searchSettled && filteredParcels.length === 0;
+
   // Manual-search notification timer
   useEffect(() => {
-    if (searchQuery && filteredParcels.length === 0 && !showManualSearchNotification && !notificationDismissedRef.current) {
+    if (noResult && !showManualSearchNotification && !notificationDismissedRef.current) {
       inactivityTimerRef.current = setTimeout(() => setShowManualSearchNotification(true), 5000);
     }
     return () => { if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current); };
-  }, [searchQuery, filteredParcels.length, showManualSearchNotification]);
+  }, [noResult, showManualSearchNotification]);
 
   useEffect(() => { notificationDismissedRef.current = false; }, [searchQuery]);
 
@@ -186,20 +210,24 @@ const CadastralMap = () => {
   }, []);
 
   const handleSelectParcel = useCallback((parcel: ParcelData) => {
+    const label = searchMode === 'title' && parcel.title_reference_number
+      ? parcel.title_reference_number
+      : parcel.parcel_number;
     setSelectedParcel(parcel);
-    setSearchQuery(
-      searchMode === 'title' && parcel.title_reference_number
-        ? parcel.title_reference_number
-        : parcel.parcel_number
-    );
+    setSearchQuery(label);
     setSearchSuggestions([]);
+    setHighlightedIndex(-1);
+    searchHistory.addToHistory(label);
     centerOnParcel(parcel, 19);
     void trackEvent('cadastral_map_parcel_select', { parcel_number: parcel.parcel_number, search_mode: searchMode });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [centerOnParcel, searchMode]);
 
   const handleClearSearch = () => {
     setSearchQuery('');
     setSearchSuggestions([]);
+    setHighlightedIndex(-1);
+    setAdvancedFiltersApplied(false);
     setFilteredParcels(parcels);
     setSelectedParcel(null);
   };
@@ -211,15 +239,23 @@ const CadastralMap = () => {
     setShowIntroDialog(true);
   }, []);
 
-  const handleApplyFilters = async () => {
-    const results = await advancedSearch.searchParcels();
+  const applyAdvancedFilters = async (filters?: typeof advancedSearch.filters) => {
+    const results = await advancedSearch.searchParcels(filters);
     if (results.length > 0) {
+      setSearchQuery('');
+      setSearchSuggestions([]);
+      setAdvancedFiltersApplied(true);
       setFilteredParcels(results as any);
       toast.success(`${results.length} parcelle(s) trouvée(s)`);
       setShowAdvancedSearch(false);
     } else {
       toast.error('Aucune parcelle ne correspond aux critères');
     }
+    return results;
+  };
+
+  const handleApplyFilters = async () => {
+    await applyAdvancedFilters();
     const filterSummary = Object.entries(advancedSearch.filters)
       .filter(([, v]) => v !== undefined && v !== '')
       .map(([k, v]) => `${k}:${v}`)
@@ -228,12 +264,21 @@ const CadastralMap = () => {
   };
 
   const handleSelectFromHistory = (query: string) => {
-    setSearchQuery(query);
     setShowAdvancedSearch(false);
-    const q = query.toLowerCase();
-    setFilteredParcels(parcels.filter(p =>
-      p.parcel_number?.toLowerCase().includes(q) || (p.title_reference_number || '').toLowerCase().includes(q)
-    ));
+    // Une entrée « Filtres: ... » n'est pas un texte recherchable : on rejoue les
+    // filtres avancés mémorisés au lieu de l'injecter dans la barre standard.
+    const item = searchHistory.history.find(h => h.query === query);
+    if (query.startsWith('Filtres:') || (item?.filters && Object.keys(item.filters).length > 0)) {
+      if (item?.filters) {
+        advancedSearch.updateFilters(item.filters);
+        void applyAdvancedFilters(item.filters);
+      } else {
+        toast.error('Ces filtres ne sont plus disponibles');
+      }
+      return;
+    }
+    setAdvancedFiltersApplied(false);
+    setSearchQuery(query);
   };
 
   const handleSelectFromFavorites = (parcelNumber: string) => {
@@ -345,6 +390,9 @@ const CadastralMap = () => {
                   mode={searchMode}
                   onModeChange={(m) => {
                     setSearchMode(m);
+                    // Le mode « titre » tolère des caractères interdits en mode parcelle :
+                    // on re-nettoie la saisie pour éviter une requête impossible.
+                    setSearchQuery(prev => sanitizeForMode(prev, m));
                     setHasUserInteracted(true);
                     void trackEvent('cadastral_map_search_mode', { mode: m });
                   }}
@@ -360,12 +408,8 @@ const CadastralMap = () => {
                     placeholder={searchMode === 'title' ? 'N° du titre de propriété...' : searchBarConfig.placeholder.map_default}
                     value={searchQuery}
                     onChange={(e) => {
-                      const inputValue = e.target.value;
-                      const normalizedValue = inputValue.toUpperCase();
-                      // Title numbers are free-form: only the parcel mode enforces the strict SU/SR charset.
-                      const invalidRegex = searchMode === 'title'
-                        ? /[^A-Z0-9./\- ]/
-                        : buildAllowedRegex();
+                      const normalizedValue = e.target.value.toUpperCase();
+                      const invalidRegex = modeRegex(searchMode);
                       const hasInvalidChars = invalidRegex.test(normalizedValue);
 
                       if (hasInvalidChars && searchMode === 'parcel') {
@@ -381,7 +425,8 @@ const CadastralMap = () => {
                         invalidCharTimeoutRef.current = setTimeout(() => setShowInvalidCharNotification(false), 3000);
                       }
 
-                      const sanitizedValue = normalizedValue.replace(new RegExp(invalidRegex.source, 'g'), '');
+                      const sanitizedValue = sanitizeForMode(normalizedValue, searchMode);
+                      setAdvancedFiltersApplied(false);
                       setSearchQuery(sanitizedValue);
                       if (sanitizedValue) setHasUserInteracted(true);
                     }}
@@ -391,16 +436,42 @@ const CadastralMap = () => {
                       if (showAdvancedSearch) setShowAdvancedSearch(false);
                     }}
                     onKeyDown={(e) => {
+                      if (e.key === 'ArrowDown' && searchSuggestions.length > 0) {
+                        e.preventDefault();
+                        setHighlightedIndex(i => (i + 1) % searchSuggestions.length);
+                        return;
+                      }
+                      if (e.key === 'ArrowUp' && searchSuggestions.length > 0) {
+                        e.preventDefault();
+                        setHighlightedIndex(i => (i <= 0 ? searchSuggestions.length - 1 : i - 1));
+                        return;
+                      }
+                      if (e.key === 'Escape') {
+                        setSearchSuggestions([]);
+                        setHighlightedIndex(-1);
+                        return;
+                      }
                       if (e.key === 'Enter' && searchQuery.trim()) {
-                        searchHistory.addToHistory(searchQuery);
                         void trackEvent('cadastral_map_search', { query: searchQuery, search_mode: searchMode });
+                        const target = searchSuggestions[highlightedIndex >= 0 ? highlightedIndex : 0];
+                        if (target) {
+                          handleSelectParcel(target);
+                        } else {
+                          searchHistory.addToHistory(searchQuery);
+                        }
                       }
                     }}
                     type="text"
                     inputMode="text"
+                    role="combobox"
+                    aria-expanded={searchSuggestions.length > 0}
+                    aria-controls="cadastral-search-suggestions"
+                    aria-autocomplete="list"
+                    aria-activedescendant={highlightedIndex >= 0 ? `cadastral-suggestion-${highlightedIndex}` : undefined}
                     aria-label={searchMode === 'title' ? 'Rechercher par numéro du titre de propriété' : 'Rechercher par numéro de parcelle'}
                     className={`h-10 text-sm pl-9 pr-8 rounded-${searchBarConfig.appearance.border_radius} border-0 bg-muted/50 focus-visible:ring-1 focus-visible:ring-${searchBarConfig.appearance.accent_color}/50 transition-all ${isShaking ? 'animate-shake border-destructive' : ''}`}
                   />
+
 
 
                   {searchQuery && (
@@ -530,14 +601,23 @@ const CadastralMap = () => {
 
               {/* Suggestions */}
               {searchSuggestions.length > 0 && !(selectedParcel && isMobile) && !showAdvancedSearch && (
-                <div className="mt-2 rounded-xl bg-muted/30 overflow-hidden max-h-36 overflow-y-auto">
+                <div
+                  id="cadastral-search-suggestions"
+                  role="listbox"
+                  className="mt-2 rounded-xl bg-muted/30 overflow-hidden max-h-36 overflow-y-auto"
+                >
                   {searchSuggestions.map((parcel, index) => {
                     const isTitleMatch = titleMatchIds.has(parcel.id);
+                    const isHighlighted = index === highlightedIndex;
                     return (
                       <button
                         key={parcel.id}
+                        id={`cadastral-suggestion-${index}`}
+                        role="option"
+                        aria-selected={isHighlighted}
+                        onMouseEnter={() => setHighlightedIndex(index)}
                         onClick={() => handleSelectParcel(parcel)}
-                        className={`w-full text-left px-3 py-2 hover:bg-primary/5 transition-colors flex items-center justify-between gap-2 ${index !== searchSuggestions.length - 1 ? 'border-b border-border/30' : ''}`}
+                        className={`w-full text-left px-3 py-2 hover:bg-primary/5 transition-colors flex items-center justify-between gap-2 ${isHighlighted ? 'bg-primary/10' : ''} ${index !== searchSuggestions.length - 1 ? 'border-b border-border/30' : ''}`}
                       >
                         <div className="min-w-0">
                           <div className="flex items-center gap-1.5">
@@ -564,8 +644,10 @@ const CadastralMap = () => {
 
               {!(selectedParcel && isMobile) && !showAdvancedSearch && (
                 <div className="mt-2 flex items-center justify-between">
-                  <span className="text-[10px] text-muted-foreground font-medium">
-                    {searchQuery ? `${filteredParcels.length} résultat(s)` : `${parcels.length} parcelles`}
+                  <span className="text-[10px] text-muted-foreground font-medium" aria-live="polite">
+                    {searchQuery
+                      ? (searchSettled ? `${filteredParcels.length} résultat(s)` : 'Recherche…')
+                      : `${parcels.length} parcelles`}
                   </span>
                 </div>
               )}
@@ -587,7 +669,7 @@ const CadastralMap = () => {
           )}
 
           {/* Manual contribution CTA when no result — rendered inside the search overlay so it sits directly below the bar and stays accessible on both desktop and mobile */}
-          {searchQuery && filteredParcels.length === 0 && !selectedParcel && (
+          {noResult && !selectedParcel && (
             <div className="mt-2 animate-fade-in">
               <Button
                 variant="default"

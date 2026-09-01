@@ -979,6 +979,7 @@ export type Database = {
           area_sqm: number | null
           avenue: string | null
           boundary_history: Json | null
+          building_height: number | null
           building_permits: Json | null
           building_shapes: Json | null
           change_justification: string | null
@@ -1084,6 +1085,7 @@ export type Database = {
           area_sqm?: number | null
           avenue?: string | null
           boundary_history?: Json | null
+          building_height?: number | null
           building_permits?: Json | null
           building_shapes?: Json | null
           change_justification?: string | null
@@ -1189,6 +1191,7 @@ export type Database = {
           area_sqm?: number | null
           avenue?: string | null
           boundary_history?: Json | null
+          building_height?: number | null
           building_permits?: Json | null
           building_shapes?: Json | null
           change_justification?: string | null
@@ -1850,6 +1853,7 @@ export type Database = {
           area_hectares: number | null
           area_sqm: number
           avenue: string | null
+          building_height: number | null
           building_shapes: Json | null
           collectivite: string | null
           commune: string | null
@@ -1935,6 +1939,7 @@ export type Database = {
           area_hectares?: number | null
           area_sqm?: number
           avenue?: string | null
+          building_height?: number | null
           building_shapes?: Json | null
           collectivite?: string | null
           commune?: string | null
@@ -2020,6 +2025,7 @@ export type Database = {
           area_hectares?: number | null
           area_sqm?: number
           avenue?: string | null
+          building_height?: number | null
           building_shapes?: Json | null
           collectivite?: string | null
           commune?: string | null
@@ -7702,20 +7708,26 @@ export type Database = {
         Row: {
           area_hectares: number | null
           area_sqm: number | null
+          avenue: string | null
           collectivite: string | null
           commune: string | null
           created_at: string | null
+          gps_coordinates: Json | null
           groupement: string | null
           has_dispute: boolean | null
           id: string | null
           is_subdivided: boolean | null
+          latitude: number | null
           location: string | null
+          longitude: number | null
           parcel_number: string | null
+          parcel_sides: Json | null
           parcel_type: string | null
           property_title_type: string | null
           province: string | null
           quartier: string | null
           territoire: string | null
+          title_reference_number: string | null
           updated_at: string | null
           village: string | null
           ville: string | null
@@ -7723,20 +7735,26 @@ export type Database = {
         Insert: {
           area_hectares?: number | null
           area_sqm?: number | null
+          avenue?: string | null
           collectivite?: string | null
           commune?: string | null
           created_at?: string | null
+          gps_coordinates?: Json | null
           groupement?: string | null
           has_dispute?: boolean | null
           id?: string | null
           is_subdivided?: boolean | null
+          latitude?: number | null
           location?: string | null
+          longitude?: number | null
           parcel_number?: string | null
+          parcel_sides?: Json | null
           parcel_type?: string | null
           property_title_type?: string | null
           province?: string | null
           quartier?: string | null
           territoire?: string | null
+          title_reference_number?: string | null
           updated_at?: string | null
           village?: string | null
           ville?: string | null
@@ -7744,20 +7762,26 @@ export type Database = {
         Update: {
           area_hectares?: number | null
           area_sqm?: number | null
+          avenue?: string | null
           collectivite?: string | null
           commune?: string | null
           created_at?: string | null
+          gps_coordinates?: Json | null
           groupement?: string | null
           has_dispute?: boolean | null
           id?: string | null
           is_subdivided?: boolean | null
+          latitude?: number | null
           location?: string | null
+          longitude?: number | null
           parcel_number?: string | null
+          parcel_sides?: Json | null
           parcel_type?: string | null
           property_title_type?: string | null
           province?: string | null
           quartier?: string | null
           territoire?: string | null
+          title_reference_number?: string | null
           updated_at?: string | null
           village?: string | null
           ville?: string | null

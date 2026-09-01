@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { untypedTables } from '@/integrations/supabase/untyped';
 import { useTestEnvironment, applyTestFilter } from '@/hooks/useTestEnvironment';
 
 export interface ParcelData {
@@ -9,7 +10,8 @@ export interface ParcelData {
   parcel_sides: any;
   latitude: number;
   longitude: number;
-  current_owner_name: string;
+  /** PII payante : non exposée par la vue publique (voir modèle d'accès PII). */
+  current_owner_name?: string | null;
   area_sqm: number;
   province: string;
   ville: string;
@@ -23,10 +25,11 @@ export interface ParcelData {
 const PARCELS_LIMIT = 2000;
 
 async function fetchParcels(isTestEnv: boolean): Promise<ParcelData[]> {
-  let query = supabase
-    .from('cadastral_parcels')
-    .select('id, parcel_number, gps_coordinates, parcel_sides, current_owner_name, area_sqm, province, ville, commune, quartier, latitude, longitude, is_subdivided, title_reference_number, property_title_type')
-    .is('deleted_at', null);
+  // Lecture via la vue publique : `cadastral_parcels` est réservée aux admins par RLS,
+  // la table directe renvoie donc 0 ligne aux visiteurs et utilisateurs standards.
+  let query = untypedTables
+    .generic('cadastral_parcels_public')
+    .select('id, parcel_number, gps_coordinates, parcel_sides, area_sqm, province, ville, commune, quartier, latitude, longitude, is_subdivided, title_reference_number, property_title_type');
   query = applyTestFilter(query, 'parcel_number', isTestEnv);
   const { data, error } = await query.limit(PARCELS_LIMIT);
   if (error) throw error;
