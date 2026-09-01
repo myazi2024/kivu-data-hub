@@ -379,6 +379,9 @@ const CadastralMap = () => {
                   mode={searchMode}
                   onModeChange={(m) => {
                     setSearchMode(m);
+                    // Le mode « titre » tolère des caractères interdits en mode parcelle :
+                    // on re-nettoie la saisie pour éviter une requête impossible.
+                    setSearchQuery(prev => sanitizeForMode(prev, m));
                     setHasUserInteracted(true);
                     void trackEvent('cadastral_map_search_mode', { mode: m });
                   }}
@@ -394,12 +397,8 @@ const CadastralMap = () => {
                     placeholder={searchMode === 'title' ? 'N° du titre de propriété...' : searchBarConfig.placeholder.map_default}
                     value={searchQuery}
                     onChange={(e) => {
-                      const inputValue = e.target.value;
-                      const normalizedValue = inputValue.toUpperCase();
-                      // Title numbers are free-form: only the parcel mode enforces the strict SU/SR charset.
-                      const invalidRegex = searchMode === 'title'
-                        ? /[^A-Z0-9./\- ]/
-                        : buildAllowedRegex();
+                      const normalizedValue = e.target.value.toUpperCase();
+                      const invalidRegex = modeRegex(searchMode);
                       const hasInvalidChars = invalidRegex.test(normalizedValue);
 
                       if (hasInvalidChars && searchMode === 'parcel') {
@@ -415,7 +414,8 @@ const CadastralMap = () => {
                         invalidCharTimeoutRef.current = setTimeout(() => setShowInvalidCharNotification(false), 3000);
                       }
 
-                      const sanitizedValue = normalizedValue.replace(new RegExp(invalidRegex.source, 'g'), '');
+                      const sanitizedValue = sanitizeForMode(normalizedValue, searchMode);
+                      setAdvancedFiltersApplied(false);
                       setSearchQuery(sanitizedValue);
                       if (sanitizedValue) setHasUserInteracted(true);
                     }}
@@ -425,16 +425,42 @@ const CadastralMap = () => {
                       if (showAdvancedSearch) setShowAdvancedSearch(false);
                     }}
                     onKeyDown={(e) => {
+                      if (e.key === 'ArrowDown' && searchSuggestions.length > 0) {
+                        e.preventDefault();
+                        setHighlightedIndex(i => (i + 1) % searchSuggestions.length);
+                        return;
+                      }
+                      if (e.key === 'ArrowUp' && searchSuggestions.length > 0) {
+                        e.preventDefault();
+                        setHighlightedIndex(i => (i <= 0 ? searchSuggestions.length - 1 : i - 1));
+                        return;
+                      }
+                      if (e.key === 'Escape') {
+                        setSearchSuggestions([]);
+                        setHighlightedIndex(-1);
+                        return;
+                      }
                       if (e.key === 'Enter' && searchQuery.trim()) {
-                        searchHistory.addToHistory(searchQuery);
                         void trackEvent('cadastral_map_search', { query: searchQuery, search_mode: searchMode });
+                        const target = searchSuggestions[highlightedIndex >= 0 ? highlightedIndex : 0];
+                        if (target) {
+                          handleSelectParcel(target);
+                        } else {
+                          searchHistory.addToHistory(searchQuery);
+                        }
                       }
                     }}
                     type="text"
                     inputMode="text"
+                    role="combobox"
+                    aria-expanded={searchSuggestions.length > 0}
+                    aria-controls="cadastral-search-suggestions"
+                    aria-autocomplete="list"
+                    aria-activedescendant={highlightedIndex >= 0 ? `cadastral-suggestion-${highlightedIndex}` : undefined}
                     aria-label={searchMode === 'title' ? 'Rechercher par numéro du titre de propriété' : 'Rechercher par numéro de parcelle'}
                     className={`h-10 text-sm pl-9 pr-8 rounded-${searchBarConfig.appearance.border_radius} border-0 bg-muted/50 focus-visible:ring-1 focus-visible:ring-${searchBarConfig.appearance.accent_color}/50 transition-all ${isShaking ? 'animate-shake border-destructive' : ''}`}
                   />
+
 
 
                   {searchQuery && (
