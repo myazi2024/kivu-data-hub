@@ -2908,7 +2908,13 @@ export const ParcelMapPreview = ({
               {buildingShapes.map((shape, idx) => {
                 const label = constructionLabels[shape.linkedIndex ?? idx] || `Construction ${idx + 1}`;
                 return (
-                    <div key={shape.id} className="space-y-1.5 text-xs bg-background/60 rounded-lg px-2 py-1.5 border border-border/30">
+                    <div
+                      key={shape.id}
+                      onMouseEnter={() => setHoveredBuildingId(shape.id)}
+                      onMouseLeave={() => setHoveredBuildingId(prev => (prev === shape.id ? null : prev))}
+                      className={`space-y-1.5 text-xs bg-background/60 rounded-lg px-2 py-1.5 border transition-colors ${hoveredBuildingId === shape.id ? 'border-primary/60 bg-primary/5' : 'border-border/30'}`}
+                    >
+
                       <div className="flex items-center justify-between gap-1.5">
                         <div className="flex items-center gap-1.5 min-w-0 flex-1">
                           <Layers className="h-3 w-3 text-primary flex-shrink-0" />
