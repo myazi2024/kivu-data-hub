@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getShapeForConstructionIndex, withShapeHeight, withoutShapeHeights } from '@/utils/buildingShapes';
+import { getShapeForConstructionIndex, withShapeHeight, withoutShapeHeights , reindexShapesAfterRemoval } from '@/utils/buildingShapes';
 
 const shapes = [
   { id: 'a', linkedIndex: 0, heightM: 3 },
@@ -44,5 +44,25 @@ describe('withoutShapeHeights', () => {
     const purged = withoutShapeHeights(shapes);
     expect(purged.every((s) => s.heightM == null)).toBe(true);
     expect(purged.map((s) => s.id)).toEqual(['a', 'b', 'c']);
+  });
+});
+
+describe('reindexShapesAfterRemoval', () => {
+  it('supprime la forme liée et décale les index supérieurs', () => {
+    const shapes = [
+      { id: 'a', linkedIndex: 0, heightM: 3 },
+      { id: 'b', linkedIndex: 1, heightM: 6 },
+      { id: 'c', linkedIndex: 2, heightM: 9 },
+    ];
+    const next = reindexShapesAfterRemoval(shapes, 1);
+    expect(next.map((s) => s.id)).toEqual(['a', 'c']);
+    expect(next.map((s) => s.linkedIndex)).toEqual([0, 1]);
+    expect(next[1].heightM).toBe(9);
+  });
+
+  it('ne touche pas aux formes inférieures ni à la liste vide', () => {
+    expect(reindexShapesAfterRemoval([], 1)).toEqual([]);
+    const shapes = [{ id: 'a', linkedIndex: 0 }, { id: 'b', linkedIndex: 1 }];
+    expect(reindexShapesAfterRemoval(shapes, 2)).toEqual(shapes);
   });
 });

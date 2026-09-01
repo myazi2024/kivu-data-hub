@@ -1,3 +1,4 @@
+import { reindexShapesAfterRemoval } from '@/utils/buildingShapes';
 import { isConstructionRented } from '@/utils/rentalStatus';
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useFormPersistence } from '@/hooks/ccc/useFormPersistence';
