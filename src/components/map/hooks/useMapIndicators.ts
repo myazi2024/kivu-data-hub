@@ -34,6 +34,10 @@ export function computeIndicators(
       if (area > 0) { buildingSurfaceSum += area; buildingSurfaceCount++; }
       if (s.heightM > 0) { buildingHeightSum += s.heightM; buildingHeightCount++; }
     });
+    // Fallback: declared construction height when no sketch height is available
+    const declaredHeight = Number(c.building_height || 0);
+    const hasSketchHeight = shapes.some((s: any) => Number(s?.heightM) > 0);
+    if (!hasSketchHeight && declaredHeight > 0) { buildingHeightSum += declaredHeight; buildingHeightCount++; }
   });
 
   return {

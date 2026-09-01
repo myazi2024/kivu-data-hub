@@ -93,20 +93,56 @@ export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
       { label: '> 15m', min: 15, max: Infinity },
     ];
     const counts = buckets.map(b => ({ name: b.label, value: 0, min: b.min, max: b.max }));
+    const push = (h: number) => {
+      const bucket = counts.find(b => h >= b.min && h < b.max);
+      if (bucket) bucket.value++;
+    };
     filteredContribs.forEach(c => {
       const shapes = c.building_shapes;
+      let fromSketch = false;
       if (Array.isArray(shapes)) {
         shapes.forEach((s: any) => {
           const h = s?.heightM ?? s?.height_m;
-          if (h != null && h > 0) {
-            const bucket = counts.find(b => h >= b.min && h < b.max);
-            if (bucket) bucket.value++;
-          }
+          if (h != null && h > 0) { push(Number(h)); fromSketch = true; }
         });
       }
+      // Declared height (Construction block) when the sketch carries none
+      const declared = Number((c as any).building_height || (c as any).apartment_height || 0);
+      if (!fromSketch && declared > 0) push(declared);
     });
     return counts.filter(c => c.value > 0).map(({ name, value }) => ({ name, value }));
   }, [filteredContribs]);
+
+  /** Apartment footprint (length × width) declared in the Construction block */
+  const apartmentSizeData = useMemo(() => {
+    const buckets = [
+      { name: '< 30 m²', min: 0, max: 30 },
+      { name: '30-60 m²', min: 30, max: 60 },
+      { name: '60-100 m²', min: 60, max: 100 },
+      { name: '100-150 m²', min: 100, max: 150 },
+      { name: '> 150 m²', min: 150, max: Infinity },
+    ];
+    const counts = buckets.map(b => ({ ...b, value: 0 }));
+    filteredContribs.forEach((c: any) => {
+      const area = Number(c.apartment_length || 0) * Number(c.apartment_width || 0);
+      if (area <= 0) return;
+      const bucket = counts.find(b => area >= b.min && area < b.max);
+      if (bucket) bucket.value++;
+    });
+    return counts.filter(c => c.value > 0).map(({ name, value }) => ({ name, value }));
+  }, [filteredContribs]);
+
+  /** Apartment orientation declared in the Construction block */
+  const apartmentOrientationData = useMemo(() => {
+    const map = new Map<string, number>();
+    filteredContribs.forEach((c: any) => {
+      if (!c.apartment_orientation) return;
+      const k = String(c.apartment_orientation);
+      map.set(k, (map.get(k) || 0) + 1);
+    });
+    return Array.from(map.entries()).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
+  }, [filteredContribs]);
+
 
   const soundEnvData = useMemo(() => {
     const map = new Map<string, number>();
@@ -248,6 +284,10 @@ export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
       insight={generateInsight(buildingSizeData, 'bar-v', 'les tailles de construction')} crossVariables={cx('building-size')} rawRecords={filteredContribs} groupField="building_shapes" /> },
     { key: 'building-height', el: () => <ChartCard title={ct('building-height', 'Hauteur construction')} icon={ArrowUpFromLine} data={buildingHeightData} type={ty('building-height', 'bar-v')} colorIndex={5} hidden={buildingHeightData.length === 0}
       insight={generateInsight(buildingHeightData, 'bar-v', 'les hauteurs de construction')} crossVariables={cx('building-height')} rawRecords={filteredContribs} groupField="building_shapes" /> },
+    { key: 'apartment-size', el: () => <ChartCard title={ct('apartment-size', 'Surface des appartements')} icon={Maximize} data={apartmentSizeData} type={ty('apartment-size', 'bar-v')} colorIndex={10} hidden={apartmentSizeData.length === 0}
+      insight={generateInsight(apartmentSizeData, 'bar-v', 'les surfaces déclarées des appartements')} /> },
+    { key: 'apartment-orientation', el: () => <ChartCard title={ct('apartment-orientation', 'Orientation des appartements')} data={apartmentOrientationData} type={ty('apartment-orientation', 'donut')} colorIndex={3} hidden={apartmentOrientationData.length === 0}
+      insight={generateInsight(apartmentOrientationData, 'donut', 'les orientations déclarées')} crossVariables={cx('apartment-orientation')} rawRecords={filteredContribs} groupField="apartment_orientation" /> },
     { key: 'sound-env', el: () => <ChartCard title={ct('sound-env', 'Environnement sonore')} icon={Volume2} data={soundEnvData} type={ty('sound-env', 'donut')} colorIndex={10} hidden={soundEnvData.length === 0}
       insight={generateInsight(soundEnvData, 'donut', "l'environnement sonore")} crossVariables={cx('sound-env')} rawRecords={filteredContribs} groupField="sound_environment" /> },
     { key: 'noise-sources', el: () => <ChartCard title={ct('noise-sources', 'Sources de bruit')} icon={Ear} data={noiseSourcesData} type={ty('noise-sources', 'bar-v')} colorIndex={11} hidden={noiseSourcesData.length === 0}
@@ -255,7 +295,7 @@ export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
     { key: 'construction-geo', el: () => <GeoCharts records={builtParcels} /> },
     { key: 'construction-evolution', el: () => <ChartCard title={ct('construction-evolution', 'Évolution constructions')} icon={TrendingUp} data={constructionTrend} type={ty('construction-evolution', 'area')} colorIndex={0} colSpan={2}
       insight={generateInsight(constructionTrend, 'area', 'les constructions')} /> },
-  ].filter(d => v(d.key)).sort((a, b) => ord(a.key) - ord(b.key)), [filteredParcels, builtParcels, filteredContribs, normalizedParcels, parcelsWithCapacity, charts, permitTypeData, buildingSizeData, buildingHeightData, soundEnvData, noiseSourcesData, occupationData, floorDistData, hostingCapacityData, occupancyPressureData, builtVsUnbuiltData, constructionTrend, v, ct, cx, ty, ord]);
+  ].filter(d => v(d.key)).sort((a, b) => ord(a.key) - ord(b.key)), [filteredParcels, builtParcels, filteredContribs, normalizedParcels, parcelsWithCapacity, charts, permitTypeData, buildingSizeData, buildingHeightData, apartmentSizeData, apartmentOrientationData, soundEnvData, noiseSourcesData, occupationData, floorDistData, hostingCapacityData, occupancyPressureData, builtVsUnbuiltData, constructionTrend, v, ct, cx, ty, ord]);
 
   return (
     <FilterLabelContext.Provider value={filterLabel}>

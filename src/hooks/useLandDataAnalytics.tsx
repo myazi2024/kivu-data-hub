@@ -74,7 +74,7 @@ async function fetchAll(
 
 export const useLandDataAnalytics = (isTestRoute = false) => {
   return useQuery({
-    queryKey: ['land-analytics-v9', isTestRoute],
+    queryKey: ['land-analytics-v10', isTestRoute],
     queryFn: async (): Promise<LandAnalyticsData> => {
       const [
         parcels, contribs, titleReqs, permits,
@@ -84,12 +84,13 @@ export const useLandDataAnalytics = (isTestRoute = false) => {
       ] = await Promise.all([
         // Parcels
         fetchAll('cadastral_parcels',
-          'id, parcel_number, parcel_type, province, ville, commune, quartier, avenue, territoire, collectivite, groupement, village, property_title_type, current_owner_legal_status, declared_usage, construction_type, construction_nature, construction_year, area_sqm, gps_coordinates, lease_type, property_category, construction_materials, standing, lease_years, is_subdivided, has_dispute, is_title_in_current_owner_name, is_occupied, occupant_count, hosting_capacity, floor_number, additional_constructions, title_issue_date, created_at',
+          'id, parcel_number, parcel_type, province, ville, commune, quartier, avenue, territoire, collectivite, groupement, village, property_title_type, current_owner_legal_status, current_owner_since, declared_usage, construction_type, construction_nature, construction_year, area_sqm, gps_coordinates, lease_type, property_category, construction_materials, standing, lease_years, is_subdivided, has_dispute, is_title_in_current_owner_name, is_occupied, occupant_count, hosting_capacity, floor_number, additional_constructions, title_issue_date, created_at, building_shapes, building_height, apartment_number, apartment_length, apartment_width, apartment_height, apartment_orientation, sound_environment, nearby_noise_sources, parcel_sides, road_sides, servitude_data, is_rented, rental_configuration, rental_units, rental_units_count, monthly_rent_usd, rental_start_date, would_sell_if_offered, resale_price_amount, resale_price_currency, resale_price_usd, has_recent_appraisal, appraisal_date, appraised_value_usd, market_listings, sale_listing',
           isTestRoute, q => q.is('deleted_at', null)),
         // Contributions
         fetchAll('cadastral_contributions',
-          'id, parcel_number, parcel_type, province, ville, commune, quartier, avenue, territoire, collectivite, groupement, village, property_title_type, current_owner_legal_status, current_owners_details, declared_usage, construction_type, construction_nature, construction_year, contribution_type, area_sqm, is_suspicious, fraud_score, fraud_reason, appeal_submitted, appeal_status, lease_type, property_category, construction_materials, standing, status, reviewed_at, created_at, building_permits, building_shapes, sound_environment, nearby_noise_sources, is_occupied, occupant_count, hosting_capacity, lease_years, floor_number, apartment_number, additional_constructions, has_dispute, is_title_in_current_owner_name, title_issue_date',
+          'id, parcel_number, parcel_type, province, ville, commune, quartier, avenue, territoire, collectivite, groupement, village, property_title_type, current_owner_legal_status, current_owners_details, current_owner_since, declared_usage, construction_type, construction_nature, construction_year, contribution_type, area_sqm, is_suspicious, fraud_score, fraud_reason, appeal_submitted, appeal_status, lease_type, property_category, construction_materials, standing, status, reviewed_at, created_at, building_permits, building_shapes, building_height, sound_environment, nearby_noise_sources, is_occupied, occupant_count, hosting_capacity, lease_years, floor_number, apartment_number, apartment_length, apartment_width, apartment_height, apartment_orientation, additional_constructions, has_dispute, is_title_in_current_owner_name, title_issue_date, gps_coordinates, parcel_sides, road_sides, servitude_data, dispute_data, ownership_history, boundary_history, tax_history, mortgage_history, is_rented, rental_configuration, rental_units, rental_units_count, monthly_rent_usd, rental_start_date, would_sell_if_offered, resale_price_amount, resale_price_currency, resale_price_usd, has_recent_appraisal, appraisal_date, appraised_value_usd, market_listings, sale_listing',
           isTestRoute),
+
         // Title requests
         fetchAll('land_title_requests',
           'id, request_type, requester_type, requester_gender, owner_gender, nationality, section_type, province, ville, commune, quartier, avenue, territoire, collectivite, groupement, village, declared_usage, construction_type, construction_nature, construction_materials, standing, construction_year, floor_number, owner_legal_status, status, payment_status, total_amount_usd, area_sqm, deduced_title_type, estimated_processing_days, is_owner_same_as_requester, created_at, reviewed_at',

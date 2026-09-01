@@ -1,6 +1,6 @@
 import React, { useState, useEffect, memo, useMemo, Suspense } from 'react';
 import { useAppAppearance } from '@/hooks/useAppAppearance';
-import { FileText, Building, Search, ArrowRightLeft, Scissors, AlertTriangle, Loader2, Database, History, Award, Receipt, Landmark, FileCheck, DollarSign, ShieldAlert, Ruler, Hexagon, ShieldCheck } from 'lucide-react';
+import { FileText, Building, Search, ArrowRightLeft, Scissors, AlertTriangle, Loader2, Database, History, Award, Receipt, Landmark, FileCheck, DollarSign, ShieldAlert, Ruler, Hexagon, ShieldCheck, KeyRound } from 'lucide-react';
 import { useLandDataAnalytics, LandAnalyticsData } from '@/hooks/useLandDataAnalytics';
 import { ProvinceData } from '@/types/province';
 import { useAnalyticsTabsConfig, useTabChartsConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
@@ -26,6 +26,7 @@ const ServitudesBlock = React.lazy(() => import('./blocks/ServitudesBlock').then
 const BoundaryBlock = React.lazy(() => import('./blocks/BoundaryBlock').then(m => ({ default: m.BoundaryBlock })));
 const GeometryBlock = React.lazy(() => import('./blocks/GeometryBlock').then(m => ({ default: m.GeometryBlock })));
 const ConsistencyBlock = React.lazy(() => import('./blocks/ConsistencyBlock').then(m => ({ default: m.ConsistencyBlock })));
+const RentalMarketBlock = React.lazy(() => import('./blocks/RentalMarketBlock').then(m => ({ default: m.RentalMarketBlock })));
 
 const BlockFallback = () => (
   <div className="flex items-center justify-center p-8">
@@ -52,6 +53,7 @@ const ICON_MAP: Record<string, React.ComponentType<any>> = {
   'boundary': Ruler,
   'geometry': Hexagon,
   'consistency': ShieldCheck,
+  'rental-market': KeyRound,
 };
 
 const BLOCK_MAP: Record<string, React.ComponentType<{ data: any }>> = {
@@ -72,6 +74,7 @@ const BLOCK_MAP: Record<string, React.ComponentType<{ data: any }>> = {
   'boundary': BoundaryBlock,
   'geometry': GeometryBlock,
   'consistency': ConsistencyBlock,
+  'rental-market': RentalMarketBlock,
 };
 
 interface ProvinceDataVisualizationProps {
