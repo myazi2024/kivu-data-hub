@@ -1,14 +1,14 @@
 import React, { useMemo, memo } from 'react';
 import { AnalyticsFilters } from '../filters/AnalyticsFilters';
 import { LandAnalyticsData } from '@/hooks/useLandDataAnalytics';
-import { Home, Coins, TrendingUp, Tag, Building2, Calendar, Megaphone, Scale } from 'lucide-react';
+import { Home, Coins, TrendingUp, Tag, Building2, Calendar, Megaphone, Scale, MapPin, ArrowUpFromLine } from 'lucide-react';
 import { pct } from '@/utils/analyticsConstants';
 import { KpiGrid } from '../shared/KpiGrid';
 import { ChartCard, FilterLabelContext } from '../shared/ChartCard';
 import { BlockUnscopedRecordsProvider } from '../shared/BlockUnscopedRecordsContext';
 import { GeoCharts } from '../shared/GeoCharts';
 import { generateInsight } from '@/utils/chartInsights';
-import { trendByMonth } from '@/utils/analyticsHelpers';
+import { trendByMonth, averageBy, recordBuildingHeightM } from '@/utils/analyticsHelpers';
 import { useBlockFilter } from '@/hooks/useBlockFilter';
 
 interface Props { data: LandAnalyticsData; }
@@ -102,6 +102,29 @@ export const RentalMarketBlock: React.FC<Props> = memo(({ data }) => {
   }, [rented]);
 
   const rentDistribution = useMemo(() => bucketize(rentValues, RENT_BUCKETS), [rentValues]);
+
+  /** Total monthly rent declared for one record (global amount or sum of units) */
+  const recordRentUsd = (r: any): number | null => {
+    if (r?.is_rented !== true) return null;
+    const units = toArray(r.rental_units);
+    if (units.length > 0) {
+      const sum = units.reduce((acc: number, u: any) => {
+        const amount = Number(u?.monthly_rent_usd ?? u?.rent_usd ?? u?.monthly_rent ?? 0);
+        return acc + (amount > 0 ? amount : 0);
+      }, 0);
+      return sum > 0 ? sum : null;
+    }
+    const amount = Number(r.monthly_rent_usd || 0);
+    return amount > 0 ? amount : null;
+  };
+
+  const avgRentByCommune = useMemo(() => averageBy(rented, 'commune', recordRentUsd), [rented]);
+  const avgRentByQuartier = useMemo(() => averageBy(rented, 'quartier', recordRentUsd), [rented]);
+  const avgHeightByCommune = useMemo(() => averageBy(filtered, 'commune', recordBuildingHeightM), [filtered]);
+  const avgHeightByQuartier = useMemo(() => averageBy(filtered, 'quartier', recordBuildingHeightM), [filtered]);
+
+  const coverage = (rows: { count: number }[]) =>
+    `${rows.reduce((s, r) => s + r.count, 0)} bien(s) pris en compte.`;
 
   const rentByCategory = useMemo(() => {
     const sums = new Map<string, { total: number; n: number }>();
@@ -240,6 +263,14 @@ export const RentalMarketBlock: React.FC<Props> = memo(({ data }) => {
       insight={generateInsight(appraisedDistribution, 'bar-v', 'les valeurs expertisées')} /> },
     { key: 'listings', el: () => <ChartCard title={ct('listings', 'Annonces publiées')} icon={Megaphone} data={listingsData} type={ty('listings', 'bar-h')} colorIndex={11} hidden={listingsData.length === 0}
       insight={generateInsight(listingsData, 'bar-h', 'les annonces publiées')} /> },
+    { key: 'rent-by-commune', el: () => <ChartCard title={ct('rent-by-commune', 'Loyer moyen par commune')} icon={MapPin} data={avgRentByCommune} type={ty('rent-by-commune', 'bar-h')} colorIndex={4} labelWidth={110} hidden={avgRentByCommune.length === 0}
+      insight={`${generateInsight(avgRentByCommune, 'bar-h', 'le loyer mensuel moyen par commune (USD)')} ${coverage(avgRentByCommune)}`} /> },
+    { key: 'rent-by-quartier', el: () => <ChartCard title={ct('rent-by-quartier', 'Loyer moyen par quartier')} icon={MapPin} data={avgRentByQuartier} type={ty('rent-by-quartier', 'bar-h')} colorIndex={5} labelWidth={110} hidden={avgRentByQuartier.length === 0}
+      insight={`${generateInsight(avgRentByQuartier, 'bar-h', 'le loyer mensuel moyen par quartier (USD)')} ${coverage(avgRentByQuartier)}`} /> },
+    { key: 'height-by-commune', el: () => <ChartCard title={ct('height-by-commune', 'Hauteur moyenne par commune')} icon={ArrowUpFromLine} data={avgHeightByCommune} type={ty('height-by-commune', 'bar-h')} colorIndex={6} labelWidth={110} hidden={avgHeightByCommune.length === 0}
+      insight={`${generateInsight(avgHeightByCommune, 'bar-h', 'la hauteur moyenne des constructions par commune (m)')} ${coverage(avgHeightByCommune)}`} /> },
+    { key: 'height-by-quartier', el: () => <ChartCard title={ct('height-by-quartier', 'Hauteur moyenne par quartier')} icon={ArrowUpFromLine} data={avgHeightByQuartier} type={ty('height-by-quartier', 'bar-h')} colorIndex={7} labelWidth={110} hidden={avgHeightByQuartier.length === 0}
+      insight={`${generateInsight(avgHeightByQuartier, 'bar-h', 'la hauteur moyenne des constructions par quartier (m)')} ${coverage(avgHeightByQuartier)}`} /> },
     { key: 'geo', el: () => <GeoCharts records={rented} /> },
     { key: 'evolution', el: () => <ChartCard title={ct('evolution', 'Évolution des déclarations marchandes')} icon={TrendingUp} data={trend} type={ty('evolution', 'area')} colorIndex={0} colSpan={2} hidden={trend.length === 0}
       insight={generateInsight(trend, 'area', 'les déclarations locatives et de vente')} /> },
