@@ -1342,6 +1342,20 @@ export const ParcelMapPreview = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isMapReady, buildingShapesSignature, buildingVertices, isDrawingBuilding, isDrawingMode, isGroupDragMode, constructionLabels]);
 
+  // Surbrillance de la construction survolée dans la liste sous la carte
+  useEffect(() => {
+    buildingPolygonsRef.current.forEach((poly, id) => {
+      try {
+        poly.setStyle(
+          id === hoveredBuildingId
+            ? { color: '#facc15', fillColor: '#facc15', fillOpacity: 0.45, weight: 3 }
+            : { color: '#dc2626', fillColor: '#dc2626', fillOpacity: 0.3, weight: 2 },
+        );
+      } catch {}
+    });
+  }, [hoveredBuildingId, buildingShapesSignature]);
+
+
   // Pendant le tracé d'une construction : forcer l'activation du drag/zoom de la carte
   // après chaque redraw, et désactiver explicitement le drag des marqueurs de bornes
   // pour qu'ils n'interceptent pas le mousedown du pan.
