@@ -402,6 +402,35 @@ export const ANALYTICS_TABS_REGISTRY: Record<string, { label: string; charts: Ch
       { tab_key: 'consistency', item_key: 'kpi-ownership-declared', item_type: 'kpi', is_visible: true, display_order: 6, custom_title: 'Avec historique propriété' },
     ],
   },
+  'rental-market': {
+    label: 'Location & Valeur',
+    charts: [
+      { tab_key: 'rental-market', item_key: 'rental-status', item_type: 'chart', is_visible: true, display_order: 0, custom_title: 'Mise en location', chart_type: 'pie' },
+      { tab_key: 'rental-market', item_key: 'rental-mode', item_type: 'chart', is_visible: true, display_order: 1, custom_title: 'Mode locatif', chart_type: 'donut' },
+      { tab_key: 'rental-market', item_key: 'rent-distribution', item_type: 'chart', is_visible: true, display_order: 2, custom_title: 'Tranches de loyer mensuel', chart_type: 'bar-v' },
+      { tab_key: 'rental-market', item_key: 'rent-by-category', item_type: 'chart', is_visible: true, display_order: 3, custom_title: 'Loyer moyen par catégorie', chart_type: 'bar-h' },
+      { tab_key: 'rental-market', item_key: 'rental-seniority', item_type: 'chart', is_visible: true, display_order: 4, custom_title: 'Ancienneté de mise en location', chart_type: 'bar-v' },
+      { tab_key: 'rental-market', item_key: 'sell-intent', item_type: 'chart', is_visible: true, display_order: 5, custom_title: 'Disposition à vendre', chart_type: 'pie' },
+      { tab_key: 'rental-market', item_key: 'resale-distribution', item_type: 'chart', is_visible: true, display_order: 6, custom_title: 'Tranches de prix de revente', chart_type: 'bar-v' },
+      { tab_key: 'rental-market', item_key: 'currency', item_type: 'chart', is_visible: true, display_order: 7, custom_title: 'Devise déclarée', chart_type: 'donut' },
+      { tab_key: 'rental-market', item_key: 'appraisal', item_type: 'chart', is_visible: true, display_order: 8, custom_title: 'Expertise récente', chart_type: 'pie' },
+      { tab_key: 'rental-market', item_key: 'appraised-value', item_type: 'chart', is_visible: true, display_order: 9, custom_title: 'Tranches de valeur expertisée', chart_type: 'bar-v' },
+      { tab_key: 'rental-market', item_key: 'listings', item_type: 'chart', is_visible: true, display_order: 10, custom_title: 'Annonces publiées', chart_type: 'bar-h' },
+      { tab_key: 'rental-market', item_key: 'geo', item_type: 'chart', is_visible: true, display_order: 11, custom_title: 'Géographie' },
+      { tab_key: 'rental-market', item_key: 'evolution', item_type: 'chart', is_visible: true, display_order: 12, custom_title: 'Évolution des déclarations marchandes', chart_type: 'area', col_span: 2 },
+    ],
+    kpis: [
+      { tab_key: 'rental-market', item_key: 'kpi-total', item_type: 'kpi', is_visible: true, display_order: 0, custom_title: 'Biens analysés' },
+      { tab_key: 'rental-market', item_key: 'kpi-rented', item_type: 'kpi', is_visible: true, display_order: 1, custom_title: 'En location' },
+      { tab_key: 'rental-market', item_key: 'kpi-rental-rate', item_type: 'kpi', is_visible: true, display_order: 2, custom_title: 'Taux de mise en location' },
+      { tab_key: 'rental-market', item_key: 'kpi-avg-rent', item_type: 'kpi', is_visible: true, display_order: 3, custom_title: 'Loyer moyen' },
+      { tab_key: 'rental-market', item_key: 'kpi-units', item_type: 'kpi', is_visible: true, display_order: 4, custom_title: 'Locaux déclarés' },
+      { tab_key: 'rental-market', item_key: 'kpi-sellers', item_type: 'kpi', is_visible: true, display_order: 5, custom_title: 'Disposés à vendre' },
+      { tab_key: 'rental-market', item_key: 'kpi-avg-resale', item_type: 'kpi', is_visible: true, display_order: 6, custom_title: 'Prix de revente moyen' },
+      { tab_key: 'rental-market', item_key: 'kpi-appraised', item_type: 'kpi', is_visible: true, display_order: 7, custom_title: 'Expertises récentes' },
+    ],
+  },
+
   '_global': {
     label: 'Global',
     charts: [
