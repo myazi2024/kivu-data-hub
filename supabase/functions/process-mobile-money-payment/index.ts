@@ -355,6 +355,7 @@ Deno.serve(async (req) => {
         await createPublicationPaymentRecord(`TEST-${Date.now()}`);
         await syncExpertisePaymentState('completed', transaction.id);
         await syncMutationPaymentState(transaction.id);
+        await syncMortgageCancellationState('completed', transaction.id);
       }, 3000);
 
       return new Response(
