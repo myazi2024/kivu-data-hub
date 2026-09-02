@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.prevent_client_expertise_payment_status() FROM anon, authenticated;
