@@ -233,7 +233,6 @@ export const useMutationRequest = () => {
     fetchFees,
     fetchUserRequests,
     createMutationRequest,
-    updatePaymentStatus,
     cancelMutationRequest,
     checkExistingPendingRequest
   };

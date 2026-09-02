@@ -82,7 +82,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
   
   const isMobile = useIsMobile();
   const { user, profile } = useAuth();
-  const { loading, fees, createMutationRequest, updatePaymentStatus, checkExistingPendingRequest } = useMutationRequest();
+  const { loading, fees, createMutationRequest, checkExistingPendingRequest } = useMutationRequest();
   const { availableMethods } = usePaymentConfig();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
@@ -145,70 +145,40 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
 
   const mutationTypeDetails = useMemo(() => MUTATION_TYPES.find(t => t.value === mutationType), [mutationType]);
 
-  // Récupérer automatiquement les données CCC
+  // Les dates cadastrales passent par une RPC sécurisée : la table source contient des données protégées.
   useEffect(() => {
-    const fetchParcelDates = async () => {
-      const hasTitleDate = !!parcelData?.title_issue_date;
-      const hasAcquisitionDate = !!parcelData?.owner_acquisition_date;
+    if (!open || !parcelNumber) return;
 
-      if (hasTitleDate) {
-        setTitleIssueDateFromCCC(parcelData!.title_issue_date!);
-        calculateTitleAgeFromDate(parcelData!.title_issue_date!);
+    let cancelled = false;
+    const applyPrefill = (titleDate?: string | null, acquisitionDate?: string | null) => {
+      if (cancelled) return;
+      if (titleDate) {
+        setTitleIssueDateFromCCC(titleDate);
+        calculateTitleAgeFromDate(titleDate);
       }
-      if (hasAcquisitionDate) {
-        setOwnerAcquisitionDate(parcelData!.owner_acquisition_date!);
+      if (acquisitionDate) {
+        setOwnerAcquisitionDate(acquisitionDate);
         setOwnerAcquisitionDateAutoDetected(true);
-      }
-
-      if (hasTitleDate && hasAcquisitionDate) return;
-
-      try {
-        const { data: contribution } = await supabase
-          .from('cadastral_contributions')
-          .select('title_issue_date, current_owner_since')
-          .eq('parcel_number', parcelNumber)
-          .eq('status', 'approved')
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .single();
-
-        if (!hasTitleDate && contribution?.title_issue_date) {
-          setTitleIssueDateFromCCC(contribution.title_issue_date);
-          calculateTitleAgeFromDate(contribution.title_issue_date);
-        }
-        if (!hasAcquisitionDate && contribution?.current_owner_since) {
-          setOwnerAcquisitionDate(contribution.current_owner_since);
-          setOwnerAcquisitionDateAutoDetected(true);
-        }
-
-        const needTitle = !hasTitleDate && !contribution?.title_issue_date;
-        const needAcquisition = !hasAcquisitionDate && !contribution?.current_owner_since;
-
-        if (needTitle || needAcquisition) {
-          const { data: parcel } = await supabase
-            .from('cadastral_parcels')
-            .select('title_issue_date, current_owner_since')
-            .eq('parcel_number', parcelNumber)
-            .limit(1)
-            .single();
-
-          if (needTitle && parcel?.title_issue_date) {
-            setTitleIssueDateFromCCC(parcel.title_issue_date);
-            calculateTitleAgeFromDate(parcel.title_issue_date);
-          }
-          if (needAcquisition && parcel?.current_owner_since) {
-            setOwnerAcquisitionDate(parcel.current_owner_since);
-            setOwnerAcquisitionDateAutoDetected(true);
-          }
-        }
-      } catch (error) {
-        console.log('Aucune donnée de date trouvée dans le CCC');
       }
     };
 
-    if (open && parcelNumber) {
-      fetchParcelDates();
-    }
+    const fetchParcelDates = async () => {
+      const { data, error } = await (supabase as any).rpc('get_parcel_mutation_prefill', {
+        p_parcel_number: parcelNumber,
+      });
+      if (error) {
+        console.error('get_parcel_mutation_prefill error:', error);
+        applyPrefill(parcelData?.title_issue_date, parcelData?.owner_acquisition_date);
+        return;
+      }
+      applyPrefill(
+        parcelData?.title_issue_date || data?.title_issue_date,
+        parcelData?.owner_acquisition_date || data?.current_owner_since,
+      );
+    };
+
+    void fetchParcelDates();
+    return () => { cancelled = true; };
   }, [open, parcelNumber, parcelData?.title_issue_date, parcelData?.owner_acquisition_date]);
 
   const calculateTitleAgeFromDate = (dateString: string) => {
@@ -577,15 +547,25 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
         if (paymentError) throw paymentError;
 
         const txId = paymentResult?.transaction_id;
-        if (txId) {
-          const result = await pollTransactionStatus(txId);
-          if (result === 'failed') throw new Error('Le paiement a échoué');
-          if (result === 'timeout') throw new Error('Délai de paiement dépassé. Vérifiez votre transaction.');
+        if (!txId) throw new Error('Transaction de paiement introuvable');
+
+        const result = await pollTransactionStatus(txId);
+        if (result === 'failed') throw new Error('Le paiement a échoué');
+        if (result === 'timeout') throw new Error('Délai de paiement dépassé. Vérifiez votre transaction.');
+        if (result === 'aborted') return;
+
+        const { data: paidRequest, error: statusError } = await supabase
+          .from('mutation_requests')
+          .select('payment_status')
+          .eq('id', createdRequest.id)
+          .single();
+        if (statusError) throw statusError;
+        if (paidRequest?.payment_status !== 'paid') {
+          throw new Error('Paiement confirmé, mais la synchronisation serveur est encore en cours. Réessayez dans quelques secondes.');
         }
 
-        const success = await updatePaymentStatus(createdRequest.id, 'paid', txId || 'TXN-' + Date.now());
-        if (success) { setStep('confirmation'); toast.success('Paiement effectué avec succès'); }
-        else { toast.error('Erreur lors de la mise à jour du paiement'); }
+        setStep('confirmation');
+        toast.success('Paiement effectué avec succès');
       } else {
         if (!availableMethods.hasBankCard) throw new Error('Le paiement par carte bancaire est indisponible actuellement.');
         const { data: stripeSession, error: stripeError } = await supabase.functions.invoke('create-payment', {
