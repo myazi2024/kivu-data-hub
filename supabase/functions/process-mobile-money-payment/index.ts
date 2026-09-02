@@ -425,6 +425,7 @@ Deno.serve(async (req) => {
         .eq('id', transaction.id);
 
       await syncExpertisePaymentState('failed', transaction.id, apiError.message);
+      await syncMortgageCancellationState('failed', transaction.id);
 
       throw apiError;
     }
