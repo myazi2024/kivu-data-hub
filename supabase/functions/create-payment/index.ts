@@ -278,6 +278,7 @@ Deno.serve(async (req) => {
         .filter((id: unknown): id is string => typeof id === 'string');
       const feeSchedule = await loadMortgageCancellationFees(supabase);
       totalAmount = Math.round(computeMortgageCancellationDue(feeSchedule, selectedFeeIds) * 100);
+      if (totalAmount <= 0) throw new Error('Le barème de radiation est invalide');
 
       lineItems = [{
         price_data: {

@@ -225,8 +225,14 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
     setSelectedFees(prev => prev.includes(feeId) ? prev.filter(id => id !== feeId) : [...prev, feeId]);
   };
 
-  const selectedFeesDetails = useMemo(() => fees.filter(f => selectedFees.includes(f.id)), [selectedFees, fees]);
-  const totalAmount = useMemo(() => selectedFeesDetails.reduce((sum, fee) => sum + fee.amount_usd, 0), [selectedFeesDetails]);
+  const selectedFeesDetails = useMemo(
+    () => fees.filter(fee => fee.is_mandatory || selectedFees.includes(fee.id)),
+    [selectedFees, fees],
+  );
+  const totalAmount = useMemo(
+    () => selectedFeesDetails.reduce((sum, fee) => sum + Number(fee.amount_usd || 0), 0),
+    [selectedFeesDetails],
+  );
 
   const validateForm = (): boolean => {
     if (!formData.mortgageReferenceNumber.trim()) { toast.error("Veuillez indiquer le numéro de référence"); return false; }
