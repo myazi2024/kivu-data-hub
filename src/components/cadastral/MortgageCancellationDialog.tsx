@@ -259,25 +259,25 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
   };
 
   const uploadDocuments = async (): Promise<string[]> => {
-    const urls: string[] = [];
+    const paths: string[] = [];
     const failedFiles: string[] = [];
     for (const file of formData.supportingDocuments) {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `cancellation_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
-      const filePath = `mortgage-cancellation/${user?.id}/${fileName}`;
+      const fileExt = file.name.split('.').pop()?.toLowerCase() || 'bin';
+      const fileName = `cancellation_${crypto.randomUUID()}.${fileExt}`;
+      const filePath = `mortgage-cancellation/${user!.id}/${fileName}`;
       const { error } = await supabase.storage.from('cadastral-documents').upload(filePath, file);
       if (error) {
         console.error(`Failed to upload ${file.name}:`, error);
         failedFiles.push(file.name);
       } else {
-        const { data } = supabase.storage.from('cadastral-documents').getPublicUrl(filePath);
-        urls.push(data.publicUrl);
+        // Keep the private Storage path. Admin/user screens resolve it with a signed URL.
+        paths.push(filePath);
       }
     }
-    if (failedFiles.length > 0 && urls.length > 0) {
+    if (failedFiles.length > 0 && paths.length > 0) {
       toast.warning(`${failedFiles.length} fichier(s) n'ont pas pu être téléversés: ${failedFiles.join(', ')}`);
     }
-    return urls;
+    return paths;
   };
 
   // Fix #2: Include 'returned' status in check to prevent duplicate submissions
@@ -296,7 +296,12 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
     }) ?? false;
   };
 
-  const processPayment = async (): Promise<{ success: boolean; transactionId?: string }> => {
+  /**
+   * Le paiement est toujours rattaché à une demande déjà enregistrée (contributionId),
+   * afin qu'aucun paiement ne puisse rester orphelin et que le serveur puisse
+   * recalculer lui-même le montant dû.
+   */
+  const processPayment = async (contributionId: string): Promise<{ success: boolean; transactionId?: string }> => {
     setProcessingPayment(true);
     try {
       if (!paymentProvider) { toast.error('Veuillez sélectionner un opérateur Mobile Money'); return { success: false }; }
@@ -305,7 +310,13 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
       if (!PHONE_REGEX_DRC.test(cleanPhone)) { toast.error('Numéro de téléphone invalide.'); return { success: false }; }
       // Fix #14: Better error handling for Edge Function errors
       const { data, error } = await supabase.functions.invoke('process-mobile-money-payment', {
-        body: { payment_provider: paymentProvider, phone_number: cleanPhone, amount_usd: totalAmount, payment_type: 'mortgage_cancellation' }
+        body: {
+          payment_provider: paymentProvider,
+          phone_number: cleanPhone,
+          amount_usd: totalAmount,
+          payment_type: 'mortgage_cancellation',
+          invoice_id: contributionId,
+        }
       });
       if (error) {
         const errMsg = error.message?.includes('404') || error.message?.includes('not found')
@@ -333,62 +344,76 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
     if (hasPending) { toast.error('Une demande de radiation est déjà en cours pour cette hypothèque.'); isSubmittingRef.current = false; return; }
     setLoading(true);
     try {
-      const documentUrls = await uploadDocuments();
-      if (documentUrls.length === 0 && formData.supportingDocuments.length > 0) { toast.error('Échec du téléversement des documents.'); isSubmittingRef.current = false; setLoading(false); return; }
-      setLoading(false);
-      const paymentResult = await processPayment();
-      if (!paymentResult.success) { isSubmittingRef.current = false; return; }
-      setLoading(true);
+      const documentPaths = await uploadDocuments();
+      if (documentPaths.length === 0 && formData.supportingDocuments.length > 0) {
+        toast.error('Échec du téléversement des documents.');
+        isSubmittingRef.current = false;
+        setLoading(false);
+        return;
+      }
 
       const reasonLabel = CANCELLATION_REASONS.find(r => r.value === formData.reason)?.label || formData.reason;
 
-      // Fix #3: Separate try/catch for DB insert to handle payment rollback
+      // 1) La demande est enregistrée AVANT le paiement (statut « en attente de paiement »).
+      let contributionId: string;
       try {
-        const { error } = await supabase.from('cadastral_contributions').insert({
-          parcel_number: parcelNumber,
-          original_parcel_id: parcelId || null,
-          user_id: user.id,
-          contribution_type: 'mortgage_cancellation',
-          status: 'pending',
-          change_justification: formData.comments || null,
-          mortgage_history: [{
-            type: 'cancellation_request',
-            request_reference_number: requestReferenceNumber,
-            mortgage_reference_number: formData.mortgageReferenceNumber.toUpperCase(),
-            mortgage_data: mortgageData,
-            parcel_data: parcelData,
-            cancellation_reason: formData.reason,
-            cancellation_reason_label: reasonLabel,
-            cancellation_date: formData.cancellationDate,
-            settlement_amount: formData.settlementAmount ? parseFloat(formData.settlementAmount) : null,
-            requester_name: formData.requesterName,
-            requester_phone: formData.requesterPhone || null,
-            requester_email: formData.requesterEmail || null,
-            requester_id_number: formData.requesterIdNumber || null,
-            requester_quality: formData.requesterQuality,
-            creditor_accord: formData.creditorAccord,
-            supporting_documents: documentUrls,
-            fees_paid: selectedFeesDetails,
-            total_amount_paid: totalAmount,
-            payment_method: 'mobile_money',
-            payment_provider: paymentProvider,
-            payment_transaction_id: paymentResult.transactionId || null,
-            submitted_at: new Date().toISOString()
-          }] as any
-        });
-        if (error) throw error;
+        const { data: created, error } = await supabase
+          .from('cadastral_contributions')
+          .insert({
+            parcel_number: parcelNumber,
+            original_parcel_id: parcelId || null,
+            user_id: user.id,
+            contribution_type: 'mortgage_cancellation',
+            status: 'awaiting_payment',
+            payment_status: 'pending',
+            change_justification: formData.comments || null,
+            mortgage_history: [{
+              type: 'cancellation_request',
+              request_reference_number: requestReferenceNumber,
+              mortgage_reference_number: formData.mortgageReferenceNumber.toUpperCase(),
+              mortgage_data: mortgageData,
+              parcel_data: parcelData,
+              cancellation_reason: formData.reason,
+              cancellation_reason_label: reasonLabel,
+              cancellation_date: formData.cancellationDate,
+              settlement_amount: formData.settlementAmount ? parseFloat(formData.settlementAmount) : null,
+              requester_name: formData.requesterName,
+              requester_phone: formData.requesterPhone || null,
+              requester_email: formData.requesterEmail || null,
+              requester_id_number: formData.requesterIdNumber || null,
+              requester_quality: formData.requesterQuality,
+              creditor_accord: formData.creditorAccord,
+              supporting_documents: documentPaths,
+              fees_selected: selectedFeesDetails,
+              total_amount_due: totalAmount,
+              payment_method: 'mobile_money',
+              payment_provider: paymentProvider,
+              submitted_at: new Date().toISOString()
+            }] as any
+          })
+          .select('id')
+          .single();
+        if (error || !created) throw error;
+        contributionId = created.id;
       } catch (insertErr) {
-        console.error('DB insert failed after payment:', insertErr);
-        toast.error(
-          `Erreur de sauvegarde. Votre paiement (ID: ${paymentResult.transactionId || 'N/A'}) est confirmé. Contactez le support avec cette référence.`,
-          { duration: 15000 }
-        );
+        console.error('Cancellation request insert failed:', insertErr);
+        toast.error("Impossible d'enregistrer la demande. Aucun paiement n'a été effectué.");
         setLoading(false);
         isSubmittingRef.current = false;
         return;
       }
 
-      // Post-insert actions (non-blocking)
+      // 2) Paiement rattaché à la demande. Le serveur valide le montant et confirme le statut.
+      setLoading(false);
+      const paymentResult = await processPayment(contributionId);
+      if (!paymentResult.success) {
+        toast.info('Votre demande est conservée en attente de paiement. Vous pouvez réessayer le paiement depuis votre espace.');
+        isSubmittingRef.current = false;
+        return;
+      }
+      setLoading(true);
+
+      // Post-payment actions (non-blocking)
       try {
         await supabase.from('notifications').insert({
           user_id: user.id,
@@ -403,7 +428,7 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
         await supabase.from('audit_logs').insert({
           action: 'mortgage_cancellation_submitted',
           user_id: user.id,
-          record_id: null,
+          record_id: contributionId,
           table_name: 'cadastral_contributions',
           new_values: { request_reference: requestReferenceNumber, parcel_number: parcelNumber } as any,
         });
