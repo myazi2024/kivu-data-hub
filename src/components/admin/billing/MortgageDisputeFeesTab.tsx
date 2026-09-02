@@ -152,7 +152,7 @@ export const MortgageDisputeFeesTab = () => {
             <Label className="text-xs">Montant USD</Label>
             <Input type="number" min="0" step="0.01" value={dispute.lifting_fee_usd} onChange={(event) => setDispute({ lifting_fee_usd: Number(event.target.value) || 0 })} />
           </div>
-          <Button size="sm" onClick={() => void save('dispute_lifting_fee', dispute, origDispute)} disabled={loading}>
+          <Button size="sm" onClick={() => void save('dispute_lifting_fee', asJson(dispute), asJson(origDispute))} disabled={loading}>
             <Save className="h-3.5 w-3.5 mr-1" /> Enregistrer
           </Button>
         </CardContent>
