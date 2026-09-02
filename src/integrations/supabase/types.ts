@@ -5545,6 +5545,7 @@ export type Database = {
           apartment_number: string | null
           assigned_at: string | null
           assigned_to: string | null
+          building_height_m: number | null
           building_permit_document_url: string | null
           building_permit_issue_date: string | null
           building_permit_issuing_service: string | null
@@ -5555,9 +5556,14 @@ export type Database = {
           certificate_expiry_date: string | null
           certificate_issue_date: string | null
           certificate_url: string | null
+          construction_materials_declared: string | null
+          construction_nature: string | null
           construction_quality: string | null
+          construction_type: string | null
           construction_year: number | null
           created_at: string
+          declared_usage: string | null
+          distance_from_road_m: number | null
           distance_to_hospital_km: number | null
           distance_to_main_road_m: number | null
           distance_to_market_km: number | null
@@ -5579,6 +5585,7 @@ export type Database = {
           has_ceiling: boolean | null
           has_cellar: boolean | null
           has_common_areas: boolean | null
+          has_direct_street_access: boolean | null
           has_double_glazing: boolean | null
           has_electric_fence: boolean | null
           has_electricity: boolean | null
@@ -5595,22 +5602,28 @@ export type Database = {
           has_solar_panels: boolean | null
           has_water_supply: boolean | null
           has_water_tank: boolean | null
+          hosting_capacity: number | null
           id: string
           internet_provider: string | null
           is_corner_plot: boolean | null
+          is_rented: boolean | null
           market_value_usd: number | null
           monthly_charges: number | null
+          monthly_rent_usd: number | null
           nearby_amenities: string | null
           nearby_noise_sources: string | null
           number_of_bathrooms: number | null
           number_of_bedrooms: number | null
           number_of_floors: number | null
           number_of_rooms: number | null
+          occupant_count: number | null
           parcel_id: string | null
           parcel_number: string
+          parcel_sound_environment: string | null
           parking_spaces: number | null
           payment_status: string | null
           processing_notes: string | null
+          property_category: string | null
           property_condition: string | null
           property_description: string | null
           reference_number: string
@@ -5638,6 +5651,7 @@ export type Database = {
           apartment_number?: string | null
           assigned_at?: string | null
           assigned_to?: string | null
+          building_height_m?: number | null
           building_permit_document_url?: string | null
           building_permit_issue_date?: string | null
           building_permit_issuing_service?: string | null
@@ -5648,9 +5662,14 @@ export type Database = {
           certificate_expiry_date?: string | null
           certificate_issue_date?: string | null
           certificate_url?: string | null
+          construction_materials_declared?: string | null
+          construction_nature?: string | null
           construction_quality?: string | null
+          construction_type?: string | null
           construction_year?: number | null
           created_at?: string
+          declared_usage?: string | null
+          distance_from_road_m?: number | null
           distance_to_hospital_km?: number | null
           distance_to_main_road_m?: number | null
           distance_to_market_km?: number | null
@@ -5672,6 +5691,7 @@ export type Database = {
           has_ceiling?: boolean | null
           has_cellar?: boolean | null
           has_common_areas?: boolean | null
+          has_direct_street_access?: boolean | null
           has_double_glazing?: boolean | null
           has_electric_fence?: boolean | null
           has_electricity?: boolean | null
@@ -5688,22 +5708,28 @@ export type Database = {
           has_solar_panels?: boolean | null
           has_water_supply?: boolean | null
           has_water_tank?: boolean | null
+          hosting_capacity?: number | null
           id?: string
           internet_provider?: string | null
           is_corner_plot?: boolean | null
+          is_rented?: boolean | null
           market_value_usd?: number | null
           monthly_charges?: number | null
+          monthly_rent_usd?: number | null
           nearby_amenities?: string | null
           nearby_noise_sources?: string | null
           number_of_bathrooms?: number | null
           number_of_bedrooms?: number | null
           number_of_floors?: number | null
           number_of_rooms?: number | null
+          occupant_count?: number | null
           parcel_id?: string | null
           parcel_number: string
+          parcel_sound_environment?: string | null
           parking_spaces?: number | null
           payment_status?: string | null
           processing_notes?: string | null
+          property_category?: string | null
           property_condition?: string | null
           property_description?: string | null
           reference_number: string
@@ -5731,6 +5757,7 @@ export type Database = {
           apartment_number?: string | null
           assigned_at?: string | null
           assigned_to?: string | null
+          building_height_m?: number | null
           building_permit_document_url?: string | null
           building_permit_issue_date?: string | null
           building_permit_issuing_service?: string | null
@@ -5741,9 +5768,14 @@ export type Database = {
           certificate_expiry_date?: string | null
           certificate_issue_date?: string | null
           certificate_url?: string | null
+          construction_materials_declared?: string | null
+          construction_nature?: string | null
           construction_quality?: string | null
+          construction_type?: string | null
           construction_year?: number | null
           created_at?: string
+          declared_usage?: string | null
+          distance_from_road_m?: number | null
           distance_to_hospital_km?: number | null
           distance_to_main_road_m?: number | null
           distance_to_market_km?: number | null
@@ -5765,6 +5797,7 @@ export type Database = {
           has_ceiling?: boolean | null
           has_cellar?: boolean | null
           has_common_areas?: boolean | null
+          has_direct_street_access?: boolean | null
           has_double_glazing?: boolean | null
           has_electric_fence?: boolean | null
           has_electricity?: boolean | null
@@ -5781,22 +5814,28 @@ export type Database = {
           has_solar_panels?: boolean | null
           has_water_supply?: boolean | null
           has_water_tank?: boolean | null
+          hosting_capacity?: number | null
           id?: string
           internet_provider?: string | null
           is_corner_plot?: boolean | null
+          is_rented?: boolean | null
           market_value_usd?: number | null
           monthly_charges?: number | null
+          monthly_rent_usd?: number | null
           nearby_amenities?: string | null
           nearby_noise_sources?: string | null
           number_of_bathrooms?: number | null
           number_of_bedrooms?: number | null
           number_of_floors?: number | null
           number_of_rooms?: number | null
+          occupant_count?: number | null
           parcel_id?: string | null
           parcel_number?: string
+          parcel_sound_environment?: string | null
           parking_spaces?: number | null
           payment_status?: string | null
           processing_notes?: string | null
+          property_category?: string | null
           property_condition?: string | null
           property_description?: string | null
           reference_number?: string
