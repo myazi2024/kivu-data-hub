@@ -8481,6 +8481,10 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_parcel_expertise_prefill: {
+        Args: { p_parcel_number: string }
+        Returns: Json
+      }
       get_parcel_timeline: {
         Args: { _parcel_number: string }
         Returns: {
