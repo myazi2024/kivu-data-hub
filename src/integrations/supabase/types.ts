@@ -1025,6 +1025,9 @@ export type Database = {
           parcel_number: string
           parcel_sides: Json | null
           parcel_type: string | null
+          payment_confirmed_at: string | null
+          payment_status: string
+          payment_transaction_id: string | null
           permit_request_data: Json | null
           previous_permit_number: string | null
           property_category: string | null
@@ -1131,6 +1134,9 @@ export type Database = {
           parcel_number: string
           parcel_sides?: Json | null
           parcel_type?: string | null
+          payment_confirmed_at?: string | null
+          payment_status?: string
+          payment_transaction_id?: string | null
           permit_request_data?: Json | null
           previous_permit_number?: string | null
           property_category?: string | null
@@ -1237,6 +1243,9 @@ export type Database = {
           parcel_number?: string
           parcel_sides?: Json | null
           parcel_type?: string | null
+          payment_confirmed_at?: string | null
+          payment_status?: string
+          payment_transaction_id?: string | null
           permit_request_data?: Json | null
           previous_permit_number?: string | null
           property_category?: string | null
@@ -1290,6 +1299,13 @@ export type Database = {
             columns: ["original_parcel_id"]
             isOneToOne: false
             referencedRelation: "cadastral_parcels_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cadastral_contributions_payment_transaction_id_fkey"
+            columns: ["payment_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "payment_transactions"
             referencedColumns: ["id"]
           },
         ]

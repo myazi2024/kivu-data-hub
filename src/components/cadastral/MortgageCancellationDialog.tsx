@@ -259,25 +259,25 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
   };
 
   const uploadDocuments = async (): Promise<string[]> => {
-    const urls: string[] = [];
+    const paths: string[] = [];
     const failedFiles: string[] = [];
     for (const file of formData.supportingDocuments) {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `cancellation_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
-      const filePath = `mortgage-cancellation/${user?.id}/${fileName}`;
+      const fileExt = file.name.split('.').pop()?.toLowerCase() || 'bin';
+      const fileName = `cancellation_${crypto.randomUUID()}.${fileExt}`;
+      const filePath = `mortgage-cancellation/${user!.id}/${fileName}`;
       const { error } = await supabase.storage.from('cadastral-documents').upload(filePath, file);
       if (error) {
         console.error(`Failed to upload ${file.name}:`, error);
         failedFiles.push(file.name);
       } else {
-        const { data } = supabase.storage.from('cadastral-documents').getPublicUrl(filePath);
-        urls.push(data.publicUrl);
+        // Keep the private Storage path. Admin/user screens resolve it with a signed URL.
+        paths.push(filePath);
       }
     }
-    if (failedFiles.length > 0 && urls.length > 0) {
+    if (failedFiles.length > 0 && paths.length > 0) {
       toast.warning(`${failedFiles.length} fichier(s) n'ont pas pu être téléversés: ${failedFiles.join(', ')}`);
     }
-    return urls;
+    return paths;
   };
 
   // Fix #2: Include 'returned' status in check to prevent duplicate submissions
