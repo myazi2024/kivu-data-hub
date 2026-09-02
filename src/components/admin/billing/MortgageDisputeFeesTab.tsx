@@ -136,7 +136,7 @@ export const MortgageDisputeFeesTab = () => {
             <span>Total affiché par défaut</span>
             <span>{total.toFixed(2)} USD</span>
           </div>
-          <Button size="sm" onClick={() => void save('mortgage_cancellation_fees', mortgage, origMortgage)} disabled={loading}>
+          <Button size="sm" onClick={() => void save('mortgage_cancellation_fees', asJson(mortgage), asJson(origMortgage))} disabled={loading}>
             <Save className="h-3.5 w-3.5 mr-1" /> Enregistrer
           </Button>
         </CardContent>
