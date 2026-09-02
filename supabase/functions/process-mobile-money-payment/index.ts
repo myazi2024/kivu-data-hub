@@ -401,6 +401,7 @@ Deno.serve(async (req) => {
         await createPublicationPaymentRecord(`REAL-${transaction.id}`);
         await syncExpertisePaymentState('completed', transaction.id);
         await syncMutationPaymentState(transaction.id);
+        await syncMortgageCancellationState('completed', transaction.id);
       }, 5000);
 
       return new Response(
