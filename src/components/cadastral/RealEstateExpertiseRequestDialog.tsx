@@ -34,6 +34,8 @@ import { resolveAvailableUsages } from '@/utils/constructionUsageResolver';
 import { BuildingPermitIssuingServiceSelect } from './BuildingPermitIssuingServiceSelect';
 import { cn } from '@/lib/utils';
 import BuildingTargetSelector, { type KnownBuilding } from './expertise/BuildingTargetSelector';
+import CadastralContextBlock from './expertise/CadastralContextBlock';
+import { useParcelExpertisePrefill } from '@/hooks/useParcelExpertisePrefill';
 
 interface RealEstateExpertiseRequestDialogProps {
   parcelNumber: string;
