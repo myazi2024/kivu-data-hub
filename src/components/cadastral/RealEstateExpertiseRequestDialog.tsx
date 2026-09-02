@@ -1238,7 +1238,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
           <TabsContent value="general" className="space-y-3 pr-2 mt-0">
             {/* Notification importance des données exactes */}
             {/* Pre-fill indicator */}
-            {parcelData && (parcelData.property_category || parcelData.construction_year || parcelData.construction_materials) && (
+            {knownBuildings.length > 0 && (
               <Alert className="border-primary/30 bg-primary/5 rounded-xl">
                 <Info className="h-4 w-4 text-primary" />
                 <AlertDescription className="text-xs text-muted-foreground">
@@ -1246,6 +1246,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                 </AlertDescription>
               </Alert>
             )}
+            <CadastralContextBlock prefill={cadastralPrefill} />
             {/* Notification importance des données exactes */}
             <Alert className="border-amber-500/30 bg-amber-500/10 rounded-xl">
               <Info className="h-4 w-4 text-amber-600" />
