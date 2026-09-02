@@ -293,10 +293,22 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
   const [selectedBuildingRef, setSelectedBuildingRef] = useState<string>('main');
   const [cadastreDiscrepancies, setCadastreDiscrepancies] = useState('');
 
+  // Contexte cadastral complet (RPC sécurisée) — la carte ne transmet que des colonnes publiques
+  const { data: cadastralPrefill } = useParcelExpertisePrefill(parcelNumber, open);
+
+  // Source unique : données RPC en priorité, sinon celles passées par la carte
+  const cadastreSource = useMemo<any>(
+    () => ({ ...(parcelData || {}), ...(cadastralPrefill || {}) }),
+    [parcelData, cadastralPrefill],
+  );
+
   // Aggregate buildings known to the cadastre for this parcel
   const knownBuildings = useMemo<KnownBuilding[]>(() => {
-    if (!parcelData) return [];
+    const parcelData = cadastreSource;
+    if (!parcelData || Object.keys(parcelData).length === 0) return [];
     const list: KnownBuilding[] = [];
+
+
 
     // Main construction (only if we actually have construction data)
     const hasMain = !!(parcelData.construction_type || parcelData.construction_materials || parcelData.construction_year);
