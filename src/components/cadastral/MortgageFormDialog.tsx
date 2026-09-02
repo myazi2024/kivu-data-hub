@@ -238,6 +238,20 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
     return (data?.length ?? 0) > 0;
   };
 
+  /** Une parcelle ne peut pas porter deux hypothèques actives simultanées. */
+  const checkExistingActiveMortgage = async (): Promise<boolean> => {
+    if (!parcelId) return false;
+    const { data, error } = await supabase
+      .from('cadastral_mortgages')
+      .select('id')
+      .eq('parcel_id', parcelId)
+      .in('mortgage_status', ['active', 'en_defaut', 'renegociee'])
+      .limit(1);
+    if (error) return false;
+    return (data?.length ?? 0) > 0;
+  };
+
+
   const handleSubmit = async () => {
     if (!user) {
       setShowAuthDialog(true);
