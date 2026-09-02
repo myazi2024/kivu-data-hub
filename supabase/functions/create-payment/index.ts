@@ -426,7 +426,7 @@ Deno.serve(async (req) => {
         invoice_id,
         payment_method: 'bank_card',
         provider: 'stripe',
-        amount_usd: amount_usd!,
+        amount_usd: totalAmount / 100,
         status: 'pending',
         transaction_reference: session.id,
         metadata: {

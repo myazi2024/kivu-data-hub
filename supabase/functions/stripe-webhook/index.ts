@@ -440,15 +440,30 @@ Deno.serve(async (req) => {
             .update({ status: "failed" })
             .eq("id", expertisePaymentId);
         } else if (metadata.invoice_id) {
-          await supabase
+          const { data: failedTransaction } = await supabase
             .from("payment_transactions")
             .update({ status: "failed", error_message: "Payment failed or expired" })
-            .eq("transaction_reference", session.id);
+            .eq("transaction_reference", session.id)
+            .select("id")
+            .maybeSingle();
 
-          await supabase
-            .from("cadastral_invoices")
-            .update({ status: "failed" })
-            .eq("id", metadata.invoice_id);
+          if (metadata.payment_type === "mortgage_cancellation") {
+            await supabase
+              .from("cadastral_contributions")
+              .update({
+                status: "awaiting_payment",
+                payment_status: "failed",
+                payment_transaction_id: failedTransaction?.id || null,
+                updated_at: new Date().toISOString(),
+              })
+              .eq("id", metadata.mortgage_cancellation_id || metadata.invoice_id)
+              .eq("user_id", metadata.user_id);
+          } else {
+            await supabase
+              .from("cadastral_invoices")
+              .update({ status: "failed" })
+              .eq("id", metadata.invoice_id);
+          }
         } else {
           await supabase
             .from("orders")
