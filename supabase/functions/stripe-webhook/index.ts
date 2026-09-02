@@ -419,16 +419,32 @@ Deno.serve(async (req) => {
 
       case "checkout.session.expired":
       case "payment_intent.payment_failed": {
-        const session = event.data.object as any;
-        const metadata = session.metadata || {};
+        const failedObject = event.data.object as any;
+        let metadata = failedObject.metadata || {};
+        let checkoutSessionId = failedObject.id as string;
+
+        // PaymentIntent events do not reliably carry Checkout Session metadata.
+        // Resolve the originating session so the stored transaction and request
+        // can be updated using the same reference created at checkout time.
+        if (event.type === "payment_intent.payment_failed") {
+          const sessions = await stripe.checkout.sessions.list({
+            payment_intent: failedObject.id,
+            limit: 1,
+          });
+          const checkoutSession = sessions.data[0];
+          if (checkoutSession) {
+            checkoutSessionId = checkoutSession.id;
+            metadata = checkoutSession.metadata || {};
+          }
+        }
 
         let expertisePaymentId = metadata.expertise_payment_id as string | undefined;
 
-        if (!expertisePaymentId && session?.id) {
+        if (!expertisePaymentId && checkoutSessionId) {
           const { data: paymentBySession } = await supabase
             .from("expertise_payments")
             .select("id")
-            .eq("transaction_id", session.id)
+            .eq("transaction_id", checkoutSessionId)
             .maybeSingle();
 
           expertisePaymentId = paymentBySession?.id;
@@ -443,12 +459,13 @@ Deno.serve(async (req) => {
           const { data: failedTransaction } = await supabase
             .from("payment_transactions")
             .update({ status: "failed", error_message: "Payment failed or expired" })
-            .eq("transaction_reference", session.id)
+            .eq("transaction_reference", checkoutSessionId)
             .select("id")
             .maybeSingle();
 
           if (metadata.payment_type === "mortgage_cancellation") {
-            await supabase
+            const requestId = metadata.mortgage_cancellation_id || metadata.invoice_id;
+            let mortgageQuery = supabase
               .from("cadastral_contributions")
               .update({
                 status: "awaiting_payment",
@@ -456,8 +473,9 @@ Deno.serve(async (req) => {
                 payment_transaction_id: failedTransaction?.id || null,
                 updated_at: new Date().toISOString(),
               })
-              .eq("id", metadata.mortgage_cancellation_id || metadata.invoice_id)
-              .eq("user_id", metadata.user_id);
+              .eq("id", requestId);
+            if (metadata.user_id) mortgageQuery = mortgageQuery.eq("user_id", metadata.user_id);
+            await mortgageQuery;
           } else {
             await supabase
               .from("cadastral_invoices")
@@ -468,7 +486,7 @@ Deno.serve(async (req) => {
           await supabase
             .from("orders")
             .update({ status: "failed" })
-            .eq("stripe_session_id", session.id);
+            .eq("stripe_session_id", checkoutSessionId);
         }
         break;
       }
