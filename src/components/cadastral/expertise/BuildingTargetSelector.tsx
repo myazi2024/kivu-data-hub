@@ -17,6 +17,9 @@ export interface KnownBuilding {
   surface_sqm?: number;
   floors?: string;
   property_category?: string;
+  standing?: string;
+  height_m?: number;
+
 }
 
 interface BuildingTargetSelectorProps {
