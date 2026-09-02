@@ -236,7 +236,7 @@ Deno.serve(async (req) => {
           }
         } else if (paymentType === "land_title_request" || paymentType === "permit_request" || paymentType === "mortgage_cancellation") {
           // Generic handler for cadastral service payment types
-          await supabase
+          const { data: paymentTransaction } = await supabase
             .from("payment_transactions")
             .update({
               status: "completed",
@@ -248,7 +248,9 @@ Deno.serve(async (req) => {
                 payment_type: paymentType,
               },
             })
-            .eq("transaction_reference", session.id);
+            .eq("transaction_reference", session.id)
+            .select('id, invoice_id')
+            .maybeSingle();
 
           // Update the corresponding request table
           if (paymentType === "land_title_request" && (metadata.land_title_request_id || metadata.invoice_id)) {
@@ -262,6 +264,21 @@ Deno.serve(async (req) => {
                 updated_at: new Date().toISOString(),
               })
               .eq("id", requestId);
+          }
+
+          if (paymentType === "mortgage_cancellation" && (metadata.mortgage_cancellation_id || metadata.invoice_id)) {
+            const requestId = metadata.mortgage_cancellation_id || metadata.invoice_id;
+            await supabase
+              .from("cadastral_contributions")
+              .update({
+                status: "pending",
+                payment_status: "paid",
+                payment_transaction_id: paymentTransaction?.id || null,
+                payment_confirmed_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+              })
+              .eq("id", requestId)
+              .eq("user_id", metadata.user_id);
           }
 
           if (metadata.user_id) {
@@ -402,16 +419,32 @@ Deno.serve(async (req) => {
 
       case "checkout.session.expired":
       case "payment_intent.payment_failed": {
-        const session = event.data.object as any;
-        const metadata = session.metadata || {};
+        const failedObject = event.data.object as any;
+        let metadata = failedObject.metadata || {};
+        let checkoutSessionId = failedObject.id as string;
+
+        // PaymentIntent events do not reliably carry Checkout Session metadata.
+        // Resolve the originating session so the stored transaction and request
+        // can be updated using the same reference created at checkout time.
+        if (event.type === "payment_intent.payment_failed") {
+          const sessions = await stripe.checkout.sessions.list({
+            payment_intent: failedObject.id,
+            limit: 1,
+          });
+          const checkoutSession = sessions.data[0];
+          if (checkoutSession) {
+            checkoutSessionId = checkoutSession.id;
+            metadata = checkoutSession.metadata || {};
+          }
+        }
 
         let expertisePaymentId = metadata.expertise_payment_id as string | undefined;
 
-        if (!expertisePaymentId && session?.id) {
+        if (!expertisePaymentId && checkoutSessionId) {
           const { data: paymentBySession } = await supabase
             .from("expertise_payments")
             .select("id")
-            .eq("transaction_id", session.id)
+            .eq("transaction_id", checkoutSessionId)
             .maybeSingle();
 
           expertisePaymentId = paymentBySession?.id;
@@ -423,20 +456,37 @@ Deno.serve(async (req) => {
             .update({ status: "failed" })
             .eq("id", expertisePaymentId);
         } else if (metadata.invoice_id) {
-          await supabase
+          const { data: failedTransaction } = await supabase
             .from("payment_transactions")
             .update({ status: "failed", error_message: "Payment failed or expired" })
-            .eq("transaction_reference", session.id);
+            .eq("transaction_reference", checkoutSessionId)
+            .select("id")
+            .maybeSingle();
 
-          await supabase
-            .from("cadastral_invoices")
-            .update({ status: "failed" })
-            .eq("id", metadata.invoice_id);
+          if (metadata.payment_type === "mortgage_cancellation") {
+            const requestId = metadata.mortgage_cancellation_id || metadata.invoice_id;
+            let mortgageQuery = supabase
+              .from("cadastral_contributions")
+              .update({
+                status: "awaiting_payment",
+                payment_status: "failed",
+                payment_transaction_id: failedTransaction?.id || null,
+                updated_at: new Date().toISOString(),
+              })
+              .eq("id", requestId);
+            if (metadata.user_id) mortgageQuery = mortgageQuery.eq("user_id", metadata.user_id);
+            await mortgageQuery;
+          } else {
+            await supabase
+              .from("cadastral_invoices")
+              .update({ status: "failed" })
+              .eq("id", metadata.invoice_id);
+          }
         } else {
           await supabase
             .from("orders")
             .update({ status: "failed" })
-            .eq("stripe_session_id", session.id);
+            .eq("stripe_session_id", checkoutSessionId);
         }
         break;
       }

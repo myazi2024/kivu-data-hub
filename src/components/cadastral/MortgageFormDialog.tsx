@@ -238,6 +238,20 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
     return (data?.length ?? 0) > 0;
   };
 
+  /** Une parcelle ne peut pas porter deux hypothèques actives simultanées. */
+  const checkExistingActiveMortgage = async (): Promise<boolean> => {
+    if (!parcelId) return false;
+    const { data, error } = await supabase
+      .from('cadastral_mortgages')
+      .select('id')
+      .eq('parcel_id', parcelId)
+      .in('mortgage_status', ['active', 'en_defaut', 'renegociee'])
+      .limit(1);
+    if (error) return false;
+    return (data?.length ?? 0) > 0;
+  };
+
+
   const handleSubmit = async () => {
     if (!user) {
       setShowAuthDialog(true);
@@ -257,6 +271,14 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
         return;
       }
 
+      const hasActiveMortgage = await checkExistingActiveMortgage();
+      if (hasActiveMortgage) {
+        toast.error('Cette parcelle porte déjà une hypothèque active. Procédez d\'abord à sa radiation.');
+        setLoading(false);
+        isSubmittingRef.current = false;
+        return;
+      }
+
       // Fix #8: Verify parcel actually exists in DB
       const { data: parcelExists, error: parcelError } = await supabase
         .from('cadastral_parcels')
@@ -271,11 +293,11 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
         return;
       }
 
-      // Upload du fichier si présent
+      // Upload du fichier si présent (chemin privé, lu ensuite via URL signée)
       let documentUrl: string | null = null;
       if (mortgageRecord.receiptFile) {
-        const fileExt = mortgageRecord.receiptFile.name.split('.').pop();
-        const fileName = `mortgage_${Date.now()}_${crypto.randomUUID()}.${fileExt}`;
+        const fileExt = mortgageRecord.receiptFile.name.split('.').pop()?.toLowerCase() || 'bin';
+        const fileName = `mortgage_${crypto.randomUUID()}.${fileExt}`;
         const filePath = `mortgage-documents/${user.id}/${fileName}`;
         
         const { error: uploadError } = await supabase.storage
@@ -287,8 +309,7 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
           throw uploadError;
         }
         
-        const { data } = supabase.storage.from('cadastral-documents').getPublicUrl(filePath);
-        documentUrl = data.publicUrl;
+        documentUrl = filePath;
       }
 
       // Generate a reference for the registration

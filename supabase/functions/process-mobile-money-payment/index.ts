@@ -1,5 +1,9 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { enforceRateLimit, rateLimitResponse } from "../_shared/rateLimit.ts";
+import {
+  computeMortgageCancellationDue,
+  loadMortgageCancellationFees,
+} from "../_shared/mortgageFees.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -70,6 +74,38 @@ Deno.serve(async (req) => {
       }
       if (Math.round(Number(mutationRequest.total_amount_usd) * 100) !== Math.round(Number(amount_usd) * 100)) {
         throw new Error('Le montant du paiement ne correspond pas à la demande.');
+      }
+    }
+
+    // Radiation d'hypothèque : le montant dû est recalculé côté serveur à partir
+    // du barème configuré, jamais accepté depuis le client.
+    if (payment_type === 'mortgage_cancellation') {
+      if (!invoice_id) throw new Error('Identifiant de la demande de radiation manquant.');
+      const { data: cancellationRequest, error: cancellationError } = await supabase
+        .from('cadastral_contributions')
+        .select('id, user_id, status, payment_status, contribution_type, mortgage_history')
+        .eq('id', invoice_id)
+        .eq('user_id', user.id)
+        .eq('contribution_type', 'mortgage_cancellation')
+        .single();
+
+      if (cancellationError || !cancellationRequest) throw new Error('Demande de radiation introuvable.');
+      if (cancellationRequest.status !== 'awaiting_payment' || cancellationRequest.payment_status === 'paid') {
+        throw new Error("Cette demande de radiation n'est plus payable.");
+      }
+
+      const history = Array.isArray(cancellationRequest.mortgage_history)
+        ? cancellationRequest.mortgage_history as any[]
+        : [];
+      const selectedFeeIds: string[] = (history[0]?.fees_selected || [])
+        .map((fee: any) => fee?.id)
+        .filter((id: unknown): id is string => typeof id === 'string');
+
+      const feeSchedule = await loadMortgageCancellationFees(supabase);
+      const dueAmount = computeMortgageCancellationDue(feeSchedule, selectedFeeIds);
+
+      if (Math.round(dueAmount * 100) !== Math.round(Number(amount_usd) * 100)) {
+        throw new Error('Le montant du paiement ne correspond pas au barème en vigueur.');
       }
     }
 
@@ -208,6 +244,44 @@ Deno.serve(async (req) => {
       if (error) throw error;
     };
 
+    /**
+     * Confirme (ou marque en échec) une demande de radiation.
+     * Seul le serveur peut faire évoluer ces statuts : un trigger bloque le client.
+     */
+    const syncMortgageCancellationState = async (
+      status: 'completed' | 'failed',
+      transactionId: string,
+    ) => {
+      if (payment_type !== 'mortgage_cancellation' || !invoice_id) return;
+
+      const update = status === 'completed'
+        ? {
+            status: 'pending',
+            payment_status: 'paid',
+            payment_transaction_id: transactionId,
+            payment_confirmed_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          }
+        : {
+            status: 'awaiting_payment',
+            payment_status: 'failed',
+            payment_transaction_id: transactionId,
+            updated_at: new Date().toISOString(),
+          };
+
+      const { error } = await supabase
+        .from('cadastral_contributions')
+        .update(update)
+        .eq('id', invoice_id)
+        .eq('user_id', user.id)
+        .eq('contribution_type', 'mortgage_cancellation')
+        .neq('payment_status', 'paid');
+
+      if (error) console.error('syncMortgageCancellationState error:', error);
+    };
+
+
+
     // Validate payment provider is enabled
 
     const { data: providerConfig, error: providerError } = await supabase
@@ -281,6 +355,7 @@ Deno.serve(async (req) => {
         await createPublicationPaymentRecord(`TEST-${Date.now()}`);
         await syncExpertisePaymentState('completed', transaction.id);
         await syncMutationPaymentState(transaction.id);
+        await syncMortgageCancellationState('completed', transaction.id);
       }, 3000);
 
       return new Response(
@@ -326,6 +401,7 @@ Deno.serve(async (req) => {
         await createPublicationPaymentRecord(`REAL-${transaction.id}`);
         await syncExpertisePaymentState('completed', transaction.id);
         await syncMutationPaymentState(transaction.id);
+        await syncMortgageCancellationState('completed', transaction.id);
       }, 5000);
 
       return new Response(
@@ -349,6 +425,7 @@ Deno.serve(async (req) => {
         .eq('id', transaction.id);
 
       await syncExpertisePaymentState('failed', transaction.id, apiError.message);
+      await syncMortgageCancellationState('failed', transaction.id);
 
       throw apiError;
     }
