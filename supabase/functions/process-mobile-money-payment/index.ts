@@ -73,6 +73,38 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Radiation d'hypothèque : le montant dû est recalculé côté serveur à partir
+    // du barème configuré, jamais accepté depuis le client.
+    if (payment_type === 'mortgage_cancellation') {
+      if (!invoice_id) throw new Error('Identifiant de la demande de radiation manquant.');
+      const { data: cancellationRequest, error: cancellationError } = await supabase
+        .from('cadastral_contributions')
+        .select('id, user_id, status, payment_status, contribution_type, mortgage_history')
+        .eq('id', invoice_id)
+        .eq('user_id', user.id)
+        .eq('contribution_type', 'mortgage_cancellation')
+        .single();
+
+      if (cancellationError || !cancellationRequest) throw new Error('Demande de radiation introuvable.');
+      if (cancellationRequest.status !== 'awaiting_payment' || cancellationRequest.payment_status === 'paid') {
+        throw new Error("Cette demande de radiation n'est plus payable.");
+      }
+
+      const history = Array.isArray(cancellationRequest.mortgage_history)
+        ? cancellationRequest.mortgage_history as any[]
+        : [];
+      const selectedFeeIds: string[] = (history[0]?.fees_selected || [])
+        .map((fee: any) => fee?.id)
+        .filter((id: unknown): id is string => typeof id === 'string');
+
+      const feeSchedule = await loadMortgageCancellationFees(supabase);
+      const dueAmount = computeMortgageCancellationDue(feeSchedule, selectedFeeIds);
+
+      if (Math.round(dueAmount * 100) !== Math.round(Number(amount_usd) * 100)) {
+        throw new Error('Le montant du paiement ne correspond pas au barème en vigueur.');
+      }
+    }
+
 
     // Fetch server-side exchange rate for the requested currency
     const requestedCurrency = clientCurrency || 'USD';
