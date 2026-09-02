@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { Json } from '@/integrations/supabase/types';
+
+const asJson = (value: unknown): Json => value as Json;
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
