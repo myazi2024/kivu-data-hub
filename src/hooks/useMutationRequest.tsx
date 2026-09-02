@@ -192,25 +192,11 @@ export const useMutationRequest = () => {
   const cancelMutationRequest = async (requestId: string): Promise<boolean> => {
     if (!user) return false;
     try {
-      const { error } = await supabase
-        .from('mutation_requests')
-        .update({
-          status: 'cancelled',
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', requestId)
-        .eq('user_id', user.id)
-        .in('status', ['pending']);
+      const { error } = await (supabase as any).rpc('cancel_mutation_request', {
+        p_request_id: requestId,
+      });
 
       if (error) throw error;
-
-      await supabase.from('notifications').insert({
-        user_id: user.id,
-        type: 'warning',
-        title: 'Demande de mutation annulée',
-        message: 'Votre demande de mutation a été annulée avec succès.',
-        action_url: '/user-dashboard?tab=mutations'
-      });
 
       toast({
         title: "Demande annulée",
@@ -223,7 +209,7 @@ export const useMutationRequest = () => {
       console.error('Error cancelling mutation request:', error);
       toast({
         title: "Erreur",
-        description: "Impossible d'annuler la demande",
+        description: error?.message || "Impossible d'annuler la demande",
         variant: "destructive"
       });
       return false;
