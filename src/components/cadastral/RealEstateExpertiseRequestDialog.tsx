@@ -366,6 +366,10 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
   }, [open, knownBuildings, cadastralPrefill]);
 
 
+  // Standing / hauteur issus du cadastre pour le bâtiment sélectionné
+  const [cadastreStanding, setCadastreStanding] = useState<string>('');
+  const [cadastreHeightM, setCadastreHeightM] = useState<number | null>(null);
+
   // Helper: apply a known building's data to the form fields
   const applyBuildingPrefill = useCallback((b: KnownBuilding | null) => {
     if (!b) {
@@ -378,6 +382,8 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
       setNumberOfFloors('');
       setTotalBuiltAreaSqm('');
       setDeclaredUsage('');
+      setCadastreStanding('');
+      setCadastreHeightM(null);
       return;
     }
     if (b.property_category) setPropertyCategory(b.property_category);
@@ -388,6 +394,8 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     if (b.floors) setNumberOfFloors(b.floors);
     if (b.surface_sqm && b.surface_sqm > 0) setTotalBuiltAreaSqm(b.surface_sqm.toString());
     if (b.usage) setDeclaredUsage(b.usage);
+    setCadastreStanding(b.standing || '');
+    setCadastreHeightM(typeof b.height_m === 'number' ? b.height_m : null);
   }, []);
 
   // Apply prefill whenever the selected building changes
@@ -400,6 +408,14 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     const b = knownBuildings.find((x) => x.ref === selectedBuildingRef);
     if (b) applyBuildingPrefill(b);
   }, [open, selectedBuildingRef, knownBuildings, applyBuildingPrefill]);
+
+  // Le standing dépend de la cascade (nature → standings) : on l'applique dès
+  // que la liste des standings disponibles contient la valeur cadastrale.
+  useEffect(() => {
+    if (!cadastreStanding || standing) return;
+    if (availableStandings.includes(cadastreStanding)) setStanding(cadastreStanding);
+  }, [cadastreStanding, availableStandings, standing]);
+
 
   // Set of fields that came from cadastre (locked unless user explicitly overrides)
   const lockedFromCadastre = useMemo<Set<string>>(() => {
