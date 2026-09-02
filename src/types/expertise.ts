@@ -97,6 +97,21 @@ export interface ExpertiseRequest {
   target_building_ref?: string;
   target_building_label?: string;
   cadastre_discrepancies?: string;
+
+  // Nomenclature cadastrale & indicateurs CCC
+  property_category?: string;
+  construction_type?: string;
+  construction_nature?: string;
+  construction_materials_declared?: string;
+  declared_usage?: string;
+  building_height_m?: number;
+  has_direct_street_access?: boolean;
+  distance_from_road_m?: number;
+  is_rented?: boolean;
+  monthly_rent_usd?: number;
+  hosting_capacity?: number;
+  occupant_count?: number;
+  parcel_sound_environment?: string;
 }
 
 export interface CreateExpertiseRequestData {
@@ -177,6 +192,21 @@ export interface CreateExpertiseRequestData {
   target_building_ref?: string;
   target_building_label?: string;
   cadastre_discrepancies?: string;
+
+  // Nomenclature cadastrale & indicateurs CCC
+  property_category?: string;
+  construction_type?: string;
+  construction_nature?: string;
+  construction_materials_declared?: string;
+  declared_usage?: string;
+  building_height_m?: number;
+  has_direct_street_access?: boolean;
+  distance_from_road_m?: number;
+  is_rented?: boolean;
+  monthly_rent_usd?: number;
+  hosting_capacity?: number;
+  occupant_count?: number;
+  parcel_sound_environment?: string;
 }
 
 export interface ExpertiseFee {

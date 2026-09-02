@@ -34,6 +34,8 @@ import { resolveAvailableUsages } from '@/utils/constructionUsageResolver';
 import { BuildingPermitIssuingServiceSelect } from './BuildingPermitIssuingServiceSelect';
 import { cn } from '@/lib/utils';
 import BuildingTargetSelector, { type KnownBuilding } from './expertise/BuildingTargetSelector';
+import CadastralContextBlock from './expertise/CadastralContextBlock';
+import { useParcelExpertisePrefill } from '@/hooks/useParcelExpertisePrefill';
 
 interface RealEstateExpertiseRequestDialogProps {
   parcelNumber: string;
@@ -324,11 +326,13 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
         surface_sqm: parcelData.area_sqm,
         floors: parcelData.floor_number,
         property_category: parcelData.property_category,
+        standing: parcelData.standing,
+        height_m: parcelData.building_height,
       });
     }
 
     const extras = Array.isArray(parcelData.additional_constructions) ? parcelData.additional_constructions : [];
-    extras.forEach((c, i) => {
+    extras.forEach((c: any, i: number) => {
       if (!c) return;
       const labelParts = [c.type || `Construction ${i + 1}`];
       if (c.surface_sqm) labelParts.push(`${c.surface_sqm} m²`);
@@ -342,19 +346,29 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
         usage: c.usage,
         surface_sqm: c.surface_sqm,
         property_category: parcelData.property_category,
+        standing: c.standing,
+        height_m: c.height_m ?? c.building_height,
       });
     });
 
     return list;
-  }, [parcelData]);
+  }, [cadastreSource]);
 
-  // Default selection on first open: first known building, or 'new' if none
+  // Default selection on first open: first known building, or 'new' if none.
+  // On attend que la RPC de contexte cadastral soit résolue pour ne pas basculer
+  // à tort sur « nouvelle construction ».
   const defaultRefDoneRef = useRef(false);
   useEffect(() => {
     if (!open || defaultRefDoneRef.current) return;
+    if (cadastralPrefill === undefined) return; // requête en cours
     defaultRefDoneRef.current = true;
     setSelectedBuildingRef(knownBuildings.length > 0 ? knownBuildings[0].ref : 'new');
-  }, [open, knownBuildings]);
+  }, [open, knownBuildings, cadastralPrefill]);
+
+
+  // Standing / hauteur issus du cadastre pour le bâtiment sélectionné
+  const [cadastreStanding, setCadastreStanding] = useState<string>('');
+  const [cadastreHeightM, setCadastreHeightM] = useState<number | null>(null);
 
   // Helper: apply a known building's data to the form fields
   const applyBuildingPrefill = useCallback((b: KnownBuilding | null) => {
@@ -368,6 +382,8 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
       setNumberOfFloors('');
       setTotalBuiltAreaSqm('');
       setDeclaredUsage('');
+      setCadastreStanding('');
+      setCadastreHeightM(null);
       return;
     }
     if (b.property_category) setPropertyCategory(b.property_category);
@@ -378,6 +394,8 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     if (b.floors) setNumberOfFloors(b.floors);
     if (b.surface_sqm && b.surface_sqm > 0) setTotalBuiltAreaSqm(b.surface_sqm.toString());
     if (b.usage) setDeclaredUsage(b.usage);
+    setCadastreStanding(b.standing || '');
+    setCadastreHeightM(typeof b.height_m === 'number' ? b.height_m : null);
   }, []);
 
   // Apply prefill whenever the selected building changes
@@ -390,6 +408,14 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     const b = knownBuildings.find((x) => x.ref === selectedBuildingRef);
     if (b) applyBuildingPrefill(b);
   }, [open, selectedBuildingRef, knownBuildings, applyBuildingPrefill]);
+
+  // Le standing dépend de la cascade (nature → standings) : on l'applique dès
+  // que la liste des standings disponibles contient la valeur cadastrale.
+  useEffect(() => {
+    if (!cadastreStanding || standing) return;
+    if (availableStandings.includes(cadastreStanding)) setStanding(cadastreStanding);
+  }, [cadastreStanding, availableStandings, standing]);
+
 
   // Set of fields that came from cadastre (locked unless user explicitly overrides)
   const lockedFromCadastre = useMemo<Set<string>>(() => {
@@ -849,6 +875,21 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
         ? 'Autre / nouvelle construction'
         : (knownBuildings.find((b) => b.ref === selectedBuildingRef)?.label || undefined),
       cadastre_discrepancies: cadastreDiscrepancies.trim() || undefined,
+      // Nomenclature cadastrale saisie (auparavant perdue à l'enregistrement)
+      property_category: propertyCategory || undefined,
+      construction_type: constructionType || undefined,
+      construction_nature: constructionNature || undefined,
+      construction_materials_declared: constructionMaterials || undefined,
+      declared_usage: declaredUsage || undefined,
+      has_direct_street_access: hasDirectStreetAccess,
+      distance_from_road_m: distanceFromRoad ? parseFloat(distanceFromRoad) : undefined,
+      // Indicateurs CCC transmis à l'expert
+      building_height_m: cadastreHeightM ?? undefined,
+      is_rented: cadastralPrefill?.is_rented ?? undefined,
+      monthly_rent_usd: cadastralPrefill?.monthly_rent_usd ?? undefined,
+      hosting_capacity: cadastralPrefill?.hosting_capacity ?? undefined,
+      occupant_count: cadastralPrefill?.occupant_count ?? undefined,
+      parcel_sound_environment: cadastralPrefill?.sound_environment ?? undefined,
     });
 
     setStep('payment');
@@ -922,10 +963,9 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
           paymentRecordId: paymentRecord.id,
         });
 
-        await supabase
-          .from('real_estate_expertise_requests')
-          .update({ payment_status: 'paid' })
-          .eq('id', request.id);
+        // Le statut de paiement est confirmé côté serveur (edge function
+        // `process-mobile-money-payment`, service role). Le client ne l'écrit jamais.
+
 
       } else if (paymentMethod === 'bank_card') {
         const { processExpertiseStripePayment } = await import('@/utils/expertisePaymentHelper');
@@ -1198,7 +1238,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
           <TabsContent value="general" className="space-y-3 pr-2 mt-0">
             {/* Notification importance des données exactes */}
             {/* Pre-fill indicator */}
-            {parcelData && (parcelData.property_category || parcelData.construction_year || parcelData.construction_materials) && (
+            {knownBuildings.length > 0 && (
               <Alert className="border-primary/30 bg-primary/5 rounded-xl">
                 <Info className="h-4 w-4 text-primary" />
                 <AlertDescription className="text-xs text-muted-foreground">
@@ -1206,6 +1246,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                 </AlertDescription>
               </Alert>
             )}
+            <CadastralContextBlock prefill={cadastralPrefill} />
             {/* Notification importance des données exactes */}
             <Alert className="border-amber-500/30 bg-amber-500/10 rounded-xl">
               <Info className="h-4 w-4 text-amber-600" />
