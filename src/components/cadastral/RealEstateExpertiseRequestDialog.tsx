@@ -875,6 +875,21 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
         ? 'Autre / nouvelle construction'
         : (knownBuildings.find((b) => b.ref === selectedBuildingRef)?.label || undefined),
       cadastre_discrepancies: cadastreDiscrepancies.trim() || undefined,
+      // Nomenclature cadastrale saisie (auparavant perdue à l'enregistrement)
+      property_category: propertyCategory || undefined,
+      construction_type: constructionType || undefined,
+      construction_nature: constructionNature || undefined,
+      construction_materials_declared: constructionMaterials || undefined,
+      declared_usage: declaredUsage || undefined,
+      has_direct_street_access: hasDirectStreetAccess,
+      distance_from_road_m: distanceFromRoad ? parseFloat(distanceFromRoad) : undefined,
+      // Indicateurs CCC transmis à l'expert
+      building_height_m: cadastreHeightM ?? undefined,
+      is_rented: cadastralPrefill?.is_rented ?? undefined,
+      monthly_rent_usd: cadastralPrefill?.monthly_rent_usd ?? undefined,
+      hosting_capacity: cadastralPrefill?.hosting_capacity ?? undefined,
+      occupant_count: cadastralPrefill?.occupant_count ?? undefined,
+      parcel_sound_environment: cadastralPrefill?.sound_environment ?? undefined,
     });
 
     setStep('payment');
