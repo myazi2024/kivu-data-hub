@@ -554,14 +554,22 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
         if (result === 'timeout') throw new Error('Délai de paiement dépassé. Vérifiez votre transaction.');
         if (result === 'aborted') return;
 
-        const { data: paidRequest, error: statusError } = await supabase
-          .from('mutation_requests')
-          .select('payment_status')
-          .eq('id', createdRequest.id)
-          .single();
-        if (statusError) throw statusError;
-        if (paidRequest?.payment_status !== 'paid') {
-          throw new Error('Paiement confirmé, mais la synchronisation serveur est encore en cours. Réessayez dans quelques secondes.');
+        let paymentWasSynchronized = false;
+        for (let attempt = 0; attempt < 8; attempt += 1) {
+          const { data: paidRequest, error: statusError } = await supabase
+            .from('mutation_requests')
+            .select('payment_status')
+            .eq('id', createdRequest.id)
+            .single();
+          if (statusError) throw statusError;
+          if (paidRequest?.payment_status === 'paid') {
+            paymentWasSynchronized = true;
+            break;
+          }
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+        if (!paymentWasSynchronized) {
+          throw new Error('Paiement confirmé, mais la synchronisation serveur est encore en cours. Vérifiez votre tableau de bord dans quelques secondes.');
         }
 
         setStep('confirmation');
