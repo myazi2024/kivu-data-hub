@@ -8125,6 +8125,10 @@ export type Database = {
         Args: { p_parcel_number: string; p_user_id: string }
         Returns: boolean
       }
+      cancel_mutation_request: {
+        Args: { p_request_id: string }
+        Returns: undefined
+      }
       check_and_consume_rate_limit: {
         Args: { _action: string; _key: string }
         Returns: Json
@@ -8482,6 +8486,10 @@ export type Database = {
         }[]
       }
       get_parcel_expertise_prefill: {
+        Args: { p_parcel_number: string }
+        Returns: Json
+      }
+      get_parcel_mutation_prefill: {
         Args: { p_parcel_number: string }
         Returns: Json
       }
