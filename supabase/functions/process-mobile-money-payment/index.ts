@@ -244,6 +244,44 @@ Deno.serve(async (req) => {
       if (error) throw error;
     };
 
+    /**
+     * Confirme (ou marque en échec) une demande de radiation.
+     * Seul le serveur peut faire évoluer ces statuts : un trigger bloque le client.
+     */
+    const syncMortgageCancellationState = async (
+      status: 'completed' | 'failed',
+      transactionId: string,
+    ) => {
+      if (payment_type !== 'mortgage_cancellation' || !invoice_id) return;
+
+      const update = status === 'completed'
+        ? {
+            status: 'pending',
+            payment_status: 'paid',
+            payment_transaction_id: transactionId,
+            payment_confirmed_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          }
+        : {
+            status: 'awaiting_payment',
+            payment_status: 'failed',
+            payment_transaction_id: transactionId,
+            updated_at: new Date().toISOString(),
+          };
+
+      const { error } = await supabase
+        .from('cadastral_contributions')
+        .update(update)
+        .eq('id', invoice_id)
+        .eq('user_id', user.id)
+        .eq('contribution_type', 'mortgage_cancellation')
+        .neq('payment_status', 'paid');
+
+      if (error) console.error('syncMortgageCancellationState error:', error);
+    };
+
+
+
     // Validate payment provider is enabled
 
     const { data: providerConfig, error: providerError } = await supabase
