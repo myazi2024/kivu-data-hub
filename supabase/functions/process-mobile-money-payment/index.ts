@@ -1,5 +1,9 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { enforceRateLimit, rateLimitResponse } from "../_shared/rateLimit.ts";
+import {
+  computeMortgageCancellationDue,
+  loadMortgageCancellationFees,
+} from "../_shared/mortgageFees.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
