@@ -56,6 +56,24 @@ Deno.serve(async (req) => {
 
     const { payment_provider, phone_number, amount_usd, payment_type, invoice_id, currency_code: clientCurrency } = body;
 
+    if (payment_type === 'mutation_request') {
+      if (!invoice_id) throw new Error('Mutation request id required');
+      const { data: mutationRequest, error: mutationError } = await supabase
+        .from('mutation_requests')
+        .select('id, user_id, total_amount_usd, payment_status, status')
+        .eq('id', invoice_id)
+        .eq('user_id', user.id)
+        .single();
+      if (mutationError || !mutationRequest) throw new Error('Invalid mutation request');
+      if (mutationRequest.payment_status !== 'pending' || mutationRequest.status !== 'pending') {
+        throw new Error('Cette demande de mutation n\'est plus payable.');
+      }
+      if (Math.round(Number(mutationRequest.total_amount_usd) * 100) !== Math.round(Number(amount_usd) * 100)) {
+        throw new Error('Le montant du paiement ne correspond pas à la demande.');
+      }
+    }
+
+
     // Fetch server-side exchange rate for the requested currency
     const requestedCurrency = clientCurrency || 'USD';
     let serverExchangeRate = 1;
@@ -170,7 +188,28 @@ Deno.serve(async (req) => {
           .eq('id', expertisePayment.expertise_request_id);
       }
     };
+    const syncMutationPaymentState = async (transactionId: string) => {
+      if (payment_type !== 'mutation_request' || !invoice_id) return;
+
+      const { error } = await supabase
+        .from('mutation_requests')
+        .update({
+          payment_status: 'paid',
+          status: 'in_review',
+          paid_at: new Date().toISOString(),
+          payment_id: transactionId,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', invoice_id)
+        .eq('user_id', user.id)
+        .eq('payment_status', 'pending')
+        .eq('status', 'pending');
+
+      if (error) throw error;
+    };
+
     // Validate payment provider is enabled
+
     const { data: providerConfig, error: providerError } = await supabase
       .from('payment_methods_config')
       .select('*')
@@ -241,6 +280,7 @@ Deno.serve(async (req) => {
 
         await createPublicationPaymentRecord(`TEST-${Date.now()}`);
         await syncExpertisePaymentState('completed', transaction.id);
+        await syncMutationPaymentState(transaction.id);
       }, 3000);
 
       return new Response(
@@ -285,6 +325,7 @@ Deno.serve(async (req) => {
 
         await createPublicationPaymentRecord(`REAL-${transaction.id}`);
         await syncExpertisePaymentState('completed', transaction.id);
+        await syncMutationPaymentState(transaction.id);
       }, 5000);
 
       return new Response(
