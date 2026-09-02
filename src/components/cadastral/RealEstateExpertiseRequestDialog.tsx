@@ -948,10 +948,9 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
           paymentRecordId: paymentRecord.id,
         });
 
-        await supabase
-          .from('real_estate_expertise_requests')
-          .update({ payment_status: 'paid' })
-          .eq('id', request.id);
+        // Le statut de paiement est confirmé côté serveur (edge function
+        // `process-mobile-money-payment`, service role). Le client ne l'écrit jamais.
+
 
       } else if (paymentMethod === 'bank_card') {
         const { processExpertiseStripePayment } = await import('@/utils/expertisePaymentHelper');
