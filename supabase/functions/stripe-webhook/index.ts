@@ -236,7 +236,7 @@ Deno.serve(async (req) => {
           }
         } else if (paymentType === "land_title_request" || paymentType === "permit_request" || paymentType === "mortgage_cancellation") {
           // Generic handler for cadastral service payment types
-          await supabase
+          const { data: paymentTransaction } = await supabase
             .from("payment_transactions")
             .update({
               status: "completed",
@@ -248,7 +248,9 @@ Deno.serve(async (req) => {
                 payment_type: paymentType,
               },
             })
-            .eq("transaction_reference", session.id);
+            .eq("transaction_reference", session.id)
+            .select('id, invoice_id')
+            .maybeSingle();
 
           // Update the corresponding request table
           if (paymentType === "land_title_request" && (metadata.land_title_request_id || metadata.invoice_id)) {
@@ -262,6 +264,21 @@ Deno.serve(async (req) => {
                 updated_at: new Date().toISOString(),
               })
               .eq("id", requestId);
+          }
+
+          if (paymentType === "mortgage_cancellation" && (metadata.mortgage_cancellation_id || metadata.invoice_id)) {
+            const requestId = metadata.mortgage_cancellation_id || metadata.invoice_id;
+            await supabase
+              .from("cadastral_contributions")
+              .update({
+                status: "pending",
+                payment_status: "paid",
+                payment_transaction_id: paymentTransaction?.id || null,
+                payment_confirmed_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+              })
+              .eq("id", requestId)
+              .eq("user_id", metadata.user_id);
           }
 
           if (metadata.user_id) {
