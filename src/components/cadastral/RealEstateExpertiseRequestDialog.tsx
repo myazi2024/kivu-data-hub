@@ -326,11 +326,13 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
         surface_sqm: parcelData.area_sqm,
         floors: parcelData.floor_number,
         property_category: parcelData.property_category,
+        standing: parcelData.standing,
+        height_m: parcelData.building_height,
       });
     }
 
     const extras = Array.isArray(parcelData.additional_constructions) ? parcelData.additional_constructions : [];
-    extras.forEach((c, i) => {
+    extras.forEach((c: any, i: number) => {
       if (!c) return;
       const labelParts = [c.type || `Construction ${i + 1}`];
       if (c.surface_sqm) labelParts.push(`${c.surface_sqm} m²`);
@@ -344,19 +346,25 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
         usage: c.usage,
         surface_sqm: c.surface_sqm,
         property_category: parcelData.property_category,
+        standing: c.standing,
+        height_m: c.height_m ?? c.building_height,
       });
     });
 
     return list;
-  }, [parcelData]);
+  }, [cadastreSource]);
 
-  // Default selection on first open: first known building, or 'new' if none
+  // Default selection on first open: first known building, or 'new' if none.
+  // On attend que la RPC de contexte cadastral soit résolue pour ne pas basculer
+  // à tort sur « nouvelle construction ».
   const defaultRefDoneRef = useRef(false);
   useEffect(() => {
     if (!open || defaultRefDoneRef.current) return;
+    if (cadastralPrefill === undefined) return; // requête en cours
     defaultRefDoneRef.current = true;
     setSelectedBuildingRef(knownBuildings.length > 0 ? knownBuildings[0].ref : 'new');
-  }, [open, knownBuildings]);
+  }, [open, knownBuildings, cadastralPrefill]);
+
 
   // Helper: apply a known building's data to the form fields
   const applyBuildingPrefill = useCallback((b: KnownBuilding | null) => {
