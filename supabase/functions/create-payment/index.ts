@@ -256,8 +256,29 @@ Deno.serve(async (req) => {
       orderMetadata.invoice_id = invoice_id;
       orderMetadata.parcel_number = subRequest.parcel_number;
     }
-    // Handle Mortgage Cancellation payment
-    else if (payment_type === 'mortgage_cancellation' && invoice_id && amount_usd) {
+    // Handle Mortgage Cancellation payment: derive the payable amount server-side.
+    else if (payment_type === 'mortgage_cancellation' && invoice_id) {
+      const { data: cancellationRequest, error: cancellationError } = await supabase
+        .from('cadastral_contributions')
+        .select('id, user_id, status, payment_status, mortgage_history')
+        .eq('id', invoice_id)
+        .eq('user_id', user.id)
+        .eq('contribution_type', 'mortgage_cancellation')
+        .single();
+      if (cancellationError || !cancellationRequest) throw new Error('Demande de radiation introuvable');
+      if (cancellationRequest.status !== 'awaiting_payment' || cancellationRequest.payment_status === 'paid') {
+        throw new Error("Cette demande de radiation n'est plus payable");
+      }
+
+      const history = Array.isArray(cancellationRequest.mortgage_history)
+        ? cancellationRequest.mortgage_history as any[]
+        : [];
+      const selectedFeeIds = (history[0]?.fees_selected || [])
+        .map((fee: any) => fee?.id)
+        .filter((id: unknown): id is string => typeof id === 'string');
+      const feeSchedule = await loadMortgageCancellationFees(supabase);
+      totalAmount = Math.round(computeMortgageCancellationDue(feeSchedule, selectedFeeIds) * 100);
+
       lineItems = [{
         price_data: {
           currency: "usd",
@@ -265,12 +286,10 @@ Deno.serve(async (req) => {
             name: `Mainlevée hypothécaire`,
             description: `Paiement frais de mainlevée`,
           },
-          unit_amount: Math.round(amount_usd * 100),
+          unit_amount: totalAmount,
         },
         quantity: 1,
       }];
-
-      totalAmount = Math.round(amount_usd * 100);
       orderMetadata.mortgage_cancellation_id = invoice_id;
       orderMetadata.invoice_id = invoice_id;
     }
