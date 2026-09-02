@@ -58,7 +58,7 @@ export const MortgageDisputeFeesTab = () => {
 
   useEffect(() => { void load(); }, []);
 
-  const save = async (key: 'mortgage_cancellation_fees' | 'dispute_lifting_fee', value: unknown, oldValue: unknown) => {
+  const save = async (key: 'mortgage_cancellation_fees' | 'dispute_lifting_fee', value: Json, oldValue: Json) => {
     try {
       const { data: existing, error: existingError } = await supabase
         .from('cadastral_contribution_config')
@@ -74,7 +74,7 @@ export const MortgageDisputeFeesTab = () => {
       } else {
         const { error } = await supabase
           .from('cadastral_contribution_config')
-          .insert({ config_key: key, config_value: value, is_active: true, description: key });
+          .insert([{ config_key: key, config_value: value, is_active: true, description: key }]);
         if (error) throw error;
       }
 
