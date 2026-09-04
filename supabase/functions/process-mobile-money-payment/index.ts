@@ -17,7 +17,7 @@ interface PaymentRequest {
   payment_provider: string;
   phone_number: string;
   amount_usd: number;
-  payment_type: 'publication' | 'cadastral_service' | 'expertise_fee' | 'certificate_access' | 'mutation_request' | 'mortgage_cancellation';
+  payment_type: 'publication' | 'cadastral_service' | 'expertise_fee' | 'certificate_access' | 'mutation_request' | 'mortgage_cancellation' | 'land_title_request';
   invoice_id?: string;
   test_mode?: boolean;
   currency_code?: string;
@@ -74,6 +74,34 @@ Deno.serve(async (req) => {
       }
       if (Math.round(Number(mutationRequest.total_amount_usd) * 100) !== Math.round(Number(amount_usd) * 100)) {
         throw new Error('Le montant du paiement ne correspond pas à la demande.');
+      }
+    }
+
+    // Titre foncier : le montant dû est recalculé côté serveur à partir du barème officiel.
+    if (payment_type === 'land_title_request') {
+      if (!invoice_id) throw new Error('Identifiant de la demande de titre foncier manquant.');
+      const { data: titleRequest, error: titleError } = await supabase
+        .from('land_title_requests')
+        .select('id, user_id, payment_status, status, deduced_title_type, section_type, area_sqm')
+        .eq('id', invoice_id)
+        .eq('user_id', user.id)
+        .single();
+
+      if (titleError || !titleRequest) throw new Error('Demande de titre foncier introuvable.');
+      if (titleRequest.payment_status !== 'pending' || titleRequest.status !== 'pending') {
+        throw new Error("Cette demande de titre foncier n'est plus payable.");
+      }
+
+      const { data: calc, error: calcError } = await supabase.rpc('calculate_land_title_fees', {
+        p_title_label: titleRequest.deduced_title_type,
+        p_section_type: titleRequest.section_type,
+        p_area_sqm: titleRequest.area_sqm,
+      });
+      if (calcError) throw new Error('Impossible de calculer les frais du titre foncier.');
+      const dueAmount = Number((calc as any)?.total_amount_usd ?? 0);
+      if (dueAmount <= 0) throw new Error('Aucun frais applicable à cette demande.');
+      if (Math.round(dueAmount * 100) !== Math.round(Number(amount_usd) * 100)) {
+        throw new Error('Le montant du paiement ne correspond pas au barème en vigueur.');
       }
     }
 
@@ -280,6 +308,24 @@ Deno.serve(async (req) => {
       if (error) console.error('syncMortgageCancellationState error:', error);
     };
 
+    /** Titre foncier : seul le serveur confirme le paiement. */
+    const syncLandTitlePaymentState = async (transactionId: string) => {
+      if (payment_type !== 'land_title_request' || !invoice_id) return;
+      const { error } = await supabase
+        .from('land_title_requests')
+        .update({
+          payment_status: 'paid',
+          status: 'in_review',
+          paid_at: new Date().toISOString(),
+          payment_id: transactionId,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', invoice_id)
+        .eq('user_id', user.id)
+        .eq('payment_status', 'pending');
+      if (error) throw error;
+    };
+
 
 
     // Validate payment provider is enabled
@@ -356,6 +402,7 @@ Deno.serve(async (req) => {
         await syncExpertisePaymentState('completed', transaction.id);
         await syncMutationPaymentState(transaction.id);
         await syncMortgageCancellationState('completed', transaction.id);
+        await syncLandTitlePaymentState(transaction.id);
       }, 3000);
 
       return new Response(
@@ -402,6 +449,7 @@ Deno.serve(async (req) => {
         await syncExpertisePaymentState('completed', transaction.id);
         await syncMutationPaymentState(transaction.id);
         await syncMortgageCancellationState('completed', transaction.id);
+        await syncLandTitlePaymentState(transaction.id);
       }, 5000);
 
       return new Response(
