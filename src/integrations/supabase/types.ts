@@ -8133,12 +8133,24 @@ export type Database = {
         Args: { contribution_id: string }
         Returns: number
       }
+      calculate_land_title_fees: {
+        Args: {
+          p_area_sqm: number
+          p_section_type: string
+          p_title_label: string
+        }
+        Returns: Json
+      }
       calculate_surface_from_coordinates: {
         Args: { coordinates: Json }
         Returns: number
       }
       can_subdivide_parcel: {
         Args: { p_parcel_number: string; p_user_id: string }
+        Returns: boolean
+      }
+      cancel_land_title_request: {
+        Args: { p_request_id: string }
         Returns: boolean
       }
       cancel_mutation_request: {
@@ -8690,6 +8702,7 @@ export type Database = {
         Args: { _filters?: Json; _row_count: number; _table_name: string }
         Returns: undefined
       }
+      map_land_title_type_key: { Args: { p_label: string }; Returns: string }
       mark_cadastral_invoice_paid_safe: {
         Args: { p_invoice_id: string; p_payment_method: string }
         Returns: {
