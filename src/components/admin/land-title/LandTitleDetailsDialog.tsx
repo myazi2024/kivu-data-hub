@@ -1,3 +1,5 @@
+import { getLandTitleDocumentUrl } from '@/hooks/useLandTitleRequest';
+import { toast } from 'sonner';
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
@@ -38,7 +40,16 @@ const LandTitleDetailsDialog: React.FC<Props> = ({
   const r = detailData || selectedRequest;
   const ad = r.additional_documents as Record<string, string | undefined> | null;
 
-  return (
+    const openDocument = async (path: string | null) => {
+    const url = await getLandTitleDocumentUrl(path);
+    if (!url) {
+      toast.error('Document indisponible');
+      return;
+    }
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
+return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl">
         <DialogHeader>
@@ -252,28 +263,28 @@ const LandTitleDetailsDialog: React.FC<Props> = ({
             <TabsContent value="docs" className="space-y-3 mt-4">
               <div className="space-y-2">
                 {detailData?.requester_id_document_url && (
-                  <a href={detailData.requester_id_document_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg hover:bg-muted transition-colors">
+                  <button type="button" onClick={() => openDocument(detailData.requester_id_document_url)} className="w-full text-left flex items-center gap-2 p-2 bg-muted/50 rounded-lg hover:bg-muted transition-colors">
                     <Download className="h-4 w-4" />
                     <span className="text-xs">Pièce d'identité demandeur</span>
-                  </a>
+                  </button>
                 )}
                 {detailData?.owner_id_document_url && (
-                  <a href={detailData.owner_id_document_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg hover:bg-muted transition-colors">
+                  <button type="button" onClick={() => openDocument(detailData.owner_id_document_url)} className="w-full text-left flex items-center gap-2 p-2 bg-muted/50 rounded-lg hover:bg-muted transition-colors">
                     <Download className="h-4 w-4" />
                     <span className="text-xs">Pièce d'identité propriétaire</span>
-                  </a>
+                  </button>
                 )}
                 {detailData?.procuration_document_url && (
-                  <a href={detailData.procuration_document_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg hover:bg-muted transition-colors">
+                  <button type="button" onClick={() => openDocument(detailData.procuration_document_url)} className="w-full text-left flex items-center gap-2 p-2 bg-muted/50 rounded-lg hover:bg-muted transition-colors">
                     <Download className="h-4 w-4" />
                     <span className="text-xs">Procuration / Mandat</span>
-                  </a>
+                  </button>
                 )}
                 {detailData?.proof_of_ownership_url && (
-                  <a href={detailData.proof_of_ownership_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg hover:bg-muted transition-colors">
+                  <button type="button" onClick={() => openDocument(detailData.proof_of_ownership_url)} className="w-full text-left flex items-center gap-2 p-2 bg-muted/50 rounded-lg hover:bg-muted transition-colors">
                     <Download className="h-4 w-4" />
                     <span className="text-xs">Preuve de propriété</span>
-                  </a>
+                  </button>
                 )}
                 {!detailData?.requester_id_document_url && !detailData?.owner_id_document_url && !detailData?.proof_of_ownership_url && !detailData?.procuration_document_url && (
                   <p className="text-xs text-muted-foreground text-center py-4">Aucun document joint</p>
