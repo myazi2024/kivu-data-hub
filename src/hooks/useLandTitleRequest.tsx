@@ -95,36 +95,41 @@ export const validatePhone = (phone: string): boolean => {
   return PHONE_REGEX.test(cleaned);
 };
 
-const uploadDocument = async (file: File, folder: string): Promise<string | null> => {
+/**
+ * Upload d'un document dans le bucket privé `land-title-documents`.
+ * Le chemin est préfixé par l'identifiant du propriétaire (exigé par les règles d'accès).
+ * On stocke le chemin (et non une URL publique) : la lecture se fait via une URL signée.
+ */
+const uploadDocument = async (file: File, folder: string, userId: string): Promise<string | null> => {
   try {
     const fileExt = file.name.split('.').pop();
-    const fileName = `${folder}/${Date.now()}_${crypto.randomUUID()}.${fileExt}`;
-    
+    const fileName = `${userId}/${folder}/${Date.now()}_${crypto.randomUUID()}.${fileExt}`;
+
     const { error: uploadError } = await supabase.storage
       .from('land-title-documents')
       .upload(fileName, file);
 
-    if (uploadError) {
-      const { error: publicUploadError } = await supabase.storage
-        .from('public')
-        .upload(`land-titles/${fileName}`, file);
-        
-      if (publicUploadError) throw publicUploadError;
-      
-      const { data: publicUrlData } = supabase.storage
-        .from('public')
-        .getPublicUrl(`land-titles/${fileName}`);
-      return publicUrlData.publicUrl;
-    }
+    if (uploadError) throw uploadError;
 
-    const { data: urlData } = supabase.storage
-      .from('land-title-documents')
-      .getPublicUrl(fileName);
-    return urlData.publicUrl;
+    return fileName;
   } catch (error) {
     console.error('Error uploading document:', error);
     return null;
   }
+};
+
+/** URL signée (1h) pour consulter un document de demande de titre foncier. */
+export const getLandTitleDocumentUrl = async (pathOrUrl: string | null): Promise<string | null> => {
+  if (!pathOrUrl) return null;
+  if (pathOrUrl.startsWith('http')) return pathOrUrl; // anciens enregistrements
+  const { data, error } = await supabase.storage
+    .from('land-title-documents')
+    .createSignedUrl(pathOrUrl, 3600);
+  if (error) {
+    console.error('Signed URL error:', error);
+    return null;
+  }
+  return data?.signedUrl ?? null;
 };
 
 export const useLandTitleRequest = () => {
@@ -140,7 +145,14 @@ export const useLandTitleRequest = () => {
   ): Promise<{ success: boolean; requestId?: string; referenceNumber?: string }> => {
     setLoading(true);
     try {
-      // 1. Upload documents FIRST
+      // 1. Utilisateur courant (obligatoire : le chemin de stockage lui est rattaché)
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error('Vous devez être connecté pour soumettre une demande');
+        return { success: false };
+      }
+
+      // 2. Upload des documents
       let requesterIdDocUrl: string | null = null;
       let ownerIdDocUrl: string | null = null;
       let proofOfOwnershipUrl: string | null = null;
@@ -148,7 +160,7 @@ export const useLandTitleRequest = () => {
       let proposedPermitDocUrl: string | null = null;
 
       if (data.requesterIdDocumentFile) {
-        requesterIdDocUrl = await uploadDocument(data.requesterIdDocumentFile, 'requester-id');
+        requesterIdDocUrl = await uploadDocument(data.requesterIdDocumentFile, 'requester-id', user.id);
         if (!requesterIdDocUrl) {
           toast.error("Échec de l'upload de la pièce d'identité du demandeur");
           return { success: false };
@@ -156,7 +168,7 @@ export const useLandTitleRequest = () => {
       }
 
       if (data.ownerIdDocumentFile && !data.isOwnerSameAsRequester) {
-        ownerIdDocUrl = await uploadDocument(data.ownerIdDocumentFile, 'owner-id');
+        ownerIdDocUrl = await uploadDocument(data.ownerIdDocumentFile, 'owner-id', user.id);
         if (!ownerIdDocUrl) {
           toast.error("Échec de l'upload de la pièce d'identité du propriétaire");
           return { success: false };
@@ -164,7 +176,7 @@ export const useLandTitleRequest = () => {
       }
 
       if (data.proofOfOwnershipFile) {
-        proofOfOwnershipUrl = await uploadDocument(data.proofOfOwnershipFile, 'proof-of-ownership');
+        proofOfOwnershipUrl = await uploadDocument(data.proofOfOwnershipFile, 'proof-of-ownership', user.id);
         if (!proofOfOwnershipUrl) {
           toast.error("Échec de l'upload de la preuve de propriété");
           return { success: false };
@@ -172,7 +184,7 @@ export const useLandTitleRequest = () => {
       }
 
       if (data.procurationDocumentFile && data.requesterType === 'representative') {
-        procurationDocUrl = await uploadDocument(data.procurationDocumentFile, 'procuration');
+        procurationDocUrl = await uploadDocument(data.procurationDocumentFile, 'procuration', user.id);
         if (!procurationDocUrl) {
           toast.error("Échec de l'upload de la procuration");
           return { success: false };
@@ -180,23 +192,14 @@ export const useLandTitleRequest = () => {
       }
 
       if (data.proposedPermitDocumentFile) {
-        proposedPermitDocUrl = await uploadDocument(data.proposedPermitDocumentFile, 'proposed-permit');
+        proposedPermitDocUrl = await uploadDocument(data.proposedPermitDocumentFile, 'proposed-permit', user.id);
         if (!proposedPermitDocUrl) {
           toast.error("Échec de l'upload du document d'autorisation");
           return { success: false };
         }
       }
 
-      // 2. Get current user
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        toast.error('Vous devez être connecté pour soumettre une demande');
-        return { success: false };
-      }
-
-      const totalAmount = data.totalAmountOverride ?? 0;
-
-      // 3. Insert with payment_status = 'pending'
+      // 3. Insertion : les frais, le montant et les statuts sont recalculés/forcés côté serveur.
       const { data: insertedData, error } = await supabase
         .from('land_title_requests')
         .insert([{
@@ -262,7 +265,6 @@ export const useLandTitleRequest = () => {
             owner_right_type: data.ownerRightType || null,
           },
           fee_items: feeItems,
-          total_amount_usd: totalAmount,
           payment_status: 'pending'
         } as any])
         .select('id, reference_number')
@@ -285,42 +287,12 @@ export const useLandTitleRequest = () => {
   }, []);
 
   /**
-   * Step 2: Mark the request as paid after successful payment.
-   */
-  const markRequestPaid = useCallback(async (requestId: string): Promise<boolean> => {
-    try {
-      const { error } = await supabase
-        .from('land_title_requests')
-        .update({ 
-          payment_status: 'paid',
-          paid_at: new Date().toISOString()
-        })
-        .eq('id', requestId);
-
-      if (error) throw error;
-      
-      toast.success('Demande de titre foncier soumise avec succès');
-      return true;
-    } catch (error: any) {
-      console.error('Error updating payment status:', error);
-      toast.error(`Le paiement a été effectué mais la mise à jour a échoué. ID demande: ${requestId}. Contactez le support.`);
-      return false;
-    }
-  }, []);
-
-  /**
    * Cancel orphaned pending request (e.g. user cancelled payment).
    */
   const cancelPendingRequest = useCallback(async (requestId: string): Promise<void> => {
     try {
-      await supabase
-        .from('land_title_requests')
-        .update({ 
-          status: 'cancelled',
-          payment_status: 'cancelled'
-        })
-        .eq('id', requestId)
-        .eq('payment_status', 'pending');
+      const { error } = await supabase.rpc('cancel_land_title_request' as any, { p_request_id: requestId });
+      if (error) throw error;
     } catch (error) {
       console.error('Error cancelling pending request:', error);
     }
@@ -329,7 +301,6 @@ export const useLandTitleRequest = () => {
   return {
     loading,
     createPendingRequest,
-    markRequestPaid,
     cancelPendingRequest
   };
 };
