@@ -61,7 +61,6 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
   const { 
     loading, 
     createPendingRequest,
-    markRequestPaid,
     cancelPendingRequest
   } = useLandTitleRequest();
   
@@ -825,10 +824,8 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
   };
 
   const handlePaymentSuccess = async () => {
-    // Payment succeeded — mark the pre-created request as paid
-    if (savedRequestId) {
-      await markRequestPaid(savedRequestId);
-    }
+    // Le paiement est confirmé côté serveur (fonction de paiement / webhook) :
+    // le client ne modifie jamais lui-même l'état de paiement.
     setShowPayment(false);
     setShowSuccess(true);
   };
@@ -982,6 +979,9 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
             <MobileMoneyPayment
               item={cartItem}
               currency="USD"
+              paymentType="land_title_request"
+              invoiceId={savedRequestId}
+              successMessage="Votre demande de titre foncier est enregistrée et en cours d'examen"
               onPaymentSuccess={handlePaymentSuccess}
             />
             <Button 

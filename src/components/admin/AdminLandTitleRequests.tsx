@@ -406,7 +406,7 @@ const AdminLandTitleRequests: React.FC = () => {
                           >
                             <Eye className="h-3.5 w-3.5" />
                           </Button>
-                          {request.payment_status === 'paid' && (request.status === 'pending' || request.status === 'in_review') && (
+                          {(request.status === 'pending' || request.status === 'in_review') && (
                             <Button
                               variant="ghost"
                               size="sm"

@@ -12,6 +12,12 @@ interface MobileMoneyPaymentProps {
   item: CartItem;
   currency: string;
   displayAmount?: number;
+  /** Type de paiement métier (défaut: publication) */
+  paymentType?: string;
+  /** Identifiant de la demande/facture associée côté serveur */
+  invoiceId?: string;
+  /** Message affiché après confirmation du paiement */
+  successMessage?: string;
   onPaymentSuccess: (paymentData?: { provider: string; phoneNumber: string }) => void;
 }
 
@@ -19,6 +25,9 @@ const MobileMoneyPayment: React.FC<MobileMoneyPaymentProps> = ({
   item,
   currency,
   displayAmount,
+  paymentType,
+  invoiceId,
+  successMessage,
   onPaymentSuccess
 }) => {
   const [paymentData, setPaymentData] = useState<PaymentData>({
@@ -41,7 +50,7 @@ const MobileMoneyPayment: React.FC<MobileMoneyPaymentProps> = ({
   const handlePayment = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const result = await createPayment(item, paymentData);
+    const result = await createPayment(item, paymentData, { paymentType, invoiceId, successMessage });
     
     if (result) {
       setTimeout(() => {

@@ -183,13 +183,22 @@ Deno.serve(async (req) => {
     else if (payment_type === 'land_title_request' && invoice_id && amount_usd) {
       const { data: titleRequest, error: titleError } = await supabase
         .from("land_title_requests")
-        .select("id, reference_number, total_amount_usd, user_id, province")
+        .select("id, reference_number, total_amount_usd, user_id, province, payment_status, status")
         .eq("id", invoice_id)
         .eq("user_id", user.id)
         .single();
 
       if (titleError || !titleRequest) {
         throw new Error("Invalid land title request");
+      }
+
+      if (titleRequest.payment_status !== 'pending' || titleRequest.status !== 'pending') {
+        throw new Error("Cette demande de titre foncier n'est plus payable.");
+      }
+
+      // Le montant affiché au client doit correspondre au montant calculé côté serveur.
+      if (Math.round(Number(titleRequest.total_amount_usd) * 100) !== Math.round(Number(amount_usd) * 100)) {
+        throw new Error("Le montant du paiement ne correspond pas au barème en vigueur.");
       }
 
       lineItems = [{

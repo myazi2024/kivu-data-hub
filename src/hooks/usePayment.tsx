@@ -19,7 +19,11 @@ export const usePayment = () => {
   const { toast } = useToast();
   const { paymentMode, availableMethods } = usePaymentConfig();
 
-  const createPayment = async (item: CartItem, paymentData: PaymentData) => {
+  const createPayment = async (
+    item: CartItem,
+    paymentData: PaymentData,
+    options?: { paymentType?: string; invoiceId?: string; successMessage?: string }
+  ) => {
     if (!user) {
       toast({
         title: "Erreur d'authentification",
@@ -45,7 +49,8 @@ export const usePayment = () => {
             payment_provider: paymentData.provider,
             phone_number: paymentData.phoneNumber,
             amount_usd: item.price,
-            payment_type: 'publication',
+            payment_type: options?.paymentType || 'publication',
+            ...(options?.invoiceId ? { invoice_id: options.invoiceId } : {}),
           }
         }
       );
@@ -72,7 +77,7 @@ export const usePayment = () => {
       setPaymentStep('success');
       toast({
         title: "Paiement réussi",
-        description: "Votre publication est maintenant disponible"
+        description: options?.successMessage || "Votre publication est maintenant disponible"
       });
 
       return { id: transactionId, status: 'completed' };
