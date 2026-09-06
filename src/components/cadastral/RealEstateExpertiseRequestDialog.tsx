@@ -35,7 +35,11 @@ import { BuildingPermitIssuingServiceSelect } from './BuildingPermitIssuingServi
 import { cn } from '@/lib/utils';
 import BuildingTargetSelector, { type KnownBuilding } from './expertise/BuildingTargetSelector';
 import CadastralContextBlock from './expertise/CadastralContextBlock';
+import ExpertiseScopeSelector, { type ValuationTarget } from './expertise/ExpertiseScopeSelector';
+import ExpertiseTargetMap, { type ExpertiseSelectionMode, type MapBuilding } from './expertise/ExpertiseTargetMap';
 import { useParcelExpertisePrefill } from '@/hooks/useParcelExpertisePrefill';
+import { useExpertiseFeeQuote } from '@/hooks/useExpertiseFeeQuote';
+
 
 interface RealEstateExpertiseRequestDialogProps {
   parcelNumber: string;
