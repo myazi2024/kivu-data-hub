@@ -40,7 +40,12 @@ export interface ParcelExpertisePrefill {
   apartment_width?: number | null;
   apartment_length?: number | null;
   apartment_orientation?: string | null;
+  /** Géométrie sans mesures (longueurs/surfaces retirées côté serveur) */
+  gps_coordinates?: { lat: number | string; lng: number | string; borne?: string }[] | null;
+  parcel_sides?: { name?: string; orientation?: string }[] | null;
+  building_shapes?: { id?: string; vertices?: { lat: number; lng: number }[] }[] | null;
 }
+
 
 export function useParcelExpertisePrefill(parcelNumber?: string, enabled = true) {
   return useQuery({

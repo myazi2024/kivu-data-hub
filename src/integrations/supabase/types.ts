@@ -2747,6 +2747,8 @@ export type Database = {
       expertise_fees_config: {
         Row: {
           amount_usd: number
+          applies_to_market_value: boolean
+          applies_to_rental_value: boolean
           created_at: string
           description: string | null
           display_order: number
@@ -2754,10 +2756,13 @@ export type Database = {
           id: string
           is_active: boolean
           is_mandatory: boolean
+          partial_multiplier: number
           updated_at: string
         }
         Insert: {
           amount_usd?: number
+          applies_to_market_value?: boolean
+          applies_to_rental_value?: boolean
           created_at?: string
           description?: string | null
           display_order?: number
@@ -2765,10 +2770,13 @@ export type Database = {
           id?: string
           is_active?: boolean
           is_mandatory?: boolean
+          partial_multiplier?: number
           updated_at?: string
         }
         Update: {
           amount_usd?: number
+          applies_to_market_value?: boolean
+          applies_to_rental_value?: boolean
           created_at?: string
           description?: string | null
           display_order?: number
@@ -2776,6 +2784,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           is_mandatory?: boolean
+          partial_multiplier?: number
           updated_at?: string
         }
         Relationships: []
@@ -5572,6 +5581,7 @@ export type Database = {
           certificate_expiry_date: string | null
           certificate_issue_date: string | null
           certificate_url: string | null
+          computed_fee_items: Json | null
           construction_materials_declared: string | null
           construction_nature: string | null
           construction_quality: string | null
@@ -5589,6 +5599,7 @@ export type Database = {
           escalated_at: string | null
           expertise_date: string | null
           expertise_report_url: string | null
+          expertise_scope: string
           facade_orientation: string | null
           flood_risk_zone: boolean | null
           floor_material: string | null
@@ -5652,12 +5663,16 @@ export type Database = {
           sound_environment: string | null
           status: string
           supporting_documents: Json | null
+          target_area_geojson: Json | null
           target_building_label: string | null
           target_building_ref: string | null
+          target_building_refs: string[]
+          total_amount_usd: number | null
           total_building_floors: number | null
           total_built_area_sqm: number | null
           updated_at: string
           user_id: string
+          valuation_targets: string[]
           wall_material: string | null
           window_type: string | null
         }
@@ -5678,6 +5693,7 @@ export type Database = {
           certificate_expiry_date?: string | null
           certificate_issue_date?: string | null
           certificate_url?: string | null
+          computed_fee_items?: Json | null
           construction_materials_declared?: string | null
           construction_nature?: string | null
           construction_quality?: string | null
@@ -5695,6 +5711,7 @@ export type Database = {
           escalated_at?: string | null
           expertise_date?: string | null
           expertise_report_url?: string | null
+          expertise_scope?: string
           facade_orientation?: string | null
           flood_risk_zone?: boolean | null
           floor_material?: string | null
@@ -5758,12 +5775,16 @@ export type Database = {
           sound_environment?: string | null
           status?: string
           supporting_documents?: Json | null
+          target_area_geojson?: Json | null
           target_building_label?: string | null
           target_building_ref?: string | null
+          target_building_refs?: string[]
+          total_amount_usd?: number | null
           total_building_floors?: number | null
           total_built_area_sqm?: number | null
           updated_at?: string
           user_id: string
+          valuation_targets?: string[]
           wall_material?: string | null
           window_type?: string | null
         }
@@ -5784,6 +5805,7 @@ export type Database = {
           certificate_expiry_date?: string | null
           certificate_issue_date?: string | null
           certificate_url?: string | null
+          computed_fee_items?: Json | null
           construction_materials_declared?: string | null
           construction_nature?: string | null
           construction_quality?: string | null
@@ -5801,6 +5823,7 @@ export type Database = {
           escalated_at?: string | null
           expertise_date?: string | null
           expertise_report_url?: string | null
+          expertise_scope?: string
           facade_orientation?: string | null
           flood_risk_zone?: boolean | null
           floor_material?: string | null
@@ -5864,12 +5887,16 @@ export type Database = {
           sound_environment?: string | null
           status?: string
           supporting_documents?: Json | null
+          target_area_geojson?: Json | null
           target_building_label?: string | null
           target_building_ref?: string | null
+          target_building_refs?: string[]
+          total_amount_usd?: number | null
           total_building_floors?: number | null
           total_built_area_sqm?: number | null
           updated_at?: string
           user_id?: string
+          valuation_targets?: string[]
           wall_material?: string | null
           window_type?: string | null
         }
@@ -8132,6 +8159,10 @@ export type Database = {
       calculate_ccc_value: {
         Args: { contribution_id: string }
         Returns: number
+      }
+      calculate_expertise_fees: {
+        Args: { p_scope?: string; p_valuations?: string[] }
+        Returns: Json
       }
       calculate_land_title_fees: {
         Args: {
