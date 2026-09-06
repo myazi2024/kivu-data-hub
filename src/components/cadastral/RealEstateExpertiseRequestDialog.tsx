@@ -292,8 +292,17 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
    const [uploadingFiles, setUploadingFiles] = useState(false);
 
   // === BUILDING TARGET (multi-construction support) ===
-  const [selectedBuildingRef, setSelectedBuildingRef] = useState<string>('main');
+  const [selectedBuildingRefs, setSelectedBuildingRefs] = useState<string[]>(['main']);
+  const selectedBuildingRef = selectedBuildingRefs[0] || 'new';
+  const setSelectedBuildingRef = useCallback((ref: string) => setSelectedBuildingRefs([ref]), []);
   const [cadastreDiscrepancies, setCadastreDiscrepancies] = useState('');
+
+  // === PÉRIMÈTRE ET VALEURS DEMANDÉES ===
+  const [expertiseScope, setExpertiseScope] = useState<'partial' | 'total'>('total');
+  const [valuationTargets, setValuationTargets] = useState<ValuationTarget[]>(['market']);
+  const [selectionMode, setSelectionMode] = useState<ExpertiseSelectionMode>('whole');
+  const [drawnArea, setDrawnArea] = useState<{ lat: number; lng: number }[] | null>(null);
+
 
   // Contexte cadastral complet (RPC sécurisée) — la carte ne transmet que des colonnes publiques
   const { data: cadastralPrefill } = useParcelExpertisePrefill(parcelNumber, open);
