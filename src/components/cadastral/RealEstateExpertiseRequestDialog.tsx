@@ -917,6 +917,26 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
       return;
     }
 
+    if (valuationTargets.length === 0) {
+      toast.error('Sélectionnez au moins une valeur à déterminer (marchande ou locative)');
+      setActiveTab('general');
+      return;
+    }
+
+    if (expertiseScope === 'partial') {
+      if (selectionMode === 'buildings' && selectedBuildingRefs.length === 0) {
+        toast.error('Sélectionnez au moins une construction à expertiser');
+        setActiveTab('general');
+        return;
+      }
+      if (selectionMode === 'area' && (!drawnArea || drawnArea.length < 3)) {
+        toast.error('Tracez la zone à expertiser sur la parcelle');
+        setActiveTab('general');
+        return;
+      }
+    }
+
+
     setFormData({
       parcel_number: parcelNumber,
       parcel_id: parcelId,
