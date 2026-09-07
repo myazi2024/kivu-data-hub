@@ -1060,12 +1060,12 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
         throw new Error('Erreur lors de la création de la demande');
       }
 
-      const mandatoryFees = fees.filter(fee => fee.is_mandatory);
-      const feeItems = mandatoryFees.map(fee => ({
-        fee_id: fee.id,
-        fee_name: fee.fee_name,
-        amount_usd: fee.amount_usd
-      }));
+      // Frais et montant : issus du calcul serveur enregistré sur la demande
+      const serverTotal = Number((request as any).total_amount_usd) || getTotalAmount();
+      const feeItems = Array.isArray((request as any).computed_fee_items)
+        ? (request as any).computed_fee_items
+        : quotedFees.map((fee) => ({ fee_name: fee.fee_name, amount_usd: fee.amount_usd }));
+
 
       const { data: paymentRecord, error: paymentError } = await supabase
         .from('expertise_payments')
