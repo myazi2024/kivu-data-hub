@@ -1346,6 +1346,11 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     defaultRefDoneRef.current = false;
     setSelectedBuildingRef('main');
     setCadastreDiscrepancies('');
+    setExpertiseScope('total');
+    setValuationTargets(['market']);
+    setSelectionMode('whole');
+    setDrawnArea(null);
+
     onOpenChange(false);
   };
 
