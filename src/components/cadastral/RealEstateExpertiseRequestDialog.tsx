@@ -986,12 +986,27 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
       building_permit_type: hasBuildingPermit === 'yes' ? buildingPermitType : undefined,
       building_permit_issue_date: hasBuildingPermit === 'yes' && buildingPermitIssueDate ? buildingPermitIssueDate : undefined,
       building_permit_issuing_service: hasBuildingPermit === 'yes' && buildingPermitIssuingService ? buildingPermitIssuingService : undefined,
+      // Périmètre et valeurs demandées
+      expertise_scope: expertiseScope,
+      valuation_targets: valuationTargets,
+      target_building_refs: selectionMode === 'buildings' ? selectedBuildingRefs : [],
+      target_area_geojson:
+        selectionMode === 'area' && drawnArea && drawnArea.length >= 3
+          ? { type: 'Polygon', coordinates: [[...drawnArea, drawnArea[0]].map((v) => [v.lng, v.lat])] }
+          : undefined,
       // Targeted building (multi-construction support)
       target_building_ref: selectedBuildingRef,
-      target_building_label: selectedBuildingRef === 'new'
-        ? 'Autre / nouvelle construction'
-        : (knownBuildings.find((b) => b.ref === selectedBuildingRef)?.label || undefined),
+      target_building_label: selectionMode === 'whole'
+        ? 'Toute la parcelle'
+        : selectionMode === 'area'
+          ? 'Zone tracée sur la parcelle'
+          : selectedBuildingRefs
+              .map((r) => (r === 'new'
+                ? 'Autre / nouvelle construction'
+                : knownBuildings.find((b) => b.ref === r)?.label || r))
+              .join(' + ') || undefined,
       cadastre_discrepancies: cadastreDiscrepancies.trim() || undefined,
+
       // Nomenclature cadastrale saisie (auparavant perdue à l'enregistrement)
       property_category: propertyCategory || undefined,
       construction_type: constructionType || undefined,
