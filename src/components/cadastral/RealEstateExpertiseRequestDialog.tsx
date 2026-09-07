@@ -1268,14 +1268,64 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
               </AlertDescription>
             </Alert>
 
-            {/* Building target selector — appears only if cadastre knows constructions for this parcel */}
-            {knownBuildings.length > 0 && (
-              <>
-                <BuildingTargetSelector
-                  buildings={knownBuildings}
-                  selectedRef={selectedBuildingRef}
-                  onSelect={setSelectedBuildingRef}
+            {/* Type d'expertise + valeurs à déterminer */}
+            <ExpertiseScopeSelector
+              scope={expertiseScope}
+              onScopeChange={handleScopeChange}
+              valuations={valuationTargets}
+              onValuationsChange={setValuationTargets}
+            />
+
+            {/* Périmètre expertisé : carte + liste */}
+            <Card className="border rounded-xl">
+              <CardContent className="p-3 space-y-3">
+                <h4 className="text-sm font-semibold flex items-center gap-2">
+                  <MapPin className="h-4 w-4 text-muted-foreground" />
+                  Périmètre concerné par l'expertise
+                </h4>
+
+                <div className="grid grid-cols-3 gap-1.5">
+                  {([
+                    { value: 'whole' as const, label: 'Toute la parcelle' },
+                    { value: 'buildings' as const, label: 'Construction(s)' },
+                    { value: 'area' as const, label: 'Zone tracée' },
+                  ]).map((o) => (
+                    <button
+                      key={o.value}
+                      type="button"
+                      onClick={() => handleSelectionModeChange(o.value)}
+                      className={cn(
+                        'px-2 py-1.5 rounded-xl border-2 text-[11px] font-medium transition-colors',
+                        selectionMode === o.value
+                          ? 'border-primary bg-primary/10 text-primary'
+                          : 'border-border bg-background hover:border-primary/50',
+                      )}
+                    >
+                      {o.label}
+                    </button>
+                  ))}
+                </div>
+
+                <ExpertiseTargetMap
+                  parcelVertices={parcelVertices}
+                  buildings={mapBuildings}
+                  mode={selectionMode}
+                  selectedRefs={selectedBuildingRefs}
+                  drawnArea={drawnArea}
+                  onToggleBuilding={toggleBuildingRef}
+                  onDrawnAreaChange={setDrawnArea}
                 />
+
+                <p className="text-xs text-muted-foreground">{scopeSummary}</p>
+
+                {selectionMode === 'buildings' && knownBuildings.length > 0 && (
+                  <BuildingTargetSelector
+                    buildings={knownBuildings}
+                    selectedRefs={selectedBuildingRefs}
+                    onToggle={toggleBuildingRef}
+                  />
+                )}
+
                 {selectedBuildingRef !== 'new' && lockedFromCadastre.size > 0 && (
                   <div className="space-y-1.5">
                     <Label htmlFor="cadastre-discrepancies" className="text-xs text-muted-foreground">
@@ -1290,8 +1340,9 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                     />
                   </div>
                 )}
-              </>
-            )}
+              </CardContent>
+            </Card>
+
 
             {/* Construction Block (CCC-aligned) */}
             <Card className="border rounded-xl">
