@@ -1073,7 +1073,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
           expertise_request_id: request.id,
           user_id: user.id,
           fee_items: feeItems,
-          total_amount_usd: getTotalAmount(),
+          total_amount_usd: serverTotal,
           payment_method: paymentMethod,
           payment_provider: paymentMethod === 'mobile_money' ? paymentProvider : 'stripe',
           phone_number: paymentMethod === 'mobile_money' ? paymentPhone : null,
@@ -1090,7 +1090,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
         await processExpertiseMobileMoneyPayment({
           provider: paymentProvider,
           phone: paymentPhone,
-          amountUsd: getTotalAmount(),
+          amountUsd: serverTotal,
           paymentType: 'expertise_fee',
           paymentRecordId: paymentRecord.id,
         });
@@ -1104,7 +1104,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
         const redirected = await processExpertiseStripePayment({
           paymentRecordId: paymentRecord.id,
           paymentType: 'expertise_fee',
-          amountUsd: getTotalAmount(),
+          amountUsd: serverTotal,
         });
         if (redirected) return;
       }
