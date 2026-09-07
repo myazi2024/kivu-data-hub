@@ -376,7 +376,94 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     if (cadastralPrefill === undefined) return; // requête en cours
     defaultRefDoneRef.current = true;
     setSelectedBuildingRef(knownBuildings.length > 0 ? knownBuildings[0].ref : 'new');
-  }, [open, knownBuildings, cadastralPrefill]);
+  }, [open, knownBuildings, cadastralPrefill, setSelectedBuildingRef]);
+
+  // === PÉRIMÈTRE : géométrie sans mesures (fournie par la RPC sécurisée) ===
+  const parcelVertices = useMemo(() => {
+    const raw = (cadastralPrefill as any)?.gps_coordinates;
+    if (!Array.isArray(raw)) return [];
+    return raw
+      .map((c: any) => ({ lat: parseFloat(c?.lat), lng: parseFloat(c?.lng) }))
+      .filter((v) => Number.isFinite(v.lat) && Number.isFinite(v.lng));
+  }, [cadastralPrefill]);
+
+  const mapBuildings = useMemo<MapBuilding[]>(() => {
+    const shapes = (cadastralPrefill as any)?.building_shapes;
+    if (!Array.isArray(shapes)) return [];
+    return shapes
+      .map((s: any, i: number) => {
+        const verts = Array.isArray(s?.vertices)
+          ? s.vertices
+              .map((v: any) => ({ lat: parseFloat(v?.lat), lng: parseFloat(v?.lng) }))
+              .filter((v: any) => Number.isFinite(v.lat) && Number.isFinite(v.lng))
+          : [];
+        const known = knownBuildings[i];
+        return {
+          ref: known?.ref || `shape-${i}`,
+          label: known?.label || `Construction ${i + 1}`,
+          vertices: verts,
+        };
+      })
+      .filter((b) => b.vertices.length >= 3);
+  }, [cadastralPrefill, knownBuildings]);
+
+  const toggleBuildingRef = useCallback((ref: string) => {
+    setSelectionMode('buildings');
+    setExpertiseScope('partial');
+    setSelectedBuildingRefs((prev) => {
+      if (ref === 'new') return prev.includes('new') ? [] : ['new'];
+      const withoutNew = prev.filter((r) => r !== 'new');
+      return withoutNew.includes(ref) ? withoutNew.filter((r) => r !== ref) : [...withoutNew, ref];
+    });
+  }, []);
+
+  const handleSelectionModeChange = useCallback((mode: ExpertiseSelectionMode) => {
+    setSelectionMode(mode);
+    if (mode === 'whole') {
+      setExpertiseScope('total');
+      setDrawnArea(null);
+    } else {
+      setExpertiseScope('partial');
+      if (mode === 'buildings') setDrawnArea(null);
+    }
+  }, []);
+
+  const handleScopeChange = useCallback((scope: 'partial' | 'total') => {
+    setExpertiseScope(scope);
+    if (scope === 'total') {
+      setSelectionMode('whole');
+      setDrawnArea(null);
+    } else if (selectionMode === 'whole') {
+      setSelectionMode('buildings');
+    }
+  }, [selectionMode]);
+
+  const scopeSummary = useMemo(() => {
+    const valLabel = valuationTargets.length === 2
+      ? 'valeur marchande et valeur locative'
+      : valuationTargets[0] === 'rental'
+        ? 'valeur locative'
+        : valuationTargets[0] === 'market'
+          ? 'valeur marchande'
+          : 'aucune valeur sélectionnée';
+    if (selectionMode === 'whole') return `Expertise totale — toute la parcelle — ${valLabel}.`;
+    if (selectionMode === 'area') {
+      return drawnArea && drawnArea.length >= 3
+        ? `Expertise partielle — zone tracée sur la parcelle — ${valLabel}.`
+        : `Expertise partielle — tracez la zone à expertiser — ${valLabel}.`;
+    }
+    const labels = selectedBuildingRefs.map(
+      (r) => (r === 'new' ? 'Autre / nouvelle construction' : knownBuildings.find((b) => b.ref === r)?.label || r),
+    );
+    return labels.length > 0
+      ? `Expertise partielle — ${labels.join(' + ')} — ${valLabel}.`
+      : `Expertise partielle — sélectionnez au moins une construction — ${valLabel}.`;
+  }, [selectionMode, drawnArea, selectedBuildingRefs, knownBuildings, valuationTargets]);
+
+  // Devis serveur des frais (jamais calculé côté client)
+  const { data: feeQuote } = useExpertiseFeeQuote(expertiseScope, valuationTargets, open);
+
+
 
 
   // Standing / hauteur issus du cadastre pour le bâtiment sélectionné
@@ -619,14 +706,31 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     return () => { cancelled = true; };
   }, [open, showIntro, user?.id, existingCertificate?.id]);
 
+   // Le total provient du devis serveur (RPC). Repli local uniquement si la RPC
+   // n'a pas encore répondu.
+   const quotedFees = useMemo(
+     () =>
+       feeQuote?.fee_items?.length
+         ? feeQuote.fee_items
+         : fees.filter((fee) => fee.is_mandatory).map((fee) => ({
+             fee_name: fee.fee_name,
+             amount_usd: fee.amount_usd,
+             description: fee.description,
+             is_mandatory: fee.is_mandatory,
+           })),
+     [feeQuote, fees],
+   );
+
    const getTotalAmount = () => {
-     const total = fees.filter(fee => fee.is_mandatory).reduce((sum, fee) => sum + fee.amount_usd, 0);
+     if (feeQuote) return Math.max(feeQuote.total_amount_usd, 0);
+     const total = quotedFees.reduce((sum, fee) => sum + Number(fee.amount_usd || 0), 0);
      return Math.max(total, 0);
    };
 
    const isPaymentValid = () => {
-     return fees.length > 0 && getTotalAmount() > 0;
+     return quotedFees.length > 0 && getTotalAmount() > 0;
    };
+
 
   // Sound measurement functions removed — now in CCC LocationTab
 
@@ -813,6 +917,26 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
       return;
     }
 
+    if (valuationTargets.length === 0) {
+      toast.error('Sélectionnez au moins une valeur à déterminer (marchande ou locative)');
+      setActiveTab('general');
+      return;
+    }
+
+    if (expertiseScope === 'partial') {
+      if (selectionMode === 'buildings' && selectedBuildingRefs.length === 0) {
+        toast.error('Sélectionnez au moins une construction à expertiser');
+        setActiveTab('general');
+        return;
+      }
+      if (selectionMode === 'area' && (!drawnArea || drawnArea.length < 3)) {
+        toast.error('Tracez la zone à expertiser sur la parcelle');
+        setActiveTab('general');
+        return;
+      }
+    }
+
+
     setFormData({
       parcel_number: parcelNumber,
       parcel_id: parcelId,
@@ -882,12 +1006,27 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
       building_permit_type: hasBuildingPermit === 'yes' ? buildingPermitType : undefined,
       building_permit_issue_date: hasBuildingPermit === 'yes' && buildingPermitIssueDate ? buildingPermitIssueDate : undefined,
       building_permit_issuing_service: hasBuildingPermit === 'yes' && buildingPermitIssuingService ? buildingPermitIssuingService : undefined,
+      // Périmètre et valeurs demandées
+      expertise_scope: expertiseScope,
+      valuation_targets: valuationTargets,
+      target_building_refs: selectionMode === 'buildings' ? selectedBuildingRefs : [],
+      target_area_geojson:
+        selectionMode === 'area' && drawnArea && drawnArea.length >= 3
+          ? { type: 'Polygon', coordinates: [[...drawnArea, drawnArea[0]].map((v) => [v.lng, v.lat])] }
+          : undefined,
       // Targeted building (multi-construction support)
       target_building_ref: selectedBuildingRef,
-      target_building_label: selectedBuildingRef === 'new'
-        ? 'Autre / nouvelle construction'
-        : (knownBuildings.find((b) => b.ref === selectedBuildingRef)?.label || undefined),
+      target_building_label: selectionMode === 'whole'
+        ? 'Toute la parcelle'
+        : selectionMode === 'area'
+          ? 'Zone tracée sur la parcelle'
+          : selectedBuildingRefs
+              .map((r) => (r === 'new'
+                ? 'Autre / nouvelle construction'
+                : knownBuildings.find((b) => b.ref === r)?.label || r))
+              .join(' + ') || undefined,
       cadastre_discrepancies: cadastreDiscrepancies.trim() || undefined,
+
       // Nomenclature cadastrale saisie (auparavant perdue à l'enregistrement)
       property_category: propertyCategory || undefined,
       construction_type: constructionType || undefined,
@@ -941,12 +1080,12 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
         throw new Error('Erreur lors de la création de la demande');
       }
 
-      const mandatoryFees = fees.filter(fee => fee.is_mandatory);
-      const feeItems = mandatoryFees.map(fee => ({
-        fee_id: fee.id,
-        fee_name: fee.fee_name,
-        amount_usd: fee.amount_usd
-      }));
+      // Frais et montant : issus du calcul serveur enregistré sur la demande
+      const serverTotal = Number((request as any).total_amount_usd) || getTotalAmount();
+      const feeItems = Array.isArray((request as any).computed_fee_items)
+        ? (request as any).computed_fee_items
+        : quotedFees.map((fee) => ({ fee_name: fee.fee_name, amount_usd: fee.amount_usd }));
+
 
       const { data: paymentRecord, error: paymentError } = await supabase
         .from('expertise_payments')
@@ -954,7 +1093,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
           expertise_request_id: request.id,
           user_id: user.id,
           fee_items: feeItems,
-          total_amount_usd: getTotalAmount(),
+          total_amount_usd: serverTotal,
           payment_method: paymentMethod,
           payment_provider: paymentMethod === 'mobile_money' ? paymentProvider : 'stripe',
           phone_number: paymentMethod === 'mobile_money' ? paymentPhone : null,
@@ -971,7 +1110,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
         await processExpertiseMobileMoneyPayment({
           provider: paymentProvider,
           phone: paymentPhone,
-          amountUsd: getTotalAmount(),
+          amountUsd: serverTotal,
           paymentType: 'expertise_fee',
           paymentRecordId: paymentRecord.id,
         });
@@ -985,7 +1124,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
         const redirected = await processExpertiseStripePayment({
           paymentRecordId: paymentRecord.id,
           paymentType: 'expertise_fee',
-          amountUsd: getTotalAmount(),
+          amountUsd: serverTotal,
         });
         if (redirected) return;
       }
@@ -1207,6 +1346,11 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     defaultRefDoneRef.current = false;
     setSelectedBuildingRef('main');
     setCadastreDiscrepancies('');
+    setExpertiseScope('total');
+    setValuationTargets(['market']);
+    setSelectionMode('whole');
+    setDrawnArea(null);
+
     onOpenChange(false);
   };
 
@@ -1268,14 +1412,64 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
               </AlertDescription>
             </Alert>
 
-            {/* Building target selector — appears only if cadastre knows constructions for this parcel */}
-            {knownBuildings.length > 0 && (
-              <>
-                <BuildingTargetSelector
-                  buildings={knownBuildings}
-                  selectedRef={selectedBuildingRef}
-                  onSelect={setSelectedBuildingRef}
+            {/* Type d'expertise + valeurs à déterminer */}
+            <ExpertiseScopeSelector
+              scope={expertiseScope}
+              onScopeChange={handleScopeChange}
+              valuations={valuationTargets}
+              onValuationsChange={setValuationTargets}
+            />
+
+            {/* Périmètre expertisé : carte + liste */}
+            <Card className="border rounded-xl">
+              <CardContent className="p-3 space-y-3">
+                <h4 className="text-sm font-semibold flex items-center gap-2">
+                  <MapPin className="h-4 w-4 text-muted-foreground" />
+                  Périmètre concerné par l'expertise
+                </h4>
+
+                <div className="grid grid-cols-3 gap-1.5">
+                  {([
+                    { value: 'whole' as const, label: 'Toute la parcelle' },
+                    { value: 'buildings' as const, label: 'Construction(s)' },
+                    { value: 'area' as const, label: 'Zone tracée' },
+                  ]).map((o) => (
+                    <button
+                      key={o.value}
+                      type="button"
+                      onClick={() => handleSelectionModeChange(o.value)}
+                      className={cn(
+                        'px-2 py-1.5 rounded-xl border-2 text-[11px] font-medium transition-colors',
+                        selectionMode === o.value
+                          ? 'border-primary bg-primary/10 text-primary'
+                          : 'border-border bg-background hover:border-primary/50',
+                      )}
+                    >
+                      {o.label}
+                    </button>
+                  ))}
+                </div>
+
+                <ExpertiseTargetMap
+                  parcelVertices={parcelVertices}
+                  buildings={mapBuildings}
+                  mode={selectionMode}
+                  selectedRefs={selectedBuildingRefs}
+                  drawnArea={drawnArea}
+                  onToggleBuilding={toggleBuildingRef}
+                  onDrawnAreaChange={setDrawnArea}
                 />
+
+                <p className="text-xs text-muted-foreground">{scopeSummary}</p>
+
+                {selectionMode === 'buildings' && knownBuildings.length > 0 && (
+                  <BuildingTargetSelector
+                    buildings={knownBuildings}
+                    selectedRefs={selectedBuildingRefs}
+                    onToggle={toggleBuildingRef}
+                  />
+                )}
+
                 {selectedBuildingRef !== 'new' && lockedFromCadastre.size > 0 && (
                   <div className="space-y-1.5">
                     <Label htmlFor="cadastre-discrepancies" className="text-xs text-muted-foreground">
@@ -1290,8 +1484,9 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                     />
                   </div>
                 )}
-              </>
-            )}
+              </CardContent>
+            </Card>
+
 
             {/* Construction Block (CCC-aligned) */}
             <Card className="border rounded-xl">
@@ -3117,12 +3312,13 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
       <div className="bg-muted/30 rounded-2xl p-2.5">
         <p className="text-[11px] font-semibold text-muted-foreground mb-1.5 px-0.5">Détails des frais</p>
         <div className="space-y-1">
-          {fees.filter(fee => fee.is_mandatory).map((fee) => (
-            <div key={fee.id} className="flex justify-between items-center px-0.5">
+          {quotedFees.map((fee, idx) => (
+            <div key={`${fee.fee_name}-${idx}`} className="flex justify-between items-center px-0.5">
               <span className="text-sm">{fee.fee_name}</span>
               <span className="font-semibold text-sm">${fee.amount_usd}</span>
             </div>
           ))}
+
         </div>
       </div>
 
