@@ -3287,12 +3287,13 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
       <div className="bg-muted/30 rounded-2xl p-2.5">
         <p className="text-[11px] font-semibold text-muted-foreground mb-1.5 px-0.5">Détails des frais</p>
         <div className="space-y-1">
-          {fees.filter(fee => fee.is_mandatory).map((fee) => (
-            <div key={fee.id} className="flex justify-between items-center px-0.5">
+          {quotedFees.map((fee, idx) => (
+            <div key={`${fee.fee_name}-${idx}`} className="flex justify-between items-center px-0.5">
               <span className="text-sm">{fee.fee_name}</span>
               <span className="font-semibold text-sm">${fee.amount_usd}</span>
             </div>
           ))}
+
         </div>
       </div>
 
