@@ -376,7 +376,94 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     if (cadastralPrefill === undefined) return; // requête en cours
     defaultRefDoneRef.current = true;
     setSelectedBuildingRef(knownBuildings.length > 0 ? knownBuildings[0].ref : 'new');
-  }, [open, knownBuildings, cadastralPrefill]);
+  }, [open, knownBuildings, cadastralPrefill, setSelectedBuildingRef]);
+
+  // === PÉRIMÈTRE : géométrie sans mesures (fournie par la RPC sécurisée) ===
+  const parcelVertices = useMemo(() => {
+    const raw = (cadastralPrefill as any)?.gps_coordinates;
+    if (!Array.isArray(raw)) return [];
+    return raw
+      .map((c: any) => ({ lat: parseFloat(c?.lat), lng: parseFloat(c?.lng) }))
+      .filter((v) => Number.isFinite(v.lat) && Number.isFinite(v.lng));
+  }, [cadastralPrefill]);
+
+  const mapBuildings = useMemo<MapBuilding[]>(() => {
+    const shapes = (cadastralPrefill as any)?.building_shapes;
+    if (!Array.isArray(shapes)) return [];
+    return shapes
+      .map((s: any, i: number) => {
+        const verts = Array.isArray(s?.vertices)
+          ? s.vertices
+              .map((v: any) => ({ lat: parseFloat(v?.lat), lng: parseFloat(v?.lng) }))
+              .filter((v: any) => Number.isFinite(v.lat) && Number.isFinite(v.lng))
+          : [];
+        const known = knownBuildings[i];
+        return {
+          ref: known?.ref || `shape-${i}`,
+          label: known?.label || `Construction ${i + 1}`,
+          vertices: verts,
+        };
+      })
+      .filter((b) => b.vertices.length >= 3);
+  }, [cadastralPrefill, knownBuildings]);
+
+  const toggleBuildingRef = useCallback((ref: string) => {
+    setSelectionMode('buildings');
+    setExpertiseScope('partial');
+    setSelectedBuildingRefs((prev) => {
+      if (ref === 'new') return prev.includes('new') ? [] : ['new'];
+      const withoutNew = prev.filter((r) => r !== 'new');
+      return withoutNew.includes(ref) ? withoutNew.filter((r) => r !== ref) : [...withoutNew, ref];
+    });
+  }, []);
+
+  const handleSelectionModeChange = useCallback((mode: ExpertiseSelectionMode) => {
+    setSelectionMode(mode);
+    if (mode === 'whole') {
+      setExpertiseScope('total');
+      setDrawnArea(null);
+    } else {
+      setExpertiseScope('partial');
+      if (mode === 'buildings') setDrawnArea(null);
+    }
+  }, []);
+
+  const handleScopeChange = useCallback((scope: 'partial' | 'total') => {
+    setExpertiseScope(scope);
+    if (scope === 'total') {
+      setSelectionMode('whole');
+      setDrawnArea(null);
+    } else if (selectionMode === 'whole') {
+      setSelectionMode('buildings');
+    }
+  }, [selectionMode]);
+
+  const scopeSummary = useMemo(() => {
+    const valLabel = valuationTargets.length === 2
+      ? 'valeur marchande et valeur locative'
+      : valuationTargets[0] === 'rental'
+        ? 'valeur locative'
+        : valuationTargets[0] === 'market'
+          ? 'valeur marchande'
+          : 'aucune valeur sélectionnée';
+    if (selectionMode === 'whole') return `Expertise totale — toute la parcelle — ${valLabel}.`;
+    if (selectionMode === 'area') {
+      return drawnArea && drawnArea.length >= 3
+        ? `Expertise partielle — zone tracée sur la parcelle — ${valLabel}.`
+        : `Expertise partielle — tracez la zone à expertiser — ${valLabel}.`;
+    }
+    const labels = selectedBuildingRefs.map(
+      (r) => (r === 'new' ? 'Autre / nouvelle construction' : knownBuildings.find((b) => b.ref === r)?.label || r),
+    );
+    return labels.length > 0
+      ? `Expertise partielle — ${labels.join(' + ')} — ${valLabel}.`
+      : `Expertise partielle — sélectionnez au moins une construction — ${valLabel}.`;
+  }, [selectionMode, drawnArea, selectedBuildingRefs, knownBuildings, valuationTargets]);
+
+  // Devis serveur des frais (jamais calculé côté client)
+  const { data: feeQuote } = useExpertiseFeeQuote(expertiseScope, valuationTargets, open);
+
+
 
 
   // Standing / hauteur issus du cadastre pour le bâtiment sélectionné
