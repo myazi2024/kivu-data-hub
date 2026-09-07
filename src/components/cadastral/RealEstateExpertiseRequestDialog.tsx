@@ -706,14 +706,31 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     return () => { cancelled = true; };
   }, [open, showIntro, user?.id, existingCertificate?.id]);
 
+   // Le total provient du devis serveur (RPC). Repli local uniquement si la RPC
+   // n'a pas encore répondu.
+   const quotedFees = useMemo(
+     () =>
+       feeQuote?.fee_items?.length
+         ? feeQuote.fee_items
+         : fees.filter((fee) => fee.is_mandatory).map((fee) => ({
+             fee_name: fee.fee_name,
+             amount_usd: fee.amount_usd,
+             description: fee.description,
+             is_mandatory: fee.is_mandatory,
+           })),
+     [feeQuote, fees],
+   );
+
    const getTotalAmount = () => {
-     const total = fees.filter(fee => fee.is_mandatory).reduce((sum, fee) => sum + fee.amount_usd, 0);
+     if (feeQuote) return Math.max(feeQuote.total_amount_usd, 0);
+     const total = quotedFees.reduce((sum, fee) => sum + Number(fee.amount_usd || 0), 0);
      return Math.max(total, 0);
    };
 
    const isPaymentValid = () => {
-     return fees.length > 0 && getTotalAmount() > 0;
+     return quotedFees.length > 0 && getTotalAmount() > 0;
    };
+
 
   // Sound measurement functions removed — now in CCC LocationTab
 
