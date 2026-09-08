@@ -378,17 +378,17 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     setSelectedBuildingRef(knownBuildings.length > 0 ? knownBuildings[0].ref : 'new');
   }, [open, knownBuildings, cadastralPrefill, setSelectedBuildingRef]);
 
-  // === PÉRIMÈTRE : géométrie sans mesures (fournie par la RPC sécurisée) ===
+  // === PÉRIMÈTRE : géométrie sans mesures (RPC sécurisée, repli sur les données de la carte) ===
   const parcelVertices = useMemo(() => {
-    const raw = (cadastralPrefill as any)?.gps_coordinates;
+    const raw = (cadastralPrefill as any)?.gps_coordinates ?? (parcelData as any)?.gps_coordinates;
     if (!Array.isArray(raw)) return [];
     return raw
       .map((c: any) => ({ lat: parseFloat(c?.lat), lng: parseFloat(c?.lng) }))
       .filter((v) => Number.isFinite(v.lat) && Number.isFinite(v.lng));
-  }, [cadastralPrefill]);
+  }, [cadastralPrefill, parcelData]);
 
   const mapBuildings = useMemo<MapBuilding[]>(() => {
-    const shapes = (cadastralPrefill as any)?.building_shapes;
+    const shapes = (cadastralPrefill as any)?.building_shapes ?? (parcelData as any)?.building_shapes;
     if (!Array.isArray(shapes)) return [];
     return shapes
       .map((s: any, i: number) => {
@@ -405,11 +405,11 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
         };
       })
       .filter((b) => b.vertices.length >= 3);
-  }, [cadastralPrefill, knownBuildings]);
+  }, [cadastralPrefill, parcelData, knownBuildings]);
 
   const toggleBuildingRef = useCallback((ref: string) => {
+    setExpertiseScope((prev) => (prev === 'total' ? 'partial' : prev));
     setSelectionMode('buildings');
-    setExpertiseScope('partial');
     setSelectedBuildingRefs((prev) => {
       if (ref === 'new') return prev.includes('new') ? [] : ['new'];
       const withoutNew = prev.filter((r) => r !== 'new');
@@ -418,14 +418,17 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
   }, []);
 
   const handleSelectionModeChange = useCallback((mode: ExpertiseSelectionMode) => {
-    setSelectionMode(mode);
-    if (mode === 'whole') {
-      setExpertiseScope('total');
-      setDrawnArea(null);
-    } else {
-      setExpertiseScope('partial');
-      if (mode === 'buildings') setDrawnArea(null);
-    }
+    setSelectionMode((prev) => {
+      if (prev === mode) return prev;
+      if (mode !== 'area') setDrawnArea(null);
+      if (mode === 'whole') {
+        setExpertiseScope('total');
+        setSelectedBuildingRefs([]);
+      } else {
+        setExpertiseScope('partial');
+      }
+      return mode;
+    });
   }, []);
 
   const handleScopeChange = useCallback((scope: 'partial' | 'total') => {
@@ -433,10 +436,12 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     if (scope === 'total') {
       setSelectionMode('whole');
       setDrawnArea(null);
+      setSelectedBuildingRefs([]);
     } else if (selectionMode === 'whole') {
       setSelectionMode('buildings');
     }
   }, [selectionMode]);
+
 
   const scopeSummary = useMemo(() => {
     const valLabel = valuationTargets.length === 2
