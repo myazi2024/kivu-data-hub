@@ -378,17 +378,17 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     setSelectedBuildingRef(knownBuildings.length > 0 ? knownBuildings[0].ref : 'new');
   }, [open, knownBuildings, cadastralPrefill, setSelectedBuildingRef]);
 
-  // === PÉRIMÈTRE : géométrie sans mesures (fournie par la RPC sécurisée) ===
+  // === PÉRIMÈTRE : géométrie sans mesures (RPC sécurisée, repli sur les données de la carte) ===
   const parcelVertices = useMemo(() => {
-    const raw = (cadastralPrefill as any)?.gps_coordinates;
+    const raw = (cadastralPrefill as any)?.gps_coordinates ?? (parcelData as any)?.gps_coordinates;
     if (!Array.isArray(raw)) return [];
     return raw
       .map((c: any) => ({ lat: parseFloat(c?.lat), lng: parseFloat(c?.lng) }))
       .filter((v) => Number.isFinite(v.lat) && Number.isFinite(v.lng));
-  }, [cadastralPrefill]);
+  }, [cadastralPrefill, parcelData]);
 
   const mapBuildings = useMemo<MapBuilding[]>(() => {
-    const shapes = (cadastralPrefill as any)?.building_shapes;
+    const shapes = (cadastralPrefill as any)?.building_shapes ?? (parcelData as any)?.building_shapes;
     if (!Array.isArray(shapes)) return [];
     return shapes
       .map((s: any, i: number) => {
@@ -405,11 +405,11 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
         };
       })
       .filter((b) => b.vertices.length >= 3);
-  }, [cadastralPrefill, knownBuildings]);
+  }, [cadastralPrefill, parcelData, knownBuildings]);
 
   const toggleBuildingRef = useCallback((ref: string) => {
+    setExpertiseScope((prev) => (prev === 'total' ? 'partial' : prev));
     setSelectionMode('buildings');
-    setExpertiseScope('partial');
     setSelectedBuildingRefs((prev) => {
       if (ref === 'new') return prev.includes('new') ? [] : ['new'];
       const withoutNew = prev.filter((r) => r !== 'new');
@@ -418,14 +418,17 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
   }, []);
 
   const handleSelectionModeChange = useCallback((mode: ExpertiseSelectionMode) => {
-    setSelectionMode(mode);
-    if (mode === 'whole') {
-      setExpertiseScope('total');
-      setDrawnArea(null);
-    } else {
-      setExpertiseScope('partial');
-      if (mode === 'buildings') setDrawnArea(null);
-    }
+    setSelectionMode((prev) => {
+      if (prev === mode) return prev;
+      if (mode !== 'area') setDrawnArea(null);
+      if (mode === 'whole') {
+        setExpertiseScope('total');
+        setSelectedBuildingRefs([]);
+      } else {
+        setExpertiseScope('partial');
+      }
+      return mode;
+    });
   }, []);
 
   const handleScopeChange = useCallback((scope: 'partial' | 'total') => {
@@ -433,10 +436,12 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     if (scope === 'total') {
       setSelectionMode('whole');
       setDrawnArea(null);
+      setSelectedBuildingRefs([]);
     } else if (selectionMode === 'whole') {
       setSelectionMode('buildings');
     }
   }, [selectionMode]);
+
 
   const scopeSummary = useMemo(() => {
     const valLabel = valuationTargets.length === 2
@@ -1433,22 +1438,35 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                     { value: 'whole' as const, label: 'Toute la parcelle' },
                     { value: 'buildings' as const, label: 'Construction(s)' },
                     { value: 'area' as const, label: 'Zone tracée' },
-                  ]).map((o) => (
-                    <button
-                      key={o.value}
-                      type="button"
-                      onClick={() => handleSelectionModeChange(o.value)}
-                      className={cn(
-                        'px-2 py-1.5 rounded-xl border-2 text-[11px] font-medium transition-colors',
-                        selectionMode === o.value
-                          ? 'border-primary bg-primary/10 text-primary'
-                          : 'border-border bg-background hover:border-primary/50',
-                      )}
-                    >
-                      {o.label}
-                    </button>
-                  ))}
+                  ]).map((o) => {
+                    const locked = expertiseScope === 'total' && o.value !== 'whole';
+                    return (
+                      <button
+                        key={o.value}
+                        type="button"
+                        disabled={locked}
+                        aria-disabled={locked}
+                        title={locked ? "Disponible uniquement pour une expertise partielle" : undefined}
+                        onClick={() => handleSelectionModeChange(o.value)}
+                        className={cn(
+                          'px-2 py-1.5 rounded-xl border-2 text-[11px] font-medium transition-colors',
+                          selectionMode === o.value
+                            ? 'border-primary bg-primary/10 text-primary'
+                            : 'border-border bg-background hover:border-primary/50',
+                          locked && 'opacity-40 cursor-not-allowed hover:border-border',
+                        )}
+                      >
+                        {o.label}
+                      </button>
+                    );
+                  })}
                 </div>
+
+                {expertiseScope === 'total' && (
+                  <p className="text-[11px] text-muted-foreground">
+                    Expertise totale : toute la parcelle est concernée. Choisissez « Expertise partielle » pour cibler une construction ou une zone.
+                  </p>
+                )}
 
                 <ExpertiseTargetMap
                   parcelVertices={parcelVertices}
@@ -1469,6 +1487,13 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                     onToggle={toggleBuildingRef}
                   />
                 )}
+
+                {selectionMode === 'buildings' && knownBuildings.length === 0 && mapBuildings.length === 0 && (
+                  <p className="text-[11px] text-muted-foreground">
+                    Aucune construction n'est encore enregistrée pour cette parcelle. Choisissez « Zone tracée » pour délimiter vous-même la partie à expertiser.
+                  </p>
+                )}
+
 
                 {selectedBuildingRef !== 'new' && lockedFromCadastre.size > 0 && (
                   <div className="space-y-1.5">

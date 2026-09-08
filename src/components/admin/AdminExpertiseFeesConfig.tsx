@@ -22,6 +22,9 @@ interface ExpertiseFee {
   is_mandatory: boolean;
   is_active: boolean;
   display_order: number;
+  applies_to_market_value?: boolean;
+  applies_to_rental_value?: boolean;
+  partial_multiplier?: number;
 }
 
 export const AdminExpertiseFeesConfig: React.FC = () => {
@@ -37,6 +40,10 @@ export const AdminExpertiseFeesConfig: React.FC = () => {
   const [feeDescription, setFeeDescription] = useState('');
   const [feeMandatory, setFeeMandatory] = useState(true);
   const [feeActive, setFeeActive] = useState(true);
+  const [appliesMarket, setAppliesMarket] = useState(false);
+  const [appliesRental, setAppliesRental] = useState(false);
+  const [partialMultiplier, setPartialMultiplier] = useState('1');
+
 
   const fetchFees = async () => {
     setLoading(true);
@@ -66,6 +73,9 @@ export const AdminExpertiseFeesConfig: React.FC = () => {
     setFeeDescription('');
     setFeeMandatory(true);
     setFeeActive(true);
+    setAppliesMarket(false);
+    setAppliesRental(false);
+    setPartialMultiplier('1');
     setEditingFee(null);
   };
 
@@ -76,12 +86,21 @@ export const AdminExpertiseFeesConfig: React.FC = () => {
     setFeeDescription(fee.description || '');
     setFeeMandatory(fee.is_mandatory);
     setFeeActive(fee.is_active);
+    setAppliesMarket(!!fee.applies_to_market_value);
+    setAppliesRental(!!fee.applies_to_rental_value);
+    setPartialMultiplier(String(fee.partial_multiplier ?? 1));
     setShowDialog(true);
   };
 
   const handleSave = async () => {
     if (!feeName || !feeAmount) {
       toast.error('Veuillez remplir tous les champs obligatoires');
+      return;
+    }
+
+    const multiplier = parseFloat(partialMultiplier);
+    if (!Number.isFinite(multiplier) || multiplier <= 0 || multiplier > 5) {
+      toast.error('Le coefficient d\'expertise partielle doit être compris entre 0 et 5');
       return;
     }
 
@@ -96,6 +115,9 @@ export const AdminExpertiseFeesConfig: React.FC = () => {
             description: feeDescription || null,
             is_mandatory: feeMandatory,
             is_active: feeActive,
+            applies_to_market_value: appliesMarket,
+            applies_to_rental_value: appliesRental,
+            partial_multiplier: multiplier,
             updated_at: new Date().toISOString()
           })
           .eq('id', editingFee.id);
@@ -111,8 +133,12 @@ export const AdminExpertiseFeesConfig: React.FC = () => {
             description: feeDescription || null,
             is_mandatory: feeMandatory,
             is_active: feeActive,
+            applies_to_market_value: appliesMarket,
+            applies_to_rental_value: appliesRental,
+            partial_multiplier: multiplier,
             display_order: fees.length + 1
           });
+
 
         if (error) throw error;
         toast.success('Frais ajouté avec succès');
@@ -318,6 +344,30 @@ export const AdminExpertiseFeesConfig: React.FC = () => {
               <Label className="text-xs">Actif</Label>
               <Switch checked={feeActive} onCheckedChange={setFeeActive} />
             </div>
+            <div className="flex items-center justify-between">
+              <Label className="text-xs">S'applique à la valeur marchande</Label>
+              <Switch checked={appliesMarket} onCheckedChange={setAppliesMarket} />
+            </div>
+            <div className="flex items-center justify-between">
+              <Label className="text-xs">S'applique à la valeur locative</Label>
+              <Switch checked={appliesRental} onCheckedChange={setAppliesRental} />
+            </div>
+            <div>
+              <Label className="text-xs">Coefficient expertise partielle</Label>
+              <Input
+                type="number"
+                step="0.05"
+                min="0.05"
+                max="5"
+                value={partialMultiplier}
+                onChange={(e) => setPartialMultiplier(e.target.value)}
+                className="h-9 text-sm rounded-xl"
+              />
+              <p className="text-[10px] text-muted-foreground mt-1">
+                1 = tarif plein. Ex. 0,7 réduit ce frais de 30 % pour une expertise partielle.
+              </p>
+            </div>
+
           </div>
 
           <DialogFooter className="gap-2">
