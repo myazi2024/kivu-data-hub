@@ -1438,22 +1438,35 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                     { value: 'whole' as const, label: 'Toute la parcelle' },
                     { value: 'buildings' as const, label: 'Construction(s)' },
                     { value: 'area' as const, label: 'Zone tracée' },
-                  ]).map((o) => (
-                    <button
-                      key={o.value}
-                      type="button"
-                      onClick={() => handleSelectionModeChange(o.value)}
-                      className={cn(
-                        'px-2 py-1.5 rounded-xl border-2 text-[11px] font-medium transition-colors',
-                        selectionMode === o.value
-                          ? 'border-primary bg-primary/10 text-primary'
-                          : 'border-border bg-background hover:border-primary/50',
-                      )}
-                    >
-                      {o.label}
-                    </button>
-                  ))}
+                  ]).map((o) => {
+                    const locked = expertiseScope === 'total' && o.value !== 'whole';
+                    return (
+                      <button
+                        key={o.value}
+                        type="button"
+                        disabled={locked}
+                        aria-disabled={locked}
+                        title={locked ? "Disponible uniquement pour une expertise partielle" : undefined}
+                        onClick={() => handleSelectionModeChange(o.value)}
+                        className={cn(
+                          'px-2 py-1.5 rounded-xl border-2 text-[11px] font-medium transition-colors',
+                          selectionMode === o.value
+                            ? 'border-primary bg-primary/10 text-primary'
+                            : 'border-border bg-background hover:border-primary/50',
+                          locked && 'opacity-40 cursor-not-allowed hover:border-border',
+                        )}
+                      >
+                        {o.label}
+                      </button>
+                    );
+                  })}
                 </div>
+
+                {expertiseScope === 'total' && (
+                  <p className="text-[11px] text-muted-foreground">
+                    Expertise totale : toute la parcelle est concernée. Choisissez « Expertise partielle » pour cibler une construction ou une zone.
+                  </p>
+                )}
 
                 <ExpertiseTargetMap
                   parcelVertices={parcelVertices}
@@ -1474,6 +1487,13 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                     onToggle={toggleBuildingRef}
                   />
                 )}
+
+                {selectionMode === 'buildings' && knownBuildings.length === 0 && mapBuildings.length === 0 && (
+                  <p className="text-[11px] text-muted-foreground">
+                    Aucune construction n'est encore enregistrée pour cette parcelle. Choisissez « Zone tracée » pour délimiter vous-même la partie à expertiser.
+                  </p>
+                )}
+
 
                 {selectedBuildingRef !== 'new' && lockedFromCadastre.size > 0 && (
                   <div className="space-y-1.5">
