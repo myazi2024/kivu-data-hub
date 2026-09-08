@@ -47,7 +47,7 @@ const ExpertiseScopeSelector: React.FC<ExpertiseScopeSelectorProps> = ({
           <RadioGroup
             value={scope}
             onValueChange={(v) => onScopeChange(v as ExpertiseScope)}
-            className="grid gap-2"
+            className="grid grid-cols-2 gap-2"
           >
             {SCOPE_OPTIONS.map((o) => (
               <label
