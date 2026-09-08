@@ -73,6 +73,9 @@ export const AdminExpertiseFeesConfig: React.FC = () => {
     setFeeDescription('');
     setFeeMandatory(true);
     setFeeActive(true);
+    setAppliesMarket(false);
+    setAppliesRental(false);
+    setPartialMultiplier('1');
     setEditingFee(null);
   };
 
@@ -83,12 +86,21 @@ export const AdminExpertiseFeesConfig: React.FC = () => {
     setFeeDescription(fee.description || '');
     setFeeMandatory(fee.is_mandatory);
     setFeeActive(fee.is_active);
+    setAppliesMarket(!!fee.applies_to_market_value);
+    setAppliesRental(!!fee.applies_to_rental_value);
+    setPartialMultiplier(String(fee.partial_multiplier ?? 1));
     setShowDialog(true);
   };
 
   const handleSave = async () => {
     if (!feeName || !feeAmount) {
       toast.error('Veuillez remplir tous les champs obligatoires');
+      return;
+    }
+
+    const multiplier = parseFloat(partialMultiplier);
+    if (!Number.isFinite(multiplier) || multiplier <= 0 || multiplier > 5) {
+      toast.error('Le coefficient d\'expertise partielle doit être compris entre 0 et 5');
       return;
     }
 
@@ -103,6 +115,9 @@ export const AdminExpertiseFeesConfig: React.FC = () => {
             description: feeDescription || null,
             is_mandatory: feeMandatory,
             is_active: feeActive,
+            applies_to_market_value: appliesMarket,
+            applies_to_rental_value: appliesRental,
+            partial_multiplier: multiplier,
             updated_at: new Date().toISOString()
           })
           .eq('id', editingFee.id);
@@ -118,8 +133,12 @@ export const AdminExpertiseFeesConfig: React.FC = () => {
             description: feeDescription || null,
             is_mandatory: feeMandatory,
             is_active: feeActive,
+            applies_to_market_value: appliesMarket,
+            applies_to_rental_value: appliesRental,
+            partial_multiplier: multiplier,
             display_order: fees.length + 1
           });
+
 
         if (error) throw error;
         toast.success('Frais ajouté avec succès');
