@@ -22,6 +22,9 @@ interface ExpertiseFee {
   is_mandatory: boolean;
   is_active: boolean;
   display_order: number;
+  applies_to_market_value?: boolean;
+  applies_to_rental_value?: boolean;
+  partial_multiplier?: number;
 }
 
 export const AdminExpertiseFeesConfig: React.FC = () => {
@@ -37,6 +40,10 @@ export const AdminExpertiseFeesConfig: React.FC = () => {
   const [feeDescription, setFeeDescription] = useState('');
   const [feeMandatory, setFeeMandatory] = useState(true);
   const [feeActive, setFeeActive] = useState(true);
+  const [appliesMarket, setAppliesMarket] = useState(false);
+  const [appliesRental, setAppliesRental] = useState(false);
+  const [partialMultiplier, setPartialMultiplier] = useState('1');
+
 
   const fetchFees = async () => {
     setLoading(true);
