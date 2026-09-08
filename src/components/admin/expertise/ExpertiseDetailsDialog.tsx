@@ -68,6 +68,73 @@ const ExpertiseDetailsDialog: React.FC<Props> = ({ open, onOpenChange, request }
 
               <Separator />
 
+              {/* Périmètre expertisé */}
+              {(() => {
+                const r = request as any;
+                const scope = r.expertise_scope as string | null;
+                const targets: string[] = Array.isArray(r.valuation_targets) ? r.valuation_targets : [];
+                const refs: string[] = Array.isArray(r.target_building_refs) ? r.target_building_refs : [];
+                const hasArea = !!r.target_area_geojson;
+                const feeItems: any[] = Array.isArray(r.computed_fee_items) ? r.computed_fee_items : [];
+                if (!scope && targets.length === 0 && refs.length === 0 && !hasArea && feeItems.length === 0) return null;
+                return (
+                  <div>
+                    <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
+                      <FileSearch className="h-4 w-4" />
+                      Périmètre expertisé
+                    </h4>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <Label className="text-xs text-muted-foreground">Type d'expertise</Label>
+                        <p>{scope === 'partial' ? 'Expertise partielle' : scope === 'total' ? 'Expertise totale' : '-'}</p>
+                      </div>
+                      <div>
+                        <Label className="text-xs text-muted-foreground">Valeur(s) demandée(s)</Label>
+                        <p>
+                          {targets.length === 0
+                            ? '-'
+                            : targets
+                                .map((t) => (t === 'rental' ? 'Valeur locative' : t === 'market' ? 'Valeur marchande' : t))
+                                .join(' + ')}
+                        </p>
+                      </div>
+                      <div className="col-span-2">
+                        <Label className="text-xs text-muted-foreground">Cible</Label>
+                        <p>
+                          {scope === 'total'
+                            ? 'Toute la parcelle'
+                            : hasArea
+                              ? 'Zone tracée par le demandeur'
+                              : refs.length > 0
+                                ? refs.map((x) => (x === 'main' ? 'Construction principale' : x === 'new' ? 'Autre / nouvelle construction' : x)).join(', ')
+                                : '-'}
+                        </p>
+                      </div>
+                      {feeItems.length > 0 && (
+                        <div className="col-span-2">
+                          <Label className="text-xs text-muted-foreground">Détail des frais (calcul serveur)</Label>
+                          <ul className="mt-1 space-y-0.5">
+                            {feeItems.map((f, i) => (
+                              <li key={i} className="flex justify-between text-xs">
+                                <span>{f.fee_name || f.name || `Frais ${i + 1}`}</span>
+                                <span className="font-medium">${Number(f.amount_usd ?? f.amount ?? 0).toFixed(2)}</span>
+                              </li>
+                            ))}
+                            <li className="flex justify-between text-xs font-bold border-t pt-1">
+                              <span>Total</span>
+                              <span>${Number(r.total_amount_usd || 0).toFixed(2)}</span>
+                            </li>
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
+
+              <Separator />
+
+
               {/* Demandeur */}
               <div>
                 <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
