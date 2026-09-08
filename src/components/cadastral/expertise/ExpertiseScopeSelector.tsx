@@ -76,7 +76,7 @@ const ExpertiseScopeSelector: React.FC<ExpertiseScopeSelectorProps> = ({
           <p className="text-xs text-muted-foreground">
             Vous pouvez demander les deux valeurs en même temps.
           </p>
-          <div className="grid gap-2">
+          <div className="grid grid-cols-2 gap-2">
             {VALUATION_OPTIONS.map((o) => {
               const checked = valuations.includes(o.value);
               return (

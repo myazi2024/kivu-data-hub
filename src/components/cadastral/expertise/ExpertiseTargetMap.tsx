@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -45,6 +45,11 @@ const ExpertiseTargetMap: React.FC<ExpertiseTargetMapProps> = ({
   const svgRef = useRef<SVGSVGElement>(null);
   const [hovered, setHovered] = useState<string | null>(null);
   const [drawing, setDrawing] = useState(false);
+
+  // Le tracé ne reste jamais actif après un changement de mode
+  useEffect(() => {
+    if (mode !== 'area') setDrawing(false);
+  }, [mode]);
 
   const width = 320;
 
