@@ -39,6 +39,12 @@ export interface ExpertiseRequest {
   payment_status?: 'pending' | 'paid' | 'failed';
   assigned_to?: string;
   assigned_at?: string;
+  expertise_scope?: 'partial' | 'total';
+  valuation_targets?: string[];
+  target_building_refs?: string[];
+  target_area_geojson?: Record<string, unknown> | null;
+  computed_fee_items?: Array<{ fee_name?: string; amount_usd?: number }>;
+  total_amount_usd?: number;
   market_value_usd?: number;
   expertise_date?: string;
   expertise_report_url?: string;
