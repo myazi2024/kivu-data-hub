@@ -43,6 +43,9 @@ export interface ExpertiseRequest {
   valuation_targets?: string[];
   target_building_refs?: string[];
   target_area_geojson?: Record<string, unknown> | null;
+  /** Fiche détaillée par construction expertisée (multi-constructions) */
+  building_details?: ExpertiseBuildingDetail[];
+
   computed_fee_items?: Array<{ fee_name?: string; amount_usd?: number }>;
   total_amount_usd?: number;
   market_value_usd?: number;
