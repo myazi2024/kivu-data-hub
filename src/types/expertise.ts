@@ -2,7 +2,70 @@
  * Type centralisé pour les demandes d'expertise immobilière.
  * Utilisé dans le hook, l'admin, le tableau de bord utilisateur et le formulaire.
  */
+
+/**
+ * Fiche descriptive d'une construction expertisée. Une demande peut en contenir
+ * plusieurs lorsque la parcelle porte plusieurs constructions.
+ */
+export interface ExpertiseBuildingDetail {
+  ref: string;
+  label: string;
+  property_category?: string;
+  construction_type?: string;
+  construction_nature?: string;
+  construction_materials?: string;
+  declared_usage?: string;
+  standing?: string;
+  construction_year?: string;
+  number_of_floors?: string;
+  total_built_area_sqm?: string;
+  property_condition?: string;
+  number_of_rooms?: string;
+  number_of_bedrooms?: string;
+  number_of_bathrooms?: string;
+  roof_material?: string;
+  window_type?: string;
+  floor_material?: string;
+  has_plaster?: boolean;
+  has_painting?: boolean;
+  has_ceiling?: boolean;
+  has_double_glazing?: boolean;
+  building_position?: string;
+  facade_orientation?: string;
+  distance_from_road_m?: string;
+  is_corner_plot?: boolean;
+  has_direct_street_access?: boolean;
+  floor_number?: string;
+  total_building_floors?: string;
+  accessibility?: string;
+  apartment_number?: string;
+  has_common_areas?: boolean;
+  monthly_charges?: string;
+  has_water_supply?: boolean;
+  has_electricity?: boolean;
+  has_sewage_system?: boolean;
+  has_internet?: boolean;
+  internet_provider?: string;
+  has_security_system?: boolean;
+  has_parking?: boolean;
+  parking_spaces?: string;
+  has_garden?: boolean;
+  garden_area_sqm?: string;
+  has_pool?: boolean;
+  has_air_conditioning?: boolean;
+  has_solar_panels?: boolean;
+  has_water_tank?: boolean;
+  has_generator?: boolean;
+  has_borehole?: boolean;
+  has_electric_fence?: boolean;
+  has_garage?: boolean;
+  has_cellar?: boolean;
+  has_automatic_gate?: boolean;
+  cadastre_discrepancies?: string;
+}
+
 export interface ExpertiseRequest {
+
   id: string;
   reference_number: string;
   user_id: string;
