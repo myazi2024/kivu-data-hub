@@ -5570,6 +5570,7 @@ export type Database = {
           apartment_number: string | null
           assigned_at: string | null
           assigned_to: string | null
+          building_details: Json
           building_height_m: number | null
           building_permit_document_url: string | null
           building_permit_issue_date: string | null
@@ -5682,6 +5683,7 @@ export type Database = {
           apartment_number?: string | null
           assigned_at?: string | null
           assigned_to?: string | null
+          building_details?: Json
           building_height_m?: number | null
           building_permit_document_url?: string | null
           building_permit_issue_date?: string | null
@@ -5794,6 +5796,7 @@ export type Database = {
           apartment_number?: string | null
           assigned_at?: string | null
           assigned_to?: string | null
+          building_details?: Json
           building_height_m?: number | null
           building_permit_document_url?: string | null
           building_permit_issue_date?: string | null
