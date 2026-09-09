@@ -107,7 +107,8 @@ export interface ExpertiseRequest {
   target_building_refs?: string[];
   target_area_geojson?: Record<string, unknown> | null;
   /** Fiche détaillée par construction expertisée (multi-constructions) */
-  building_details?: ExpertiseBuildingDetail[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  building_details?: ExpertiseBuildingDetail[] | any;
 
   computed_fee_items?: Array<{ fee_name?: string; amount_usd?: number }>;
   total_amount_usd?: number;
