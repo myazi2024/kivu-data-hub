@@ -407,7 +407,19 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
       .filter((b) => b.vertices.length >= 3);
   }, [cadastralPrefill, parcelData, knownBuildings]);
 
+  /**
+   * Parcelle enregistrée comme terrain vide : le cadastre a bien une fiche pour
+   * cette parcelle, mais aucune construction n'y figure (ou la catégorie est
+   * « Terrain nu »). Dans ce cas, cibler « Construction(s) » n'a aucun sens.
+   */
+  const isBareLandParcel = useMemo(() => {
+    if (!cadastralPrefill) return false; // contexte cadastral inconnu → on ne bloque rien
+    if ((cadastralPrefill as any)?.property_category === 'Terrain nu') return true;
+    return knownBuildings.length === 0 && mapBuildings.length === 0;
+  }, [cadastralPrefill, knownBuildings, mapBuildings]);
+
   const toggleBuildingRef = useCallback((ref: string) => {
+    if (isBareLandParcel) return;
     setExpertiseScope((prev) => (prev === 'total' ? 'partial' : prev));
     setSelectionMode('buildings');
     setSelectedBuildingRefs((prev) => {
@@ -415,9 +427,10 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
       const withoutNew = prev.filter((r) => r !== 'new');
       return withoutNew.includes(ref) ? withoutNew.filter((r) => r !== ref) : [...withoutNew, ref];
     });
-  }, []);
+  }, [isBareLandParcel]);
 
   const handleSelectionModeChange = useCallback((mode: ExpertiseSelectionMode) => {
+    if (mode === 'buildings' && isBareLandParcel) return;
     setSelectionMode((prev) => {
       if (prev === mode) return prev;
       if (mode !== 'area') setDrawnArea(null);
@@ -429,7 +442,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
       }
       return mode;
     });
-  }, []);
+  }, [isBareLandParcel]);
 
   const handleScopeChange = useCallback((scope: 'partial' | 'total') => {
     setExpertiseScope(scope);
@@ -438,9 +451,10 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
       setDrawnArea(null);
       setSelectedBuildingRefs([]);
     } else if (selectionMode === 'whole') {
-      setSelectionMode('buildings');
+      setSelectionMode(isBareLandParcel ? 'area' : 'buildings');
     }
-  }, [selectionMode]);
+  }, [selectionMode, isBareLandParcel]);
+
 
 
   const scopeSummary = useMemo(() => {
@@ -503,16 +517,199 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     setCadastreHeightM(typeof b.height_m === 'number' ? b.height_m : null);
   }, []);
 
-  // Apply prefill whenever the selected building changes
+  // === FICHES PAR CONSTRUCTION ===
+  // Chaque construction de la parcelle possède sa propre fiche (caractéristiques,
+  // position, équipements, matériaux) et sa propre cascade de dépendances.
+  const [buildingFiches, setBuildingFiches] = useState<Record<string, ExpertiseBuildingDetail>>({});
+  const buildingFichesRef = useRef<Record<string, ExpertiseBuildingDetail>>({});
+  useEffect(() => { buildingFichesRef.current = buildingFiches; }, [buildingFiches]);
+  const [activeFicheRef, setActiveFicheRef] = useState<string>('main');
+
+  /** Constructions à décrire, en fonction du périmètre choisi. */
+  const buildingsToDescribe = useMemo<{ ref: string; label: string }[]>(() => {
+    if (isBareLandParcel) return [];
+    if (expertiseScope === 'partial' && selectionMode === 'area') return [];
+    if (expertiseScope === 'partial' && selectionMode === 'buildings') {
+      return selectedBuildingRefs.map((r) => ({
+        ref: r,
+        label: r === 'new'
+          ? 'Autre / nouvelle construction'
+          : knownBuildings.find((b) => b.ref === r)?.label || r,
+      }));
+    }
+    if (knownBuildings.length > 0) return knownBuildings.map((b) => ({ ref: b.ref, label: b.label }));
+    return [{ ref: 'new', label: 'Construction' }];
+  }, [isBareLandParcel, expertiseScope, selectionMode, selectedBuildingRefs, knownBuildings]);
+
+  const isMultiBuilding = buildingsToDescribe.length > 1;
+
+  // La fiche active reste toujours dans le périmètre courant
+  useEffect(() => {
+    if (buildingsToDescribe.length === 0) return;
+    if (!buildingsToDescribe.some((b) => b.ref === activeFicheRef)) {
+      setActiveFicheRef(buildingsToDescribe[0].ref);
+    }
+  }, [buildingsToDescribe, activeFicheRef]);
+
+  const collectFiche = (): ExpertiseBuildingDetail => ({
+    ref: activeFicheRef,
+    label: buildingsToDescribe.find((b) => b.ref === activeFicheRef)?.label || 'Construction',
+    property_category: propertyCategory,
+    construction_type: constructionType,
+    construction_nature: constructionNature,
+    construction_materials: constructionMaterials,
+    declared_usage: declaredUsage,
+    standing,
+    construction_year: constructionYear,
+    number_of_floors: numberOfFloors,
+    total_built_area_sqm: totalBuiltAreaSqm,
+    property_condition: propertyCondition,
+    number_of_rooms: numberOfRooms,
+    number_of_bedrooms: numberOfBedrooms,
+    number_of_bathrooms: numberOfBathrooms,
+    roof_material: roofMaterial,
+    window_type: windowType,
+    floor_material: floorMaterial,
+    has_plaster: hasPlaster,
+    has_painting: hasPainting,
+    has_ceiling: hasCeiling,
+    has_double_glazing: hasDoubleGlazing,
+    building_position: buildingPosition,
+    facade_orientation: facadeOrientation,
+    distance_from_road_m: distanceFromRoad,
+    is_corner_plot: isCornerPlot,
+    has_direct_street_access: hasDirectStreetAccess,
+    floor_number: floorNumber,
+    total_building_floors: totalBuildingFloors,
+    accessibility,
+    apartment_number: apartmentNumber,
+    has_common_areas: hasCommonAreas,
+    monthly_charges: monthlyCharges,
+    has_water_supply: hasWaterSupply,
+    has_electricity: hasElectricity,
+    has_sewage_system: hasSewageSystem,
+    has_internet: hasInternet,
+    internet_provider: internetProvider,
+    has_security_system: hasSecuritySystem,
+    has_parking: hasParking,
+    parking_spaces: parkingSpaces,
+    has_garden: hasGarden,
+    garden_area_sqm: gardenAreaSqm,
+    has_pool: hasPool,
+    has_air_conditioning: hasAirConditioning,
+    has_solar_panels: hasSolarPanels,
+    has_water_tank: hasWaterTank,
+    has_generator: hasGenerator,
+    has_borehole: hasBorehole,
+    has_electric_fence: hasElectricFence,
+    has_garage: hasGarage,
+    has_cellar: hasCellar,
+    has_automatic_gate: hasAutomaticGate,
+    cadastre_discrepancies: cadastreDiscrepancies,
+  });
+
+  const applyFiche = useCallback((f: ExpertiseBuildingDetail) => {
+    setPropertyCategory(f.property_category || '');
+    setConstructionType(f.construction_type || '');
+    setConstructionNature(f.construction_nature || '');
+    setConstructionMaterials(f.construction_materials || '');
+    setDeclaredUsage(f.declared_usage || '');
+    setStanding(f.standing || '');
+    setConstructionYear(f.construction_year || '');
+    setNumberOfFloors(f.number_of_floors || '1');
+    setTotalBuiltAreaSqm(f.total_built_area_sqm || '');
+    setPropertyCondition(f.property_condition || 'bon');
+    setNumberOfRooms(f.number_of_rooms || '');
+    setNumberOfBedrooms(f.number_of_bedrooms || '');
+    setNumberOfBathrooms(f.number_of_bathrooms || '');
+    setRoofMaterial(f.roof_material || 'tole_bac');
+    setWindowType(f.window_type || 'aluminium');
+    setFloorMaterial(f.floor_material || 'carrelage');
+    setHasPlaster(!!f.has_plaster);
+    setHasPainting(!!f.has_painting);
+    setHasCeiling(!!f.has_ceiling);
+    setHasDoubleGlazing(!!f.has_double_glazing);
+    setBuildingPosition(f.building_position || 'premiere_position');
+    setFacadeOrientation(f.facade_orientation || '');
+    setDistanceFromRoad(f.distance_from_road_m || '');
+    setIsCornerPlot(!!f.is_corner_plot);
+    setHasDirectStreetAccess(!!f.has_direct_street_access);
+    setFloorNumber(f.floor_number || '');
+    setTotalBuildingFloors(f.total_building_floors || '');
+    setAccessibility(f.accessibility || 'escalier');
+    setApartmentNumber(f.apartment_number || '');
+    setHasCommonAreas(!!f.has_common_areas);
+    setMonthlyCharges(f.monthly_charges || '');
+    setHasWaterSupply(!!f.has_water_supply);
+    setHasElectricity(!!f.has_electricity);
+    setHasSewageSystem(!!f.has_sewage_system);
+    setHasInternet(!!f.has_internet);
+    setInternetProvider(f.internet_provider || '');
+    setHasSecuritySystem(!!f.has_security_system);
+    setHasParking(!!f.has_parking);
+    setParkingSpaces(f.parking_spaces || '');
+    setHasGarden(!!f.has_garden);
+    setGardenAreaSqm(f.garden_area_sqm || '');
+    setHasPool(!!f.has_pool);
+    setHasAirConditioning(!!f.has_air_conditioning);
+    setHasSolarPanels(!!f.has_solar_panels);
+    setHasWaterTank(!!f.has_water_tank);
+    setHasGenerator(!!f.has_generator);
+    setHasBorehole(!!f.has_borehole);
+    setHasElectricFence(!!f.has_electric_fence);
+    setHasGarage(!!f.has_garage);
+    setHasCellar(!!f.has_cellar);
+    setHasAutomaticGate(!!f.has_automatic_gate);
+    setCadastreDiscrepancies(f.cadastre_discrepancies || '');
+  }, []);
+
+  /** Bascule d'une fiche à l'autre en conservant la saisie en cours. */
+  const handleSelectFiche = (ref: string) => {
+    if (ref === activeFicheRef) return;
+    const current = collectFiche();
+    setBuildingFiches((prev) => ({ ...prev, [current.ref]: current }));
+    setActiveFicheRef(ref);
+  };
+
+  /** Fiches complètes de toutes les constructions du périmètre. */
+  const buildAllBuildingDetails = (): ExpertiseBuildingDetail[] => {
+    const current = collectFiche();
+    return buildingsToDescribe.map((b) => {
+      if (b.ref === current.ref) return current;
+      const stored = buildingFiches[b.ref];
+      if (stored) return { ...stored, label: b.label };
+      const known = knownBuildings.find((k) => k.ref === b.ref);
+      return {
+        ref: b.ref,
+        label: b.label,
+        property_category: known?.property_category,
+        construction_type: known?.type,
+        construction_nature: known?.nature,
+        construction_materials: known?.materials,
+        declared_usage: known?.usage,
+        standing: known?.standing,
+        construction_year: known?.year ? String(known.year) : undefined,
+        number_of_floors: known?.floors,
+        total_built_area_sqm: known?.surface_sqm ? String(known.surface_sqm) : undefined,
+      };
+    });
+  };
+
+  // Chargement de la fiche active : saisie déjà faite, sinon données du cadastre
   useEffect(() => {
     if (!open) return;
-    if (selectedBuildingRef === 'new') {
+    const stored = buildingFichesRef.current[activeFicheRef];
+    if (stored) {
+      applyFiche(stored);
+      return;
+    }
+    if (activeFicheRef === 'new') {
       applyBuildingPrefill(null);
       return;
     }
-    const b = knownBuildings.find((x) => x.ref === selectedBuildingRef);
+    const b = knownBuildings.find((x) => x.ref === activeFicheRef);
     if (b) applyBuildingPrefill(b);
-  }, [open, selectedBuildingRef, knownBuildings, applyBuildingPrefill]);
+  }, [open, activeFicheRef, knownBuildings, applyBuildingPrefill, applyFiche]);
 
   // Le standing dépend de la cascade (nature → standings) : on l'applique dès
   // que la liste des standings disponibles contient la valeur cadastrale.
@@ -524,8 +721,8 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
 
   // Set of fields that came from cadastre (locked unless user explicitly overrides)
   const lockedFromCadastre = useMemo<Set<string>>(() => {
-    if (selectedBuildingRef === 'new') return new Set();
-    const b = knownBuildings.find((x) => x.ref === selectedBuildingRef);
+    if (activeFicheRef === 'new') return new Set();
+    const b = knownBuildings.find((x) => x.ref === activeFicheRef);
     if (!b) return new Set();
     const s = new Set<string>();
     if (b.property_category) s.add('property_category');
@@ -536,7 +733,8 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     if (b.surface_sqm) s.add('total_built_area');
     if (b.floors) s.add('number_of_floors');
     return s;
-  }, [selectedBuildingRef, knownBuildings]);
+  }, [activeFicheRef, knownBuildings]);
+
 
   // === CCC CONSTRUCTION CASCADE EFFECTS ===
   // Helper: build reverse mapping material -> nature
