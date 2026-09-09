@@ -407,7 +407,19 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
       .filter((b) => b.vertices.length >= 3);
   }, [cadastralPrefill, parcelData, knownBuildings]);
 
+  /**
+   * Parcelle enregistrée comme terrain vide : le cadastre a bien une fiche pour
+   * cette parcelle, mais aucune construction n'y figure (ou la catégorie est
+   * « Terrain nu »). Dans ce cas, cibler « Construction(s) » n'a aucun sens.
+   */
+  const isBareLandParcel = useMemo(() => {
+    if (!cadastralPrefill) return false; // contexte cadastral inconnu → on ne bloque rien
+    if ((cadastralPrefill as any)?.property_category === 'Terrain nu') return true;
+    return knownBuildings.length === 0 && mapBuildings.length === 0;
+  }, [cadastralPrefill, knownBuildings, mapBuildings]);
+
   const toggleBuildingRef = useCallback((ref: string) => {
+    if (isBareLandParcel) return;
     setExpertiseScope((prev) => (prev === 'total' ? 'partial' : prev));
     setSelectionMode('buildings');
     setSelectedBuildingRefs((prev) => {
@@ -415,9 +427,10 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
       const withoutNew = prev.filter((r) => r !== 'new');
       return withoutNew.includes(ref) ? withoutNew.filter((r) => r !== ref) : [...withoutNew, ref];
     });
-  }, []);
+  }, [isBareLandParcel]);
 
   const handleSelectionModeChange = useCallback((mode: ExpertiseSelectionMode) => {
+    if (mode === 'buildings' && isBareLandParcel) return;
     setSelectionMode((prev) => {
       if (prev === mode) return prev;
       if (mode !== 'area') setDrawnArea(null);
@@ -429,7 +442,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
       }
       return mode;
     });
-  }, []);
+  }, [isBareLandParcel]);
 
   const handleScopeChange = useCallback((scope: 'partial' | 'total') => {
     setExpertiseScope(scope);
@@ -438,9 +451,10 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
       setDrawnArea(null);
       setSelectedBuildingRefs([]);
     } else if (selectionMode === 'whole') {
-      setSelectionMode('buildings');
+      setSelectionMode(isBareLandParcel ? 'area' : 'buildings');
     }
-  }, [selectionMode]);
+  }, [selectionMode, isBareLandParcel]);
+
 
 
   const scopeSummary = useMemo(() => {
