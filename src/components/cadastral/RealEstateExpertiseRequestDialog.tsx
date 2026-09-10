@@ -1558,6 +1558,8 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
   };
 
   const isTerrainNu = propertyCategory === 'Terrain nu';
+  /** Y a-t-il au moins une construction à décrire dans le périmètre choisi ? */
+  const showBuildingBlocks = buildingsToDescribe.length > 0;
   const isApartmentOrBuilding = propertyCategory === 'Appartement';
 
   const renderForm = () => (
@@ -1637,14 +1639,18 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                     { value: 'buildings' as const, label: 'Construction(s)' },
                     { value: 'area' as const, label: 'Zone tracée' },
                   ]).map((o) => {
-                    const locked = expertiseScope === 'total' && o.value !== 'whole';
+                    const noBuildings = o.value === 'buildings' && isBareLandParcel;
+                    const locked = (expertiseScope === 'total' && o.value !== 'whole') || noBuildings;
+                    const lockReason = noBuildings
+                      ? "Cette parcelle est enregistrée sans construction : il n'y a rien à cibler."
+                      : 'Disponible uniquement pour une expertise partielle';
                     return (
                       <button
                         key={o.value}
                         type="button"
                         disabled={locked}
                         aria-disabled={locked}
-                        title={locked ? "Disponible uniquement pour une expertise partielle" : undefined}
+                        title={locked ? lockReason : undefined}
                         onClick={() => handleSelectionModeChange(o.value)}
                         className={cn(
                           'px-2 py-1.5 rounded-xl border-2 text-[11px] font-medium transition-colors',
@@ -1686,7 +1692,13 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                   />
                 )}
 
-                {selectionMode === 'buildings' && knownBuildings.length === 0 && mapBuildings.length === 0 && (
+                {isBareLandParcel && (
+                  <p className="text-[11px] text-muted-foreground">
+                    Cette parcelle est enregistrée comme terrain sans construction : l'expertise porte sur le terrain (toute la parcelle ou une zone que vous tracez).
+                  </p>
+                )}
+
+                {!isBareLandParcel && selectionMode === 'buildings' && knownBuildings.length === 0 && mapBuildings.length === 0 && (
                   <p className="text-[11px] text-muted-foreground">
                     Aucune construction n'est encore enregistrée pour cette parcelle. Choisissez « Zone tracée » pour délimiter vous-même la partie à expertiser.
                   </p>
@@ -2409,6 +2421,44 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
 
           {/* === ONGLET MATÉRIAUX === */}
           <TabsContent value="materiaux" className="space-y-3 pr-2 mt-0">
+            {!showBuildingBlocks && (
+              <Card className="border rounded-xl">
+                <CardContent className="p-3">
+                  <p className="text-xs text-muted-foreground">
+                    Aucune construction n'est concernée par cette expertise : il n'y a pas de matériaux à décrire.
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+            {showBuildingBlocks && (
+            <>
+            {isMultiBuilding && (
+              <Card className="border-2 border-primary/20 bg-primary/5 rounded-xl">
+                <CardContent className="p-3 space-y-2">
+                  <h4 className="text-sm font-semibold flex items-center gap-2">
+                    <Building2 className="h-4 w-4 text-primary" />
+                    Fiche par construction
+                  </h4>
+                  <div className="flex flex-wrap gap-1.5">
+                    {buildingsToDescribe.map((b, i) => (
+                      <button
+                        key={b.ref}
+                        type="button"
+                        onClick={() => handleSelectFiche(b.ref)}
+                        className={cn(
+                          'px-2.5 py-1.5 rounded-xl border-2 text-[11px] font-medium transition-colors',
+                          activeFicheRef === b.ref
+                            ? 'border-primary bg-primary/10 text-primary'
+                            : 'border-border bg-background hover:border-primary/50',
+                        )}
+                      >
+                        {i + 1}. {b.label}
+                      </button>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
             <Card className="border rounded-xl">
               <CardContent className="p-3 space-y-3">
                 <h4 className="text-sm font-semibold flex items-center gap-2">
