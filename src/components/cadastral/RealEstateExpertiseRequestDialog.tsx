@@ -2542,6 +2542,8 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                 </div>
               </CardContent>
             </Card>
+            </>
+            )}
           </TabsContent>
 
           {/* === ONGLET ENVIRONNEMENT === */}
