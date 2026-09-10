@@ -74,7 +74,7 @@ interface RealEstateExpertiseRequestDialogProps {
   onSuccess?: () => void;
 }
 
-import type { ExpertiseFee } from '@/types/expertise';
+import type { ExpertiseFee, ExpertiseBuildingDetail } from '@/types/expertise';
 import {
   CONDITION_LABELS,
   ROAD_LABELS, ROOF_LABELS, SOUND_LABELS,
