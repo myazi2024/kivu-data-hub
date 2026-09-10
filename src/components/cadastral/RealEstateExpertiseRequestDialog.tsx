@@ -1711,6 +1711,39 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
             </Card>
 
 
+            {/* Fiches par construction : chaque construction se décrit séparément */}
+            {showBuildingBlocks && (
+            <>
+            {isMultiBuilding && (
+              <Card className="border-2 border-primary/20 bg-primary/5 rounded-xl">
+                <CardContent className="p-3 space-y-2">
+                  <h4 className="text-sm font-semibold flex items-center gap-2">
+                    <Building2 className="h-4 w-4 text-primary" />
+                    Fiche par construction
+                  </h4>
+                  <p className="text-[11px] text-muted-foreground">
+                    Cette parcelle porte {buildingsToDescribe.length} constructions. Décrivez-les une par une : chaque fiche est enregistrée séparément.
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {buildingsToDescribe.map((b, i) => (
+                      <button
+                        key={b.ref}
+                        type="button"
+                        onClick={() => handleSelectFiche(b.ref)}
+                        className={cn(
+                          'px-2.5 py-1.5 rounded-xl border-2 text-[11px] font-medium transition-colors',
+                          activeFicheRef === b.ref
+                            ? 'border-primary bg-primary/10 text-primary'
+                            : 'border-border bg-background hover:border-primary/50',
+                        )}
+                      >
+                        {i + 1}. {b.label}
+                      </button>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
             {/* Construction Block (CCC-aligned) */}
             <Card className="border rounded-xl">
               <CardContent className="p-3 space-y-3">
@@ -2370,6 +2403,8 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                 )}
               </CardContent>
             </Card>
+            </>
+            )}
           </TabsContent>
 
           {/* === ONGLET MATÉRIAUX === */}
