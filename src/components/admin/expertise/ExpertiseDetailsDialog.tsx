@@ -132,7 +132,41 @@ const ExpertiseDetailsDialog: React.FC<Props> = ({ open, onOpenChange, request }
                 );
               })()}
 
+              {/* Fiches par construction */}
+              {(() => {
+                const details = ((request as any)?.building_details || []) as any[];
+                if (!Array.isArray(details) || details.length === 0) return null;
+                return (
+                  <div>
+                    <h4 className="text-sm font-semibold mb-2">
+                      Constructions expertisées ({details.length})
+                    </h4>
+                    <div className="space-y-2">
+                      {details.map((d, i) => (
+                        <div key={d?.ref || i} className="rounded-lg border p-2">
+                          <p className="text-sm font-medium">{d?.label || `Construction ${i + 1}`}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {[d?.property_category, d?.construction_type, d?.construction_nature, d?.declared_usage, d?.standing]
+                              .filter(Boolean)
+                              .join(' • ') || '-'}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {[
+                              d?.construction_year && `Année ${d.construction_year}`,
+                              d?.number_of_floors && `${d.number_of_floors} niveau(x)`,
+                              d?.total_built_area_sqm && `${d.total_built_area_sqm} m²`,
+                              d?.property_condition && `État : ${d.property_condition}`,
+                            ].filter(Boolean).join(' • ')}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
+
               <Separator />
+
 
 
               {/* Demandeur */}
