@@ -1217,6 +1217,8 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
         selectionMode === 'area' && drawnArea && drawnArea.length >= 3
           ? { type: 'Polygon', coordinates: [[...drawnArea, drawnArea[0]].map((v) => [v.lng, v.lat])] }
           : undefined,
+      // Fiche détaillée par construction expertisée
+      building_details: buildAllBuildingDetails(),
       // Targeted building (multi-construction support)
       target_building_ref: selectedBuildingRef,
       target_building_label: selectionMode === 'whole'
