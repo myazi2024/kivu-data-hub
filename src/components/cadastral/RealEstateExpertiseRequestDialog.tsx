@@ -1231,7 +1231,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
           ? { type: 'Polygon', coordinates: [[...drawnArea, drawnArea[0]].map((v) => [v.lng, v.lat])] }
           : undefined,
       // Fiche détaillée par construction expertisée
-      building_details: buildAllBuildingDetails(),
+      building_details: allBuildingDetails,
       // Targeted building (multi-construction support)
       target_building_ref: selectedBuildingRef,
       target_building_label: selectionMode === 'whole'
@@ -1243,14 +1243,14 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                 ? 'Autre / nouvelle construction'
                 : knownBuildings.find((b) => b.ref === r)?.label || r))
               .join(' + ') || undefined,
-      cadastre_discrepancies: cadastreDiscrepancies.trim() || undefined,
+      cadastre_discrepancies: (primary?.cadastre_discrepancies || cadastreDiscrepancies).trim() || undefined,
 
       // Nomenclature cadastrale saisie (auparavant perdue à l'enregistrement)
-      property_category: propertyCategory || undefined,
-      construction_type: constructionType || undefined,
-      construction_nature: constructionNature || undefined,
-      construction_materials_declared: constructionMaterials || undefined,
-      declared_usage: declaredUsage || undefined,
+      property_category: primary?.property_category || propertyCategory || undefined,
+      construction_type: primary?.construction_type || constructionType || undefined,
+      construction_nature: primary?.construction_nature || undefined,
+      construction_materials_declared: primary?.construction_materials || undefined,
+      declared_usage: primary?.declared_usage || undefined,
       has_direct_street_access: hasDirectStreetAccess,
       distance_from_road_m: distanceFromRoad ? parseFloat(distanceFromRoad) : undefined,
       // Indicateurs CCC transmis à l'expert
