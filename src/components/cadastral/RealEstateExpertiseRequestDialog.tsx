@@ -543,10 +543,15 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
 
   const isMultiBuilding = buildingsToDescribe.length > 1;
 
+  // Sauvegarde de la fiche en cours avant tout basculement automatique
+  const collectFicheRef = useRef<(() => ExpertiseBuildingDetail) | null>(null);
+
   // La fiche active reste toujours dans le périmètre courant
   useEffect(() => {
     if (buildingsToDescribe.length === 0) return;
     if (!buildingsToDescribe.some((b) => b.ref === activeFicheRef)) {
+      const current = collectFicheRef.current?.();
+      if (current) setBuildingFiches((prev) => ({ ...prev, [current.ref]: current }));
       setActiveFicheRef(buildingsToDescribe[0].ref);
     }
   }, [buildingsToDescribe, activeFicheRef]);
