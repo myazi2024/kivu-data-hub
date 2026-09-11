@@ -543,10 +543,15 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
 
   const isMultiBuilding = buildingsToDescribe.length > 1;
 
+  // Sauvegarde de la fiche en cours avant tout basculement automatique
+  const collectFicheRef = useRef<(() => ExpertiseBuildingDetail) | null>(null);
+
   // La fiche active reste toujours dans le périmètre courant
   useEffect(() => {
     if (buildingsToDescribe.length === 0) return;
     if (!buildingsToDescribe.some((b) => b.ref === activeFicheRef)) {
+      const current = collectFicheRef.current?.();
+      if (current) setBuildingFiches((prev) => ({ ...prev, [current.ref]: current }));
       setActiveFicheRef(buildingsToDescribe[0].ref);
     }
   }, [buildingsToDescribe, activeFicheRef]);
@@ -607,6 +612,9 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     has_automatic_gate: hasAutomaticGate,
     cadastre_discrepancies: cadastreDiscrepancies,
   });
+  collectFicheRef.current = collectFiche;
+
+
 
   const applyFiche = useCallback((f: ExpertiseBuildingDetail) => {
     setPropertyCategory(f.property_category || '');
@@ -1140,15 +1148,20 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     }
 
 
+    // Fiches par construction : les colonnes plates restent alignées sur la
+    // première fiche (compatibilité), pas sur la fiche affichée à l'écran.
+    const allBuildingDetails = buildAllBuildingDetails();
+    const primary = allBuildingDetails[0];
+
     setFormData({
       parcel_number: parcelNumber,
       parcel_id: parcelId,
       property_description: propertyDescription || undefined,
-      construction_year: constructionYear ? parseInt(constructionYear) : undefined,
-      construction_quality: standing || undefined,
-      number_of_floors: numberOfFloors ? parseInt(numberOfFloors) : undefined,
-      total_built_area_sqm: totalBuiltAreaSqm ? parseFloat(totalBuiltAreaSqm) : undefined,
-      property_condition: propertyCondition,
+      construction_year: primary?.construction_year ? parseInt(primary.construction_year) : undefined,
+      construction_quality: primary?.standing || undefined,
+      number_of_floors: primary?.number_of_floors ? parseInt(primary.number_of_floors) : undefined,
+      total_built_area_sqm: primary?.total_built_area_sqm ? parseFloat(primary.total_built_area_sqm) : undefined,
+      property_condition: primary?.property_condition || propertyCondition,
       has_water_supply: hasWaterSupply,
       has_electricity: hasElectricity,
       has_sewage_system: hasSewageSystem,
@@ -1170,17 +1183,17 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
       requester_phone: undefined,
       requester_email: profile?.email || user.email || undefined,
       // Extended columns — stored directly in DB columns
-      wall_material: constructionMaterials || undefined,
-      roof_material: roofMaterial || undefined,
-      window_type: windowType || undefined,
-      floor_material: floorMaterial || undefined,
-      has_plaster: hasPlaster,
-      has_painting: hasPainting,
-      has_ceiling: hasCeiling,
-      has_double_glazing: hasDoubleGlazing,
-      building_position: buildingPosition || undefined,
-      facade_orientation: facadeOrientation || undefined,
-      is_corner_plot: isCornerPlot,
+      wall_material: primary?.construction_materials || undefined,
+      roof_material: primary?.roof_material || undefined,
+      window_type: primary?.window_type || undefined,
+      floor_material: primary?.floor_material || undefined,
+      has_plaster: !!primary?.has_plaster,
+      has_painting: !!primary?.has_painting,
+      has_ceiling: !!primary?.has_ceiling,
+      has_double_glazing: !!primary?.has_double_glazing,
+      building_position: primary?.building_position || undefined,
+      facade_orientation: primary?.facade_orientation || undefined,
+      is_corner_plot: !!primary?.is_corner_plot,
       // sound_environment removed — now collected in CCC form
       has_pool: hasPool,
       has_air_conditioning: hasAirConditioning,
@@ -1218,7 +1231,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
           ? { type: 'Polygon', coordinates: [[...drawnArea, drawnArea[0]].map((v) => [v.lng, v.lat])] }
           : undefined,
       // Fiche détaillée par construction expertisée
-      building_details: buildAllBuildingDetails(),
+      building_details: allBuildingDetails,
       // Targeted building (multi-construction support)
       target_building_ref: selectedBuildingRef,
       target_building_label: selectionMode === 'whole'
@@ -1230,14 +1243,14 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                 ? 'Autre / nouvelle construction'
                 : knownBuildings.find((b) => b.ref === r)?.label || r))
               .join(' + ') || undefined,
-      cadastre_discrepancies: cadastreDiscrepancies.trim() || undefined,
+      cadastre_discrepancies: (primary?.cadastre_discrepancies || cadastreDiscrepancies).trim() || undefined,
 
       // Nomenclature cadastrale saisie (auparavant perdue à l'enregistrement)
-      property_category: propertyCategory || undefined,
-      construction_type: constructionType || undefined,
-      construction_nature: constructionNature || undefined,
-      construction_materials_declared: constructionMaterials || undefined,
-      declared_usage: declaredUsage || undefined,
+      property_category: primary?.property_category || propertyCategory || undefined,
+      construction_type: primary?.construction_type || constructionType || undefined,
+      construction_nature: primary?.construction_nature || undefined,
+      construction_materials_declared: primary?.construction_materials || undefined,
+      declared_usage: primary?.declared_usage || undefined,
       has_direct_street_access: hasDirectStreetAccess,
       distance_from_road_m: distanceFromRoad ? parseFloat(distanceFromRoad) : undefined,
       // Indicateurs CCC transmis à l'expert
@@ -2881,23 +2894,31 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     // Validation des champs obligatoires et importants
     const getMissingFields = () => {
       const missing: Array<{ label: string; tab: string; required: boolean }> = [];
-      
-      // Champs obligatoires
-      if (!propertyCategory) missing.push({ label: 'Catégorie de bien', tab: 'general', required: true });
-      if (!constructionType) missing.push({ label: 'Type de construction', tab: 'general', required: true });
-      
-      if (constructionType !== 'terrain_nu') {
-        // Champs obligatoires pour biens bâtis
-        if (!constructionYear) missing.push({ label: 'Année de construction', tab: 'general', required: true });
-        if (!totalBuiltAreaSqm) missing.push({ label: 'Surface construite', tab: 'general', required: true });
-        // Champs importants (recommandés)
-        if (!numberOfRooms) missing.push({ label: 'Nombre de pièces', tab: 'general', required: false });
+      const fiches = buildAllBuildingDetails();
+      const multi = fiches.length > 1;
+
+      if (fiches.length === 0) {
+        // Terrain nu / zone tracée : aucune fiche de construction à compléter
+        if (!propertyCategory) missing.push({ label: 'Catégorie de bien', tab: 'general', required: true });
+      } else {
+        fiches.forEach((f) => {
+          const p = multi ? `${f.label} — ` : '';
+          const bare = f.property_category === 'Terrain nu';
+          if (!f.property_category) missing.push({ label: `${p}Catégorie de bien`, tab: 'general', required: true });
+          if (!f.construction_type) missing.push({ label: `${p}Type de construction`, tab: 'general', required: true });
+          if (!bare) {
+            if (!f.construction_year) missing.push({ label: `${p}Année de construction`, tab: 'general', required: true });
+            if (!f.total_built_area_sqm) missing.push({ label: `${p}Surface construite`, tab: 'general', required: true });
+            if (!f.number_of_rooms) missing.push({ label: `${p}Nombre de pièces`, tab: 'general', required: false });
+          }
+        });
       }
+
       if (!roadAccessType) missing.push({ label: 'Type d\'accès routier', tab: 'environnement', required: true });
-      if (constructionImages.length === 0 && constructionType !== 'terrain_nu') {
+      if (constructionImages.length === 0 && !isTerrainNu && fiches.length > 0) {
         missing.push({ label: 'Photos de la construction', tab: 'documents', required: false });
       }
-      
+
       return missing;
     };
 
@@ -3117,7 +3138,12 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                     <Home className="h-4 w-4 text-green-600" />
                     <h4 className="text-xs font-semibold">Construction</h4>
                     <Badge variant="outline" className="text-[10px] h-5">
-                      {[propertyCategory, constructionType, constructionMaterials, constructionNature, standing, constructionYear].filter(Boolean).length}/6
+                      {(() => {
+                        const fiches = buildAllBuildingDetails();
+                        const per = 6;
+                        const filled = fiches.reduce((n, f) => n + [f.property_category, f.construction_type, f.construction_materials, f.construction_nature, f.standing, f.construction_year].filter(Boolean).length, 0);
+                        return `${filled}/${Math.max(per, fiches.length * per)}`;
+                      })()}
                     </Badge>
                   </div>
                   <Button variant="ghost" size="sm" onClick={() => { setActiveTab('general'); setStep('form'); }} className="h-6 px-2 text-xs text-muted-foreground hover:text-primary">

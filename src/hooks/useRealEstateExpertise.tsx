@@ -67,10 +67,12 @@ export const useRealEstateExpertise = () => {
         .from('real_estate_expertise_requests')
         .insert({
           ...data,
+          building_details: data.building_details ?? [],
           user_id: user.id,
           reference_number,
           supporting_documents: data.supporting_documents || [],
-        })
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        } as any)
         .select()
         .single();
 

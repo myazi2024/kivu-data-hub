@@ -280,6 +280,13 @@ export interface CreateExpertiseRequestData {
   hosting_capacity?: number;
   occupant_count?: number;
   parcel_sound_environment?: string;
+
+  // Périmètre de l'expertise et fiches par construction
+  expertise_scope?: 'partial' | 'total';
+  valuation_targets?: string[];
+  target_building_refs?: string[];
+  target_area_geojson?: Record<string, unknown>;
+  building_details?: ExpertiseBuildingDetail[];
 }
 
 export interface ExpertiseFee {
