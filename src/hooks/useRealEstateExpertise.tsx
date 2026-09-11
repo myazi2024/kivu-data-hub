@@ -67,6 +67,7 @@ export const useRealEstateExpertise = () => {
         .from('real_estate_expertise_requests')
         .insert({
           ...data,
+          building_details: (data.building_details ?? []) as unknown as Json,
           user_id: user.id,
           reference_number,
           supporting_documents: data.supporting_documents || [],
