@@ -2889,23 +2889,31 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     // Validation des champs obligatoires et importants
     const getMissingFields = () => {
       const missing: Array<{ label: string; tab: string; required: boolean }> = [];
-      
-      // Champs obligatoires
-      if (!propertyCategory) missing.push({ label: 'Catégorie de bien', tab: 'general', required: true });
-      if (!constructionType) missing.push({ label: 'Type de construction', tab: 'general', required: true });
-      
-      if (constructionType !== 'terrain_nu') {
-        // Champs obligatoires pour biens bâtis
-        if (!constructionYear) missing.push({ label: 'Année de construction', tab: 'general', required: true });
-        if (!totalBuiltAreaSqm) missing.push({ label: 'Surface construite', tab: 'general', required: true });
-        // Champs importants (recommandés)
-        if (!numberOfRooms) missing.push({ label: 'Nombre de pièces', tab: 'general', required: false });
+      const fiches = buildAllBuildingDetails();
+      const multi = fiches.length > 1;
+
+      if (fiches.length === 0) {
+        // Terrain nu / zone tracée : aucune fiche de construction à compléter
+        if (!propertyCategory) missing.push({ label: 'Catégorie de bien', tab: 'general', required: true });
+      } else {
+        fiches.forEach((f) => {
+          const p = multi ? `${f.label} — ` : '';
+          const bare = f.property_category === 'Terrain nu';
+          if (!f.property_category) missing.push({ label: `${p}Catégorie de bien`, tab: 'general', required: true });
+          if (!f.construction_type) missing.push({ label: `${p}Type de construction`, tab: 'general', required: true });
+          if (!bare) {
+            if (!f.construction_year) missing.push({ label: `${p}Année de construction`, tab: 'general', required: true });
+            if (!f.total_built_area_sqm) missing.push({ label: `${p}Surface construite`, tab: 'general', required: true });
+            if (!f.number_of_rooms) missing.push({ label: `${p}Nombre de pièces`, tab: 'general', required: false });
+          }
+        });
       }
+
       if (!roadAccessType) missing.push({ label: 'Type d\'accès routier', tab: 'environnement', required: true });
-      if (constructionImages.length === 0 && constructionType !== 'terrain_nu') {
+      if (constructionImages.length === 0 && !isTerrainNu && fiches.length > 0) {
         missing.push({ label: 'Photos de la construction', tab: 'documents', required: false });
       }
-      
+
       return missing;
     };
 
