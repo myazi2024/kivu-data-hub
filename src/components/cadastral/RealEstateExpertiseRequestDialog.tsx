@@ -1148,15 +1148,20 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     }
 
 
+    // Fiches par construction : les colonnes plates restent alignées sur la
+    // première fiche (compatibilité), pas sur la fiche affichée à l'écran.
+    const allBuildingDetails = buildAllBuildingDetails();
+    const primary = allBuildingDetails[0];
+
     setFormData({
       parcel_number: parcelNumber,
       parcel_id: parcelId,
       property_description: propertyDescription || undefined,
-      construction_year: constructionYear ? parseInt(constructionYear) : undefined,
-      construction_quality: standing || undefined,
-      number_of_floors: numberOfFloors ? parseInt(numberOfFloors) : undefined,
-      total_built_area_sqm: totalBuiltAreaSqm ? parseFloat(totalBuiltAreaSqm) : undefined,
-      property_condition: propertyCondition,
+      construction_year: primary?.construction_year ? parseInt(primary.construction_year) : undefined,
+      construction_quality: primary?.standing || undefined,
+      number_of_floors: primary?.number_of_floors ? parseInt(primary.number_of_floors) : undefined,
+      total_built_area_sqm: primary?.total_built_area_sqm ? parseFloat(primary.total_built_area_sqm) : undefined,
+      property_condition: primary?.property_condition || propertyCondition,
       has_water_supply: hasWaterSupply,
       has_electricity: hasElectricity,
       has_sewage_system: hasSewageSystem,
