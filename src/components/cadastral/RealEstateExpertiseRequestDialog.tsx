@@ -612,6 +612,9 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     has_automatic_gate: hasAutomaticGate,
     cadastre_discrepancies: cadastreDiscrepancies,
   });
+  collectFicheRef.current = collectFiche;
+
+
 
   const applyFiche = useCallback((f: ExpertiseBuildingDetail) => {
     setPropertyCategory(f.property_category || '');
