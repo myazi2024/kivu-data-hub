@@ -3138,7 +3138,12 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                     <Home className="h-4 w-4 text-green-600" />
                     <h4 className="text-xs font-semibold">Construction</h4>
                     <Badge variant="outline" className="text-[10px] h-5">
-                      {[propertyCategory, constructionType, constructionMaterials, constructionNature, standing, constructionYear].filter(Boolean).length}/6
+                      {(() => {
+                        const fiches = buildAllBuildingDetails();
+                        const per = 6;
+                        const filled = fiches.reduce((n, f) => n + [f.property_category, f.construction_type, f.construction_materials, f.construction_nature, f.standing, f.construction_year].filter(Boolean).length, 0);
+                        return `${filled}/${Math.max(per, fiches.length * per)}`;
+                      })()}
                     </Badge>
                   </div>
                   <Button variant="ghost" size="sm" onClick={() => { setActiveTab('general'); setStep('form'); }} className="h-6 px-2 text-xs text-muted-foreground hover:text-primary">
