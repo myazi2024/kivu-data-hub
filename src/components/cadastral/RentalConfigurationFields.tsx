@@ -9,6 +9,8 @@ import {
 import { cn } from '@/lib/utils';
 import { Home, Building2, DollarSign } from 'lucide-react';
 import { isTerrainNuCategory as isTerrainNuCategoryShared } from '@/utils/cccPredicates';
+import { buildActualUsageOptions, isResidentialActualUsage, resolveOperationalCapacityField, ACTUAL_USAGE_OTHER } from '@/utils/actualUsage';
+import LeaseContractField from './LeaseContractField';
 
 export type RentalConfiguration = 'single' | 'multi';
 
@@ -19,9 +21,18 @@ export interface RentalUnit {
   /** Nombre de personnes vivant actuellement dans le local (si occupé). */
   occupantCount?: number;
   hostingCapacity?: number;
+  /** Usage réel du local par l'occupant (peut différer de l'usage prévu). */
+  actualUsage?: string;
+  actualUsageOther?: string;
+  /** Capacité d'exploitation si l'usage réel n'est pas résidentiel (postes, m³, places…). */
+  operationalCapacity?: number;
+  operationalCapacityUnit?: string;
+  /** Contrat de location joint (optionnel). */
+  leaseContractUrl?: string;
   rentalStartDate?: string; // ISO yyyy-MM-dd
   floor?: string;           // 'RDC' | '1' | '2' …
 }
+
 
 export interface RentalConfigurationState {
   rentalConfiguration?: RentalConfiguration;
@@ -49,6 +60,8 @@ interface CommonProps {
   numberOfFloors?: number;
   /** Année de construction parente (borne min de la date de mise en location). */
   constructionYear?: number;
+  /** Surcharges Admin des picklists (usage réel). */
+  getPicklistDependentOptions?: (key: string) => Record<string, string[]>;
 }
 
 const buildSubject = (cat?: string, type?: string): string => {
@@ -284,7 +297,13 @@ export const RentalConfigurationSelector: React.FC<CommonProps> = ({
 /** ─── B. Loyer mensuel (1 champ si single, x cartes si multi) ─── */
 export const MonthlyRentFields: React.FC<CommonProps> = ({
   state, onPatch, propertyCategory, constructionType, highlightRequired, numberOfFloors, constructionYear,
+  getPicklistDependentOptions,
 }) => {
+  const actualUsageOptions = useMemo(
+    () => buildActualUsageOptions(getPicklistDependentOptions),
+    [getPicklistDependentOptions],
+  );
+
   const total = useMemo(() => {
     if (state.rentalConfiguration === 'multi') {
       return (state.rentalUnits || []).reduce((sum, u) => sum + (Number(u?.monthlyRentUsd) || 0), 0);
@@ -355,10 +374,14 @@ export const MonthlyRentFields: React.FC<CommonProps> = ({
       {state.rentalConfiguration === 'multi' && (
         <div className="space-y-2 pl-1">
           {resizeUnits(state.rentalUnits, state.rentalUnitsCount ?? MIN_UNITS).map((unit, idx) => {
+            const residentialUse = isResidentialActualUsage(unit.actualUsage);
+            const capacityField = resolveOperationalCapacityField(unit.actualUsage);
             const missingRent = highlightRequired && !unit.monthlyRentUsd;
             const missingOccupied = !vocab.isTerrainNu && highlightRequired && unit.isOccupied === undefined;
-            const missingCapacity = !vocab.isTerrainNu && highlightRequired && unit.isOccupied !== undefined && !unit.hostingCapacity;
-            const missingOccupants = !vocab.isTerrainNu && highlightRequired && unit.isOccupied === true && !unit.occupantCount;
+            const missingCapacity = !vocab.isTerrainNu && highlightRequired && unit.isOccupied !== undefined
+              && (unit.isOccupied === false || residentialUse) && !unit.hostingCapacity;
+            const missingOccupants = !vocab.isTerrainNu && highlightRequired && unit.isOccupied === true
+              && residentialUse && !unit.occupantCount;
             const missingDate = highlightRequired && !unit.rentalStartDate;
             const missingFloor = highlightRequired && showFloorSelect && !unit.floor;
             return (
@@ -449,6 +472,45 @@ export const MonthlyRentFields: React.FC<CommonProps> = ({
 
                   {!vocab.isTerrainNu && unit.isOccupied === true && (
                     <div className="space-y-1">
+                      <Label className="text-xs font-medium text-muted-foreground">
+                        Usage réel du {vocab.singular} (optionnel)
+                      </Label>
+                      <Select
+                        value={unit.actualUsage ?? ''}
+                        onValueChange={(v) => updateUnit(idx, {
+                          actualUsage: v,
+                          actualUsageOther: v === ACTUAL_USAGE_OTHER ? unit.actualUsageOther : undefined,
+                          ...(isResidentialActualUsage(v)
+                            ? { operationalCapacity: undefined, operationalCapacityUnit: undefined }
+                            : { occupantCount: undefined, hostingCapacity: undefined }),
+                        })}
+                      >
+                        <SelectTrigger className="h-9 rounded-xl text-sm">
+                          <SelectValue placeholder="Ce que l'occupant en fait réellement" />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl max-h-60">
+                          {actualUsageOptions.map((opt) => (
+                            <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
+                  {!vocab.isTerrainNu && unit.isOccupied === true && unit.actualUsage === ACTUAL_USAGE_OTHER && (
+                    <div className="space-y-1">
+                      <Label className="text-xs font-medium text-muted-foreground">Précisez l'usage réel</Label>
+                      <Input
+                        value={unit.actualUsageOther ?? ''}
+                        onChange={(e) => updateUnit(idx, { actualUsageOther: e.target.value || undefined })}
+                        placeholder="Ex: atelier de couture"
+                        className="h-9 rounded-xl text-sm"
+                      />
+                    </div>
+                  )}
+
+                  {!vocab.isTerrainNu && unit.isOccupied === true && residentialUse && (
+                    <div className="space-y-1">
                       <Label className={cn('text-xs font-medium', missingOccupants ? 'text-destructive' : 'text-muted-foreground')}>
                         Combien de personnes y vivent ? {missingOccupants && <span className="text-destructive">*</span>}
                       </Label>
@@ -463,7 +525,7 @@ export const MonthlyRentFields: React.FC<CommonProps> = ({
                     </div>
                   )}
 
-                  {!vocab.isTerrainNu && unit.isOccupied !== undefined && (
+                  {!vocab.isTerrainNu && unit.isOccupied !== undefined && (unit.isOccupied === false || residentialUse) && (
                     <div className="space-y-1">
                       <Label className={cn('text-xs font-medium', missingCapacity ? 'text-destructive' : 'text-muted-foreground')}>
                         Capacité d'accueil (personnes) {missingCapacity && <span className="text-destructive">*</span>}
@@ -475,6 +537,25 @@ export const MonthlyRentFields: React.FC<CommonProps> = ({
                         onChange={(e) => updateUnit(idx, { hostingCapacity: e.target.value ? parseInt(e.target.value) : undefined })}
                         placeholder="Ex: 4"
                         className={cn('h-9 rounded-xl text-sm', missingCapacity && 'border-destructive ring-1 ring-destructive/40')}
+                      />
+                    </div>
+                  )}
+
+                  {!vocab.isTerrainNu && unit.isOccupied === true && !!unit.actualUsage && !residentialUse && (
+                    <div className="space-y-1">
+                      <Label className="text-xs font-medium text-muted-foreground">
+                        {capacityField.label} (optionnel)
+                      </Label>
+                      <Input
+                        type="number"
+                        min={0}
+                        value={unit.operationalCapacity ?? ''}
+                        onChange={(e) => updateUnit(idx, {
+                          operationalCapacity: e.target.value === '' ? undefined : Number(e.target.value),
+                          operationalCapacityUnit: e.target.value === '' ? undefined : (capacityField.unit || undefined),
+                        })}
+                        placeholder={capacityField.placeholder}
+                        className="h-9 rounded-xl text-sm"
                       />
                     </div>
                   )}
