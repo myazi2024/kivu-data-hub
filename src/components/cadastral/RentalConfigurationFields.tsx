@@ -374,10 +374,14 @@ export const MonthlyRentFields: React.FC<CommonProps> = ({
       {state.rentalConfiguration === 'multi' && (
         <div className="space-y-2 pl-1">
           {resizeUnits(state.rentalUnits, state.rentalUnitsCount ?? MIN_UNITS).map((unit, idx) => {
+            const residentialUse = isResidentialActualUsage(unit.actualUsage);
+            const capacityField = resolveOperationalCapacityField(unit.actualUsage);
             const missingRent = highlightRequired && !unit.monthlyRentUsd;
             const missingOccupied = !vocab.isTerrainNu && highlightRequired && unit.isOccupied === undefined;
-            const missingCapacity = !vocab.isTerrainNu && highlightRequired && unit.isOccupied !== undefined && !unit.hostingCapacity;
-            const missingOccupants = !vocab.isTerrainNu && highlightRequired && unit.isOccupied === true && !unit.occupantCount;
+            const missingCapacity = !vocab.isTerrainNu && highlightRequired && unit.isOccupied !== undefined
+              && (unit.isOccupied === false || residentialUse) && !unit.hostingCapacity;
+            const missingOccupants = !vocab.isTerrainNu && highlightRequired && unit.isOccupied === true
+              && residentialUse && !unit.occupantCount;
             const missingDate = highlightRequired && !unit.rentalStartDate;
             const missingFloor = highlightRequired && showFloorSelect && !unit.floor;
             return (
