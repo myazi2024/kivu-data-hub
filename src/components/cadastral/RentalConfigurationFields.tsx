@@ -9,6 +9,8 @@ import {
 import { cn } from '@/lib/utils';
 import { Home, Building2, DollarSign } from 'lucide-react';
 import { isTerrainNuCategory as isTerrainNuCategoryShared } from '@/utils/cccPredicates';
+import { buildActualUsageOptions, isResidentialActualUsage, resolveOperationalCapacityField, ACTUAL_USAGE_OTHER } from '@/utils/actualUsage';
+import LeaseContractField from './LeaseContractField';
 
 export type RentalConfiguration = 'single' | 'multi';
 
@@ -58,6 +60,8 @@ interface CommonProps {
   numberOfFloors?: number;
   /** Année de construction parente (borne min de la date de mise en location). */
   constructionYear?: number;
+  /** Surcharges Admin des picklists (usage réel). */
+  getPicklistDependentOptions?: (key: string) => Record<string, string[]>;
 }
 
 const buildSubject = (cat?: string, type?: string): string => {
