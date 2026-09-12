@@ -297,7 +297,13 @@ export const RentalConfigurationSelector: React.FC<CommonProps> = ({
 /** ─── B. Loyer mensuel (1 champ si single, x cartes si multi) ─── */
 export const MonthlyRentFields: React.FC<CommonProps> = ({
   state, onPatch, propertyCategory, constructionType, highlightRequired, numberOfFloors, constructionYear,
+  getPicklistDependentOptions,
 }) => {
+  const actualUsageOptions = useMemo(
+    () => buildActualUsageOptions(getPicklistDependentOptions),
+    [getPicklistDependentOptions],
+  );
+
   const total = useMemo(() => {
     if (state.rentalConfiguration === 'multi') {
       return (state.rentalUnits || []).reduce((sum, u) => sum + (Number(u?.monthlyRentUsd) || 0), 0);
