@@ -472,6 +472,45 @@ export const MonthlyRentFields: React.FC<CommonProps> = ({
 
                   {!vocab.isTerrainNu && unit.isOccupied === true && (
                     <div className="space-y-1">
+                      <Label className="text-xs font-medium text-muted-foreground">
+                        Usage réel du {vocab.singular} (optionnel)
+                      </Label>
+                      <Select
+                        value={unit.actualUsage ?? ''}
+                        onValueChange={(v) => updateUnit(idx, {
+                          actualUsage: v,
+                          actualUsageOther: v === ACTUAL_USAGE_OTHER ? unit.actualUsageOther : undefined,
+                          ...(isResidentialActualUsage(v)
+                            ? { operationalCapacity: undefined, operationalCapacityUnit: undefined }
+                            : { occupantCount: undefined, hostingCapacity: undefined }),
+                        })}
+                      >
+                        <SelectTrigger className="h-9 rounded-xl text-sm">
+                          <SelectValue placeholder="Ce que l'occupant en fait réellement" />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl max-h-60">
+                          {actualUsageOptions.map((opt) => (
+                            <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
+                  {!vocab.isTerrainNu && unit.isOccupied === true && unit.actualUsage === ACTUAL_USAGE_OTHER && (
+                    <div className="space-y-1">
+                      <Label className="text-xs font-medium text-muted-foreground">Précisez l'usage réel</Label>
+                      <Input
+                        value={unit.actualUsageOther ?? ''}
+                        onChange={(e) => updateUnit(idx, { actualUsageOther: e.target.value || undefined })}
+                        placeholder="Ex: atelier de couture"
+                        className="h-9 rounded-xl text-sm"
+                      />
+                    </div>
+                  )}
+
+                  {!vocab.isTerrainNu && unit.isOccupied === true && residentialUse && (
+                    <div className="space-y-1">
                       <Label className={cn('text-xs font-medium', missingOccupants ? 'text-destructive' : 'text-muted-foreground')}>
                         Combien de personnes y vivent ? {missingOccupants && <span className="text-destructive">*</span>}
                       </Label>
@@ -486,7 +525,7 @@ export const MonthlyRentFields: React.FC<CommonProps> = ({
                     </div>
                   )}
 
-                  {!vocab.isTerrainNu && unit.isOccupied !== undefined && (
+                  {!vocab.isTerrainNu && unit.isOccupied !== undefined && (unit.isOccupied === false || residentialUse) && (
                     <div className="space-y-1">
                       <Label className={cn('text-xs font-medium', missingCapacity ? 'text-destructive' : 'text-muted-foreground')}>
                         Capacité d'accueil (personnes) {missingCapacity && <span className="text-destructive">*</span>}
@@ -498,6 +537,25 @@ export const MonthlyRentFields: React.FC<CommonProps> = ({
                         onChange={(e) => updateUnit(idx, { hostingCapacity: e.target.value ? parseInt(e.target.value) : undefined })}
                         placeholder="Ex: 4"
                         className={cn('h-9 rounded-xl text-sm', missingCapacity && 'border-destructive ring-1 ring-destructive/40')}
+                      />
+                    </div>
+                  )}
+
+                  {!vocab.isTerrainNu && unit.isOccupied === true && !!unit.actualUsage && !residentialUse && (
+                    <div className="space-y-1">
+                      <Label className="text-xs font-medium text-muted-foreground">
+                        {capacityField.label} (optionnel)
+                      </Label>
+                      <Input
+                        type="number"
+                        min={0}
+                        value={unit.operationalCapacity ?? ''}
+                        onChange={(e) => updateUnit(idx, {
+                          operationalCapacity: e.target.value === '' ? undefined : Number(e.target.value),
+                          operationalCapacityUnit: e.target.value === '' ? undefined : (capacityField.unit || undefined),
+                        })}
+                        placeholder={capacityField.placeholder}
+                        className="h-9 rounded-xl text-sm"
                       />
                     </div>
                   )}
