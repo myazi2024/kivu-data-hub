@@ -19,9 +19,18 @@ export interface RentalUnit {
   /** Nombre de personnes vivant actuellement dans le local (si occupé). */
   occupantCount?: number;
   hostingCapacity?: number;
+  /** Usage réel du local par l'occupant (peut différer de l'usage prévu). */
+  actualUsage?: string;
+  actualUsageOther?: string;
+  /** Capacité d'exploitation si l'usage réel n'est pas résidentiel (postes, m³, places…). */
+  operationalCapacity?: number;
+  operationalCapacityUnit?: string;
+  /** Contrat de location joint (optionnel). */
+  leaseContractUrl?: string;
   rentalStartDate?: string; // ISO yyyy-MM-dd
   floor?: string;           // 'RDC' | '1' | '2' …
 }
+
 
 export interface RentalConfigurationState {
   rentalConfiguration?: RentalConfiguration;
