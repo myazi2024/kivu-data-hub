@@ -1,5 +1,6 @@
 import { isConstructionRented, isNonResidentialCategory, isSingleUnitRentalCategory } from '@/utils/rentalStatus';
 import { minHeightForFloors } from '@/utils/buildingShapes';
+import { isResidentialActualUsage } from '@/utils/actualUsage';
 import { useMemo, useCallback } from 'react';
 import { CadastralContributionData } from '@/hooks/useCadastralContribution';
 import { CurrentOwner, BuildingPermit } from '@/components/cadastral/ccc-tabs/GeneralTab';
@@ -166,13 +167,15 @@ export function useFormValidation(params: UseFormValidationParams) {
         // Symétrie avec le mode multi : occupation et capacité sont requises
         // (non pertinent pour un terrain nu ni pour une catégorie non résidentielle)
         if (!isTerrainNu && !isNonResidential) {
+          // Usage réel non résidentiel → occupants et capacité d'accueil sans objet.
+          const residentialUse = !formData.actualUsage || isResidentialActualUsage(formData.actualUsage);
           if (formData.isOccupied === undefined || formData.isOccupied === null) {
             missing.push({ field: 'isOccupied', label: "Statut d'occupation du local", tab: 'location' });
           }
-          if (!formData.hostingCapacity || Number(formData.hostingCapacity) <= 0) {
+          if (residentialUse && (!formData.hostingCapacity || Number(formData.hostingCapacity) <= 0)) {
             missing.push({ field: 'hostingCapacity', label: "Capacité d'accueil", tab: 'location' });
           }
-          if (formData.isOccupied === true && (!formData.occupantCount || Number(formData.occupantCount) <= 0)) {
+          if (residentialUse && formData.isOccupied === true && (!formData.occupantCount || Number(formData.occupantCount) <= 0)) {
             missing.push({ field: 'occupantCount', label: 'Nombre de personnes qui y vivent', tab: 'location' });
           }
         }
@@ -192,12 +195,13 @@ export function useFormValidation(params: UseFormValidationParams) {
             missing.push({ field: `rentalUnit_${i}`, label: `Loyer mensuel du ${unitWord.toLowerCase()} #${i + 1}`, tab: 'location' });
           }
           if (!isTerrainNu) {
+            const residentialUse = !u?.actualUsage || isResidentialActualUsage(u.actualUsage);
             if (!u || u.isOccupied === undefined || u.isOccupied === null) {
               missing.push({ field: `rentalUnitOccupied_${i}`, label: `${unitWord} #${i + 1} : statut d'occupation`, tab: 'location' });
-            } else if (!u.hostingCapacity || Number(u.hostingCapacity) <= 0) {
+            } else if (residentialUse && (!u.hostingCapacity || Number(u.hostingCapacity) <= 0)) {
               missing.push({ field: `rentalUnitCapacity_${i}`, label: `${unitWord} #${i + 1} : capacité d'accueil`, tab: 'location' });
             }
-            if (u && u.isOccupied === true) {
+            if (u && u.isOccupied === true && residentialUse) {
               if (!u.occupantCount || Number(u.occupantCount) <= 0) {
                 missing.push({ field: `rentalUnitOccupants_${i}`, label: `${unitWord} #${i + 1} : nombre de personnes qui y vivent`, tab: 'location' });
               }
@@ -233,13 +237,14 @@ export function useFormValidation(params: UseFormValidationParams) {
             missing.push({ field: `additionalMonthlyRent_${idx}`, label: `Loyer mensuel (construction #${idx + 2})`, tab: 'location' });
           }
           if (!cIsTerrainNu && !cIsNonResidential) {
+            const cResidentialUse = !(c as any).actualUsage || isResidentialActualUsage((c as any).actualUsage);
             if ((c as any).isOccupied === undefined || (c as any).isOccupied === null) {
               missing.push({ field: `additionalIsOccupied_${idx}`, label: `Statut d'occupation (construction #${idx + 2})`, tab: 'location' });
             }
-            if (!(c as any).hostingCapacity || Number((c as any).hostingCapacity) <= 0) {
+            if (cResidentialUse && (!(c as any).hostingCapacity || Number((c as any).hostingCapacity) <= 0)) {
               missing.push({ field: `additionalHostingCapacity_${idx}`, label: `Capacité d'accueil (construction #${idx + 2})`, tab: 'location' });
             }
-            if ((c as any).isOccupied === true && (!(c as any).occupantCount || Number((c as any).occupantCount) <= 0)) {
+            if (cResidentialUse && (c as any).isOccupied === true && (!(c as any).occupantCount || Number((c as any).occupantCount) <= 0)) {
               missing.push({ field: `additionalOccupantCount_${idx}`, label: `Nombre d'occupants (construction #${idx + 2})`, tab: 'location' });
             }
           }

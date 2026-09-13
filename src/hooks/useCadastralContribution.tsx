@@ -45,7 +45,13 @@ export interface CadastralContributionData {
     label?: string;
     monthlyRentUsd?: number;
     isOccupied?: boolean;
+    occupantCount?: number;
     hostingCapacity?: number;
+    actualUsage?: string;
+    actualUsageOther?: string;
+    operationalCapacity?: number;
+    operationalCapacityUnit?: string;
+    leaseContractUrl?: string;
     rentalStartDate?: string;
     floor?: string;
   }>;
@@ -54,6 +60,15 @@ export interface CadastralContributionData {
   isOccupied?: boolean;
   occupantCount?: number;
   hostingCapacity?: number;
+  /** Usage réel du bien par l'occupant (peut différer de l'usage prévu). */
+  actualUsage?: string;
+  actualUsageOther?: string;
+  /** Capacité d'exploitation si l'usage réel n'est pas résidentiel. */
+  operationalCapacity?: number;
+  operationalCapacityUnit?: string;
+  /** Contrat de location joint (optionnel, mode « un seul local »). */
+  leaseContractUrl?: string;
+
   
   // Autorisation de bâtir
   buildingPermits?: Array<{
@@ -183,13 +198,24 @@ export interface CadastralContributionData {
       label?: string;
       monthlyRentUsd?: number;
       isOccupied?: boolean;
+      occupantCount?: number;
       hostingCapacity?: number;
+      actualUsage?: string;
+      actualUsageOther?: string;
+      operationalCapacity?: number;
+      operationalCapacityUnit?: string;
+      leaseContractUrl?: string;
       rentalStartDate?: string;
       floor?: string;
     }>;
     isOccupied?: boolean;
     occupantCount?: number;
     hostingCapacity?: number;
+    actualUsage?: string;
+    actualUsageOther?: string;
+    operationalCapacity?: number;
+    operationalCapacityUnit?: string;
+    leaseContractUrl?: string;
     permitMode?: 'existing' | 'request';
     permit?: {
       permitType: 'construction' | 'regularization';
@@ -392,6 +418,11 @@ export const useCadastralContribution = () => {
       is_occupied: data.isOccupied ?? null,
       occupant_count: blankNum(data.occupantCount),
       hosting_capacity: blankNum(data.hostingCapacity),
+      actual_usage: blank(data.actualUsage),
+      actual_usage_other: blank(data.actualUsageOther),
+      operational_capacity: blankNum(data.operationalCapacity),
+      operational_capacity_unit: blank(data.operationalCapacityUnit),
+      lease_contract_url: blank(data.leaseContractUrl),
       declared_usage: blank(data.declaredUsage),
       is_rented: data.isRented === true,
       standing: blank(data.standing),
@@ -404,7 +435,13 @@ export const useCadastralContribution = () => {
             label: u.label ?? null,
             monthly_rent_usd: blankNum(u.monthlyRentUsd),
             is_occupied: u.isOccupied ?? null,
+            occupant_count: blankNum(u.occupantCount),
             hosting_capacity: blankNum(u.hostingCapacity),
+            actual_usage: blank(u.actualUsage),
+            actual_usage_other: blank(u.actualUsageOther),
+            operational_capacity: blankNum(u.operationalCapacity),
+            operational_capacity_unit: blank(u.operationalCapacityUnit),
+            lease_contract_url: blank(u.leaseContractUrl),
             rental_start_date: blankDate(u.rentalStartDate),
             floor: u.floor ?? null,
           }))

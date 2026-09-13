@@ -24,6 +24,7 @@ import { renumberParcelSides, renumberGpsCoordinates, reindexRoadSidesAfterRemov
 import { normalizeConstructionNature } from '@/utils/constructionNatureNormalizer';
 import { composeParcelNumber, stripParcelPrefix } from '@/components/cadastral/ccc-tabs/shared/ParcelNumberField';
 import { hasSuSrReference, computeParcelNumberRequired } from '@/utils/cccPredicates';
+import { notifyMissingLeaseContract } from '@/utils/leaseContractNotice';
 import {
   getAllProvinces,
   getVillesForProvince,
@@ -1067,6 +1068,8 @@ export const useCCCFormState = ({
         formDirtyRef.current = false;
         isClosingAfterSuccessRef.current = true;
         setShowSuccess(true);
+        // Rappel : contrat de location manquant pour au moins un local occupé.
+        await notifyMissingLeaseContract(dataToSubmit);
       } else if (result && !result.success) {
         console.error('Échec de la soumission');
         await rollbackUploadedFiles();

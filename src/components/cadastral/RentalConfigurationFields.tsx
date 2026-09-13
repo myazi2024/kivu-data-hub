@@ -456,7 +456,7 @@ export const MonthlyRentFields: React.FC<CommonProps> = ({
                         type="button"
                         role="radio"
                         aria-checked={unit.isOccupied === false}
-                        onClick={() => updateUnit(idx, { isOccupied: false, occupantCount: undefined })}
+                        onClick={() => updateUnit(idx, { isOccupied: false, occupantCount: undefined, actualUsage: undefined, actualUsageOther: undefined, operationalCapacity: undefined, operationalCapacityUnit: undefined, leaseContractUrl: undefined })}
                         className={cn(
                           'flex-1 h-9 rounded-xl text-xs font-semibold transition-all border-2',
                           unit.isOccupied === false
@@ -593,6 +593,13 @@ export const MonthlyRentFields: React.FC<CommonProps> = ({
                       )}
                     />
                   </div>
+
+                  {unit.isOccupied === true && (
+                    <LeaseContractField
+                      value={unit.leaseContractUrl}
+                      onChange={(url) => updateUnit(idx, { leaseContractUrl: url })}
+                    />
+                  )}
                 </div>
               </div>
             );
