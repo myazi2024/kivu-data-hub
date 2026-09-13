@@ -620,7 +620,16 @@ export const ConstructionSection: React.FC<ConstructionSectionProps> = ({
             highlightRequired={highlightRequiredFields}
             numberOfFloors={formData.floorNumber ? parseInt(formData.floorNumber, 10) : undefined}
             constructionYear={formData.constructionYear}
+            getPicklistDependentOptions={getPicklistDependentOptions}
           />
+
+          {/* Contrat de location — mode « un seul local » et bien habité */}
+          {formData.rentalConfiguration === 'single' && formData.isOccupied === true && (
+            <LeaseContractField
+              value={formData.leaseContractUrl}
+              onChange={(url) => handleInputChange('leaseContractUrl', url)}
+            />
+          )}
         </>
       )}
 
