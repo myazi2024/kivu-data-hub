@@ -1067,6 +1067,8 @@ export const useCCCFormState = ({
         formDirtyRef.current = false;
         isClosingAfterSuccessRef.current = true;
         setShowSuccess(true);
+        // Rappel : contrat de location manquant pour au moins un local occupé.
+        await notifyMissingLeaseContract(dataToSubmit);
       } else if (result && !result.success) {
         console.error('Échec de la soumission');
         await rollbackUploadedFiles();
