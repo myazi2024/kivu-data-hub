@@ -593,6 +593,13 @@ export const MonthlyRentFields: React.FC<CommonProps> = ({
                       )}
                     />
                   </div>
+
+                  {unit.isOccupied === true && (
+                    <LeaseContractField
+                      value={unit.leaseContractUrl}
+                      onChange={(url) => updateUnit(idx, { leaseContractUrl: url })}
+                    />
+                  )}
                 </div>
               </div>
             );
