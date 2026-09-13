@@ -494,21 +494,84 @@ export const ConstructionSection: React.FC<ConstructionSectionProps> = ({
               <Label className="text-sm font-medium">Votre {formData.propertyCategory?.toLowerCase() || 'bien'} est-il habité ?</Label>
               <div className="flex gap-2">
                 <button type="button" onClick={() => { handleInputChange('isOccupied', true); }} className={cn("flex-1 py-3 px-4 rounded-2xl text-sm font-semibold transition-all", formData.isOccupied === true ? 'bg-primary text-primary-foreground shadow-lg' : 'bg-muted text-muted-foreground hover:bg-muted/80')}>Oui</button>
-                <button type="button" onClick={() => { handleInputChange('isOccupied', false); handleInputChange('occupantCount', undefined); }} className={cn("flex-1 py-3 px-4 rounded-2xl text-sm font-semibold transition-all", formData.isOccupied === false ? 'bg-primary text-primary-foreground shadow-lg' : 'bg-muted text-muted-foreground hover:bg-muted/80')}>Non</button>
+                <button type="button" onClick={() => {
+                  handleInputChange('isOccupied', false);
+                  handleInputChange('occupantCount', undefined);
+                  handleInputChange('actualUsage', undefined);
+                  handleInputChange('actualUsageOther', undefined);
+                  handleInputChange('operationalCapacity', undefined);
+                  handleInputChange('operationalCapacityUnit', undefined);
+                  handleInputChange('leaseContractUrl', undefined);
+                }} className={cn("flex-1 py-3 px-4 rounded-2xl text-sm font-semibold transition-all", formData.isOccupied === false ? 'bg-primary text-primary-foreground shadow-lg' : 'bg-muted text-muted-foreground hover:bg-muted/80')}>Non</button>
               </div>
             </div>
 
             {formData.isOccupied === true && (
+              <div className="space-y-1.5">
+                <Label className="text-sm font-medium">Usage réel (optionnel)</Label>
+                <p className="text-[11px] text-muted-foreground leading-snug">
+                  Ce que l'occupant fait réellement du bien — cela peut différer de l'usage prévu.
+                </p>
+                <Select
+                  value={formData.actualUsage ?? ''}
+                  onValueChange={(v) => {
+                    handleInputChange('actualUsage', v);
+                    if (v !== ACTUAL_USAGE_OTHER) handleInputChange('actualUsageOther', undefined);
+                    if (isResidentialActualUsage(v)) {
+                      handleInputChange('operationalCapacity', undefined);
+                      handleInputChange('operationalCapacityUnit', undefined);
+                    } else {
+                      handleInputChange('occupantCount', undefined);
+                      handleInputChange('hostingCapacity', undefined);
+                    }
+                  }}
+                >
+                  <SelectTrigger className="h-10 rounded-xl text-sm"><SelectValue placeholder="Sélectionner l'usage réel" /></SelectTrigger>
+                  <SelectContent className="rounded-xl max-h-60">
+                    {actualUsageOptions.map(opt => (
+                      <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {formData.isOccupied === true && formData.actualUsage === ACTUAL_USAGE_OTHER && (
+              <div className="space-y-1.5">
+                <Label className="text-sm font-medium">Précisez l'usage réel</Label>
+                <Input value={formData.actualUsageOther ?? ''} onChange={(e) => handleInputChange('actualUsageOther', e.target.value || undefined)} placeholder="Ex: atelier de couture" className="h-10 rounded-xl text-sm" />
+              </div>
+            )}
+
+            {formData.isOccupied === true && residentialActualUse && (
               <div className="space-y-1.5">
                 <Label className="text-sm font-medium">Combien de personnes y vivent ?</Label>
                 <Input type="number" min={1} value={formData.occupantCount || ''} onChange={(e) => handleInputChange('occupantCount', e.target.value ? parseInt(e.target.value) : undefined)} placeholder="Nombre de personnes" className="h-10 rounded-xl text-sm" />
               </div>
             )}
 
-            {formData.isOccupied !== undefined && formData.isOccupied !== null && (
+            {formData.isOccupied !== undefined && formData.isOccupied !== null && (formData.isOccupied === false || residentialActualUse) && (
               <div className="space-y-1.5">
                 <Label className="text-sm font-medium">Quelle est sa capacité d'accueil ?</Label>
                 <Input type="number" min={1} value={formData.hostingCapacity || ''} onChange={(e) => handleInputChange('hostingCapacity', e.target.value ? parseInt(e.target.value) : undefined)} placeholder="Nombre de personnes" className="h-10 rounded-xl text-sm" />
+              </div>
+            )}
+
+            {formData.isOccupied === true && !!formData.actualUsage && !residentialActualUse && (
+              <div className="space-y-1.5">
+                <Label className="text-sm font-medium">{operationalCapacityField.label} (optionnel)</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  value={formData.operationalCapacity ?? ''}
+                  onChange={(e) => {
+                    const v = e.target.value === '' ? undefined : Number(e.target.value);
+                    handleInputChange('operationalCapacity', v);
+                    handleInputChange('operationalCapacityUnit', v === undefined ? undefined : (operationalCapacityField.unit || undefined));
+                  }}
+                  placeholder={operationalCapacityField.placeholder}
+                  className="h-10 rounded-xl text-sm"
+                />
               </div>
             )}
           </div>
