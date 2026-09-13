@@ -166,13 +166,15 @@ export function useFormValidation(params: UseFormValidationParams) {
         // Symétrie avec le mode multi : occupation et capacité sont requises
         // (non pertinent pour un terrain nu ni pour une catégorie non résidentielle)
         if (!isTerrainNu && !isNonResidential) {
+          // Usage réel non résidentiel → occupants et capacité d'accueil sans objet.
+          const residentialUse = !formData.actualUsage || isResidentialActualUsage(formData.actualUsage);
           if (formData.isOccupied === undefined || formData.isOccupied === null) {
             missing.push({ field: 'isOccupied', label: "Statut d'occupation du local", tab: 'location' });
           }
-          if (!formData.hostingCapacity || Number(formData.hostingCapacity) <= 0) {
+          if (residentialUse && (!formData.hostingCapacity || Number(formData.hostingCapacity) <= 0)) {
             missing.push({ field: 'hostingCapacity', label: "Capacité d'accueil", tab: 'location' });
           }
-          if (formData.isOccupied === true && (!formData.occupantCount || Number(formData.occupantCount) <= 0)) {
+          if (residentialUse && formData.isOccupied === true && (!formData.occupantCount || Number(formData.occupantCount) <= 0)) {
             missing.push({ field: 'occupantCount', label: 'Nombre de personnes qui y vivent', tab: 'location' });
           }
         }
