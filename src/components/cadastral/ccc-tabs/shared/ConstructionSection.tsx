@@ -82,6 +82,16 @@ export const ConstructionSection: React.FC<ConstructionSectionProps> = ({
   /** Usages proposés pour un terrain nu si la liste dépendante n'est pas encore résolue. */
   const TERRAIN_NU_USAGES = ['Parking', "Espace d'entreposage", 'Aucun'];
 
+  /** Usage réel : toutes les valeurs d'usage, toutes catégories confondues, + « Autre ». */
+  const actualUsageOptions = React.useMemo(
+    () => buildActualUsageOptions(getPicklistDependentOptions),
+    [getPicklistDependentOptions],
+  );
+  const residentialActualUse = isResidentialActualUsage(formData.actualUsage);
+  const operationalCapacityField = resolveOperationalCapacityField(formData.actualUsage);
+
+
+
   /** Hauteur : visible dès qu'une nature bâtie est choisie (avant Standing). */
   const showHeightField = !!formData.constructionNature && formData.constructionNature !== 'Non bâti';
   const isApartmentCategory = formData.propertyCategory === 'Appartement';
