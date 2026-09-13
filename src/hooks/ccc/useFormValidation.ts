@@ -195,12 +195,13 @@ export function useFormValidation(params: UseFormValidationParams) {
             missing.push({ field: `rentalUnit_${i}`, label: `Loyer mensuel du ${unitWord.toLowerCase()} #${i + 1}`, tab: 'location' });
           }
           if (!isTerrainNu) {
+            const residentialUse = !u?.actualUsage || isResidentialActualUsage(u.actualUsage);
             if (!u || u.isOccupied === undefined || u.isOccupied === null) {
               missing.push({ field: `rentalUnitOccupied_${i}`, label: `${unitWord} #${i + 1} : statut d'occupation`, tab: 'location' });
-            } else if (!u.hostingCapacity || Number(u.hostingCapacity) <= 0) {
+            } else if (residentialUse && (!u.hostingCapacity || Number(u.hostingCapacity) <= 0)) {
               missing.push({ field: `rentalUnitCapacity_${i}`, label: `${unitWord} #${i + 1} : capacité d'accueil`, tab: 'location' });
             }
-            if (u && u.isOccupied === true) {
+            if (u && u.isOccupied === true && residentialUse) {
               if (!u.occupantCount || Number(u.occupantCount) <= 0) {
                 missing.push({ field: `rentalUnitOccupants_${i}`, label: `${unitWord} #${i + 1} : nombre de personnes qui y vivent`, tab: 'location' });
               }
