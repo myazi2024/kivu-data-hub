@@ -45,7 +45,13 @@ export interface CadastralContributionData {
     label?: string;
     monthlyRentUsd?: number;
     isOccupied?: boolean;
+    occupantCount?: number;
     hostingCapacity?: number;
+    actualUsage?: string;
+    actualUsageOther?: string;
+    operationalCapacity?: number;
+    operationalCapacityUnit?: string;
+    leaseContractUrl?: string;
     rentalStartDate?: string;
     floor?: string;
   }>;
@@ -54,6 +60,15 @@ export interface CadastralContributionData {
   isOccupied?: boolean;
   occupantCount?: number;
   hostingCapacity?: number;
+  /** Usage réel du bien par l'occupant (peut différer de l'usage prévu). */
+  actualUsage?: string;
+  actualUsageOther?: string;
+  /** Capacité d'exploitation si l'usage réel n'est pas résidentiel. */
+  operationalCapacity?: number;
+  operationalCapacityUnit?: string;
+  /** Contrat de location joint (optionnel, mode « un seul local »). */
+  leaseContractUrl?: string;
+
   
   // Autorisation de bâtir
   buildingPermits?: Array<{

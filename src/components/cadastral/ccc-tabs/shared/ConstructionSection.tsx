@@ -19,6 +19,8 @@ import { isConstructionRented, isRentalEligible, isSingleUnitRentalCategory, isN
 import { isTerrainNuCategory, isUnbuiltLand } from '@/utils/cccPredicates';
 import BuildingHeightField from '@/components/cadastral/BuildingHeightField';
 import { getShapeForConstructionIndex, withShapeHeight } from '@/utils/buildingShapes';
+import LeaseContractField from '@/components/cadastral/LeaseContractField';
+import { ACTUAL_USAGE_OTHER, buildActualUsageOptions, isResidentialActualUsage, resolveOperationalCapacityField } from '@/utils/actualUsage';
 
 export interface ConstructionSectionProps {
   formData: CadastralContributionData;
