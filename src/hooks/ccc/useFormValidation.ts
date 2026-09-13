@@ -237,13 +237,14 @@ export function useFormValidation(params: UseFormValidationParams) {
             missing.push({ field: `additionalMonthlyRent_${idx}`, label: `Loyer mensuel (construction #${idx + 2})`, tab: 'location' });
           }
           if (!cIsTerrainNu && !cIsNonResidential) {
+            const cResidentialUse = !(c as any).actualUsage || isResidentialActualUsage((c as any).actualUsage);
             if ((c as any).isOccupied === undefined || (c as any).isOccupied === null) {
               missing.push({ field: `additionalIsOccupied_${idx}`, label: `Statut d'occupation (construction #${idx + 2})`, tab: 'location' });
             }
-            if (!(c as any).hostingCapacity || Number((c as any).hostingCapacity) <= 0) {
+            if (cResidentialUse && (!(c as any).hostingCapacity || Number((c as any).hostingCapacity) <= 0)) {
               missing.push({ field: `additionalHostingCapacity_${idx}`, label: `Capacité d'accueil (construction #${idx + 2})`, tab: 'location' });
             }
-            if ((c as any).isOccupied === true && (!(c as any).occupantCount || Number((c as any).occupantCount) <= 0)) {
+            if (cResidentialUse && (c as any).isOccupied === true && (!(c as any).occupantCount || Number((c as any).occupantCount) <= 0)) {
               missing.push({ field: `additionalOccupantCount_${idx}`, label: `Nombre d'occupants (construction #${idx + 2})`, tab: 'location' });
             }
           }
