@@ -1,5 +1,6 @@
 import { isConstructionRented, isNonResidentialCategory, isSingleUnitRentalCategory } from '@/utils/rentalStatus';
 import { minHeightForFloors } from '@/utils/buildingShapes';
+import { isResidentialActualUsage } from '@/utils/actualUsage';
 import { useMemo, useCallback } from 'react';
 import { CadastralContributionData } from '@/hooks/useCadastralContribution';
 import { CurrentOwner, BuildingPermit } from '@/components/cadastral/ccc-tabs/GeneralTab';
