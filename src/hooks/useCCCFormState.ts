@@ -24,6 +24,7 @@ import { renumberParcelSides, renumberGpsCoordinates, reindexRoadSidesAfterRemov
 import { normalizeConstructionNature } from '@/utils/constructionNatureNormalizer';
 import { composeParcelNumber, stripParcelPrefix } from '@/components/cadastral/ccc-tabs/shared/ParcelNumberField';
 import { hasSuSrReference, computeParcelNumberRequired } from '@/utils/cccPredicates';
+import { notifyMissingLeaseContract } from '@/utils/leaseContractNotice';
 import {
   getAllProvinces,
   getVillesForProvince,
