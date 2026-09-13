@@ -198,13 +198,24 @@ export interface CadastralContributionData {
       label?: string;
       monthlyRentUsd?: number;
       isOccupied?: boolean;
+      occupantCount?: number;
       hostingCapacity?: number;
+      actualUsage?: string;
+      actualUsageOther?: string;
+      operationalCapacity?: number;
+      operationalCapacityUnit?: string;
+      leaseContractUrl?: string;
       rentalStartDate?: string;
       floor?: string;
     }>;
     isOccupied?: boolean;
     occupantCount?: number;
     hostingCapacity?: number;
+    actualUsage?: string;
+    actualUsageOther?: string;
+    operationalCapacity?: number;
+    operationalCapacityUnit?: string;
+    leaseContractUrl?: string;
     permitMode?: 'existing' | 'request';
     permit?: {
       permitType: 'construction' | 'regularization';
