@@ -722,7 +722,15 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
             constructionType={data.constructionType}
             numberOfFloors={data.floorNumber ? parseInt(data.floorNumber, 10) : undefined}
             constructionYear={data.constructionYear}
+            getPicklistDependentOptions={getPicklistDependentOptions}
           />
+          {/* Contrat de location — mode « un seul local » et bien habité */}
+          {data.rentalConfiguration === 'single' && (data as any).isOccupied === true && (
+            <LeaseContractField
+              value={(data as any).leaseContractUrl}
+              onChange={(url) => onChange(index, { ...data, leaseContractUrl: url } as any)}
+            />
+          )}
         </>
       )}
 
