@@ -72,6 +72,11 @@ export interface Contribution {
   is_occupied: boolean | null;
   occupant_count: number | null;
   hosting_capacity: number | null;
+  actual_usage: string | null;
+  actual_usage_other: string | null;
+  operational_capacity: number | null;
+  operational_capacity_unit: string | null;
+  lease_contract_url: string | null;
   rental_start_date: string | null;
   source_form_type: string | null;
   changed_fields: any;
