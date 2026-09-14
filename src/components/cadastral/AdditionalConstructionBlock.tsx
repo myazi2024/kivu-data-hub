@@ -13,6 +13,7 @@ import { resolveAvailableUsages } from '@/utils/constructionUsageResolver';
 import { isConstructionRented, isRentalEligible, isSingleUnitRentalCategory, isNonResidentialCategory } from '@/utils/rentalStatus';
 import RentalStartDateField from './RentalStartDateField';
 import { RentalConfigurationSelector, MonthlyRentFields } from './RentalConfigurationFields';
+import LeaseContractField from './LeaseContractField';
 import BuildingHeightField from './BuildingHeightField';
 import { getShapeForConstructionIndex, withShapeHeight } from '@/utils/buildingShapes';
 
