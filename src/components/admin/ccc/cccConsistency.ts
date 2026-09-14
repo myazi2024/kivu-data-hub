@@ -13,6 +13,11 @@ export interface AdminRentalUnit {
   isOccupied: boolean | null;
   occupantCount: number | null;
   hostingCapacity: number | null;
+  actualUsage: string | null;
+  actualUsageOther: string | null;
+  operationalCapacity: number | null;
+  operationalCapacityUnit: string | null;
+  leaseContractUrl: string | null;
   rentalStartDate: string | null;
   floor: string | null;
 }
@@ -52,6 +57,11 @@ export const parseRentalUnits = (raw: unknown): AdminRentalUnit[] => {
       isOccupied: (rr(u, 'is_occupied', 'isOccupied') as boolean | null) ?? null,
       occupantCount: num(rr(u, 'occupant_count', 'occupantCount')),
       hostingCapacity: num(rr(u, 'hosting_capacity', 'hostingCapacity')),
+      actualUsage: rr(u, 'actual_usage', 'actualUsage'),
+      actualUsageOther: rr(u, 'actual_usage_other', 'actualUsageOther'),
+      operationalCapacity: num(rr(u, 'operational_capacity', 'operationalCapacity')),
+      operationalCapacityUnit: rr(u, 'operational_capacity_unit', 'operationalCapacityUnit'),
+      leaseContractUrl: rr(u, 'lease_contract_url', 'leaseContractUrl'),
       rentalStartDate: rr(u, 'rental_start_date', 'rentalStartDate'),
       floor: rr(u, 'floor'),
     }));

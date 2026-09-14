@@ -264,12 +264,13 @@ export function useFormValidation(params: UseFormValidationParams) {
               missing.push({ field: `additionalRentalUnit_${idx}_${i}`, label: `Loyer du ${unitWord.toLowerCase()} #${i + 1} (construction #${idx + 2})`, tab: 'location' });
             }
             if (!cIsTerrainNu) {
+              const uResidentialUse = !u?.actualUsage || isResidentialActualUsage(u.actualUsage);
               if (!u || u.isOccupied === undefined || u.isOccupied === null) {
                 missing.push({ field: `additionalRentalUnitOccupied_${idx}_${i}`, label: `${unitWord} #${i + 1} : occupation (construction #${idx + 2})`, tab: 'location' });
-              } else if (!u.hostingCapacity || Number(u.hostingCapacity) <= 0) {
+              } else if (uResidentialUse && (!u.hostingCapacity || Number(u.hostingCapacity) <= 0)) {
                 missing.push({ field: `additionalRentalUnitCapacity_${idx}_${i}`, label: `${unitWord} #${i + 1} : capacité (construction #${idx + 2})`, tab: 'location' });
               }
-              if (u && u.isOccupied === true) {
+              if (u && u.isOccupied === true && uResidentialUse) {
                 if (!u.occupantCount || Number(u.occupantCount) <= 0) {
                   missing.push({ field: `additionalRentalUnitOccupants_${idx}_${i}`, label: `${unitWord} #${i + 1} : nombre d'occupants (construction #${idx + 2})`, tab: 'location' });
                 }
