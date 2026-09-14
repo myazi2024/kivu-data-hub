@@ -43,6 +43,40 @@ export const CCCRentalBlock: React.FC<Props> = ({ contribution }) => {
               {contribution.monthly_rent_usd ? fmtUsd(Number(contribution.monthly_rent_usd) * 12) : 'Non renseigné'}
             </p>
           </div>
+          {contribution.actual_usage && (
+            <div>
+              <Label className="text-xs text-muted-foreground">Usage réel</Label>
+              <p className="text-sm">
+                {contribution.actual_usage === 'Autre' && contribution.actual_usage_other
+                  ? contribution.actual_usage_other
+                  : contribution.actual_usage}
+              </p>
+            </div>
+          )}
+          {contribution.operational_capacity != null && (
+            <div>
+              <Label className="text-xs text-muted-foreground">Capacité d'exploitation</Label>
+              <p className="text-sm">
+                {contribution.operational_capacity}
+                {contribution.operational_capacity_unit ? ` ${contribution.operational_capacity_unit}` : ''}
+              </p>
+            </div>
+          )}
+          <div>
+            <Label className="text-xs text-muted-foreground">Contrat de location</Label>
+            {contribution.lease_contract_url ? (
+              <a
+                href={contribution.lease_contract_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm text-primary underline"
+              >
+                Consulter le contrat
+              </a>
+            ) : (
+              <p className="text-sm text-muted-foreground">Non joint</p>
+            )}
+          </div>
         </div>
       )}
 
