@@ -323,8 +323,20 @@ const ReviewTab: React.FC<ReviewTabProps> = ({
             {formData.standing && <ReviewLine label="Standing" value={formData.standing} />}
             {formData.constructionYear && <ReviewLine label="Année construction" value={String(formData.constructionYear)} />}
             {formData.isOccupied !== undefined && formData.isOccupied !== null && <ReviewLine label="Habité" value={formData.isOccupied ? 'Oui' : 'Non'} />}
+            {formData.actualUsage && (
+              <ReviewLine
+                label="Usage réel"
+                value={formData.actualUsage === 'Autre' && formData.actualUsageOther ? formData.actualUsageOther : formData.actualUsage}
+              />
+            )}
             {formData.isOccupied === true && formData.occupantCount && <ReviewLine label="Occupants" value={`${formData.occupantCount} personne(s)`} />}
             {formData.hostingCapacity && <ReviewLine label="Capacité d'accueil" value={`${formData.hostingCapacity} personne(s)`} />}
+            {formData.operationalCapacity != null && formData.operationalCapacity > 0 && (
+              <ReviewLine label="Capacité d'exploitation" value={`${formData.operationalCapacity}${formData.operationalCapacityUnit ? ` ${formData.operationalCapacityUnit}` : ''}`} />
+            )}
+            {formData.isRented && formData.isOccupied === true && formData.rentalConfiguration === 'single' && (
+              <ReviewLine label="Contrat de location" value={formData.leaseContractUrl ? 'Joint' : 'À ajouter plus tard'} />
+            )}
             {formData.floorNumber && <ReviewLine label="Nombre d'étages" value={formData.floorNumber} />}
             {formData.buildingHeight != null && formData.buildingHeight > 0 && (
               <ReviewLine label="Hauteur de la construction" value={`${formData.buildingHeight} m`} />
