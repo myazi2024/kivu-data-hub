@@ -84,9 +84,17 @@ export const ConstructionSection: React.FC<ConstructionSectionProps> = ({
 
   /** Usage réel : toutes les valeurs d'usage, toutes catégories confondues, + « Autre ». */
   const actualUsageOptions = React.useMemo(
-    () => buildActualUsageOptions(getPicklistDependentOptions),
-    [getPicklistDependentOptions],
+    () => buildActualUsageOptions(getPicklistDependentOptions, formData.propertyCategory),
+    [getPicklistDependentOptions, formData.propertyCategory],
   );
+  /** La catégorie a changé : un « Terrain vacant » hérité n'est plus valide pour un bien bâti. */
+  React.useEffect(() => {
+    if (formData.actualUsage && !actualUsageOptions.includes(formData.actualUsage)) {
+      handleInputChange('actualUsage', undefined);
+      handleInputChange('actualUsageOther', undefined);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [actualUsageOptions, formData.actualUsage]);
   const residentialActualUse = isResidentialActualUsage(formData.actualUsage);
   const operationalCapacityField = resolveOperationalCapacityField(formData.actualUsage);
 
