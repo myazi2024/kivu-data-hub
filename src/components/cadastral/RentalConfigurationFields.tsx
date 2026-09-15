@@ -300,8 +300,8 @@ export const MonthlyRentFields: React.FC<CommonProps> = ({
   getPicklistDependentOptions,
 }) => {
   const actualUsageOptions = useMemo(
-    () => buildActualUsageOptions(getPicklistDependentOptions),
-    [getPicklistDependentOptions],
+    () => buildActualUsageOptions(getPicklistDependentOptions, propertyCategory),
+    [getPicklistDependentOptions, propertyCategory],
   );
 
   const total = useMemo(() => {
