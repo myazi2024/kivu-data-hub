@@ -38,12 +38,12 @@ export function withoutShapeHeights<T extends BuildingShapeLike>(shapes: T[]): T
 
 /**
  * Hauteur minimale (m) cohérente avec le nombre d'étages de la construction.
- * Règle : 3 m par étage, avec un minimum légal de 3 m (RDC seul = 3 m).
- *   0 → 3 m, 1 → 3 m, 2 → 6 m, 3 → 9 m, n → max(3, n×3) m.
+ * Règle : 3 m pour le rez-de-chaussée + 3 m par étage supplémentaire.
+ *   0 (RDC) → 3 m, 1 → 6 m, 2 → 9 m, n → 3 × (n + 1) m.
  */
 export function minHeightForFloors(floorCount: number | string | undefined | null): number {
   const n = Math.max(0, Math.floor(Number(floorCount) || 0));
-  return Math.max(3, n * 3);
+  return 3 * (n + 1);
 }
 
 /**

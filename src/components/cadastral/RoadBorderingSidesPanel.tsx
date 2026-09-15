@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -15,6 +16,12 @@ export interface RoadSideInfo {
   roadType?: string;
   roadName?: string;
   roadWidth?: number;
+  /** Revêtement de la chaussée (accessibilité, viabilité). */
+  roadSurface?: string;
+  /** Présence d'un caniveau le long de ce côté (assainissement). */
+  hasGutter?: boolean;
+  /** La parcelle est-elle raccordée au caniveau depuis ce côté ? */
+  gutterConnected?: boolean;
   orientation?: string;
   length?: number;
   isConfirmed?: boolean;
@@ -40,6 +47,20 @@ const defaultRoadTypes = [
   { value: 'chemin', label: 'Chemin' },
   { value: 'piste', label: 'Piste' },
 ];
+
+/** Revêtements de chaussée usuels en RDC. */
+export const ROAD_SURFACE_OPTIONS = [
+  { value: 'asphalte', label: 'Asphalte / bitume' },
+  { value: 'beton', label: 'Béton' },
+  { value: 'paves', label: 'Pavés' },
+  { value: 'gravier', label: 'Gravier / latérite' },
+  { value: 'terre', label: 'Terre battue' },
+  { value: 'non_revetue', label: 'Non revêtue' },
+];
+
+/** Libellé lisible d'un revêtement (valeur stockée ou libellé déjà humain). */
+export const roadSurfaceLabel = (value?: string): string =>
+  ROAD_SURFACE_OPTIONS.find(o => o.value === value)?.label || value || '—';
 
 const getOrientationColor = (orientation?: string) => {
   switch (orientation) {
@@ -74,6 +95,9 @@ export const RoadBorderingSidesPanel: React.FC<RoadBorderingSidesPanelProps> = (
       roadType: undefined, 
       roadName: undefined, 
       roadWidth: undefined,
+      roadSurface: undefined,
+      hasGutter: undefined,
+      gutterConnected: undefined,
       isConfirmed: false 
     });
     setEditingSide(null);
@@ -87,7 +111,10 @@ export const RoadBorderingSidesPanel: React.FC<RoadBorderingSidesPanelProps> = (
   };
 
   const canConfirm = (side: RoadSideInfo) => {
-    return side.bordersRoad && side.roadType && side.roadWidth && side.roadWidth > 0;
+    const base = !!side.bordersRoad && !!side.roadType && !!side.roadSurface
+      && !!side.roadWidth && side.roadWidth > 0 && side.hasGutter !== undefined;
+    // Le raccordement n'est exigé que si un caniveau est déclaré.
+    return base && (side.hasGutter !== true || side.gutterConnected !== undefined);
   };
 
   return (
@@ -212,9 +239,16 @@ export const RoadBorderingSidesPanel: React.FC<RoadBorderingSidesPanelProps> = (
                   </div>
 
                   {/* Résumé route confirmée */}
-                  {side.isConfirmed && side.roadName && (
+                  {side.isConfirmed && (side.roadName || side.roadSurface || side.hasGutter !== undefined) && (
                     <p className="text-xs text-muted-foreground pl-6">
-                      {side.roadName} {side.roadWidth ? `(${side.roadWidth}m)` : ''}
+                      {[
+                        side.roadName,
+                        side.roadWidth ? `${side.roadWidth} m` : null,
+                        side.roadSurface ? roadSurfaceLabel(side.roadSurface) : null,
+                        side.hasGutter === true
+                          ? (side.gutterConnected ? 'Caniveau raccordé' : 'Caniveau non raccordé')
+                          : side.hasGutter === false ? 'Sans caniveau' : null,
+                      ].filter(Boolean).join(' · ')}
                     </p>
                   )}
 
@@ -234,6 +268,24 @@ export const RoadBorderingSidesPanel: React.FC<RoadBorderingSidesPanelProps> = (
                           {roadTypes.map((type) => (
                             <SelectItem key={type.value} value={type.value} className="text-xs">
                               {type.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+
+                      <Select
+                        value={side.roadSurface || ''}
+                        onValueChange={(value) =>
+                          onSideUpdate(side.sideIndex, { roadSurface: value })
+                        }
+                      >
+                        <SelectTrigger className="h-8 text-xs rounded-lg">
+                          <SelectValue placeholder="Revêtement de la route *" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {ROAD_SURFACE_OPTIONS.map((surface) => (
+                            <SelectItem key={surface.value} value={surface.value} className="text-xs">
+                              {surface.label}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -261,6 +313,55 @@ export const RoadBorderingSidesPanel: React.FC<RoadBorderingSidesPanelProps> = (
                           className="h-8 text-xs rounded-lg"
                         />
                       </div>
+
+                      {/* Caniveau */}
+                      <div className="space-y-1 pt-0.5">
+                        <Label className="text-[11px] font-medium">Présence d'un caniveau *</Label>
+                        <RadioGroup
+                          value={side.hasGutter === undefined ? '' : side.hasGutter ? 'oui' : 'non'}
+                          onValueChange={(value) =>
+                            onSideUpdate(side.sideIndex, {
+                              hasGutter: value === 'oui',
+                              gutterConnected: value === 'oui' ? side.gutterConnected : undefined,
+                            })
+                          }
+                          className="flex gap-3"
+                        >
+                          <div className="flex items-center gap-1.5">
+                            <RadioGroupItem value="oui" id={`gutter-yes-${side.sideIndex}`} className="h-3.5 w-3.5" />
+                            <Label htmlFor={`gutter-yes-${side.sideIndex}`} className="text-[11px] cursor-pointer">Oui</Label>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <RadioGroupItem value="non" id={`gutter-no-${side.sideIndex}`} className="h-3.5 w-3.5" />
+                            <Label htmlFor={`gutter-no-${side.sideIndex}`} className="text-[11px] cursor-pointer">Non</Label>
+                          </div>
+                        </RadioGroup>
+                      </div>
+
+                      {side.hasGutter === true && (
+                        <div className="space-y-1 animate-fade-in">
+                          <Label className="text-[11px] font-medium">
+                            La parcelle est-elle raccordée au caniveau depuis ce côté ? *
+                          </Label>
+                          <RadioGroup
+                            value={side.gutterConnected === undefined ? '' : side.gutterConnected ? 'oui' : 'non'}
+                            onValueChange={(value) =>
+                              onSideUpdate(side.sideIndex, { gutterConnected: value === 'oui' })
+                            }
+                            className="flex gap-3"
+                          >
+                            <div className="flex items-center gap-1.5">
+                              <RadioGroupItem value="oui" id={`gutter-link-yes-${side.sideIndex}`} className="h-3.5 w-3.5" />
+                              <Label htmlFor={`gutter-link-yes-${side.sideIndex}`} className="text-[11px] cursor-pointer">Oui</Label>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <RadioGroupItem value="non" id={`gutter-link-no-${side.sideIndex}`} className="h-3.5 w-3.5" />
+                              <Label htmlFor={`gutter-link-no-${side.sideIndex}`} className="text-[11px] cursor-pointer">Non</Label>
+                            </div>
+                          </RadioGroup>
+                        </div>
+                      )}
+
 
                       {/* Boutons d'action */}
                       <div className="flex gap-1.5 pt-1">

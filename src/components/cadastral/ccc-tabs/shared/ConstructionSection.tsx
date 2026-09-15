@@ -18,7 +18,7 @@ import type { BuildingPermit } from '../GeneralTab';
 import { isConstructionRented, isRentalEligible, isSingleUnitRentalCategory, isNonResidentialCategory } from '@/utils/rentalStatus';
 import { isTerrainNuCategory, isUnbuiltLand } from '@/utils/cccPredicates';
 import BuildingHeightField from '@/components/cadastral/BuildingHeightField';
-import { getShapeForConstructionIndex, withShapeHeight } from '@/utils/buildingShapes';
+import { getShapeForConstructionIndex, withShapeHeight, minHeightForFloors } from '@/utils/buildingShapes';
 import LeaseContractField from '@/components/cadastral/LeaseContractField';
 import { ACTUAL_USAGE_OTHER, buildActualUsageOptions, isResidentialActualUsage, resolveOperationalCapacityField } from '@/utils/actualUsage';
 
@@ -84,9 +84,17 @@ export const ConstructionSection: React.FC<ConstructionSectionProps> = ({
 
   /** Usage réel : toutes les valeurs d'usage, toutes catégories confondues, + « Autre ». */
   const actualUsageOptions = React.useMemo(
-    () => buildActualUsageOptions(getPicklistDependentOptions),
-    [getPicklistDependentOptions],
+    () => buildActualUsageOptions(getPicklistDependentOptions, formData.propertyCategory),
+    [getPicklistDependentOptions, formData.propertyCategory],
   );
+  /** La catégorie a changé : un « Terrain vacant » hérité n'est plus valide pour un bien bâti. */
+  React.useEffect(() => {
+    if (formData.actualUsage && !actualUsageOptions.includes(formData.actualUsage)) {
+      handleInputChange('actualUsage', undefined);
+      handleInputChange('actualUsageOther', undefined);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [actualUsageOptions, formData.actualUsage]);
   const residentialActualUse = isResidentialActualUsage(formData.actualUsage);
   const operationalCapacityField = resolveOperationalCapacityField(formData.actualUsage);
 
@@ -354,7 +362,18 @@ export const ConstructionSection: React.FC<ConstructionSectionProps> = ({
                       min={0}
                       max={200}
                       value={formData.floorNumber || ''}
-                      onChange={(e) => handleInputChange('floorNumber', e.target.value)}
+                      onChange={(e) => {
+                        const next = e.target.value;
+                        handleInputChange('floorNumber', next);
+                        if (isApartmentCategory) return;
+                        const prevMin = minHeightForFloors(formData.floorNumber);
+                        const nextMin = minHeightForFloors(next);
+                        const current = formData.buildingHeight ?? mainBuildingShape?.heightM;
+                        if (current == null || current <= 0 || current === prevMin) {
+                          handleInputChange('buildingHeight', nextMin);
+                          if (mainBuildingShape) updateShapeHeight(mainBuildingShape.id, nextMin);
+                        }
+                      }}
                       placeholder="Ex: 2"
                       className="h-10 rounded-xl text-sm"
                     />
