@@ -15,6 +15,12 @@ export interface RoadSideInfo {
   roadType?: string;
   roadName?: string;
   roadWidth?: number;
+  /** Revêtement de la chaussée (accessibilité, viabilité). */
+  roadSurface?: string;
+  /** Présence d'un caniveau le long de ce côté (assainissement). */
+  hasGutter?: boolean;
+  /** La parcelle est-elle raccordée au caniveau depuis ce côté ? */
+  gutterConnected?: boolean;
   orientation?: string;
   length?: number;
   isConfirmed?: boolean;
@@ -40,6 +46,20 @@ const defaultRoadTypes = [
   { value: 'chemin', label: 'Chemin' },
   { value: 'piste', label: 'Piste' },
 ];
+
+/** Revêtements de chaussée usuels en RDC. */
+export const ROAD_SURFACE_OPTIONS = [
+  { value: 'asphalte', label: 'Asphalte / bitume' },
+  { value: 'beton', label: 'Béton' },
+  { value: 'paves', label: 'Pavés' },
+  { value: 'gravier', label: 'Gravier / latérite' },
+  { value: 'terre', label: 'Terre battue' },
+  { value: 'non_revetue', label: 'Non revêtue' },
+];
+
+/** Libellé lisible d'un revêtement (valeur stockée ou libellé déjà humain). */
+export const roadSurfaceLabel = (value?: string): string =>
+  ROAD_SURFACE_OPTIONS.find(o => o.value === value)?.label || value || '—';
 
 const getOrientationColor = (orientation?: string) => {
   switch (orientation) {
