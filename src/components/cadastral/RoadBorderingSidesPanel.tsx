@@ -238,9 +238,16 @@ export const RoadBorderingSidesPanel: React.FC<RoadBorderingSidesPanelProps> = (
                   </div>
 
                   {/* Résumé route confirmée */}
-                  {side.isConfirmed && side.roadName && (
+                  {side.isConfirmed && (side.roadName || side.roadSurface || side.hasGutter !== undefined) && (
                     <p className="text-xs text-muted-foreground pl-6">
-                      {side.roadName} {side.roadWidth ? `(${side.roadWidth}m)` : ''}
+                      {[
+                        side.roadName,
+                        side.roadWidth ? `${side.roadWidth} m` : null,
+                        side.roadSurface ? roadSurfaceLabel(side.roadSurface) : null,
+                        side.hasGutter === true
+                          ? (side.gutterConnected ? 'Caniveau raccordé' : 'Caniveau non raccordé')
+                          : side.hasGutter === false ? 'Sans caniveau' : null,
+                      ].filter(Boolean).join(' · ')}
                     </p>
                   )}
 
