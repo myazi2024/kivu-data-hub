@@ -32,9 +32,9 @@ const BuildingHeightField: React.FC<BuildingHeightFieldProps> = ({
 }) => {
   const minHeight = minHeightForFloors(floorCount);
   const tooLow = value != null && value > 0 && value < minHeight;
-  const hint = floorCount && floorCount >= 2
-    ? `Hauteur hors œuvre du sol au point le plus haut. Hauteur minimale : ${minHeight} m (${floorCount} étages).`
-    : 'Hauteur hors œuvre de la construction, du sol au point le plus haut. Hauteur minimale : 3 m.';
+  const hint = floorCount && floorCount >= 1
+    ? `Hauteur hors œuvre du sol au point le plus haut. Minimum : ${minHeight} m (3 m pour le rez-de-chaussée + 3 m par étage, ${floorCount} étage(s)).`
+    : 'Hauteur hors œuvre de la construction, du sol au point le plus haut. Minimum : 3 m pour le rez-de-chaussée, puis 3 m par étage supplémentaire.';
   return (
     <div className="space-y-1.5">
       <div className="flex items-center gap-1">
