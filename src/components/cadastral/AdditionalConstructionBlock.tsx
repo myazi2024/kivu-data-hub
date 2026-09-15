@@ -15,7 +15,7 @@ import RentalStartDateField from './RentalStartDateField';
 import { RentalConfigurationSelector, MonthlyRentFields } from './RentalConfigurationFields';
 import LeaseContractField from './LeaseContractField';
 import BuildingHeightField from './BuildingHeightField';
-import { getShapeForConstructionIndex, withShapeHeight } from '@/utils/buildingShapes';
+import { getShapeForConstructionIndex, withShapeHeight, minHeightForFloors } from '@/utils/buildingShapes';
 
 export interface AdditionalConstructionPermit {
   permitType: 'construction' | 'regularization';
@@ -477,7 +477,19 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
                       min={0}
                       max={200}
                       value={data.floorNumber || ''}
-                      onChange={(e) => update('floorNumber', e.target.value)}
+                      onChange={(e) => {
+                        const next = e.target.value;
+                        update('floorNumber', next);
+                        const prevMin = minHeightForFloors(data.floorNumber);
+                        const nextMin = minHeightForFloors(next);
+                        const current = data.heightM ?? linkedShape?.heightM;
+                        if (current == null || current <= 0 || current === prevMin) {
+                          update('heightM', nextMin);
+                          if (linkedShape && buildingShapes && onBuildingShapesChange) {
+                            onBuildingShapesChange(withShapeHeight(buildingShapes, linkedShape.id, nextMin));
+                          }
+                        }
+                      }}
                       placeholder="Ex: 2"
                       className="h-10 rounded-xl text-sm"
                     />
