@@ -39,6 +39,7 @@ export function buildActualUsageOptions(
     for (const usage of list || []) {
       const value = (usage || '').trim();
       if (!value || value === 'Location' || value === ACTUAL_USAGE_OTHER) continue;
+      if (!isTerrainNu && isUnbuiltOnlyUsage(value)) continue;
       if (seen.has(value)) continue;
       seen.add(value);
       options.push(value);
