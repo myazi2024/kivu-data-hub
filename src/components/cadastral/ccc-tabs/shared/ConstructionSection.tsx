@@ -354,7 +354,18 @@ export const ConstructionSection: React.FC<ConstructionSectionProps> = ({
                       min={0}
                       max={200}
                       value={formData.floorNumber || ''}
-                      onChange={(e) => handleInputChange('floorNumber', e.target.value)}
+                      onChange={(e) => {
+                        const next = e.target.value;
+                        handleInputChange('floorNumber', next);
+                        if (isApartmentCategory) return;
+                        const prevMin = minHeightForFloors(formData.floorNumber);
+                        const nextMin = minHeightForFloors(next);
+                        const current = formData.buildingHeight ?? mainBuildingShape?.heightM;
+                        if (current == null || current <= 0 || current === prevMin) {
+                          handleInputChange('buildingHeight', nextMin);
+                          if (mainBuildingShape) updateShapeHeight(mainBuildingShape.id, nextMin);
+                        }
+                      }}
                       placeholder="Ex: 2"
                       className="h-10 rounded-xl text-sm"
                     />
