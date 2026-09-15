@@ -16,9 +16,19 @@ const RESIDENTIAL_USAGES = new Set(['Habitation', 'Usage mixte']);
  * Toutes les valeurs d'usage prévu, toutes catégories confondues, dédupliquées,
  * suivies de « Autre ». Les surcharges Admin (DB) priment sur les valeurs par défaut.
  */
+/** Usages réservés au terrain nu : absurdes pour un bien bâti. */
+const UNBUILT_ONLY_USAGES = new Set(['terrain vacant', 'terrain nu', 'vacant']);
+
+/** Un usage n'est-il proposable que pour un terrain nu ? */
+export function isUnbuiltOnlyUsage(usage?: string | null): boolean {
+  return !!usage && UNBUILT_ONLY_USAGES.has(usage.trim().toLowerCase());
+}
+
 export function buildActualUsageOptions(
   getPicklistDependentOptions?: (key: string) => Record<string, string[]>,
+  propertyCategory?: string | null,
 ): string[] {
+  const isTerrainNu = (propertyCategory || '').trim().toLowerCase() === 'terrain nu';
   const fallback = CCC_STATIC_PICKLIST_REGISTRY.picklist_declared_usage.fallback as Record<string, string[]>;
   const fromDb = getPicklistDependentOptions?.('picklist_declared_usage');
   const map = fromDb && Object.keys(fromDb).length > 0 ? fromDb : fallback;
