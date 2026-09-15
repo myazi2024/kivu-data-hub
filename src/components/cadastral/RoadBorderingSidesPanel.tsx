@@ -94,6 +94,9 @@ export const RoadBorderingSidesPanel: React.FC<RoadBorderingSidesPanelProps> = (
       roadType: undefined, 
       roadName: undefined, 
       roadWidth: undefined,
+      roadSurface: undefined,
+      hasGutter: undefined,
+      gutterConnected: undefined,
       isConfirmed: false 
     });
     setEditingSide(null);
@@ -107,7 +110,10 @@ export const RoadBorderingSidesPanel: React.FC<RoadBorderingSidesPanelProps> = (
   };
 
   const canConfirm = (side: RoadSideInfo) => {
-    return side.bordersRoad && side.roadType && side.roadWidth && side.roadWidth > 0;
+    const base = !!side.bordersRoad && !!side.roadType && !!side.roadSurface
+      && !!side.roadWidth && side.roadWidth > 0 && side.hasGutter !== undefined;
+    // Le raccordement n'est exigé que si un caniveau est déclaré.
+    return base && (side.hasGutter !== true || side.gutterConnected !== undefined);
   };
 
   return (
