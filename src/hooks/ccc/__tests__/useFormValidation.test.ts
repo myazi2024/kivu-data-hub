@@ -373,31 +373,36 @@ describe('useFormValidation — accessibilité des onglets', () => {
   });
 });
 
-describe('useFormValidation — cohérence étages / hauteur', () => {
-  it('2 étages + hauteur 4 m : bloquant', () => {
+describe('useFormValidation — cohérence étages / hauteur (RDC + 3 m par étage)', () => {
+  it('0 étage (rez-de-chaussée) : 3 m suffit', () => {
     const f = fields(build('Villa', {
-      formData: { floorNumber: '2', buildingHeight: 4 } as any,
-      buildingShapes: [{ id: 's1', linkedIndex: 0, heightM: 4 }],
-    }));
-    expect(f).toContain('buildingHeightMin');
-  });
-
-  it('2 étages + hauteur 6 m : OK', () => {
-    const f = fields(build('Villa', {
-      formData: { floorNumber: '2', buildingHeight: 6 } as any,
-      buildingShapes: [{ id: 's1', linkedIndex: 0, heightM: 6 }],
+      formData: { floorNumber: '0', buildingHeight: 3 } as any,
+      buildingShapes: [{ id: 's1', linkedIndex: 0, heightM: 3 }],
     }));
     expect(f).not.toContain('buildingHeightMin');
   });
 
-  it('3 étages + hauteur 8 m : bloquant ; 9 m : OK', () => {
+  it('1 étage + hauteur 4 m : bloquant ; 6 m : OK', () => {
     const low = fields(build('Villa', {
-      formData: { floorNumber: '3', buildingHeight: 8 } as any,
-      buildingShapes: [{ id: 's1', linkedIndex: 0, heightM: 8 }],
+      formData: { floorNumber: '1', buildingHeight: 4 } as any,
+      buildingShapes: [{ id: 's1', linkedIndex: 0, heightM: 4 }],
     }));
     expect(low).toContain('buildingHeightMin');
     const ok = fields(build('Villa', {
-      formData: { floorNumber: '3', buildingHeight: 9 } as any,
+      formData: { floorNumber: '1', buildingHeight: 6 } as any,
+      buildingShapes: [{ id: 's1', linkedIndex: 0, heightM: 6 }],
+    }));
+    expect(ok).not.toContain('buildingHeightMin');
+  });
+
+  it('2 étages + hauteur 6 m : bloquant ; 9 m : OK', () => {
+    const low = fields(build('Villa', {
+      formData: { floorNumber: '2', buildingHeight: 6 } as any,
+      buildingShapes: [{ id: 's1', linkedIndex: 0, heightM: 6 }],
+    }));
+    expect(low).toContain('buildingHeightMin');
+    const ok = fields(build('Villa', {
+      formData: { floorNumber: '2', buildingHeight: 9 } as any,
       buildingShapes: [{ id: 's1', linkedIndex: 0, heightM: 9 }],
     }));
     expect(ok).not.toContain('buildingHeightMin');
