@@ -40,6 +40,11 @@ const LocationSection: React.FC<LocationSectionProps> = ({ number, parcel, bound
     orientation: s.orientation,
   }));
 
+  /** Voirie déclarée par côté (type, revêtement, caniveau, raccordement). */
+  const roadSides: any[] = Array.isArray((parcel as any).road_sides)
+    ? ((parcel as any).road_sides as any[]).filter(s => s && s.bordersRoad)
+    : [];
+
   return (
     <SectionCard number={number} icon={<MapPin className="h-4 w-4" />} title="Localisation">
       <DataGrid>
