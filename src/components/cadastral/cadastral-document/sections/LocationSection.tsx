@@ -5,6 +5,7 @@ import { CadastralParcel } from '@/types/cadastral';
 import { BoundaryHistory } from '@/hooks/useCadastralSearch';
 import ParcelSketchSVG from '../../ParcelSketchSVG';
 import DocumentAttachment from '../../DocumentAttachment';
+import { roadSurfaceLabel } from '../../RoadBorderingSidesPanel';
 
 interface LocationSectionProps {
   number: number;
@@ -125,7 +126,7 @@ const LocationSection: React.FC<LocationSectionProps> = ({ number, parcel, bound
               coordinates={gpsCoords}
               parcelSides={sketchSides}
               buildingShapes={[]}
-              roadSides={[]}
+              roadSides={roadSides}
             />
           </div>
         </div>
