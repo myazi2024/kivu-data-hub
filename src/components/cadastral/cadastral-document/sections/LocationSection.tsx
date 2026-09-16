@@ -89,6 +89,31 @@ const LocationSection: React.FC<LocationSectionProps> = ({ number, parcel, bound
         </div>
       )}
 
+      {/* Informations sur la route */}
+      {roadSides.length > 0 && (
+        <div className="mt-5">
+          <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
+            <Map className="h-3.5 w-3.5" /> Informations sur la route
+          </h4>
+          <DocTable headers={['Côté', 'Type', 'Nom', 'Largeur', 'Revêtement', 'Caniveau']}>
+            {roadSides.map((s, i) => (
+              <tr key={i}>
+                <td className="text-xs font-medium">Côté {(s.sideIndex ?? i) + 1}</td>
+                <td className="text-xs">{s.roadType || '—'}</td>
+                <td className="text-xs">{s.roadName || '—'}</td>
+                <td className="font-mono text-xs">{s.roadWidth ? `${s.roadWidth} m` : '—'}</td>
+                <td className="text-xs">{s.roadSurface ? roadSurfaceLabel(s.roadSurface) : '—'}</td>
+                <td className="text-xs">
+                  {s.hasGutter === true
+                    ? (s.gutterConnected ? 'Oui — parcelle raccordée' : 'Oui — non raccordée')
+                    : s.hasGutter === false ? 'Non' : '—'}
+                </td>
+              </tr>
+            ))}
+          </DocTable>
+        </div>
+      )}
+
       {/* Sketch SVG */}
       {hasSketch && (
         <div className="mt-4 print:break-before-page">
