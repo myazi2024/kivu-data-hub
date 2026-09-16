@@ -1,3 +1,4 @@
+import { roadSurfaceLabel } from '@/components/cadastral/RoadBorderingSidesPanel';
 import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import Navigation from '@/components/ui/navigation';
@@ -60,6 +61,22 @@ const CadastralMap = () => {
           .filter((p) => isFinite(p.lat) && isFinite(p.lng))
       : [];
     return computeEffectiveAreaSqm(gps, selectedParcel.area_sqm || 0);
+  }, [selectedParcel]);
+  /** Côtés bordant une route : « type · revêtement » (voirie publique, non PII). */
+  const parcelRoadAccess = useMemo(() => {
+    const sides = Array.isArray(selectedParcel?.road_sides) ? (selectedParcel!.road_sides as any[]) : [];
+    return sides
+      .filter((s) => s?.bordersRoad)
+      .map((s) => [s.roadType, s.roadSurface ? roadSurfaceLabel(s.roadSurface) : null].filter(Boolean).join(' · '))
+      .filter((label) => label.length > 0)
+      .slice(0, 2);
+  }, [selectedParcel]);
+  /** Assainissement : caniveau présent sur au moins un côté, et raccordement de la parcelle. */
+  const parcelGutter = useMemo(() => {
+    const sides = Array.isArray(selectedParcel?.road_sides) ? (selectedParcel!.road_sides as any[]) : [];
+    const withGutter = sides.filter((s) => s?.bordersRoad && s?.hasGutter === true);
+    if (withGutter.length === 0) return null;
+    return withGutter.some((s) => s.gutterConnected) ? 'Caniveau raccordé' : 'Caniveau non raccordé';
   }, [selectedParcel]);
   const hasIncompleteData = useMemo(() => {
     if (!selectedParcel || !selectedParcelHistory) return false;
@@ -766,6 +783,17 @@ const CadastralMap = () => {
                   {selectedParcel.quartier && (
                     <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-muted/60 text-[10px]">
                       <span className="font-medium text-foreground/80">{selectedParcel.quartier}</span>
+                    </div>
+                  )}
+                  {parcelRoadAccess.map((info, i) => (
+                    <div key={i} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-muted/60 text-[10px]">
+                      <span className="text-muted-foreground">Accès</span>
+                      <span className="font-medium text-foreground/80">{info}</span>
+                    </div>
+                  ))}
+                  {parcelGutter && (
+                    <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-muted/60 text-[10px]">
+                      <span className="font-medium text-foreground/80">{parcelGutter}</span>
                     </div>
                   )}
                 </div>

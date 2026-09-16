@@ -110,7 +110,7 @@ export interface CadastralContributionData {
   apartmentOrientation?: string;
   
   // Limites et entrées
-  roadSides?: Array<{ name: string; bordersRoad?: boolean; roadType?: string; roadName?: string; roadWidth?: string; hasEntrance?: boolean; orientation?: string }>;
+  roadSides?: Array<{ name: string; bordersRoad?: boolean; roadType?: string; roadName?: string; roadWidth?: string; roadSurface?: string; hasGutter?: boolean; gutterConnected?: boolean; hasEntrance?: boolean; orientation?: string }>;
   servitudeData?: { hasServitude: boolean; width?: number };
   hasDispute?: boolean;
   disputeData?: any;

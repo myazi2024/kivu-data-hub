@@ -7829,6 +7829,7 @@ export type Database = {
           property_title_type: string | null
           province: string | null
           quartier: string | null
+          road_sides: Json | null
           territoire: string | null
           title_reference_number: string | null
           updated_at: string | null
@@ -7856,6 +7857,7 @@ export type Database = {
           property_title_type?: string | null
           province?: string | null
           quartier?: string | null
+          road_sides?: Json | null
           territoire?: string | null
           title_reference_number?: string | null
           updated_at?: string | null
@@ -7883,6 +7885,7 @@ export type Database = {
           property_title_type?: string | null
           province?: string | null
           quartier?: string | null
+          road_sides?: Json | null
           territoire?: string | null
           title_reference_number?: string | null
           updated_at?: string | null

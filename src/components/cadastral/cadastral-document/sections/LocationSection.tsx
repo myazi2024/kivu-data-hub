@@ -5,6 +5,7 @@ import { CadastralParcel } from '@/types/cadastral';
 import { BoundaryHistory } from '@/hooks/useCadastralSearch';
 import ParcelSketchSVG from '../../ParcelSketchSVG';
 import DocumentAttachment from '../../DocumentAttachment';
+import { roadSurfaceLabel } from '../../RoadBorderingSidesPanel';
 
 interface LocationSectionProps {
   number: number;
@@ -39,6 +40,11 @@ const LocationSection: React.FC<LocationSectionProps> = ({ number, parcel, bound
     length: String(s.length ?? ''),
     orientation: s.orientation,
   }));
+
+  /** Voirie déclarée par côté (type, revêtement, caniveau, raccordement). */
+  const roadSides: any[] = Array.isArray((parcel as any).road_sides)
+    ? ((parcel as any).road_sides as any[]).filter(s => s && s.bordersRoad)
+    : [];
 
   return (
     <SectionCard number={number} icon={<MapPin className="h-4 w-4" />} title="Localisation">
@@ -84,6 +90,31 @@ const LocationSection: React.FC<LocationSectionProps> = ({ number, parcel, bound
         </div>
       )}
 
+      {/* Informations sur la route */}
+      {roadSides.length > 0 && (
+        <div className="mt-5">
+          <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
+            <Map className="h-3.5 w-3.5" /> Informations sur la route
+          </h4>
+          <DocTable headers={['Côté', 'Type', 'Nom', 'Largeur', 'Revêtement', 'Caniveau']}>
+            {roadSides.map((s, i) => (
+              <tr key={i}>
+                <td className="text-xs font-medium">Côté {(s.sideIndex ?? i) + 1}</td>
+                <td className="text-xs">{s.roadType || '—'}</td>
+                <td className="text-xs">{s.roadName || '—'}</td>
+                <td className="font-mono text-xs">{s.roadWidth ? `${s.roadWidth} m` : '—'}</td>
+                <td className="text-xs">{s.roadSurface ? roadSurfaceLabel(s.roadSurface) : '—'}</td>
+                <td className="text-xs">
+                  {s.hasGutter === true
+                    ? (s.gutterConnected ? 'Oui — parcelle raccordée' : 'Oui — non raccordée')
+                    : s.hasGutter === false ? 'Non' : '—'}
+                </td>
+              </tr>
+            ))}
+          </DocTable>
+        </div>
+      )}
+
       {/* Sketch SVG */}
       {hasSketch && (
         <div className="mt-4 print:break-before-page">
@@ -95,7 +126,7 @@ const LocationSection: React.FC<LocationSectionProps> = ({ number, parcel, bound
               coordinates={gpsCoords}
               parcelSides={sketchSides}
               buildingShapes={[]}
-              roadSides={[]}
+              roadSides={roadSides}
             />
           </div>
         </div>
