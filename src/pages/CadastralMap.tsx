@@ -768,6 +768,17 @@ const CadastralMap = () => {
                       <span className="font-medium text-foreground/80">{selectedParcel.quartier}</span>
                     </div>
                   )}
+                  {parcelRoadAccess.map((info, i) => (
+                    <div key={i} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-muted/60 text-[10px]">
+                      <span className="text-muted-foreground">Accès</span>
+                      <span className="font-medium text-foreground/80">{info}</span>
+                    </div>
+                  ))}
+                  {parcelGutter && (
+                    <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-muted/60 text-[10px]">
+                      <span className="font-medium text-foreground/80">{parcelGutter}</span>
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex gap-1.5">
