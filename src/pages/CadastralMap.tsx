@@ -61,6 +61,22 @@ const CadastralMap = () => {
       : [];
     return computeEffectiveAreaSqm(gps, selectedParcel.area_sqm || 0);
   }, [selectedParcel]);
+  /** Côtés bordant une route : « type · revêtement » (voirie publique, non PII). */
+  const parcelRoadAccess = useMemo(() => {
+    const sides = Array.isArray(selectedParcel?.road_sides) ? (selectedParcel!.road_sides as any[]) : [];
+    return sides
+      .filter((s) => s?.bordersRoad)
+      .map((s) => [s.roadType, s.roadSurface ? roadSurfaceLabel(s.roadSurface) : null].filter(Boolean).join(' · '))
+      .filter((label) => label.length > 0)
+      .slice(0, 2);
+  }, [selectedParcel]);
+  /** Assainissement : caniveau présent sur au moins un côté, et raccordement de la parcelle. */
+  const parcelGutter = useMemo(() => {
+    const sides = Array.isArray(selectedParcel?.road_sides) ? (selectedParcel!.road_sides as any[]) : [];
+    const withGutter = sides.filter((s) => s?.bordersRoad && s?.hasGutter === true);
+    if (withGutter.length === 0) return null;
+    return withGutter.some((s) => s.gutterConnected) ? 'Caniveau raccordé' : 'Caniveau non raccordé';
+  }, [selectedParcel]);
   const hasIncompleteData = useMemo(() => {
     if (!selectedParcel || !selectedParcelHistory) return false;
     const hasLocation = !!(selectedParcel.province && selectedParcel.ville);
