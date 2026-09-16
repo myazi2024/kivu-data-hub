@@ -8,6 +8,8 @@ export interface ParcelData {
   parcel_number: string;
   gps_coordinates: any;
   parcel_sides: any;
+  /** Voirie par côté : type, revêtement, caniveau et raccordement (non PII). */
+  road_sides?: any;
   latitude: number;
   longitude: number;
   /** PII payante : non exposée par la vue publique (voir modèle d'accès PII). */
