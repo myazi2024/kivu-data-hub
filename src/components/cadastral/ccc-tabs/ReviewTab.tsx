@@ -269,6 +269,9 @@ const ReviewTab: React.FC<ReviewTabProps> = ({
                   const details: string[] = [];
                   if (side.orientation) details.push(side.orientation);
                   if (side.bordersRoad) details.push(`Route: ${side.roadType || '?'}${side.roadName ? ` (${side.roadName})` : ''}${side.roadWidth ? ` [${side.roadWidth}m]` : ''}`);
+                  if (side.bordersRoad && side.roadSurface) details.push(`Revêtement: ${roadSurfaceLabel(side.roadSurface)}`);
+                  if (side.bordersRoad && side.hasGutter === true) details.push(side.gutterConnected ? 'Caniveau raccordé' : 'Caniveau non raccordé');
+                  if (side.bordersRoad && side.hasGutter === false) details.push('Sans caniveau');
                   if (side.hasEntrance) details.push('🚪 Entrée');
                   if (!side.bordersRoad) details.push('Mur mitoyen');
                   return (
