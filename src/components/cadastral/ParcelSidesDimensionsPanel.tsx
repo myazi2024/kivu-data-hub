@@ -6,12 +6,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch';
+import { cn } from '@/lib/utils';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Ruler, Compass, Info, Trash2, Check, Route, X, Lightbulb, BrickWall, AlertTriangle, DoorOpen, Pencil } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { useIsMobile } from '@/hooks/use-mobile';
+
 
 export interface ParcelSide {
   name: string;
@@ -90,6 +90,68 @@ const getOrientationColor = (orientation?: string) => {
   }
 };
 
+/** Contrôle segmenté coulissant [Mur | Route], calqué sur CadastralSearchModeToggle. */
+const BorderTypeToggle: React.FC<{
+  value?: SideBorderType;
+  onChange: (type: SideBorderType) => void;
+}> = ({ value, onChange }) => {
+  const hasSelection = value === 'route' || value === 'mur_mitoyen';
+  const activeIndex = value === 'route' ? 1 : 0;
+  return (
+    <div
+      role="radiogroup"
+      aria-label="Type de limite"
+      onClick={(e) => e.stopPropagation()}
+      className="relative flex items-center rounded-full bg-muted/60 p-0.5 border border-border/40 shadow-inner"
+    >
+      {hasSelection && (
+        <div
+          className={cn(
+            'absolute top-0.5 bottom-0.5 left-0.5 rounded-full pointer-events-none',
+            value === 'route' ? 'bg-green-400 dark:bg-green-600' : 'bg-amber-400 dark:bg-amber-600'
+          )}
+          style={{
+            width: 'calc(50% - 0.125rem)',
+            transform: `translateX(${activeIndex * 100}%)`,
+            transition: 'transform 0.28s cubic-bezier(0.34, 1.4, 0.64, 1)',
+          }}
+          aria-hidden="true"
+        />
+      )}
+      <button
+        type="button"
+        role="radio"
+        aria-checked={value === 'mur_mitoyen'}
+        aria-label="Mur mitoyen"
+        onClick={() => onChange('mur_mitoyen')}
+        className={cn(
+          'relative z-10 flex-1 h-6 px-2 rounded-full text-[10px] font-semibold transition-colors select-none',
+          'flex items-center justify-center gap-1',
+          value === 'mur_mitoyen' ? 'text-amber-950 dark:text-white' : 'text-muted-foreground hover:text-foreground'
+        )}
+      >
+        <BrickWall className="h-2.5 w-2.5" />
+        Mur
+      </button>
+      <button
+        type="button"
+        role="radio"
+        aria-checked={value === 'route'}
+        aria-label="Route"
+        onClick={() => onChange('route')}
+        className={cn(
+          'relative z-10 flex-1 h-6 px-2 rounded-full text-[10px] font-semibold transition-colors select-none',
+          'flex items-center justify-center gap-1',
+          value === 'route' ? 'text-green-950 dark:text-white' : 'text-muted-foreground hover:text-foreground'
+        )}
+      >
+        <Route className="h-2.5 w-2.5" />
+        Route
+      </button>
+    </div>
+  );
+};
+
 export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProps> = ({
   parcelSides,
   roadSides,
@@ -100,7 +162,6 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
   roadTypes = defaultRoadTypes,
   wallMaterials = defaultWallMaterials,
 }) => {
-  const isMobile = useIsMobile();
   const [editingSide, setEditingSide] = useState<number | null>(null);
   const [showNotification, setShowNotification] = useState(true);
   const confirmedSidesCount = roadSides.filter(s => s.bordersRoad && s.isConfirmed).length;
@@ -155,12 +216,12 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
     setEditingSide(null);
   };
 
-  const handleStartEdit = (sideIndex: number) => {
+  const handleStartEdit = (sideIndex: number, borderType: SideBorderType = 'route') => {
     setEditingSide(sideIndex);
     setShowNotification(false);
     const roadSide = roadSides.find(s => s.sideIndex === sideIndex);
     if (!roadSide?.bordersRoad) {
-      onRoadSideUpdate(sideIndex, { bordersRoad: true, borderType: 'route' });
+      onRoadSideUpdate(sideIndex, { bordersRoad: true, borderType });
     }
   };
 
@@ -179,6 +240,7 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
   const canConfirm = (side: RoadSideInfo) => {
     if (!side.bordersRoad) return false;
     if (side.borderType === 'route') return !!side.roadType && !!side.roadWidth && side.roadWidth > 0;
+    if (side.borderType === 'mur_mitoyen') return !!side.wallMaterial;
     return false;
   };
 
@@ -239,7 +301,7 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
                   💡 Définissez les limites et l'entrée
                 </p>
                 <p className="text-[11px] text-amber-700 dark:text-amber-300 leading-relaxed">
-                   Activez le bouton sur chaque côté pour indiquer s'il borde une <span className="inline-flex items-center gap-0.5 px-1 py-0.5 rounded bg-amber-200 dark:bg-amber-800 text-amber-700 dark:text-amber-300 font-medium text-[10px]"><BrickWall className="h-2 w-2" />Mur mitoyen</span> ou une <span className="inline-flex items-center gap-0.5 px-1 py-0.5 rounded bg-primary/10 text-primary font-medium text-[10px]"><Route className="h-2 w-2" />Route</span>, puis cochez <span className="inline-flex items-center gap-0.5 px-1 py-0.5 rounded bg-primary/10 text-primary font-medium text-[10px]"><DoorOpen className="h-2 w-2" />Entrée</span> sur le côté ayant une porte d'accès.
+                   Activez le bouton sur chaque côté pour indiquer s'il borde une <span className="inline-flex items-center gap-0.5 px-1 py-0.5 rounded bg-amber-200 dark:bg-amber-800 text-amber-700 dark:text-amber-300 font-medium text-[10px]"><BrickWall className="h-2 w-2" />Mur</span> ou une <span className="inline-flex items-center gap-0.5 px-1 py-0.5 rounded bg-primary/10 text-primary font-medium text-[10px]"><Route className="h-2 w-2" />Route</span>, puis cochez <span className="inline-flex items-center gap-0.5 px-1 py-0.5 rounded bg-primary/10 text-primary font-medium text-[10px]"><DoorOpen className="h-2 w-2" />Entrée</span> sur le côté ayant une porte d'accès.
                 </p>
               </div>
             </div>
@@ -314,32 +376,21 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
                         className="h-3.5 w-3.5"
                       />
                       <label htmlFor={`entrance-${index}`} className="text-[10px] font-medium text-muted-foreground cursor-pointer select-none">
-                        {isMobile ? 'Entrée' : 'Entrée de la parcelle'}
+                        Entrée
                       </label>
                     </div>
-                    {/* Bouton slide - visible si pas confirmé */}
+                    {/* Contrôle segmenté Mur/Route — visible si pas confirmé */}
                     {!hasConfirmed && (
-                      <div
-                        className="flex items-center gap-1.5"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <Switch
-                          checked={isEditingThis || false}
-                          onCheckedChange={(checked) => {
-                            if (checked) {
-                              onRoadSideUpdate(index, { bordersRoad: true, borderType: 'route' });
-                              setEditingSide(index);
-                              setShowNotification(false);
-                            } else {
-                              handleRemoveSide(index);
-                            }
-                          }}
-                          className="h-5 w-9 data-[state=checked]:bg-primary"
-                        />
-                        <span className="text-[10px] font-medium text-muted-foreground">
-                          {isEditingThis ? 'Route' : 'Mur mitoyen'}
-                        </span>
-                      </div>
+                      <BorderTypeToggle
+                        value={roadSide?.borderType}
+                        onChange={(type) => {
+                          if (!roadSide?.bordersRoad) {
+                            handleStartEdit(index, type);
+                          } else {
+                            handleBorderTypeChange(index, type);
+                          }
+                        }}
+                      />
                     )}
                     {hasConfirmed && (
                       <>
@@ -394,7 +445,7 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
                   }`}
                 >
                   <div className="overflow-hidden">
-                    {isEditingThis && (
+                    {isEditingThis && isRoad && (
                       <div className="space-y-1.5 pl-6 pt-2">
                         <div className="flex items-center gap-1.5 mb-1">
                           <Route className="h-3.5 w-3.5 text-green-600" />
@@ -403,7 +454,7 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
 
                         <Select
                           value={roadSide?.roadType || ''}
-                          onValueChange={(value) => 
+                          onValueChange={(value) =>
                             onRoadSideUpdate(index, { roadType: value })
                           }
                         >
@@ -424,7 +475,7 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
                             type="text"
                             placeholder="Nom route"
                             value={roadSide?.roadName || ''}
-                            onChange={(e) => 
+                            onChange={(e) =>
                               onRoadSideUpdate(index, { roadName: e.target.value })
                             }
                             className="h-8 text-xs rounded-lg"
@@ -435,12 +486,79 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
                             step="0.1"
                             placeholder="Largeur (m)"
                             value={roadSide?.roadWidth || ''}
-                            onChange={(e) => 
+                            onChange={(e) =>
                               onRoadSideUpdate(index, { roadWidth: parseFloat(e.target.value) || undefined })
                             }
                             className="h-8 text-xs rounded-lg"
                           />
                         </div>
+
+                        {/* Boutons d'action */}
+                        <div className="flex gap-1.5 pt-1">
+                          <Button
+                            type="button"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleConfirmSide(index);
+                            }}
+                            disabled={!canConfirm(roadSide!)}
+                            className="flex-1 h-7 text-xs rounded-lg gap-1"
+                          >
+                            <Check className="h-3 w-3" />
+                            Ajouter
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRemoveSide(index);
+                            }}
+                            className="h-7 text-xs rounded-lg px-2"
+                          >
+                            Annuler
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                    {isEditingThis && isWall && (
+                      <div className="space-y-1.5 pl-6 pt-2 animate-fade-in">
+                        <div className="flex items-center gap-1.5 mb-1">
+                          <BrickWall className="h-3.5 w-3.5 text-amber-600" />
+                          <span className="text-xs font-medium text-amber-700 dark:text-amber-300">Informations sur le mur</span>
+                        </div>
+
+                        <Select
+                          value={roadSide?.wallMaterial || ''}
+                          onValueChange={(value) =>
+                            onRoadSideUpdate(index, { wallMaterial: value })
+                          }
+                        >
+                          <SelectTrigger className="h-8 text-xs rounded-lg">
+                            <SelectValue placeholder="Matériau du mur *" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {wallMaterials.map((material) => (
+                              <SelectItem key={material.value} value={material.value} className="text-xs">
+                                {material.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+
+                        <Input
+                          type="number"
+                          min="0"
+                          step="0.1"
+                          placeholder="Hauteur du mur (m)"
+                          value={roadSide?.wallHeight || ''}
+                          onChange={(e) =>
+                            onRoadSideUpdate(index, { wallHeight: parseFloat(e.target.value) || undefined })
+                          }
+                          className="h-8 text-xs rounded-lg"
+                        />
 
                         {/* Boutons d'action */}
                         <div className="flex gap-1.5 pt-1">
