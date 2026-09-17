@@ -11,6 +11,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Ruler, Compass, Info, Trash2, Check, Route, X, Lightbulb, BrickWall, AlertTriangle, DoorOpen, Pencil } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { ROAD_SURFACE_OPTIONS } from './RoadBorderingSidesPanel';
 
 
 export interface ParcelSide {
@@ -31,6 +33,12 @@ export interface RoadSideInfo {
   roadType?: string;
   roadName?: string;
   roadWidth?: number;
+  /** Revêtement de la chaussée (voir ROAD_SURFACE_OPTIONS). */
+  roadSurface?: string;
+  /** Présence d'un caniveau le long de ce côté. */
+  hasGutter?: boolean;
+  /** Parcelle raccordée au caniveau depuis ce côté (si caniveau présent). */
+  gutterConnected?: boolean;
   // Propriétés pour les murs mitoyens
   wallHeight?: number;
   wallMaterial?: string;
