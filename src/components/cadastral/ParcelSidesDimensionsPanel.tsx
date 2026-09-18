@@ -488,6 +488,25 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
                           </SelectContent>
                         </Select>
 
+                        {/* Revêtement de la route */}
+                        <Select
+                          value={roadSide?.roadSurface || ''}
+                          onValueChange={(value) =>
+                            onRoadSideUpdate(index, { roadSurface: value })
+                          }
+                        >
+                          <SelectTrigger className="h-8 text-xs rounded-lg">
+                            <SelectValue placeholder="Revêtement de la route *" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {ROAD_SURFACE_OPTIONS.map((opt) => (
+                              <SelectItem key={opt.value} value={opt.value} className="text-xs">
+                                {opt.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+
                         <div className="grid grid-cols-2 gap-1.5">
                           <Input
                             type="text"
@@ -510,6 +529,58 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
                             className="h-8 text-xs rounded-lg"
                           />
                         </div>
+
+                        {/* Présence d'un caniveau */}
+                        <div className="pt-1">
+                          <Label className="text-[11px] font-medium text-muted-foreground mb-1 block">
+                            Présence d'un caniveau *
+                          </Label>
+                          <RadioGroup
+                            value={roadSide?.hasGutter === undefined ? '' : roadSide.hasGutter ? 'oui' : 'non'}
+                            onValueChange={(value) =>
+                              onRoadSideUpdate(index, {
+                                hasGutter: value === 'oui',
+                                gutterConnected: value === 'oui' ? roadSide?.gutterConnected : undefined,
+                              })
+                            }
+                            className="flex gap-3"
+                          >
+                            <div className="flex items-center gap-1.5">
+                              <RadioGroupItem value="oui" id={`gutter-yes-${index}`} className="h-3.5 w-3.5" />
+                              <label htmlFor={`gutter-yes-${index}`} className="text-[11px] cursor-pointer select-none">Oui</label>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <RadioGroupItem value="non" id={`gutter-no-${index}`} className="h-3.5 w-3.5" />
+                              <label htmlFor={`gutter-no-${index}`} className="text-[11px] cursor-pointer select-none">Non</label>
+                            </div>
+                          </RadioGroup>
+                        </div>
+
+                        {/* Raccordement au caniveau */}
+                        {roadSide?.hasGutter === true && (
+                          <div className="pt-1 animate-fade-in">
+                            <Label className="text-[11px] font-medium text-muted-foreground mb-1 block">
+                              La parcelle est-elle raccordée au caniveau depuis ce côté ? *
+                            </Label>
+                            <RadioGroup
+                              value={roadSide?.gutterConnected === undefined ? '' : roadSide.gutterConnected ? 'oui' : 'non'}
+                              onValueChange={(value) =>
+                                onRoadSideUpdate(index, { gutterConnected: value === 'oui' })
+                              }
+                              className="flex gap-3"
+                            >
+                              <div className="flex items-center gap-1.5">
+                                <RadioGroupItem value="oui" id={`gutter-conn-yes-${index}`} className="h-3.5 w-3.5" />
+                                <label htmlFor={`gutter-conn-yes-${index}`} className="text-[11px] cursor-pointer select-none">Oui</label>
+                              </div>
+                              <div className="flex items-center gap-1.5">
+                                <RadioGroupItem value="non" id={`gutter-conn-no-${index}`} className="h-3.5 w-3.5" />
+                                <label htmlFor={`gutter-conn-no-${index}`} className="text-[11px] cursor-pointer select-none">Non</label>
+                              </div>
+                            </RadioGroup>
+                          </div>
+                        )}
+
 
                         {/* Boutons d'action */}
                         <div className="flex gap-1.5 pt-1">
