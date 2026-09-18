@@ -437,9 +437,16 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
                 </div>
 
                 {/* Résumé confirmé */}
-                {hasConfirmed && isRoad && roadSide?.roadName && (
+                {hasConfirmed && isRoad && (
                   <p className="text-xs text-muted-foreground pl-6">
-                    {roadSide.roadName} {roadSide.roadWidth ? `(largeur: ${roadSide.roadWidth}m)` : ''}
+                    {[
+                      roadSide?.roadName || null,
+                      roadSide?.roadWidth ? `largeur: ${roadSide.roadWidth}m` : null,
+                      roadSide?.roadSurface ? roadSurfaceLabel(roadSide.roadSurface) : null,
+                      roadSide?.hasGutter === true
+                        ? (roadSide.gutterConnected ? 'Caniveau raccordé' : 'Caniveau non raccordé')
+                        : roadSide?.hasGutter === false ? 'Sans caniveau' : null,
+                    ].filter(Boolean).join(' · ')}
                   </p>
                 )}
                 {hasConfirmed && isWall && (
