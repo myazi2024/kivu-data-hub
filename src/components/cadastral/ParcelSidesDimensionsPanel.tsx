@@ -198,15 +198,9 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
 
   const handleConfirmSide = (sideIndex: number) => {
     const side = roadSides.find(s => s.sideIndex === sideIndex);
-    if (side && side.bordersRoad) {
-      // Validation selon le type
-      if (side.borderType === 'route' && side.roadType) {
-        onRoadSideUpdate(sideIndex, { isConfirmed: true });
-        setEditingSide(null);
-      } else if (side.borderType === 'mur_mitoyen' && side.wallMaterial) {
-        onRoadSideUpdate(sideIndex, { isConfirmed: true });
-        setEditingSide(null);
-      }
+    if (side && canConfirm(side)) {
+      onRoadSideUpdate(sideIndex, { isConfirmed: true });
+      setEditingSide(null);
     }
   };
 
