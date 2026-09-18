@@ -217,6 +217,9 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
       roadType: undefined, 
       roadName: undefined, 
       roadWidth: undefined,
+      roadSurface: undefined,
+      hasGutter: undefined,
+      gutterConnected: undefined,
       wallHeight: undefined,
       wallMaterial: undefined,
       isConfirmed: false 
@@ -237,17 +240,24 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
     onRoadSideUpdate(sideIndex, { 
       borderType,
       // Reset les champs de l'autre type
-      roadType: borderType === 'route' ? undefined : undefined,
-      roadName: borderType === 'route' ? undefined : undefined,
-      roadWidth: borderType === 'route' ? undefined : undefined,
-      wallHeight: borderType === 'mur_mitoyen' ? undefined : undefined,
-      wallMaterial: borderType === 'mur_mitoyen' ? undefined : undefined,
+      roadType: undefined,
+      roadName: undefined,
+      roadWidth: undefined,
+      roadSurface: undefined,
+      hasGutter: undefined,
+      gutterConnected: undefined,
+      wallHeight: undefined,
+      wallMaterial: undefined,
     });
   };
 
   const canConfirm = (side: RoadSideInfo) => {
     if (!side.bordersRoad) return false;
-    if (side.borderType === 'route') return !!side.roadType && !!side.roadWidth && side.roadWidth > 0;
+    if (side.borderType === 'route') {
+      const base = !!side.roadType && !!side.roadWidth && side.roadWidth > 0
+        && !!side.roadSurface && side.hasGutter !== undefined;
+      return base && (side.hasGutter !== true || side.gutterConnected !== undefined);
+    }
     if (side.borderType === 'mur_mitoyen') return !!side.wallMaterial;
     return false;
   };
