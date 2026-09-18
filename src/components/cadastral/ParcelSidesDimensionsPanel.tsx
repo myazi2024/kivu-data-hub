@@ -198,15 +198,9 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
 
   const handleConfirmSide = (sideIndex: number) => {
     const side = roadSides.find(s => s.sideIndex === sideIndex);
-    if (side && side.bordersRoad) {
-      // Validation selon le type
-      if (side.borderType === 'route' && side.roadType) {
-        onRoadSideUpdate(sideIndex, { isConfirmed: true });
-        setEditingSide(null);
-      } else if (side.borderType === 'mur_mitoyen' && side.wallMaterial) {
-        onRoadSideUpdate(sideIndex, { isConfirmed: true });
-        setEditingSide(null);
-      }
+    if (side && canConfirm(side)) {
+      onRoadSideUpdate(sideIndex, { isConfirmed: true });
+      setEditingSide(null);
     }
   };
 
@@ -217,6 +211,9 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
       roadType: undefined, 
       roadName: undefined, 
       roadWidth: undefined,
+      roadSurface: undefined,
+      hasGutter: undefined,
+      gutterConnected: undefined,
       wallHeight: undefined,
       wallMaterial: undefined,
       isConfirmed: false 
@@ -237,17 +234,24 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
     onRoadSideUpdate(sideIndex, { 
       borderType,
       // Reset les champs de l'autre type
-      roadType: borderType === 'route' ? undefined : undefined,
-      roadName: borderType === 'route' ? undefined : undefined,
-      roadWidth: borderType === 'route' ? undefined : undefined,
-      wallHeight: borderType === 'mur_mitoyen' ? undefined : undefined,
-      wallMaterial: borderType === 'mur_mitoyen' ? undefined : undefined,
+      roadType: undefined,
+      roadName: undefined,
+      roadWidth: undefined,
+      roadSurface: undefined,
+      hasGutter: undefined,
+      gutterConnected: undefined,
+      wallHeight: undefined,
+      wallMaterial: undefined,
     });
   };
 
   const canConfirm = (side: RoadSideInfo) => {
     if (!side.bordersRoad) return false;
-    if (side.borderType === 'route') return !!side.roadType && !!side.roadWidth && side.roadWidth > 0;
+    if (side.borderType === 'route') {
+      const base = !!side.roadType && !!side.roadWidth && side.roadWidth > 0
+        && !!side.roadSurface && side.hasGutter !== undefined;
+      return base && (side.hasGutter !== true || side.gutterConnected !== undefined);
+    }
     if (side.borderType === 'mur_mitoyen') return !!side.wallMaterial;
     return false;
   };
@@ -433,9 +437,16 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
                 </div>
 
                 {/* Résumé confirmé */}
-                {hasConfirmed && isRoad && roadSide?.roadName && (
+                {hasConfirmed && isRoad && (
                   <p className="text-xs text-muted-foreground pl-6">
-                    {roadSide.roadName} {roadSide.roadWidth ? `(largeur: ${roadSide.roadWidth}m)` : ''}
+                    {[
+                      roadSide?.roadName || null,
+                      roadSide?.roadWidth ? `largeur: ${roadSide.roadWidth}m` : null,
+                      roadSide?.roadSurface ? roadSurfaceLabel(roadSide.roadSurface) : null,
+                      roadSide?.hasGutter === true
+                        ? (roadSide.gutterConnected ? 'Caniveau raccordé' : 'Caniveau non raccordé')
+                        : roadSide?.hasGutter === false ? 'Sans caniveau' : null,
+                    ].filter(Boolean).join(' · ')}
                   </p>
                 )}
                 {hasConfirmed && isWall && (
@@ -478,6 +489,25 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
                           </SelectContent>
                         </Select>
 
+                        {/* Revêtement de la route */}
+                        <Select
+                          value={roadSide?.roadSurface || ''}
+                          onValueChange={(value) =>
+                            onRoadSideUpdate(index, { roadSurface: value })
+                          }
+                        >
+                          <SelectTrigger className="h-8 text-xs rounded-lg">
+                            <SelectValue placeholder="Revêtement de la route *" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {ROAD_SURFACE_OPTIONS.map((opt) => (
+                              <SelectItem key={opt.value} value={opt.value} className="text-xs">
+                                {opt.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+
                         <div className="grid grid-cols-2 gap-1.5">
                           <Input
                             type="text"
@@ -500,6 +530,58 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
                             className="h-8 text-xs rounded-lg"
                           />
                         </div>
+
+                        {/* Présence d'un caniveau */}
+                        <div className="pt-1">
+                          <Label className="text-[11px] font-medium text-muted-foreground mb-1 block">
+                            Présence d'un caniveau *
+                          </Label>
+                          <RadioGroup
+                            value={roadSide?.hasGutter === undefined ? '' : roadSide.hasGutter ? 'oui' : 'non'}
+                            onValueChange={(value) =>
+                              onRoadSideUpdate(index, {
+                                hasGutter: value === 'oui',
+                                gutterConnected: value === 'oui' ? roadSide?.gutterConnected : undefined,
+                              })
+                            }
+                            className="flex gap-3"
+                          >
+                            <div className="flex items-center gap-1.5">
+                              <RadioGroupItem value="oui" id={`gutter-yes-${index}`} className="h-3.5 w-3.5" />
+                              <label htmlFor={`gutter-yes-${index}`} className="text-[11px] cursor-pointer select-none">Oui</label>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <RadioGroupItem value="non" id={`gutter-no-${index}`} className="h-3.5 w-3.5" />
+                              <label htmlFor={`gutter-no-${index}`} className="text-[11px] cursor-pointer select-none">Non</label>
+                            </div>
+                          </RadioGroup>
+                        </div>
+
+                        {/* Raccordement au caniveau */}
+                        {roadSide?.hasGutter === true && (
+                          <div className="pt-1 animate-fade-in">
+                            <Label className="text-[11px] font-medium text-muted-foreground mb-1 block">
+                              La parcelle est-elle raccordée au caniveau depuis ce côté ? *
+                            </Label>
+                            <RadioGroup
+                              value={roadSide?.gutterConnected === undefined ? '' : roadSide.gutterConnected ? 'oui' : 'non'}
+                              onValueChange={(value) =>
+                                onRoadSideUpdate(index, { gutterConnected: value === 'oui' })
+                              }
+                              className="flex gap-3"
+                            >
+                              <div className="flex items-center gap-1.5">
+                                <RadioGroupItem value="oui" id={`gutter-conn-yes-${index}`} className="h-3.5 w-3.5" />
+                                <label htmlFor={`gutter-conn-yes-${index}`} className="text-[11px] cursor-pointer select-none">Oui</label>
+                              </div>
+                              <div className="flex items-center gap-1.5">
+                                <RadioGroupItem value="non" id={`gutter-conn-no-${index}`} className="h-3.5 w-3.5" />
+                                <label htmlFor={`gutter-conn-no-${index}`} className="text-[11px] cursor-pointer select-none">Non</label>
+                              </div>
+                            </RadioGroup>
+                          </div>
+                        )}
+
 
                         {/* Boutons d'action */}
                         <div className="flex gap-1.5 pt-1">
