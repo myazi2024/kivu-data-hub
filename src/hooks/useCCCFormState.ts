@@ -1313,10 +1313,20 @@ export const useCCCFormState = ({
         // Restore sound environment
         if ((contrib as any).sound_environment) setSoundEnvironment((contrib as any).sound_environment);
         if ((contrib as any).nearby_noise_sources) setNearbySoundSources((contrib as any).nearby_noise_sources);
-      } catch (err) { console.error('Erreur chargement contribution:', err); }
-      finally { setTimeout(() => { isLoadingFromDbRef.current = false; }, 500); }
+      } catch (err) {
+        console.error('Erreur chargement contribution:', err);
+        if (!cancelled) toast({ title: "Erreur", description: "Impossible de charger la contribution. Fermez puis rouvrez le formulaire.", variant: "destructive" });
+      }
+      finally {
+        releaseTimer = setTimeout(() => { if (!cancelled) isLoadingFromDbRef.current = false; }, 500);
+      }
     };
     fetchContribution();
+    return () => {
+      cancelled = true;
+      if (releaseTimer) clearTimeout(releaseTimer);
+      isLoadingFromDbRef.current = false;
+    };
   }, [open, editingContributionId]);
 
   // Auto-save debounced: géré dans useFormPersistence
