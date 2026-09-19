@@ -896,6 +896,8 @@ export const useCCCFormState = ({
   }, [formData, currentOwners, previousOwners, taxRecords, mortgageRecords, hasMortgage, hasDispute, buildingPermits, permitRequest, gpsCoordinates, parcelSides, sectionType, buildingShapes, soundEnvironment, nearbySoundSources]);
 
   // ─── Confetti ───
+  const confettiIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  useEffect(() => () => { if (confettiIntervalRef.current) clearInterval(confettiIntervalRef.current); }, []);
   const triggerConfetti = async () => {
     const confetti = await lazyConfetti();
     const duration = 3 * 1000;
