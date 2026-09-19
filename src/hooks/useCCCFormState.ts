@@ -782,6 +782,7 @@ export const useCCCFormState = ({
     roadSides, servitude, buildingShapes, constructionMode, additionalConstructions,
     soundEnvironment, nearbySoundSources, disputeFormData,
     parcelNumberRequired: isParcelNumberRequired,
+    gpsCoordinates,
   });
 
   const handleNextTab = useCallback((currentTab: string, nextTab: string) => {
