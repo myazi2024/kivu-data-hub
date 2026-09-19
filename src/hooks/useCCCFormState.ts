@@ -1129,7 +1129,13 @@ export const useCCCFormState = ({
 
   const handleAttemptClose = useCallback(() => {
     if (isClosingAfterSuccessRef.current || showSuccess || !formDirtyRef.current) { handleClose(); return; }
-    const hasData = Object.keys(formData).length > 1 || currentOwners.some(o => o.lastName || o.firstName) || previousOwners.some(o => o.name) || taxRecords.some(t => t.taxAmount) || mortgageRecords.some(m => m.mortgageAmount) || buildingPermits.some(p => p.permitNumber) || gpsCoordinates.some(g => g.lat || g.lng);
+    const hasFilledFormField = Object.entries(formData).some(([key, value]) => {
+      if (key === 'parcelNumber') return false;
+      if (value === undefined || value === null || value === '') return false;
+      if (Array.isArray(value)) return value.length > 0;
+      return true;
+    });
+    const hasData = hasFilledFormField || currentOwners.some(o => o.lastName || o.firstName) || previousOwners.some(o => o.name) || taxRecords.some(t => t.taxAmount) || mortgageRecords.some(m => m.mortgageAmount) || buildingPermits.some(p => p.permitNumber) || gpsCoordinates.some(g => g.lat || g.lng);
     if (hasData) { saveFormDataToStorage(); setShowExitConfirmation(true); } else { handleClose(); }
   }, [formData, currentOwners, previousOwners, taxRecords, mortgageRecords, buildingPermits, gpsCoordinates, showSuccess, saveFormDataToStorage]);
 
