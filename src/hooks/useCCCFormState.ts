@@ -1204,7 +1204,14 @@ export const useCCCFormState = ({
             const ct = contrib.construction_type; if (!ct) return undefined;
             const matches: string[] = [];
             for (const [cat, types] of Object.entries(CATEGORY_TO_CONSTRUCTION_TYPES)) { if (types.includes(ct)) matches.push(cat); }
-            return matches.length === 1 ? matches[0] : undefined;
+            if (matches.length === 1) return matches[0];
+            if (matches.length > 1) {
+              setTimeout(() => toast({
+                title: "Catégorie de bien à confirmer",
+                description: `Plusieurs catégories correspondent à « ${ct} ». Merci de re-sélectionner la catégorie dans l'onglet Localisation.`,
+              }), 0);
+            }
+            return undefined;
           })(),
           constructionNature: contrib.construction_nature || undefined, constructionMaterials: contrib.construction_materials || undefined,
           declaredUsage: contrib.declared_usage || undefined, standing: contrib.standing || undefined,
