@@ -323,6 +323,11 @@ export function useFormValidation(params: UseFormValidationParams) {
       const filledSides = parcelSides.filter(s => s.length && parseFloat(s.length) > 0);
       if (filledSides.length < 3) missing.push({ field: 'parcelSides', label: 'Dimensions de la parcelle (au moins 3 côtés)', tab: 'location' });
     }
+    // Aligné sur la validation de soumission : des points GPS partiels bloquent l'envoi.
+    const filledGps = (gpsCoordinates || []).filter(c => String(c?.lat ?? '').trim() !== '' && String(c?.lng ?? '').trim() !== '');
+    if (filledGps.length > 0 && filledGps.length < 3) {
+      missing.push({ field: 'gpsCoordinates', label: 'Points GPS (au moins 3 bornes renseignées)', tab: 'location' });
+    }
     if (isAppartement) {
       if (!formData.apartmentLength || formData.apartmentLength <= 0) missing.push({ field: 'apartmentLength', label: "Longueur de l'appartement", tab: 'location' });
       if (!formData.apartmentWidth || formData.apartmentWidth <= 0) missing.push({ field: 'apartmentWidth', label: "Largeur de l'appartement", tab: 'location' });
