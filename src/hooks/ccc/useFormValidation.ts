@@ -22,6 +22,8 @@ export interface UseFormValidationParams {
   permitMode: 'existing' | 'request' | null;
   buildingPermits: BuildingPermit[];
   parcelSides: Array<{ name: string; length: string }>;
+  /** Points GPS saisis : si l'utilisateur en renseigne, il en faut au moins 3 (aligné sur la validation de soumission). */
+  gpsCoordinates?: Array<{ lat: string; lng: string }>;
   taxRecords: TaxRecord[];
   hasMortgage: boolean | null;
   hasDispute: boolean | null;
@@ -84,6 +86,7 @@ export function useFormValidation(params: UseFormValidationParams) {
     mortgageRecords, ownerDocFile, titleDocFiles, editingContributionId,
     roadSides, servitude, buildingShapes, constructionMode, additionalConstructions,
     soundEnvironment, nearbySoundSources, disputeFormData, parcelNumberRequired: parcelNumberRequiredParam,
+    gpsCoordinates,
   } = params;
 
   const missingFieldsList = useMemo<MissingField[]>(() => {
@@ -319,6 +322,11 @@ export function useFormValidation(params: UseFormValidationParams) {
     if (!isAppartement) {
       const filledSides = parcelSides.filter(s => s.length && parseFloat(s.length) > 0);
       if (filledSides.length < 3) missing.push({ field: 'parcelSides', label: 'Dimensions de la parcelle (au moins 3 côtés)', tab: 'location' });
+    }
+    // Aligné sur la validation de soumission : des points GPS partiels bloquent l'envoi.
+    const filledGps = (gpsCoordinates || []).filter(c => String(c?.lat ?? '').trim() !== '' && String(c?.lng ?? '').trim() !== '');
+    if (filledGps.length > 0 && filledGps.length < 3) {
+      missing.push({ field: 'gpsCoordinates', label: 'Points GPS (au moins 3 bornes renseignées)', tab: 'location' });
     }
     if (isAppartement) {
       if (!formData.apartmentLength || formData.apartmentLength <= 0) missing.push({ field: 'apartmentLength', label: "Longueur de l'appartement", tab: 'location' });
@@ -614,7 +622,7 @@ export function useFormValidation(params: UseFormValidationParams) {
 
 
     return missing;
-  }, [formData, customTitleName, currentOwners, previousOwners, sectionType, permitMode, buildingPermits, parcelSides, taxRecords, hasMortgage, hasDispute, mortgageRecords, ownerDocFile, titleDocFiles, editingContributionId, roadSides, servitude, buildingShapes, constructionMode, additionalConstructions, soundEnvironment, nearbySoundSources, disputeFormData, parcelNumberRequiredParam]);
+  }, [formData, customTitleName, currentOwners, previousOwners, sectionType, permitMode, buildingPermits, parcelSides, taxRecords, hasMortgage, hasDispute, mortgageRecords, ownerDocFile, titleDocFiles, editingContributionId, roadSides, servitude, buildingShapes, constructionMode, additionalConstructions, soundEnvironment, nearbySoundSources, disputeFormData, parcelNumberRequiredParam, gpsCoordinates]);
 
   const getMissingFields = useCallback(() => missingFieldsList, [missingFieldsList]);
 

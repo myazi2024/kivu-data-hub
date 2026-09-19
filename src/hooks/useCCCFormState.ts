@@ -782,6 +782,7 @@ export const useCCCFormState = ({
     roadSides, servitude, buildingShapes, constructionMode, additionalConstructions,
     soundEnvironment, nearbySoundSources, disputeFormData,
     parcelNumberRequired: isParcelNumberRequired,
+    gpsCoordinates,
   });
 
   const handleNextTab = useCallback((currentTab: string, nextTab: string) => {
@@ -896,19 +897,23 @@ export const useCCCFormState = ({
   }, [formData, currentOwners, previousOwners, taxRecords, mortgageRecords, hasMortgage, hasDispute, buildingPermits, permitRequest, gpsCoordinates, parcelSides, sectionType, buildingShapes, soundEnvironment, nearbySoundSources]);
 
   // ─── Confetti ───
+  const confettiIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  useEffect(() => () => { if (confettiIntervalRef.current) clearInterval(confettiIntervalRef.current); }, []);
   const triggerConfetti = async () => {
     const confetti = await lazyConfetti();
     const duration = 3 * 1000;
     const animationEnd = Date.now() + duration;
     const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 9999 };
     const randomInRange = (min: number, max: number) => Math.random() * (max - min) + min;
+    if (confettiIntervalRef.current) clearInterval(confettiIntervalRef.current);
     const interval = setInterval(() => {
       const timeLeft = animationEnd - Date.now();
-      if (timeLeft <= 0) return clearInterval(interval);
+      if (timeLeft <= 0) { clearInterval(interval); confettiIntervalRef.current = null; return; }
       const particleCount = 50 * (timeLeft / duration);
       confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } });
       confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } });
     }, 250);
+    confettiIntervalRef.current = interval;
   };
 
   // ─── Submit ───
@@ -1129,7 +1134,13 @@ export const useCCCFormState = ({
 
   const handleAttemptClose = useCallback(() => {
     if (isClosingAfterSuccessRef.current || showSuccess || !formDirtyRef.current) { handleClose(); return; }
-    const hasData = Object.keys(formData).length > 1 || currentOwners.some(o => o.lastName || o.firstName) || previousOwners.some(o => o.name) || taxRecords.some(t => t.taxAmount) || mortgageRecords.some(m => m.mortgageAmount) || buildingPermits.some(p => p.permitNumber) || gpsCoordinates.some(g => g.lat || g.lng);
+    const hasFilledFormField = Object.entries(formData).some(([key, value]) => {
+      if (key === 'parcelNumber') return false;
+      if (value === undefined || value === null || value === '') return false;
+      if (Array.isArray(value)) return value.length > 0;
+      return true;
+    });
+    const hasData = hasFilledFormField || currentOwners.some(o => o.lastName || o.firstName) || previousOwners.some(o => o.name) || taxRecords.some(t => t.taxAmount) || mortgageRecords.some(m => m.mortgageAmount) || buildingPermits.some(p => p.permitNumber) || gpsCoordinates.some(g => g.lat || g.lng);
     if (hasData) { saveFormDataToStorage(); setShowExitConfirmation(true); } else { handleClose(); }
   }, [formData, currentOwners, previousOwners, taxRecords, mortgageRecords, buildingPermits, gpsCoordinates, showSuccess, saveFormDataToStorage]);
 
@@ -1183,6 +1194,8 @@ export const useCCCFormState = ({
   // Load from DB in edit mode
   useEffect(() => {
     if (!open || !editingContributionId) return;
+    let cancelled = false;
+    let releaseTimer: ReturnType<typeof setTimeout> | undefined;
     const fetchContribution = async () => {
       isLoadingFromDbRef.current = true;
       try {
@@ -1202,7 +1215,14 @@ export const useCCCFormState = ({
             const ct = contrib.construction_type; if (!ct) return undefined;
             const matches: string[] = [];
             for (const [cat, types] of Object.entries(CATEGORY_TO_CONSTRUCTION_TYPES)) { if (types.includes(ct)) matches.push(cat); }
-            return matches.length === 1 ? matches[0] : undefined;
+            if (matches.length === 1) return matches[0];
+            if (matches.length > 1) {
+              setTimeout(() => toast({
+                title: "Catégorie de bien à confirmer",
+                description: `Plusieurs catégories correspondent à « ${ct} ». Merci de re-sélectionner la catégorie dans l'onglet Localisation.`,
+              }), 0);
+            }
+            return undefined;
           })(),
           constructionNature: contrib.construction_nature || undefined, constructionMaterials: contrib.construction_materials || undefined,
           declaredUsage: contrib.declared_usage || undefined, standing: contrib.standing || undefined,
@@ -1311,10 +1331,20 @@ export const useCCCFormState = ({
         // Restore sound environment
         if ((contrib as any).sound_environment) setSoundEnvironment((contrib as any).sound_environment);
         if ((contrib as any).nearby_noise_sources) setNearbySoundSources((contrib as any).nearby_noise_sources);
-      } catch (err) { console.error('Erreur chargement contribution:', err); }
-      finally { setTimeout(() => { isLoadingFromDbRef.current = false; }, 500); }
+      } catch (err) {
+        console.error('Erreur chargement contribution:', err);
+        if (!cancelled) toast({ title: "Erreur", description: "Impossible de charger la contribution. Fermez puis rouvrez le formulaire.", variant: "destructive" });
+      }
+      finally {
+        releaseTimer = setTimeout(() => { if (!cancelled) isLoadingFromDbRef.current = false; }, 500);
+      }
     };
     fetchContribution();
+    return () => {
+      cancelled = true;
+      if (releaseTimer) clearTimeout(releaseTimer);
+      isLoadingFromDbRef.current = false;
+    };
   }, [open, editingContributionId]);
 
   // Auto-save debounced: géré dans useFormPersistence

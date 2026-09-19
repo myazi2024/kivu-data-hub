@@ -1869,6 +1869,8 @@ export type Database = {
       }
       cadastral_parcels: {
         Row: {
+          actual_usage: string | null
+          actual_usage_other: string | null
           additional_constructions: Json | null
           apartment_height: number | null
           apartment_length: number | null
@@ -1913,6 +1915,7 @@ export type Database = {
           is_subdivided: boolean | null
           is_title_in_current_owner_name: boolean | null
           latitude: number | null
+          lease_contract_url: string | null
           lease_type: string | null
           lease_years: number | null
           location: string
@@ -1922,6 +1925,8 @@ export type Database = {
           nearby_noise_sources: string | null
           nombre_bornes: number | null
           occupant_count: number | null
+          operational_capacity: number | null
+          operational_capacity_unit: string | null
           owner_document_url: string | null
           parcel_number: string
           parcel_sides: Json | null
@@ -1955,6 +1960,8 @@ export type Database = {
           would_sell_if_offered: boolean | null
         }
         Insert: {
+          actual_usage?: string | null
+          actual_usage_other?: string | null
           additional_constructions?: Json | null
           apartment_height?: number | null
           apartment_length?: number | null
@@ -1999,6 +2006,7 @@ export type Database = {
           is_subdivided?: boolean | null
           is_title_in_current_owner_name?: boolean | null
           latitude?: number | null
+          lease_contract_url?: string | null
           lease_type?: string | null
           lease_years?: number | null
           location: string
@@ -2008,6 +2016,8 @@ export type Database = {
           nearby_noise_sources?: string | null
           nombre_bornes?: number | null
           occupant_count?: number | null
+          operational_capacity?: number | null
+          operational_capacity_unit?: string | null
           owner_document_url?: string | null
           parcel_number: string
           parcel_sides?: Json | null
@@ -2041,6 +2051,8 @@ export type Database = {
           would_sell_if_offered?: boolean | null
         }
         Update: {
+          actual_usage?: string | null
+          actual_usage_other?: string | null
           additional_constructions?: Json | null
           apartment_height?: number | null
           apartment_length?: number | null
@@ -2085,6 +2097,7 @@ export type Database = {
           is_subdivided?: boolean | null
           is_title_in_current_owner_name?: boolean | null
           latitude?: number | null
+          lease_contract_url?: string | null
           lease_type?: string | null
           lease_years?: number | null
           location?: string
@@ -2094,6 +2107,8 @@ export type Database = {
           nearby_noise_sources?: string | null
           nombre_bornes?: number | null
           occupant_count?: number | null
+          operational_capacity?: number | null
+          operational_capacity_unit?: string | null
           owner_document_url?: string | null
           parcel_number?: string
           parcel_sides?: Json | null

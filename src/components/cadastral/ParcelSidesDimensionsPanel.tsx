@@ -12,7 +12,7 @@ import { Ruler, Compass, Info, Trash2, Check, Route, X, Lightbulb, BrickWall, Al
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { ROAD_SURFACE_OPTIONS } from './RoadBorderingSidesPanel';
+import { ROAD_SURFACE_OPTIONS, roadSurfaceLabel } from './RoadBorderingSidesPanel';
 
 
 export interface ParcelSide {
