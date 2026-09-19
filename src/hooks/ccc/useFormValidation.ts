@@ -22,6 +22,8 @@ export interface UseFormValidationParams {
   permitMode: 'existing' | 'request' | null;
   buildingPermits: BuildingPermit[];
   parcelSides: Array<{ name: string; length: string }>;
+  /** Points GPS saisis : si l'utilisateur en renseigne, il en faut au moins 3 (aligné sur la validation de soumission). */
+  gpsCoordinates?: Array<{ lat: string; lng: string }>;
   taxRecords: TaxRecord[];
   hasMortgage: boolean | null;
   hasDispute: boolean | null;
