@@ -1183,6 +1183,8 @@ export const useCCCFormState = ({
   // Load from DB in edit mode
   useEffect(() => {
     if (!open || !editingContributionId) return;
+    let cancelled = false;
+    let releaseTimer: ReturnType<typeof setTimeout> | undefined;
     const fetchContribution = async () => {
       isLoadingFromDbRef.current = true;
       try {
