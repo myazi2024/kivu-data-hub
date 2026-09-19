@@ -756,6 +756,9 @@ export const ParcelMapPreview = ({
       setShowNeighbors(true);
     } catch (error) {
       console.error('Error checking neighbors:', error);
+      toast.error("Vérification des parcelles voisines impossible", {
+        description: "Le contrôle des chevauchements n'a pas abouti. Vérifiez votre connexion puis réessayez.",
+      });
     } finally {
       setLoadingConflicts(false);
     }
