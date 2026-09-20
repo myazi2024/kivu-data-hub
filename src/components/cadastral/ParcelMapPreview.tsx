@@ -748,12 +748,18 @@ export const ParcelMapPreview = ({
             });
           }
         } catch (err) {
+          skippedParcels += 1;
           console.error('Error processing parcel:', err);
         }
       });
 
       setConflictingParcels(conflicts);
       setShowNeighbors(true);
+      if (skippedParcels > 0) {
+        toast.warning(`${skippedParcels} parcelle(s) voisine(s) non analysée(s)`, {
+          description: "Leurs contours sont illisibles : le contrôle de chevauchement est incomplet pour ces parcelles.",
+        });
+      }
     } catch (error) {
       console.error('Error checking neighbors:', error);
       toast.error("Vérification des parcelles voisines impossible", {
