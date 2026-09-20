@@ -10,7 +10,7 @@ interface LeaseContractCheckData {
 }
 
 /** Nombre de locaux occupés dont le contrat de location n'a pas été joint. */
-export function countMissingLeaseContracts(data: LeaseContractCheckData): number {
+function countMissingLeaseContracts(data: LeaseContractCheckData): number {
   if (!data?.isRented) return 0;
   if (data.rentalConfiguration === 'multi') {
     return (data.rentalUnits || []).filter((u) => u?.isOccupied === true && !u?.leaseContractUrl).length;

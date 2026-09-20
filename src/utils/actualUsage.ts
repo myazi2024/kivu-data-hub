@@ -20,7 +20,7 @@ const RESIDENTIAL_USAGES = new Set(['Habitation', 'Usage mixte']);
 const UNBUILT_ONLY_USAGES = new Set(['terrain vacant', 'terrain nu', 'vacant']);
 
 /** Un usage n'est-il proposable que pour un terrain nu ? */
-export function isUnbuiltOnlyUsage(usage?: string | null): boolean {
+function isUnbuiltOnlyUsage(usage?: string | null): boolean {
   return !!usage && UNBUILT_ONLY_USAGES.has(usage.trim().toLowerCase());
 }
 
