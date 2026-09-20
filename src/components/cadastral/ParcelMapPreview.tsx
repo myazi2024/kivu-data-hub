@@ -2131,6 +2131,20 @@ export const ParcelMapPreview = ({
       onPointerCancel: () => stopLongPress(),
       onPointerLeave: () => stopLongPress(),
       onContextMenu: (e: any) => e.preventDefault?.(),
+      // Accessibilité clavier : Entrée/Espace déclenchent la même action,
+      // le maintien de touche relance la répétition comme l'appui long.
+      onKeyDown: (e: any) => {
+        if (e.key !== 'Enter' && e.key !== ' ' && e.key !== 'Spacebar') return;
+        e.preventDefault?.();
+        if (e.repeat) return;
+        startLongPress(action);
+      },
+      onKeyUp: (e: any) => {
+        if (e.key !== 'Enter' && e.key !== ' ' && e.key !== 'Spacebar') return;
+        e.preventDefault?.();
+        stopLongPress();
+      },
+      onBlur: () => stopLongPress(),
     }),
     [startLongPress, stopLongPress]
   );
