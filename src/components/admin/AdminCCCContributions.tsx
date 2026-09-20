@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -63,9 +63,15 @@ const AdminCCCContributions: React.FC = () => {
 
   // Pagination - sera initialisée après filteredContributions
 
-  useEffect(() => {
-    fetchContributions();
+  // Onglet courant accessible depuis le canal realtime sans recréer l'abonnement
+  const activeTabRef = useRef(activeTab);
+  activeTabRef.current = activeTab;
 
+  useEffect(() => {
+    fetchContributions(activeTab);
+  }, [activeTab]);
+
+  useEffect(() => {
     // Realtime debounced (300 ms) pour limiter les refetch en rafale
     let debounceTimer: ReturnType<typeof setTimeout> | null = null;
     const channel = supabase
@@ -79,7 +85,7 @@ const AdminCCCContributions: React.FC = () => {
         },
         () => {
           if (debounceTimer) clearTimeout(debounceTimer);
-          debounceTimer = setTimeout(() => fetchContributions(), 300);
+          debounceTimer = setTimeout(() => fetchContributions(activeTabRef.current), 300);
         }
       )
       .subscribe();
@@ -90,28 +96,37 @@ const AdminCCCContributions: React.FC = () => {
     };
   }, []);
 
-  const fetchContributions = async () => {
+  /** Applique le filtre serveur correspondant à l'onglet affiché. */
+  const applyTabFilter = (query: any, tab: string) => {
+    if (tab === 'suspicious') return query.eq('is_suspicious', true);
+    if (tab === 'all') return query;
+    return query.eq('status', tab);
+  };
+
+  const fetchContributions = async (tab: string = activeTabRef.current) => {
     try {
       setLoading(true);
-      
-      // Fetch all contributions using pagination to bypass 1000-row limit
-      let allData: any[] = [];
+
+      // Seules les lignes de l'onglet affiché sont chargées (pagination 1 000 lignes)
+      const allData: any[] = [];
       let from = 0;
       const batchSize = 1000;
       let hasMore = true;
 
       while (hasMore) {
-        const { data, error } = await supabase
+        const base = supabase
           .from('cadastral_contributions')
           .select('*')
-          .not('parcel_number', 'ilike', 'TEST-%')
+          .not('parcel_number', 'ilike', 'TEST-%');
+
+        const { data, error } = await applyTabFilter(base, tab)
           .order('created_at', { ascending: false })
           .range(from, from + batchSize - 1);
 
         if (error) throw error;
 
         if (data && data.length > 0) {
-          allData = [...allData, ...data];
+          allData.push(...data);
           from += batchSize;
           hasMore = data.length === batchSize;
         } else {
@@ -120,16 +135,28 @@ const AdminCCCContributions: React.FC = () => {
       }
 
       setContributions(allData);
-      
-      // Calculer les statistiques
-      const stats: ContributionStats = {
-        total: allData.length,
-        pending: allData.filter(c => c.status === 'pending').length,
-        approved: allData.filter(c => c.status === 'approved').length,
-        rejected: allData.filter(c => c.status === 'rejected').length,
-        suspicious: allData.filter(c => c.is_suspicious).length
+
+      // Statistiques via des compteurs serveur (aucun transfert de lignes)
+      const countFor = async (apply: (q: any) => any) => {
+        const q = apply(
+          supabase
+            .from('cadastral_contributions')
+            .select('id', { count: 'exact', head: true })
+            .not('parcel_number', 'ilike', 'TEST-%'),
+        );
+        const { count, error } = await q;
+        if (error) throw error;
+        return count ?? 0;
       };
-      setStats(stats);
+
+      const [total, pending, approved, rejected, suspicious] = await Promise.all([
+        countFor(q => q),
+        countFor(q => q.eq('status', 'pending')),
+        countFor(q => q.eq('status', 'approved')),
+        countFor(q => q.eq('status', 'rejected')),
+        countFor(q => q.eq('is_suspicious', true)),
+      ]);
+      setStats({ total, pending, approved, rejected, suspicious });
     } catch (error: any) {
       console.error('Erreur lors du chargement des contributions:', error);
       toast.error('Erreur lors du chargement des contributions');
@@ -439,13 +466,14 @@ const AdminCCCContributions: React.FC = () => {
       const warned: string[] = [];
 
       // Même chemin que l'approbation unitaire : validation serveur puis
-      // création des historiques associés.
-      for (const id of ids) {
+      // création des historiques associés. Traitement par lots de 5 en parallèle
+      // pour éviter une longue file séquentielle sans saturer la base.
+      const processOne = async (id: string) => {
         try {
           const validation = await runServerValidation(id);
-          if (!validation?.valid) { skipped.push(id); continue; }
+          if (!validation?.valid) { skipped.push(id); return; }
           const outcome = await approveContributionCore(id, user.id);
-          if (!outcome.ok) { skipped.push(id); continue; }
+          if (!outcome.ok) { skipped.push(id); return; }
           if (outcome.warnings.length > 0) warned.push(id);
           approved.push(id);
           await logContributionAudit({ contributionId: id, action: 'bulk_approve', payload: { count: ids.length } });
@@ -453,6 +481,11 @@ const AdminCCCContributions: React.FC = () => {
           console.error('Approbation en masse — échec sur', id, e);
           skipped.push(id);
         }
+      };
+
+      const CONCURRENCY = 5;
+      for (let i = 0; i < ids.length; i += CONCURRENCY) {
+        await Promise.all(ids.slice(i, i + CONCURRENCY).map(processOne));
       }
 
       if (approved.length > 0) toast.success(`${approved.length} contribution(s) approuvée(s)`);

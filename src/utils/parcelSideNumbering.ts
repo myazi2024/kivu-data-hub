@@ -12,7 +12,7 @@ const GENERIC_BORNE_RE = /^\s*borne\s*\d*\s*$/i;
 export const isGenericSideName = (name?: string | null) =>
   !name || !name.trim() || GENERIC_SIDE_RE.test(name);
 
-export const isGenericBorneName = (name?: string | null) =>
+const isGenericBorneName = (name?: string | null) =>
   !name || !name.trim() || GENERIC_BORNE_RE.test(name);
 
 /** Réattribue « Côté 1..N » aux côtés au nom générique, en préservant les noms personnalisés. */
