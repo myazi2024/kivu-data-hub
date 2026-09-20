@@ -73,13 +73,13 @@ const buildSubject = (cat?: string, type?: string): string => {
   return 'Ce bien';
 };
 
-/** Terrain nu : le vocabulaire « local » n'est pas pertinent. Délègue au prédicat canonique. */
-export const isTerrainNuCategory = (cat?: string, type?: string): boolean =>
+/** Terrain nu : le vocabulaire « local » n'est pas pertinent. Usage interne, délègue au prédicat canonique. */
+const isTerrainNuByFields = (cat?: string, type?: string): boolean =>
   isTerrainNuCategoryShared({ propertyCategory: cat, constructionType: type });
 
 /** Vocabulaire d'unité locative selon la catégorie de bien. */
 const unitVocab = (cat?: string, type?: string) => {
-  const terrain = isTerrainNuCategory(cat, type);
+  const terrain = isTerrainNuByFields(cat, type);
   return {
     isTerrainNu: terrain,
     singular: terrain ? 'terrain' : 'local',
