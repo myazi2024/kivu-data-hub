@@ -466,13 +466,14 @@ const AdminCCCContributions: React.FC = () => {
       const warned: string[] = [];
 
       // Même chemin que l'approbation unitaire : validation serveur puis
-      // création des historiques associés.
-      for (const id of ids) {
+      // création des historiques associés. Traitement par lots de 5 en parallèle
+      // pour éviter une longue file séquentielle sans saturer la base.
+      const processOne = async (id: string) => {
         try {
           const validation = await runServerValidation(id);
-          if (!validation?.valid) { skipped.push(id); continue; }
+          if (!validation?.valid) { skipped.push(id); return; }
           const outcome = await approveContributionCore(id, user.id);
-          if (!outcome.ok) { skipped.push(id); continue; }
+          if (!outcome.ok) { skipped.push(id); return; }
           if (outcome.warnings.length > 0) warned.push(id);
           approved.push(id);
           await logContributionAudit({ contributionId: id, action: 'bulk_approve', payload: { count: ids.length } });
@@ -480,6 +481,11 @@ const AdminCCCContributions: React.FC = () => {
           console.error('Approbation en masse — échec sur', id, e);
           skipped.push(id);
         }
+      };
+
+      const CONCURRENCY = 5;
+      for (let i = 0; i < ids.length; i += CONCURRENCY) {
+        await Promise.all(ids.slice(i, i + CONCURRENCY).map(processOne));
       }
 
       if (approved.length > 0) toast.success(`${approved.length} contribution(s) approuvée(s)`);
