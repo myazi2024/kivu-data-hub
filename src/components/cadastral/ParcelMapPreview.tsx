@@ -705,6 +705,7 @@ export const ParcelMapPreview = ({
       if (error) throw error;
 
       const conflicts: ConflictingParcel[] = [];
+      let skippedParcels = 0;
 
       nearbyParcels?.forEach((parcel: any) => {
         try {
