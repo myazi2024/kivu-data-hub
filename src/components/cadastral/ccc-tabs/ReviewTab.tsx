@@ -112,8 +112,10 @@ const ReviewTab: React.FC<ReviewTabProps> = ({
             const cleanup = () => {
               document.body.classList.remove('print-review-only');
               window.removeEventListener('afterprint', cleanup);
+              setPrintAnnouncement('');
             };
             document.body.classList.add('print-review-only');
+            setPrintAnnouncement("Préparation de l'impression du récapitulatif…");
             window.addEventListener('afterprint', cleanup);
             setTimeout(() => {
               try { window.print(); } finally { setTimeout(cleanup, 1000); }
