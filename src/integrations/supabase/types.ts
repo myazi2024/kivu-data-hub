@@ -990,6 +990,7 @@ export type Database = {
           commune: string | null
           construction_materials: string | null
           construction_nature: string | null
+          construction_status: string | null
           construction_type: string | null
           construction_year: number | null
           contribution_type: string
@@ -1104,6 +1105,7 @@ export type Database = {
           commune?: string | null
           construction_materials?: string | null
           construction_nature?: string | null
+          construction_status?: string | null
           construction_type?: string | null
           construction_year?: number | null
           contribution_type?: string
@@ -1218,6 +1220,7 @@ export type Database = {
           commune?: string | null
           construction_materials?: string | null
           construction_nature?: string | null
+          construction_status?: string | null
           construction_type?: string | null
           construction_year?: number | null
           contribution_type?: string
@@ -1892,6 +1895,7 @@ export type Database = {
           commune: string | null
           construction_materials: string | null
           construction_nature: string | null
+          construction_status: string | null
           construction_type: string | null
           construction_year: number | null
           created_at: string
@@ -1983,6 +1987,7 @@ export type Database = {
           commune?: string | null
           construction_materials?: string | null
           construction_nature?: string | null
+          construction_status?: string | null
           construction_type?: string | null
           construction_year?: number | null
           created_at?: string
@@ -2074,6 +2079,7 @@ export type Database = {
           commune?: string | null
           construction_materials?: string | null
           construction_nature?: string | null
+          construction_status?: string | null
           construction_type?: string | null
           construction_year?: number | null
           created_at?: string
