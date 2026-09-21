@@ -118,6 +118,15 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
     [buildingShapes, index],
   );
   const showHeightField = !!data.constructionNature && data.constructionNature !== 'Non bâti';
+  /** Maison basse : plain-pied, le nombre d'étages ne s'applique pas. */
+  const isSingleStorey = isSingleStoreyCategory(data.propertyCategory);
+
+  // Maison basse : rez-de-chaussée uniquement — on neutralise une saisie d'étages héritée.
+  useEffect(() => {
+    if (!isSingleStorey) return;
+    if (data.floorNumber !== '0') update('floorNumber', '0');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSingleStorey, data.floorNumber]);
 
   // Répercute la hauteur saisie sur la forme du croquis dès qu'elle est tracée.
   useEffect(() => {
