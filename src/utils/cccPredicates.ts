@@ -27,6 +27,13 @@ export const isUnbuiltLand = (data?: UnbuiltLandInput | null): boolean => {
   return nature === 'Non bâti';
 };
 
+/**
+ * Catégorie de plain-pied : « Maison basse ». Le nombre d'étages ne s'applique
+ * pas (rez-de-chaussée uniquement) et la hauteur minimale reste celle du RDC.
+ */
+export const isSingleStoreyCategory = (propertyCategory?: string | null): boolean =>
+  (propertyCategory || '').trim() === 'Maison basse';
+
 /** Terrain nu déclaré explicitement (catégorie ou type), hors nature « Non bâti ». */
 export const isTerrainNuCategory = (data?: UnbuiltLandInput | null): boolean =>
   !!data && (data.propertyCategory === 'Terrain nu' || data.constructionType === 'Terrain nu');

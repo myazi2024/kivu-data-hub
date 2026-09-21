@@ -4,6 +4,7 @@ import {
   isTerrainNuCategory,
   hasSuSrReference,
   computeParcelNumberRequired,
+  isSingleStoreyCategory,
 } from '@/utils/cccPredicates';
 
 /** Matrice de référence des catégories de bien du formulaire CCC. */
@@ -69,5 +70,11 @@ describe('cccPredicates — référence SU/SR et n° de parcelle', () => {
     expect(computeParcelNumberRequired('Fiche parcellaire', false)).toBe(false);
     expect(computeParcelNumberRequired('Fiche parcellaire', true)).toBe(true);
     expect(computeParcelNumberRequired("Certificat d'enregistrement", false)).toBe(true);
+  });
+  it('« Maison basse » est une catégorie de plain-pied', () => {
+    expect(isSingleStoreyCategory('Maison basse')).toBe(true);
+    expect(isSingleStoreyCategory(' Maison basse ')).toBe(true);
+    expect(isSingleStoreyCategory('Maison')).toBe(false);
+    expect(isSingleStoreyCategory(undefined)).toBe(false);
   });
 });

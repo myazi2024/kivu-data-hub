@@ -176,12 +176,13 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
   
   // CCC construction categories
   const PROPERTY_CATEGORY_OPTIONS = useMemo(() => [
-    'Appartement', 'Villa', 'Maison', 'Local commercial',
+    'Appartement', 'Villa', 'Maison', 'Maison basse', 'Local commercial',
     'Immeuble/Bâtiment', 'Entrepôt/Hangar', 'Terrain nu',
   ], []);
 
   const CATEGORY_TO_CONSTRUCTION_TYPES: Record<string, string[]> = useMemo(() => ({
     'Appartement': ['Résidentielle'], 'Villa': ['Résidentielle'], 'Maison': ['Résidentielle'],
+    'Maison basse': ['Résidentielle'],
     'Local commercial': ['Commerciale'], 'Immeuble/Bâtiment': ['Résidentielle', 'Commerciale', 'Industrielle'],
     'Entrepôt/Hangar': ['Industrielle', 'Agricole'], 'Terrain nu': ['Terrain nu'],
   }), []);

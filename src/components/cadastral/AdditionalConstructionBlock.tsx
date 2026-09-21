@@ -16,6 +16,7 @@ import { RentalConfigurationSelector, MonthlyRentFields } from './RentalConfigur
 import LeaseContractField from './LeaseContractField';
 import BuildingHeightField from './BuildingHeightField';
 import { getShapeForConstructionIndex, withShapeHeight, minHeightForFloors } from '@/utils/buildingShapes';
+import { isSingleStoreyCategory } from '@/utils/cccPredicates';
 
 export interface AdditionalConstructionPermit {
   permitType: 'construction' | 'regularization';
@@ -62,7 +63,7 @@ export interface AdditionalConstruction {
 }
 
 const PROPERTY_CATEGORY_OPTIONS_NO_TERRAIN = [
-  'Villa', 'Maison', 'Local commercial',
+  'Villa', 'Maison', 'Maison basse', 'Local commercial',
   'Immeuble/Bâtiment', 'Entrepôt/Hangar',
 ];
 
@@ -70,6 +71,7 @@ const CATEGORY_TO_CONSTRUCTION_TYPES: Record<string, string[]> = {
   'Appartement': ['Résidentielle'],
   'Villa': ['Résidentielle'],
   'Maison': ['Résidentielle'],
+  'Maison basse': ['Résidentielle'],
   'Local commercial': ['Commerciale'],
   'Immeuble/Bâtiment': ['Résidentielle', 'Commerciale', 'Industrielle'],
   'Entrepôt/Hangar': ['Industrielle', 'Agricole'],
@@ -117,6 +119,15 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
     [buildingShapes, index],
   );
   const showHeightField = !!data.constructionNature && data.constructionNature !== 'Non bâti';
+  /** Maison basse : plain-pied, le nombre d'étages ne s'applique pas. */
+  const isSingleStorey = isSingleStoreyCategory(data.propertyCategory);
+
+  // Maison basse : rez-de-chaussée uniquement — on neutralise une saisie d'étages héritée.
+  useEffect(() => {
+    if (!isSingleStorey) return;
+    if (data.floorNumber !== '0') update('floorNumber', '0');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSingleStorey, data.floorNumber]);
 
   // Répercute la hauteur saisie sur la forme du croquis dès qu'elle est tracée.
   useEffect(() => {
@@ -450,7 +461,7 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
       {/* Nombre d'étages + Hauteur sur la même ligne */}
       {(() => {
         const showStandingBlock = !!data.constructionNature && data.constructionNature !== 'Non bâti' && availableStandings.length > 0;
-        const showFloors = showStandingBlock && data.propertyCategory !== 'Appartement';
+        const showFloors = showStandingBlock && data.propertyCategory !== 'Appartement' && !isSingleStorey;
         return (
           <>
             {(showHeightField || showFloors) && (
@@ -498,7 +509,7 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
                 {showHeightField && (
                   <BuildingHeightField
                     value={data.heightM ?? linkedShape?.heightM}
-                    floorCount={data.floorNumber ? parseInt(data.floorNumber, 10) : undefined}
+                    floorCount={isSingleStorey ? 0 : (data.floorNumber ? parseInt(data.floorNumber, 10) : undefined)}
                     onChange={(v) => {
                       update('heightM', v);
                       if (linkedShape && buildingShapes && onBuildingShapesChange) {
@@ -586,7 +597,7 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
       {rentalEligible && (
         <div className="space-y-1.5">
           <Label className="text-sm font-medium">
-            Ce{data.propertyCategory === 'Maison' || data.propertyCategory === 'Villa' ? 'tte ' : ' '}
+            Ce{data.propertyCategory === 'Maison' || data.propertyCategory === 'Maison basse' || data.propertyCategory === 'Villa' ? 'tte ' : ' '}
             {data.propertyCategory?.toLowerCase() || 'bien'} est-il mis en location ?
           </Label>
           <div className="flex gap-2">
