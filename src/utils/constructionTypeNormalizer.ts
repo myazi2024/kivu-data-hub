@@ -9,6 +9,7 @@ const LEGACY_MAP: Record<string, string> = {
   "Résidentiel": "Résidentielle",
   "Villa": "Résidentielle",
   "Maison individuelle": "Résidentielle",
+  "Maison basse": "Résidentielle",
   "Immeuble R+2": "Résidentielle",
   "Immeuble": "Résidentielle",
   "Maison": "Résidentielle",
