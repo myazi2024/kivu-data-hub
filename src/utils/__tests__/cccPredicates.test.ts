@@ -4,6 +4,7 @@ import {
   isTerrainNuCategory,
   hasSuSrReference,
   computeParcelNumberRequired,
+  isSingleStoreyCategory,
 } from '@/utils/cccPredicates';
 
 /** Matrice de référence des catégories de bien du formulaire CCC. */
