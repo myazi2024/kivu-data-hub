@@ -451,7 +451,7 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
       {/* Nombre d'étages + Hauteur sur la même ligne */}
       {(() => {
         const showStandingBlock = !!data.constructionNature && data.constructionNature !== 'Non bâti' && availableStandings.length > 0;
-        const showFloors = showStandingBlock && data.propertyCategory !== 'Appartement';
+        const showFloors = showStandingBlock && data.propertyCategory !== 'Appartement' && !isSingleStorey;
         return (
           <>
             {(showHeightField || showFloors) && (
@@ -499,7 +499,7 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
                 {showHeightField && (
                   <BuildingHeightField
                     value={data.heightM ?? linkedShape?.heightM}
-                    floorCount={data.floorNumber ? parseInt(data.floorNumber, 10) : undefined}
+                    floorCount={isSingleStorey ? 0 : (data.floorNumber ? parseInt(data.floorNumber, 10) : undefined)}
                     onChange={(v) => {
                       update('heightM', v);
                       if (linkedShape && buildingShapes && onBuildingShapesChange) {
@@ -587,7 +587,7 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
       {rentalEligible && (
         <div className="space-y-1.5">
           <Label className="text-sm font-medium">
-            Ce{data.propertyCategory === 'Maison' || data.propertyCategory === 'Villa' ? 'tte ' : ' '}
+            Ce{data.propertyCategory === 'Maison' || data.propertyCategory === 'Maison basse' || data.propertyCategory === 'Villa' ? 'tte ' : ' '}
             {data.propertyCategory?.toLowerCase() || 'bien'} est-il mis en location ?
           </Label>
           <div className="flex gap-2">

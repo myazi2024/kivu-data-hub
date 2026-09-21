@@ -16,7 +16,7 @@ import AdditionalConstructionBlock, { AdditionalConstruction } from '../../Addit
 import { BuildingPermitIssuingServiceSelect } from '../../BuildingPermitIssuingServiceSelect';
 import type { BuildingPermit } from '../GeneralTab';
 import { isConstructionRented, isRentalEligible, isSingleUnitRentalCategory, isNonResidentialCategory } from '@/utils/rentalStatus';
-import { isTerrainNuCategory, isUnbuiltLand } from '@/utils/cccPredicates';
+import { isTerrainNuCategory, isUnbuiltLand, isSingleStoreyCategory } from '@/utils/cccPredicates';
 import BuildingHeightField from '@/components/cadastral/BuildingHeightField';
 import { getShapeForConstructionIndex, withShapeHeight, minHeightForFloors } from '@/utils/buildingShapes';
 import LeaseContractField from '@/components/cadastral/LeaseContractField';
@@ -339,7 +339,7 @@ export const ConstructionSection: React.FC<ConstructionSectionProps> = ({
       {/* Nombre d'étages + Hauteur sur la même ligne */}
       {(() => {
         const showStandingBlock = !!formData.constructionNature && formData.constructionNature !== 'Non bâti' && availableStandings.length > 0;
-        const showFloors = showStandingBlock && formData.propertyCategory !== 'Appartement';
+        const showFloors = showStandingBlock && formData.propertyCategory !== 'Appartement' && !isSingleStorey;
         return (
           <>
             {(showHeightField || showFloors) && (
@@ -388,7 +388,7 @@ export const ConstructionSection: React.FC<ConstructionSectionProps> = ({
                   ) : (
                     <BuildingHeightField
                       value={formData.buildingHeight ?? mainBuildingShape?.heightM}
-                      floorCount={formData.floorNumber ? parseInt(formData.floorNumber, 10) : undefined}
+                      floorCount={isSingleStorey ? 0 : (formData.floorNumber ? parseInt(formData.floorNumber, 10) : undefined)}
                       onChange={(v) => {
                         handleInputChange('buildingHeight', v);
                         if (mainBuildingShape) updateShapeHeight(mainBuildingShape.id, v);
@@ -462,7 +462,7 @@ export const ConstructionSection: React.FC<ConstructionSectionProps> = ({
       {rentalEligible && (
         <div className="space-y-1.5">
           <Label className="text-sm font-medium">
-            Ce{formData.propertyCategory === 'Maison' || formData.propertyCategory === 'Villa' ? 'tte ' : ' '}
+            Ce{formData.propertyCategory === 'Maison' || formData.propertyCategory === 'Maison basse' || formData.propertyCategory === 'Villa' ? 'tte ' : ' '}
             {formData.propertyCategory?.toLowerCase() || 'bien'} est-il mis en location ?
           </Label>
           <div className="flex gap-2">
