@@ -103,6 +103,15 @@ export const ConstructionSection: React.FC<ConstructionSectionProps> = ({
   /** Hauteur : visible dès qu'une nature bâtie est choisie (avant Standing). */
   const showHeightField = !!formData.constructionNature && formData.constructionNature !== 'Non bâti';
   const isApartmentCategory = formData.propertyCategory === 'Appartement';
+  /** Maison basse : plain-pied, le nombre d'étages ne s'applique pas. */
+  const isSingleStorey = isSingleStoreyCategory(formData.propertyCategory);
+
+  // Maison basse : rez-de-chaussée uniquement — on neutralise une saisie d'étages héritée.
+  React.useEffect(() => {
+    if (!isSingleStorey) return;
+    if (formData.floorNumber !== '0') handleInputChange('floorNumber', '0');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSingleStorey, formData.floorNumber]);
   /** Forme du croquis liée à la construction principale (linkedIndex 0). */
   const mainBuildingShape = React.useMemo(
     () => (buildingShapes ? getShapeForConstructionIndex(buildingShapes, 0) : undefined),
