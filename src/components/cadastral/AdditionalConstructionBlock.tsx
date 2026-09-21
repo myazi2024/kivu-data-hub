@@ -16,6 +16,7 @@ import { RentalConfigurationSelector, MonthlyRentFields } from './RentalConfigur
 import LeaseContractField from './LeaseContractField';
 import BuildingHeightField from './BuildingHeightField';
 import { getShapeForConstructionIndex, withShapeHeight, minHeightForFloors } from '@/utils/buildingShapes';
+import { isSingleStoreyCategory } from '@/utils/cccPredicates';
 
 export interface AdditionalConstructionPermit {
   permitType: 'construction' | 'regularization';
