@@ -438,7 +438,9 @@ export const ConstructionSection: React.FC<ConstructionSectionProps> = ({
       {/* Construction year */}
       {formData.propertyCategory && formData.propertyCategory !== 'Terrain nu' && formData.constructionType && formData.constructionType !== 'Terrain nu' && (
         <div className="space-y-1.5">
-          <Label className="text-sm font-medium">Année de construction</Label>
+          <Label className="text-sm font-medium">
+            {formData.constructionStatus === 'in_progress' ? 'Année de début des travaux' : 'Année de construction'}
+          </Label>
           <Select value={formData.constructionYear?.toString() || ''} onValueChange={(value) => {
             const y = parseInt(value);
             handleInputChange('constructionYear', y);
