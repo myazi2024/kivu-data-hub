@@ -689,36 +689,6 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
                             </RadioGroup>
                           </div>
                         )}
-
-
-                        {/* Boutons d'action */}
-                        <div className="flex gap-1.5 pt-1">
-                          <Button
-                            type="button"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleConfirmSide(index);
-                            }}
-                            disabled={!canConfirm(roadSide!)}
-                            className="flex-1 h-7 text-xs rounded-lg gap-1"
-                          >
-                            <Check className="h-3 w-3" />
-                            Ajouter
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleRemoveSide(index);
-                            }}
-                            className="h-7 text-xs rounded-lg px-2"
-                          >
-                            Annuler
-                          </Button>
-                        </div>
                       </div>
                     )}
                     {isEditingThis && isWall && (
