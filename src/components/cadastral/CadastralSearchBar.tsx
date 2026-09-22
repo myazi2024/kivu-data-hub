@@ -19,13 +19,13 @@ import { useTestEnvironment } from '@/hooks/useTestEnvironment';
 
 const FIXED_TEXT = "Ex: ";
 
-// Caractères autorisés: lettres, chiffres, /, -, _
-const ALLOWED_CHARS_REGEX = /^[a-zA-Z0-9\/\-_\.\s]*$/;
+// Caractères autorisés: lettres, chiffres, /, -, _, . et espace
+const INVALID_CHARS_REGEX = /[^a-zA-Z0-9\/\-_.\s]/g;
 
 interface ParcelSuggestion {
   id: string;
   parcel_number: string;
-  current_owner_name: string;
+  title_reference_number: string | null;
   ville: string | null;
   commune: string | null;
   quartier: string | null;
@@ -42,6 +42,7 @@ const CadastralSearchBar = () => {
   const [fromMap, setFromMap] = useState(false);
   const [searchSuggestions, setSearchSuggestions] = useState<ParcelSuggestion[]>([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+  const [suggestionsError, setSuggestionsError] = useState<string | null>(null);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   
   // Animation shake pour caractères invalides
@@ -102,7 +103,12 @@ const CadastralSearchBar = () => {
     if (urlSearchQuery) {
       setSearchQuery(urlSearchQuery.toUpperCase());
       setFromMap(fromParam === 'map');
-      setSearchParams({});
+      // Ne retirer que nos propres paramètres : un retour de paiement
+      // (session_id, etc.) doit survivre à l'ouverture de la recherche.
+      const next = new URLSearchParams(searchParams);
+      next.delete('search');
+      next.delete('from');
+      setSearchParams(next, { replace: true });
     }
   }, []);
 
@@ -122,37 +128,41 @@ const CadastralSearchBar = () => {
       return;
     }
 
+    let cancelled = false;
     const fetchSuggestions = async () => {
       setLoadingSuggestions(true);
       try {
-        let query = supabase
-          .from('cadastral_parcels')
-          .select('id, parcel_number, current_owner_name, ville, commune, quartier')
-          .ilike('parcel_number', `%${trimmed}%`)
-          .is('deleted_at', null);
-        if (isTestRoute) {
-          query = query.ilike('parcel_number', 'TEST-%');
-        } else {
-          query = query.not('parcel_number', 'ilike', 'TEST-%');
-        }
-        const { data, error } = await query.limit(predictiveSettings.max_results);
-
+        // Table `cadastral_parcels` réservée aux admins par RLS : on passe par la
+        // RPC publique, qui ne renvoie que des données non confidentielles et
+        // neutralise les jokers côté serveur.
+        const { data, error } = await supabase.rpc('search_parcels_public', {
+          p_query: trimmed,
+          p_mode: 'parcel',
+          p_limit: predictiveSettings.max_results,
+          p_test_mode: isTestRoute,
+        });
+        if (cancelled) return;
         if (error) {
           console.error('Erreur recherche suggestions:', error);
           setSearchSuggestions([]);
+          setSuggestionsError("Suggestions indisponibles pour le moment.");
         } else {
-          setSearchSuggestions(data || []);
+          setSearchSuggestions((data as ParcelSuggestion[]) || []);
+          setSuggestionsError(null);
         }
       } catch (err) {
+        if (cancelled) return;
         console.error('Erreur:', err);
         setSearchSuggestions([]);
+        setSuggestionsError("Suggestions indisponibles pour le moment.");
       } finally {
-        setLoadingSuggestions(false);
+        if (!cancelled) setLoadingSuggestions(false);
       }
     };
 
     fetchSuggestions();
-  }, [debouncedSearchQuery, predictiveSettings]);
+    return () => { cancelled = true; };
+  }, [debouncedSearchQuery, predictiveSettings, isTestRoute]);
 
   // Animation placeholder — nettoyage robuste des timeouts/intervalles
   useEffect(() => {
@@ -232,16 +242,19 @@ const CadastralSearchBar = () => {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    
-    if (!ALLOWED_CHARS_REGEX.test(value)) {
-      triggerShakeAnimation();
-      return;
-    }
-    
+    const sanitized = value.replace(INVALID_CHARS_REGEX, '');
+
     // Réinitialiser le flag de fermeture manuelle quand l'utilisateur tape
     dialogClosedManuallyRef.current = false;
-    setSearchQuery(value);
-    setShowInvalidCharWarning(false);
+    setSearchQuery(sanitized);
+
+    if (sanitized !== value) {
+      // Collage partiellement invalide : on conserve la partie valide et on
+      // signale les caractères retirés au lieu d'annuler toute la saisie.
+      triggerShakeAnimation();
+    } else {
+      setShowInvalidCharWarning(false);
+    }
   };
 
   // Lancer la recherche complète quand l'utilisateur sélectionne une suggestion
@@ -412,6 +425,13 @@ const CadastralSearchBar = () => {
               </button>
             )}
           </div>
+
+          {/* Suggestions indisponibles */}
+          {suggestionsError && !loadingSuggestions && searchQuery.trim() && (
+            <div className="border-t border-border/30 px-4 py-2" role="status">
+              <p className="text-xs text-muted-foreground">{suggestionsError}</p>
+            </div>
+          )}
 
           {/* Suggestions dropdown */}
           {searchSuggestions.length > 0 && (

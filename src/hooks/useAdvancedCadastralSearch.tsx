@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { untypedTables } from '@/integrations/supabase/untyped';
 import { useTestEnvironment, applyTestFilter } from '@/hooks/useTestEnvironment';
 import { escapeIlike } from '@/utils/escapeIlike';
+import { toast } from 'sonner';
 
 export interface SearchFilters {
   province?: string;
@@ -91,7 +92,7 @@ export const useAdvancedCadastralSearch = () => {
 
     // Filtres géographiques
     if (activeFilters.province) {
-      query = query.ilike('province', `%${activeFilters.province}%`);
+      query = query.ilike('province', `%${escapeIlike(activeFilters.province)}%`);
     }
 
     // Filtre sectionType → parcel_type mapping
@@ -103,29 +104,29 @@ export const useAdvancedCadastralSearch = () => {
 
     // Filtres urbains
     if (activeFilters.ville) {
-      query = query.ilike('ville', `%${activeFilters.ville}%`);
+      query = query.ilike('ville', `%${escapeIlike(activeFilters.ville)}%`);
     }
     if (activeFilters.commune) {
-      query = query.ilike('commune', `%${activeFilters.commune}%`);
+      query = query.ilike('commune', `%${escapeIlike(activeFilters.commune)}%`);
     }
     if (activeFilters.quartier) {
-      query = query.ilike('quartier', `%${activeFilters.quartier}%`);
+      query = query.ilike('quartier', `%${escapeIlike(activeFilters.quartier)}%`);
     }
     if (activeFilters.avenue) {
-      query = query.ilike('avenue', `%${activeFilters.avenue}%`);
+      query = query.ilike('avenue', `%${escapeIlike(activeFilters.avenue)}%`);
     }
     // Filtres ruraux
     if (activeFilters.territoire) {
-      query = query.ilike('territoire', `%${activeFilters.territoire}%`);
+      query = query.ilike('territoire', `%${escapeIlike(activeFilters.territoire)}%`);
     }
     if (activeFilters.collectivite) {
-      query = query.ilike('collectivite', `%${activeFilters.collectivite}%`);
+      query = query.ilike('collectivite', `%${escapeIlike(activeFilters.collectivite)}%`);
     }
     if (activeFilters.groupement) {
-      query = query.ilike('groupement', `%${activeFilters.groupement}%`);
+      query = query.ilike('groupement', `%${escapeIlike(activeFilters.groupement)}%`);
     }
     if (activeFilters.village) {
-      query = query.ilike('village', `%${activeFilters.village}%`);
+      query = query.ilike('village', `%${escapeIlike(activeFilters.village)}%`);
     }
 
 
@@ -237,6 +238,7 @@ export const useAdvancedCadastralSearch = () => {
       return filteredData;
     } catch (error) {
       console.error('Erreur recherche avancée:', error);
+      toast.error("La recherche avancée a échoué. Veuillez réessayer.");
       setResults([]);
       setTotalCount(0);
       setHasMore(false);

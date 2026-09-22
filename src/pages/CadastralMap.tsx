@@ -37,6 +37,8 @@ import { useLeafletMap } from '@/hooks/useLeafletMap';
 import { playFeedbackBeep } from '@/lib/feedbackAudio';
 import { trackEvent } from '@/lib/analytics';
 import { computeEffectiveAreaSqm } from '@/utils/parcelGeometricArea';
+import { supabase } from '@/integrations/supabase/client';
+import { useTestEnvironment } from '@/hooks/useTestEnvironment';
 
 import 'leaflet/dist/leaflet.css';
 
@@ -150,6 +152,7 @@ const CadastralMap = () => {
     return () => { mapObs.disconnect(); cardObs.disconnect(); };
   }, []);
 
+  const { isTestRoute } = useTestEnvironment();
   const advancedSearch = useAdvancedCadastralSearch();
   const searchHistory = useSearchHistory();
   const { config: searchBarConfig, buildAllowedRegex } = useSearchBarConfig();
@@ -187,26 +190,42 @@ const CadastralMap = () => {
 
   // Predictive search — parcel number (SU/SR) or property title number.
   // Debounced so a fast typist doesn't re-filter 2000 parcels and redraw all
-  // Leaflet layers on every keystroke.
+  // Leaflet layers on every keystroke. Les correspondances sont mémoïsées :
+  // changer de mode ne relance pas le balayage des parcelles.
+  const matches = useMemo(() => {
+    const q = debouncedQuery.toLowerCase().trim();
+    if (!q) return null;
+    const byParcel: ParcelData[] = [];
+    const byParcelIds = new Set<string>();
+    for (const p of parcels) {
+      if (p.parcel_number?.toLowerCase().includes(q)) {
+        byParcel.push(p);
+        byParcelIds.add(p.id);
+      }
+    }
+    const byTitle = parcels.filter(
+      p => !byParcelIds.has(p.id) && (p.title_reference_number || '').toLowerCase().includes(q)
+    );
+    return { byParcel, byTitle };
+  }, [debouncedQuery, parcels]);
+
   useEffect(() => {
-    if (!debouncedQuery.trim()) {
+    if (!matches) {
       setSearchSuggestions([]);
       setHighlightedIndex(-1);
+      setTitleMatchIds(new Set());
       if (!advancedFiltersApplied) setFilteredParcels(parcels);
       return;
     }
-    const q = debouncedQuery.toLowerCase().trim();
-    const byParcel = parcels.filter(p => p.parcel_number?.toLowerCase().includes(q));
-    const byTitle = parcels.filter(
-      p => (p.title_reference_number || '').toLowerCase().includes(q) && !byParcel.some(bp => bp.id === p.id)
-    );
     // Mode chooses which match is prioritised; the other is always kept as fallback.
-    const filtered = searchMode === 'title' ? [...byTitle, ...byParcel] : [...byParcel, ...byTitle];
-    setTitleMatchIds(new Set(byTitle.map(p => p.id)));
+    const filtered = searchMode === 'title'
+      ? [...matches.byTitle, ...matches.byParcel]
+      : [...matches.byParcel, ...matches.byTitle];
+    setTitleMatchIds(new Set(matches.byTitle.map(p => p.id)));
     setSearchSuggestions(filtered.slice(0, 5));
     setHighlightedIndex(-1);
     setFilteredParcels(filtered);
-  }, [debouncedQuery, parcels, searchMode, advancedFiltersApplied]);
+  }, [matches, parcels, searchMode, advancedFiltersApplied]);
 
 
   // Render layers (incremental diff inside the hook)
@@ -263,12 +282,41 @@ const CadastralMap = () => {
     setSelectedParcel(null);
   };
 
-  const handleManualSearchClick = useCallback(() => {
+  /**
+   * Avant de proposer la création d'une parcelle, on vérifie côté serveur qu'elle
+   * n'existe pas : la carte ne charge qu'un sous-ensemble des parcelles, donc une
+   * absence locale ne prouve rien (risque de contribution en doublon).
+   */
+  const handleManualSearchClick = useCallback(async () => {
     notificationDismissedRef.current = true;
     setShowManualSearchNotification(false);
     if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
+
+    const q = searchQuery.trim();
+    if (q) {
+      try {
+        const { data, error } = await supabase.rpc('search_parcels_public', {
+          p_query: q,
+          p_mode: searchMode,
+          p_limit: 1,
+          p_test_mode: isTestRoute,
+        });
+        if (!error && Array.isArray(data) && data.length > 0) {
+          const hit: any = data[0];
+          const known = parcels.find(p => p.id === hit.id);
+          if (known) {
+            handleSelectParcel(known);
+          } else {
+            toast.info(`La parcelle ${hit.parcel_number} existe déjà dans le cadastre.`);
+          }
+          return;
+        }
+      } catch (err) {
+        console.error('Vérification d\'existence impossible:', err);
+      }
+    }
     setShowIntroDialog(true);
-  }, []);
+  }, [searchQuery, searchMode, isTestRoute, parcels, handleSelectParcel]);
 
   const applyAdvancedFilters = async (filters?: typeof advancedSearch.filters) => {
     const results = await advancedSearch.searchParcels(filters);
