@@ -190,26 +190,42 @@ const CadastralMap = () => {
 
   // Predictive search — parcel number (SU/SR) or property title number.
   // Debounced so a fast typist doesn't re-filter 2000 parcels and redraw all
-  // Leaflet layers on every keystroke.
+  // Leaflet layers on every keystroke. Les correspondances sont mémoïsées :
+  // changer de mode ne relance pas le balayage des parcelles.
+  const matches = useMemo(() => {
+    const q = debouncedQuery.toLowerCase().trim();
+    if (!q) return null;
+    const byParcel: ParcelData[] = [];
+    const byParcelIds = new Set<string>();
+    for (const p of parcels) {
+      if (p.parcel_number?.toLowerCase().includes(q)) {
+        byParcel.push(p);
+        byParcelIds.add(p.id);
+      }
+    }
+    const byTitle = parcels.filter(
+      p => !byParcelIds.has(p.id) && (p.title_reference_number || '').toLowerCase().includes(q)
+    );
+    return { byParcel, byTitle };
+  }, [debouncedQuery, parcels]);
+
   useEffect(() => {
-    if (!debouncedQuery.trim()) {
+    if (!matches) {
       setSearchSuggestions([]);
       setHighlightedIndex(-1);
+      setTitleMatchIds(new Set());
       if (!advancedFiltersApplied) setFilteredParcels(parcels);
       return;
     }
-    const q = debouncedQuery.toLowerCase().trim();
-    const byParcel = parcels.filter(p => p.parcel_number?.toLowerCase().includes(q));
-    const byTitle = parcels.filter(
-      p => (p.title_reference_number || '').toLowerCase().includes(q) && !byParcel.some(bp => bp.id === p.id)
-    );
     // Mode chooses which match is prioritised; the other is always kept as fallback.
-    const filtered = searchMode === 'title' ? [...byTitle, ...byParcel] : [...byParcel, ...byTitle];
-    setTitleMatchIds(new Set(byTitle.map(p => p.id)));
+    const filtered = searchMode === 'title'
+      ? [...matches.byTitle, ...matches.byParcel]
+      : [...matches.byParcel, ...matches.byTitle];
+    setTitleMatchIds(new Set(matches.byTitle.map(p => p.id)));
     setSearchSuggestions(filtered.slice(0, 5));
     setHighlightedIndex(-1);
     setFilteredParcels(filtered);
-  }, [debouncedQuery, parcels, searchMode, advancedFiltersApplied]);
+  }, [matches, parcels, searchMode, advancedFiltersApplied]);
 
 
   // Render layers (incremental diff inside the hook)
