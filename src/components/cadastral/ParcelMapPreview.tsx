@@ -840,6 +840,8 @@ export const ParcelMapPreview = ({
           }
         });
         dimensionLayersRef.current = [];
+        // Les marqueurs retirés ne doivent plus ouvrir une édition sur un côté réindexé
+        clearMarkerLongPressTimers();
 
         segmentLayersRef.current.forEach(layer => {
           try {
