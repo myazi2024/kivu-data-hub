@@ -171,7 +171,7 @@ const BorderTypeToggle: React.FC<{
       <button
         type="button"
         aria-pressed={wallActive}
-        aria-label="Mur"
+        aria-label="Limite (mur ou simple limite)"
         onClick={() => onToggle('mur_mitoyen')}
         className={cn(
           'relative z-10 flex-1 h-6 px-2 rounded-full text-[10px] font-semibold transition-colors select-none',
@@ -180,7 +180,7 @@ const BorderTypeToggle: React.FC<{
         )}
       >
         <BrickWall className="h-2.5 w-2.5" />
-        Mur
+        Limite
       </button>
       <button
         type="button"
