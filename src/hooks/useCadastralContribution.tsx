@@ -189,6 +189,7 @@ export interface CadastralContributionData {
     declaredUsage: string;
     standing: string;
     constructionYear?: number;
+    constructionStatus?: 'completed' | 'in_progress';
     apartmentNumber?: string;
     floorNumber?: string;
     isRented?: boolean;
