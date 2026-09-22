@@ -13,7 +13,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CheckCircle2, Info, ChevronRight, ChevronLeft, Ruler, Volume2, Mic, MicOff, AlertTriangle } from 'lucide-react';
 import { MdLocationOn } from 'react-icons/md';
 import { CadastralContributionData } from '@/hooks/useCadastralContribution';
-import { getAllProvinces } from '@/lib/geographicData';
+import { getAllProvinces, getLandDistrictsForProvince } from '@/lib/geographicData';
 import { ParcelMapPreview } from '../ParcelMapPreview';
 import SuggestivePicklist from '../SuggestivePicklist';
 import SectionHelpPopover from '../SectionHelpPopover';
@@ -181,6 +181,40 @@ const LocationTab: React.FC<LocationTabProps> = ({
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          {/* Circonscription foncière — dépendante de la province */}
+          <div className="space-y-1.5">
+            <Label htmlFor="landDistrict" className="text-sm">Circonscription foncière *</Label>
+            {formData.province && getLandDistrictsForProvince(formData.province).length > 0 ? (
+              <Select
+                value={formData.landDistrict || ''}
+                onValueChange={(value) => handleInputChange('landDistrict', value)}
+              >
+                <SelectTrigger id="landDistrict" className="h-9 text-sm rounded-xl border">
+                  <SelectValue placeholder="Sélectionner la circonscription" />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl max-h-48 overflow-y-auto w-56">
+                  {getLandDistrictsForProvince(formData.province).map(d => (
+                    <SelectItem key={d} value={d} className="text-sm py-2 rounded-lg">{d}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <Input
+                id="landDistrict"
+                value={formData.landDistrict || ''}
+                onChange={(e) => handleInputChange('landDistrict', e.target.value)}
+                disabled={!formData.province}
+                placeholder={!formData.province ? "Province d'abord" : 'Saisir la circonscription foncière'}
+                className="h-9 text-sm rounded-xl border"
+              />
+            )}
+            {formData.province && getLandDistrictsForProvince(formData.province).length === 0 && (
+              <p className="text-xs text-muted-foreground">
+                Aucune circonscription répertoriée pour cette province : saisissez-la manuellement.
+              </p>
+            )}
           </div>
 
           {/* Zone urbaine ou rurale */}
