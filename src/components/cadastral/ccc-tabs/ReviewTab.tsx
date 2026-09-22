@@ -273,13 +273,17 @@ const ReviewTab: React.FC<ReviewTabProps> = ({
                 <div className="font-medium">Limites et Entrées:</div>
                 {roadSides.map((side: any, idx: number) => {
                   const details: string[] = [];
+                  const hasRoad = side.hasRoad ?? (side.bordersRoad || side.borderType === 'route');
+                  const hasWall = side.hasWall ?? (side.borderType === 'mur_mitoyen');
                   if (side.orientation) details.push(side.orientation);
-                  if (side.bordersRoad) details.push(`Route: ${side.roadType || '?'}${side.roadName ? ` (${side.roadName})` : ''}${side.roadWidth ? ` [${side.roadWidth}m]` : ''}`);
-                  if (side.bordersRoad && side.roadSurface) details.push(`Revêtement: ${roadSurfaceLabel(side.roadSurface)}`);
-                  if (side.bordersRoad && side.hasGutter === true) details.push(side.gutterConnected ? 'Caniveau raccordé' : 'Caniveau non raccordé');
-                  if (side.bordersRoad && side.hasGutter === false) details.push('Sans caniveau');
+                  if (hasRoad) details.push(`Route: ${side.roadType || '?'}${side.roadName ? ` (${side.roadName})` : ''}${side.roadWidth ? ` [${side.roadWidth}m]` : ''}`);
+                  if (hasRoad && side.roadSurface) details.push(`Revêtement: ${roadSurfaceLabel(side.roadSurface)}`);
+                  if (hasRoad && side.hasStreetLighting === true) details.push(`Éclairage public${side.streetLampCount ? ` (${side.streetLampCount} lampadaire${side.streetLampCount > 1 ? 's' : ''})` : ''}`);
+                  if (hasRoad && side.hasStreetLighting === false) details.push('Sans éclairage public');
+                  if (hasRoad && side.hasGutter === true) details.push(side.gutterConnected ? 'Caniveau raccordé' : 'Caniveau non raccordé');
+                  if (hasRoad && side.hasGutter === false) details.push('Sans caniveau');
                   if (side.hasEntrance) details.push('🚪 Entrée');
-                  if (!side.bordersRoad) details.push('Mur mitoyen');
+                  if (hasWall) details.push(`Mur${side.wallMaterial ? `: ${side.wallMaterial}` : ''}${side.wallHeight ? ` (${side.wallHeight} m)` : ''}`);
                   return (
                     <div key={idx} className="ml-2 text-muted-foreground">
                       • {side.name?.replace('Côté ', '') || `Côté ${idx + 1}`}: {details.join(' • ')}
