@@ -17,6 +17,7 @@ export type AnalyticsEvent =
   | 'user_profile_update'
   | 'user_contribution_delete'
   | 'user_contribution_edit_open'
+  | 'ccc_correction_request_submit'
   | 'user_referral_link_copy'
   | 'user_account_delete_request'
   | 'cadastral_service_view'

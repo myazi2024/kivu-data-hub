@@ -16,7 +16,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useUserContributions, type ContributionRowFull } from '@/hooks/useUserContributions';
 import { detectFormType } from '@/utils/contributionFormMapping';
 import { UserContributionDeleteDialog } from '@/components/user/contributions/UserContributionDeleteDialog';
-import { CorrectionRequestDialog } from '@/components/user/contributions/CorrectionRequestDialog';
+import { FieldCorrectionDialog } from '@/components/user/contributions/FieldCorrectionDialog';
+import { UserCorrectionRequests } from '@/components/user/contributions/UserCorrectionRequests';
 import { trackEvent } from '@/lib/analytics';
 import { CADASTRAL_MAP_ROUTE } from '@/utils/userDashboardLinks';
 
@@ -295,7 +296,7 @@ export const UserContributions: React.FC = () => {
                             e.stopPropagation();
                             setCorrectionTarget(contribution);
                           }}
-                          title="Demander une correction"
+                          title="Modifier mes données"
                         >
                           <MessageSquareWarning className="h-3.5 w-3.5" />
                         </Button>
@@ -338,6 +339,8 @@ export const UserContributions: React.FC = () => {
           )}
         </div>
       </div>
+
+      <UserCorrectionRequests />
 
       <Dialog
         open={isDetailsOpen}
@@ -476,11 +479,10 @@ export const UserContributions: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      <CorrectionRequestDialog
+      <FieldCorrectionDialog
         open={!!correctionTarget}
         onOpenChange={(o) => { if (!o) setCorrectionTarget(null); }}
-        parcelNumber={correctionTarget?.parcel_number ?? ''}
-        contributionId={correctionTarget?.id ?? ''}
+        contribution={correctionTarget}
       />
 
       <UserContributionDeleteDialog

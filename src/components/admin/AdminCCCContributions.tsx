@@ -25,6 +25,7 @@ import { calculateCCCCompleteness } from './ccc/cccCompleteness';
 import { parseRentalUnits, sumUnitsRent } from './ccc/cccConsistency';
 import { CCCDetailsDialog } from './ccc/CCCDetailsDialog';
 import { CCCTestDialog } from './ccc/CCCTestDialog';
+import { CCCCorrectionRequestsPanel } from './ccc/CCCCorrectionRequestsPanel';
 import type { Contribution, ContributionStats, ValidationResult, TestResult } from './ccc/types';
 import { approveContributionCore, validateContribution as runServerValidation } from './ccc/cccApproval';
 import { useAdminAnalytics } from '@/lib/adminAnalytics';
@@ -662,16 +663,20 @@ const AdminCCCContributions: React.FC = () => {
           />
 
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-6 h-8 md:h-10">
+            <TabsList className="grid w-full grid-cols-7 h-8 md:h-10">
               <TabsTrigger value="pending" className="text-xs md:text-sm px-1 md:px-3">Attente</TabsTrigger>
               <TabsTrigger value="returned" className="text-xs md:text-sm px-1 md:px-3">Renvoyés</TabsTrigger>
               <TabsTrigger value="approved" className="text-xs md:text-sm px-1 md:px-3">Approuvés</TabsTrigger>
               <TabsTrigger value="rejected" className="text-xs md:text-sm px-1 md:px-3">Rejetés</TabsTrigger>
               <TabsTrigger value="suspicious" className="text-xs md:text-sm px-1 md:px-3">Suspects</TabsTrigger>
               <TabsTrigger value="all" className="text-xs md:text-sm px-1 md:px-3">Tous</TabsTrigger>
+              <TabsTrigger value="corrections" className="text-xs md:text-sm px-1 md:px-3">Corrections</TabsTrigger>
             </TabsList>
 
             <TabsContent value={activeTab} className="mt-2">
+              {activeTab === 'corrections' ? (
+                <CCCCorrectionRequestsPanel />
+              ) : (
               <CCCContributionsTable
                 rows={paginatedContributions}
                 selectedIds={selectedIds}
@@ -695,6 +700,7 @@ const AdminCCCContributions: React.FC = () => {
                   onPageSizeChange: changePageSize,
                 }}
               />
+              )}
             </TabsContent>
           </Tabs>
         </CardContent>
