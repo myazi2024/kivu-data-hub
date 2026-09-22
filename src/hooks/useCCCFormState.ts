@@ -1697,7 +1697,7 @@ export const useCCCFormState = ({
     permitMode, setPermitMode, buildingPermits, addBuildingPermit, removeBuildingPermit, updateBuildingPermit, updateBuildingPermitFile, removeBuildingPermitFile,
     getPermitTypeRestrictions, showPermitWarning, highlightIncompletePermit,
     // Location
-    sectionType, sectionTypeAutoDetected, handleSectionTypeChange,
+    sectionType, sectionTypeAutoDetected, handleSectionTypeChange, districtSectionType,
     hasSuSrParcelNumber, isParcelNumberRequired,
     availableVilles, availableCommunes, availableTerritoires, availableCollectivites, availableQuartiers, availableAvenues,
     gpsCoordinates, setGpsCoordinates, parcelSides, setParcelSides,
