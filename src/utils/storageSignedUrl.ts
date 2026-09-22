@@ -42,3 +42,22 @@ export async function openSignedStorageFile(
   window.open(url, '_blank', 'noopener,noreferrer');
   return true;
 }
+
+/** Durée d'une URL signée « longue durée » (10 ans) — cohérente avec `uploadCccDocument`. */
+export const LONG_LIVED_SIGNED_URL_TTL = 60 * 60 * 24 * 365 * 10;
+
+/**
+ * Crée une URL signée longue durée pour un fichier fraîchement uploadé dans un
+ * bucket privé. Remplace `getPublicUrl`, inopérant sur les buckets privés.
+ * Retourne `null` si la signature échoue (l'appelant décide du repli).
+ */
+export async function createLongLivedSignedUrl(
+  path: string,
+  bucket = 'cadastral-documents',
+): Promise<string | null> {
+  const { data, error } = await supabase.storage
+    .from(bucket)
+    .createSignedUrl(path, LONG_LIVED_SIGNED_URL_TTL);
+  if (error) return null;
+  return data?.signedUrl ?? null;
+}
