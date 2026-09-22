@@ -752,39 +752,73 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
                       <div className="space-y-1.5 pl-6 pt-2 animate-fade-in">
                         <div className="flex items-center gap-1.5 mb-1">
                           <BrickWall className="h-3.5 w-3.5 text-amber-600" />
-                          <span className="text-xs font-medium text-amber-700 dark:text-amber-300">Informations sur le mur</span>
+                          <span className="text-xs font-medium text-amber-700 dark:text-amber-300">Limite de la parcelle</span>
                         </div>
 
+                        {/* Nature de la limite : mur ou simple limite */}
                         <Select
-                          value={roadSide?.wallMaterial || ''}
+                          value={boundaryKind || ''}
                           onValueChange={(value) =>
-                            onRoadSideUpdate(index, { wallMaterial: value })
+                            handleBoundaryKindChange(index, value as BoundaryKind)
                           }
                         >
                           <SelectTrigger className="h-8 text-xs rounded-lg">
-                            <SelectValue placeholder="Matériau du mur *" />
+                            <SelectValue placeholder="Mur ou Limite *" />
                           </SelectTrigger>
                           <SelectContent>
-                            {wallMaterials.map((material) => (
-                              <SelectItem key={material.value} value={material.value} className="text-xs">
-                                {material.label}
-                              </SelectItem>
-                            ))}
+                            <SelectItem value="mur" className="text-xs">Mur</SelectItem>
+                            <SelectItem value="limite" className="text-xs">Limite (sans mur)</SelectItem>
                           </SelectContent>
                         </Select>
 
-                        <Input
-                          type="number"
-                          min="0"
-                          step="0.1"
-                          placeholder="Hauteur du mur (m)"
-                          value={roadSide?.wallHeight || ''}
-                          onChange={(e) =>
-                            onRoadSideUpdate(index, { wallHeight: parseFloat(e.target.value) || undefined })
-                          }
-                          className="h-8 text-xs rounded-lg"
-                        />
+                        {!boundaryKind && (
+                          <p className="text-[11px] text-muted-foreground leading-snug">
+                            Ce côté est-il fermé par un mur, ou s'agit-il d'une simple limite de parcelle ?
+                          </p>
+                        )}
 
+                        {boundaryKind === 'limite' && (
+                          <p className="text-[11px] text-muted-foreground leading-snug animate-fade-in">
+                            Aucune information supplémentaire n'est requise pour une simple limite — cliquez sur « Ajouter » pour valider ce côté.
+                          </p>
+                        )}
+
+                        {boundaryKind === 'mur' && (
+                          <div className="space-y-1.5 animate-fade-in">
+                            <p className="text-[11px] text-muted-foreground leading-snug">
+                              Précisez le matériau du mur ; la hauteur est facultative mais utile pour l'évaluation.
+                            </p>
+                            <Select
+                              value={roadSide?.wallMaterial || ''}
+                              onValueChange={(value) =>
+                                onRoadSideUpdate(index, { wallMaterial: value })
+                              }
+                            >
+                              <SelectTrigger className="h-8 text-xs rounded-lg">
+                                <SelectValue placeholder="Matériau du mur *" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {wallMaterials.map((material) => (
+                                  <SelectItem key={material.value} value={material.value} className="text-xs">
+                                    {material.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+
+                            <Input
+                              type="number"
+                              min="0"
+                              step="0.1"
+                              placeholder="Hauteur du mur (m)"
+                              value={roadSide?.wallHeight || ''}
+                              onChange={(e) =>
+                                onRoadSideUpdate(index, { wallHeight: parseFloat(e.target.value) || undefined })
+                              }
+                              className="h-8 text-xs rounded-lg"
+                            />
+                          </div>
+                        )}
                       </div>
                     )}
                     {/* Boutons d'action — communs aux blocs Mur et Route */}
