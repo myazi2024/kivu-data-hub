@@ -8865,6 +8865,27 @@ export type Database = {
         Args: { confirmation_email: string }
         Returns: Json
       }
+      search_parcels_public: {
+        Args: {
+          p_limit?: number
+          p_mode?: string
+          p_query: string
+          p_test_mode?: boolean
+        }
+        Returns: {
+          commune: string
+          id: string
+          latitude: number
+          longitude: number
+          parcel_number: string
+          province: string
+          quartier: string
+          title_reference_number: string
+          ville: string
+        }[]
+      }
+      show_limit: { Args: never; Returns: number }
+      show_trgm: { Args: { "": string }; Returns: string[] }
       swap_theme_order: {
         Args: { _theme_a: string; _theme_b: string }
         Returns: undefined
