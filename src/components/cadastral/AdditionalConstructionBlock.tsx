@@ -35,6 +35,8 @@ export interface AdditionalConstruction {
   declaredUsage: string;
   standing: string;
   constructionYear?: number;
+  /** État d'avancement : construction achevée ou en cours. */
+  constructionStatus?: 'completed' | 'in_progress';
   /** Le bien est-il mis en location ? (remplace l'ancien usage « Location ») */
   isRented?: boolean;
   rentalStartDate?: string; // ISO yyyy-MM-dd, requis si isRented
