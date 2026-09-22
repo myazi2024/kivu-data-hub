@@ -378,9 +378,15 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
               </Badge>
             )}
             {wallCount > 0 && (
-              <Badge variant="secondary" className="text-[10px] h-5 px-1.5 rounded-md bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300">
+              <Badge variant="secondary" className="text-[10px] h-5 px-1.5 rounded-md bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300" title="Côtés fermés par un mur">
                 <BrickWall className="h-2.5 w-2.5 mr-0.5" />
                 {wallCount}
+              </Badge>
+            )}
+            {plainBoundaryCount > 0 && (
+              <Badge variant="secondary" className="text-[10px] h-5 px-1.5 rounded-md bg-muted text-muted-foreground" title="Côtés en simple limite (sans mur)">
+                <Minus className="h-2.5 w-2.5 mr-0.5" />
+                {plainBoundaryCount}
               </Badge>
             )}
           </div>
