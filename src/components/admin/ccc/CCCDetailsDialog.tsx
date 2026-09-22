@@ -335,14 +335,22 @@ export const CCCDetailsDialog: React.FC<CCCDetailsDialogProps> = ({
                         <div key={idx} className="p-1.5 bg-secondary rounded text-xs md:text-sm">
                           <p><strong>{side.name}:</strong> {side.bordersRoad ? '🛣️ Borde une route' : '🚫 Pas de route'}{side.hasEntrance ? ' — 🚪 Entrée' : ''}</p>
                           {side.bordersRoad && <p className="text-muted-foreground ml-4">{side.roadType || ''} {side.roadName ? `- ${side.roadName}` : ''} {side.roadWidth ? `(${side.roadWidth}m)` : ''}</p>}
-                          {side.bordersRoad && (side.roadSurface || side.hasGutter !== undefined) && (
+                          {side.bordersRoad && (side.roadSurface || side.hasGutter !== undefined || side.hasStreetLighting !== undefined) && (
                             <p className="text-muted-foreground ml-4">
                               {[
                                 side.roadSurface ? `Revêtement: ${roadSurfaceLabel(side.roadSurface)}` : null,
+                                side.hasStreetLighting === true
+                                  ? `Éclairage public${side.streetLampCount ? ` (${side.streetLampCount})` : ''}`
+                                  : side.hasStreetLighting === false ? 'Sans éclairage public' : null,
                                 side.hasGutter === true
                                   ? (side.gutterConnected ? 'Caniveau raccordé' : 'Caniveau non raccordé')
                                   : side.hasGutter === false ? 'Sans caniveau' : null,
                               ].filter(Boolean).join(' · ')}
+                            </p>
+                          )}
+                          {(side.hasWall ?? side.borderType === 'mur_mitoyen') && (
+                            <p className="text-muted-foreground ml-4">
+                              Mur{side.wallMaterial ? `: ${side.wallMaterial}` : ''}{side.wallHeight ? ` · Hauteur: ${side.wallHeight} m` : ''}
                             </p>
                           )}
                         </div>
