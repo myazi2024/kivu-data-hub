@@ -2146,8 +2146,13 @@ export const ParcelMapPreview = ({
       window.removeEventListener('pointerup', onWindowStop);
       window.removeEventListener('blur', onWindowStop);
       stopLongPress();
+      if (longPressTimerRef.current) {
+        window.clearTimeout(longPressTimerRef.current);
+        longPressTimerRef.current = null;
+      }
+      clearMarkerLongPressTimers();
     };
-  }, [stopLongPress]);
+  }, [stopLongPress, clearMarkerLongPressTimers]);
 
   const getLongPressProps = useCallback(
     (action: () => void) => ({
