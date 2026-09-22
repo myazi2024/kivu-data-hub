@@ -99,28 +99,28 @@ const UserDashboard = () => {
         <title>Mon compte | BIC - Bureau d'Informations Cadastrales</title>
         <meta name="description" content="Gérez votre compte BIC : contributions cadastrales, titres fonciers, expertises, mutations et paramètres." />
       </Helmet>
-      <div className="flex h-dvh overflow-hidden bg-background">
+      <div className="user-workspace flex h-dvh overflow-hidden bg-background">
         <aside className="hidden w-52 flex-col border-r bg-card/50 md:flex lg:w-60">
           <UserSidebar activeTab={activeTab} />
         </aside>
 
         <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-          <SheetContent side="left" className="w-[280px] p-0">
+          <SheetContent side="left" className="w-[min(86vw,300px)] p-0">
             <UserSidebar activeTab={activeTab} onNavigate={() => setMobileMenuOpen(false)} />
           </SheetContent>
         </Sheet>
 
         <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
           <UserDashboardHeader title={getUserTabLabel(activeTab)} onMenuClick={() => setMobileMenuOpen(true)} />
-          <main className="flex-1 overflow-y-auto bg-muted/20 p-3 md:p-4 lg:p-5">
-            <div className="mx-auto w-full max-w-screen-2xl">
+          <main className="min-w-0 flex-1 overflow-x-hidden overflow-y-auto bg-muted/20 px-2 py-3 sm:p-4 lg:p-5">
+            <div className="mx-auto min-w-0 w-full max-w-screen-2xl">
               {activeTab !== 'dashboard' && (
-                <div className="mb-3 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
-                  <span>Mon espace</span>
+                <div className="mb-3 flex min-w-0 items-center gap-1.5 overflow-hidden text-xs text-muted-foreground">
+                  <span className="hidden sm:inline">Mon espace</span>
+                  <ChevronRight className="hidden h-3 w-3 sm:block" />
+                  <span className="hidden sm:inline">{getUserTabCategory(activeTab)}</span>
                   <ChevronRight className="h-3 w-3" />
-                  <span>{getUserTabCategory(activeTab)}</span>
-                  <ChevronRight className="h-3 w-3" />
-                  <span className="font-medium text-foreground">{getUserTabLabel(activeTab)}</span>
+                  <span className="truncate font-medium text-foreground">{getUserTabLabel(activeTab)}</span>
                 </div>
               )}
               <ErrorBoundary>

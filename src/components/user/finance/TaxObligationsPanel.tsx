@@ -42,8 +42,8 @@ export const TaxObligationsPanel: React.FC = () => {
 
   return (
     <div className="space-y-3">
-      <div className="grid grid-cols-3 gap-2">
-        <div className="rounded-md border bg-card p-3">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+        <div className="col-span-2 rounded-md border bg-card p-3 sm:col-span-1">
           <p className="text-[10px] text-muted-foreground">Revenus locatifs annuels</p>
           <p className="text-sm font-bold">{formatUsd(totals.annualRentUsd)}</p>
         </div>

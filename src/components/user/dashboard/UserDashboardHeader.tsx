@@ -30,18 +30,18 @@ export function UserDashboardHeader({ title, onMenuClick }: UserDashboardHeaderP
 
   return (
     <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-      <div className="flex h-12 items-center gap-2 px-2 md:h-14 md:px-4">
-        <Button variant="ghost" size="icon" className="h-8 w-8 md:hidden" onClick={onMenuClick} aria-label="Ouvrir le menu">
+      <div className="flex h-12 min-w-0 items-center gap-1 px-1.5 sm:gap-2 sm:px-2 md:h-14 md:px-4">
+        <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0 md:hidden" onClick={onMenuClick} aria-label="Ouvrir le menu">
           <Menu className="h-4 w-4" />
         </Button>
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold md:text-base">{title}</p>
+          <p className="truncate text-sm font-semibold md:text-base" title={title}>{title}</p>
           <p className="hidden text-[10px] text-muted-foreground sm:block">Gérez vos biens, démarches et documents</p>
         </div>
         <NotificationBell />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full" aria-label="Menu du compte">
+            <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0 rounded-full" aria-label="Menu du compte">
               <Avatar className="h-8 w-8">
                 <AvatarImage src={profile?.avatar_url || undefined} alt={profile?.full_name || 'Utilisateur'} />
                 <AvatarFallback className="bg-primary/10 text-xs font-semibold text-primary">{initials}</AvatarFallback>

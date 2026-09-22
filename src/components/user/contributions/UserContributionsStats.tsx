@@ -13,9 +13,9 @@ export function UserContributionsStats({ stats }: { stats: Stats }) {
     { label: 'Rejetées', value: stats.rejected, color: 'text-destructive' },
   ];
   return (
-    <div className="grid grid-cols-4 gap-2 mb-4">
+    <div className="grid grid-cols-2 gap-2 mb-4 sm:grid-cols-4">
       {items.map((s) => (
-        <div key={s.label} className="bg-background rounded-2xl p-3 shadow-sm border text-center">
+        <div key={s.label} className="rounded-md border bg-card p-3 text-center">
           <p className={`text-xl font-bold ${s.color}`}>{s.value}</p>
           <p className="text-[10px] text-muted-foreground">{s.label}</p>
         </div>
