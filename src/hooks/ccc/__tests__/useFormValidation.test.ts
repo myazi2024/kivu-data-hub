@@ -68,7 +68,7 @@ const CATEGORY_FIXTURES: Record<string, Partial<UseFormValidationParams>> = {
       constructionMaterials: 'Béton armé',
       standing: 'Moyen standing',
       declaredUsage: 'Habitation',
-      constructionYear: 2015,
+      constructionYear: 2015, constructionStatus: 'completed' as const,
       apartmentNumber: 'A12',
       floorNumber: '2',
       apartmentLength: 10,
@@ -88,7 +88,7 @@ const CATEGORY_FIXTURES: Record<string, Partial<UseFormValidationParams>> = {
       constructionMaterials: 'Béton armé',
       standing: 'Moyen standing',
       declaredUsage: 'Habitation',
-      constructionYear: 2015,
+      constructionYear: 2015, constructionStatus: 'completed' as const,
     } as any,
   },
   Maison: {
@@ -100,7 +100,7 @@ const CATEGORY_FIXTURES: Record<string, Partial<UseFormValidationParams>> = {
       constructionMaterials: 'Semi-dur',
       standing: 'Économique',
       declaredUsage: 'Habitation',
-      constructionYear: 2012,
+      constructionYear: 2012, constructionStatus: 'completed' as const,
     } as any,
   },
   'Local commercial': {
@@ -112,7 +112,7 @@ const CATEGORY_FIXTURES: Record<string, Partial<UseFormValidationParams>> = {
       constructionMaterials: 'Béton armé',
       standing: 'Moyen standing',
       declaredUsage: 'Commerce',
-      constructionYear: 2019,
+      constructionYear: 2019, constructionStatus: 'completed' as const,
     } as any,
   },
   'Immeuble/Bâtiment': {
@@ -124,7 +124,7 @@ const CATEGORY_FIXTURES: Record<string, Partial<UseFormValidationParams>> = {
       constructionMaterials: 'Béton armé',
       standing: 'Haut standing',
       declaredUsage: 'Bureau',
-      constructionYear: 2020,
+      constructionYear: 2020, constructionStatus: 'completed' as const,
     } as any,
   },
   'Entrepôt/Hangar': {
@@ -136,7 +136,7 @@ const CATEGORY_FIXTURES: Record<string, Partial<UseFormValidationParams>> = {
       constructionMaterials: 'Béton armé',
       standing: 'Économique',
       declaredUsage: 'Industrie',
-      constructionYear: 2016,
+      constructionYear: 2016, constructionStatus: 'completed' as const,
     } as any,
   },
   'Terrain nu': {
@@ -418,7 +418,7 @@ describe('useFormValidation — cohérence étages / hauteur (RDC + 3 m par éta
         constructionMaterials: 'Béton armé',
         standing: 'Moyen standing',
         declaredUsage: 'Habitation',
-        constructionYear: 2015,
+        constructionYear: 2015, constructionStatus: 'completed' as const,
         floorNumber: '2',
         heightM: 5,
       } as any],

@@ -3,6 +3,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Info, Trash2, X, Users } from 'lucide-react';
 import { MdInsertDriveFile } from 'react-icons/md';
@@ -34,6 +35,8 @@ export interface AdditionalConstruction {
   declaredUsage: string;
   standing: string;
   constructionYear?: number;
+  /** État d'avancement : construction achevée ou en cours. */
+  constructionStatus?: 'completed' | 'in_progress';
   /** Le bien est-il mis en location ? (remplace l'ancien usage « Location ») */
   isRented?: boolean;
   rentalStartDate?: string; // ISO yyyy-MM-dd, requis si isRented
@@ -559,7 +562,9 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
       {/* Année de construction */}
       {isNotTerrainNu && (
         <div className="space-y-1.5">
-          <Label className="text-sm font-medium">Année de construction</Label>
+          <Label className="text-sm font-medium">
+            {data.constructionStatus === 'in_progress' ? 'Année de début des travaux' : 'Année de construction'}
+          </Label>
           <Select
             value={data.constructionYear?.toString() || ''}
             onValueChange={(v) => {
@@ -592,6 +597,29 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
           </Select>
         </div>
       )}
+
+      {/* État de la construction */}
+      {isNotTerrainNu && (
+        <div className="space-y-1.5">
+          <Label className="text-sm font-medium">État de la construction *</Label>
+          <RadioGroup
+            value={data.constructionStatus || ''}
+            onValueChange={(v) => onChange(index, { ...data, constructionStatus: v as 'completed' | 'in_progress' })}
+            className="flex flex-wrap gap-4"
+          >
+            <div className="flex items-center gap-2">
+              <RadioGroupItem value="completed" id={`add-construction-status-completed-${index}`} />
+              <label htmlFor={`add-construction-status-completed-${index}`} className="text-sm cursor-pointer select-none">Construction achevée</label>
+            </div>
+            <div className="flex items-center gap-2">
+              <RadioGroupItem value="in_progress" id={`add-construction-status-in-progress-${index}`} />
+              <label htmlFor={`add-construction-status-in-progress-${index}`} className="text-sm cursor-pointer select-none">Construction en cours</label>
+            </div>
+          </RadioGroup>
+        </div>
+      )}
+
+
 
       {/* Mise en location */}
       {rentalEligible && (

@@ -299,6 +299,7 @@ export function useFormValidation(params: UseFormValidationParams) {
     if (!isTerrainNu && formData.constructionNature && !isPrecaireOrUnbuilt && !formData.constructionMaterials) missing.push({ field: 'constructionMaterials', label: 'Matériaux de construction', tab: 'location' });
     if (!isTerrainNu && formData.constructionNature && !isPrecaireOrUnbuilt && !formData.standing) missing.push({ field: 'standing', label: 'Standing', tab: 'location' });
     if (!isUnbuilt && formData.propertyCategory && !formData.constructionYear) missing.push({ field: 'constructionYear', label: 'Année de construction', tab: 'location' });
+    if (!isUnbuilt && formData.propertyCategory && !formData.constructionStatus) missing.push({ field: 'constructionStatus', label: 'État de la construction (achevée / en cours)', tab: 'location' });
 
     if (isAppartement) {
       if (!formData.apartmentNumber) missing.push({ field: 'apartmentNumber', label: "Numéro de l'appartement", tab: 'location' });

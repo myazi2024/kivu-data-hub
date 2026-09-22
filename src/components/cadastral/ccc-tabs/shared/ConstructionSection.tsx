@@ -5,6 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Plus, Info, X, Users } from 'lucide-react';
 import { MdLocationOn, MdInsertDriveFile } from 'react-icons/md';
@@ -438,7 +439,9 @@ export const ConstructionSection: React.FC<ConstructionSectionProps> = ({
       {/* Construction year */}
       {formData.propertyCategory && formData.propertyCategory !== 'Terrain nu' && formData.constructionType && formData.constructionType !== 'Terrain nu' && (
         <div className="space-y-1.5">
-          <Label className="text-sm font-medium">Année de construction</Label>
+          <Label className="text-sm font-medium">
+            {formData.constructionStatus === 'in_progress' ? 'Année de début des travaux' : 'Année de construction'}
+          </Label>
           <Select value={formData.constructionYear?.toString() || ''} onValueChange={(value) => {
             const y = parseInt(value);
             handleInputChange('constructionYear', y);
@@ -464,6 +467,27 @@ export const ConstructionSection: React.FC<ConstructionSectionProps> = ({
               ))}
             </SelectContent>
           </Select>
+        </div>
+      )}
+
+      {/* État d'avancement de la construction */}
+      {formData.propertyCategory && formData.propertyCategory !== 'Terrain nu' && formData.constructionType && formData.constructionType !== 'Terrain nu' && (
+        <div className="space-y-1.5">
+          <Label className="text-sm font-medium">État de la construction *</Label>
+          <RadioGroup
+            value={formData.constructionStatus || ''}
+            onValueChange={(value) => handleInputChange('constructionStatus', value)}
+            className="flex flex-wrap gap-4"
+          >
+            <div className="flex items-center gap-2">
+              <RadioGroupItem value="completed" id="construction-status-completed" />
+              <label htmlFor="construction-status-completed" className="text-sm cursor-pointer select-none">Construction achevée</label>
+            </div>
+            <div className="flex items-center gap-2">
+              <RadioGroupItem value="in_progress" id="construction-status-in-progress" />
+              <label htmlFor="construction-status-in-progress" className="text-sm cursor-pointer select-none">Construction en cours</label>
+            </div>
+          </RadioGroup>
         </div>
       )}
 

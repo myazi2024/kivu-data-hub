@@ -244,7 +244,8 @@ export const CCCDetailsDialog: React.FC<CCCDetailsDialogProps> = ({
                   <div><Label className="text-xs text-muted-foreground">Matériaux</Label><p className="text-sm">{contribution.construction_materials || 'Non renseigné'}</p></div>
                   <div><Label className="text-xs text-muted-foreground">Usage déclaré</Label><p className="text-sm">{contribution.declared_usage || 'Non renseigné'}</p></div>
                   <div><Label className="text-xs text-muted-foreground">Standing</Label><p className="text-sm">{contribution.standing || 'Non renseigné'}</p></div>
-                  <div><Label className="text-xs text-muted-foreground">Année de construction</Label><p className="text-sm">{contribution.construction_year || 'Non renseigné'}</p></div>
+                  <div><Label className="text-xs text-muted-foreground">{(contribution as any).construction_status === 'in_progress' ? 'Année de début des travaux' : 'Année de construction'}</Label><p className="text-sm">{contribution.construction_year || 'Non renseigné'}</p></div>
+                  <div><Label className="text-xs text-muted-foreground">État de la construction</Label><p className="text-sm">{(contribution as any).construction_status === 'in_progress' ? 'Construction en cours' : (contribution as any).construction_status === 'completed' ? 'Construction achevée' : 'Non renseigné'}</p></div>
                   {contribution.apartment_number && (<div><Label className="text-xs text-muted-foreground">N° appartement</Label><p className="text-sm">{contribution.apartment_number}</p></div>)}
                   {contribution.floor_number && (<div><Label className="text-xs text-muted-foreground">Étage</Label><p className="text-sm">{contribution.floor_number}</p></div>)}
                   {contribution.house_number && (<div><Label className="text-xs text-muted-foreground">N° parcelle (voirie)</Label><p className="text-sm">{contribution.house_number}</p></div>)}
@@ -335,14 +336,22 @@ export const CCCDetailsDialog: React.FC<CCCDetailsDialogProps> = ({
                         <div key={idx} className="p-1.5 bg-secondary rounded text-xs md:text-sm">
                           <p><strong>{side.name}:</strong> {side.bordersRoad ? '🛣️ Borde une route' : '🚫 Pas de route'}{side.hasEntrance ? ' — 🚪 Entrée' : ''}</p>
                           {side.bordersRoad && <p className="text-muted-foreground ml-4">{side.roadType || ''} {side.roadName ? `- ${side.roadName}` : ''} {side.roadWidth ? `(${side.roadWidth}m)` : ''}</p>}
-                          {side.bordersRoad && (side.roadSurface || side.hasGutter !== undefined) && (
+                          {side.bordersRoad && (side.roadSurface || side.hasGutter !== undefined || side.hasStreetLighting !== undefined) && (
                             <p className="text-muted-foreground ml-4">
                               {[
                                 side.roadSurface ? `Revêtement: ${roadSurfaceLabel(side.roadSurface)}` : null,
+                                side.hasStreetLighting === true
+                                  ? `Éclairage public${side.streetLampCount ? ` (${side.streetLampCount})` : ''}`
+                                  : side.hasStreetLighting === false ? 'Sans éclairage public' : null,
                                 side.hasGutter === true
                                   ? (side.gutterConnected ? 'Caniveau raccordé' : 'Caniveau non raccordé')
                                   : side.hasGutter === false ? 'Sans caniveau' : null,
                               ].filter(Boolean).join(' · ')}
+                            </p>
+                          )}
+                          {(side.hasWall ?? side.borderType === 'mur_mitoyen') && (
+                            <p className="text-muted-foreground ml-4">
+                              Mur{side.wallMaterial ? `: ${side.wallMaterial}` : ''}{side.wallHeight ? ` · Hauteur: ${side.wallHeight} m` : ''}
                             </p>
                           )}
                         </div>

@@ -33,6 +33,8 @@ export interface CadastralContributionData {
   floorNumber?: string;
   standing?: string;
   constructionYear?: number;
+  /** État d'avancement : construction achevée ou en cours. */
+  constructionStatus?: 'completed' | 'in_progress';
   /** Le bien est-il mis en location ? (remplace l'ancien usage « Location ») */
   isRented?: boolean;
   rentalStartDate?: string; // ISO yyyy-MM-dd, requis si isRented
@@ -187,6 +189,7 @@ export interface CadastralContributionData {
     declaredUsage: string;
     standing: string;
     constructionYear?: number;
+    constructionStatus?: 'completed' | 'in_progress';
     apartmentNumber?: string;
     floorNumber?: string;
     isRented?: boolean;
@@ -415,6 +418,7 @@ export const useCadastralContribution = () => {
       construction_nature: blank(data.constructionNature),
       construction_materials: blank(data.constructionMaterials),
       construction_year: blankNum(data.constructionYear),
+      construction_status: data.constructionStatus || null,
       is_occupied: data.isOccupied ?? null,
       occupant_count: blankNum(data.occupantCount),
       hosting_capacity: blankNum(data.hostingCapacity),
