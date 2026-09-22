@@ -32,8 +32,10 @@ import {
   getTerritoiresForProvince,
   getCollectivitesForTerritoire,
   getQuartiersForCommune,
-  getAvenuesForQuartier
+  getAvenuesForQuartier,
+  getSectionTypeForLandDistrict
 } from '@/lib/geographicData';
+
 
 // FIX #27: Lazy import confetti to avoid loading it for every session
 const lazyConfetti = () => import('canvas-confetti').then(m => m.default);
