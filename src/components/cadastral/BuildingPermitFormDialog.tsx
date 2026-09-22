@@ -1,4 +1,5 @@
 import React, { useState, useRef, useMemo } from 'react';
+import { createLongLivedSignedUrl } from '@/utils/storageSignedUrl';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import WhatsAppFloatingButton from './WhatsAppFloatingButton';
 import { Button } from '@/components/ui/button';
@@ -189,8 +190,7 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
         
         if (uploadError) throw uploadError;
         
-        const { data } = supabase.storage.from('cadastral-documents').getPublicUrl(uploadedFilePath);
-        documentUrl = data.publicUrl;
+        documentUrl = await createLongLivedSignedUrl(uploadedFilePath);
       }
 
       // Use memoized calculatedStatus (already in scope)

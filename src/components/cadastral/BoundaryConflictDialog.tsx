@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { createLongLivedSignedUrl } from '@/utils/storageSignedUrl';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -91,11 +92,10 @@ export const BoundaryConflictDialog = ({
 
           if (uploadError) throw uploadError;
 
-          const { data: { publicUrl } } = supabase.storage
-            .from('cadastral-documents')
-            .getPublicUrl(filePath);
+          const signedUrl = await createLongLivedSignedUrl(filePath);
+          if (!signedUrl) throw new Error("Lien du document indisponible");
 
-          evidenceUrls.push(publicUrl);
+          evidenceUrls.push(signedUrl);
         }
         setUploading(false);
       }

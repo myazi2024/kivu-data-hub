@@ -2,6 +2,7 @@
  * Utilitaires partagés pour les uploads de fichiers du service Litige foncier
  */
 import { supabase } from '@/integrations/supabase/client';
+import { createLongLivedSignedUrl } from '@/utils/storageSignedUrl';
 import { toast } from 'sonner';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -68,8 +69,12 @@ export const uploadDisputeFiles = async (
     }
 
     paths.push(filePath);
-    const { data } = supabase.storage.from('cadastral-documents').getPublicUrl(filePath);
-    urls.push(data.publicUrl);
+    const signed = await createLongLivedSignedUrl(filePath);
+    if (!signed) {
+      await cleanupUploadedFiles(paths);
+      throw new Error(`Lien du fichier "${file.name}" indisponible`);
+    }
+    urls.push(signed);
   }
 
   return { urls, paths };

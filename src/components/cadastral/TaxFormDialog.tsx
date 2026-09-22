@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { createLongLivedSignedUrl } from '@/utils/storageSignedUrl';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import WhatsAppFloatingButton from './WhatsAppFloatingButton';
 import { Button } from '@/components/ui/button';
@@ -189,8 +190,7 @@ const TaxFormDialog: React.FC<TaxFormDialogProps> = ({
         if (uploadError) throw uploadError;
         uploadedFilePath = filePath;
 
-        const { data } = supabase.storage.from('cadastral-documents').getPublicUrl(filePath);
-        documentUrl = data.publicUrl;
+        documentUrl = await createLongLivedSignedUrl(filePath);
       }
 
       const remaining = taxRecord.remainingAmount.trim() === ''

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createLongLivedSignedUrl } from '@/utils/storageSignedUrl';
 import { Loader2 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { usePropertyTaxCalculator, TaxCalculationInput, TaxCalculationResult } from '@/hooks/usePropertyTaxCalculator';
@@ -170,11 +171,11 @@ const PropertyTaxCalculator: React.FC<PropertyTaxCalculatorProps> = ({
       let uploadedIdPath: string | null = null;
       if (idDocumentFile) {
         const ext = idDocumentFile.name.split('.').pop();
-        const path = `tax-documents/${user.id}/id_${Date.now()}.${ext}`;
+        const path = `tax-documents/${user.id}/id_${crypto.randomUUID()}.${ext}`;
         const { error: upErr } = await supabase.storage.from('cadastral-documents').upload(path, idDocumentFile);
         if (upErr) throw upErr;
         uploadedIdPath = path;
-        idDocUrl = supabase.storage.from('cadastral-documents').getPublicUrl(path).data.publicUrl;
+        idDocUrl = await createLongLivedSignedUrl(path);
       }
 
       // Upload exemption certificate if present
@@ -182,11 +183,11 @@ const PropertyTaxCalculator: React.FC<PropertyTaxCalculatorProps> = ({
       let uploadedExemptionPath: string | null = null;
       if (exemptionCertificateFile) {
         const ext = exemptionCertificateFile.name.split('.').pop();
-        const path = `tax-documents/${user.id}/exemption_${Date.now()}.${ext}`;
+        const path = `tax-documents/${user.id}/exemption_${crypto.randomUUID()}.${ext}`;
         const { error: upErr } = await supabase.storage.from('cadastral-documents').upload(path, exemptionCertificateFile);
         if (upErr) throw upErr;
         uploadedExemptionPath = path;
-        exemptionDocUrl = supabase.storage.from('cadastral-documents').getPublicUrl(path).data.publicUrl;
+        exemptionDocUrl = await createLongLivedSignedUrl(path);
       }
 
       // Only set root construction_* / declared_usage when targeting the main building.

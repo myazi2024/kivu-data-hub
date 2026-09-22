@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { createLongLivedSignedUrl } from '@/utils/storageSignedUrl';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -211,11 +212,11 @@ const BuildingTaxCalculator: React.FC<BuildingTaxCalculatorProps> = ({
       let uploadedIdPath: string | null = null;
       if (idDocumentFile) {
         const ext = idDocumentFile.name.split('.').pop();
-        const path = `tax-documents/${user.id}/id_building_${Date.now()}.${ext}`;
+        const path = `tax-documents/${user.id}/id_building_${crypto.randomUUID()}.${ext}`;
         const { error: upErr } = await supabase.storage.from('cadastral-documents').upload(path, idDocumentFile);
         if (upErr) throw upErr;
         uploadedIdPath = path;
-        idDocUrl = supabase.storage.from('cadastral-documents').getPublicUrl(path).data.publicUrl;
+        idDocUrl = await createLongLivedSignedUrl(path);
       }
 
       const isMain = constructionRef === 'main';
