@@ -469,6 +469,27 @@ export const ConstructionSection: React.FC<ConstructionSectionProps> = ({
         </div>
       )}
 
+      {/* État d'avancement de la construction */}
+      {formData.propertyCategory && formData.propertyCategory !== 'Terrain nu' && formData.constructionType && formData.constructionType !== 'Terrain nu' && (
+        <div className="space-y-1.5">
+          <Label className="text-sm font-medium">État de la construction *</Label>
+          <RadioGroup
+            value={formData.constructionStatus || ''}
+            onValueChange={(value) => handleInputChange('constructionStatus', value)}
+            className="flex flex-wrap gap-4"
+          >
+            <div className="flex items-center gap-2">
+              <RadioGroupItem value="completed" id="construction-status-completed" />
+              <label htmlFor="construction-status-completed" className="text-sm cursor-pointer select-none">Construction achevée</label>
+            </div>
+            <div className="flex items-center gap-2">
+              <RadioGroupItem value="in_progress" id="construction-status-in-progress" />
+              <label htmlFor="construction-status-in-progress" className="text-sm cursor-pointer select-none">Construction en cours</label>
+            </div>
+          </RadioGroup>
+        </div>
+      )}
+
       {/* Mise en location — remplace l'ancienne valeur « Location » du picklist Usage */}
       {rentalEligible && (
         <div className="space-y-1.5">
