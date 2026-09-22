@@ -214,13 +214,24 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
   const [showNotification, setShowNotification] = useState(true);
   const confirmedSidesCount = roadSides.filter(s => s.bordersRoad && s.isConfirmed).length;
   const roadCount = roadSides.filter(s => s.bordersRoad && s.isConfirmed && sideHasRoad(s)).length;
-  const wallCount = roadSides.filter(s => s.bordersRoad && s.isConfirmed && sideHasWall(s)).length;
-  
+  const wallCount = roadSides.filter(
+    s => s.bordersRoad && s.isConfirmed && sideBoundaryKind(s) === 'mur'
+  ).length;
+  const plainBoundaryCount = roadSides.filter(
+    s => s.bordersRoad && s.isConfirmed && sideBoundaryKind(s) === 'limite'
+  ).length;
 
-  // Vérifier si tous les côtés sont en mur mitoyen (aucun côté n'est une route)
+  // Vérifier si aucun côté ne borde une route
   const hasAnyRoute = roadSides.some(s => s.bordersRoad && sideHasRoad(s));
   const allSidesAreMurMitoyen = parcelSides.length > 0 && !hasAnyRoute;
   const sidesCount = parcelSides.length;
+  /** Côtés encore non renseignés (ni confirmés, ni en cours). */
+  const remainingSideNames = parcelSides
+    .map((s, i) => ({ name: s.name || `Côté ${i + 1}`, side: roadSides.find(r => r.sideIndex === i) }))
+    .filter(({ side }) => !(side?.bordersRoad && side?.isConfirmed))
+    .map(({ name }) => name);
+  /** Aucune entrée déclarée alors que des côtés sont renseignés. */
+  const missingEntrance = confirmedSidesCount > 0 && !roadSides.some(s => s.hasEntrance);
 
   // Reset servitude quand un côté passe en route
   useEffect(() => {
