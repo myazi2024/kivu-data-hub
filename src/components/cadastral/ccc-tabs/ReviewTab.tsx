@@ -283,7 +283,14 @@ const ReviewTab: React.FC<ReviewTabProps> = ({
                   if (hasRoad && side.hasGutter === true) details.push(side.gutterConnected ? 'Caniveau raccordé' : 'Caniveau non raccordé');
                   if (hasRoad && side.hasGutter === false) details.push('Sans caniveau');
                   if (side.hasEntrance) details.push('🚪 Entrée');
-                  if (hasWall) details.push(`Mur${side.wallMaterial ? `: ${side.wallMaterial}` : ''}${side.wallHeight ? ` (${side.wallHeight} m)` : ''}`);
+                  if (hasWall) {
+                    const kind = side.boundaryKind ?? ((side.wallMaterial || side.wallHeight) ? 'mur' : side.borderType === 'mur_mitoyen' ? 'mur' : undefined);
+                    details.push(
+                      kind === 'limite'
+                        ? 'Limite (sans mur)'
+                        : `Mur${side.wallMaterial ? `: ${side.wallMaterial}` : ''}${side.wallHeight ? ` (${side.wallHeight} m)` : ''}`
+                    );
+                  }
                   return (
                     <div key={idx} className="ml-2 text-muted-foreground">
                       • {side.name?.replace('Côté ', '') || `Côté ${idx + 1}`}: {details.join(' • ')}

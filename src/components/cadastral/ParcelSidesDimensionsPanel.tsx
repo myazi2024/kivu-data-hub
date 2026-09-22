@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Ruler, Compass, Info, Trash2, Check, Route, X, Lightbulb, BrickWall, AlertTriangle, DoorOpen, Pencil } from 'lucide-react';
+import { Ruler, Compass, Info, Trash2, Check, Route, X, Lightbulb, BrickWall, AlertTriangle, DoorOpen, Pencil, Minus } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -23,6 +23,9 @@ export interface ParcelSide {
 
 // Type de limite du côté : route ou mur mitoyen
 export type SideBorderType = 'route' | 'mur_mitoyen';
+
+/** Nature de la limite non routière d'un côté : mur ou simple limite de parcelle. */
+export type BoundaryKind = 'mur' | 'limite';
 
 export interface RoadSideInfo {
   sideIndex: number;
@@ -51,6 +54,8 @@ export interface RoadSideInfo {
   /** Parcelle raccordée au caniveau depuis ce côté (si caniveau présent). */
   gutterConnected?: boolean;
   // Propriétés pour les murs mitoyens
+  /** Nature de la limite : fermée par un mur, ou simple limite de parcelle. */
+  boundaryKind?: BoundaryKind;
   wallHeight?: number;
   wallMaterial?: string;
   // Propriétés communes
@@ -65,9 +70,21 @@ export interface RoadSideInfo {
 export const sideHasRoad = (s?: Partial<RoadSideInfo> | null): boolean =>
   !!s && (s.hasRoad ?? s.borderType === 'route');
 
-/** Le côté est fermé par un mur (lit le nouveau champ, avec repli sur l'ancien `borderType`). */
+/** Le côté porte une limite déclarée (mur ou simple limite). */
 export const sideHasWall = (s?: Partial<RoadSideInfo> | null): boolean =>
   !!s && (s.hasWall ?? s.borderType === 'mur_mitoyen');
+
+/**
+ * Nature de la limite d'un côté : 'mur', 'limite', ou undefined si non renseignée.
+ * Repli pour les enregistrements antérieurs : un matériau de mur (ou l'ancien
+ * `borderType === 'mur_mitoyen'`) vaut « mur ».
+ */
+export const sideBoundaryKind = (s?: Partial<RoadSideInfo> | null): BoundaryKind | undefined => {
+  if (!s || !sideHasWall(s)) return undefined;
+  if (s.boundaryKind) return s.boundaryKind;
+  if (s.wallMaterial || s.wallHeight || s.borderType === 'mur_mitoyen') return 'mur';
+  return undefined;
+};
 
 export interface ServitudeInfo {
   hasServitude: boolean;
@@ -154,7 +171,7 @@ const BorderTypeToggle: React.FC<{
       <button
         type="button"
         aria-pressed={wallActive}
-        aria-label="Mur"
+        aria-label="Limite (mur ou simple limite)"
         onClick={() => onToggle('mur_mitoyen')}
         className={cn(
           'relative z-10 flex-1 h-6 px-2 rounded-full text-[10px] font-semibold transition-colors select-none',
@@ -163,7 +180,7 @@ const BorderTypeToggle: React.FC<{
         )}
       >
         <BrickWall className="h-2.5 w-2.5" />
-        Mur
+        Limite
       </button>
       <button
         type="button"
@@ -197,13 +214,24 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
   const [showNotification, setShowNotification] = useState(true);
   const confirmedSidesCount = roadSides.filter(s => s.bordersRoad && s.isConfirmed).length;
   const roadCount = roadSides.filter(s => s.bordersRoad && s.isConfirmed && sideHasRoad(s)).length;
-  const wallCount = roadSides.filter(s => s.bordersRoad && s.isConfirmed && sideHasWall(s)).length;
-  
+  const wallCount = roadSides.filter(
+    s => s.bordersRoad && s.isConfirmed && sideBoundaryKind(s) === 'mur'
+  ).length;
+  const plainBoundaryCount = roadSides.filter(
+    s => s.bordersRoad && s.isConfirmed && sideBoundaryKind(s) === 'limite'
+  ).length;
 
-  // Vérifier si tous les côtés sont en mur mitoyen (aucun côté n'est une route)
+  // Vérifier si aucun côté ne borde une route
   const hasAnyRoute = roadSides.some(s => s.bordersRoad && sideHasRoad(s));
   const allSidesAreMurMitoyen = parcelSides.length > 0 && !hasAnyRoute;
   const sidesCount = parcelSides.length;
+  /** Côtés encore non renseignés (ni confirmés, ni en cours). */
+  const remainingSideNames = parcelSides
+    .map((s, i) => ({ name: s.name || `Côté ${i + 1}`, side: roadSides.find(r => r.sideIndex === i) }))
+    .filter(({ side }) => !(side?.bordersRoad && side?.isConfirmed))
+    .map(({ name }) => name);
+  /** Aucune entrée déclarée alors que des côtés sont renseignés. */
+  const missingEntrance = confirmedSidesCount > 0 && !roadSides.some(s => s.hasEntrance);
 
   // Reset servitude quand un côté passe en route
   useEffect(() => {
@@ -292,7 +320,15 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
       // Champ dérivé : la route prime pour les indicateurs d'accès
       borderType: nextRoad ? 'route' : 'mur_mitoyen',
       ...(nextRoad ? {} : ROAD_FIELDS_RESET),
-      ...(nextWall ? {} : WALL_FIELDS_RESET),
+      ...(nextWall ? {} : { ...WALL_FIELDS_RESET, boundaryKind: undefined }),
+    });
+  };
+
+  /** Bascule entre « Mur » et « Limite » : une simple limite n'a aucune dépendance. */
+  const handleBoundaryKindChange = (sideIndex: number, kind: BoundaryKind) => {
+    onRoadSideUpdate(sideIndex, {
+      boundaryKind: kind,
+      ...(kind === 'limite' ? WALL_FIELDS_RESET : {}),
     });
   };
 
@@ -310,7 +346,11 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
       const gutter = side.hasGutter !== true || side.gutterConnected !== undefined;
       if (!(base && lighting && gutter)) return false;
     }
-    if (hasWall && !side.wallMaterial) return false;
+    if (hasWall) {
+      const kind = sideBoundaryKind(side);
+      if (!kind) return false;
+      if (kind === 'mur' && !side.wallMaterial) return false;
+    }
     return true;
   };
 
@@ -338,9 +378,15 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
               </Badge>
             )}
             {wallCount > 0 && (
-              <Badge variant="secondary" className="text-[10px] h-5 px-1.5 rounded-md bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300">
+              <Badge variant="secondary" className="text-[10px] h-5 px-1.5 rounded-md bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300" title="Côtés fermés par un mur">
                 <BrickWall className="h-2.5 w-2.5 mr-0.5" />
                 {wallCount}
+              </Badge>
+            )}
+            {plainBoundaryCount > 0 && (
+              <Badge variant="secondary" className="text-[10px] h-5 px-1.5 rounded-md bg-muted text-muted-foreground" title="Côtés en simple limite (sans mur)">
+                <Minus className="h-2.5 w-2.5 mr-0.5" />
+                {plainBoundaryCount}
               </Badge>
             )}
           </div>
@@ -371,7 +417,7 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
                   💡 Définissez les limites et l'entrée
                 </p>
                 <p className="text-[11px] text-amber-700 dark:text-amber-300 leading-relaxed">
-                   Activez le bouton sur chaque côté pour indiquer s'il borde une <span className="inline-flex items-center gap-0.5 px-1 py-0.5 rounded bg-amber-200 dark:bg-amber-800 text-amber-700 dark:text-amber-300 font-medium text-[10px]"><BrickWall className="h-2 w-2" />Mur</span> ou une <span className="inline-flex items-center gap-0.5 px-1 py-0.5 rounded bg-primary/10 text-primary font-medium text-[10px]"><Route className="h-2 w-2" />Route</span>, puis cochez <span className="inline-flex items-center gap-0.5 px-1 py-0.5 rounded bg-primary/10 text-primary font-medium text-[10px]"><DoorOpen className="h-2 w-2" />Entrée</span> sur le côté ayant une porte d'accès.
+                   Sur chaque côté, activez <span className="inline-flex items-center gap-0.5 px-1 py-0.5 rounded bg-amber-200 dark:bg-amber-800 text-amber-700 dark:text-amber-300 font-medium text-[10px]"><BrickWall className="h-2 w-2" />Limite</span> — puis précisez s'il s'agit d'un <strong>mur</strong> ou d'une <strong>simple limite</strong> — et/ou <span className="inline-flex items-center gap-0.5 px-1 py-0.5 rounded bg-primary/10 text-primary font-medium text-[10px]"><Route className="h-2 w-2" />Route</span> si le côté borde une voie. Les deux peuvent être déclarés sur un même côté. Cochez enfin <span className="inline-flex items-center gap-0.5 px-1 py-0.5 rounded bg-primary/10 text-primary font-medium text-[10px]"><DoorOpen className="h-2 w-2" />Entrée</span> sur le côté d'accès.
                 </p>
               </div>
             </div>
@@ -384,6 +430,8 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
           const isEditingThis = roadSide?.bordersRoad && !roadSide?.isConfirmed;
           const isRoad = sideHasRoad(roadSide);
           const isWall = sideHasWall(roadSide);
+          const boundaryKind = sideBoundaryKind(roadSide);
+          const isPlainBoundary = boundaryKind === 'limite';
 
           return (
             <div
@@ -391,8 +439,10 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
               className={`p-2 rounded-xl transition-all ${
                 hasConfirmed && isRoad
                   ? 'bg-green-50 dark:bg-green-950 border border-green-300 dark:border-green-800 shadow-sm'
-                  : hasConfirmed && isWall
+                  : hasConfirmed && isWall && !isPlainBoundary
                   ? 'bg-amber-50 dark:bg-amber-950 border border-amber-300 dark:border-amber-800 shadow-sm'
+                  : hasConfirmed && isPlainBoundary
+                  ? 'bg-muted/50 border border-border shadow-sm'
                   : isEditingThis
                   ? 'bg-primary/5 border border-primary/30 shadow-sm'
                   : 'bg-muted/30 border border-transparent hover:bg-muted/50 cursor-pointer'
@@ -404,8 +454,8 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     {hasConfirmed ? (
-                      <div className={`h-4 w-4 rounded-md flex items-center justify-center ${isRoad ? 'bg-green-500' : 'bg-amber-500'}`}>
-                        {isRoad ? <Route className="h-2.5 w-2.5 text-white" /> : <BrickWall className="h-2.5 w-2.5 text-white" />}
+                      <div className={`h-4 w-4 rounded-md flex items-center justify-center ${isRoad ? 'bg-green-500' : isPlainBoundary ? 'bg-muted-foreground/60' : 'bg-amber-500'}`}>
+                        {isRoad ? <Route className="h-2.5 w-2.5 text-white" /> : isPlainBoundary ? <Minus className="h-2.5 w-2.5 text-white" /> : <BrickWall className="h-2.5 w-2.5 text-white" />}
                       </div>
                     ) : (
                       <div className="h-4 w-4 rounded-md bg-muted flex items-center justify-center">
@@ -418,9 +468,14 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
                         {roadTypes.find(t => t.value === roadSide.roadType)?.label || roadSide.roadType}
                       </Badge>
                     )}
-                    {hasConfirmed && isWall && roadSide?.wallMaterial && (
+                    {hasConfirmed && isWall && !isPlainBoundary && roadSide?.wallMaterial && (
                       <Badge variant="outline" className="text-[9px] h-4 px-1 rounded-md bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300 border-0 truncate max-w-[50px]">
                         {wallMaterials.find(m => m.value === roadSide.wallMaterial)?.label || roadSide.wallMaterial}
+                      </Badge>
+                    )}
+                    {hasConfirmed && isPlainBoundary && (
+                      <Badge variant="outline" className="text-[9px] h-4 px-1 rounded-md bg-muted text-muted-foreground border-0 truncate max-w-[60px]">
+                        Limite
                       </Badge>
                     )}
                   </div>
@@ -507,10 +562,12 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
                 )}
                 {hasConfirmed && isWall && (
                   <p className="text-xs text-muted-foreground pl-6">
-                    {[
-                      `Mur : ${wallMaterials.find(m => m.value === roadSide?.wallMaterial)?.label || roadSide?.wallMaterial || '—'}`,
-                      roadSide?.wallHeight ? `Hauteur: ${roadSide.wallHeight}m` : null,
-                    ].filter(Boolean).join(' · ')}
+                    {isPlainBoundary
+                      ? 'Limite de parcelle (sans mur)'
+                      : [
+                          `Mur : ${wallMaterials.find(m => m.value === roadSide?.wallMaterial)?.label || roadSide?.wallMaterial || '—'}`,
+                          roadSide?.wallHeight ? `Hauteur: ${roadSide.wallHeight}m` : null,
+                        ].filter(Boolean).join(' · ')}
                   </p>
                 )}
 
@@ -695,39 +752,73 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
                       <div className="space-y-1.5 pl-6 pt-2 animate-fade-in">
                         <div className="flex items-center gap-1.5 mb-1">
                           <BrickWall className="h-3.5 w-3.5 text-amber-600" />
-                          <span className="text-xs font-medium text-amber-700 dark:text-amber-300">Informations sur le mur</span>
+                          <span className="text-xs font-medium text-amber-700 dark:text-amber-300">Limite de la parcelle</span>
                         </div>
 
+                        {/* Nature de la limite : mur ou simple limite */}
                         <Select
-                          value={roadSide?.wallMaterial || ''}
+                          value={boundaryKind || ''}
                           onValueChange={(value) =>
-                            onRoadSideUpdate(index, { wallMaterial: value })
+                            handleBoundaryKindChange(index, value as BoundaryKind)
                           }
                         >
                           <SelectTrigger className="h-8 text-xs rounded-lg">
-                            <SelectValue placeholder="Matériau du mur *" />
+                            <SelectValue placeholder="Mur ou Limite *" />
                           </SelectTrigger>
                           <SelectContent>
-                            {wallMaterials.map((material) => (
-                              <SelectItem key={material.value} value={material.value} className="text-xs">
-                                {material.label}
-                              </SelectItem>
-                            ))}
+                            <SelectItem value="mur" className="text-xs">Mur</SelectItem>
+                            <SelectItem value="limite" className="text-xs">Limite (sans mur)</SelectItem>
                           </SelectContent>
                         </Select>
 
-                        <Input
-                          type="number"
-                          min="0"
-                          step="0.1"
-                          placeholder="Hauteur du mur (m)"
-                          value={roadSide?.wallHeight || ''}
-                          onChange={(e) =>
-                            onRoadSideUpdate(index, { wallHeight: parseFloat(e.target.value) || undefined })
-                          }
-                          className="h-8 text-xs rounded-lg"
-                        />
+                        {!boundaryKind && (
+                          <p className="text-[11px] text-muted-foreground leading-snug">
+                            Ce côté est-il fermé par un mur, ou s'agit-il d'une simple limite de parcelle ?
+                          </p>
+                        )}
 
+                        {boundaryKind === 'limite' && (
+                          <p className="text-[11px] text-muted-foreground leading-snug animate-fade-in">
+                            Aucune information supplémentaire n'est requise pour une simple limite — cliquez sur « Ajouter » pour valider ce côté.
+                          </p>
+                        )}
+
+                        {boundaryKind === 'mur' && (
+                          <div className="space-y-1.5 animate-fade-in">
+                            <p className="text-[11px] text-muted-foreground leading-snug">
+                              Précisez le matériau du mur ; la hauteur est facultative mais utile pour l'évaluation.
+                            </p>
+                            <Select
+                              value={roadSide?.wallMaterial || ''}
+                              onValueChange={(value) =>
+                                onRoadSideUpdate(index, { wallMaterial: value })
+                              }
+                            >
+                              <SelectTrigger className="h-8 text-xs rounded-lg">
+                                <SelectValue placeholder="Matériau du mur *" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {wallMaterials.map((material) => (
+                                  <SelectItem key={material.value} value={material.value} className="text-xs">
+                                    {material.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+
+                            <Input
+                              type="number"
+                              min="0"
+                              step="0.1"
+                              placeholder="Hauteur du mur (m)"
+                              value={roadSide?.wallHeight || ''}
+                              onChange={(e) =>
+                                onRoadSideUpdate(index, { wallHeight: parseFloat(e.target.value) || undefined })
+                              }
+                              className="h-8 text-xs rounded-lg"
+                            />
+                          </div>
+                        )}
                       </div>
                     )}
                     {/* Boutons d'action — communs aux blocs Mur et Route */}
@@ -785,7 +876,7 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
                         ⚠️ Servitude de passage détectée
                       </p>
                       <p className="text-[11px] text-orange-700 dark:text-orange-300 leading-relaxed">
-                        Les {sidesCount} limites de votre parcelle sont longées par {sidesCount} murs mitoyens. Cela signifie que votre parcelle est située dans une servitude de passage.
+                        Aucun des {sidesCount} côtés de votre parcelle ne borde une route : ses limites sont des murs ou de simples limites. Cela signifie que votre parcelle est desservie par une servitude de passage.
                       </p>
                     </div>
                   </div>
@@ -818,6 +909,26 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
             <Info className="h-3 w-3" />
             <AlertDescription className="text-[11px]">
               Définissez les limites et cochez l'entrée de la parcelle
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* Progression : côtés restant à renseigner */}
+        {confirmedSidesCount > 0 && remainingSideNames.length > 0 && (
+          <Alert className="py-1.5 px-2 rounded-xl bg-muted/50 border-0 mt-1">
+            <Info className="h-3 w-3" />
+            <AlertDescription className="text-[11px]">
+              {confirmedSidesCount} côté{confirmedSidesCount > 1 ? 's' : ''} sur {sidesCount} renseigné{confirmedSidesCount > 1 ? 's' : ''} — il reste : {remainingSideNames.join(', ')}.
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* Rappel : aucune entrée déclarée */}
+        {missingEntrance && (
+          <Alert className="py-1.5 px-2 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 mt-1">
+            <DoorOpen className="h-3 w-3 text-amber-600 dark:text-amber-400" />
+            <AlertDescription className="text-[11px] text-amber-800 dark:text-amber-200">
+              Indiquez le côté par lequel on accède à la parcelle en cochant « Entrée ».
             </AlertDescription>
           </Alert>
         )}

@@ -35,6 +35,8 @@ export interface RoadSideInfo {
   hasRoad?: boolean;
   /** Le côté est fermé par un mur (cumulable avec une route). */
   hasWall?: boolean;
+  /** Nature de la limite non routière : mur ou simple limite de parcelle. */
+  boundaryKind?: 'mur' | 'limite';
   wallHeight?: number;
   wallMaterial?: string;
 }
