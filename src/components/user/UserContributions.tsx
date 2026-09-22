@@ -170,7 +170,7 @@ export const UserContributions: React.FC = () => {
         </Alert>
       )}
 
-      <div className="grid grid-cols-4 gap-2 mb-4">
+      <div className="grid grid-cols-2 gap-2 mb-4 sm:grid-cols-4">
         {[
           { label: 'Total', value: stats.total, color: 'text-foreground' },
           { label: 'Attente', value: stats.pending, color: 'text-amber-600' },
@@ -229,7 +229,7 @@ export const UserContributions: React.FC = () => {
                 return (
                   <div
                     key={contribution.id}
-                    className="flex items-center gap-3 rounded-md bg-muted/30 p-2.5 transition-colors hover:bg-muted/50"
+                    className="flex min-w-0 flex-col gap-2 rounded-md bg-muted/30 p-2.5 transition-colors hover:bg-muted/50 sm:flex-row sm:items-center sm:gap-3"
                   >
                     <div
                       className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer"
@@ -251,7 +251,7 @@ export const UserContributions: React.FC = () => {
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 shrink-0">
+                    <div className="flex w-full items-center justify-between gap-2 border-t pt-2 sm:w-auto sm:justify-end sm:border-0 sm:pt-0">
                       <div className="text-right">
                         {getStatusBadge(contribution.status, contribution.is_suspicious)}
                         <p className="text-[9px] text-muted-foreground mt-0.5">
@@ -349,13 +349,13 @@ export const UserContributions: React.FC = () => {
           if (!open) setSelectedContribution(null);
         }}
       >
-        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-h-[90dvh] w-[calc(100vw-1rem)] max-w-3xl overflow-y-auto p-4 sm:p-6">
           <DialogHeader>
             <DialogTitle>Détails de la contribution</DialogTitle>
           </DialogHeader>
           {selectedContribution && (
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Numéro de parcelle</label>
                   <p className="text-base font-medium">{selectedContribution.parcel_number}</p>
@@ -454,7 +454,7 @@ export const UserContributions: React.FC = () => {
                 </div>
               )}
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Type de titre</label>
                   <p className="text-base">{selectedContribution.property_title_type || 'Non spécifié'}</p>

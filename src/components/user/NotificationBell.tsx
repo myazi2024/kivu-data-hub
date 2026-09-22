@@ -49,7 +49,7 @@ export const NotificationBell: React.FC = () => {
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative">
+        <Button variant="ghost" size="icon" className="relative h-9 w-9 shrink-0" aria-label="Notifications">
           <Bell className="h-5 w-5" />
           {unreadCount > 0 && (
             <Badge 
@@ -61,13 +61,14 @@ export const NotificationBell: React.FC = () => {
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-80 p-0" align="end">
-        <div className="flex items-center justify-between p-4 border-b">
+      <PopoverContent className="w-[calc(100vw-1rem)] max-w-80 p-0" align="end" sideOffset={6}>
+        <div className="flex items-center justify-between gap-2 p-3 sm:p-4 border-b">
           <h3 className="font-semibold">Notifications</h3>
           {unreadCount > 0 && (
             <Button 
               variant="ghost" 
               size="sm"
+              className="h-auto whitespace-normal px-2 py-1 text-right text-xs"
               onClick={markAllAsRead}
             >
               Tout marquer comme lu
@@ -75,7 +76,7 @@ export const NotificationBell: React.FC = () => {
           )}
         </div>
         
-        <ScrollArea className="h-[400px]">
+        <ScrollArea className="h-[min(400px,65vh)]">
           {notifications.length === 0 ? (
             <div className="p-8 text-center text-muted-foreground">
               Aucune notification
@@ -119,7 +120,7 @@ export const NotificationBell: React.FC = () => {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="absolute top-2 right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="absolute top-2 right-2 h-7 w-7 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100"
                     onClick={(e) => handleDelete(e, notification.id)}
                   >
                     <Trash2 className="h-3 w-3" />

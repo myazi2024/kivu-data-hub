@@ -91,7 +91,7 @@ export const UserLandTitleRequests: React.FC = () => {
   if (loading) {
     return (
       <div className="space-y-4">
-        <div className="grid grid-cols-4 gap-2">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           {[1, 2, 3, 4].map(i => (
             <Skeleton key={i} className="h-20 rounded-2xl" />
           ))}
@@ -104,7 +104,7 @@ export const UserLandTitleRequests: React.FC = () => {
   return (
     <>
       {/* Stats compactes */}
-      <div className="grid grid-cols-4 gap-2 mb-4">
+      <div className="grid grid-cols-2 gap-2 mb-4 sm:grid-cols-4">
         {[
           { label: "Total", value: stats.total, color: "text-foreground" },
           { label: "Attente", value: stats.pending, color: "text-amber-600" },
@@ -146,7 +146,7 @@ export const UserLandTitleRequests: React.FC = () => {
                 .map((request) => (
                 <div 
                   key={request.id} 
-                  className="flex items-center gap-3 p-2.5 bg-muted/30 rounded-xl hover:bg-muted/50 transition-colors cursor-pointer"
+                  className="flex min-w-0 flex-wrap items-center gap-2 p-2.5 bg-muted/30 rounded-md hover:bg-muted/50 transition-colors cursor-pointer sm:flex-nowrap sm:gap-3"
                   onClick={() => {
                     setSelectedRequest(request);
                     setIsDetailsOpen(true);
@@ -164,7 +164,7 @@ export const UserLandTitleRequests: React.FC = () => {
                       {[request.commune, request.ville, request.province].filter(Boolean).join(', ')}
                     </p>
                   </div>
-                  <div className="text-right shrink-0 space-y-1">
+                  <div className="ml-11 flex w-full items-center justify-between space-y-1 sm:ml-0 sm:w-auto sm:block sm:text-right">
                     <StatusBadge status={request.status as StatusType} compact />
                     <p className="text-[9px] text-muted-foreground">
                       {format(new Date(request.created_at), 'dd/MM/yyyy', { locale: fr })}
@@ -209,7 +209,7 @@ export const UserLandTitleRequests: React.FC = () => {
 
       {/* Dialog des détails */}
       <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
-        <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-h-[90dvh] w-[calc(100vw-1rem)] max-w-lg overflow-y-auto p-4 sm:p-6">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <ScrollText className="h-5 w-5 text-primary" />
@@ -231,7 +231,7 @@ export const UserLandTitleRequests: React.FC = () => {
               </div>
 
               {/* Infos principales */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div className="p-3 bg-muted/30 rounded-xl">
                   <div className="flex items-center gap-2 mb-1">
                     <MapPin className="h-3 w-3 text-muted-foreground" />

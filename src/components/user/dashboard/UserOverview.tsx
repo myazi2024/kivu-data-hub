@@ -21,7 +21,7 @@ export function UserOverview() {
           <h1 className="text-xl font-bold md:text-2xl">Tableau de bord</h1>
           <p className="text-sm text-muted-foreground">Suivez l’essentiel de votre activité cadastrale.</p>
         </div>
-        <Button asChild size="sm">
+        <Button asChild size="sm" className="w-full sm:w-auto">
           <Link to={CADASTRAL_MAP_ROUTE}><MapPin className="mr-2 h-4 w-4" />Nouvelle contribution</Link>
         </Button>
       </div>
@@ -30,14 +30,14 @@ export function UserOverview() {
         {items.map(item => {
           const Icon = item.icon;
           return (
-            <Link key={item.tab} to={`/mon-compte?tab=${item.tab}`} className="rounded-md border bg-card p-3 transition-colors hover:bg-accent/40 md:p-4">
-              <div className="mb-3 flex items-center justify-between">
+            <Link key={item.tab} to={`/mon-compte?tab=${item.tab}`} className="min-w-0 rounded-md border bg-card p-2.5 transition-colors hover:bg-accent/40 sm:p-3 md:p-4">
+              <div className="mb-2 flex items-center justify-between sm:mb-3">
                 <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/10"><Icon className="h-4 w-4 text-primary" /></div>
                 <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
               </div>
-              <p className="text-2xl font-bold">{isLoading ? '—' : item.value}</p>
-              <p className="text-xs font-medium">{item.label}</p>
-              <p className="mt-1 text-[11px] text-muted-foreground">{item.detail}</p>
+              <p className="text-xl font-bold sm:text-2xl">{isLoading ? '—' : item.value}</p>
+              <p className="break-words text-xs font-medium">{item.label}</p>
+              <p className="mt-1 break-words text-[10px] text-muted-foreground sm:text-[11px]">{item.detail}</p>
             </Link>
           );
         })}
@@ -50,16 +50,16 @@ export function UserOverview() {
           </div>
           <div className="grid gap-2 p-3 sm:grid-cols-2">
             <Button asChild variant="outline" className="h-auto justify-between py-3">
-              <Link to="/mon-compte?tab=contributions"><span className="flex items-center"><FileText className="mr-2 h-4 w-4" />Mes contributions</span><ArrowRight className="h-4 w-4" /></Link>
+              <Link to="/mon-compte?tab=contributions"><span className="flex min-w-0 items-center"><FileText className="mr-2 h-4 w-4 shrink-0" /><span className="truncate">Mes contributions</span></span><ArrowRight className="h-4 w-4 shrink-0" /></Link>
             </Button>
             <Button asChild variant="outline" className="h-auto justify-between py-3">
-              <Link to="/mon-compte?tab=titles"><span className="flex items-center"><ScrollText className="mr-2 h-4 w-4" />Mes titres</span><ArrowRight className="h-4 w-4" /></Link>
+              <Link to="/mon-compte?tab=titles"><span className="flex min-w-0 items-center"><ScrollText className="mr-2 h-4 w-4 shrink-0" /><span className="truncate">Mes titres</span></span><ArrowRight className="h-4 w-4 shrink-0" /></Link>
             </Button>
             <Button asChild variant="outline" className="h-auto justify-between py-3">
-              <Link to="/mon-compte?tab=invoices"><span className="flex items-center"><CreditCard className="mr-2 h-4 w-4" />Mes factures</span><ArrowRight className="h-4 w-4" /></Link>
+              <Link to="/mon-compte?tab=invoices"><span className="flex min-w-0 items-center"><CreditCard className="mr-2 h-4 w-4 shrink-0" /><span className="truncate">Mes factures</span></span><ArrowRight className="h-4 w-4 shrink-0" /></Link>
             </Button>
             <Button asChild variant="outline" className="h-auto justify-between py-3">
-              <Link to="/mon-compte?tab=disputes"><span className="flex items-center"><Scale className="mr-2 h-4 w-4" />Mes litiges</span><ArrowRight className="h-4 w-4" /></Link>
+              <Link to="/mon-compte?tab=disputes"><span className="flex min-w-0 items-center"><Scale className="mr-2 h-4 w-4 shrink-0" /><span className="truncate">Mes litiges</span></span><ArrowRight className="h-4 w-4 shrink-0" /></Link>
             </Button>
           </div>
         </section>

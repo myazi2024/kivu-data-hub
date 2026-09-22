@@ -239,7 +239,7 @@ const UserProfileSection: React.FC = () => {
       </div>
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-4 gap-2">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         {statItems.map((item) => {
           const Icon = item.icon;
           return (
