@@ -1245,6 +1245,7 @@ export const useCCCFormState = ({
           apartmentNumber: (contrib as any).apartment_number || undefined, floorNumber: (contrib as any).floor_number || undefined,
           buildingHeight: (contrib as any).building_height != null ? Number((contrib as any).building_height) : undefined,
           areaSqm: contrib.area_sqm || undefined, province: contrib.province || undefined,
+          landDistrict: (contrib as any).land_district || undefined,
           ville: contrib.ville || undefined, commune: contrib.commune || undefined,
           quartier: contrib.quartier || undefined, avenue: contrib.avenue || undefined,
           houseNumber: (contrib as any).house_number || undefined, territoire: contrib.territoire || undefined,
@@ -1546,6 +1547,7 @@ export const useCCCFormState = ({
 
   const resetLocationBlock = useCallback(() => {
     handleInputChange('province', undefined);
+    handleInputChange('landDistrict', undefined);
     handleInputChange('ville', undefined);
     handleInputChange('commune', undefined);
     handleInputChange('quartier', undefined);
