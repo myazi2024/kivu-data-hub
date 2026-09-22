@@ -138,6 +138,12 @@ export const ParcelMapPreview = ({
   const markersRef = useRef<any[]>([]);
   const polygonRef = useRef<any>(null);
   const dimensionLayersRef = useRef<any[]>([]);
+  /** Minuteries d'appui prolongé attachées aux marqueurs — annulées au redessin et au démontage. */
+  const markerLongPressTimersRef = useRef<Set<number>>(new Set());
+  const clearMarkerLongPressTimers = useCallback(() => {
+    markerLongPressTimersRef.current.forEach(id => window.clearTimeout(id));
+    markerLongPressTimersRef.current.clear();
+  }, []);
   const conflictLayersRef = useRef<any[]>([]);
   const segmentLayersRef = useRef<any[]>([]);
   const neighborLayersRef = useRef<any[]>([]);
