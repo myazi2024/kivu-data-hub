@@ -433,8 +433,27 @@ export const CCCDetailsDialog: React.FC<CCCDetailsDialogProps> = ({
                     {contribution.change_justification && (
                       <p className="text-sm mt-1">{contribution.change_justification}</p>
                     )}
-                    {contribution.changed_fields && Array.isArray(contribution.changed_fields) && contribution.changed_fields.length > 0 && (
-                      <p className="text-xs text-muted-foreground mt-1">Champs modifiés : {contribution.changed_fields.join(', ')}</p>
+                    {Array.isArray(contribution.changed_fields) && contribution.changed_fields.length > 0 && (
+                      typeof contribution.changed_fields[0] === 'string' ? (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Champs modifiés : {(contribution.changed_fields as string[]).join(', ')}
+                        </p>
+                      ) : (
+                        <ul className="text-xs text-muted-foreground mt-1 space-y-0.5">
+                          {(contribution.changed_fields as any[]).map((c, i) => (
+                            <li key={c?.field ?? i}>
+                              {c?.label ?? c?.field} : {String(c?.old_value ?? '—')} → {String(c?.new_value ?? '—')}
+                            </li>
+                          ))}
+                        </ul>
+                      )
+                    )}
+                    {!Array.isArray(contribution.changed_fields) && contribution.changed_fields && (
+                      <ul className="text-xs text-muted-foreground mt-1 space-y-0.5">
+                        {Object.entries(contribution.changed_fields as Record<string, any>).map(([k, v]) => (
+                          <li key={k}>{k} : {typeof v === 'object' ? JSON.stringify(v) : String(v)}</li>
+                        ))}
+                      </ul>
                     )}
                   </div>
                 )}
