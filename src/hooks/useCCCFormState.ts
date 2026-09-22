@@ -1359,17 +1359,42 @@ export const useCCCFormState = ({
 
   // Auto-save debounced: géré dans useFormPersistence
 
-  // Auto-detect section type from parcel number (prop initial OU saisie manuelle).
-  // Les boutons SU/SR ne sont verrouillés que si le numéro REÇU de la recherche
-  // portait réellement un préfixe SU/SR (sinon le préfixe appliqué automatiquement
-  // par le choix de zone verrouillerait à tort ce choix).
+  // Zone déduite de la circonscription foncière (source de vérité principale).
+  const districtSectionType = getSectionTypeForLandDistrict(formData.landDistrict);
+
+  // Circonscription → zone SU/SR. La purge des blocs géographiques n'a lieu que
+  // lorsqu'une zone déjà établie change réellement (pas au premier remplissage
+  // ni pendant la restauration d'une contribution).
   useEffect(() => {
+    if (isLoadingFromDbRef.current) return;
+    if (!districtSectionType || districtSectionType === sectionType) return;
+    if (!sectionType) {
+      setSectionType(districtSectionType);
+      setFormData(prev => ({
+        ...prev,
+        parcelNumber: prev.parcelNumber
+          ? composeParcelNumber(districtSectionType, stripParcelPrefix(prev.parcelNumber))
+          : prev.parcelNumber,
+      }));
+      return;
+    }
+    handleSectionTypeChange(districtSectionType);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [districtSectionType]);
+
+  // Repli : détection depuis le numéro de parcelle uniquement quand la
+  // circonscription est inconnue (saisie manuelle / province non répertoriée).
+  // Les boutons SU/SR ne sont verrouillés que si le numéro REÇU de la recherche
+  // portait réellement un préfixe SU/SR.
+  useEffect(() => {
+    if (districtSectionType) { setSectionTypeAutoDetected(false); return; }
     const upper = (formData.parcelNumber || '').toUpperCase().trim();
     const lockable = /^S\s*[UR]/i.test((parcelNumber || '').trim());
     if (upper.startsWith('SU')) { setSectionType('urbaine'); setSectionTypeAutoDetected(lockable); }
     else if (upper.startsWith('SR')) { setSectionType('rurale'); setSectionTypeAutoDetected(lockable); }
     else { setSectionTypeAutoDetected(false); }
-  }, [formData.parcelNumber, parcelNumber]);
+  }, [formData.parcelNumber, parcelNumber, districtSectionType]);
+
 
 
   // Chaîne des dates de fin des anciens propriétaires.
