@@ -334,6 +334,14 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
   const isNotTerrainNu = data.propertyCategory && data.propertyCategory !== 'Terrain nu' && data.constructionType !== 'Terrain nu';
   const showBuildingPermit = isNotTerrainNu && data.propertyCategory !== 'Appartement';
 
+  // Usage réel (ce que l'occupant fait réellement du bien)
+  const actualUsageOptions = useMemo(
+    () => buildActualUsageOptions(getPicklistDependentOptions, data.propertyCategory),
+    [getPicklistDependentOptions, data.propertyCategory]
+  );
+  const residentialActualUse = isResidentialActualUsage(data.actualUsage);
+  const operationalCapacityField = resolveOperationalCapacityField(data.actualUsage);
+
   return (
     <div className="border-2 border-border rounded-2xl p-4 space-y-3 bg-card shadow-sm animate-fade-in">
       <div className="flex items-center justify-between pb-2 border-b border-border/50">
