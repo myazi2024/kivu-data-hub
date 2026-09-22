@@ -1163,8 +1163,13 @@ export const ParcelMapPreview = ({
             const startBvLongPress = (e: any) => {
               if (isDrawingMode || isGroupDragMode || isDrawingBuilding) return;
               e.originalEvent?.preventDefault();
-              if (bvLongPressTimer) window.clearTimeout(bvLongPressTimer);
+              if (bvLongPressTimer) {
+                window.clearTimeout(bvLongPressTimer);
+                markerLongPressTimersRef.current.delete(bvLongPressTimer);
+              }
               bvLongPressTimer = window.setTimeout(() => {
+                if (bvLongPressTimer) markerLongPressTimersRef.current.delete(bvLongPressTimer);
+                bvLongPressTimer = null;
                 bvDragActiveRef.current = true;
                 bvDragShapeIdRef.current = shape.id;
                 bvDragVertexIdxRef.current = vi;
@@ -1177,10 +1182,15 @@ export const ParcelMapPreview = ({
                   map.getContainer().style.cursor = 'grabbing';
                 }
               }, 450);
+              markerLongPressTimersRef.current.add(bvLongPressTimer);
             };
 
             const cancelBvLongPress = () => {
-              if (bvLongPressTimer) { window.clearTimeout(bvLongPressTimer); bvLongPressTimer = null; }
+              if (bvLongPressTimer) {
+                window.clearTimeout(bvLongPressTimer);
+                markerLongPressTimersRef.current.delete(bvLongPressTimer);
+                bvLongPressTimer = null;
+              }
             };
 
             const moveBvDrag = (e: any) => {
