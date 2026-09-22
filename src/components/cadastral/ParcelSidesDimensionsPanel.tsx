@@ -449,17 +449,12 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
                         Entrée
                       </label>
                     </div>
-                    {/* Contrôle segmenté Mur/Route — visible si pas confirmé */}
+                    {/* Contrôle segmenté Mur/Route (cumulables) — visible si pas confirmé */}
                     {!hasConfirmed && (
                       <BorderTypeToggle
-                        value={roadSide?.borderType}
-                        onChange={(type) => {
-                          if (!roadSide?.bordersRoad) {
-                            handleStartEdit(index, type);
-                          } else {
-                            handleBorderTypeChange(index, type);
-                          }
-                        }}
+                        wallActive={isWall}
+                        roadActive={isRoad}
+                        onToggle={(type) => toggleBorderType(index, type)}
                       />
                     )}
                     {hasConfirmed && (
