@@ -1,60 +1,85 @@
-import React, { useState, useEffect } from 'react';
-import { Navigate, useSearchParams, Link } from 'react-router-dom';
+import React, { lazy, Suspense, useEffect, useMemo, useState } from 'react';
+import { Navigate, useSearchParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
 import { useAuth } from '@/hooks/useAuth';
-import Navigation from '@/components/ui/navigation';
-import Footer from '@/components/Footer';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { UserPreferences } from '@/components/user/UserPreferences';
-import { UserContributions } from '@/components/user/UserContributions';
-import CadastralDashboardTabs from '@/components/cadastral/CadastralDashboardTabs';
-import { UserBuildingPermits } from '@/components/user/UserBuildingPermits';
-import { UserAccountSecurity } from '@/components/user/UserAccountSecurity';
-import UserProfileSection from '@/components/user/UserProfileSection';
-import { UserLandTitleRequests } from '@/components/user/UserLandTitleRequests';
-import { NotificationBell } from '@/components/user/NotificationBell';
-import { UserLandDisputes } from '@/components/user/UserLandDisputes';
-import { UserExpertiseRequests } from '@/components/user/UserExpertiseRequests';
-import { UserMutationRequests } from '@/components/user/UserMutationRequests';
-import { UserMortgageRequests } from '@/components/user/UserMortgageRequests';
-import { UserSubdivisionRequests } from '@/components/user/UserSubdivisionRequests';
-import { RentalUnitsPanel } from '@/components/user/assets/RentalUnitsPanel';
-import { ListingsPanel } from '@/components/user/assets/ListingsPanel';
-import { MarketValuePanel } from '@/components/user/assets/MarketValuePanel';
-import { TaxObligationsPanel } from '@/components/user/finance/TaxObligationsPanel';
-import { UserDataControls } from '@/components/user/data/UserDataControls';
+import ErrorBoundary from '@/components/ErrorBoundary';
+import { Sheet, SheetContent } from '@/components/ui/sheet';
+import { UserDashboardHeader } from '@/components/user/dashboard/UserDashboardHeader';
+import { UserOverview } from '@/components/user/dashboard/UserOverview';
+import { UserSidebar } from '@/components/user/dashboard/UserSidebar';
+import {
+  getUserTabCategory,
+  getUserTabLabel,
+  USER_TAB_ALIASES,
+  USER_TAB_VALUES,
+} from '@/components/user/dashboard/userDashboardConfig';
+import { ChevronRight } from 'lucide-react';
 
-import { User, FileText, Building, CreditCard, Settings, ScrollText, Scale, FileSearch, FileEdit, Landmark, LayoutGrid } from 'lucide-react';
-import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
+const UserProfileSection = lazy(() => import('@/components/user/UserProfileSection'));
+const UserContributions = lazy(() => import('@/components/user/UserContributions').then(module => ({ default: module.UserContributions })));
+const RentalUnitsPanel = lazy(() => import('@/components/user/assets/RentalUnitsPanel').then(module => ({ default: module.RentalUnitsPanel })));
+const ListingsPanel = lazy(() => import('@/components/user/assets/ListingsPanel').then(module => ({ default: module.ListingsPanel })));
+const MarketValuePanel = lazy(() => import('@/components/user/assets/MarketValuePanel').then(module => ({ default: module.MarketValuePanel })));
+const TaxObligationsPanel = lazy(() => import('@/components/user/finance/TaxObligationsPanel').then(module => ({ default: module.TaxObligationsPanel })));
+const UserLandTitleRequests = lazy(() => import('@/components/user/UserLandTitleRequests').then(module => ({ default: module.UserLandTitleRequests })));
+const UserBuildingPermits = lazy(() => import('@/components/user/UserBuildingPermits').then(module => ({ default: module.UserBuildingPermits })));
+const UserExpertiseRequests = lazy(() => import('@/components/user/UserExpertiseRequests').then(module => ({ default: module.UserExpertiseRequests })));
+const UserMutationRequests = lazy(() => import('@/components/user/UserMutationRequests').then(module => ({ default: module.UserMutationRequests })));
+const UserMortgageRequests = lazy(() => import('@/components/user/UserMortgageRequests').then(module => ({ default: module.UserMortgageRequests })));
+const UserSubdivisionRequests = lazy(() => import('@/components/user/UserSubdivisionRequests').then(module => ({ default: module.UserSubdivisionRequests })));
+const UserLandDisputes = lazy(() => import('@/components/user/UserLandDisputes').then(module => ({ default: module.UserLandDisputes })));
+const CadastralDashboardTabs = lazy(() => import('@/components/cadastral/CadastralDashboardTabs'));
+const UserPreferences = lazy(() => import('@/components/user/UserPreferences').then(module => ({ default: module.UserPreferences })));
+const UserAccountSecurity = lazy(() => import('@/components/user/UserAccountSecurity').then(module => ({ default: module.UserAccountSecurity })));
+const UserDataControls = lazy(() => import('@/components/user/data/UserDataControls').then(module => ({ default: module.UserDataControls })));
 
-const VALID_TABS = [
-  'profile', 'contributions', 'titles', 'permits', 'expertise',
-  'mutations', 'mortgages', 'subdivisions', 'disputes', 'invoices', 'settings'
-];
+const TAB_CONTENT: Record<string, React.LazyExoticComponent<React.ComponentType>> = {
+  profile: UserProfileSection,
+  contributions: UserContributions,
+  rentals: RentalUnitsPanel,
+  listings: ListingsPanel,
+  'market-value': MarketValuePanel,
+  titles: UserLandTitleRequests,
+  permits: UserBuildingPermits,
+  expertise: UserExpertiseRequests,
+  mutations: UserMutationRequests,
+  mortgages: UserMortgageRequests,
+  subdivisions: UserSubdivisionRequests,
+  disputes: UserLandDisputes,
+  invoices: CadastralDashboardTabs,
+  taxes: TaxObligationsPanel,
+  preferences: UserPreferences,
+  security: UserAccountSecurity,
+  data: UserDataControls,
+};
+
+const DashboardFallback = () => (
+  <div className="flex items-center justify-center py-16">
+    <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent motion-reduce:animate-none" />
+  </div>
+);
 
 const UserDashboard = () => {
   const { user, loading } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
-  const tabFromUrl = searchParams.get('tab');
-  const [activeTab, setActiveTab] = useState(
-    tabFromUrl && VALID_TABS.includes(tabFromUrl) ? tabFromUrl : 'profile'
-  );
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const requestedTab = searchParams.get('tab') || 'dashboard';
+  const activeTab = USER_TAB_ALIASES[requestedTab] ?? (USER_TAB_VALUES.has(requestedTab) ? requestedTab : 'dashboard');
 
   useEffect(() => {
-    if (tabFromUrl && VALID_TABS.includes(tabFromUrl) && tabFromUrl !== activeTab) {
-      setActiveTab(tabFromUrl);
+    const canonical = USER_TAB_ALIASES[requestedTab];
+    if (canonical) {
+      const next = new URLSearchParams(searchParams);
+      next.set('tab', canonical);
+      setSearchParams(next, { replace: true });
     }
-  }, [tabFromUrl]);
+  }, [requestedTab, searchParams, setSearchParams]);
 
-  const handleTabChange = (value: string) => {
-    setActiveTab(value);
-    if (value === 'profile') {
-      searchParams.delete('tab');
-    } else {
-      searchParams.set('tab', value);
-    }
-    setSearchParams(searchParams, { replace: true });
-  };
+  const content = useMemo(() => {
+    if (activeTab === 'dashboard') return <UserOverview />;
+    const Component = TAB_CONTENT[activeTab];
+    return Component ? <Component /> : <UserOverview />;
+  }, [activeTab]);
 
   if (loading) {
     return (
@@ -74,171 +99,37 @@ const UserDashboard = () => {
         <title>Mon compte | BIC - Bureau d'Informations Cadastrales</title>
         <meta name="description" content="Gérez votre compte BIC : contributions cadastrales, titres fonciers, expertises, mutations et paramètres." />
       </Helmet>
-      <div className="min-h-dvh flex flex-col bg-muted/30">
-      <Navigation />
-      
-      <main className="flex-grow px-3 py-4">
-        <div className="max-w-[360px] sm:max-w-md lg:max-w-2xl mx-auto">
-          {/* Breadcrumb */}
-          <Breadcrumb className="mb-3">
-            <BreadcrumbList>
-              <BreadcrumbItem>
-                <BreadcrumbLink asChild><Link to="/">Accueil</Link></BreadcrumbLink>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator />
-              <BreadcrumbItem>
-                <BreadcrumbPage>Mon compte</BreadcrumbPage>
-              </BreadcrumbItem>
-            </BreadcrumbList>
-          </Breadcrumb>
+      <div className="flex h-dvh overflow-hidden bg-background">
+        <aside className="hidden w-52 flex-col border-r bg-card/50 md:flex lg:w-60">
+          <UserSidebar activeTab={activeTab} />
+        </aside>
 
-          {/* Header with notification bell */}
-          <div className="flex items-center justify-between mb-4">
-            <h1 className="text-lg font-semibold">Mon compte</h1>
-            <NotificationBell />
-          </div>
+        <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+          <SheetContent side="left" className="w-[280px] p-0">
+            <UserSidebar activeTab={activeTab} onNavigate={() => setMobileMenuOpen(false)} />
+          </SheetContent>
+        </Sheet>
 
-          <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-            {/* Navigation compacte - scrollable horizontally */}
-            <div className="overflow-x-auto -mx-1 px-1 pb-1">
-              <TabsList className="w-max min-w-full h-auto p-1 flex gap-1 bg-background shadow-sm rounded-2xl border">
-                <TabsTrigger 
-                  value="profile" 
-                  className="flex flex-col items-center gap-0.5 py-2 px-3 text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-xl transition-all"
-                >
-                  <User className="h-4 w-4" />
-                  <span className="text-[10px] font-medium">Profil</span>
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="contributions" 
-                  className="flex flex-col items-center gap-0.5 py-2 px-3 text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-xl transition-all"
-                >
-                  <FileText className="h-4 w-4" />
-                  <span className="text-[10px] font-medium">Données</span>
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="titles" 
-                  className="flex flex-col items-center gap-0.5 py-2 px-3 text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-xl transition-all"
-                >
-                  <ScrollText className="h-4 w-4" />
-                  <span className="text-[10px] font-medium">Titres</span>
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="permits" 
-                  className="flex flex-col items-center gap-0.5 py-2 px-3 text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-xl transition-all"
-                >
-                  <Building className="h-4 w-4" />
-                  <span className="text-[10px] font-medium">Autorisations</span>
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="expertise" 
-                  className="flex flex-col items-center gap-0.5 py-2 px-3 text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-xl transition-all"
-                >
-                  <FileSearch className="h-4 w-4" />
-                  <span className="text-[10px] font-medium">Expertises</span>
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="mutations" 
-                  className="flex flex-col items-center gap-0.5 py-2 px-3 text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-xl transition-all"
-                >
-                  <FileEdit className="h-4 w-4" />
-                  <span className="text-[10px] font-medium">Mutations</span>
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="mortgages" 
-                  className="flex flex-col items-center gap-0.5 py-2 px-3 text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-xl transition-all"
-                >
-                  <Landmark className="h-4 w-4" />
-                  <span className="text-[10px] font-medium">Hypothèques</span>
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="subdivisions" 
-                  className="flex flex-col items-center gap-0.5 py-2 px-3 text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-xl transition-all"
-                >
-                  <LayoutGrid className="h-4 w-4" />
-                  <span className="text-[10px] font-medium">Lotissements</span>
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="disputes" 
-                  className="flex flex-col items-center gap-0.5 py-2 px-3 text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-xl transition-all"
-                >
-                  <Scale className="h-4 w-4" />
-                  <span className="text-[10px] font-medium">Litiges</span>
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="invoices"
-                  className="flex flex-col items-center gap-0.5 py-2 px-3 text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-xl transition-all"
-                >
-                  <CreditCard className="h-4 w-4" />
-                  <span className="text-[10px] font-medium">Factures</span>
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="settings" 
-                  className="flex flex-col items-center gap-0.5 py-2 px-3 text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-xl transition-all"
-                >
-                  <Settings className="h-4 w-4" />
-                  <span className="text-[10px] font-medium">Réglages</span>
-                </TabsTrigger>
-              </TabsList>
+        <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+          <UserDashboardHeader title={getUserTabLabel(activeTab)} onMenuClick={() => setMobileMenuOpen(true)} />
+          <main className="flex-1 overflow-y-auto bg-muted/20 p-3 md:p-4 lg:p-5">
+            <div className="mx-auto w-full max-w-screen-2xl">
+              {activeTab !== 'dashboard' && (
+                <div className="mb-3 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+                  <span>Mon espace</span>
+                  <ChevronRight className="h-3 w-3" />
+                  <span>{getUserTabCategory(activeTab)}</span>
+                  <ChevronRight className="h-3 w-3" />
+                  <span className="font-medium text-foreground">{getUserTabLabel(activeTab)}</span>
+                </div>
+              )}
+              <ErrorBoundary>
+                <Suspense fallback={<DashboardFallback />}>{content}</Suspense>
+              </ErrorBoundary>
             </div>
-
-            <TabsContent value="profile" className="mt-4">
-              <UserProfileSection />
-            </TabsContent>
-
-            <TabsContent value="contributions" className="mt-4 space-y-4">
-              <UserContributions />
-              <RentalUnitsPanel />
-              <ListingsPanel />
-              <MarketValuePanel />
-              <TaxObligationsPanel />
-            </TabsContent>
-
-
-            <TabsContent value="titles" className="mt-4">
-              <UserLandTitleRequests />
-            </TabsContent>
-
-            <TabsContent value="permits" className="mt-4">
-              <UserBuildingPermits />
-            </TabsContent>
-
-            <TabsContent value="expertise" className="mt-4">
-              <UserExpertiseRequests />
-            </TabsContent>
-
-            <TabsContent value="mortgages" className="mt-4">
-              <UserMortgageRequests />
-            </TabsContent>
-
-            <TabsContent value="subdivisions" className="mt-4">
-              <UserSubdivisionRequests />
-            </TabsContent>
-
-            <TabsContent value="disputes" className="mt-4">
-              <UserLandDisputes />
-            </TabsContent>
-
-            <TabsContent value="mutations" className="mt-4">
-              <UserMutationRequests />
-            </TabsContent>
-
-            <TabsContent value="invoices" className="mt-4">
-              <CadastralDashboardTabs />
-            </TabsContent>
-
-            <TabsContent value="settings" className="mt-4 space-y-4">
-              <UserPreferences />
-              <UserAccountSecurity />
-              <UserDataControls />
-
-            </TabsContent>
-          </Tabs>
+          </main>
         </div>
-      </main>
-
-      <Footer />
-    </div>
+      </div>
     </>
   );
 };
