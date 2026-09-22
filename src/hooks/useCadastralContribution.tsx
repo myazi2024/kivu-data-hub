@@ -418,6 +418,7 @@ export const useCadastralContribution = () => {
       construction_nature: blank(data.constructionNature),
       construction_materials: blank(data.constructionMaterials),
       construction_year: blankNum(data.constructionYear),
+      construction_status: data.constructionStatus || null,
       is_occupied: data.isOccupied ?? null,
       occupant_count: blankNum(data.occupantCount),
       hosting_capacity: blankNum(data.hostingCapacity),
