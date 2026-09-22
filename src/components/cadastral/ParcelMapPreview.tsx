@@ -138,6 +138,12 @@ export const ParcelMapPreview = ({
   const markersRef = useRef<any[]>([]);
   const polygonRef = useRef<any>(null);
   const dimensionLayersRef = useRef<any[]>([]);
+  /** Minuteries d'appui prolongé attachées aux marqueurs — annulées au redessin et au démontage. */
+  const markerLongPressTimersRef = useRef<Set<number>>(new Set());
+  const clearMarkerLongPressTimers = useCallback(() => {
+    markerLongPressTimersRef.current.forEach(id => window.clearTimeout(id));
+    markerLongPressTimersRef.current.clear();
+  }, []);
   const conflictLayersRef = useRef<any[]>([]);
   const segmentLayersRef = useRef<any[]>([]);
   const neighborLayersRef = useRef<any[]>([]);
@@ -834,6 +840,8 @@ export const ParcelMapPreview = ({
           }
         });
         dimensionLayersRef.current = [];
+        // Les marqueurs retirés ne doivent plus ouvrir une édition sur un côté réindexé
+        clearMarkerLongPressTimers();
 
         segmentLayersRef.current.forEach(layer => {
           try {
@@ -1155,8 +1163,13 @@ export const ParcelMapPreview = ({
             const startBvLongPress = (e: any) => {
               if (isDrawingMode || isGroupDragMode || isDrawingBuilding) return;
               e.originalEvent?.preventDefault();
-              if (bvLongPressTimer) window.clearTimeout(bvLongPressTimer);
+              if (bvLongPressTimer) {
+                window.clearTimeout(bvLongPressTimer);
+                markerLongPressTimersRef.current.delete(bvLongPressTimer);
+              }
               bvLongPressTimer = window.setTimeout(() => {
+                if (bvLongPressTimer) markerLongPressTimersRef.current.delete(bvLongPressTimer);
+                bvLongPressTimer = null;
                 bvDragActiveRef.current = true;
                 bvDragShapeIdRef.current = shape.id;
                 bvDragVertexIdxRef.current = vi;
@@ -1169,10 +1182,15 @@ export const ParcelMapPreview = ({
                   map.getContainer().style.cursor = 'grabbing';
                 }
               }, 450);
+              markerLongPressTimersRef.current.add(bvLongPressTimer);
             };
 
             const cancelBvLongPress = () => {
-              if (bvLongPressTimer) { window.clearTimeout(bvLongPressTimer); bvLongPressTimer = null; }
+              if (bvLongPressTimer) {
+                window.clearTimeout(bvLongPressTimer);
+                markerLongPressTimersRef.current.delete(bvLongPressTimer);
+                bvLongPressTimer = null;
+              }
             };
 
             const moveBvDrag = (e: any) => {
@@ -1723,18 +1741,24 @@ export const ParcelMapPreview = ({
       
       // Appui prolongé pour éditer (mobile)
       let longPressTimer: number | null = null;
+      const cancelLongPress = () => {
+        if (longPressTimer) {
+          window.clearTimeout(longPressTimer);
+          markerLongPressTimersRef.current.delete(longPressTimer);
+          longPressTimer = null;
+        }
+      };
       marker.on('mousedown touchstart', () => {
+        cancelLongPress();
         longPressTimer = window.setTimeout(() => {
+          if (longPressTimer) markerLongPressTimersRef.current.delete(longPressTimer);
+          longPressTimer = null;
           setEditingSideIndex(index);
           setEditingSideValue(displayDistance.toFixed(1));
         }, 500);
+        markerLongPressTimersRef.current.add(longPressTimer);
       });
-      marker.on('mouseup touchend mouseout', () => {
-        if (longPressTimer) {
-          window.clearTimeout(longPressTimer);
-          longPressTimer = null;
-        }
-      });
+      marker.on('mouseup touchend mouseout', cancelLongPress);
       
       dimensionLayersRef.current.push(marker);
     });
@@ -2122,8 +2146,13 @@ export const ParcelMapPreview = ({
       window.removeEventListener('pointerup', onWindowStop);
       window.removeEventListener('blur', onWindowStop);
       stopLongPress();
+      if (longPressTimerRef.current) {
+        window.clearTimeout(longPressTimerRef.current);
+        longPressTimerRef.current = null;
+      }
+      clearMarkerLongPressTimers();
     };
-  }, [stopLongPress]);
+  }, [stopLongPress, clearMarkerLongPressTimers]);
 
   const getLongPressProps = useCallback(
     (action: () => void) => ({

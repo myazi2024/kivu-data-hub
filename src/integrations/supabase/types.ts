@@ -1936,6 +1936,7 @@ export type Database = {
           parcel_sides: Json | null
           parcel_type: string
           permit_request_data: Json | null
+          previous_permit_number: string | null
           property_category: string | null
           property_title_document_url: string | null
           property_title_type: string
@@ -2028,6 +2029,7 @@ export type Database = {
           parcel_sides?: Json | null
           parcel_type: string
           permit_request_data?: Json | null
+          previous_permit_number?: string | null
           property_category?: string | null
           property_title_document_url?: string | null
           property_title_type?: string
@@ -2120,6 +2122,7 @@ export type Database = {
           parcel_sides?: Json | null
           parcel_type?: string
           permit_request_data?: Json | null
+          previous_permit_number?: string | null
           property_category?: string | null
           property_title_document_url?: string | null
           property_title_type?: string

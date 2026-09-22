@@ -18,6 +18,7 @@ import LeaseContractField from './LeaseContractField';
 import BuildingHeightField from './BuildingHeightField';
 import { getShapeForConstructionIndex, withShapeHeight, minHeightForFloors } from '@/utils/buildingShapes';
 import { isSingleStoreyCategory } from '@/utils/cccPredicates';
+import { ACTUAL_USAGE_OTHER, buildActualUsageOptions, isResidentialActualUsage, resolveOperationalCapacityField } from '@/utils/actualUsage';
 
 export interface AdditionalConstructionPermit {
   permitType: 'construction' | 'regularization';
@@ -58,6 +59,12 @@ export interface AdditionalConstruction {
   isOccupied?: boolean;
   occupantCount?: number;
   hostingCapacity?: number;
+  /** Usage réellement fait du bien par l'occupant (peut différer de l'usage prévu). */
+  actualUsage?: string;
+  actualUsageOther?: string;
+  operationalCapacity?: number;
+  operationalCapacityUnit?: string;
+  leaseContractUrl?: string;
   /** Hauteur (m) — saisie indépendante du tracé, répercutée sur la forme liée du croquis. */
   heightM?: number;
   // Autorisation de bâtir
@@ -326,6 +333,14 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
 
   const isNotTerrainNu = data.propertyCategory && data.propertyCategory !== 'Terrain nu' && data.constructionType !== 'Terrain nu';
   const showBuildingPermit = isNotTerrainNu && data.propertyCategory !== 'Appartement';
+
+  // Usage réel (ce que l'occupant fait réellement du bien)
+  const actualUsageOptions = useMemo(
+    () => buildActualUsageOptions(getPicklistDependentOptions, data.propertyCategory),
+    [getPicklistDependentOptions, data.propertyCategory]
+  );
+  const residentialActualUse = isResidentialActualUsage(data.actualUsage);
+  const operationalCapacityField = resolveOperationalCapacityField(data.actualUsage);
 
   return (
     <div className="border-2 border-border rounded-2xl p-4 space-y-3 bg-card shadow-sm animate-fade-in">
@@ -710,7 +725,16 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
                   size="sm"
                   className="rounded-xl"
                   onClick={() => {
-                    onChange(index, { ...data, isOccupied: false, occupantCount: undefined });
+                    onChange(index, {
+                      ...data,
+                      isOccupied: false,
+                      occupantCount: undefined,
+                      actualUsage: undefined,
+                      actualUsageOther: undefined,
+                      operationalCapacity: undefined,
+                      operationalCapacityUnit: undefined,
+                      leaseContractUrl: undefined,
+                    });
                   }}
                 >
                   Non
@@ -719,6 +743,49 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
             </div>
 
             {data.isOccupied === true && (
+              <div className="space-y-1.5">
+                <Label className="text-sm font-medium">Usage réel (optionnel)</Label>
+                <p className="text-[11px] text-muted-foreground leading-snug">
+                  Ce que l'occupant fait réellement du bien — cela peut différer de l'usage prévu.
+                </p>
+                <Select
+                  value={data.actualUsage ?? ''}
+                  onValueChange={(v) => {
+                    const next: AdditionalConstruction = { ...data, actualUsage: v };
+                    if (v !== ACTUAL_USAGE_OTHER) next.actualUsageOther = undefined;
+                    if (isResidentialActualUsage(v)) {
+                      next.operationalCapacity = undefined;
+                      next.operationalCapacityUnit = undefined;
+                    } else {
+                      next.occupantCount = undefined;
+                      next.hostingCapacity = undefined;
+                    }
+                    onChange(index, next);
+                  }}
+                >
+                  <SelectTrigger className="h-10 rounded-xl text-sm"><SelectValue placeholder="Sélectionner l'usage réel" /></SelectTrigger>
+                  <SelectContent className="rounded-xl max-h-60">
+                    {actualUsageOptions.map(opt => (
+                      <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {data.isOccupied === true && data.actualUsage === ACTUAL_USAGE_OTHER && (
+              <div className="space-y-1.5">
+                <Label className="text-sm font-medium">Précisez l'usage réel</Label>
+                <Input
+                  value={data.actualUsageOther ?? ''}
+                  onChange={(e) => update('actualUsageOther', e.target.value || undefined)}
+                  placeholder="Ex: atelier de couture"
+                  className="h-10 rounded-xl text-sm"
+                />
+              </div>
+            )}
+
+            {data.isOccupied === true && residentialActualUse && (
               <div className="space-y-1.5">
                 <Label className="text-sm font-medium">Combien de personnes y vivent ?</Label>
                 <Input
@@ -732,7 +799,7 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
               </div>
             )}
 
-            {data.isOccupied !== undefined && (
+            {data.isOccupied !== undefined && (data.isOccupied === false || residentialActualUse) && (
               <div className="space-y-1.5">
                 <Label className="text-sm font-medium">Capacité d'accueil (personnes)</Label>
                 <Input
@@ -741,6 +808,27 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
                   value={data.hostingCapacity || ''}
                   onChange={(e) => update('hostingCapacity', e.target.value ? parseInt(e.target.value) : undefined)}
                   placeholder="Ex: 10"
+                  className="h-10 rounded-xl text-sm"
+                />
+              </div>
+            )}
+
+            {data.isOccupied === true && !!data.actualUsage && !residentialActualUse && (
+              <div className="space-y-1.5">
+                <Label className="text-sm font-medium">{operationalCapacityField.label} (optionnel)</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  value={data.operationalCapacity ?? ''}
+                  onChange={(e) => {
+                    const v = e.target.value === '' ? undefined : Number(e.target.value);
+                    onChange(index, {
+                      ...data,
+                      operationalCapacity: v,
+                      operationalCapacityUnit: v === undefined ? undefined : (operationalCapacityField.unit || undefined),
+                    });
+                  }}
+                  placeholder={operationalCapacityField.placeholder}
                   className="h-10 rounded-xl text-sm"
                 />
               </div>

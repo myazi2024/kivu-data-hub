@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 
@@ -212,26 +212,37 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
 }) => {
   const [editingSide, setEditingSide] = useState<number | null>(null);
   const [showNotification, setShowNotification] = useState(true);
-  const confirmedSidesCount = roadSides.filter(s => s.bordersRoad && s.isConfirmed).length;
-  const roadCount = roadSides.filter(s => s.bordersRoad && s.isConfirmed && sideHasRoad(s)).length;
-  const wallCount = roadSides.filter(
-    s => s.bordersRoad && s.isConfirmed && sideBoundaryKind(s) === 'mur'
-  ).length;
-  const plainBoundaryCount = roadSides.filter(
-    s => s.bordersRoad && s.isConfirmed && sideBoundaryKind(s) === 'limite'
-  ).length;
+  /** Statistiques des côtés — recalculées seulement quand les côtés changent. */
+  const {
+    confirmedSidesCount,
+    roadCount,
+    wallCount,
+    plainBoundaryCount,
+    hasAnyRoute,
+    missingEntrance,
+  } = useMemo(() => {
+    const confirmed = roadSides.filter(s => s.bordersRoad && s.isConfirmed);
+    return {
+      confirmedSidesCount: confirmed.length,
+      roadCount: confirmed.filter(s => sideHasRoad(s)).length,
+      wallCount: confirmed.filter(s => sideBoundaryKind(s) === 'mur').length,
+      plainBoundaryCount: confirmed.filter(s => sideBoundaryKind(s) === 'limite').length,
+      hasAnyRoute: roadSides.some(s => s.bordersRoad && sideHasRoad(s)),
+      missingEntrance: confirmed.length > 0 && !roadSides.some(s => s.hasEntrance),
+    };
+  }, [roadSides]);
 
-  // Vérifier si aucun côté ne borde une route
-  const hasAnyRoute = roadSides.some(s => s.bordersRoad && sideHasRoad(s));
   const allSidesAreMurMitoyen = parcelSides.length > 0 && !hasAnyRoute;
   const sidesCount = parcelSides.length;
   /** Côtés encore non renseignés (ni confirmés, ni en cours). */
-  const remainingSideNames = parcelSides
-    .map((s, i) => ({ name: s.name || `Côté ${i + 1}`, side: roadSides.find(r => r.sideIndex === i) }))
-    .filter(({ side }) => !(side?.bordersRoad && side?.isConfirmed))
-    .map(({ name }) => name);
-  /** Aucune entrée déclarée alors que des côtés sont renseignés. */
-  const missingEntrance = confirmedSidesCount > 0 && !roadSides.some(s => s.hasEntrance);
+  const remainingSideNames = useMemo(
+    () =>
+      parcelSides
+        .map((s, i) => ({ name: s.name || `Côté ${i + 1}`, side: roadSides.find(r => r.sideIndex === i) }))
+        .filter(({ side }) => !(side?.bordersRoad && side?.isConfirmed))
+        .map(({ name }) => name),
+    [parcelSides, roadSides]
+  );
 
   // Reset servitude quand un côté passe en route
   useEffect(() => {

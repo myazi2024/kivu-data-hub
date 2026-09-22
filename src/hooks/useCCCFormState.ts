@@ -1237,6 +1237,11 @@ export const useCCCFormState = ({
           isOccupied: (contrib as any).is_occupied ?? undefined,
           occupantCount: (contrib as any).occupant_count || undefined,
           hostingCapacity: (contrib as any).hosting_capacity || undefined,
+          actualUsage: (contrib as any).actual_usage || undefined,
+          actualUsageOther: (contrib as any).actual_usage_other || undefined,
+          operationalCapacity: (contrib as any).operational_capacity != null ? Number((contrib as any).operational_capacity) : undefined,
+          operationalCapacityUnit: (contrib as any).operational_capacity_unit || undefined,
+          leaseContractUrl: (contrib as any).lease_contract_url || undefined,
           apartmentNumber: (contrib as any).apartment_number || undefined, floorNumber: (contrib as any).floor_number || undefined,
           buildingHeight: (contrib as any).building_height != null ? Number((contrib as any).building_height) : undefined,
           areaSqm: contrib.area_sqm || undefined, province: contrib.province || undefined,
@@ -1310,7 +1315,7 @@ export const useCCCFormState = ({
         const additionalConstr = (contrib as any).additional_constructions as any[];
         if (additionalConstr && Array.isArray(additionalConstr) && additionalConstr.length > 0) {
           setConstructionMode('multiple');
-          setAdditionalConstructions(additionalConstr.map((c: any) => ({ propertyCategory: c.propertyCategory || '', constructionType: c.constructionType || '', constructionNature: c.constructionNature || '', constructionMaterials: c.constructionMaterials || '', declaredUsage: c.declaredUsage || '', standing: c.standing || '', constructionYear: c.constructionYear || undefined, constructionStatus: c.constructionStatus || undefined, rentalStartDate: c.rentalStartDate || undefined, apartmentNumber: c.apartmentNumber || undefined, floorNumber: c.floorNumber || undefined, isOccupied: c.isOccupied ?? undefined, occupantCount: c.occupantCount ?? undefined, hostingCapacity: c.hostingCapacity ?? undefined, rentalConfiguration: c.rentalConfiguration || undefined, rentalUnitsCount: c.rentalUnitsCount ?? undefined, monthlyRentUsd: c.monthlyRentUsd ?? undefined, rentalUnits: Array.isArray(c.rentalUnits) ? c.rentalUnits : undefined, permitMode: c.permitMode || undefined, permit: c.permit || undefined })));
+          setAdditionalConstructions(additionalConstr.map((c: any) => ({ propertyCategory: c.propertyCategory || '', constructionType: c.constructionType || '', constructionNature: c.constructionNature || '', constructionMaterials: c.constructionMaterials || '', declaredUsage: c.declaredUsage || '', standing: c.standing || '', constructionYear: c.constructionYear || undefined, constructionStatus: c.constructionStatus || undefined, rentalStartDate: c.rentalStartDate || undefined, apartmentNumber: c.apartmentNumber || undefined, floorNumber: c.floorNumber || undefined, isOccupied: c.isOccupied ?? undefined, occupantCount: c.occupantCount ?? undefined, hostingCapacity: c.hostingCapacity ?? undefined, actualUsage: c.actualUsage || undefined, actualUsageOther: c.actualUsageOther || undefined, operationalCapacity: c.operationalCapacity ?? undefined, operationalCapacityUnit: c.operationalCapacityUnit || undefined, leaseContractUrl: c.leaseContractUrl || undefined, rentalConfiguration: c.rentalConfiguration || undefined, rentalUnitsCount: c.rentalUnitsCount ?? undefined, monthlyRentUsd: c.monthlyRentUsd ?? undefined, rentalUnits: Array.isArray(c.rentalUnits) ? c.rentalUnits : undefined, permitMode: c.permitMode || undefined, permit: c.permit || undefined })));
         }
 
         // Restore roadSides, servitude, hasDispute, disputeData, buildingShapes from DB
