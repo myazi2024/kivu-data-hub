@@ -18,6 +18,7 @@ import LeaseContractField from './LeaseContractField';
 import BuildingHeightField from './BuildingHeightField';
 import { getShapeForConstructionIndex, withShapeHeight, minHeightForFloors } from '@/utils/buildingShapes';
 import { isSingleStoreyCategory } from '@/utils/cccPredicates';
+import { ACTUAL_USAGE_OTHER, buildActualUsageOptions, isResidentialActualUsage, resolveOperationalCapacityField } from '@/utils/actualUsage';
 
 export interface AdditionalConstructionPermit {
   permitType: 'construction' | 'regularization';
@@ -58,6 +59,12 @@ export interface AdditionalConstruction {
   isOccupied?: boolean;
   occupantCount?: number;
   hostingCapacity?: number;
+  /** Usage réellement fait du bien par l'occupant (peut différer de l'usage prévu). */
+  actualUsage?: string;
+  actualUsageOther?: string;
+  operationalCapacity?: number;
+  operationalCapacityUnit?: string;
+  leaseContractUrl?: string;
   /** Hauteur (m) — saisie indépendante du tracé, répercutée sur la forme liée du croquis. */
   heightM?: number;
   // Autorisation de bâtir
