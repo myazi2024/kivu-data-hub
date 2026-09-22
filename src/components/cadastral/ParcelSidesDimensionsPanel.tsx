@@ -496,6 +496,9 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
                       roadSide?.roadName || null,
                       roadSide?.roadWidth ? `largeur: ${roadSide.roadWidth}m` : null,
                       roadSide?.roadSurface ? roadSurfaceLabel(roadSide.roadSurface) : null,
+                      roadSide?.hasStreetLighting === true
+                        ? `Éclairage public${roadSide.streetLampCount ? ` : ${roadSide.streetLampCount} lampadaire${roadSide.streetLampCount > 1 ? 's' : ''}` : ''}`
+                        : roadSide?.hasStreetLighting === false ? 'Sans éclairage public' : null,
                       roadSide?.hasGutter === true
                         ? (roadSide.gutterConnected ? 'Caniveau raccordé' : 'Caniveau non raccordé')
                         : roadSide?.hasGutter === false ? 'Sans caniveau' : null,
@@ -504,7 +507,10 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
                 )}
                 {hasConfirmed && isWall && (
                   <p className="text-xs text-muted-foreground pl-6">
-                    {roadSide?.wallHeight ? `Hauteur: ${roadSide.wallHeight}m` : ''}
+                    {[
+                      `Mur : ${wallMaterials.find(m => m.value === roadSide?.wallMaterial)?.label || roadSide?.wallMaterial || '—'}`,
+                      roadSide?.wallHeight ? `Hauteur: ${roadSide.wallHeight}m` : null,
+                    ].filter(Boolean).join(' · ')}
                   </p>
                 )}
 
