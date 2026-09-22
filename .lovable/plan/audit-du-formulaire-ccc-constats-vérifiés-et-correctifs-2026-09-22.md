@@ -1,102 +1,64 @@
 # Audit du formulaire CCC — constats vérifiés et correctifs
 
-Audit mené sur le formulaire (écrans, hooks, utilitaires) et sur la base réelle
-(politiques d'accès, déclencheurs, index interrogés en direct).
+État de départ : le code compile (contrôle de types sans erreur) et les 160 tests automatisés passent. Les constats ci-dessous ont tous été vérifiés par lecture du code ou requête en base.
 
-## Ce que j'ai trouvé
+## Constats
 
-### Bloquant (vérifié en base)
+### 1. Le type de section enregistré en base est incohérent (bloquant)
 
-1. **Le rattachement d'une déclaration à sa parcelle est effacé silencieusement.**
-   Un contrôle posé en base vide systématiquement le lien vers la parcelle pour tout
-   envoi fait par un utilisateur non-administrateur. Conséquence : les déclarations
-   fiscales (impôt foncier, impôt locatif, taxe sur bâtiment), les enregistrements
-   d'hypothèque, les autorisations de bâtir et les demandes de correction partent sans
-   parcelle rattachée. Côté admin, ces demandes n'apparaissent plus liées au bon dossier.
+À la création d'une parcelle depuis une contribution approuvée, le déclencheur copie tel quel la valeur envoyée par le formulaire : `SU` ou `SR`. La branche de mise à jour (contribution rattachée à une parcelle existante) écrit au contraire `urbain` / `rural`. Vérifié en base : la seule valeur présente aujourd'hui est `SU`.
 
-2. **Le score anti-fraude calculé à l'envoi est jeté.** Le même contrôle remet à vide le
-   score et l'indicateur « suspect » à l'insertion. Une fiche marquée suspecte par le
-   formulaire arrive donc en revue comme une fiche ordinaire, alors qu'une alerte de fraude
-   est bien écrite à côté : les deux sources se contredisent.
+Conséquences vérifiées :
+- La recherche avancée filtre sur `Terrain bâti` / `Terrain nu` pour ce même champ : ce filtre ne peut jamais rien retourner.
+- Le calcul de taxe teste `rural` : une parcelle créée par le CCC sera toujours traitée comme urbaine.
+- Les analyses foncières et les fiches PDF testent `SU` : elles cesseront d'être correctes dès qu'une contribution de mise à jour écrira `urbain`.
 
-3. **Pièces jointes illisibles dans plusieurs écrans.** Le coffre des documents cadastraux
-   est privé, mais six écrans (déclarations fiscales, taxe bâtiment, mutation, expertise,
-   conflit de limites, litiges) y fabriquent encore des liens « publics ». Ces liens
-   renvoient une erreur à l'ouverture. Le formulaire CCC lui-même est déjà correct
-   (liens signés).
+### 2. Les champs récents ne sont pas écrits à la création de la parcelle
 
-### Bugs et robustesse
+La création de parcelle omet la circonscription foncière, l'état de la construction, l'autorisation précédente, l'usage réel, la capacité d'exploitation et le contrat de location. Ces valeurs ne sont récupérées que par un second déclencheur qui repasse derrière en mise à jour — dépendance à l'ordre alphabétique des déclencheurs, fragile et non documentée.
 
-4. **Modification d'une contribution : aucun contrôle anti-fraude.** L'envoi initial vérifie
-   le compte et la fraude ; la modification ne vérifie que le blocage du compte. On peut
-   donc renvoyer par modification un contenu qui aurait été signalé à l'envoi.
+### 3. Effacer une valeur est impossible lors d'une mise à jour
 
-5. **Brouillons locaux jamais purgés.** Chaque parcelle ouverte laisse un brouillon dans le
-   navigateur, conservé 30 jours et jamais nettoyé pour les autres parcelles ; il contient
-   des données personnelles (propriétaires, adresses). Aucun plafond de place.
+La branche de mise à jour utilise systématiquement « garder l'ancienne valeur si la nouvelle est vide ». Corriger une contribution pour supprimer une information (année de construction erronée, loyer, servitude) ne l'efface donc jamais sur la fiche parcelle.
 
-6. **Nommage de fichiers par horodatage** dans les déclarations fiscales : deux envois dans
-   la même milliseconde s'écrasent. Le reste du projet utilise déjà un identifiant unique.
+### 4. Zone déduite : cas résiduels après la refonte
 
-### Code mort
+- Changer de province vide la circonscription mais laisse la zone précédente active : le préfixe du numéro de parcelle peut rester incohérent jusqu'à ce qu'une nouvelle circonscription soit choisie.
+- La remise à zéro du bloc Localisation conserve la zone quand elle avait été « auto-détectée », alors que la circonscription vient d'être effacée.
+- Le message de validation cite encore la zone comme champ à remplir, alors qu'elle n'est plus saisissable : l'utilisateur ne peut pas agir dessus directement.
 
-7. `FormSummaryStep` (392 lignes) n'est plus référencé nulle part.
+### 5. Recherche avancée : filtre inopérant
 
-### Optimisations
+Le filtre « type de section » de la recherche avancée compare à des libellés qui n'existent dans aucune colonne (voir constat 1) : il renvoie toujours zéro résultat sans message.
 
-8. Le brouillon est réécrit intégralement à chaque frappe (sérialisation complète du
-   formulaire toutes les 1,5 s), y compris quand rien de significatif n'a changé.
-9. La restauration d'un brouillon déclenche deux mises à jour d'état successives
-   (un re-render inutile de tout le formulaire).
-10. Les index de la table des contributions sont redondants : `status` seul,
-    `(status, created_at)` et `(status, created_at DESC)` coexistent — coût d'écriture
-    inutile à chaque envoi.
+## Correctifs
 
-## Corrections proposées, par étapes
+### Étape A — Uniformiser le type de section (base de données)
+Une migration :
+- Normalise la valeur à l'écriture dans les deux branches du déclencheur (`SU`/`urbain` → une seule convention retenue : `SU` / `SR`, déjà la plus répandue dans le code applicatif).
+- Convertit les lignes existantes écrites en `urbain` / `rural`.
+- Ajoute la circonscription foncière, l'état de la construction, l'autorisation précédente, l'usage réel, la capacité d'exploitation et le contrat de location à la création de parcelle, afin que le second déclencheur ne soit plus qu'un filet de sécurité.
 
-**Étape A — Rattachement parcelle et anti-fraude (base de données)**
-- Ne plus effacer le lien vers la parcelle : le conserver quand il désigne une parcelle
-  réellement existante, le vider sinon.
-- Conserver le score et l'indicateur de suspicion produits à l'envoi, tout en empêchant
-  toujours l'utilisateur de se déclarer lui-même validé ou vérifié.
-- Aligner la règle d'accès correspondante pour qu'elle accepte ce lien.
+### Étape B — Autoriser l'effacement d'une valeur
+Passage des champs modifiables (année, loyer, capacité, servitude, environnement sonore, valeurs marchandes) à une écriture directe quand la contribution est de type « mise à jour », en conservant le comportement actuel pour les champs structurants (numéro, propriétaire, titre).
 
-**Étape B — Liens de pièces jointes**
-- Remplacer les liens « publics » par des liens signés via l'utilitaire déjà en place,
-  dans les six écrans concernés.
-- Passer au nommage par identifiant unique pour les documents fiscaux.
+### Étape C — Cohérence de la zone dans le formulaire
+- Vider la zone et le préfixe du numéro quand la circonscription est effacée (changement de province, remise à zéro du bloc).
+- Reformuler le message de validation : demander la circonscription foncière, plus la zone.
+- Aligner la remise à zéro du bloc Localisation sur la nouvelle source de vérité.
 
-**Étape C — Modification sécurisée**
-- Appliquer à la modification les mêmes contrôles qu'à l'envoi (compte bloqué + détection
-  de fraude), avec mise à jour du score sur la fiche.
+### Étape D — Recherche avancée
+Faire correspondre le filtre de section aux valeurs réellement stockées, et afficher un message distinct entre « aucun résultat » et « la recherche a échoué ».
 
-**Étape D — Brouillons**
-- Purger les brouillons périmés et limiter leur nombre à l'ouverture du formulaire ;
-  n'écrire que si le contenu a réellement changé.
-
-**Étape E — Nettoyage et performance**
-- Supprimer l'écran mort `FormSummaryStep`.
-- Restauration de brouillon en une seule mise à jour d'état.
-- Retirer les index redondants de la table des contributions.
-
-Vérification après chaque étape : contrôle de types et suite de tests complète.
+### Étape E — Tests et vérification finale
+- Tests unitaires : normalisation du type de section, effacement d'une valeur en mise à jour, purge de la zone au changement de province.
+- Vérification du parcours complet dans le navigateur (formulaire ouvert, navigation entre onglets, soumission) avec relevé des erreurs de console, en mobile et en bureau.
+- Contrôle de types et suite complète de tests après chaque étape.
 
 ## Détails techniques
 
-- Déclencheur `aaa_normalize_contribution_insert` → `normalize_contribution_insert()` :
-  force `original_parcel_id := NULL`, `fraud_score := NULL`, `is_suspicious := NULL` pour
-  tout non-admin. Policy INSERT `Users can create their own contributions` exige en plus
-  `original_parcel_id IS NULL`. Appelants impactés : `PropertyTaxCalculator.tsx:201`,
-  `BuildingTaxCalculator.tsx:229`, `IRLCalculator.tsx:194`, `MortgageFormDialog.tsx:323`,
-  `MortgageCancellationDialog.tsx:370`, `BuildingPermitFormDialog.tsx:206`,
-  `CorrectionRequestDialog.tsx:56`.
-- `getPublicUrl` sur bucket privé `cadastral-documents` : `PropertyTaxCalculator.tsx:177,189`,
-  `BuildingTaxCalculator.tsx:218`, `TaxFormDialog.tsx:192`, `MutationRequestDialog.tsx:329,429`,
-  `RealEstateExpertiseRequestDialog.tsx:1052,1068,1084`, `BoundaryConflictDialog.tsx`,
-  `disputeUploadUtils.ts:71` → utiliser `uploadCccDocument` / `getSignedStorageUrl`.
-- `useCadastralContribution.tsx` : `updateContribution` n'appelle pas `validateUserSecurity`.
-- `useFormPersistence.ts` : clé `cadastral_contribution_<parcel>`, TTL 30 j sans purge
-  transverse ; `loadFormDataFromStorage` appelle `setFormData` deux fois (l. 192 et 217).
-- Index redondants : `idx_cadastral_contributions_status`,
-  `cadastral_contributions_status_created_idx` (doublon de `..._status_created_desc`).
-- Vérification : `npx tsgo --noEmit -p tsconfig.app.json` puis `npx vitest run`.
+Base : `sync_approved_contribution_to_parcel` (branches INSERT et UPDATE), `sync_contribution_extra_fields_to_parcel`, colonne `cadastral_parcels.parcel_type`.
+Front : `src/hooks/useCCCFormState.ts` (effets circonscription → zone, `resetLocationBlock`), `src/hooks/ccc/useFormValidation.ts`, `src/hooks/useAdvancedCadastralSearch.tsx`, `src/components/cadastral/tax-calculator/taxSharedUtils.ts`, `src/lib/pdf.ts`, `src/utils/analyticsHelpers.ts`.
+Vérification : `npx tsgo --noEmit -p tsconfig.app.json` et `npx vitest run`.
+
+Note : l'analyseur de sécurité de la base remonte 393 avertissements antérieurs à ce travail (fonctions `SECURITY DEFINER`, protection de mot de passe) ; ils ne sont pas traités ici sauf demande.

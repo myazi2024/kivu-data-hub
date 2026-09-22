@@ -95,11 +95,12 @@ export const useAdvancedCadastralSearch = () => {
       query = query.ilike('province', `%${escapeIlike(activeFilters.province)}%`);
     }
 
-    // Filtre sectionType → parcel_type mapping
+    // Filtre zone → parcel_type. Convention unique en base : 'SU' / 'SR'
+    // (les anciennes valeurs 'urbain' / 'rural' ont été converties).
     if (activeFilters.sectionType === 'urbaine') {
-      query = query.eq('parcel_type', 'Terrain bâti');
+      query = query.eq('parcel_type', 'SU');
     } else if (activeFilters.sectionType === 'rurale') {
-      query = query.eq('parcel_type', 'Terrain nu');
+      query = query.eq('parcel_type', 'SR');
     }
 
     // Filtres urbains

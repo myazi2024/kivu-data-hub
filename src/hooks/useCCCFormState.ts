@@ -1382,6 +1382,23 @@ export const useCCCFormState = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [districtSectionType]);
 
+  // Circonscription effacée (changement de province, remise à zéro du bloc) :
+  // la zone déduite et le préfixe SU/SR du numéro ne sont plus fondés.
+  // Exception : un numéro issu d'une recherche cadastrale reste la source.
+  const landDistrictValue = formData.landDistrict;
+  useEffect(() => {
+    if (isLoadingFromDbRef.current) return;
+    if (landDistrictValue && landDistrictValue.trim()) return;
+    if (sectionTypeAutoDetected) return;
+    if (!sectionType) return;
+    setSectionType('');
+    setFormData(prev => ({
+      ...prev,
+      parcelNumber: prev.parcelNumber ? stripParcelPrefix(prev.parcelNumber) : prev.parcelNumber,
+    }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [landDistrictValue]);
+
   // Repli : détection depuis le numéro de parcelle uniquement quand la
   // circonscription est inconnue (saisie manuelle / province non répertoriée).
   // Les boutons SU/SR ne sont verrouillés que si le numéro REÇU de la recherche
