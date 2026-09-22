@@ -18,6 +18,10 @@ export interface RoadSideInfo {
   roadWidth?: number;
   /** Revêtement de la chaussée (accessibilité, viabilité). */
   roadSurface?: string;
+  /** Éclairage public devant la parcelle sur ce côté. */
+  hasStreetLighting?: boolean;
+  /** Nombre de lampadaires bordant la parcelle sur ce côté. */
+  streetLampCount?: number;
   /** Présence d'un caniveau le long de ce côté (assainissement). */
   hasGutter?: boolean;
   /** La parcelle est-elle raccordée au caniveau depuis ce côté ? */
@@ -25,7 +29,12 @@ export interface RoadSideInfo {
   orientation?: string;
   length?: number;
   isConfirmed?: boolean;
+  /** Type dominant (dérivé) : 'route' dès qu'une route est déclarée. */
   borderType?: 'route' | 'mur_mitoyen';
+  /** Le côté est bordé par une route (cumulable avec un mur). */
+  hasRoad?: boolean;
+  /** Le côté est fermé par un mur (cumulable avec une route). */
+  hasWall?: boolean;
   wallHeight?: number;
   wallMaterial?: string;
 }

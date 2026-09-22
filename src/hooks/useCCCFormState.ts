@@ -1228,6 +1228,7 @@ export const useCCCFormState = ({
           constructionNature: contrib.construction_nature || undefined, constructionMaterials: contrib.construction_materials || undefined,
           declaredUsage: contrib.declared_usage || undefined, standing: contrib.standing || undefined,
           constructionYear: contrib.construction_year || undefined,
+          constructionStatus: (contrib as any).construction_status || undefined,
           rentalStartDate: (contrib as any).rental_start_date || undefined,
           rentalConfiguration: (contrib as any).rental_configuration || undefined,
           rentalUnitsCount: (contrib as any).rental_units_count ?? undefined,

@@ -27,14 +27,25 @@ export type SideBorderType = 'route' | 'mur_mitoyen';
 export interface RoadSideInfo {
   sideIndex: number;
   bordersRoad: boolean;
-  // Type de limite (route ou mur mitoyen)
+  /**
+   * Type de limite dominant — champ dérivé conservé pour compatibilité :
+   * vaut 'route' dès qu'une route est déclarée sur le côté, sinon 'mur_mitoyen'.
+   */
   borderType?: SideBorderType;
+  /** Le côté est bordé par une route (cumulable avec un mur). */
+  hasRoad?: boolean;
+  /** Le côté est fermé par un mur (cumulable avec une route). */
+  hasWall?: boolean;
   // Propriétés pour les routes
   roadType?: string;
   roadName?: string;
   roadWidth?: number;
   /** Revêtement de la chaussée (voir ROAD_SURFACE_OPTIONS). */
   roadSurface?: string;
+  /** Éclairage public devant la parcelle sur ce côté. */
+  hasStreetLighting?: boolean;
+  /** Nombre de lampadaires bordant la parcelle sur ce côté. */
+  streetLampCount?: number;
   /** Présence d'un caniveau le long de ce côté. */
   hasGutter?: boolean;
   /** Parcelle raccordée au caniveau depuis ce côté (si caniveau présent). */
@@ -49,6 +60,14 @@ export interface RoadSideInfo {
   // Entrée de la parcelle
   hasEntrance?: boolean;
 }
+
+/** Le côté borde une route (lit le nouveau champ, avec repli sur l'ancien `borderType`). */
+export const sideHasRoad = (s?: Partial<RoadSideInfo> | null): boolean =>
+  !!s && (s.hasRoad ?? s.borderType === 'route');
+
+/** Le côté est fermé par un mur (lit le nouveau champ, avec repli sur l'ancien `borderType`). */
+export const sideHasWall = (s?: Partial<RoadSideInfo> | null): boolean =>
+  !!s && (s.hasWall ?? s.borderType === 'mur_mitoyen');
 
 export interface ServitudeInfo {
   hasServitude: boolean;
@@ -98,29 +117,35 @@ const getOrientationColor = (orientation?: string) => {
   }
 };
 
-/** Contrôle segmenté coulissant [Mur | Route], calqué sur CadastralSearchModeToggle. */
+/**
+ * Contrôle segmenté [Mur | Route] — multi-sélection : un côté peut porter
+ * un mur ET une route en même temps.
+ */
 const BorderTypeToggle: React.FC<{
-  value?: SideBorderType;
-  onChange: (type: SideBorderType) => void;
-}> = ({ value, onChange }) => {
-  const hasSelection = value === 'route' || value === 'mur_mitoyen';
-  const activeIndex = value === 'route' ? 1 : 0;
+  wallActive: boolean;
+  roadActive: boolean;
+  onToggle: (type: SideBorderType) => void;
+}> = ({ wallActive, roadActive, onToggle }) => {
   return (
     <div
-      role="radiogroup"
-      aria-label="Type de limite"
+      role="group"
+      aria-label="Type de limite (mur et/ou route)"
       onClick={(e) => e.stopPropagation()}
       className="relative flex items-center rounded-full bg-muted/60 p-0.5 border border-border/40 shadow-inner"
     >
-      {hasSelection && (
+      {wallActive && (
         <div
-          className={cn(
-            'absolute top-0.5 bottom-0.5 left-0.5 rounded-full pointer-events-none',
-            value === 'route' ? 'bg-green-400 dark:bg-green-600' : 'bg-amber-400 dark:bg-amber-600'
-          )}
+          className="absolute top-0.5 bottom-0.5 left-0.5 rounded-full pointer-events-none bg-amber-400 dark:bg-amber-600"
+          style={{ width: 'calc(50% - 0.125rem)', transition: 'opacity 0.2s ease-out' }}
+          aria-hidden="true"
+        />
+      )}
+      {roadActive && (
+        <div
+          className="absolute top-0.5 bottom-0.5 left-0.5 rounded-full pointer-events-none bg-green-400 dark:bg-green-600"
           style={{
             width: 'calc(50% - 0.125rem)',
-            transform: `translateX(${activeIndex * 100}%)`,
+            transform: 'translateX(100%)',
             transition: 'transform 0.28s cubic-bezier(0.34, 1.4, 0.64, 1)',
           }}
           aria-hidden="true"
@@ -128,14 +153,13 @@ const BorderTypeToggle: React.FC<{
       )}
       <button
         type="button"
-        role="radio"
-        aria-checked={value === 'mur_mitoyen'}
-        aria-label="Mur mitoyen"
-        onClick={() => onChange('mur_mitoyen')}
+        aria-pressed={wallActive}
+        aria-label="Mur"
+        onClick={() => onToggle('mur_mitoyen')}
         className={cn(
           'relative z-10 flex-1 h-6 px-2 rounded-full text-[10px] font-semibold transition-colors select-none',
           'flex items-center justify-center gap-1',
-          value === 'mur_mitoyen' ? 'text-amber-950 dark:text-white' : 'text-muted-foreground hover:text-foreground'
+          wallActive ? 'text-amber-950 dark:text-white' : 'text-muted-foreground hover:text-foreground'
         )}
       >
         <BrickWall className="h-2.5 w-2.5" />
@@ -143,14 +167,13 @@ const BorderTypeToggle: React.FC<{
       </button>
       <button
         type="button"
-        role="radio"
-        aria-checked={value === 'route'}
+        aria-pressed={roadActive}
         aria-label="Route"
-        onClick={() => onChange('route')}
+        onClick={() => onToggle('route')}
         className={cn(
           'relative z-10 flex-1 h-6 px-2 rounded-full text-[10px] font-semibold transition-colors select-none',
           'flex items-center justify-center gap-1',
-          value === 'route' ? 'text-green-950 dark:text-white' : 'text-muted-foreground hover:text-foreground'
+          roadActive ? 'text-green-950 dark:text-white' : 'text-muted-foreground hover:text-foreground'
         )}
       >
         <Route className="h-2.5 w-2.5" />
@@ -173,12 +196,12 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
   const [editingSide, setEditingSide] = useState<number | null>(null);
   const [showNotification, setShowNotification] = useState(true);
   const confirmedSidesCount = roadSides.filter(s => s.bordersRoad && s.isConfirmed).length;
-  const roadCount = roadSides.filter(s => s.bordersRoad && s.isConfirmed && s.borderType === 'route').length;
-  const wallCount = roadSides.filter(s => s.bordersRoad && s.isConfirmed && s.borderType === 'mur_mitoyen').length;
+  const roadCount = roadSides.filter(s => s.bordersRoad && s.isConfirmed && sideHasRoad(s)).length;
+  const wallCount = roadSides.filter(s => s.bordersRoad && s.isConfirmed && sideHasWall(s)).length;
   
 
   // Vérifier si tous les côtés sont en mur mitoyen (aucun côté n'est une route)
-  const hasAnyRoute = roadSides.some(s => s.bordersRoad && s.borderType === 'route');
+  const hasAnyRoute = roadSides.some(s => s.bordersRoad && sideHasRoad(s));
   const allSidesAreMurMitoyen = parcelSides.length > 0 && !hasAnyRoute;
   const sidesCount = parcelSides.length;
 
@@ -204,19 +227,31 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
     }
   };
 
+  const ROAD_FIELDS_RESET = {
+    roadType: undefined,
+    roadName: undefined,
+    roadWidth: undefined,
+    roadSurface: undefined,
+    hasStreetLighting: undefined,
+    streetLampCount: undefined,
+    hasGutter: undefined,
+    gutterConnected: undefined,
+  } as const;
+
+  const WALL_FIELDS_RESET = {
+    wallHeight: undefined,
+    wallMaterial: undefined,
+  } as const;
+
   const handleRemoveSide = (sideIndex: number) => {
-    onRoadSideUpdate(sideIndex, { 
-      bordersRoad: false, 
+    onRoadSideUpdate(sideIndex, {
+      bordersRoad: false,
       borderType: undefined,
-      roadType: undefined, 
-      roadName: undefined, 
-      roadWidth: undefined,
-      roadSurface: undefined,
-      hasGutter: undefined,
-      gutterConnected: undefined,
-      wallHeight: undefined,
-      wallMaterial: undefined,
-      isConfirmed: false 
+      hasRoad: false,
+      hasWall: false,
+      ...ROAD_FIELDS_RESET,
+      ...WALL_FIELDS_RESET,
+      isConfirmed: false,
     });
     setEditingSide(null);
   };
@@ -226,34 +261,57 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
     setShowNotification(false);
     const roadSide = roadSides.find(s => s.sideIndex === sideIndex);
     if (!roadSide?.bordersRoad) {
-      onRoadSideUpdate(sideIndex, { bordersRoad: true, borderType });
+      onRoadSideUpdate(sideIndex, {
+        bordersRoad: true,
+        borderType,
+        hasRoad: borderType === 'route',
+        hasWall: borderType === 'mur_mitoyen',
+      });
     }
   };
 
-  const handleBorderTypeChange = (sideIndex: number, borderType: SideBorderType) => {
-    onRoadSideUpdate(sideIndex, { 
-      borderType,
-      // Reset les champs de l'autre type
-      roadType: undefined,
-      roadName: undefined,
-      roadWidth: undefined,
-      roadSurface: undefined,
-      hasGutter: undefined,
-      gutterConnected: undefined,
-      wallHeight: undefined,
-      wallMaterial: undefined,
+  /** Active ou désactive un type de limite sur un côté (mur et route cumulables). */
+  const toggleBorderType = (sideIndex: number, type: SideBorderType) => {
+    const side = roadSides.find(s => s.sideIndex === sideIndex);
+    const currentRoad = sideHasRoad(side);
+    const currentWall = sideHasWall(side);
+    const nextRoad = type === 'route' ? !currentRoad : currentRoad;
+    const nextWall = type === 'mur_mitoyen' ? !currentWall : currentWall;
+
+    if (!nextRoad && !nextWall) {
+      handleRemoveSide(sideIndex);
+      return;
+    }
+
+    setEditingSide(sideIndex);
+    setShowNotification(false);
+    onRoadSideUpdate(sideIndex, {
+      bordersRoad: true,
+      hasRoad: nextRoad,
+      hasWall: nextWall,
+      // Champ dérivé : la route prime pour les indicateurs d'accès
+      borderType: nextRoad ? 'route' : 'mur_mitoyen',
+      ...(nextRoad ? {} : ROAD_FIELDS_RESET),
+      ...(nextWall ? {} : WALL_FIELDS_RESET),
     });
   };
 
   const canConfirm = (side: RoadSideInfo) => {
     if (!side.bordersRoad) return false;
-    if (side.borderType === 'route') {
+    const hasRoad = sideHasRoad(side);
+    const hasWall = sideHasWall(side);
+    if (!hasRoad && !hasWall) return false;
+    if (hasRoad) {
       const base = !!side.roadType && !!side.roadWidth && side.roadWidth > 0
-        && !!side.roadSurface && side.hasGutter !== undefined;
-      return base && (side.hasGutter !== true || side.gutterConnected !== undefined);
+        && !!side.roadSurface && side.hasStreetLighting !== undefined
+        && side.hasGutter !== undefined;
+      const lighting = side.hasStreetLighting !== true
+        || (typeof side.streetLampCount === 'number' && side.streetLampCount > 0);
+      const gutter = side.hasGutter !== true || side.gutterConnected !== undefined;
+      if (!(base && lighting && gutter)) return false;
     }
-    if (side.borderType === 'mur_mitoyen') return !!side.wallMaterial;
-    return false;
+    if (hasWall && !side.wallMaterial) return false;
+    return true;
   };
 
   const getRoadSideForIndex = (index: number) => {
@@ -324,8 +382,8 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
           const isEditing = editingSide === index;
           const hasConfirmed = roadSide?.bordersRoad && roadSide?.isConfirmed;
           const isEditingThis = roadSide?.bordersRoad && !roadSide?.isConfirmed;
-          const isRoad = roadSide?.borderType === 'route';
-          const isWall = roadSide?.borderType === 'mur_mitoyen';
+          const isRoad = sideHasRoad(roadSide);
+          const isWall = sideHasWall(roadSide);
 
           return (
             <div
@@ -391,17 +449,12 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
                         Entrée
                       </label>
                     </div>
-                    {/* Contrôle segmenté Mur/Route — visible si pas confirmé */}
+                    {/* Contrôle segmenté Mur/Route (cumulables) — visible si pas confirmé */}
                     {!hasConfirmed && (
                       <BorderTypeToggle
-                        value={roadSide?.borderType}
-                        onChange={(type) => {
-                          if (!roadSide?.bordersRoad) {
-                            handleStartEdit(index, type);
-                          } else {
-                            handleBorderTypeChange(index, type);
-                          }
-                        }}
+                        wallActive={isWall}
+                        roadActive={isRoad}
+                        onToggle={(type) => toggleBorderType(index, type)}
                       />
                     )}
                     {hasConfirmed && (
@@ -443,6 +496,9 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
                       roadSide?.roadName || null,
                       roadSide?.roadWidth ? `largeur: ${roadSide.roadWidth}m` : null,
                       roadSide?.roadSurface ? roadSurfaceLabel(roadSide.roadSurface) : null,
+                      roadSide?.hasStreetLighting === true
+                        ? `Éclairage public${roadSide.streetLampCount ? ` : ${roadSide.streetLampCount} lampadaire${roadSide.streetLampCount > 1 ? 's' : ''}` : ''}`
+                        : roadSide?.hasStreetLighting === false ? 'Sans éclairage public' : null,
                       roadSide?.hasGutter === true
                         ? (roadSide.gutterConnected ? 'Caniveau raccordé' : 'Caniveau non raccordé')
                         : roadSide?.hasGutter === false ? 'Sans caniveau' : null,
@@ -451,7 +507,10 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
                 )}
                 {hasConfirmed && isWall && (
                   <p className="text-xs text-muted-foreground pl-6">
-                    {roadSide?.wallHeight ? `Hauteur: ${roadSide.wallHeight}m` : ''}
+                    {[
+                      `Mur : ${wallMaterials.find(m => m.value === roadSide?.wallMaterial)?.label || roadSide?.wallMaterial || '—'}`,
+                      roadSide?.wallHeight ? `Hauteur: ${roadSide.wallHeight}m` : null,
+                    ].filter(Boolean).join(' · ')}
                   </p>
                 )}
 
@@ -531,6 +590,55 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
                           />
                         </div>
 
+                        {/* Éclairage public */}
+                        <div className="pt-1">
+                          <Label className="text-[11px] font-medium text-muted-foreground mb-1 block">
+                            Éclairage public devant la parcelle ? *
+                          </Label>
+                          <RadioGroup
+                            value={roadSide?.hasStreetLighting === undefined ? '' : roadSide.hasStreetLighting ? 'oui' : 'non'}
+                            onValueChange={(value) =>
+                              onRoadSideUpdate(index, {
+                                hasStreetLighting: value === 'oui',
+                                streetLampCount: value === 'oui' ? roadSide?.streetLampCount : undefined,
+                              })
+                            }
+                            className="flex gap-3"
+                          >
+                            <div className="flex items-center gap-1.5">
+                              <RadioGroupItem value="oui" id={`lighting-yes-${index}`} className="h-3.5 w-3.5" />
+                              <label htmlFor={`lighting-yes-${index}`} className="text-[11px] cursor-pointer select-none">Oui</label>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <RadioGroupItem value="non" id={`lighting-no-${index}`} className="h-3.5 w-3.5" />
+                              <label htmlFor={`lighting-no-${index}`} className="text-[11px] cursor-pointer select-none">Non</label>
+                            </div>
+                          </RadioGroup>
+                        </div>
+
+                        {/* Nombre de lampadaires */}
+                        {roadSide?.hasStreetLighting === true && (
+                          <div className="pt-1 animate-fade-in">
+                            <Label className="text-[11px] font-medium text-muted-foreground mb-1 block">
+                              Nombre de lampadaires qui bordent la parcelle *
+                            </Label>
+                            <Input
+                              type="number"
+                              min="1"
+                              step="1"
+                              placeholder="Ex: 2"
+                              value={roadSide?.streetLampCount ?? ''}
+                              onChange={(e) => {
+                                const n = parseInt(e.target.value, 10);
+                                onRoadSideUpdate(index, {
+                                  streetLampCount: Number.isFinite(n) && n > 0 ? n : undefined,
+                                });
+                              }}
+                              className="h-8 text-xs rounded-lg"
+                            />
+                          </div>
+                        )}
+
                         {/* Présence d'un caniveau */}
                         <div className="pt-1">
                           <Label className="text-[11px] font-medium text-muted-foreground mb-1 block">
@@ -581,36 +689,6 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
                             </RadioGroup>
                           </div>
                         )}
-
-
-                        {/* Boutons d'action */}
-                        <div className="flex gap-1.5 pt-1">
-                          <Button
-                            type="button"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleConfirmSide(index);
-                            }}
-                            disabled={!canConfirm(roadSide!)}
-                            className="flex-1 h-7 text-xs rounded-lg gap-1"
-                          >
-                            <Check className="h-3 w-3" />
-                            Ajouter
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleRemoveSide(index);
-                            }}
-                            className="h-7 text-xs rounded-lg px-2"
-                          >
-                            Annuler
-                          </Button>
-                        </div>
                       </div>
                     )}
                     {isEditingThis && isWall && (
@@ -650,34 +728,36 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
                           className="h-8 text-xs rounded-lg"
                         />
 
-                        {/* Boutons d'action */}
-                        <div className="flex gap-1.5 pt-1">
-                          <Button
-                            type="button"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleConfirmSide(index);
-                            }}
-                            disabled={!canConfirm(roadSide!)}
-                            className="flex-1 h-7 text-xs rounded-lg gap-1"
-                          >
-                            <Check className="h-3 w-3" />
-                            Ajouter
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleRemoveSide(index);
-                            }}
-                            className="h-7 text-xs rounded-lg px-2"
-                          >
-                            Annuler
-                          </Button>
-                        </div>
+                      </div>
+                    )}
+                    {/* Boutons d'action — communs aux blocs Mur et Route */}
+                    {isEditingThis && (
+                      <div className="flex gap-1.5 pt-2 pl-6">
+                        <Button
+                          type="button"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleConfirmSide(index);
+                          }}
+                          disabled={!canConfirm(roadSide!)}
+                          className="flex-1 h-7 text-xs rounded-lg gap-1"
+                        >
+                          <Check className="h-3 w-3" />
+                          Ajouter
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRemoveSide(index);
+                          }}
+                          className="h-7 text-xs rounded-lg px-2"
+                        >
+                          Annuler
+                        </Button>
                       </div>
                     )}
                   </div>
