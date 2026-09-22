@@ -288,11 +288,13 @@ export const CCCDetailsDialog: React.FC<CCCDetailsDialogProps> = ({
                                 Route: {side.roadType} {side.roadName ? `- ${side.roadName}` : ''} {side.roadWidth ? `(${side.roadWidth}m)` : ''}
                               </p>
                             )}
-                            {isWall && side.wallMaterial && (
+                            {isWall && (side.boundaryKind === 'limite' ? (
+                              <p className="text-[10px] text-muted-foreground mt-0.5 ml-4">Limite (sans mur)</p>
+                            ) : side.wallMaterial ? (
                               <p className="text-[10px] text-muted-foreground mt-0.5 ml-4">
                                 Mur: {side.wallMaterial} {side.wallHeight ? `(H: ${side.wallHeight}m)` : ''}
                               </p>
-                            )}
+                            ) : null)}
                           </div>
                         );
                       })}
