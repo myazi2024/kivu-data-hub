@@ -430,6 +430,8 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
           const isEditingThis = roadSide?.bordersRoad && !roadSide?.isConfirmed;
           const isRoad = sideHasRoad(roadSide);
           const isWall = sideHasWall(roadSide);
+          const boundaryKind = sideBoundaryKind(roadSide);
+          const isPlainBoundary = boundaryKind === 'limite';
 
           return (
             <div
