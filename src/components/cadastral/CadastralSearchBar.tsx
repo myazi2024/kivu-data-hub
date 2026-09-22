@@ -16,7 +16,6 @@ import AdvancedSearchFilters from './AdvancedSearchFilters';
 import { useAdvancedCadastralSearch } from '@/hooks/useAdvancedCadastralSearch';
 import { cn } from '@/lib/utils';
 import { useTestEnvironment } from '@/hooks/useTestEnvironment';
-import { toast } from 'sonner';
 
 const FIXED_TEXT = "Ex: ";
 

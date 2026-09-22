@@ -19,6 +19,34 @@ export interface FavoriteParcel {
 const HISTORY_KEY = 'cadastral_search_history';
 const FAVORITES_KEY = 'cadastral_favorites';
 const MAX_HISTORY = 20;
+const MAX_FAVORITES = 50;
+
+const newId = () =>
+  typeof crypto !== 'undefined' && 'randomUUID' in crypto
+    ? crypto.randomUUID()
+    : `${Date.now()}-${Math.round(Math.random() * 1e6)}`;
+
+/** Lecture tolérante : une entrée corrompue ne doit pas casser la recherche. */
+function readList<T>(key: string): T[] {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? (parsed as T[]) : [];
+  } catch (e) {
+    console.error(`Erreur chargement ${key}:`, e);
+    localStorage.removeItem(key);
+    return [];
+  }
+}
+
+function writeList(key: string, value: unknown) {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch (e) {
+    console.warn(`Écriture ${key} impossible:`, e);
+  }
+}
 
 export const useSearchHistory = () => {
   const [history, setHistory] = useState<SearchHistoryItem[]>([]);
@@ -26,45 +54,26 @@ export const useSearchHistory = () => {
 
   // Charger l'historique au démarrage
   useEffect(() => {
-    const storedHistory = localStorage.getItem(HISTORY_KEY);
-    const storedFavorites = localStorage.getItem(FAVORITES_KEY);
-    
-    if (storedHistory) {
-      try {
-        setHistory(JSON.parse(storedHistory));
-      } catch (e) {
-        console.error('Erreur chargement historique:', e);
-      }
-    }
-    
-    if (storedFavorites) {
-      try {
-        setFavorites(JSON.parse(storedFavorites));
-      } catch (e) {
-        console.error('Erreur chargement favoris:', e);
-      }
-    }
+    setHistory(readList<SearchHistoryItem>(HISTORY_KEY));
+    setFavorites(readList<FavoriteParcel>(FAVORITES_KEY));
   }, []);
 
   const addToHistory = (query: string, filters?: any) => {
-    const newItem: SearchHistoryItem = {
-      id: Date.now().toString(),
-      query,
-      filters,
-      timestamp: Date.now()
-    };
-
-    const updatedHistory = [newItem, ...history.filter(item => item.query !== query)]
-      .slice(0, MAX_HISTORY);
-    
-    setHistory(updatedHistory);
-    localStorage.setItem(HISTORY_KEY, JSON.stringify(updatedHistory));
+    const newItem: SearchHistoryItem = { id: newId(), query, filters, timestamp: Date.now() };
+    // Mise à jour fonctionnelle : deux ajouts rapprochés ne s'écrasent plus.
+    setHistory(prev => {
+      const updated = [newItem, ...prev.filter(item => item.query !== query)].slice(0, MAX_HISTORY);
+      writeList(HISTORY_KEY, updated);
+      return updated;
+    });
   };
 
   const removeFromHistory = (id: string) => {
-    const updatedHistory = history.filter(item => item.id !== id);
-    setHistory(updatedHistory);
-    localStorage.setItem(HISTORY_KEY, JSON.stringify(updatedHistory));
+    setHistory(prev => {
+      const updated = prev.filter(item => item.id !== id);
+      writeList(HISTORY_KEY, updated);
+      return updated;
+    });
   };
 
   const clearHistory = () => {
@@ -73,21 +82,22 @@ export const useSearchHistory = () => {
   };
 
   const addToFavorites = (parcel: Omit<FavoriteParcel, 'id' | 'timestamp'>) => {
-    const newFavorite: FavoriteParcel = {
-      ...parcel,
-      id: Date.now().toString(),
-      timestamp: Date.now()
-    };
+    const newFavorite: FavoriteParcel = { ...parcel, id: newId(), timestamp: Date.now() };
 
-    const updatedFavorites = [newFavorite, ...favorites.filter(f => f.parcel_id !== parcel.parcel_id)];
-    setFavorites(updatedFavorites);
-    localStorage.setItem(FAVORITES_KEY, JSON.stringify(updatedFavorites));
+    setFavorites(prev => {
+      const updated = [newFavorite, ...prev.filter(f => f.parcel_id !== parcel.parcel_id)]
+        .slice(0, MAX_FAVORITES);
+      writeList(FAVORITES_KEY, updated);
+      return updated;
+    });
   };
 
   const removeFromFavorites = (id: string) => {
-    const updatedFavorites = favorites.filter(fav => fav.id !== id);
-    setFavorites(updatedFavorites);
-    localStorage.setItem(FAVORITES_KEY, JSON.stringify(updatedFavorites));
+    setFavorites(prev => {
+      const updated = prev.filter(fav => fav.id !== id);
+      writeList(FAVORITES_KEY, updated);
+      return updated;
+    });
   };
 
   const isFavorite = (parcelId: string) => {
