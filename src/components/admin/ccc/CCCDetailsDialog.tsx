@@ -244,7 +244,8 @@ export const CCCDetailsDialog: React.FC<CCCDetailsDialogProps> = ({
                   <div><Label className="text-xs text-muted-foreground">Matériaux</Label><p className="text-sm">{contribution.construction_materials || 'Non renseigné'}</p></div>
                   <div><Label className="text-xs text-muted-foreground">Usage déclaré</Label><p className="text-sm">{contribution.declared_usage || 'Non renseigné'}</p></div>
                   <div><Label className="text-xs text-muted-foreground">Standing</Label><p className="text-sm">{contribution.standing || 'Non renseigné'}</p></div>
-                  <div><Label className="text-xs text-muted-foreground">Année de construction</Label><p className="text-sm">{contribution.construction_year || 'Non renseigné'}</p></div>
+                  <div><Label className="text-xs text-muted-foreground">{(contribution as any).construction_status === 'in_progress' ? 'Année de début des travaux' : 'Année de construction'}</Label><p className="text-sm">{contribution.construction_year || 'Non renseigné'}</p></div>
+                  <div><Label className="text-xs text-muted-foreground">État de la construction</Label><p className="text-sm">{(contribution as any).construction_status === 'in_progress' ? 'Construction en cours' : (contribution as any).construction_status === 'completed' ? 'Construction achevée' : 'Non renseigné'}</p></div>
                   {contribution.apartment_number && (<div><Label className="text-xs text-muted-foreground">N° appartement</Label><p className="text-sm">{contribution.apartment_number}</p></div>)}
                   {contribution.floor_number && (<div><Label className="text-xs text-muted-foreground">Étage</Label><p className="text-sm">{contribution.floor_number}</p></div>)}
                   {contribution.house_number && (<div><Label className="text-xs text-muted-foreground">N° parcelle (voirie)</Label><p className="text-sm">{contribution.house_number}</p></div>)}
