@@ -524,6 +524,27 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
               </div>
             )}
 
+            {/* État de la construction */}
+            {isNotTerrainNu && (
+              <div className="space-y-1.5">
+                <Label className="text-sm font-medium">État de la construction *</Label>
+                <RadioGroup
+                  value={data.constructionStatus || ''}
+                  onValueChange={(v) => onChange(index, { ...data, constructionStatus: v as 'completed' | 'in_progress' })}
+                  className="flex flex-wrap gap-4"
+                >
+                  <div className="flex items-center gap-2">
+                    <RadioGroupItem value="completed" id={`add-construction-status-completed-${index}`} />
+                    <label htmlFor={`add-construction-status-completed-${index}`} className="text-sm cursor-pointer select-none">Construction achevée</label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <RadioGroupItem value="in_progress" id={`add-construction-status-in-progress-${index}`} />
+                    <label htmlFor={`add-construction-status-in-progress-${index}`} className="text-sm cursor-pointer select-none">Construction en cours</label>
+                  </div>
+                </RadioGroup>
+              </div>
+            )}
+
             {/* Standing — pleine largeur */}
             {showStandingBlock && (
               <div className="space-y-1.5">
