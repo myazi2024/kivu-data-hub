@@ -562,7 +562,9 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
       {/* Année de construction */}
       {isNotTerrainNu && (
         <div className="space-y-1.5">
-          <Label className="text-sm font-medium">Année de construction</Label>
+          <Label className="text-sm font-medium">
+            {data.constructionStatus === 'in_progress' ? 'Année de début des travaux' : 'Année de construction'}
+          </Label>
           <Select
             value={data.constructionYear?.toString() || ''}
             onValueChange={(v) => {
