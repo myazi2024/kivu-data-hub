@@ -468,9 +468,14 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
                         {roadTypes.find(t => t.value === roadSide.roadType)?.label || roadSide.roadType}
                       </Badge>
                     )}
-                    {hasConfirmed && isWall && roadSide?.wallMaterial && (
+                    {hasConfirmed && isWall && !isPlainBoundary && roadSide?.wallMaterial && (
                       <Badge variant="outline" className="text-[9px] h-4 px-1 rounded-md bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300 border-0 truncate max-w-[50px]">
                         {wallMaterials.find(m => m.value === roadSide.wallMaterial)?.label || roadSide.wallMaterial}
+                      </Badge>
+                    )}
+                    {hasConfirmed && isPlainBoundary && (
+                      <Badge variant="outline" className="text-[9px] h-4 px-1 rounded-md bg-muted text-muted-foreground border-0 truncate max-w-[60px]">
+                        Limite
                       </Badge>
                     )}
                   </div>
