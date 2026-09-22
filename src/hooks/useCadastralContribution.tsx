@@ -559,7 +559,11 @@ export const useCadastralContribution = () => {
   };
 
   // Shared user validation: check blocked status and fraud
-  const validateUserSecurity = async (authenticatedUserId: string, data: CadastralContributionData): Promise<{
+  const validateUserSecurity = async (
+    authenticatedUserId: string,
+    data: CadastralContributionData,
+    options?: { skipAbuseCheck?: boolean },
+  ): Promise<{
     allowed: boolean;
     isSuspicious: boolean;
     fraudScore: number;
@@ -615,7 +619,11 @@ export const useCadastralContribution = () => {
     }
 
     // Garde-fou anti-abus (3 contributions/parcelle/24h, 10 contributions/24h)
-    const { data: abuseCheck, error: abuseError } = await supabase
+    // Ignoré à la modification : corriger une contribution existante ne crée pas
+    // de nouvelle contribution et ne doit pas consommer le quota.
+    const { data: abuseCheck, error: abuseError } = options?.skipAbuseCheck
+      ? { data: null, error: null as any }
+      : await supabase
       .rpc('check_contribution_abuse', {
         p_user_id: authenticatedUserId,
         p_parcel_id: null,
@@ -884,25 +892,19 @@ export const useCadastralContribution = () => {
     setLoading(true);
 
     try {
-      // FIX #5: Check blocked status before allowing update
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('is_blocked, blocked_reason')
-        .eq('user_id', authenticatedUserId)
-        .maybeSingle();
-
-      if (profile?.is_blocked) {
-        toast({
-          title: "Compte bloqué",
-          description: `Votre compte a été bloqué : ${profile.blocked_reason || 'Violations répétées'}`,
-          variant: "destructive",
-        });
+      // Mêmes contrôles qu'à l'envoi initial (compte bloqué + détection de fraude),
+      // hors quota anti-abus qui ne s'applique qu'aux nouvelles contributions.
+      const security = await validateUserSecurity(authenticatedUserId, data, { skipAbuseCheck: true });
+      if (!security.allowed) {
         return { success: false };
       }
 
       // Build update payload using shared builder
       const contributionPayload = {
         ...buildContributionPayload(data),
+        is_suspicious: security.isSuspicious,
+        fraud_score: security.fraudScore,
+        fraud_reason: security.fraudReasons.length > 0 ? security.fraudReasons.join('; ') : null,
         updated_at: new Date().toISOString(),
       };
 
