@@ -394,6 +394,49 @@ export const getAllProvinces = (): string[] => {
   return Object.keys(geographicData);
 };
 
+/**
+ * Circonscriptions foncières par province (source : Ministère des Affaires Foncières,
+ * https://www.affairesfoncieres.gouv.cd/secretariat/circonscriptions — 143 circonscriptions, 26 provinces).
+ */
+export const landDistrictsData: { [province: string]: string[] } = {
+  "Kinshasa": ["Gombe", "Ngaliema", "Limete", "Matete", "Kasa-Vubu", "N'Sele", "Bandalungwa", "N'Djili", "Mont-Ngafula", "Barumbu", "Maluku", "Kintambo", "Selembao", "Lingwala", "Kimbanseke", "Kinshasa"],
+  "Kongo-Central": ["Matadi", "Boma", "Mbanza-Ngungu", "Songololo", "Tshela", "Luozi", "Seke-Banza", "Kisantu", "Moanda", "Kasangulu", "Lukula"],
+  "Haut-Katanga": ["Lubumbashi-Ouest", "Lubumbashi-Est", "Lubumbashi-Plateau", "Kipushi-Nord", "Kipushi-Sud", "Kasumbalesa-Sakania", "Likasi", "Kasenga/M'Pweto"],
+  "Lualaba": ["Kolwezi I", "Kolwezi II", "Dilolo", "Mutshatsha", "Lubudi"],
+  "Tanganyika": ["Kalemie", "Lukuga", "Moba", "Kongolo", "Manono"],
+  "Haut-Lomami": ["Kamina", "Kanyama"],
+  "Haut-Uele": ["Isiro", "Watsa", "Dungu", "Wamba"],
+  "Bas-Uele": ["Buta", "Bondo", "Bambesa"],
+  "Équateur": ["Mbandaka I", "Mbandaka II", "Mbansakusu", "Bikoro", "Bomongo", "Ingende", "Makanza"],
+  "Mongala": ["Lisala", "Bumba"],
+  "Tshuapa": ["Boende", "Bokungu"],
+  "Sud-Ubangi": ["Gemena", "Zongo"],
+  "Nord-Ubangi": ["Gbadolite", "Yakoma"],
+  "Nord-Kivu": ["Goma", "Karisimbi", "Rutshuru", "Lubero", "Kayna", "Walikale", "Beni-Ville", "Beni-Territoire", "Butembo I", "Butembo II", "Nyiragongo", "Kyondo", "Masisi"],
+  "Sud-Kivu": ["Bukavu I", "Bukavu II", "Kabare", "Kalehe-Centre", "Kalehe-Nord", "Kalehe-Sud/Kalonge", "Mwenga-Kamituga", "Shabunda-Nord", "Shabunda-Sud", "Baraka-Fizi", "Walungu", "Idjwi", "Uvira-Ville", "Uvira-Territoire"],
+  "Lomami": ["Mwene-Ditu", "Kabinda"],
+  "Ituri": ["Bunia", "Aru", "Mahagi", "Djugu", "Mambasa", "Irumu"],
+  "Tshopo": ["Tshopo I", "Tshopo II", "Kisangani-Nord", "Kisangani-Sud"],
+  "Maniema": ["Kindu I", "Kindu II", "Pangi", "Lubutu", "Punia", "Kasongo", "Kabambare", "Kibombo"],
+  "Kasaï": ["Tshikapa", "Mweka", "Ilebo"],
+  "Kasaï-Central": ["Kananga", "Dibaya", "Luiza"],
+  "Kasaï-Oriental": ["Mbuji-Mayi", "Katanda", "Kabeya-Kamwanga", "Tshilenge"],
+  "Sankuru": ["Lodja", "Lusambo", "Katako-Kombe"],
+  "Maï-Ndombe": ["Inongo", "Kutu", "Bolobo", "Mushie"],
+  "Kwango": ["Kenge", "Kasongo-Lunda", "Kahemba"],
+  "Kwilu": ["Kikwit I", "Kikwit II", "Bandundu-Ville", "Idiofa", "Gungu", "Masimanimba", "Bulungu"],
+};
+
+/** Circonscriptions foncières d'une province (matching tolérant aux accents/tirets). */
+export const getLandDistrictsForProvince = (province: string): string[] => {
+  if (!province) return [];
+  const direct = landDistrictsData[province];
+  if (direct) return direct;
+  const target = normalizeProvinceName(province);
+  const key = Object.keys(landDistrictsData).find(p => normalizeProvinceName(p) === target);
+  return key ? landDistrictsData[key] : [];
+};
+
 // Données détaillées des quartiers et avenues par ville
 export const quartiersAvenuesData: { [province: string]: VilleCommunes } = {
   "Nord-Kivu": {
