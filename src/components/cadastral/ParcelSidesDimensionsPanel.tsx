@@ -117,29 +117,35 @@ const getOrientationColor = (orientation?: string) => {
   }
 };
 
-/** Contrôle segmenté coulissant [Mur | Route], calqué sur CadastralSearchModeToggle. */
+/**
+ * Contrôle segmenté [Mur | Route] — multi-sélection : un côté peut porter
+ * un mur ET une route en même temps.
+ */
 const BorderTypeToggle: React.FC<{
-  value?: SideBorderType;
-  onChange: (type: SideBorderType) => void;
-}> = ({ value, onChange }) => {
-  const hasSelection = value === 'route' || value === 'mur_mitoyen';
-  const activeIndex = value === 'route' ? 1 : 0;
+  wallActive: boolean;
+  roadActive: boolean;
+  onToggle: (type: SideBorderType) => void;
+}> = ({ wallActive, roadActive, onToggle }) => {
   return (
     <div
-      role="radiogroup"
-      aria-label="Type de limite"
+      role="group"
+      aria-label="Type de limite (mur et/ou route)"
       onClick={(e) => e.stopPropagation()}
       className="relative flex items-center rounded-full bg-muted/60 p-0.5 border border-border/40 shadow-inner"
     >
-      {hasSelection && (
+      {wallActive && (
         <div
-          className={cn(
-            'absolute top-0.5 bottom-0.5 left-0.5 rounded-full pointer-events-none',
-            value === 'route' ? 'bg-green-400 dark:bg-green-600' : 'bg-amber-400 dark:bg-amber-600'
-          )}
+          className="absolute top-0.5 bottom-0.5 left-0.5 rounded-full pointer-events-none bg-amber-400 dark:bg-amber-600"
+          style={{ width: 'calc(50% - 0.125rem)', transition: 'opacity 0.2s ease-out' }}
+          aria-hidden="true"
+        />
+      )}
+      {roadActive && (
+        <div
+          className="absolute top-0.5 bottom-0.5 left-0.5 rounded-full pointer-events-none bg-green-400 dark:bg-green-600"
           style={{
             width: 'calc(50% - 0.125rem)',
-            transform: `translateX(${activeIndex * 100}%)`,
+            transform: 'translateX(100%)',
             transition: 'transform 0.28s cubic-bezier(0.34, 1.4, 0.64, 1)',
           }}
           aria-hidden="true"
@@ -147,14 +153,13 @@ const BorderTypeToggle: React.FC<{
       )}
       <button
         type="button"
-        role="radio"
-        aria-checked={value === 'mur_mitoyen'}
-        aria-label="Mur mitoyen"
-        onClick={() => onChange('mur_mitoyen')}
+        aria-pressed={wallActive}
+        aria-label="Mur"
+        onClick={() => onToggle('mur_mitoyen')}
         className={cn(
           'relative z-10 flex-1 h-6 px-2 rounded-full text-[10px] font-semibold transition-colors select-none',
           'flex items-center justify-center gap-1',
-          value === 'mur_mitoyen' ? 'text-amber-950 dark:text-white' : 'text-muted-foreground hover:text-foreground'
+          wallActive ? 'text-amber-950 dark:text-white' : 'text-muted-foreground hover:text-foreground'
         )}
       >
         <BrickWall className="h-2.5 w-2.5" />
@@ -162,14 +167,13 @@ const BorderTypeToggle: React.FC<{
       </button>
       <button
         type="button"
-        role="radio"
-        aria-checked={value === 'route'}
+        aria-pressed={roadActive}
         aria-label="Route"
-        onClick={() => onChange('route')}
+        onClick={() => onToggle('route')}
         className={cn(
           'relative z-10 flex-1 h-6 px-2 rounded-full text-[10px] font-semibold transition-colors select-none',
           'flex items-center justify-center gap-1',
-          value === 'route' ? 'text-green-950 dark:text-white' : 'text-muted-foreground hover:text-foreground'
+          roadActive ? 'text-green-950 dark:text-white' : 'text-muted-foreground hover:text-foreground'
         )}
       >
         <Route className="h-2.5 w-2.5" />
