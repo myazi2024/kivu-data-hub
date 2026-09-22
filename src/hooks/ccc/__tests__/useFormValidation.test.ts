@@ -24,6 +24,7 @@ const baseParams = (): UseFormValidationParams => ({
     propertyTitleType: "Certificat d'enregistrement",
     parcelNumber: 'SU12345',
     province: 'Haut-Katanga',
+    landDistrict: 'Lubumbashi-Est',
     ville: 'Lubumbashi',
     commune: 'Kampemba',
     quartier: 'Bel-Air',
