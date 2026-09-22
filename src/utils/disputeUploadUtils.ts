@@ -2,6 +2,7 @@
  * Utilitaires partagés pour les uploads de fichiers du service Litige foncier
  */
 import { supabase } from '@/integrations/supabase/client';
+import { createLongLivedSignedUrl } from '@/utils/storageSignedUrl';
 import { toast } from 'sonner';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
