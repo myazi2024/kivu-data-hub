@@ -876,7 +876,7 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
                         ⚠️ Servitude de passage détectée
                       </p>
                       <p className="text-[11px] text-orange-700 dark:text-orange-300 leading-relaxed">
-                        Les {sidesCount} limites de votre parcelle sont longées par {sidesCount} murs mitoyens. Cela signifie que votre parcelle est située dans une servitude de passage.
+                        Aucun des {sidesCount} côtés de votre parcelle ne borde une route : ses limites sont des murs ou de simples limites. Cela signifie que votre parcelle est desservie par une servitude de passage.
                       </p>
                     </div>
                   </div>
