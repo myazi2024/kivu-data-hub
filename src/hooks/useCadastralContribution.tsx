@@ -126,6 +126,7 @@ export interface CadastralContributionData {
   areaSqm?: number;
   parcelSides?: Array<{ name: string; length: string }>;
   province?: string;
+  landDistrict?: string;
   ville?: string;
   commune?: string;
   quartier?: string;
@@ -453,6 +454,7 @@ export const useCadastralContribution = () => {
       building_permits: buildingPermitsSnake,
       previous_permit_number: data.previousPermitNumber || data.permitRequest?.originalPermitNumber,
       province: data.province,
+      land_district: data.landDistrict || null,
       ville: data.ville,
       commune: data.commune,
       quartier: data.quartier,

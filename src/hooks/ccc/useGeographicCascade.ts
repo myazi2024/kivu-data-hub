@@ -6,6 +6,7 @@ import {
   getCollectivitesForTerritoire,
   getQuartiersForCommune,
   getAvenuesForQuartier,
+  getLandDistrictsForProvince,
 } from '@/lib/geographicData';
 import type { CadastralContributionData } from '@/hooks/useCadastralContribution';
 
@@ -51,6 +52,11 @@ export function useGeographicCascade({
         handleInputChange('territoire', undefined);
         setAvailableCollectivites([]);
         handleInputChange('collectivite', undefined);
+      }
+      // Circonscription foncière : purgée si elle n'appartient pas à la nouvelle province
+      const districts = getLandDistrictsForProvince(formData.province);
+      if (districts.length > 0 && formData.landDistrict && !districts.includes(formData.landDistrict)) {
+        handleInputChange('landDistrict', undefined);
       }
     } else {
       setAvailableVilles([]);

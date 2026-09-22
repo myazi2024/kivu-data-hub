@@ -308,6 +308,7 @@ export function useFormValidation(params: UseFormValidationParams) {
 
     // LOCATION
     if (!formData.province || formData.province.trim() === '') missing.push({ field: 'province', label: 'Province', tab: 'location' });
+    if (!formData.landDistrict || formData.landDistrict.trim() === '') missing.push({ field: 'landDistrict', label: 'Circonscription foncière', tab: 'location' });
     if (!isAppartement && (!formData.areaSqm || Number(formData.areaSqm) <= 0)) missing.push({ field: 'areaSqm', label: 'Superficie (m²)', tab: 'location' });
     if (!sectionType || (sectionType !== 'urbaine' && sectionType !== 'rurale')) missing.push({ field: 'sectionType', label: 'Type de section (Urbaine/Rurale)', tab: 'location' });
     if (sectionType === 'urbaine') {

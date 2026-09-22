@@ -1015,6 +1015,7 @@ export type Database = {
           is_rented: boolean
           is_suspicious: boolean | null
           is_title_in_current_owner_name: boolean | null
+          land_district: string | null
           lease_contract_url: string | null
           lease_type: string | null
           lease_years: number | null
@@ -1130,6 +1131,7 @@ export type Database = {
           is_rented?: boolean
           is_suspicious?: boolean | null
           is_title_in_current_owner_name?: boolean | null
+          land_district?: string | null
           lease_contract_url?: string | null
           lease_type?: string | null
           lease_years?: number | null
@@ -1245,6 +1247,7 @@ export type Database = {
           is_rented?: boolean
           is_suspicious?: boolean | null
           is_title_in_current_owner_name?: boolean | null
+          land_district?: string | null
           lease_contract_url?: string | null
           lease_type?: string | null
           lease_years?: number | null
@@ -1918,6 +1921,7 @@ export type Database = {
           is_rented: boolean | null
           is_subdivided: boolean | null
           is_title_in_current_owner_name: boolean | null
+          land_district: string | null
           latitude: number | null
           lease_contract_url: string | null
           lease_type: string | null
@@ -2011,6 +2015,7 @@ export type Database = {
           is_rented?: boolean | null
           is_subdivided?: boolean | null
           is_title_in_current_owner_name?: boolean | null
+          land_district?: string | null
           latitude?: number | null
           lease_contract_url?: string | null
           lease_type?: string | null
@@ -2104,6 +2109,7 @@ export type Database = {
           is_rented?: boolean | null
           is_subdivided?: boolean | null
           is_title_in_current_owner_name?: boolean | null
+          land_district?: string | null
           latitude?: number | null
           lease_contract_url?: string | null
           lease_type?: string | null

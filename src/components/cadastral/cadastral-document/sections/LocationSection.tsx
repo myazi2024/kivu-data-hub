@@ -50,6 +50,7 @@ const LocationSection: React.FC<LocationSectionProps> = ({ number, parcel, bound
     <SectionCard number={number} icon={<MapPin className="h-4 w-4" />} title="Localisation">
       <DataGrid>
         <DataField label="Province" value={parcel.province} />
+        <DataField label="Circonscription foncière" value={(parcel as any).land_district} />
         {parcel.parcel_type === 'SU' ? (
           <>
             {parcel.ville && <DataField label="Ville" value={parcel.ville} />}
