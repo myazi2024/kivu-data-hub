@@ -590,6 +590,55 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
                           />
                         </div>
 
+                        {/* Éclairage public */}
+                        <div className="pt-1">
+                          <Label className="text-[11px] font-medium text-muted-foreground mb-1 block">
+                            Éclairage public devant la parcelle ? *
+                          </Label>
+                          <RadioGroup
+                            value={roadSide?.hasStreetLighting === undefined ? '' : roadSide.hasStreetLighting ? 'oui' : 'non'}
+                            onValueChange={(value) =>
+                              onRoadSideUpdate(index, {
+                                hasStreetLighting: value === 'oui',
+                                streetLampCount: value === 'oui' ? roadSide?.streetLampCount : undefined,
+                              })
+                            }
+                            className="flex gap-3"
+                          >
+                            <div className="flex items-center gap-1.5">
+                              <RadioGroupItem value="oui" id={`lighting-yes-${index}`} className="h-3.5 w-3.5" />
+                              <label htmlFor={`lighting-yes-${index}`} className="text-[11px] cursor-pointer select-none">Oui</label>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <RadioGroupItem value="non" id={`lighting-no-${index}`} className="h-3.5 w-3.5" />
+                              <label htmlFor={`lighting-no-${index}`} className="text-[11px] cursor-pointer select-none">Non</label>
+                            </div>
+                          </RadioGroup>
+                        </div>
+
+                        {/* Nombre de lampadaires */}
+                        {roadSide?.hasStreetLighting === true && (
+                          <div className="pt-1 animate-fade-in">
+                            <Label className="text-[11px] font-medium text-muted-foreground mb-1 block">
+                              Nombre de lampadaires qui bordent la parcelle *
+                            </Label>
+                            <Input
+                              type="number"
+                              min="1"
+                              step="1"
+                              placeholder="Ex: 2"
+                              value={roadSide?.streetLampCount ?? ''}
+                              onChange={(e) => {
+                                const n = parseInt(e.target.value, 10);
+                                onRoadSideUpdate(index, {
+                                  streetLampCount: Number.isFinite(n) && n > 0 ? n : undefined,
+                                });
+                              }}
+                              className="h-8 text-xs rounded-lg"
+                            />
+                          </div>
+                        )}
+
                         {/* Présence d'un caniveau */}
                         <div className="pt-1">
                           <Label className="text-[11px] font-medium text-muted-foreground mb-1 block">
