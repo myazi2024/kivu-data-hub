@@ -804,6 +804,11 @@ const CadastralMap = () => {
                       <span className="font-medium text-foreground/80">{info}</span>
                     </div>
                   ))}
+                  {parcelStreetLighting && (
+                    <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-muted/60 text-[10px]">
+                      <span className="font-medium text-foreground/80">{parcelStreetLighting}</span>
+                    </div>
+                  )}
                   {parcelGutter && (
                     <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-muted/60 text-[10px]">
                       <span className="font-medium text-foreground/80">{parcelGutter}</span>
