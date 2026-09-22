@@ -334,7 +334,8 @@ const ReviewTab: React.FC<ReviewTabProps> = ({
             {formData.constructionMaterials && <ReviewLine label="Matériaux" value={formData.constructionMaterials} />}
             {formData.declaredUsage && <ReviewLine label="Usage" value={formData.declaredUsage} />}
             {formData.standing && <ReviewLine label="Standing" value={formData.standing} />}
-            {formData.constructionYear && <ReviewLine label="Année construction" value={String(formData.constructionYear)} />}
+            {formData.constructionYear && <ReviewLine label={formData.constructionStatus === 'in_progress' ? 'Année début des travaux' : 'Année construction'} value={String(formData.constructionYear)} />}
+            {formData.constructionStatus && <ReviewLine label="État de la construction" value={formData.constructionStatus === 'in_progress' ? 'Construction en cours' : 'Construction achevée'} />}
             {formData.isOccupied !== undefined && formData.isOccupied !== null && <ReviewLine label="Habité" value={formData.isOccupied ? 'Oui' : 'Non'} />}
             {formData.actualUsage && (
               <ReviewLine
