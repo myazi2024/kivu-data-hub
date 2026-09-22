@@ -95,7 +95,7 @@ interface LocationTabProps {
 
 const LocationTab: React.FC<LocationTabProps> = ({
   formData, handleInputChange,
-  sectionType, sectionTypeAutoDetected, isParcelNumberRequired, handleSectionTypeChange,
+  sectionType, sectionTypeAutoDetected, districtSectionType, isParcelNumberRequired, handleSectionTypeChange,
   availableVilles, availableCommunes, availableTerritoires, availableCollectivites, availableQuartiers, availableAvenues,
   gpsCoordinates, onCoordinatesUpdate, mapConfig, parcelNumber,
   roadSides, onRoadSidesChange, parcelSides, onParcelSidesUpdate,
