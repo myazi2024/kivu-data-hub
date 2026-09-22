@@ -1731,18 +1731,24 @@ export const ParcelMapPreview = ({
       
       // Appui prolongé pour éditer (mobile)
       let longPressTimer: number | null = null;
+      const cancelLongPress = () => {
+        if (longPressTimer) {
+          window.clearTimeout(longPressTimer);
+          markerLongPressTimersRef.current.delete(longPressTimer);
+          longPressTimer = null;
+        }
+      };
       marker.on('mousedown touchstart', () => {
+        cancelLongPress();
         longPressTimer = window.setTimeout(() => {
+          if (longPressTimer) markerLongPressTimersRef.current.delete(longPressTimer);
+          longPressTimer = null;
           setEditingSideIndex(index);
           setEditingSideValue(displayDistance.toFixed(1));
         }, 500);
+        markerLongPressTimersRef.current.add(longPressTimer);
       });
-      marker.on('mouseup touchend mouseout', () => {
-        if (longPressTimer) {
-          window.clearTimeout(longPressTimer);
-          longPressTimer = null;
-        }
-      });
+      marker.on('mouseup touchend mouseout', cancelLongPress);
       
       dimensionLayersRef.current.push(marker);
     });
