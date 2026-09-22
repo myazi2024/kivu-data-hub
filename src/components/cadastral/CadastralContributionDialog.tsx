@@ -192,6 +192,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                 <LocationTab
                   formData={state.formData} handleInputChange={state.handleInputChange}
                   sectionType={state.sectionType} sectionTypeAutoDetected={state.sectionTypeAutoDetected}
+                  districtSectionType={state.districtSectionType}
+
                   isParcelNumberRequired={state.isParcelNumberRequired}
                   handleSectionTypeChange={state.handleSectionTypeChange}
                   availableVilles={state.availableVilles} availableCommunes={state.availableCommunes}

@@ -438,6 +438,74 @@ export const getLandDistrictsForProvince = (province: string): string[] => {
   return key ? landDistrictsData[key] : [];
 };
 
+/**
+ * Circonscriptions foncières à caractère rural (territoires et entités rurales).
+ * Toutes les autres circonscriptions répertoriées sont considérées urbaines.
+ */
+const RURAL_LAND_DISTRICTS: string[] = [
+  // Kinshasa
+  "Maluku", "N'Sele",
+  // Kongo-Central
+  "Mbanza-Ngungu", "Songololo", "Tshela", "Luozi", "Seke-Banza", "Kisantu", "Moanda", "Kasangulu", "Lukula",
+  // Haut-Katanga
+  "Kipushi-Nord", "Kipushi-Sud", "Kasumbalesa-Sakania", "Kasenga/M'Pweto",
+  // Lualaba / Tanganyika / Haut-Lomami
+  "Dilolo", "Mutshatsha", "Lubudi", "Moba", "Kongolo", "Manono", "Kanyama",
+  // Haut-Uele / Bas-Uele
+  "Watsa", "Dungu", "Wamba", "Buta", "Bondo", "Bambesa",
+  // Équateur / Mongala / Tshuapa / Ubangi
+  "Mbansakusu", "Bikoro", "Bomongo", "Ingende", "Makanza", "Bumba", "Bokungu", "Zongo", "Yakoma",
+  // Nord-Kivu
+  "Rutshuru", "Lubero", "Kayna", "Walikale", "Beni-Territoire", "Nyiragongo", "Kyondo", "Masisi",
+  // Sud-Kivu
+  "Kabare", "Kalehe-Centre", "Kalehe-Nord", "Kalehe-Sud/Kalonge", "Mwenga-Kamituga",
+  "Shabunda-Nord", "Shabunda-Sud", "Baraka-Fizi", "Walungu", "Idjwi", "Uvira-Territoire",
+  // Lomami / Ituri
+  "Kabinda", "Aru", "Mahagi", "Djugu", "Mambasa", "Irumu",
+  // Maniema
+  "Pangi", "Lubutu", "Punia", "Kasongo", "Kabambare", "Kibombo",
+  // Kasaï
+  "Mweka", "Ilebo", "Dibaya", "Luiza", "Katanda", "Kabeya-Kamwanga", "Tshilenge",
+  // Sankuru / Maï-Ndombe / Kwango / Kwilu
+  "Lusambo", "Katako-Kombe", "Kutu", "Bolobo", "Mushie", "Kasongo-Lunda", "Kahemba",
+  "Idiofa", "Gungu", "Masimanimba", "Bulungu",
+];
+
+/** Normalisation tolérante (accents, casse, séparateurs) pour comparer deux noms. */
+const normalizeDistrictName = (value: string): string =>
+  value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '');
+
+/** Zone (urbaine / rurale) de chaque circonscription foncière répertoriée. */
+export const landDistrictSectionType: Record<string, 'urbaine' | 'rurale'> = (() => {
+  const ruralKeys = new Set(RURAL_LAND_DISTRICTS.map(normalizeDistrictName));
+  const map: Record<string, 'urbaine' | 'rurale'> = {};
+  for (const districts of Object.values(landDistrictsData)) {
+    for (const d of districts) {
+      map[d] = ruralKeys.has(normalizeDistrictName(d)) ? 'rurale' : 'urbaine';
+    }
+  }
+  return map;
+})();
+
+/**
+ * Déduit la zone cadastrale (SU/SR) depuis la circonscription foncière.
+ * Renvoie '' si la circonscription est inconnue (saisie manuelle).
+ */
+export const getSectionTypeForLandDistrict = (district?: string | null): 'urbaine' | 'rurale' | '' => {
+  if (!district || !district.trim()) return '';
+  const direct = landDistrictSectionType[district];
+  if (direct) return direct;
+  const target = normalizeDistrictName(district);
+  const key = Object.keys(landDistrictSectionType).find(d => normalizeDistrictName(d) === target);
+  return key ? landDistrictSectionType[key] : '';
+};
+
+
+
 // Données détaillées des quartiers et avenues par ville
 export const quartiersAvenuesData: { [province: string]: VilleCommunes } = {
   "Nord-Kivu": {

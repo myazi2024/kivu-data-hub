@@ -30,6 +30,9 @@ interface LocationTabProps {
   handleInputChange: (field: keyof CadastralContributionData, value: any) => void;
   sectionType: 'urbaine' | 'rurale' | '';
   sectionTypeAutoDetected: boolean;
+  /** Zone déduite de la circonscription foncière ('' si circonscription inconnue). */
+  districtSectionType: 'urbaine' | 'rurale' | '';
+
   /** Le n° SU/SR est-il demandé (dépend du type de titre) ? */
   isParcelNumberRequired: boolean;
   handleSectionTypeChange: (type: 'urbaine' | 'rurale') => void;
@@ -92,7 +95,7 @@ interface LocationTabProps {
 
 const LocationTab: React.FC<LocationTabProps> = ({
   formData, handleInputChange,
-  sectionType, sectionTypeAutoDetected, isParcelNumberRequired, handleSectionTypeChange,
+  sectionType, sectionTypeAutoDetected, districtSectionType, isParcelNumberRequired, handleSectionTypeChange,
   availableVilles, availableCommunes, availableTerritoires, availableCollectivites, availableQuartiers, availableAvenues,
   gpsCoordinates, onCoordinatesUpdate, mapConfig, parcelNumber,
   roadSides, onRoadSidesChange, parcelSides, onParcelSidesUpdate,
@@ -217,64 +220,104 @@ const LocationTab: React.FC<LocationTabProps> = ({
             )}
           </div>
 
-          {/* Zone urbaine ou rurale */}
+          {/* Zone cadastrale : déduite de la circonscription foncière */}
           {formData.province && (
             <div className="space-y-2 animate-fade-in">
-              <div className="flex items-center justify-between">
-                <Label className="text-sm">Zone urbaine ou Zone rurale ? *</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button type="button" variant="ghost" size="sm" className="h-5 w-5 p-0 hover:bg-primary/10 rounded-full">
-                      <Info className="h-3.5 w-3.5 text-muted-foreground" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-72 text-sm rounded-xl">
-                    <h4 className="font-semibold mb-1.5 text-sm">Section cadastrale</h4>
-                    <p className="text-xs text-muted-foreground leading-relaxed">
-                      SU (Urbain): Ville → Commune → Quartier<br />
-                      SR (Rural): Territoire → Collectivité → Village
+              {districtSectionType ? (
+                <>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="secondary" className="text-xs">
+                      {districtSectionType === 'urbaine' ? 'Section urbaine (SU)' : 'Section rurale (SR)'}
+                    </Badge>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button type="button" variant="ghost" size="sm" className="h-5 w-5 p-0 hover:bg-primary/10 rounded-full">
+                          <Info className="h-3.5 w-3.5 text-muted-foreground" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-72 text-sm rounded-xl">
+                        <h4 className="font-semibold mb-1.5 text-sm">Section cadastrale</h4>
+                        <p className="text-xs text-muted-foreground leading-relaxed">
+                          La zone est déduite de la circonscription foncière.<br />
+                          SU (Urbain) : Ville → Commune → Quartier<br />
+                          SR (Rural) : Territoire → Collectivité → Village
+                        </p>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                  {/^S\s*[UR]/i.test((parcelNumber || '').trim()) &&
+                    ((parcelNumber || '').trim().toUpperCase().startsWith('SU') ? 'urbaine' : 'rurale') !== districtSectionType && (
+                    <Alert variant="destructive" className="rounded-xl">
+                      <AlertTriangle className="h-4 w-4" />
+                      <AlertDescription className="text-xs">
+                        Le numéro repris de votre recherche indique une autre zone que la circonscription
+                        sélectionnée : vérifiez la circonscription foncière.
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm">Zone urbaine ou Zone rurale ? *</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button type="button" variant="ghost" size="sm" className="h-5 w-5 p-0 hover:bg-primary/10 rounded-full">
+                          <Info className="h-3.5 w-3.5 text-muted-foreground" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-72 text-sm rounded-xl">
+                        <h4 className="font-semibold mb-1.5 text-sm">Section cadastrale</h4>
+                        <p className="text-xs text-muted-foreground leading-relaxed">
+                          SU (Urbain): Ville → Commune → Quartier<br />
+                          SR (Rural): Territoire → Collectivité → Village
+                        </p>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Circonscription non répertoriée : précisez la zone manuellement.
+                  </p>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => !sectionTypeAutoDetected && handleSectionTypeChange('urbaine')}
+                      disabled={sectionTypeAutoDetected}
+                      className={cn(
+                        "flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all",
+                        sectionType === 'urbaine'
+                          ? 'bg-primary text-primary-foreground shadow-md'
+                          : 'bg-muted text-muted-foreground hover:bg-muted/80',
+                        sectionTypeAutoDetected && 'cursor-not-allowed opacity-70'
+                      )}
+                    >
+                      SU - Urbaine
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => !sectionTypeAutoDetected && handleSectionTypeChange('rurale')}
+                      disabled={sectionTypeAutoDetected}
+                      className={cn(
+                        "flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all",
+                        sectionType === 'rurale'
+                          ? 'bg-primary text-primary-foreground shadow-md'
+                          : 'bg-muted text-muted-foreground hover:bg-muted/80',
+                        sectionTypeAutoDetected && 'cursor-not-allowed opacity-70'
+                      )}
+                    >
+                      SR - Rurale
+                    </button>
+                  </div>
+                  {sectionTypeAutoDetected && (
+                    <p className="text-xs text-primary flex items-center gap-1 justify-center">
+                      <CheckCircle2 className="h-3 w-3" />
+                      Type auto-détecté depuis le numéro
                     </p>
-                  </PopoverContent>
-                </Popover>
-              </div>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => !sectionTypeAutoDetected && handleSectionTypeChange('urbaine')}
-                  disabled={sectionTypeAutoDetected}
-                  className={cn(
-                    "flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all",
-                    sectionType === 'urbaine'
-                      ? 'bg-primary text-primary-foreground shadow-md'
-                      : 'bg-muted text-muted-foreground hover:bg-muted/80',
-                    sectionTypeAutoDetected && 'cursor-not-allowed opacity-70'
                   )}
-                >
-                  SU - Urbaine
-                </button>
-                <button
-                  type="button"
-                  onClick={() => !sectionTypeAutoDetected && handleSectionTypeChange('rurale')}
-                  disabled={sectionTypeAutoDetected}
-                  className={cn(
-                    "flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all",
-                    sectionType === 'rurale'
-                      ? 'bg-primary text-primary-foreground shadow-md'
-                      : 'bg-muted text-muted-foreground hover:bg-muted/80',
-                    sectionTypeAutoDetected && 'cursor-not-allowed opacity-70'
-                  )}
-                >
-                  SR - Rurale
-                </button>
-              </div>
-              {sectionTypeAutoDetected && (
-                <p className="text-xs text-primary flex items-center gap-1 justify-center">
-                  <CheckCircle2 className="h-3 w-3" />
-                  Type auto-détecté depuis le numéro
-                </p>
+                </>
               )}
 
-              {/* Numéro de la parcelle — dépendant du choix SU / SR et du type de titre.
+              {/* Numéro de la parcelle — dépendant de la zone déduite et du type de titre.
                   « Fiche parcellaire » : non demandé (sauf si déjà identifié par une recherche). */}
               {sectionType && isParcelNumberRequired && (
                 <ParcelNumberField
@@ -288,6 +331,7 @@ const LocationTab: React.FC<LocationTabProps> = ({
             </div>
 
           )}
+
         </CardContent>
       </Card>
 
