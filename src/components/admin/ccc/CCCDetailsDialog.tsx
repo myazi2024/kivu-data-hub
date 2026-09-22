@@ -307,6 +307,7 @@ export const CCCDetailsDialog: React.FC<CCCDetailsDialogProps> = ({
               <TabsContent value="location" className="space-y-2 md:space-y-3 mt-2">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 md:gap-3">
                   <div><Label className="text-xs text-muted-foreground">Province</Label><p className="text-sm">{contribution.province || 'Non renseigné'}</p></div>
+                  <div><Label className="text-xs text-muted-foreground">Circonscription foncière</Label><p className="text-sm">{(contribution as any).land_district || 'Non renseigné'}</p></div>
                   <div><Label className="text-xs text-muted-foreground">Ville</Label><p className="text-sm">{contribution.ville || 'Non renseigné'}</p></div>
                   <div><Label className="text-xs text-muted-foreground">Commune</Label><p className="text-sm">{contribution.commune || 'Non renseigné'}</p></div>
                   <div><Label className="text-xs text-muted-foreground">Quartier</Label><p className="text-sm">{contribution.quartier || 'Non renseigné'}</p></div>
