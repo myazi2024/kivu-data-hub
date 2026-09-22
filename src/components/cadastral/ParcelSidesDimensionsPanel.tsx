@@ -196,12 +196,12 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
   const [editingSide, setEditingSide] = useState<number | null>(null);
   const [showNotification, setShowNotification] = useState(true);
   const confirmedSidesCount = roadSides.filter(s => s.bordersRoad && s.isConfirmed).length;
-  const roadCount = roadSides.filter(s => s.bordersRoad && s.isConfirmed && s.borderType === 'route').length;
-  const wallCount = roadSides.filter(s => s.bordersRoad && s.isConfirmed && s.borderType === 'mur_mitoyen').length;
+  const roadCount = roadSides.filter(s => s.bordersRoad && s.isConfirmed && sideHasRoad(s)).length;
+  const wallCount = roadSides.filter(s => s.bordersRoad && s.isConfirmed && sideHasWall(s)).length;
   
 
   // Vérifier si tous les côtés sont en mur mitoyen (aucun côté n'est une route)
-  const hasAnyRoute = roadSides.some(s => s.bordersRoad && s.borderType === 'route');
+  const hasAnyRoute = roadSides.some(s => s.bordersRoad && sideHasRoad(s));
   const allSidesAreMurMitoyen = parcelSides.length > 0 && !hasAnyRoute;
   const sidesCount = parcelSides.length;
 
@@ -227,19 +227,31 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
     }
   };
 
+  const ROAD_FIELDS_RESET = {
+    roadType: undefined,
+    roadName: undefined,
+    roadWidth: undefined,
+    roadSurface: undefined,
+    hasStreetLighting: undefined,
+    streetLampCount: undefined,
+    hasGutter: undefined,
+    gutterConnected: undefined,
+  } as const;
+
+  const WALL_FIELDS_RESET = {
+    wallHeight: undefined,
+    wallMaterial: undefined,
+  } as const;
+
   const handleRemoveSide = (sideIndex: number) => {
-    onRoadSideUpdate(sideIndex, { 
-      bordersRoad: false, 
+    onRoadSideUpdate(sideIndex, {
+      bordersRoad: false,
       borderType: undefined,
-      roadType: undefined, 
-      roadName: undefined, 
-      roadWidth: undefined,
-      roadSurface: undefined,
-      hasGutter: undefined,
-      gutterConnected: undefined,
-      wallHeight: undefined,
-      wallMaterial: undefined,
-      isConfirmed: false 
+      hasRoad: false,
+      hasWall: false,
+      ...ROAD_FIELDS_RESET,
+      ...WALL_FIELDS_RESET,
+      isConfirmed: false,
     });
     setEditingSide(null);
   };
@@ -249,34 +261,57 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
     setShowNotification(false);
     const roadSide = roadSides.find(s => s.sideIndex === sideIndex);
     if (!roadSide?.bordersRoad) {
-      onRoadSideUpdate(sideIndex, { bordersRoad: true, borderType });
+      onRoadSideUpdate(sideIndex, {
+        bordersRoad: true,
+        borderType,
+        hasRoad: borderType === 'route',
+        hasWall: borderType === 'mur_mitoyen',
+      });
     }
   };
 
-  const handleBorderTypeChange = (sideIndex: number, borderType: SideBorderType) => {
-    onRoadSideUpdate(sideIndex, { 
-      borderType,
-      // Reset les champs de l'autre type
-      roadType: undefined,
-      roadName: undefined,
-      roadWidth: undefined,
-      roadSurface: undefined,
-      hasGutter: undefined,
-      gutterConnected: undefined,
-      wallHeight: undefined,
-      wallMaterial: undefined,
+  /** Active ou désactive un type de limite sur un côté (mur et route cumulables). */
+  const toggleBorderType = (sideIndex: number, type: SideBorderType) => {
+    const side = roadSides.find(s => s.sideIndex === sideIndex);
+    const currentRoad = sideHasRoad(side);
+    const currentWall = sideHasWall(side);
+    const nextRoad = type === 'route' ? !currentRoad : currentRoad;
+    const nextWall = type === 'mur_mitoyen' ? !currentWall : currentWall;
+
+    if (!nextRoad && !nextWall) {
+      handleRemoveSide(sideIndex);
+      return;
+    }
+
+    setEditingSide(sideIndex);
+    setShowNotification(false);
+    onRoadSideUpdate(sideIndex, {
+      bordersRoad: true,
+      hasRoad: nextRoad,
+      hasWall: nextWall,
+      // Champ dérivé : la route prime pour les indicateurs d'accès
+      borderType: nextRoad ? 'route' : 'mur_mitoyen',
+      ...(nextRoad ? {} : ROAD_FIELDS_RESET),
+      ...(nextWall ? {} : WALL_FIELDS_RESET),
     });
   };
 
   const canConfirm = (side: RoadSideInfo) => {
     if (!side.bordersRoad) return false;
-    if (side.borderType === 'route') {
+    const hasRoad = sideHasRoad(side);
+    const hasWall = sideHasWall(side);
+    if (!hasRoad && !hasWall) return false;
+    if (hasRoad) {
       const base = !!side.roadType && !!side.roadWidth && side.roadWidth > 0
-        && !!side.roadSurface && side.hasGutter !== undefined;
-      return base && (side.hasGutter !== true || side.gutterConnected !== undefined);
+        && !!side.roadSurface && side.hasStreetLighting !== undefined
+        && side.hasGutter !== undefined;
+      const lighting = side.hasStreetLighting !== true
+        || (typeof side.streetLampCount === 'number' && side.streetLampCount > 0);
+      const gutter = side.hasGutter !== true || side.gutterConnected !== undefined;
+      if (!(base && lighting && gutter)) return false;
     }
-    if (side.borderType === 'mur_mitoyen') return !!side.wallMaterial;
-    return false;
+    if (hasWall && !side.wallMaterial) return false;
+    return true;
   };
 
   const getRoadSideForIndex = (index: number) => {
