@@ -408,6 +408,7 @@ export const ParcelMapPreview = ({
           borderType: existingSide?.borderType,
           hasRoad: existingSide?.hasRoad,
           hasWall: existingSide?.hasWall,
+          boundaryKind: existingSide?.boundaryKind,
           wallHeight: existingSide?.wallHeight,
           wallMaterial: existingSide?.wallMaterial,
           orientation,
