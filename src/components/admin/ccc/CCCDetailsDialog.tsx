@@ -353,7 +353,9 @@ export const CCCDetailsDialog: React.FC<CCCDetailsDialogProps> = ({
                           )}
                           {(side.hasWall ?? side.borderType === 'mur_mitoyen') && (
                             <p className="text-muted-foreground ml-4">
-                              Mur{side.wallMaterial ? `: ${side.wallMaterial}` : ''}{side.wallHeight ? ` · Hauteur: ${side.wallHeight} m` : ''}
+                              {side.boundaryKind === 'limite'
+                                ? 'Limite (sans mur)'
+                                : `Mur${side.wallMaterial ? `: ${side.wallMaterial}` : ''}${side.wallHeight ? ` · Hauteur: ${side.wallHeight} m` : ''}`}
                             </p>
                           )}
                         </div>
