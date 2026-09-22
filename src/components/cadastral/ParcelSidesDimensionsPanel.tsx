@@ -912,6 +912,26 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
             </AlertDescription>
           </Alert>
         )}
+
+        {/* Progression : côtés restant à renseigner */}
+        {confirmedSidesCount > 0 && remainingSideNames.length > 0 && (
+          <Alert className="py-1.5 px-2 rounded-xl bg-muted/50 border-0 mt-1">
+            <Info className="h-3 w-3" />
+            <AlertDescription className="text-[11px]">
+              {confirmedSidesCount} côté{confirmedSidesCount > 1 ? 's' : ''} sur {sidesCount} renseigné{confirmedSidesCount > 1 ? 's' : ''} — il reste : {remainingSideNames.join(', ')}.
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* Rappel : aucune entrée déclarée */}
+        {missingEntrance && (
+          <Alert className="py-1.5 px-2 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 mt-1">
+            <DoorOpen className="h-3 w-3 text-amber-600 dark:text-amber-400" />
+            <AlertDescription className="text-[11px] text-amber-800 dark:text-amber-200">
+              Indiquez le côté par lequel on accède à la parcelle en cochant « Entrée ».
+            </AlertDescription>
+          </Alert>
+        )}
       </CardContent>
     </Card>
   );
