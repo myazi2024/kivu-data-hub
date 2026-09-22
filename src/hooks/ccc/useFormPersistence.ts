@@ -21,6 +21,48 @@ import { renumberParcelSides, renumberGpsCoordinates } from '@/utils/parcelSideN
 const STORAGE_SCHEMA_VERSION = 2;
 const STORAGE_TTL_DAYS = 30;
 const DEBOUNCE_MS = 1500;
+const STORAGE_PREFIX = 'cadastral_contribution_';
+/** Nombre maximum de brouillons CCC conservés dans le navigateur. */
+const MAX_DRAFTS = 5;
+
+/**
+ * Purge les brouillons CCC périmés (TTL/schéma) et limite leur nombre aux plus
+ * récents. Évite l'accumulation de données personnelles dans le navigateur et
+ * les dépassements de quota localStorage.
+ */
+function pruneStoredDrafts(keepKey: string) {
+  try {
+    const entries: Array<{ key: string; savedAt: number }> = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (!key || !key.startsWith(STORAGE_PREFIX)) continue;
+      let envelope: any = null;
+      try {
+        envelope = JSON.parse(localStorage.getItem(key) || 'null');
+      } catch {
+        entries.push({ key, savedAt: -1 });
+        continue;
+      }
+      const savedAt = envelope?.savedAt ? new Date(envelope.savedAt).getTime() : NaN;
+      const expired =
+        !envelope ||
+        envelope.schemaVersion !== STORAGE_SCHEMA_VERSION ||
+        !Number.isFinite(savedAt) ||
+        (Date.now() - savedAt) / (1000 * 60 * 60 * 24) > STORAGE_TTL_DAYS;
+      entries.push({ key, savedAt: expired ? -1 : savedAt });
+    }
+
+    const stale = entries.filter(e => e.savedAt === -1 && e.key !== keepKey);
+    const fresh = entries
+      .filter(e => e.savedAt !== -1)
+      .sort((a, b) => b.savedAt - a.savedAt);
+    const excess = fresh.slice(MAX_DRAFTS).filter(e => e.key !== keepKey);
+
+    [...stale, ...excess].forEach(e => localStorage.removeItem(e.key));
+  } catch (error) {
+    console.warn('Purge des brouillons impossible:', error);
+  }
+}
 
 interface UseFormPersistenceParams {
   open: boolean;
