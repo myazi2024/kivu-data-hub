@@ -24,6 +24,9 @@ export interface ParcelSide {
 // Type de limite du côté : route ou mur mitoyen
 export type SideBorderType = 'route' | 'mur_mitoyen';
 
+/** Nature de la limite non routière d'un côté : mur ou simple limite de parcelle. */
+export type BoundaryKind = 'mur' | 'limite';
+
 export interface RoadSideInfo {
   sideIndex: number;
   bordersRoad: boolean;
