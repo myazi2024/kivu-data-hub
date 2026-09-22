@@ -51,6 +51,8 @@ export interface RoadSideInfo {
   /** Parcelle raccordée au caniveau depuis ce côté (si caniveau présent). */
   gutterConnected?: boolean;
   // Propriétés pour les murs mitoyens
+  /** Nature de la limite : fermée par un mur, ou simple limite de parcelle. */
+  boundaryKind?: BoundaryKind;
   wallHeight?: number;
   wallMaterial?: string;
   // Propriétés communes
@@ -65,9 +67,21 @@ export interface RoadSideInfo {
 export const sideHasRoad = (s?: Partial<RoadSideInfo> | null): boolean =>
   !!s && (s.hasRoad ?? s.borderType === 'route');
 
-/** Le côté est fermé par un mur (lit le nouveau champ, avec repli sur l'ancien `borderType`). */
+/** Le côté porte une limite déclarée (mur ou simple limite). */
 export const sideHasWall = (s?: Partial<RoadSideInfo> | null): boolean =>
   !!s && (s.hasWall ?? s.borderType === 'mur_mitoyen');
+
+/**
+ * Nature de la limite d'un côté : 'mur', 'limite', ou undefined si non renseignée.
+ * Repli pour les enregistrements antérieurs : un matériau de mur (ou l'ancien
+ * `borderType === 'mur_mitoyen'`) vaut « mur ».
+ */
+export const sideBoundaryKind = (s?: Partial<RoadSideInfo> | null): BoundaryKind | undefined => {
+  if (!s || !sideHasWall(s)) return undefined;
+  if (s.boundaryKind) return s.boundaryKind;
+  if (s.wallMaterial || s.wallHeight || s.borderType === 'mur_mitoyen') return 'mur';
+  return undefined;
+};
 
 export interface ServitudeInfo {
   hasServitude: boolean;
