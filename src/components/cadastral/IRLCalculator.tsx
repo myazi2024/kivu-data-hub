@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createLongLivedSignedUrl } from '@/utils/storageSignedUrl';
 import { Loader2 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { usePropertyTaxCalculator, TaxCalculationInput, TaxCalculationResult } from '@/hooks/usePropertyTaxCalculator';
@@ -171,11 +172,11 @@ const IRLCalculator: React.FC<IRLCalculatorProps> = ({
       let uploadedIdPath: string | null = null;
       if (idDocumentFile) {
         const ext = idDocumentFile.name.split('.').pop();
-        const path = `tax-documents/${user.id}/id_irl_${Date.now()}.${ext}`;
+        const path = `tax-documents/${user.id}/id_irl_${crypto.randomUUID()}.${ext}`;
         const { error: upErr } = await supabase.storage.from('cadastral-documents').upload(path, idDocumentFile);
         if (upErr) throw upErr;
         uploadedIdPath = path;
-        idDocUrl = supabase.storage.from('cadastral-documents').getPublicUrl(path).data.publicUrl;
+        idDocUrl = await createLongLivedSignedUrl(path);
       }
 
       const tenantData = tenants

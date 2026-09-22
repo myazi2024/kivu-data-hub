@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { createLongLivedSignedUrl } from '@/utils/storageSignedUrl';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from '@/components/ui/dialog';
@@ -87,8 +88,9 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
       const filePath = `permit-requests/${user.id}/${fileName}`;
       const { error: uploadError } = await supabase.storage.from('cadastral-documents').upload(filePath, attachment.file);
       if (uploadError) throw new Error(`Échec upload ${attachment.label}: ${uploadError.message}`);
-      const { data } = supabase.storage.from('cadastral-documents').getPublicUrl(filePath);
-      uploadedUrls[key] = data.publicUrl;
+      const signed = await createLongLivedSignedUrl(filePath);
+      if (!signed) throw new Error(`Lien du document ${attachment.label} indisponible`);
+      uploadedUrls[key] = signed;
     }
     return uploadedUrls;
   };
