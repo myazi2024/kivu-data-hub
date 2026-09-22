@@ -439,8 +439,10 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
               className={`p-2 rounded-xl transition-all ${
                 hasConfirmed && isRoad
                   ? 'bg-green-50 dark:bg-green-950 border border-green-300 dark:border-green-800 shadow-sm'
-                  : hasConfirmed && isWall
+                  : hasConfirmed && isWall && !isPlainBoundary
                   ? 'bg-amber-50 dark:bg-amber-950 border border-amber-300 dark:border-amber-800 shadow-sm'
+                  : hasConfirmed && isPlainBoundary
+                  ? 'bg-muted/50 border border-border shadow-sm'
                   : isEditingThis
                   ? 'bg-primary/5 border border-primary/30 shadow-sm'
                   : 'bg-muted/30 border border-transparent hover:bg-muted/50 cursor-pointer'
@@ -452,8 +454,8 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     {hasConfirmed ? (
-                      <div className={`h-4 w-4 rounded-md flex items-center justify-center ${isRoad ? 'bg-green-500' : 'bg-amber-500'}`}>
-                        {isRoad ? <Route className="h-2.5 w-2.5 text-white" /> : <BrickWall className="h-2.5 w-2.5 text-white" />}
+                      <div className={`h-4 w-4 rounded-md flex items-center justify-center ${isRoad ? 'bg-green-500' : isPlainBoundary ? 'bg-muted-foreground/60' : 'bg-amber-500'}`}>
+                        {isRoad ? <Route className="h-2.5 w-2.5 text-white" /> : isPlainBoundary ? <Minus className="h-2.5 w-2.5 text-white" /> : <BrickWall className="h-2.5 w-2.5 text-white" />}
                       </div>
                     ) : (
                       <div className="h-4 w-4 rounded-md bg-muted flex items-center justify-center">
