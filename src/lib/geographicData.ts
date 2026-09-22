@@ -1,4 +1,5 @@
 // Structure hiérarchique pour les données géographiques de la RDC
+import { normalizeProvinceName } from '@/lib/provinceNameNormalize';
 
 export interface QuartierAvenue {
   [quartier: string]: string[]; // avenues par quartier
