@@ -21,7 +21,7 @@ export const MarketValuePanel: React.FC = () => {
 
   if (marketValues.length === 0) {
     return (
-      <div className="text-center py-10 bg-background rounded-2xl border">
+      <div className="rounded-md border bg-card py-10 text-center">
         <TrendingUp className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
         <p className="text-sm text-muted-foreground">Aucune valeur marchande déclarée</p>
       </div>
@@ -43,7 +43,7 @@ export const MarketValuePanel: React.FC = () => {
       )}
 
       {marketValues.map((m) => (
-        <div key={m.contributionId} className="bg-background rounded-2xl border p-3 space-y-3">
+        <div key={m.contributionId} className="space-y-3 rounded-md border bg-card p-3">
           <div className="flex items-center justify-between gap-2">
             <p className="text-sm font-medium truncate">{m.parcelNumber}</p>
             <Badge variant="outline" className="text-[9px]">

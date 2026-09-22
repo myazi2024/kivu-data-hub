@@ -177,21 +177,21 @@ export const UserContributions: React.FC = () => {
           { label: 'Validées', value: stats.approved, color: 'text-green-600' },
           { label: 'Rejetées', value: stats.rejected, color: 'text-destructive' },
         ].map((stat) => (
-          <div key={stat.label} className="bg-background rounded-2xl p-3 shadow-sm border text-center">
+          <div key={stat.label} className="rounded-md border bg-card p-3 text-center">
             <p className={`text-xl font-bold ${stat.color}`}>{stat.value}</p>
             <p className="text-[10px] text-muted-foreground">{stat.label}</p>
           </div>
         ))}
       </div>
 
-      <div className="bg-background rounded-2xl shadow-sm border overflow-hidden">
+      <div className="overflow-hidden rounded-md border bg-card">
         <div className="p-3 border-b flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <FileText className="h-4 w-4 text-primary" />
             <h3 className="text-sm font-semibold">Mes contributions CCC</h3>
           </div>
           <Link to={CADASTRAL_MAP_ROUTE}>
-            <Button size="sm" variant="outline" className="h-7 gap-1 text-xs rounded-lg">
+            <Button size="sm" variant="outline" className="h-7 gap-1 text-xs">
               <Plus className="h-3 w-3" />
               <span className="hidden sm:inline">Contribuer</span>
             </Button>
@@ -206,7 +206,7 @@ export const UserContributions: React.FC = () => {
                 placeholder="Rechercher par parcelle, ville, propriétaire..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="h-8 pl-8 text-xs rounded-xl"
+                className="h-8 pl-8 text-xs"
               />
             </div>
           </div>
@@ -215,7 +215,7 @@ export const UserContributions: React.FC = () => {
         <div className="p-3">
           {filteredContributions.length === 0 ? (
             <div className="text-center py-8">
-              <div className="h-12 w-12 mx-auto rounded-2xl bg-muted/50 flex items-center justify-center mb-3">
+              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-md bg-muted/50">
                 <FileText className="h-6 w-6 text-muted-foreground" />
               </div>
               <p className="text-sm text-muted-foreground">
@@ -229,7 +229,7 @@ export const UserContributions: React.FC = () => {
                 return (
                   <div
                     key={contribution.id}
-                    className="flex items-center gap-3 p-2.5 bg-muted/30 rounded-xl hover:bg-muted/50 transition-colors"
+                    className="flex items-center gap-3 rounded-md bg-muted/30 p-2.5 transition-colors hover:bg-muted/50"
                   >
                     <div
                       className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer"
@@ -238,7 +238,7 @@ export const UserContributions: React.FC = () => {
                         setIsDetailsOpen(true);
                       }}
                     >
-                      <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary/10">
                         <span className="text-lg">{typeInfo.icon}</span>
                       </div>
                       <div className="flex-1 min-w-0">

@@ -158,7 +158,7 @@ const UserProfileSection: React.FC = () => {
   return (
     <div className="space-y-4">
       {/* Profil Header + Edit */}
-      <div className="bg-background rounded-2xl shadow-sm border overflow-hidden">
+      <div className="overflow-hidden rounded-md border bg-card">
         <div className="p-4">
           <div className="flex items-start gap-3">
             <div className="relative">
@@ -186,8 +186,8 @@ const UserProfileSection: React.FC = () => {
             <div className="flex-1 min-w-0">
               {isEditing ? (
                 <div className="space-y-2">
-                  <Input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Nom complet" className="h-8 text-sm rounded-xl" disabled={loading} />
-                  <Input value={organization} onChange={(e) => setOrganization(e.target.value)} placeholder="Organisation" className="h-8 text-sm rounded-xl" disabled={loading} />
+                  <Input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Nom complet" className="h-8 text-sm" disabled={loading} />
+                  <Input value={organization} onChange={(e) => setOrganization(e.target.value)} placeholder="Organisation" className="h-8 text-sm" disabled={loading} />
                   <div className="flex gap-1.5">
                     <Button size="sm" onClick={handleSaveProfile} disabled={loading} className="h-7 text-xs px-2 rounded-lg">
                       {loading ? <Loader2 className="h-3 w-3 animate-spin motion-reduce:animate-none" /> : <Check className="h-3 w-3 mr-1" />}
@@ -243,9 +243,9 @@ const UserProfileSection: React.FC = () => {
         {statItems.map((item) => {
           const Icon = item.icon;
           return (
-            <div key={item.title} className="bg-background rounded-2xl shadow-sm border text-center p-3">
+            <div key={item.title} className="rounded-md border bg-card p-3 text-center">
               <div className="flex justify-center mb-1">
-                <div className="h-8 w-8 rounded-xl bg-primary/10 flex items-center justify-center">
+                <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/10">
                   <Icon className="h-4 w-4 text-primary" />
                 </div>
               </div>
@@ -257,17 +257,17 @@ const UserProfileSection: React.FC = () => {
       </div>
 
       {/* Actions rapides */}
-      <div className="bg-background rounded-2xl shadow-sm border overflow-hidden">
+      <div className="overflow-hidden rounded-md border bg-card">
         <div className="p-3 border-b flex items-center gap-2">
           <Share2 className="h-4 w-4 text-primary" />
           <h3 className="text-sm font-semibold">Actions rapides</h3>
         </div>
 
         <div className="p-3 space-y-2">
-          <div className="p-2.5 bg-muted/30 rounded-xl">
+          <div className="rounded-md bg-muted/30 p-2.5">
             <p className="text-xs font-medium mb-2">Lien de parrainage</p>
             <div className="flex items-center gap-1.5">
-              <code className="flex-1 text-[9px] bg-background p-1.5 rounded-lg truncate border">
+              <code className="flex-1 truncate rounded-md border bg-background p-1.5 text-[9px]">
                 {referralLink}
               </code>
               <Button size="sm" variant="outline" onClick={handleCopyReferralLink} className="h-7 w-7 p-0 shrink-0 rounded-lg" aria-label="Copier le lien de parrainage">
@@ -277,7 +277,7 @@ const UserProfileSection: React.FC = () => {
           </div>
 
           <Link to="/partnership" className="block">
-            <Button variant="outline" size="sm" className="w-full justify-start gap-2 h-9 rounded-xl text-xs">
+            <Button variant="outline" size="sm" className="h-9 w-full justify-start gap-2 text-xs">
               <HelpCircle className="h-3.5 w-3.5" />
               <span>Contacter le support</span>
             </Button>

@@ -169,7 +169,7 @@ export const UserPreferences: React.FC = () => {
   return (
     <div className="space-y-3">
       {/* Notifications */}
-      <Card className="border-none shadow-md rounded-2xl">
+      <Card className="rounded-md">
         <CardContent className="p-3">
           <div className="flex items-center gap-2 mb-3">
             <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -179,7 +179,7 @@ export const UserPreferences: React.FC = () => {
           </div>
 
           <div className="space-y-3">
-            <div className="flex items-center justify-between p-2.5 bg-muted/30 rounded-xl">
+            <div className="flex items-center justify-between rounded-md bg-muted/30 p-2.5">
               <div className="flex items-center gap-2">
                 <Mail className="h-3.5 w-3.5 text-muted-foreground" />
                 <div>
@@ -193,7 +193,7 @@ export const UserPreferences: React.FC = () => {
               />
             </div>
 
-            <div className="flex items-center justify-between p-2.5 bg-muted/30 rounded-xl">
+            <div className="flex items-center justify-between rounded-md bg-muted/30 p-2.5">
               <div className="flex items-center gap-2">
                 <Mail className="h-3.5 w-3.5 text-muted-foreground" />
                 <div>
@@ -211,7 +211,7 @@ export const UserPreferences: React.FC = () => {
       </Card>
 
       {/* Confidentialité */}
-      <Card className="border-none shadow-md rounded-2xl">
+      <Card className="rounded-md">
         <CardContent className="p-3">
           <div className="flex items-center gap-2 mb-3">
             <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center">

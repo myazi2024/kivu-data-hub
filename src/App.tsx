@@ -3,7 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { HelmetProvider } from "react-helmet-async";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, useLocation } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { MfaGuardProvider } from "@/components/auth/MfaGuardProvider";
 import { CartProvider } from '@/hooks/useCart';
@@ -83,6 +83,11 @@ const ScrollToTopOnRouteChange = () => {
   return null;
 };
 
+const LegacyUserDashboardRedirect = () => {
+  const location = useLocation();
+  return <Navigate to={`/mon-compte${location.search}`} replace />;
+};
+
 const App = () => (
   <ErrorBoundary>
     <HelmetProvider>
@@ -128,7 +133,7 @@ const App = () => (
                       <UserDashboard />
                     </ProtectedRoute>
                   } />
-                  <Route path="/user-dashboard" element={<Navigate to="/mon-compte" replace />} />
+                  <Route path="/user-dashboard" element={<LegacyUserDashboardRedirect />} />
                   <Route path="/reseller" element={
                     <ProtectedRoute requiredRoles={['partner', 'admin', 'super_admin']}>
                       <ResellerDashboard />
