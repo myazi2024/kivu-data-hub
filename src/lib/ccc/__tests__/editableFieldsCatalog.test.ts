@@ -33,10 +33,10 @@ describe('editableFieldsCatalog', () => {
   });
 
   it('valide les bornes numériques', () => {
-    const floors = getEditableField('floor_number')!;
-    expect(validateFieldValue(floors, '-1')).toBeTruthy();
-    expect(validateFieldValue(floors, '2')).toBeNull();
-    expect(validateFieldValue(floors, 'abc')).toBeTruthy();
+    const occupants = getEditableField('occupant_count')!;
+    expect(validateFieldValue(occupants, '-1')).toBeTruthy();
+    expect(validateFieldValue(occupants, '2')).toBeNull();
+    expect(validateFieldValue(occupants, 'abc')).toBeTruthy();
   });
 
   it('invalide les données dépendantes renseignées', () => {
