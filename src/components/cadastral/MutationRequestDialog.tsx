@@ -326,8 +326,9 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
         const filePath = `mutation-documents/${user?.id}/${fileName}`;
         const { error: uploadError } = await supabase.storage.from('cadastral-documents').upload(filePath, file);
         if (uploadError) throw uploadError;
-        const { data } = supabase.storage.from('cadastral-documents').getPublicUrl(filePath);
-        urls.push(data.publicUrl);
+        const signed = await createLongLivedSignedUrl(filePath);
+        if (!signed) throw new Error("Lien du document indisponible");
+        urls.push(signed);
       }
       return urls;
     } catch (error: any) {
@@ -426,8 +427,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
       const filePath = `mutation-documents/${user.id}/certificates/${fileName}`;
       const { error: uploadError } = await supabase.storage.from('cadastral-documents').upload(filePath, expertiseCertificateFile);
       if (uploadError) throw uploadError;
-      const { data } = supabase.storage.from('cadastral-documents').getPublicUrl(filePath);
-      return data.publicUrl;
+      return await createLongLivedSignedUrl(filePath);
     } catch (error: any) {
       console.error('Expertise certificate upload error:', error);
       toast.error('Erreur lors de l\'envoi du certificat d\'expertise');

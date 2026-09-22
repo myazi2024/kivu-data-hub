@@ -1049,8 +1049,9 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
         
         if (uploadError) throw uploadError;
         
-        const { data } = supabase.storage.from('cadastral-documents').getPublicUrl(filePath);
-        result.parcelDocs.push(data.publicUrl);
+        const signed = await createLongLivedSignedUrl(filePath);
+        if (!signed) throw new Error("Lien du document indisponible");
+        result.parcelDocs.push(signed);
       }
 
       // Upload construction images
@@ -1065,8 +1066,9 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
         
         if (uploadError) throw uploadError;
         
-        const { data } = supabase.storage.from('cadastral-documents').getPublicUrl(filePath);
-        result.constructionImages.push(data.publicUrl);
+        const signedImg = await createLongLivedSignedUrl(filePath);
+        if (!signedImg) throw new Error("Lien de l'image indisponible");
+        result.constructionImages.push(signedImg);
       }
 
       // Upload building permit document
@@ -1081,8 +1083,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
         
         if (uploadError) throw uploadError;
         
-        const { data } = supabase.storage.from('cadastral-documents').getPublicUrl(filePath);
-        result.permitDocUrl = data.publicUrl;
+        result.permitDocUrl = (await createLongLivedSignedUrl(filePath)) ?? undefined;
       }
       
       return result;
