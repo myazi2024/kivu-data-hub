@@ -20,6 +20,7 @@ export interface ContributionRow {
   current_owner_name?: string | null;
   area_sqm?: number | null;
   province?: string | null;
+  land_district?: string | null;
   ville?: string | null;
   commune?: string | null;
   quartier?: string | null;
@@ -84,6 +85,7 @@ export function mapContributionToFormDraft(c: ContributionRow) {
       parcelNumber: c.parcel_number,
       propertyTitleType: c.property_title_type ?? '',
       province: c.province ?? '',
+      landDistrict: c.land_district ?? '',
       ville: c.ville ?? '',
       commune: c.commune ?? '',
       quartier: c.quartier ?? '',
