@@ -1,56 +1,50 @@
-# Nettoyage et stabilisation de l'application
+# Modifier une donnée CCC directement depuis l'espace utilisateur
 
-Revue complète du code (interface et serveur) pour corriger les défauts réels, supprimer ce qui ne sert plus, puis retester. Portée retenue : bugs et zones sensibles (parcours CCC, carte, paiements, espace administration). Suppression directe du code inutilisé. Rapport livré comme document séparé dans vos fichiers.
+## Constat vérifié
 
-## Constats vérifiés
+- Pour corriger une seule donnée (ex. « Matériaux de construction »), l'utilisateur doit rouvrir tout le formulaire CCC : `UserContributions.tsx` n'ouvre que `CadastralContributionDialog`, et uniquement pour les statuts `pending`/`returned`.
+- Le bouton « Demander une correction » existant (`CorrectionRequestDialog.tsx`) est un formulaire libre : l'utilisateur tape le nom du champ et la valeur souhaitée en texte. Rien n'est structuré, rien n'est appliqué.
+- Côté administration, `CCCDetailsDialog.tsx` n'affiche `changed_fields` que s'il s'agit d'un tableau de noms. Les demandes créées par le dialogue actuel (objet JSON) ne s'affichent donc pas : la demande part dans le vide.
 
-Ces points ont été confirmés en lisant le code :
+## Ce qui sera construit
 
-- **Deux erreurs sont avalées en silence.** À la déconnexion, si la fermeture de session côté serveur échoue, l'application affiche quand même « déconnecté » alors que la session peut rester ouverte. Sur l'aperçu cartographique d'une parcelle, une erreur d'import de tracé est ignorée sans aucun message.
-- **Deux actions annoncent un succès sans rien faire.** Le remboursement renvoie « en cours de traitement » sans jamais contacter le prestataire de paiement. Le rappel de facture renvoie « envoyé » alors qu'il se contente d'écrire une ligne de journal.
-- **Le permis de construire a deux écrans en maquette.** Les pièces jointes ajoutées ne sont jamais enregistrées (et utilisent un identifiant aléatoire non fiable) ; les messages envoyés dans le fil de discussion ne partent pas.
-- **Le numéro de téléphone est validé par cinq règles différentes** selon le formulaire : un même numéro est accepté ici et refusé là.
-- **La date est reformatée à la main dans huit fichiers**, avec des variantes.
-- **20 fichiers ne sont utilisés nulle part** (composants, deux hooks, trois fichiers de test laissés hors dossier de tests).
-- **Six cartes de la RDC quasi identiques** (~1 900 lignes) ne diffèrent que par le niveau administratif affiché.
-- Le contrôle qualité remonte 155 listes de dépendances React incomplètes et 64 désactivations explicites de ce contrôle, très concentrées sur les hooks du formulaire CCC.
-- Les tests actuels passent (160 tests, 9 fichiers) et le projet compile sans erreur de type.
+### 1. Catalogue des données modifiables
 
-## Corrections prévues
+Un catalogue unique décrit chaque donnée du formulaire CCC : libellé, onglet d'origine (Général, Localisation, Construction, Location, Valeur marchande, Obligations), type de saisie (texte, nombre, date, oui/non, liste de choix) et dépendances de liste (type → nature → matériaux → standing → usage). Les listes de choix proviennent des mêmes réglages que le formulaire, donc aucune valeur figée en double.
 
-**1. Fiabilité (priorité haute)**
-- Journaliser et remonter à l'utilisateur les deux erreurs actuellement ignorées ; forcer un état de déconnexion cohérent en cas d'échec serveur.
-- Remboursement : soit brancher réellement le prestataire, soit renvoyer un statut explicite « non pris en charge » au lieu d'un faux succès, et refléter ce statut en base.
-- Rappel de facture : envoyer réellement l'email via le service déjà utilisé ailleurs dans le projet, sinon renvoyer un échec explicite.
-- Permis de construire : enregistrer réellement les pièces jointes (stockage privé, nom de fichier `crypto.randomUUID()`) et enregistrer réellement les messages ; à défaut d'une table existante, désactiver visiblement l'écran plutôt que de simuler.
+### 2. Nouveau dialogue « Modifier mes données »
 
-**2. Cohérence et doublons**
-- Une seule règle de validation du téléphone (format RDC), utilisée par tous les formulaires, avec tests.
-- Un seul utilitaire de formatage de date, réutilisé partout.
-- Fusion des cartes RDC communes/territoires/quartiers en un composant paramétré.
+Sur une contribution approuvée, un bouton ouvre un dialogue en trois temps :
 
-**3. Suppression du code mort**
-- Retrait des 20 fichiers inutilisés, après une vérification finale par recherche globale et compilation.
+```text
+1. Choisir les données     -> recherche + regroupement par onglet, cases à cocher
+2. Saisir les valeurs      -> même contrôle que dans le formulaire (liste, nombre, date…)
+                              valeur actuelle affichée à côté de la nouvelle
+3. Motiver et envoyer      -> motif obligatoire, récapitulatif avant / après
+```
 
-**4. Zones sensibles**
-- Reprise des dépendances React manquantes et des désactivations de contrôle sur les parcours critiques uniquement (formulaire CCC, carte cadastrale, paiements, administration), en conservant le comportement actuel — chaque hook touché est couvert par un test avant modification.
-- Vérification du nettoyage des écouteurs d'événements dans le gestionnaire de balayage tactile.
+Plusieurs données peuvent être corrigées en une seule demande. Les dépendances sont respectées : changer le type de construction propose les natures correspondantes et signale les données devenues incohérentes, qui sont alors ajoutées automatiquement à la demande.
 
-## Tests
+### 3. Suivi de la demande
 
-- Compilation et contrôle qualité complets.
-- Suite de tests existante (160) plus nouveaux tests : validation téléphone, formatage de date, hooks de cascade CCC modifiés.
-- Parcours navigateur automatisé sur l'application locale : page d'accueil, carte cadastrale et recherche, ouverture du formulaire CCC, navigation entre onglets, relevé des erreurs de console.
+- Liste « Mes demandes de modification » dans l'espace utilisateur : données concernées, valeurs demandées, statut (en attente, approuvée, rejetée), motif de rejet, date.
+- Annulation possible tant que la demande est en attente.
+- Une seule demande en attente par contribution, pour éviter les corrections contradictoires.
 
-## Détails techniques
+### 4. Traitement côté administration
 
-- Nouveau `src/utils/phone.ts` (regex unique `^(\+?243|0)(8[1-9]|9[0-9])\d{7}$`) remplaçant les règles de `disputeUploadUtils.ts`, `useLandTitleRequest.tsx`, `building-permit-request/types.ts`, `RealEstateExpertiseRequestDialog.tsx`, `PermitValidationScore.tsx`.
-- `formatDate` centralisé dans `src/utils/formatters.ts` ; suppression des copies dans `lib/pdf.ts`, `CadastralInvoice.tsx` et les sections `cadastral-document/*`.
-- `DRCCommunesMap/DRCTerritoiresMap/DRCQuartiersMap` → composant unique paramétré par `level`.
-- Edge functions concernées : `process-refund`, `send-invoice-reminder`.
-- Fichiers supprimés : `CadastralStatsCounter`, `ServicesSection`, `InvoiceSourceLink`, `RequestAuditTimeline`, `UserSearchSelect`, `LockedServiceOverlay`, `PermitPaymentDialog`, `VerificationButton`, `shared/DataTable`, `AdminStatisticsCharts`, `UserStatisticsCharts`, `UserCCCCodes`, `UserProfileHeader`, `PermitRequestCard`, `UserContributionsStats`, `usePersistentPagination`, `useUserResourceList`, `testAreaHectaresValidation`, `testCadastralReport`, `testUserBuildingPermits`.
-- Le typage relâché généralisé (~1 850 `any`) n'est pas repris en masse, conformément à la portée choisie.
+- Un onglet dédié liste les demandes en attente avec un tableau avant / après par donnée.
+- À l'approbation, les nouvelles valeurs sont écrites automatiquement sur la contribution et sur la fiche de parcelle correspondante, dans une seule opération serveur, avec trace dans l'historique d'audit.
+- Au rejet, motif obligatoire, notification à l'utilisateur.
+- L'affichage des demandes de mise à jour dans la fiche de contribution est corrigé pour gérer aussi bien un tableau de noms qu'un détail avant / après.
 
-## Livrable
+## Notes techniques
 
-Rapport détaillé (problèmes trouvés et corrigés, tests exécutés et résultats, confirmation du bon fonctionnement des composants) déposé dans vos fichiers.
+- Nouvelle table `ccc_correction_requests` : `contribution_id`, `parcel_number`, `user_id`, `changes` (jsonb `[{field, label, old_value, new_value}]`), `reason`, `status` (`pending`/`approved`/`rejected`/`cancelled`), `reviewed_by`, `reviewed_at`, `rejection_reason`. GRANT explicites (`authenticated`, `service_role`), RLS : l'utilisateur voit et crée ses propres demandes, annule seulement les siennes en attente ; les administrateurs lisent tout via `has_role`. Index unique partiel sur `contribution_id` pour les demandes en attente.
+- RPC `apply_ccc_correction_request(p_request_id, p_decision, p_rejection_reason)` en SECURITY DEFINER, `SET search_path = public`, réservée aux administrateurs : vérifie le rôle, applique les valeurs sur `cadastral_contributions` puis sur `cadastral_parcels` via une liste blanche de colonnes, écrit l'audit et le statut de manière atomique. Les valeurs ne sont jamais appliquées côté client.
+- Liste blanche de colonnes partagée entre le catalogue front et la RPC : seules les colonnes déclarées modifiables peuvent être écrites, ce qui exclut le numéro de parcelle, les statuts, les scores de fraude et les champs d'approbation.
+- Nouveaux fichiers : `src/lib/ccc/editableFieldsCatalog.ts`, `src/components/user/contributions/FieldCorrectionDialog/` (`index.tsx`, `FieldPickerStep.tsx`, `FieldValuesStep.tsx`, `ReviewStep.tsx`, `FieldInput.tsx`), `src/components/user/contributions/UserCorrectionRequests.tsx`, `src/hooks/useCorrectionRequests.ts`, `src/components/admin/ccc/CCCCorrectionRequestsPanel.tsx`.
+- Les listes de choix réutilisent `useCCCFormPicklists` et les cascades existantes (`useConstructionCascade`), sans duplication de règles.
+- `CorrectionRequestDialog.tsx` (saisie libre) est remplacé par le nouveau dialogue et supprimé.
+- Validation identique au formulaire pour chaque donnée (bornes de hauteur, années, montants), plafond anti-abus sur le nombre de demandes par utilisateur et par jour.
+- Couleurs et styles via jetons sémantiques Tailwind ; tests unitaires sur le catalogue, la détection des incohérences de cascade et la construction du diff.
