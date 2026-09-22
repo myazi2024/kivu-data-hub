@@ -27,14 +27,25 @@ export type SideBorderType = 'route' | 'mur_mitoyen';
 export interface RoadSideInfo {
   sideIndex: number;
   bordersRoad: boolean;
-  // Type de limite (route ou mur mitoyen)
+  /**
+   * Type de limite dominant — champ dérivé conservé pour compatibilité :
+   * vaut 'route' dès qu'une route est déclarée sur le côté, sinon 'mur_mitoyen'.
+   */
   borderType?: SideBorderType;
+  /** Le côté est bordé par une route (cumulable avec un mur). */
+  hasRoad?: boolean;
+  /** Le côté est fermé par un mur (cumulable avec une route). */
+  hasWall?: boolean;
   // Propriétés pour les routes
   roadType?: string;
   roadName?: string;
   roadWidth?: number;
   /** Revêtement de la chaussée (voir ROAD_SURFACE_OPTIONS). */
   roadSurface?: string;
+  /** Éclairage public devant la parcelle sur ce côté. */
+  hasStreetLighting?: boolean;
+  /** Nombre de lampadaires bordant la parcelle sur ce côté. */
+  streetLampCount?: number;
   /** Présence d'un caniveau le long de ce côté. */
   hasGutter?: boolean;
   /** Parcelle raccordée au caniveau depuis ce côté (si caniveau présent). */
@@ -49,6 +60,14 @@ export interface RoadSideInfo {
   // Entrée de la parcelle
   hasEntrance?: boolean;
 }
+
+/** Le côté borde une route (lit le nouveau champ, avec repli sur l'ancien `borderType`). */
+export const sideHasRoad = (s?: Partial<RoadSideInfo> | null): boolean =>
+  !!s && (s.hasRoad ?? s.borderType === 'route');
+
+/** Le côté est fermé par un mur (lit le nouveau champ, avec repli sur l'ancien `borderType`). */
+export const sideHasWall = (s?: Partial<RoadSideInfo> | null): boolean =>
+  !!s && (s.hasWall ?? s.borderType === 'mur_mitoyen');
 
 export interface ServitudeInfo {
   hasServitude: boolean;
