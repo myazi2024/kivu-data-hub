@@ -37,6 +37,8 @@ import { useLeafletMap } from '@/hooks/useLeafletMap';
 import { playFeedbackBeep } from '@/lib/feedbackAudio';
 import { trackEvent } from '@/lib/analytics';
 import { computeEffectiveAreaSqm } from '@/utils/parcelGeometricArea';
+import { supabase } from '@/integrations/supabase/client';
+import { useTestEnvironment } from '@/hooks/useTestEnvironment';
 
 import 'leaflet/dist/leaflet.css';
 
@@ -150,6 +152,7 @@ const CadastralMap = () => {
     return () => { mapObs.disconnect(); cardObs.disconnect(); };
   }, []);
 
+  const { isTestRoute } = useTestEnvironment();
   const advancedSearch = useAdvancedCadastralSearch();
   const searchHistory = useSearchHistory();
   const { config: searchBarConfig, buildAllowedRegex } = useSearchBarConfig();
@@ -263,12 +266,41 @@ const CadastralMap = () => {
     setSelectedParcel(null);
   };
 
-  const handleManualSearchClick = useCallback(() => {
+  /**
+   * Avant de proposer la création d'une parcelle, on vérifie côté serveur qu'elle
+   * n'existe pas : la carte ne charge qu'un sous-ensemble des parcelles, donc une
+   * absence locale ne prouve rien (risque de contribution en doublon).
+   */
+  const handleManualSearchClick = useCallback(async () => {
     notificationDismissedRef.current = true;
     setShowManualSearchNotification(false);
     if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
+
+    const q = searchQuery.trim();
+    if (q) {
+      try {
+        const { data, error } = await supabase.rpc('search_parcels_public', {
+          p_query: q,
+          p_mode: searchMode,
+          p_limit: 1,
+          p_test_mode: isTestRoute,
+        });
+        if (!error && Array.isArray(data) && data.length > 0) {
+          const hit: any = data[0];
+          const known = parcels.find(p => p.id === hit.id);
+          if (known) {
+            handleSelectParcel(known);
+          } else {
+            toast.info(`La parcelle ${hit.parcel_number} existe déjà dans le cadastre.`);
+          }
+          return;
+        }
+      } catch (err) {
+        console.error('Vérification d\'existence impossible:', err);
+      }
+    }
     setShowIntroDialog(true);
-  }, []);
+  }, [searchQuery, searchMode, isTestRoute, parcels, handleSelectParcel]);
 
   const applyAdvancedFilters = async (filters?: typeof advancedSearch.filters) => {
     const results = await advancedSearch.searchParcels(filters);
