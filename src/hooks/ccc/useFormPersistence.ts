@@ -158,8 +158,10 @@ export function useFormPersistence(params: UseFormPersistenceParams): UseFormPer
     setSoundEnvironment, setNearbySoundSources,
   } = params;
 
-  const STORAGE_KEY = `cadastral_contribution_${parcelNumber || 'draft'}`;
+  const STORAGE_KEY = `${STORAGE_PREFIX}${parcelNumber || 'draft'}`;
   const submitUploadedPathsRef = useRef<string[]>([]);
+  /** Dernière charge sérialisée écrite : évite de réécrire un brouillon identique. */
+  const lastSerializedRef = useRef<string | null>(null);
 
   // ─── Save (manual + debounced) ───
   const saveFormDataToStorage = useCallback(() => {
@@ -182,12 +184,16 @@ export function useFormPersistence(params: UseFormPersistenceParams): UseFormPer
       timestamp: new Date().toISOString()
     };
     try {
+      const { timestamp: _ignored, ...comparable } = dataToSave as any;
+      const fingerprint = JSON.stringify(comparable);
+      if (fingerprint === lastSerializedRef.current) return; // rien n'a changé
       const wrapped = {
         schemaVersion: STORAGE_SCHEMA_VERSION,
         savedAt: new Date().toISOString(),
         data: dataToSave,
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(wrapped));
+      lastSerializedRef.current = fingerprint;
       localStorage.setItem('auth_redirect_url', window.location.pathname + window.location.search);
     } catch (error) {
       console.error('Erreur sauvegarde:', error);
@@ -195,6 +201,7 @@ export function useFormPersistence(params: UseFormPersistenceParams): UseFormPer
   }, [formData, currentOwners, previousOwners, taxRecords, mortgageRecords, permitMode, buildingPermits, permitRequest, gpsCoordinates, parcelSides, obligationType, sectionType, hasMortgage, hasDispute, ownershipMode, leaseYears, roadSides, servitude, customTitleName, constructionMode, additionalConstructions, buildingShapes, disputeFormData, soundEnvironment, nearbySoundSources, STORAGE_KEY]);
 
   const clearSavedFormData = useCallback(() => {
+    lastSerializedRef.current = null;
     try { localStorage.removeItem(STORAGE_KEY); localStorage.removeItem('auth_redirect_url'); } catch (error) { console.error(error); }
   }, [STORAGE_KEY]);
 
@@ -231,7 +238,19 @@ export function useFormPersistence(params: UseFormPersistenceParams): UseFormPer
         return;
       }
 
-      if (parsed.formData) setFormData(parsed.formData);
+      if (parsed.formData || parsed.isOccupied !== undefined) {
+        setFormData(prev => ({
+          ...prev,
+          ...(parsed.formData || {}),
+          ...(parsed.isOccupied !== undefined
+            ? {
+                isOccupied: parsed.isOccupied,
+                occupantCount: parsed.occupantCount,
+                hostingCapacity: parsed.hostingCapacity,
+              }
+            : {}),
+        }));
+      }
       if (parsed.currentOwners) setCurrentOwners(parsed.currentOwners);
       if (parsed.previousOwners) setPreviousOwners(parsed.previousOwners);
       if (parsed.taxRecords) setTaxRecords(parsed.taxRecords);
@@ -256,7 +275,6 @@ export function useFormPersistence(params: UseFormPersistenceParams): UseFormPer
       if (parsed.disputeFormData) setDisputeFormData(parsed.disputeFormData);
       if (parsed.soundEnvironment) setSoundEnvironment(parsed.soundEnvironment);
       if (parsed.nearbySoundSources) setNearbySoundSources(parsed.nearbySoundSources);
-      if (parsed.isOccupied !== undefined) setFormData(prev => ({ ...prev, isOccupied: parsed.isOccupied, occupantCount: parsed.occupantCount, hostingCapacity: parsed.hostingCapacity }));
       toast({ title: "Données restaurées", description: "Vos données précédentes ont été restaurées." });
     } catch (error) {
       console.error('Erreur chargement:', error);
@@ -265,7 +283,9 @@ export function useFormPersistence(params: UseFormPersistenceParams): UseFormPer
 
   // Effet: chargement initial au montage / ouverture
   useEffect(() => {
-    if (open && !editingContributionId) loadFormDataFromStorage();
+    if (!open) return;
+    pruneStoredDrafts(STORAGE_KEY);
+    if (!editingContributionId) loadFormDataFromStorage();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, editingContributionId]);
 
