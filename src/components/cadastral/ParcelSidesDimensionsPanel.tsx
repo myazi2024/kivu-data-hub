@@ -320,7 +320,15 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
       // Champ dérivé : la route prime pour les indicateurs d'accès
       borderType: nextRoad ? 'route' : 'mur_mitoyen',
       ...(nextRoad ? {} : ROAD_FIELDS_RESET),
-      ...(nextWall ? {} : WALL_FIELDS_RESET),
+      ...(nextWall ? {} : { ...WALL_FIELDS_RESET, boundaryKind: undefined }),
+    });
+  };
+
+  /** Bascule entre « Mur » et « Limite » : une simple limite n'a aucune dépendance. */
+  const handleBoundaryKindChange = (sideIndex: number, kind: BoundaryKind) => {
+    onRoadSideUpdate(sideIndex, {
+      boundaryKind: kind,
+      ...(kind === 'limite' ? WALL_FIELDS_RESET : {}),
     });
   };
 
@@ -338,7 +346,11 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
       const gutter = side.hasGutter !== true || side.gutterConnected !== undefined;
       if (!(base && lighting && gutter)) return false;
     }
-    if (hasWall && !side.wallMaterial) return false;
+    if (hasWall) {
+      const kind = sideBoundaryKind(side);
+      if (!kind) return false;
+      if (kind === 'mur' && !side.wallMaterial) return false;
+    }
     return true;
   };
 
