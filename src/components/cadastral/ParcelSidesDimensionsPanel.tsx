@@ -562,10 +562,12 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
                 )}
                 {hasConfirmed && isWall && (
                   <p className="text-xs text-muted-foreground pl-6">
-                    {[
-                      `Mur : ${wallMaterials.find(m => m.value === roadSide?.wallMaterial)?.label || roadSide?.wallMaterial || '—'}`,
-                      roadSide?.wallHeight ? `Hauteur: ${roadSide.wallHeight}m` : null,
-                    ].filter(Boolean).join(' · ')}
+                    {isPlainBoundary
+                      ? 'Limite de parcelle (sans mur)'
+                      : [
+                          `Mur : ${wallMaterials.find(m => m.value === roadSide?.wallMaterial)?.label || roadSide?.wallMaterial || '—'}`,
+                          roadSide?.wallHeight ? `Hauteur: ${roadSide.wallHeight}m` : null,
+                        ].filter(Boolean).join(' · ')}
                   </p>
                 )}
 
