@@ -591,6 +591,37 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
 
 
 
+      {/* Standing — pleine largeur */}
+      {!!data.constructionNature && data.constructionNature !== 'Non bâti' && availableStandings.length > 0 && (
+        <div className="space-y-1.5">
+          <div className="flex items-center gap-1">
+            <Label className="text-sm font-medium">Standing</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-4 w-4 p-0 rounded-full">
+                  <Info className="h-3 w-3 text-muted-foreground" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-64 rounded-xl text-xs">
+                <p className="text-muted-foreground">
+                  Niveau de finition de la construction : haut standing, moyen standing ou économique.
+                </p>
+              </PopoverContent>
+            </Popover>
+          </div>
+          <Select value={data.standing} onValueChange={(v) => update('standing', v)}>
+            <SelectTrigger className="h-10 rounded-xl text-sm">
+              <SelectValue placeholder="Sélectionner le standing" />
+            </SelectTrigger>
+            <SelectContent className="rounded-xl">
+              {availableStandings.map(s => (
+                <SelectItem key={s} value={s}>{s}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
       {/* Mise en location */}
       {rentalEligible && (
         <div className="space-y-1.5">
