@@ -19,7 +19,7 @@ export const UserCorrectionRequests: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="bg-background rounded-2xl border p-6 flex justify-center">
+      <div className="flex justify-center rounded-md border bg-card p-6">
         <div className="animate-spin motion-reduce:animate-none rounded-full h-6 w-6 border-b-2 border-primary" />
       </div>
     );
@@ -37,7 +37,7 @@ export const UserCorrectionRequests: React.FC = () => {
   };
 
   return (
-    <div className="bg-background rounded-2xl shadow-sm border overflow-hidden mt-4">
+    <div className="mt-4 overflow-hidden rounded-md border bg-card">
       <div className="p-3 border-b flex items-center gap-2">
         <ClipboardList className="h-4 w-4 text-primary" />
         <h3 className="text-sm font-semibold">Mes demandes de modification</h3>
@@ -46,7 +46,7 @@ export const UserCorrectionRequests: React.FC = () => {
         {requests.map((r) => {
           const status = STATUS_LABEL[r.status] ?? STATUS_LABEL.pending;
           return (
-            <div key={r.id} className="rounded-xl bg-muted/30 p-3 space-y-2">
+            <div key={r.id} className="space-y-2 rounded-md bg-muted/30 p-3">
               <div className="flex items-center justify-between gap-2">
                 <p className="text-sm font-medium truncate">{r.parcel_number}</p>
                 <div className="flex items-center gap-2 shrink-0">

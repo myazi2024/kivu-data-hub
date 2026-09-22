@@ -27,7 +27,7 @@ export const RentalUnitsPanel: React.FC = () => {
 
   if (rentals.length === 0) {
     return (
-      <div className="text-center py-10 bg-background rounded-2xl border">
+      <div className="rounded-md border bg-card py-10 text-center">
         <Home className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
         <p className="text-sm text-muted-foreground">Aucun bien déclaré en location</p>
         <p className="text-xs text-muted-foreground mt-1">
@@ -46,7 +46,7 @@ export const RentalUnitsPanel: React.FC = () => {
           { label: 'Locaux', value: `${totals.occupiedUnits}/${totals.unitsTotal} occupés` },
           { label: 'Taux d\u2019occupation', value: `${totals.occupancyRate}%` },
         ].map((s) => (
-          <div key={s.label} className="bg-background rounded-2xl p-3 border shadow-sm">
+          <div key={s.label} className="rounded-md border bg-card p-3">
             <p className="text-[10px] text-muted-foreground">{s.label}</p>
             <p className="text-sm font-bold">{s.value}</p>
           </div>
@@ -68,14 +68,14 @@ export const RentalUnitsPanel: React.FC = () => {
           const key = `${r.contributionId}-${r.constructionRef}`;
           const isOpen = expanded === key;
           return (
-            <div key={key} className="bg-background rounded-2xl border overflow-hidden">
+            <div key={key} className="overflow-hidden rounded-md border bg-card">
               <button
                 type="button"
                 onClick={() => setExpanded(isOpen ? null : key)}
                 className="w-full flex items-center gap-3 p-3 text-left hover:bg-muted/40 transition-colors"
                 aria-expanded={isOpen}
               >
-                <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary/10">
                   <Home className="h-4 w-4 text-primary" />
                 </div>
                 <div className="flex-1 min-w-0">

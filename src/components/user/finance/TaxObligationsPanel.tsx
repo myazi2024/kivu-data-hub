@@ -43,15 +43,15 @@ export const TaxObligationsPanel: React.FC = () => {
   return (
     <div className="space-y-3">
       <div className="grid grid-cols-3 gap-2">
-        <div className="bg-background rounded-2xl p-3 border shadow-sm">
+        <div className="rounded-md border bg-card p-3">
           <p className="text-[10px] text-muted-foreground">Revenus locatifs annuels</p>
           <p className="text-sm font-bold">{formatUsd(totals.annualRentUsd)}</p>
         </div>
-        <div className="bg-background rounded-2xl p-3 border shadow-sm">
+        <div className="rounded-md border bg-card p-3">
           <p className="text-[10px] text-muted-foreground">Déclarations</p>
           <p className="text-sm font-bold">{taxes.length}</p>
         </div>
-        <div className="bg-background rounded-2xl p-3 border shadow-sm">
+        <div className="rounded-md border bg-card p-3">
           <p className="text-[10px] text-muted-foreground">Reste à payer</p>
           <p className="text-sm font-bold text-destructive">{formatUsd(totals.taxDue)}</p>
         </div>
@@ -68,13 +68,13 @@ export const TaxObligationsPanel: React.FC = () => {
       )}
 
       {grouped.length === 0 ? (
-        <div className="text-center py-10 bg-background rounded-2xl border">
+        <div className="rounded-md border bg-card py-10 text-center">
           <Receipt className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
           <p className="text-sm text-muted-foreground">Aucune obligation fiscale déclarée</p>
         </div>
       ) : (
         grouped.map(([parcel, items]) => (
-          <div key={parcel} className="bg-background rounded-2xl border overflow-hidden">
+          <div key={parcel} className="overflow-hidden rounded-md border bg-card">
             <div className="px-3 py-2 border-b flex items-center gap-2">
               <Landmark className="h-4 w-4 text-primary" />
               <p className="text-sm font-medium">{parcel}</p>

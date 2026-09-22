@@ -75,7 +75,7 @@ export const ListingsPanel: React.FC = () => {
 
   if (listings.length === 0) {
     return (
-      <div className="text-center py-10 bg-background rounded-2xl border">
+      <div className="rounded-md border bg-card py-10 text-center">
         <Megaphone className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
         <p className="text-sm text-muted-foreground">Aucune annonce publiée</p>
         <p className="text-xs text-muted-foreground mt-1">
@@ -92,9 +92,9 @@ export const ListingsPanel: React.FC = () => {
         const published = publishedMap[key] ?? true;
         const cover = l.coverImageMainUrl || l.coverImageUrls?.[0] || null;
         return (
-          <div key={key} className="bg-background rounded-2xl border overflow-hidden">
+          <div key={key} className="overflow-hidden rounded-md border bg-card">
             <div className="flex gap-3 p-3">
-              <div className="h-20 w-20 rounded-xl overflow-hidden bg-muted flex items-center justify-center shrink-0">
+              <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted">
                 {cover ? (
                   <SignedStorageImage
                     src={cover}

@@ -69,7 +69,7 @@ export const UserAccountSecurity = () => {
   return (
     <div className="space-y-3">
       {/* Changer mot de passe */}
-      <Card className="border-none shadow-md rounded-2xl">
+      <Card className="rounded-md">
         <CardContent className="p-3">
           <div className="flex items-center gap-2 mb-3">
             <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -90,7 +90,7 @@ export const UserAccountSecurity = () => {
                   placeholder="••••••••••"
                   disabled={loading}
                   autoComplete="new-password"
-                  className="h-9 text-sm pr-9 rounded-xl"
+                  className="h-9 pr-9 text-sm"
                 />
                 <Button
                   type="button"
@@ -143,7 +143,7 @@ export const UserAccountSecurity = () => {
                 placeholder="••••••••••"
                 disabled={loading}
                 autoComplete="new-password"
-                className="h-9 text-sm rounded-xl"
+                className="h-9 text-sm"
               />
               {confirmPassword.length > 0 && !matches && (
                 <p className="text-[10px] text-destructive">Les mots de passe ne correspondent pas</p>
@@ -154,7 +154,7 @@ export const UserAccountSecurity = () => {
               type="submit"
               disabled={!canSubmit}
               size="sm"
-              className="w-full h-9 rounded-xl text-xs"
+              className="h-9 w-full text-xs"
             >
               {loading && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />}
               Changer le mot de passe
@@ -164,7 +164,7 @@ export const UserAccountSecurity = () => {
       </Card>
 
       {/* 2FA */}
-      <Card className="border-none shadow-md rounded-2xl">
+      <Card className="rounded-md">
         <CardContent className="p-3">
           <div className="flex items-center justify-between mb-3 gap-2">
             <div className="flex items-center gap-2 min-w-0">
@@ -191,14 +191,14 @@ export const UserAccountSecurity = () => {
           </div>
 
           {mfa.loading ? (
-            <div className="flex items-center gap-2 p-2.5 bg-muted/30 rounded-xl">
+            <div className="flex items-center gap-2 rounded-md bg-muted/30 p-2.5">
               <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
               <p className="text-[11px] text-muted-foreground">Chargement…</p>
             </div>
           ) : mfa.factors.length > 0 ? (
             <ul className="space-y-1.5">
               {mfa.factors.map((f) => (
-                <li key={f.id} className="flex items-center justify-between gap-2 p-2 bg-muted/30 rounded-xl">
+                <li key={f.id} className="flex items-center justify-between gap-2 rounded-md bg-muted/30 p-2">
                   <div className="flex items-center gap-2 min-w-0">
                     <Smartphone className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                     <div className="min-w-0">
