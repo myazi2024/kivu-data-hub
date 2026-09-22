@@ -66,7 +66,7 @@ const CadastralMap = () => {
   const parcelRoadAccess = useMemo(() => {
     const sides = Array.isArray(selectedParcel?.road_sides) ? (selectedParcel!.road_sides as any[]) : [];
     return sides
-      .filter((s) => s?.bordersRoad)
+      .filter((s) => s?.hasRoad ?? (s?.bordersRoad || s?.borderType === 'route'))
       .map((s) => [s.roadType, s.roadSurface ? roadSurfaceLabel(s.roadSurface) : null].filter(Boolean).join(' · '))
       .filter((label) => label.length > 0)
       .slice(0, 2);
@@ -74,9 +74,22 @@ const CadastralMap = () => {
   /** Assainissement : caniveau présent sur au moins un côté, et raccordement de la parcelle. */
   const parcelGutter = useMemo(() => {
     const sides = Array.isArray(selectedParcel?.road_sides) ? (selectedParcel!.road_sides as any[]) : [];
-    const withGutter = sides.filter((s) => s?.bordersRoad && s?.hasGutter === true);
+    const roadSides = sides.filter((s) => s?.hasRoad ?? (s?.bordersRoad || s?.borderType === 'route'));
+    const withGutter = roadSides.filter((s) => s?.hasGutter === true);
     if (withGutter.length === 0) return null;
     return withGutter.some((s) => s.gutterConnected) ? 'Caniveau raccordé' : 'Caniveau non raccordé';
+  }, [selectedParcel]);
+  /** Éclairage public : nombre total de lampadaires déclarés le long de la parcelle. */
+  const parcelStreetLighting = useMemo(() => {
+    const sides = Array.isArray(selectedParcel?.road_sides) ? (selectedParcel!.road_sides as any[]) : [];
+    const roadSides = sides.filter((s) => s?.hasRoad ?? (s?.bordersRoad || s?.borderType === 'route'));
+    if (roadSides.length === 0) return null;
+    const lit = roadSides.filter((s) => s?.hasStreetLighting === true);
+    if (lit.length === 0) {
+      return roadSides.some((s) => s?.hasStreetLighting === false) ? 'Sans éclairage public' : null;
+    }
+    const lamps = lit.reduce((sum, s) => sum + (Number(s?.streetLampCount) || 0), 0);
+    return lamps > 0 ? `Éclairage public · ${lamps} lampadaire${lamps > 1 ? 's' : ''}` : 'Éclairage public';
   }, [selectedParcel]);
   const hasIncompleteData = useMemo(() => {
     if (!selectedParcel || !selectedParcelHistory) return false;
