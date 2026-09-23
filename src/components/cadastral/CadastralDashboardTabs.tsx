@@ -44,19 +44,19 @@ const CadastralDashboardTabs: React.FC = () => {
 
   return (
     <Tabs defaultValue="invoices" className="w-full">
-      <TabsList className={`grid w-full ${isReseller ? 'grid-cols-3' : 'grid-cols-2'}`}>
-        <TabsTrigger value="invoices" className="flex items-center gap-2">
+      <TabsList className={`grid h-auto w-full ${isReseller ? 'grid-cols-3' : 'grid-cols-2'}`}>
+        <TabsTrigger value="invoices" className="flex min-w-0 items-center gap-1 px-2 sm:gap-2 sm:px-3">
           <FileText className="h-4 w-4" />
           <span className="hidden sm:inline">Factures</span>
           <span className="sm:hidden text-xs">Factures</span>
         </TabsTrigger>
-        <TabsTrigger value="codes" className="flex items-center gap-2">
+        <TabsTrigger value="codes" className="flex min-w-0 items-center gap-1 px-2 sm:gap-2 sm:px-3">
           <Gift className="h-4 w-4" />
           <span className="hidden sm:inline">Codes CCC</span>
           <span className="sm:hidden text-xs">CCC</span>
         </TabsTrigger>
         {isReseller && (
-          <TabsTrigger value="discount-codes" className="flex items-center gap-2">
+          <TabsTrigger value="discount-codes" className="flex min-w-0 items-center gap-1 px-2 sm:gap-2 sm:px-3">
             <Tag className="h-4 w-4" />
             <span className="hidden sm:inline">Codes Remise</span>
             <span className="sm:hidden text-xs">Remise</span>
@@ -64,16 +64,16 @@ const CadastralDashboardTabs: React.FC = () => {
         )}
       </TabsList>
 
-      <TabsContent value="invoices" className="mt-6">
+      <TabsContent value="invoices" className="mt-3 min-w-0 sm:mt-6">
         <CadastralClientDashboard />
       </TabsContent>
 
-      <TabsContent value="codes" className="mt-6">
+      <TabsContent value="codes" className="mt-3 min-w-0 sm:mt-6">
         <ContributorCodesPanel />
       </TabsContent>
 
       {isReseller && (
-        <TabsContent value="discount-codes" className="mt-6">
+        <TabsContent value="discount-codes" className="mt-3 min-w-0 sm:mt-6">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">

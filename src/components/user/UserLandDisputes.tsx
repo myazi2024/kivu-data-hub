@@ -122,15 +122,15 @@ export const UserLandDisputes: React.FC = () => {
   return (
     <>
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-2 mb-4">
+      <div className="grid grid-cols-3 gap-1.5 mb-4 sm:gap-2">
         {[
           { label: "Total", value: stats.total, color: "text-foreground" },
           { label: "Signalements", value: stats.reports, color: "text-orange-600" },
           { label: "Levées", value: stats.liftings, color: "text-green-600" },
         ].map((stat) => (
-          <div key={stat.label} className="bg-background rounded-2xl p-3 shadow-sm border text-center">
+          <div key={stat.label} className="min-w-0 rounded-md border bg-card p-2 text-center sm:p-3">
             <p className={`text-xl font-bold ${stat.color}`}>{stat.value}</p>
-            <p className="text-[10px] text-muted-foreground">{stat.label}</p>
+            <p className="break-words text-[9px] text-muted-foreground sm:text-[10px]">{stat.label}</p>
           </div>
         ))}
       </div>
@@ -194,9 +194,9 @@ export const UserLandDisputes: React.FC = () => {
           ) : (
             <div className="space-y-2">
               {paginatedDisputes.map((dispute) => (
-                <div
+                 <div
                   key={dispute.id}
-                  className="flex items-center justify-between p-3 border rounded-xl hover:bg-muted/50 cursor-pointer transition-colors"
+                   className="flex min-w-0 items-center justify-between gap-2 rounded-md border p-3 hover:bg-muted/50 cursor-pointer transition-colors"
                   onClick={() => { setSelectedDispute(dispute); setIsDetailsOpen(true); }}
                 >
                   <div className="flex-1 min-w-0">
@@ -236,7 +236,7 @@ export const UserLandDisputes: React.FC = () => {
 
       {/* Detail Dialog */}
       <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
-        <DialogContent className="max-w-[400px] w-[calc(100vw-2rem)] rounded-2xl max-h-[85vh] overflow-y-auto">
+        <DialogContent className="max-h-[90dvh] w-[calc(100vw-1rem)] max-w-[400px] overflow-y-auto p-4 sm:p-6">
           <DialogHeader>
             <DialogTitle className="text-base flex items-center gap-2">
               <Scale className="h-5 w-5 text-orange-600" />
@@ -249,19 +249,19 @@ export const UserLandDisputes: React.FC = () => {
                 <CardContent className="p-3 space-y-2">
                   <div className="flex items-center gap-2 text-sm font-semibold text-primary"><FileText className="h-4 w-4" /> Informations</div>
                   <div className="space-y-1.5 text-sm">
-                    <div className="flex justify-between items-center">
+                    <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                       <span className="text-muted-foreground">Référence :</span>
                       <button onClick={() => copyReference(selectedDispute.reference_number)} className="flex items-center gap-1 font-mono font-bold hover:text-primary transition-colors">
                         {selectedDispute.reference_number} <Copy className="h-3 w-3" />
                       </button>
                     </div>
-                    <div className="flex justify-between"><span className="text-muted-foreground">Parcelle :</span><span className="font-mono">{selectedDispute.parcel_number}</span></div>
+                    <div className="flex flex-wrap justify-between gap-1"><span className="text-muted-foreground">Parcelle :</span><span className="break-all font-mono">{selectedDispute.parcel_number}</span></div>
                     <div className="flex justify-between"><span className="text-muted-foreground">Type :</span>
                       <Badge variant={selectedDispute.dispute_type === 'report' ? 'destructive' : 'default'} className="text-[10px]">
                         {selectedDispute.dispute_type === 'report' ? 'Signalement' : 'Levée'}
                       </Badge>
                     </div>
-                    <div className="flex justify-between"><span className="text-muted-foreground">Nature :</span><span>{DISPUTE_NATURES_MAP[selectedDispute.dispute_nature] || selectedDispute.dispute_nature}</span></div>
+                    <div className="flex flex-wrap justify-between gap-1"><span className="text-muted-foreground">Nature :</span><span className="text-right">{DISPUTE_NATURES_MAP[selectedDispute.dispute_nature] || selectedDispute.dispute_nature}</span></div>
                     <div className="flex justify-between"><span className="text-muted-foreground">Statut :</span><DisputeStatusBadge status={selectedDispute.current_status} /></div>
                     {selectedDispute.dispute_start_date && (
                       <div className="flex justify-between"><span className="text-muted-foreground">Début :</span><span>{new Date(selectedDispute.dispute_start_date).toLocaleDateString('fr-FR')}</span></div>
@@ -306,7 +306,7 @@ export const UserLandDisputes: React.FC = () => {
                     <div className="flex justify-between"><span className="text-muted-foreground">Nom :</span><span>{selectedDispute.declarant_name}</span></div>
                     <div className="flex justify-between"><span className="text-muted-foreground">Qualité :</span><span>{DECLARANT_QUALITIES_MAP[selectedDispute.declarant_quality] || selectedDispute.declarant_quality}</span></div>
                     {selectedDispute.declarant_phone && <div className="flex justify-between"><span className="text-muted-foreground">Téléphone :</span><span>{selectedDispute.declarant_phone}</span></div>}
-                    {selectedDispute.declarant_email && <div className="flex justify-between"><span className="text-muted-foreground">Email :</span><span className="truncate">{selectedDispute.declarant_email}</span></div>}
+                    {selectedDispute.declarant_email && <div className="flex min-w-0 justify-between gap-2"><span className="shrink-0 text-muted-foreground">Email :</span><span className="truncate">{selectedDispute.declarant_email}</span></div>}
                   </div>
                 </CardContent>
               </Card>

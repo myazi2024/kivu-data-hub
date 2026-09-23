@@ -87,14 +87,14 @@ export const UserCCCCodes: React.FC = () => {
   return (
     <>
       {/* Stats compactes */}
-      <div className="grid grid-cols-4 gap-2 mb-4">
+      <div className="grid grid-cols-2 gap-2 mb-4 sm:grid-cols-4">
         {[
           { label: "Total", value: stats.total, color: "text-foreground" },
           { label: "Dispo.", value: stats.available, color: "text-green-600" },
           { label: "Utilisés", value: stats.used, color: "text-blue-600" },
           { label: "Valeur", value: `$${stats.totalValue.toFixed(0)}`, color: "text-primary" },
         ].map((stat) => (
-          <div key={stat.label} className="bg-background rounded-2xl p-3 shadow-sm border text-center">
+          <div key={stat.label} className="rounded-md border bg-card p-3 text-center">
             <p className={`text-lg font-bold ${stat.color}`}>{stat.value}</p>
             <p className="text-[10px] text-muted-foreground">{stat.label}</p>
           </div>
@@ -102,7 +102,7 @@ export const UserCCCCodes: React.FC = () => {
       </div>
 
       {/* Liste des codes */}
-      <div className="bg-background rounded-2xl shadow-sm border overflow-hidden">
+      <div className="overflow-hidden rounded-md border bg-card">
         <div className="p-3 border-b flex items-center gap-2">
           <Gift className="h-4 w-4 text-primary" />
           <h3 className="text-sm font-semibold">Mes codes CCC</h3>
@@ -126,7 +126,7 @@ export const UserCCCCodes: React.FC = () => {
                 .map((code) => (
                   <div 
                     key={code.id} 
-                    className="flex items-center gap-3 p-2.5 bg-muted/30 rounded-xl hover:bg-muted/50 transition-colors cursor-pointer"
+                     className="flex min-w-0 items-center gap-2 rounded-md bg-muted/30 p-2.5 hover:bg-muted/50 transition-colors cursor-pointer sm:gap-3"
                     onClick={() => {
                       setSelectedCode(code);
                       setIsDetailsOpen(true);

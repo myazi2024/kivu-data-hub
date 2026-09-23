@@ -123,13 +123,13 @@ export const UserMortgageRequests: React.FC = () => {
         const details = getMortgageDetails(request);
 
         return (
-          <Card key={request.id} className="rounded-xl overflow-hidden">
-            <CardContent className="p-4 space-y-3">
+            <Card key={request.id} className="overflow-hidden rounded-md">
+            <CardContent className="space-y-3 p-3 sm:p-4">
               {/* Header */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
+              <div className="flex min-w-0 items-start justify-between gap-2">
+                <div className="flex min-w-0 items-center gap-2">
                   {getTypeIcon(request.contribution_type)}
-                  <span className="text-sm font-semibold">{getTypeLabel(request.contribution_type)}</span>
+                  <span className="truncate text-sm font-semibold">{getTypeLabel(request.contribution_type)}</span>
                 </div>
                 <Badge variant={statusConfig.variant} className="text-[10px] flex items-center gap-1">
                   {statusConfig.icon}
@@ -138,11 +138,11 @@ export const UserMortgageRequests: React.FC = () => {
               </div>
 
               {/* Details */}
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                <div className="flex items-center gap-1.5">
+              <div className="grid grid-cols-1 gap-2 text-xs sm:grid-cols-2">
+                <div className="flex min-w-0 items-center gap-1.5">
                   <MapPin className="h-3 w-3 text-muted-foreground" />
                   <span className="text-muted-foreground">Parcelle:</span>
-                  <span className="font-mono font-medium">{request.parcel_number}</span>
+                  <span className="truncate font-mono font-medium">{request.parcel_number}</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <Clock className="h-3 w-3 text-muted-foreground" />
@@ -156,13 +156,13 @@ export const UserMortgageRequests: React.FC = () => {
               {details && (
                 <div className="text-xs space-y-1 bg-muted/30 rounded-lg p-2">
                   {details.creditor_name && (
-                    <div className="flex justify-between">
+                    <div className="flex min-w-0 justify-between gap-2">
                       <span className="text-muted-foreground">Créancier:</span>
-                      <span className="font-medium">{details.creditor_name}</span>
+                      <span className="truncate text-right font-medium">{details.creditor_name}</span>
                     </div>
                   )}
                   {details.mortgage_amount_usd && (
-                    <div className="flex justify-between">
+                    <div className="flex min-w-0 justify-between gap-2">
                       <span className="text-muted-foreground">Montant:</span>
                       <span className="font-medium flex items-center gap-1">
                         <DollarSign className="h-3 w-3" />
@@ -173,7 +173,7 @@ export const UserMortgageRequests: React.FC = () => {
                   {details.request_reference_number && (
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Réf. demande:</span>
-                      <span className="font-mono font-medium">{details.request_reference_number}</span>
+                      <span className="truncate font-mono font-medium">{details.request_reference_number}</span>
                     </div>
                   )}
                   {details.total_amount_paid && (
