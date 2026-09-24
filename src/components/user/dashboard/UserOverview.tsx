@@ -45,7 +45,7 @@ export function UserOverview() {
                 <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/10"><Icon className="h-4 w-4 text-primary" /></div>
                 <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
               </div>
-              <p className="text-xl font-bold sm:text-2xl">{isLoading ? '—' : item.value}</p>
+              <p className="text-xl font-bold sm:text-2xl">{isLoading || isError ? '—' : item.value}</p>
               <p className="break-words text-xs font-medium">{item.label}</p>
               <p className="mt-1 break-words text-[10px] text-muted-foreground sm:text-[11px]">{item.detail}</p>
             </Link>
@@ -81,7 +81,7 @@ export function UserOverview() {
             </div>
             <div>
               <p className="text-sm font-semibold">Éléments à suivre</p>
-              <p className="mt-1 text-2xl font-bold">{isLoading ? '—' : attentionCount}</p>
+              <p className="mt-1 text-2xl font-bold">{isLoading || isError ? '—' : attentionCount}</p>
               <p className="text-xs text-muted-foreground">demandes ou paiements en attente de traitement</p>
             </div>
           </div>
