@@ -5,7 +5,7 @@ import { useUserDashboardStats } from '@/hooks/useUserDashboardStats';
 import { CADASTRAL_MAP_ROUTE } from '@/utils/userDashboardLinks';
 
 export function UserOverview() {
-  const { data: stats, isLoading } = useUserDashboardStats();
+  const { data: stats, isLoading, isError, refetch } = useUserDashboardStats();
   const items = [
     { label: 'Contributions', value: stats?.contributions_total ?? 0, detail: `${stats?.contributions_pending ?? 0} en attente`, icon: FileText, tab: 'contributions' },
     { label: 'Titres fonciers', value: stats?.titles_total ?? 0, detail: `${stats?.titles_pending ?? 0} en attente`, icon: ScrollText, tab: 'titles' },
