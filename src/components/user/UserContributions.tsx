@@ -101,16 +101,11 @@ export const UserContributions: React.FC = () => {
     }
   };
 
-  const stats = React.useMemo(() => {
-    const returned = contributions.filter(c => c.status === 'returned').length;
-    return {
-      total,
-      pending: contributions.filter(c => c.status === 'pending').length + returned,
-      approved: contributions.filter(c => c.status === 'approved').length,
-      rejected: contributions.filter(c => c.status === 'rejected').length,
-      returned,
-    };
-  }, [contributions, total]);
+  // Compteurs serveur : ils couvrent toutes les contributions, pas seulement la page affichée.
+  const stats = React.useMemo(
+    () => computeContributionStats(statusCounts, total),
+    [statusCounts, total],
+  );
 
   const handleEditContribution = (contribution: Contribution) => {
     const formType = detectFormType(contribution);
