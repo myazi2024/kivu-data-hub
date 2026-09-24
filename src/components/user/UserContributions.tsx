@@ -50,6 +50,7 @@ export const UserContributions: React.FC = () => {
   const {
     rows: contributions,
     total,
+    statusCounts,
     pageSize: itemsPerPage,
     loading,
     deleteContribution,
