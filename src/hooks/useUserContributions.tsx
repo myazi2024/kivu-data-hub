@@ -125,7 +125,7 @@ export function useUserContributions(page: number = 1, search: string = '') {
           return [status, count ?? 0] as const;
         }),
       );
-      return Object.fromEntries(results) as ContributionStatusCounts;
+      return Object.fromEntries(results) as unknown as ContributionStatusCounts;
     },
   });
 
