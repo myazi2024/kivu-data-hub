@@ -40,10 +40,9 @@ export function useUserDashboardStats() {
       const { data, error } = await supabase.rpc('get_user_dashboard_stats', {
         target_user_id: user.id,
       });
-      if (error) {
-        console.warn('get_user_dashboard_stats failed:', error.message);
-        return EMPTY_STATS;
-      }
+      // Un échec doit remonter comme erreur : afficher des zéros ferait passer
+      // une panne de chargement pour un compte vide.
+      if (error) throw error;
       return { ...EMPTY_STATS, ...(data as Partial<UserDashboardStats>) };
     },
   });
