@@ -22,6 +22,8 @@ export const useNotifications = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
+  // Distingue « aucune notification » d'un échec de chargement.
+  const [loadFailed, setLoadFailed] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -46,8 +48,10 @@ export const useNotifications = () => {
 
       setNotifications(typedData);
       setUnreadCount(typedData.filter(n => !n.is_read).length);
+      setLoadFailed(false);
     } catch (error) {
       console.error('Erreur lors de la récupération des notifications:', error);
+      setLoadFailed(true);
     } finally {
       setLoading(false);
     }
