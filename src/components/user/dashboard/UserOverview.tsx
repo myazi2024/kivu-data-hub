@@ -26,6 +26,16 @@ export function UserOverview() {
         </Button>
       </div>
 
+      {isError && (
+        <div className="flex flex-wrap items-center gap-2 rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs text-destructive">
+          <AlertCircle className="h-4 w-4 shrink-0" />
+          <span>Vos chiffres n’ont pas pu être chargés.</span>
+          <Button variant="outline" size="sm" className="h-7" onClick={() => void refetch()}>
+            Réessayer
+          </Button>
+        </div>
+      )}
+
       <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
         {items.map(item => {
           const Icon = item.icon;
