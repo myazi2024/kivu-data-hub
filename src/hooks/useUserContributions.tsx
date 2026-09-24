@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useTestEnvironment, applyTestFilter } from '@/hooks/useTestEnvironment';
 import { escapeIlike } from '@/utils/escapeIlike';
 import { useEffect } from 'react';
+import type { ContributionStatusCounts } from '@/lib/contributions/contributionStats';
 
 
 export interface ContributionRowFull {
@@ -104,6 +105,30 @@ export function useUserContributions(page: number = 1, search: string = '') {
     return () => { supabase.removeChannel(channel); };
   }, [user?.id, queryClient]);
 
+  // Compteurs par statut calculés côté serveur (sinon faussés par la pagination).
+  const countsQuery = useQuery({
+    queryKey: ['user-contributions-counts', user?.id, isTestRoute],
+    enabled: !!user?.id,
+    staleTime: 30 * 1000,
+    queryFn: async (): Promise<ContributionStatusCounts> => {
+      const statuses = ['pending', 'returned', 'approved', 'rejected'] as const;
+      const results = await Promise.all(
+        statuses.map(async (status) => {
+          let q = supabase
+            .from('cadastral_contributions')
+            .select('id', { count: 'exact', head: true })
+            .eq('user_id', user!.id)
+            .eq('status', status);
+          q = applyTestFilter(q as any, 'parcel_number', isTestRoute) as any;
+          const { count, error } = await q;
+          if (error) throw error;
+          return [status, count ?? 0] as const;
+        }),
+      );
+      return Object.fromEntries(results) as unknown as ContributionStatusCounts;
+    },
+  });
+
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
@@ -117,6 +142,7 @@ export function useUserContributions(page: number = 1, search: string = '') {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['user-contributions', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['user-contributions-counts', user?.id] });
       queryClient.invalidateQueries({ queryKey: ['user-dashboard-stats', user?.id] });
     },
   });
@@ -124,6 +150,7 @@ export function useUserContributions(page: number = 1, search: string = '') {
   return {
     rows: query.data?.rows ?? [],
     total: query.data?.total ?? 0,
+    statusCounts: countsQuery.data,
     pageSize: PAGE_SIZE,
     loading: query.isLoading,
     error: query.error,

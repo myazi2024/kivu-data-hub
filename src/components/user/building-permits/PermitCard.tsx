@@ -9,7 +9,6 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { PermitValidationScore } from "./PermitValidationScore";
 import { PermitTimeline } from "./PermitTimeline";
 import { DocumentUploadSection } from "./DocumentUploadSection";
-import { PermitMessaging } from "./PermitMessaging";
 import { PermitPaymentTracker } from "./PermitPaymentTracker";
 import { PermitLocationMap } from "./PermitLocationMap";
 import { PermitDownloadButton } from "./PermitDownloadButton";
@@ -316,11 +315,6 @@ export function PermitCard({ permit, onAppealClick }: PermitCardProps) {
             {/* Localisation */}
             <PermitLocationMap permit={permit} />
 
-            {/* Messagerie */}
-            <PermitMessaging
-              contributionId={permit.id}
-              parcelNumber={permit.parcel_number}
-            />
 
             {/* Documents */}
             <DocumentUploadSection

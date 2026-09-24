@@ -5,7 +5,7 @@ import { useUserDashboardStats } from '@/hooks/useUserDashboardStats';
 import { CADASTRAL_MAP_ROUTE } from '@/utils/userDashboardLinks';
 
 export function UserOverview() {
-  const { data: stats, isLoading } = useUserDashboardStats();
+  const { data: stats, isLoading, isError, refetch } = useUserDashboardStats();
   const items = [
     { label: 'Contributions', value: stats?.contributions_total ?? 0, detail: `${stats?.contributions_pending ?? 0} en attente`, icon: FileText, tab: 'contributions' },
     { label: 'Titres fonciers', value: stats?.titles_total ?? 0, detail: `${stats?.titles_pending ?? 0} en attente`, icon: ScrollText, tab: 'titles' },
@@ -26,6 +26,16 @@ export function UserOverview() {
         </Button>
       </div>
 
+      {isError && (
+        <div className="flex flex-wrap items-center gap-2 rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs text-destructive">
+          <AlertCircle className="h-4 w-4 shrink-0" />
+          <span>Vos chiffres n’ont pas pu être chargés.</span>
+          <Button variant="outline" size="sm" className="h-7" onClick={() => void refetch()}>
+            Réessayer
+          </Button>
+        </div>
+      )}
+
       <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
         {items.map(item => {
           const Icon = item.icon;
@@ -35,7 +45,7 @@ export function UserOverview() {
                 <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/10"><Icon className="h-4 w-4 text-primary" /></div>
                 <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
               </div>
-              <p className="text-xl font-bold sm:text-2xl">{isLoading ? '—' : item.value}</p>
+              <p className="text-xl font-bold sm:text-2xl">{isLoading || isError ? '—' : item.value}</p>
               <p className="break-words text-xs font-medium">{item.label}</p>
               <p className="mt-1 break-words text-[10px] text-muted-foreground sm:text-[11px]">{item.detail}</p>
             </Link>
@@ -71,7 +81,7 @@ export function UserOverview() {
             </div>
             <div>
               <p className="text-sm font-semibold">Éléments à suivre</p>
-              <p className="mt-1 text-2xl font-bold">{isLoading ? '—' : attentionCount}</p>
+              <p className="mt-1 text-2xl font-bold">{isLoading || isError ? '—' : attentionCount}</p>
               <p className="text-xs text-muted-foreground">demandes ou paiements en attente de traitement</p>
             </div>
           </div>

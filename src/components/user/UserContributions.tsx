@@ -14,6 +14,7 @@ import { Link } from 'react-router-dom';
 import CadastralContributionDialog from '@/components/cadastral/CadastralContributionDialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useUserContributions, type ContributionRowFull } from '@/hooks/useUserContributions';
+import { computeContributionStats } from '@/lib/contributions/contributionStats';
 import { detectFormType } from '@/utils/contributionFormMapping';
 import { UserContributionDeleteDialog } from '@/components/user/contributions/UserContributionDeleteDialog';
 import { FieldCorrectionDialog } from '@/components/user/contributions/FieldCorrectionDialog';
@@ -50,6 +51,7 @@ export const UserContributions: React.FC = () => {
   const {
     rows: contributions,
     total,
+    statusCounts,
     pageSize: itemsPerPage,
     loading,
     deleteContribution,
@@ -100,16 +102,11 @@ export const UserContributions: React.FC = () => {
     }
   };
 
-  const stats = React.useMemo(() => {
-    const returned = contributions.filter(c => c.status === 'returned').length;
-    return {
-      total,
-      pending: contributions.filter(c => c.status === 'pending').length + returned,
-      approved: contributions.filter(c => c.status === 'approved').length,
-      rejected: contributions.filter(c => c.status === 'rejected').length,
-      returned,
-    };
-  }, [contributions, total]);
+  // Compteurs serveur : ils couvrent toutes les contributions, pas seulement la page affichée.
+  const stats = React.useMemo(
+    () => computeContributionStats(statusCounts, total),
+    [statusCounts, total],
+  );
 
   const handleEditContribution = (contribution: Contribution) => {
     const formType = detectFormType(contribution);
