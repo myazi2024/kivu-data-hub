@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useTestEnvironment, applyTestFilter } from '@/hooks/useTestEnvironment';
 import { escapeIlike } from '@/utils/escapeIlike';
 import { useEffect } from 'react';
+import type { ContributionStatusCounts } from '@/lib/contributions/contributionStats';
 
 
 export interface ContributionRowFull {
