@@ -120,6 +120,11 @@ export const useNotifications = () => {
       setUnreadCount(prev => Math.max(0, prev - 1));
     } catch (error) {
       console.error('Erreur lors du marquage de la notification:', error);
+      toast({
+        title: 'Erreur',
+        description: 'Impossible de marquer cette notification comme lue',
+        variant: 'destructive',
+      });
     }
   };
 
