@@ -120,6 +120,11 @@ export const useNotifications = () => {
       setUnreadCount(prev => Math.max(0, prev - 1));
     } catch (error) {
       console.error('Erreur lors du marquage de la notification:', error);
+      toast({
+        title: 'Erreur',
+        description: 'Impossible de marquer cette notification comme lue',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -139,6 +144,11 @@ export const useNotifications = () => {
       setUnreadCount(0);
     } catch (error) {
       console.error('Erreur lors du marquage de toutes les notifications:', error);
+      toast({
+        title: 'Erreur',
+        description: 'Impossible de marquer les notifications comme lues',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -174,6 +184,7 @@ export const useNotifications = () => {
     notifications,
     unreadCount,
     loading,
+    loadFailed,
     fetchNotifications,
     markAsRead,
     markAllAsRead,
