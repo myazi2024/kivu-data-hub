@@ -78,8 +78,17 @@ export const NotificationBell: React.FC = () => {
         
         <ScrollArea className="h-[min(400px,65vh)]">
           {notifications.length === 0 ? (
-            <div className="p-8 text-center text-muted-foreground">
-              Aucune notification
+            <div className="space-y-2 p-8 text-center text-muted-foreground">
+              {loadFailed ? (
+                <>
+                  <p className="text-destructive">Impossible de charger vos notifications</p>
+                  <Button variant="outline" size="sm" onClick={() => void fetchNotifications()}>
+                    Réessayer
+                  </Button>
+                </>
+              ) : (
+                'Aucune notification'
+              )}
             </div>
           ) : (
             <div className="divide-y">
