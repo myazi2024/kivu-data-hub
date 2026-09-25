@@ -16,7 +16,7 @@ import { resolveActionUrl } from '@/utils/userDashboardLinks';
 export const NotificationBell: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { notifications, unreadCount, markAsRead, markAllAsRead, deleteNotification } = useNotifications();
+  const { notifications, unreadCount, loadFailed, fetchNotifications, markAsRead, markAllAsRead, deleteNotification } = useNotifications();
   const [open, setOpen] = useState(false);
 
   const handleNotificationClick = async (notification: typeof notifications[0]) => {
