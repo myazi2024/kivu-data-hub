@@ -184,6 +184,7 @@ export const useNotifications = () => {
     notifications,
     unreadCount,
     loading,
+    loadFailed,
     fetchNotifications,
     markAsRead,
     markAllAsRead,
