@@ -460,9 +460,13 @@ export function useFormValidation(params: UseFormValidationParams) {
         missing.push({ field: 'irlUnassigned', label: `${unassignedCount} déclaration(s) IRL sans construction rattachée`, tab: 'obligations' });
       }
 
-      const refCounts = irlRefs.reduce<Record<string, number>>((acc, r) => { acc[r] = (acc[r] || 0) + 1; return acc; }, {});
-      Object.entries(refCounts).filter(([, n]) => n > 1).forEach(([r, n]) => {
-        missing.push({ field: `irlDuplicate_${r}`, label: `${n} IRL déclarés pour la même construction (${rentalLabels[r] || r})`, tab: 'obligations' });
+      // 1 IRL par construction ET par exercice
+      const refCounts = irlRecords.filter(t => t.constructionRef).reduce<Record<string, number>>((acc, t) => {
+        const k = `${t.constructionRef}|${t.taxYear}`; acc[k] = (acc[k] || 0) + 1; return acc;
+      }, {});
+      Object.entries(refCounts).filter(([, n]) => n > 1).forEach(([k, n]) => {
+        const [r, y] = k.split('|');
+        missing.push({ field: `irlDuplicate_${r}_${y}`, label: `${n} IRL déclarés pour la même construction et l'exercice ${y} (${rentalLabels[r] || r})`, tab: 'obligations' });
       });
     }
 

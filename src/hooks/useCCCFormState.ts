@@ -554,9 +554,11 @@ export const useCCCFormState = ({
     if (field === 'taxType') {
       if (value === 'Impôt sur les revenus locatifs') {
         // Auto-assign first available rentalRef if none yet
+        // 1 IRL par construction et par exercice : seules les refs déjà prises pour la même année sont écartées
+        const year = updated[index].taxYear;
         const usedRefs = new Set(
           updated
-            .filter((t, i) => i !== index && t.taxType === 'Impôt sur les revenus locatifs' && t.constructionRef)
+            .filter((t, i) => i !== index && t.taxType === 'Impôt sur les revenus locatifs' && t.constructionRef && (!year || t.taxYear === year))
             .map(t => t.constructionRef as string)
         );
         const available: string[] = [];
@@ -564,7 +566,7 @@ export const useCCCFormState = ({
         additionalConstructions.forEach((c, idx) => {
           if (isConstructionRented(c as any)) available.push(`additional:${idx}`);
         });
-        const free = available.find(r => !usedRefs.has(r));
+        const free = available.find(r => !usedRefs.has(r)) ?? available[0];
         if (free && !updated[index].constructionRef) {
           updated[index] = { ...updated[index], constructionRef: free };
         }
