@@ -196,11 +196,14 @@ const ObligationsTab: React.FC<ObligationsTabProps> = ({
                           const year = new Date().getFullYear() - i;
                           const yearStr = year.toString();
                           // Block year if same taxType+year already declared "Payé" in another record
+                          const isIrl = tax.taxType === 'Impôt sur les revenus locatifs';
                           const isBlocked = tax.taxType && taxRecords.some((other, otherIdx) =>
                             otherIdx !== index &&
                             other.taxType === tax.taxType &&
                             other.taxYear === yearStr &&
-                            other.paymentStatus === 'Payé'
+                            (isIrl
+                              ? !!tax.constructionRef && other.constructionRef === tax.constructionRef
+                              : other.paymentStatus === 'Payé')
                           );
                           return (
                             <SelectItem key={year} value={yearStr} disabled={isBlocked}>
@@ -221,7 +224,7 @@ const ObligationsTab: React.FC<ObligationsTabProps> = ({
                   );
                   const usedRefs = new Set(
                     taxRecords
-                      .filter((t, i) => i !== index && t.taxType === 'Impôt sur les revenus locatifs' && t.constructionRef)
+                      .filter((t, i) => i !== index && t.taxType === 'Impôt sur les revenus locatifs' && t.constructionRef && !!tax.taxYear && t.taxYear === tax.taxYear)
                       .map(t => t.constructionRef as string)
                   );
                   const isMissing = !tax.constructionRef;
