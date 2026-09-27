@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { applyLoadingLogo } from '@/lib/loadingLogo';
 
 interface AppearanceConfig {
   logo_url?: string;
+  loading_logo_url?: string;
+  loading_logo_animation?: 'pulse' | 'rotate' | 'none';
   favicon_url?: string;
   theme_colors?: Record<string, string>;
   theme_colors_dark?: Record<string, string>;
@@ -57,6 +60,7 @@ export const useAppAppearance = () => {
 
 function applyConfig(config: AppearanceConfig) {
   const root = document.documentElement;
+  applyLoadingLogo(config.loading_logo_url || config.logo_url, config.loading_logo_animation);
 
   // Apply light theme colors
   if (config.theme_colors) {

@@ -14,6 +14,7 @@ import {
   USER_TAB_VALUES,
 } from '@/components/user/dashboard/userDashboardConfig';
 import { ChevronRight } from 'lucide-react';
+import { LoadingIndicator } from '@/components/ui/loading-indicator';
 
 const UserProfileSection = lazy(() => import('@/components/user/UserProfileSection'));
 const UserContributions = lazy(() => import('@/components/user/UserContributions').then(module => ({ default: module.UserContributions })));
@@ -55,7 +56,7 @@ const TAB_CONTENT: Record<string, React.LazyExoticComponent<React.ComponentType>
 
 const DashboardFallback = () => (
   <div className="flex items-center justify-center py-16">
-    <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent motion-reduce:animate-none" />
+    <LoadingIndicator />
   </div>
 );
 
@@ -84,7 +85,7 @@ const UserDashboard = () => {
   if (loading) {
     return (
       <div className="min-h-dvh flex items-center justify-center bg-background">
-        <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent"></div>
+        <LoadingIndicator />
       </div>
     );
   }

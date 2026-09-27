@@ -19,10 +19,10 @@ import { TestEnvironmentProvider } from '@/hooks/useTestEnvironment';
 import TestEnvironmentBanner from '@/components/TestEnvironmentBanner';
 import TestEmptyStateBanner from '@/components/TestEmptyStateBanner';
 import React, { Suspense } from "react";
-import { Loader2 } from "lucide-react";
 import { lazyWithRetry } from "@/lib/lazyWithRetry";
 import { useAppAppearance } from "@/hooks/useAppAppearance";
 import { installRateLimitInterceptor } from "@/lib/rateLimitInterceptor";
+import { LoadingIndicator } from "@/components/ui/loading-indicator";
 
 installRateLimitInterceptor();
 import { Navigate } from "react-router-dom";
@@ -69,7 +69,7 @@ const queryClient = new QueryClient({
 
 const PageLoader = () => (
   <div className="min-h-dvh flex items-center justify-center">
-    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+    <LoadingIndicator />
   </div>
 );
 

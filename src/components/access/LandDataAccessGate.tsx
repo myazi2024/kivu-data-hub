@@ -1,13 +1,14 @@
 import { ReactNode } from "react";
 import { Navigate, Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { Loader2, Lock, ShieldCheck, MapPin, FileText, Users, Scale, BarChart3, Handshake, Home, Building2, Banknote, Layers } from "lucide-react";
+import { Lock, ShieldCheck, MapPin, FileText, Users, Scale, BarChart3, Handshake, Home, Building2, Banknote, Layers } from "lucide-react";
 import { LAND_DATA_ROLES } from "@/constants/roles";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Helmet } from "react-helmet-async";
 import Navigation from "@/components/ui/navigation";
+import { LoadingIndicator } from "@/components/ui/loading-indicator";
 
 interface LandDataAccessGateProps {
   children: ReactNode;
@@ -143,7 +144,7 @@ const LandDataAccessGate = ({ children }: LandDataAccessGateProps) => {
   if (loading) {
     return (
       <div className="min-h-dvh flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <LoadingIndicator />
       </div>
     );
   }
@@ -157,7 +158,7 @@ const LandDataAccessGate = ({ children }: LandDataAccessGateProps) => {
   if (!profile) {
     return (
       <div className="min-h-dvh flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <LoadingIndicator />
       </div>
     );
   }

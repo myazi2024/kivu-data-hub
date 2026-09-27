@@ -12,6 +12,7 @@ import { trackEvent } from '@/lib/analytics';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
 import { ChevronRight } from 'lucide-react';
+import { LoadingIndicator } from '@/components/ui/loading-indicator';
 
 // Lazy-loaded admin components — object mapping
 const tabComponents: Record<string, React.LazyExoticComponent<any>> = {
@@ -117,7 +118,7 @@ const getComponentProps = (tab: string, refreshCounts: () => void) => {
 
 const LazyFallback = () => (
   <div className="flex items-center justify-center py-12">
-    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+    <LoadingIndicator />
   </div>
 );
 
@@ -205,7 +206,7 @@ const Admin = () => {
   if (loading || hasAdminRole === null) {
     return (
       <div className="flex items-center justify-center min-h-dvh">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <LoadingIndicator />
       </div>
     );
   }
