@@ -1,0 +1,1 @@
+- Keep loading-image settings in `app_appearance_config`, applying them once at the root and styling existing loading indicators through shared CSS; this avoids per-indicator network calls across lazy-loaded screens.

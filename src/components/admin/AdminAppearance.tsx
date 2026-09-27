@@ -15,6 +15,7 @@ import { useAuth } from '@/hooks/useAuth';
 import AppearancePresets, { type AppearancePreset } from './appearance/AppearancePresets';
 import AppearanceHistoryTab from './appearance/AppearanceHistoryTab';
 import { useGoogleFontInjection } from '@/hooks/useGoogleFontInjection';
+import { applyLoadingLogo } from '@/lib/loadingLogo';
 
 const FONT_OPTIONS = [
   { value: 'Inter, sans-serif', label: 'Inter' },
@@ -410,7 +411,8 @@ const AdminAppearance = () => {
         upsertConfig('hero_overlay_opacity', heroOverlayOpacity),
         upsertConfig('google_font_url', googleFontUrl),
       ]);
-      toast({ title: 'Configuration sauvegardée', description: 'Les changements seront appliqués au prochain chargement.' });
+      applyLoadingLogo(loadingLogoUrl || logoUrl, loadingAnimation);
+      toast({ title: 'Configuration sauvegardée', description: 'Le logo de chargement est appliqué immédiatement ; les autres changements seront appliqués au prochain chargement.' });
     } catch (e: any) {
       toast({ title: 'Erreur', description: e.message, variant: 'destructive' });
     } finally {

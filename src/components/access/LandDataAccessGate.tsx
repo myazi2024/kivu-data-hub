@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Helmet } from "react-helmet-async";
 import Navigation from "@/components/ui/navigation";
+import { LoadingIndicator } from "@/components/ui/loading-indicator";
 
 interface LandDataAccessGateProps {
   children: ReactNode;
@@ -143,7 +144,7 @@ const LandDataAccessGate = ({ children }: LandDataAccessGateProps) => {
   if (loading) {
     return (
       <div className="min-h-dvh flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <LoadingIndicator />
       </div>
     );
   }
@@ -157,7 +158,7 @@ const LandDataAccessGate = ({ children }: LandDataAccessGateProps) => {
   if (!profile) {
     return (
       <div className="min-h-dvh flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <LoadingIndicator />
       </div>
     );
   }
