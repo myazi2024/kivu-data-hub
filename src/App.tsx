@@ -19,7 +19,6 @@ import { TestEnvironmentProvider } from '@/hooks/useTestEnvironment';
 import TestEnvironmentBanner from '@/components/TestEnvironmentBanner';
 import TestEmptyStateBanner from '@/components/TestEmptyStateBanner';
 import React, { Suspense } from "react";
-import { Loader2 } from "lucide-react";
 import { lazyWithRetry } from "@/lib/lazyWithRetry";
 import { useAppAppearance } from "@/hooks/useAppAppearance";
 import { installRateLimitInterceptor } from "@/lib/rateLimitInterceptor";

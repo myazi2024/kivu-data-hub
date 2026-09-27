@@ -1,7 +1,6 @@
 import { ReactNode } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { Loader2 } from "lucide-react";
 import { LoadingIndicator } from "@/components/ui/loading-indicator";
 import type { AppRole } from "@/constants/roles";
 

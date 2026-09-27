@@ -1,7 +1,7 @@
 import { ReactNode } from "react";
 import { Navigate, Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { Loader2, Lock, ShieldCheck, MapPin, FileText, Users, Scale, BarChart3, Handshake, Home, Building2, Banknote, Layers } from "lucide-react";
+import { Lock, ShieldCheck, MapPin, FileText, Users, Scale, BarChart3, Handshake, Home, Building2, Banknote, Layers } from "lucide-react";
 import { LAND_DATA_ROLES } from "@/constants/roles";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
