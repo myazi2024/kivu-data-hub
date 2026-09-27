@@ -669,12 +669,16 @@ html[data-loading-logo="ready"][data-loading-animation="none"] .animate-spin.rou
   animation: none;
 }
 
+.loading-logo-preview[data-animation="pulse"] { animation: loading-logo-pulse 1.5s ease-in-out infinite; }
+.loading-logo-preview[data-animation="rotate"] { animation: spin 2s linear infinite; }
+
 @media (prefers-reduced-motion: reduce) {
   .lucide-loader-circle.animate-spin,
   .lucide-loader-2.animate-spin,
   .animate-spin.rounded-full[class*="border-"] {
     animation: none !important;
   }
+  .loading-logo-preview { animation: none !important; }
 }
 
 @media (prefers-reduced-motion: reduce) {

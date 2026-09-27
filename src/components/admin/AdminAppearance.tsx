@@ -241,6 +241,9 @@ const AdminAppearance = () => {
   const [appName, setAppName] = useState('BIC');
   const [appTagline, setAppTagline] = useState("Bureau d'Informations Cadastrales");
   const [logoUrl, setLogoUrl] = useState('');
+  const [loadingLogoUrl, setLoadingLogoUrl] = useState('');
+  const [loadingAnimation, setLoadingAnimation] = useState<'pulse' | 'rotate' | 'none'>('pulse');
+  const [uploadingLoadingLogo, setUploadingLoadingLogo] = useState(false);
   const [faviconUrl, setFaviconUrl] = useState('');
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [uploadingFavicon, setUploadingFavicon] = useState(false);
@@ -297,6 +300,8 @@ const AdminAppearance = () => {
               case 'app_name': setAppName(typeof val === 'string' ? val : 'BIC'); break;
               case 'app_tagline': setAppTagline(typeof val === 'string' ? val : "Bureau d'Informations Cadastrales"); break;
               case 'logo_url': setLogoUrl(typeof val === 'string' ? val : ''); break;
+              case 'loading_logo_url': setLoadingLogoUrl(typeof val === 'string' ? val : ''); break;
+              case 'loading_logo_animation': setLoadingAnimation(val === 'rotate' || val === 'none' ? val : 'pulse'); break;
               case 'favicon_url': setFaviconUrl(typeof val === 'string' ? val : ''); break;
               case 'theme_colors':
                 if (val && typeof val === 'object' && !Array.isArray(val)) setLightColors(prev => ({ ...prev, ...(val as Record<string, string>) }));
@@ -355,6 +360,18 @@ const AdminAppearance = () => {
     if (url) setHeroImageUrl(url);
   };
 
+  const handleLoadingLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!['image/png', 'image/jpeg', 'image/webp', 'image/gif', 'image/svg+xml'].includes(file.type) || file.size > 2 * 1024 * 1024) {
+      toast({ title: 'Image invalide', description: 'Choisissez une image PNG, JPG, WebP, GIF ou SVG de 2 Mo maximum.', variant: 'destructive' });
+      return;
+    }
+    const url = await uploadFile(file, 'logo', setUploadingLoadingLogo);
+    if (url) setLoadingLogoUrl(url);
+    e.target.value = '';
+  };
+
   const handleFaviconUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -379,6 +396,8 @@ const AdminAppearance = () => {
         upsertConfig('app_name', appName),
         upsertConfig('app_tagline', appTagline),
         upsertConfig('logo_url', logoUrl),
+        upsertConfig('loading_logo_url', loadingLogoUrl),
+        upsertConfig('loading_logo_animation', loadingAnimation),
         upsertConfig('favicon_url', faviconUrl),
         upsertConfig('theme_colors', lightColors),
         upsertConfig('theme_colors_dark', darkColors),
@@ -408,6 +427,8 @@ const AdminAppearance = () => {
     setDarkMode(false);
     setAppName('BIC');
     setAppTagline("Bureau d'Informations Cadastrales");
+    setLoadingLogoUrl('');
+    setLoadingAnimation('pulse');
     setHeroImageUrl('');
     setHeroTitle('Consultez les informations cadastrales des parcelles depuis chez vous.');
     setHeroOverlayOpacity(80);
@@ -524,6 +545,39 @@ const AdminAppearance = () => {
                     </Button>
                   </div>
                   <Input placeholder="Ou collez une URL..." value={faviconUrl} onChange={e => setFaviconUrl(e.target.value)} className="text-xs" />
+                </div>
+              </div>
+              <div className="border-t pt-4 space-y-3">
+                <div>
+                  <Label className="text-sm font-medium">Logo de chargement</Label>
+                  <p className="text-xs text-muted-foreground">Sans image distincte, le logo principal est utilisé.</p>
+                </div>
+                <div className="flex flex-wrap items-center gap-4">
+                  <div className="flex h-16 w-16 items-center justify-center rounded-md border bg-muted/30">
+                    {(loadingLogoUrl || logoUrl) ? (
+                      <img key={loadingLogoUrl || logoUrl} src={loadingLogoUrl || logoUrl} alt="Aperçu du chargement" data-animation={loadingAnimation} className="loading-logo-preview h-9 w-9 object-contain" />
+                    ) : <Loader2 className="h-8 w-8 animate-spin text-primary" aria-label="Indicateur par défaut" />}
+                  </div>
+                  <div className="space-y-2">
+                    <Select value={loadingAnimation} onValueChange={(v: 'pulse' | 'rotate' | 'none') => setLoadingAnimation(v)}>
+                      <SelectTrigger className="w-44" aria-label="Animation du chargement"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="pulse">Pulsation</SelectItem>
+                        <SelectItem value="rotate">Rotation</SelectItem>
+                        <SelectItem value="none">Aucune</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <div className="flex flex-wrap gap-2">
+                      <Button variant="outline" size="sm" asChild disabled={uploadingLoadingLogo}>
+                        <label className="cursor-pointer">
+                          {uploadingLoadingLogo ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                          Choisir une image
+                          <input type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml" className="hidden" onChange={handleLoadingLogoUpload} />
+                        </label>
+                      </Button>
+                      {loadingLogoUrl && <Button type="button" variant="ghost" size="sm" onClick={() => setLoadingLogoUrl('')}><Trash2 className="h-4 w-4" /> Utiliser le logo principal</Button>}
+                    </div>
+                  </div>
                 </div>
               </div>
             </CardContent>
