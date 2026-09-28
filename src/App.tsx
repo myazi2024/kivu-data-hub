@@ -19,7 +19,6 @@ import { TestEnvironmentProvider } from '@/hooks/useTestEnvironment';
 import TestEnvironmentBanner from '@/components/TestEnvironmentBanner';
 import TestEmptyStateBanner from '@/components/TestEmptyStateBanner';
 import React, { Suspense } from "react";
-import TempIntroPreview from "./pages/TempIntroPreview";
 import { lazyWithRetry } from "@/lib/lazyWithRetry";
 import { useAppAppearance } from "@/hooks/useAppAppearance";
 import { installRateLimitInterceptor } from "@/lib/rateLimitInterceptor";
@@ -151,7 +150,6 @@ const App = () => (
                   <Route path="/about-discount-codes" element={<AboutDiscountCodes />} />
                   <Route path="/discount-codes" element={<Navigate to="/about-discount-codes" replace />} />
                   <Route path="/verify/:code?" element={<VerifyDocument />} />
-                  <Route path="/__tmp-intro" element={<TempIntroPreview />} />
                   <Route path="/pitch-partenaires" element={<PitchPartenaires />} />
                   <Route path="/hr/me" element={<ProtectedRoute><HrMe /></ProtectedRoute>} />
 
