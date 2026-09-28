@@ -113,10 +113,10 @@ const CCCIntroDialog = ({ open, onOpenChange, onContinue }: CCCIntroDialogProps)
           </Card>
 
           {/* Constructions */}
-          <Card className="p-3 rounded-xl border-orange-500/20 bg-orange-500/5 shadow-sm">
+          <Card className="p-3 rounded-xl border-warning/20 bg-warning/5 shadow-sm">
             <div className="flex items-start gap-2.5">
-              <div className="p-2 bg-orange-500/20 rounded-lg flex-shrink-0">
-                <Building2 className="h-4 w-4 text-orange-600" />
+              <div className="p-2 bg-warning/20 rounded-lg flex-shrink-0">
+                <Building2 className="h-4 w-4 text-warning-foreground" />
               </div>
               <div className="flex-1 min-w-0">
                 <h3 className="font-semibold text-sm mb-2">Constructions</h3>
