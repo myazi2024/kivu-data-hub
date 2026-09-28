@@ -150,6 +150,7 @@ const App = () => (
                   <Route path="/about-discount-codes" element={<AboutDiscountCodes />} />
                   <Route path="/discount-codes" element={<Navigate to="/about-discount-codes" replace />} />
                   <Route path="/verify/:code?" element={<VerifyDocument />} />
+                  <Route path="/__tmp-intro" element={React.lazy(() => import("./pages/TempIntroPreview"))} />
                   <Route path="/pitch-partenaires" element={<PitchPartenaires />} />
                   <Route path="/hr/me" element={<ProtectedRoute><HrMe /></ProtectedRoute>} />
 
