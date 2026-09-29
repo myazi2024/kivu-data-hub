@@ -37,6 +37,15 @@ export function matchAreaToDistrict(area: string): DistrictMatch {
   const candidates = province
     ? landDistrictsData[province] ?? []
     : Object.values(landDistrictsData).flat();
+  // Une ville dont plusieurs communes sont elles-mêmes des circonscriptions est découpée.
+  if (province) {
+    const communes = Object.entries(geographicData[province]?.villes ?? {})
+      .find(([ville]) => normalizeGeoName(ville) === key)?.[1] ?? [];
+    const districtKeys = new Set((landDistrictsData[province] ?? []).map(normalizeGeoName));
+    if (communes.filter((c) => districtKeys.has(normalizeGeoName(c))).length >= 2) {
+      return { area, province, district: null };
+    }
+  }
   const hits = candidates.filter((d) => normalizeGeoName(d) === key);
   if (hits.length !== 1) return { area, province, district: null };
   const resolvedProvince = province
