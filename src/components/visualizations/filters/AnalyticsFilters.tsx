@@ -75,6 +75,7 @@ export const AnalyticsFilters: React.FC<Props> = ({
         ...filter,
         province: mapProvince || filter.province,
         sectionType: 'rurale',
+        landDistrict: undefined,
         territoire: mapTerritoire,
         collectivite: undefined,
         groupement: undefined,
@@ -106,7 +107,7 @@ export const AnalyticsFilters: React.FC<Props> = ({
   const hasActiveFilters =
     filter.year !== defaultFilter.year ||
     !!filter.semester || !!filter.quarter || !!filter.month || !!filter.week ||
-    filter.sectionType !== 'all' ||
+    filter.sectionType !== 'all' || !!filter.landDistrict ||
     !!filter.province || !!filter.ville || !!filter.commune || !!filter.quartier || !!filter.avenue ||
     !!filter.territoire || !!filter.collectivite || !!filter.groupement || !!filter.villageFilter ||
     !!filter.status;
@@ -169,6 +170,7 @@ export const AnalyticsFilters: React.FC<Props> = ({
           filter={filter}
           onChange={onChange}
           provinces={cascade.provinces}
+          landDistricts={cascade.landDistricts}
           villes={cascade.villes}
           communesFinal={cascade.communesFinal}
           quartiersFinal={cascade.quartiersFinal}

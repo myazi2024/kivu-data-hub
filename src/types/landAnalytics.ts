@@ -12,6 +12,7 @@ export interface GeoFields {
   groupement?: string | null;
   village?: string | null;
   parcel_type?: string | null;
+  land_district?: string | null;
   section_type?: string | null;
 }
 

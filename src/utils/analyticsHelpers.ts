@@ -1,3 +1,4 @@
+import { getSectionTypeForLandDistrict } from '@/lib/geographicData';
 export const CHART_COLORS = [
   '#6366f1', '#06b6d4', '#10b981', '#f59e0b', '#ef4444',
   '#8b5cf6', '#ec4899', '#14b8a6', '#f97316', '#3b82f6',
@@ -12,6 +13,8 @@ export interface AnalyticsFilter {
   month?: number;      // 1..12
   week?: number;       // 1..5 (week within month)
   province?: string;
+  /** Circonscription foncière — la zone (sectionType) en est dérivée */
+  landDistrict?: string;
   ville?: string;
   commune?: string;
   quartier?: string;
@@ -26,6 +29,8 @@ export interface AnalyticsFilter {
 export const defaultFilter: AnalyticsFilter = { sectionType: 'all', year: null };
 
 export function getSectionType(record: any): 'urbaine' | 'rurale' | null {
+  const fromDistrict = getSectionTypeForLandDistrict(record?.land_district);
+  if (fromDistrict) return fromDistrict;
   if (record.section_type === 'urbaine' || record.parcel_type === 'SU') return 'urbaine';
   if (record.section_type === 'rurale' || record.parcel_type === 'SR') return 'rurale';
   return null;
@@ -55,12 +60,15 @@ export function matchesPeriod(dateStr: string | null | undefined, filter: Analyt
 }
 
 const _norm = (s?: string | null) => (s || '').trim().toLowerCase();
+const _normDistrict = (s?: string | null) =>
+  (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '');
 
 export function matchesLocation(r: any, f: AnalyticsFilter): boolean {
   if (f.sectionType !== 'all') {
     const st = getSectionType(r);
     if (st && st !== f.sectionType) return false;
   }
+  if (f.landDistrict && _normDistrict(r.land_district) !== _normDistrict(f.landDistrict)) return false;
   if (f.province && _norm(r.province) !== _norm(f.province)) return false;
   if (f.ville && _norm(r.ville) !== _norm(f.ville)) return false;
   if (f.commune && _norm(r.commune) !== _norm(f.commune)) return false;
@@ -303,7 +311,7 @@ export function buildFilterLabel(filter: AnalyticsFilter): string {
   // Location — always show at least the country
   const loc: string[] = ['Rép. Dém. du Congo'];
   if (filter.province) loc.push(filter.province);
-  if (filter.sectionType !== 'all') loc.push(filter.sectionType === 'urbaine' ? 'Urbaine' : 'Rurale');
+  if (filter.landDistrict) loc.push(`Circ. ${filter.landDistrict}`);
   if (filter.ville) loc.push(filter.ville);
   if (filter.commune) loc.push(filter.commune);
   if (filter.quartier) loc.push(filter.quartier);

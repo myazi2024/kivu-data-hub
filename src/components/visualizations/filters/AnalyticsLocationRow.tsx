@@ -1,5 +1,5 @@
 /**
- * Location row of AnalyticsFilters: Pays › Province › Section › urban OR rural cascade.
+ * Location row of AnalyticsFilters: Pays › Province › Circonscription › urban OR rural cascade.
  *
  * Pure presentational — receives precomputed cascade lists from useAnalyticsCascade.
  */
@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { MapPin } from 'lucide-react';
 import { AnalyticsFilter } from '@/utils/analyticsHelpers';
+import { getSectionTypeForLandDistrict } from '@/lib/geographicData';
 
 const selectCls = 'h-6 text-[10px] w-auto min-w-[70px]';
 const sep = <span className="text-[10px] text-muted-foreground">›</span>;
@@ -17,6 +18,7 @@ interface Props {
   onChange: (f: AnalyticsFilter) => void;
   // Cascade-derived lists
   provinces: string[];
+  landDistricts: string[];
   villes: string[];
   communesFinal: string[];
   quartiersFinal: string[];
@@ -38,7 +40,7 @@ interface Props {
 
 export const AnalyticsLocationRow: React.FC<Props> = ({
   filter, onChange,
-  provinces, villes, communesFinal, quartiersFinal, avenuesFinal,
+  provinces, landDistricts, villes, communesFinal, quartiersFinal, avenuesFinal,
   territoiresFinal, collectivitesFinal, groupements, villages,
   hasUrbanData, hasRuralData,
   onProvinceFilter, onVilleChange, onCommuneChange, onQuartierChange, onTerritoireChange,
@@ -67,6 +69,7 @@ export const AnalyticsLocationRow: React.FC<Props> = ({
             ...filter,
             province: newProvince,
             sectionType: 'all',
+            landDistrict: undefined,
             ville: undefined, commune: undefined, quartier: undefined, avenue: undefined,
             territoire: undefined, collectivite: undefined, groupement: undefined, villageFilter: undefined,
           });
@@ -84,24 +87,27 @@ export const AnalyticsLocationRow: React.FC<Props> = ({
 
       {sep}
       <Select
-        value={filter.sectionType}
+        value={filter.landDistrict || '__all__'}
         onValueChange={(v) => {
+          const district = v === '__all__' ? undefined : v;
+          const zone = district ? getSectionTypeForLandDistrict(district) : '';
+          const sectionType = (zone || 'all') as AnalyticsFilter['sectionType'];
           onChange({
             ...filter,
-            sectionType: v as any,
+            landDistrict: district,
+            sectionType,
             ville: undefined, commune: undefined, quartier: undefined, avenue: undefined,
             territoire: undefined, collectivite: undefined, groupement: undefined, villageFilter: undefined,
           });
           onVilleChange(undefined);
           onCommuneChange(undefined);
-          onSectionTypeChange?.(v);
+          onSectionTypeChange?.(sectionType);
         }}
       >
-        <SelectTrigger className={selectCls}><SelectValue /></SelectTrigger>
+        <SelectTrigger className={selectCls} aria-label="Circonscription foncière"><SelectValue placeholder="Circonscription" /></SelectTrigger>
         <SelectContent>
-          <SelectItem value="all">Toutes les sections</SelectItem>
-          <SelectItem value="urbaine">Urbaine</SelectItem>
-          <SelectItem value="rurale">Rurale</SelectItem>
+          <SelectItem value="__all__">Toutes les circonscriptions</SelectItem>
+          {landDistricts.map((d) => (<SelectItem key={d} value={d}>{d}</SelectItem>))}
         </SelectContent>
       </Select>
 
