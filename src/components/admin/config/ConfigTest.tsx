@@ -25,9 +25,6 @@ export const ConfigTest: React.FC<ConfigTestProps> = ({ config, configType }) =>
     setTesting(true);
     setTested(false);
 
-    // Simuler un délai pour l'effet visuel
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
     let results: ValidationError[] = [];
 
     switch (configType) {
