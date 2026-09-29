@@ -78,7 +78,7 @@ export default function HomeProvinceMap() {
         {svg ? (
           <div
             ref={mapRef}
-            className="home-province-map h-full w-full"
+            className="home-province-map absolute inset-0"
             onMouseOver={(event: MouseEvent<HTMLDivElement>) => selectFromTarget(event.target)}
             onClick={(event: MouseEvent<HTMLDivElement>) => selectFromTarget(event.target)}
             onKeyDown={handleKeyDown}
