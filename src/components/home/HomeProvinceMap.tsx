@@ -79,13 +79,14 @@ export default function HomeProvinceMap() {
           <div
             ref={mapRef}
             className="home-province-map h-full w-full"
+            onMouseOver={(event: MouseEvent<HTMLDivElement>) => selectFromTarget(event.target)}
             onClick={(event: MouseEvent<HTMLDivElement>) => selectFromTarget(event.target)}
             onKeyDown={handleKeyDown}
             dangerouslySetInnerHTML={{ __html: svg }}
           />
         ) : (
           <div className="text-center text-sm text-primary-foreground/80">
-            {failed ? 'Carte indisponible. Choisissez une province ci-dessous.' : 'Chargement de la carte…'}
+            {failed ? 'Carte indisponible pour le moment.' : 'Chargement de la carte…'}
           </div>
         )}
       </div>
@@ -111,11 +112,6 @@ export default function HomeProvinceMap() {
           </div>
         )}
       </div>
-      <label className="sr-only" htmlFor="home-province-select">Choisir une province</label>
-      <select id="home-province-select" value={selected || ''} onChange={(event) => setSelected(event.target.value || null)} className="mt-2 w-full rounded-md border border-primary-foreground/30 bg-primary/70 px-2 py-1.5 text-xs text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-foreground">
-        <option value="" className="text-foreground bg-background">Choisir une province</option>
-        {[...PROVINCE_META].sort((a, b) => a.name.localeCompare(b.name, 'fr')).map(({ id, name }) => <option key={id} value={name} className="text-foreground bg-background">{name}</option>)}
-      </select>
     </div>
   );
 }
