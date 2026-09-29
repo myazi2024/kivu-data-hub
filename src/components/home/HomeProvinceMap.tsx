@@ -73,8 +73,8 @@ export default function HomeProvinceMap() {
   const districts = selected ? getLandDistrictsForProvince(selected) : [];
 
   return (
-    <div className="relative min-w-0" aria-label="Explorer les circonscriptions par province">
-      <div className="relative h-[108px] sm:h-[220px] lg:h-[clamp(215px,calc(100dvh-490px),320px)] flex items-center justify-center">
+    <div className="relative min-w-0 md:flex-1 md:flex md:flex-col md:min-h-[278px]" aria-label="Explorer les circonscriptions par province">
+      <div className="relative h-[108px] sm:h-[220px] md:h-auto md:min-h-[215px] md:flex-1 flex items-center justify-center">
         {svg ? (
           <div
             ref={mapRef}
