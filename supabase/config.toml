@@ -30,3 +30,6 @@ verify_jwt = false
 
 [functions.system-alerts-check]
 verify_jwt = false
+
+[functions.home-bic-counts]
+verify_jwt = false

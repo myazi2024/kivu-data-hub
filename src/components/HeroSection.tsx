@@ -10,6 +10,7 @@ import { useAppAppearance } from '@/hooks/useAppAppearance';
 import { useAuth } from '@/hooks/useAuth';
 import { trackEvent } from '@/lib/analytics';
 import HomeProvinceMap from '@/components/home/HomeProvinceMap';
+import HomeBicIndicators from '@/components/home/HomeBicIndicators';
 
 const HeroSection = () => {
   const { config: catalogConfig } = useCatalogConfig();
@@ -34,7 +35,7 @@ const HeroSection = () => {
         <link rel="preload" as="image" href={heroImage} />
       </Helmet>
 
-      <section className="relative isolate overflow-hidden flex items-center py-4 sm:py-8 lg:py-12">
+      <section className="relative isolate overflow-hidden py-3 sm:py-6 lg:py-8">
         <div className="absolute inset-0">
           <img
             src={heroImage}
@@ -51,9 +52,8 @@ const HeroSection = () => {
           />
         </div>
 
-        <div className="relative z-10 w-full max-w-7xl mx-auto px-5 sm:px-8 grid gap-4 md:gap-8 lg:gap-12 md:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] items-center text-primary-foreground">
+        <div className="relative z-10 w-full max-w-7xl mx-auto px-5 sm:px-8 grid gap-3 md:gap-8 lg:gap-12 md:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] items-center text-primary-foreground">
           <div className="min-w-0 lg:pl-2 order-last md:order-last">
-            <p className="mb-4 text-xs font-bold uppercase tracking-widest text-primary-foreground/85">BIC · Informations cadastrales en RDC</p>
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight max-w-xl">{heroTitle}</h1>
             <div className="mt-2 sm:mt-4 max-w-xl text-left [&>div]:justify-start [&_p]:!mx-0 [&_p]:!px-0 [&_p]:!text-primary-foreground/90">
               <TypewriterAnimation />
@@ -116,6 +116,7 @@ const HeroSection = () => {
             )}
           </div>
           <div className="order-first md:order-first min-w-0"><HomeProvinceMap /></div>
+          <div className="md:col-span-2 order-last"><HomeBicIndicators configured={appearanceConfig} /></div>
         </div>
       </section>
     </>

@@ -8631,6 +8631,14 @@ export type Database = {
           txn_count: number
         }[]
       }
+      get_home_bic_counts: {
+        Args: never
+        Returns: {
+          disputes_count: number
+          parcels_count: number
+          services_count: number
+        }[]
+      }
       get_inactive_users: {
         Args: { _threshold_days?: number }
         Returns: {

@@ -74,11 +74,7 @@ export default function HomeProvinceMap() {
 
   return (
     <div className="relative min-w-0" aria-label="Explorer les circonscriptions par province">
-      <div className="flex items-center justify-between gap-3 border-b border-primary-foreground/25 pb-3 mb-2 text-primary-foreground">
-        <span className="text-xs font-semibold uppercase tracking-widest">Territoire · RDC</span>
-        <span className="text-xs text-primary-foreground/80">26 provinces</span>
-      </div>
-      <div className="relative h-[120px] sm:h-[220px] lg:h-[380px] xl:h-[420px] flex items-center justify-center">
+      <div className="relative h-[108px] sm:h-[220px] lg:h-[380px] xl:h-[420px] flex items-center justify-center">
         {svg ? (
           <div
             ref={mapRef}
