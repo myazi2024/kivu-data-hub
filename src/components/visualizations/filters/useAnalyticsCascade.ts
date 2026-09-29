@@ -20,6 +20,8 @@ import {
   getCollectivitesForTerritoire,
   getQuartiersForCommune,
   getAvenuesForQuartier,
+  getLandDistrictsForProvince,
+  landDistrictsData,
 } from '@/lib/geographicData';
 
 export interface CascadeOptions {
@@ -29,6 +31,11 @@ export interface CascadeOptions {
 
 export const useAnalyticsCascade = ({ data, filter }: CascadeOptions) => {
   const provinces = useMemo(() => getAllProvinces(), []);
+
+  const landDistricts = useMemo(() => {
+    if (filter.province) return getLandDistrictsForProvince(filter.province);
+    return Array.from(new Set(Object.values(landDistrictsData).flat())).sort((a, b) => a.localeCompare(b, 'fr'));
+  }, [filter.province]);
 
   const provinceScoped = useMemo(
     () => (filter.province ? data.filter((r) => r.province === filter.province) : data),
@@ -128,11 +135,14 @@ export const useAnalyticsCascade = ({ data, filter }: CascadeOptions) => {
 
   const sectionScoped = useMemo(() => {
     let scoped = provinceScoped;
-    if (filter.sectionType !== 'all') scoped = scoped.filter((r) => getSectionType(r) === filter.sectionType);
+    if (filter.landDistrict) {
+      const target = filter.landDistrict.toLowerCase();
+      scoped = scoped.filter((r) => (r.land_district || '').toLowerCase() === target);
+    } else if (filter.sectionType !== 'all') scoped = scoped.filter((r) => getSectionType(r) === filter.sectionType);
     if (filter.territoire) scoped = scoped.filter((r) => r.territoire === filter.territoire);
     if (filter.collectivite) scoped = scoped.filter((r) => r.collectivite === filter.collectivite);
     return scoped;
-  }, [provinceScoped, filter.sectionType, filter.territoire, filter.collectivite]);
+  }, [provinceScoped, filter.landDistrict, filter.sectionType, filter.territoire, filter.collectivite]);
 
   const groupements = useMemo(
     () => (filter.collectivite ? extractUnique(sectionScoped, 'groupement') : []),
@@ -151,6 +161,7 @@ export const useAnalyticsCascade = ({ data, filter }: CascadeOptions) => {
 
   return {
     provinces,
+    landDistricts,
     hasUrbanData,
     hasRuralData,
     villes,
