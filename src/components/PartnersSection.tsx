@@ -84,10 +84,10 @@ const PartnersSection = () => {
 
   return (
     <section
-      className="relative overflow-hidden border-y border-border/60 bg-background py-4 md:py-5"
+      className="relative overflow-hidden border-y border-border/60 bg-background py-4 md:py-5 lg:py-3"
       aria-labelledby="partners-heading"
     >
-      <div className="mb-3 md:mb-4 text-center">
+      <div className="mb-3 md:mb-4 lg:mb-2 text-center">
         <h2
           id="partners-heading"
           className="text-[9px] md:text-[10px] font-medium lowercase tracking-[0.14em] text-muted-foreground/90"

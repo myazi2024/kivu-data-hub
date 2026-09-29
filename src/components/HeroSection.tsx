@@ -35,7 +35,7 @@ const HeroSection = () => {
         <link rel="preload" as="image" href={heroImage} />
       </Helmet>
 
-      <section className="relative isolate overflow-hidden py-3 sm:py-6 lg:py-8">
+      <section className="relative isolate overflow-hidden py-3 sm:py-6 lg:py-4 lg:flex-1 lg:flex lg:items-center">
         <div className="absolute inset-0">
           <img
             src={heroImage}
@@ -52,16 +52,16 @@ const HeroSection = () => {
           />
         </div>
 
-        <div className="relative z-10 w-full max-w-7xl mx-auto px-5 sm:px-8 grid gap-3 md:gap-8 lg:gap-12 md:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] items-center text-primary-foreground">
+        <div className="relative z-10 w-full max-w-7xl mx-auto px-5 sm:px-8 grid gap-3 md:gap-8 lg:gap-4 md:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] items-center text-primary-foreground">
           <div className="min-w-0 lg:pl-2 order-last md:order-last">
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight max-w-xl">{heroTitle}</h1>
-            <div className="mt-2 sm:mt-4 max-w-xl text-left [&>div]:justify-start [&_p]:!mx-0 [&_p]:!px-0 [&_p]:!text-primary-foreground/90">
+            <h1 className="text-3xl sm:text-4xl lg:text-4xl font-bold leading-tight max-w-xl">{heroTitle}</h1>
+            <div className="mt-2 sm:mt-4 lg:mt-1 max-w-xl text-left [&>div]:justify-start [&_p]:!mx-0 [&_p]:!px-0 [&_p]:!text-primary-foreground/90">
               <TypewriterAnimation />
             </div>
-            <p className="mt-1 mb-4 sm:mb-6 text-sm sm:text-base leading-relaxed text-primary-foreground/90 max-w-lg">
+            <p className="mt-1 mb-4 sm:mb-6 lg:mb-3 text-sm sm:text-base leading-relaxed text-primary-foreground/90 max-w-lg">
               Consultez les parcelles, repérez les circonscriptions foncières et découvrez les données disponibles pour votre territoire.
             </p>
-            <div className="flex flex-col lg:flex-row gap-3 items-stretch">
+            <div className="flex flex-col lg:flex-row gap-3 lg:gap-2 items-stretch">
             <Link
               to={cadastreTarget}
               className="w-full lg:w-auto"
@@ -69,7 +69,7 @@ const HeroSection = () => {
             >
               <Button
                 size="lg"
-                className="w-full bg-background text-primary hover:bg-background/90 font-bold px-5 h-12 text-sm sm:text-base group"
+                className="w-full bg-background text-primary hover:bg-background/90 font-bold px-5 h-12 lg:h-10 text-sm sm:text-base group"
               >
                 <Map className="h-5 w-5" />
                 <span>Cadastre numérique</span>
@@ -85,7 +85,7 @@ const HeroSection = () => {
               <Button
                 variant="outline"
                 size="lg"
-                className="w-full bg-primary/30 border border-primary-foreground/50 text-primary-foreground hover:bg-background hover:text-primary font-semibold px-5 h-12 text-sm sm:text-base"
+                className="w-full bg-primary/30 border border-primary-foreground/50 text-primary-foreground hover:bg-background hover:text-primary font-semibold px-5 h-12 lg:h-10 text-sm sm:text-base"
               >
                 <MapPin className="h-5 w-5" />
                 <span>Données foncières</span>
@@ -93,11 +93,11 @@ const HeroSection = () => {
             </Link>
             </div>
 
-            <div className="mt-4 sm:mt-6 flex flex-wrap items-center gap-x-6 gap-y-2 text-xs text-primary-foreground/90">
+            <div className="mt-4 sm:mt-6 lg:mt-3 flex flex-wrap items-center gap-x-6 gap-y-2 text-xs text-primary-foreground/90">
               <span className="inline-flex items-center gap-1.5"><Check className="h-3.5 w-3.5" /> Circonscriptions foncières</span>
               <span className="inline-flex items-center gap-1.5"><Check className="h-3.5 w-3.5" /> Services cadastraux</span>
             </div>
-            <div className="mt-4 sm:mt-6">
+            <div className="mt-4 sm:mt-6 lg:mt-2">
             <Link
               to={secondaryHref}
               onClick={() => trackEvent('hero_cta_click', { id: 'secondary', href: secondaryHref })}
@@ -108,7 +108,7 @@ const HeroSection = () => {
             </div>
 
             {provinces.length > 0 && (
-            <div className="mt-6">
+            <div className="mt-6 lg:mt-2">
               <p className="text-xs text-primary-foreground/75 leading-relaxed break-words">
                 Service disponible pour : {provinces.join(', ')}
               </p>
