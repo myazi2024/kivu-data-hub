@@ -8639,6 +8639,13 @@ export type Database = {
           services_count: number
         }[]
       }
+      get_home_district_parcel_counts: {
+        Args: never
+        Returns: {
+          land_district: string
+          parcels_count: number
+        }[]
+      }
       get_inactive_users: {
         Args: { _threshold_days?: number }
         Returns: {
