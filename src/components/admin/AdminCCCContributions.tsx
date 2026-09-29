@@ -57,6 +57,7 @@ const AdminCCCContributions: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [userFilter, setUserFilter] = useState('');
   const [provinceFilter, setProvinceFilter] = useState('all');
+  const [districtFilter, setDistrictFilter] = useState('all');
   const [bulkRejectOpen, setBulkRejectOpen] = useState(false);
   const [bulkRejectReason, setBulkRejectReason] = useState('');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -428,19 +429,32 @@ const AdminCCCContributions: React.FC = () => {
         c.province?.toLowerCase().includes(query) ||
         c.ville?.toLowerCase().includes(query) ||
         c.commune?.toLowerCase().includes(query) ||
+        ((c as any).land_district as string | undefined)?.toLowerCase().includes(query) ||
         c.current_owner_name?.toLowerCase().includes(query) ||
         c.user_id?.toLowerCase().includes(query);
 
       const matchesUser = !userQ || c.user_id?.toLowerCase().includes(userQ);
       const matchesProvince = provinceFilter === 'all' || c.province === provinceFilter;
 
-      return matchesTab && matchesSearch && matchesUser && matchesProvince;
+      const matchesDistrict = districtFilter === 'all' || (c as any).land_district === districtFilter;
+
+      return matchesTab && matchesSearch && matchesUser && matchesProvince && matchesDistrict;
     });
-  }, [contributions, activeTab, searchQuery, userFilter, provinceFilter]);
+  }, [contributions, activeTab, searchQuery, userFilter, provinceFilter, districtFilter]);
 
   const provinceOptions = useMemo(
     () => Array.from(new Set(contributions.map(c => c.province).filter(Boolean) as string[])).sort(),
     [contributions],
+  );
+
+  const districtOptions = useMemo(
+    () => Array.from(new Set(
+      contributions
+        .filter(c => provinceFilter === 'all' || c.province === provinceFilter)
+        .map(c => (c as any).land_district as string | null)
+        .filter(Boolean) as string[],
+    )).sort(),
+    [contributions, provinceFilter],
   );
 
   // Bulk actions
@@ -650,8 +664,11 @@ const AdminCCCContributions: React.FC = () => {
             userFilter={userFilter}
             onUserFilterChange={setUserFilter}
             provinceFilter={provinceFilter}
-            onProvinceFilterChange={setProvinceFilter}
+            onProvinceFilterChange={(v) => { setProvinceFilter(v); setDistrictFilter('all'); }}
             provinceOptions={provinceOptions}
+            districtFilter={districtFilter}
+            onDistrictFilterChange={setDistrictFilter}
+            districtOptions={districtOptions}
           />
 
           <CCCBulkActions

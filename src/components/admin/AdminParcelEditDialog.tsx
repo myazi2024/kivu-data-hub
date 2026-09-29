@@ -6,7 +6,10 @@ import { Badge } from '@/components/ui/badge';
 import { ParcelMapPreview } from '@/components/cadastral/ParcelMapPreview';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Save, X, AlertCircle, CheckCircle } from 'lucide-react';
+import { Save, X, AlertCircle } from 'lucide-react';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { getLandDistrictsForProvince, getSectionTypeForLandDistrict } from '@/lib/geographicData';
 
 interface Coordinate {
   borne: string;
@@ -21,6 +24,7 @@ interface AdminParcelEditDialogProps {
     current_owner_name: string;
     province: string | null;
     ville: string | null;
+    land_district?: string | null;
     gps_coordinates: any;
   } | null;
   open: boolean;
@@ -33,6 +37,8 @@ export const AdminParcelEditDialog = ({ parcel, open, onClose, onSave }: AdminPa
   const [saving, setSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [landDistrict, setLandDistrict] = useState<string>('');
+  const [gpsChanged, setGpsChanged] = useState(false);
 
   useEffect(() => {
     if (parcel && parcel.gps_coordinates && open) {
@@ -45,6 +51,8 @@ export const AdminParcelEditDialog = ({ parcel, open, onClose, onSave }: AdminPa
           }))
         : [];
       setCoordinates(coords);
+      setLandDistrict(parcel.land_district || '');
+      setGpsChanged(false);
       setHasChanges(false);
       setValidationError(null);
     }
@@ -52,6 +60,7 @@ export const AdminParcelEditDialog = ({ parcel, open, onClose, onSave }: AdminPa
 
   const handleCoordinatesUpdate = (newCoords: Coordinate[]) => {
     setCoordinates(newCoords);
+    setGpsChanged(true);
     setHasChanges(true);
     setValidationError(null);
   };
@@ -87,56 +96,72 @@ export const AdminParcelEditDialog = ({ parcel, open, onClose, onSave }: AdminPa
     return true;
   };
 
+  const districtOptions = parcel?.province ? getLandDistrictsForProvince(parcel.province) : [];
+  const derivedSection = getSectionTypeForLandDistrict(landDistrict);
+  const districtChanged = (parcel?.land_district || '') !== landDistrict;
+
   const handleSave = async () => {
-    if (!parcel || !validateCoordinates()) return;
+    if (!parcel) return;
+    if (gpsChanged && !validateCoordinates()) return;
+    if (districtOptions.length > 0 && !landDistrict) {
+      setValidationError('La circonscription foncière est obligatoire');
+      return;
+    }
 
     setSaving(true);
     try {
-      // Convertir les coordonnées au format de stockage
-      const gpsCoordinates = coordinates.map(coord => ({
-        borne: coord.borne,
-        lat: parseFloat(coord.lat),
-        lng: parseFloat(coord.lng)
-      }));
+      const patch: Record<string, unknown> = {};
+      if (gpsChanged) {
+        const gpsCoordinates = coordinates.map(coord => ({
+          borne: coord.borne,
+          lat: parseFloat(coord.lat),
+          lng: parseFloat(coord.lng),
+        }));
+        patch.gps_coordinates = gpsCoordinates;
+        patch.latitude = gpsCoordinates[0].lat;
+        patch.longitude = gpsCoordinates[0].lng;
+      }
+      if (districtChanged) {
+        patch.land_district = landDistrict || null;
+        if (derivedSection) patch.parcel_type = derivedSection === 'urbaine' ? 'SU' : 'SR';
+      }
 
-      // Calculer latitude et longitude (premier point)
-      const firstCoord = gpsCoordinates[0];
-      const latitude = firstCoord.lat;
-      const longitude = firstCoord.lng;
-
-      // Mettre à jour la parcelle dans cadastral_parcels
-      const { error: updateError } = await supabase
+      // La ligne affichée est une contribution : la parcelle se retrouve par son numéro.
+      const { data: updated, error: updateError } = await supabase
         .from('cadastral_parcels')
-        .update({
-          gps_coordinates: gpsCoordinates,
-          latitude,
-          longitude,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', parcel.id);
-
+        .update({ ...patch, updated_at: new Date().toISOString() } as any)
+        .eq('parcel_number', parcel.parcel_number)
+        .is('deleted_at', null)
+        .select('id');
       if (updateError) throw updateError;
+      if (!updated || updated.length === 0) {
+        throw new Error('Parcelle introuvable dans le cadastre pour ce numéro');
+      }
 
-      // Créer une entrée d'audit
+      // Garder la contribution alignée (source affichée sur cette carte)
+      const contribPatch: Record<string, unknown> = {};
+      if (gpsChanged) contribPatch.gps_coordinates = patch.gps_coordinates;
+      if (districtChanged) contribPatch.land_district = patch.land_district;
+      const { error: contribError } = await supabase
+        .from('cadastral_contributions')
+        .update(contribPatch as any)
+        .eq('id', parcel.id);
+      if (contribError) throw contribError;
+
       await supabase.rpc('log_audit_action', {
-        action_param: 'GPS_EDIT',
+        action_param: gpsChanged ? 'GPS_EDIT' : 'PARCEL_LOCATION_EDIT',
         table_name_param: 'cadastral_parcels',
-        record_id_param: parcel.id,
-        new_values_param: {
-          gps_coordinates: gpsCoordinates,
-          latitude,
-          longitude,
-          edited_by: 'admin',
-          edit_reason: 'Correction des coordonnées GPS via interface admin'
-        }
+        record_id_param: updated[0].id,
+        new_values_param: { ...patch, edited_by: 'admin', edit_reason: 'Correction via la carte cadastrale admin' } as any,
       });
 
-      toast.success('Coordonnées GPS mises à jour avec succès');
+      toast.success('Parcelle mise à jour');
       setHasChanges(false);
+      setGpsChanged(false);
       onSave();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erreur lors de la sauvegarde:', error);
-      toast.error('Erreur lors de la mise à jour des coordonnées GPS');
+      toast.error(error?.message || 'Erreur lors de la mise à jour de la parcelle');
     } finally {
       setSaving(false);
     }
@@ -160,9 +185,9 @@ export const AdminParcelEditDialog = ({ parcel, open, onClose, onSave }: AdminPa
       <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <span>Éditer les coordonnées GPS</span>
+            <span>Éditer la parcelle</span>
             {hasChanges && (
-              <Badge variant="outline" className="bg-orange-100 text-orange-800 border-orange-300">
+              <Badge variant="outline" className="border-warning text-warning">
                 Modifications non sauvegardées
               </Badge>
             )}
@@ -189,6 +214,34 @@ export const AdminParcelEditDialog = ({ parcel, open, onClose, onSave }: AdminPa
                   <span className="font-medium">Ville:</span> {parcel.ville}
                 </div>
               )}
+            </div>
+          </div>
+
+          {/* Circonscription foncière */}
+          <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-3 items-end">
+            <div className="space-y-1">
+              <Label className="text-xs">Circonscription foncière</Label>
+              {districtOptions.length > 0 ? (
+                <Select
+                  value={landDistrict || undefined}
+                  onValueChange={(v) => { setLandDistrict(v); setHasChanges(true); setValidationError(null); }}
+                >
+                  <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Sélectionner" /></SelectTrigger>
+                  <SelectContent>
+                    {districtOptions.map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  {landDistrict || 'Province inconnue : aucune circonscription disponible'}
+                </p>
+              )}
+            </div>
+            <div className="text-xs">
+              <span className="text-muted-foreground">Section : </span>
+              <Badge variant="secondary">
+                {derivedSection === 'urbaine' ? 'SU (urbaine)' : derivedSection === 'rurale' ? 'SR (rurale)' : '—'}
+              </Badge>
             </div>
           </div>
 

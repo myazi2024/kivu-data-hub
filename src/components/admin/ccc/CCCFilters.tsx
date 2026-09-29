@@ -11,9 +11,12 @@ interface CCCFiltersProps {
   provinceFilter?: string;
   onProvinceFilterChange?: (value: string) => void;
   provinceOptions?: string[];
+  districtFilter?: string;
+  onDistrictFilterChange?: (value: string) => void;
+  districtOptions?: string[];
 }
 
-/** Search + province + user-id filter row above the CCC contributions table. */
+/** Search + province + circonscription + user-id filter row above the CCC contributions table. */
 export const CCCFilters: React.FC<CCCFiltersProps> = ({
   searchQuery,
   onSearchQueryChange,
@@ -22,8 +25,11 @@ export const CCCFilters: React.FC<CCCFiltersProps> = ({
   provinceFilter = 'all',
   onProvinceFilterChange,
   provinceOptions = [],
+  districtFilter = 'all',
+  onDistrictFilterChange,
+  districtOptions = [],
 }) => (
-  <div className="grid grid-cols-1 sm:grid-cols-[1fr_180px_220px] gap-2 mb-3">
+  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1fr_170px_190px_200px] gap-2 mb-3">
     <div className="relative">
       <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
       <Input
@@ -41,6 +47,17 @@ export const CCCFilters: React.FC<CCCFiltersProps> = ({
         <SelectItem value="all">Toutes les provinces</SelectItem>
         {provinceOptions.map((p) => (
           <SelectItem key={p} value={p}>{p}</SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+    <Select value={districtFilter} onValueChange={(v) => onDistrictFilterChange?.(v)}>
+      <SelectTrigger className="h-9 text-sm" aria-label="Circonscription">
+        <SelectValue placeholder="Toutes les circonscriptions" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="all">Toutes les circonscriptions</SelectItem>
+        {districtOptions.map((d) => (
+          <SelectItem key={d} value={d}>{d}</SelectItem>
         ))}
       </SelectContent>
     </Select>

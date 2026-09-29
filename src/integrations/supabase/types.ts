@@ -2389,6 +2389,59 @@ export type Database = {
         }
         Relationships: []
       }
+      ccc_correction_requests: {
+        Row: {
+          changes: Json
+          contribution_id: string
+          created_at: string
+          id: string
+          parcel_number: string
+          reason: string
+          rejection_reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          changes?: Json
+          contribution_id: string
+          created_at?: string
+          id?: string
+          parcel_number: string
+          reason: string
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          changes?: Json
+          contribution_id?: string
+          created_at?: string
+          id?: string
+          parcel_number?: string
+          reason?: string
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ccc_correction_requests_contribution_id_fkey"
+            columns: ["contribution_id"]
+            isOneToOne: false
+            referencedRelation: "cadastral_contributions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       certificate_templates: {
         Row: {
           body_text: string
@@ -8177,6 +8230,14 @@ export type Database = {
         Returns: number
       }
       _purge_stale_test_generation_jobs: { Args: never; Returns: number }
+      apply_ccc_correction_request: {
+        Args: {
+          p_decision: string
+          p_rejection_reason?: string
+          p_request_id: string
+        }
+        Returns: Json
+      }
       approve_ccc_contribution: { Args: { p_id: string }; Returns: string }
       approve_subdivision_atomic: {
         Args: { _admin_id: string; _request_id: string }
@@ -8239,6 +8300,7 @@ export type Database = {
         Args: { p_request_id: string }
         Returns: undefined
       }
+      ccc_correctable_columns: { Args: never; Returns: string[] }
       check_and_consume_rate_limit: {
         Args: { _action: string; _key: string }
         Returns: Json
