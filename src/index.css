@@ -651,7 +651,8 @@ All colors MUST be HSL.
   transition: fill .2s ease, stroke-width .2s ease;
 }
 .home-province-map path[data-province]:hover,
-.home-province-map path[data-province]:focus-visible {
+.home-province-map path[data-province]:focus-visible,
+.home-province-map path[data-province][aria-pressed="true"] {
   fill: hsl(var(--primary-foreground) / .55);
   stroke-width: 2.5;
   outline: none;

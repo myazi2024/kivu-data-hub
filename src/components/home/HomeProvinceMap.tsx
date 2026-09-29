@@ -1,4 +1,4 @@
-import { useEffect, useState, type KeyboardEvent, type MouseEvent } from 'react';
+import { useEffect, useRef, useState, type KeyboardEvent, type MouseEvent } from 'react';
 import DOMPurify from 'dompurify';
 import { Button } from '@/components/ui/button';
 import { getLandDistrictsForProvince } from '@/lib/geographicData';
@@ -12,6 +12,7 @@ export default function HomeProvinceMap() {
   const [svg, setSvg] = useState('');
   const [failed, setFailed] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
+  const mapRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -48,6 +49,12 @@ export default function HomeProvinceMap() {
     return () => controller.abort();
   }, []);
 
+  useEffect(() => {
+    mapRef.current?.querySelectorAll('path[data-province]').forEach((path) => {
+      path.setAttribute('aria-pressed', String(provinceById.get(path.getAttribute('data-province') || '') === selected));
+    });
+  }, [svg, selected]);
+
   const selectFromTarget = (target: EventTarget | null) => {
     const path = target instanceof Element ? target.closest('path[data-province]') : null;
     const name = path ? provinceById.get(path.getAttribute('data-province') || '') : null;
@@ -71,9 +78,10 @@ export default function HomeProvinceMap() {
         <span className="text-xs font-semibold uppercase tracking-widest">Territoire · RDC</span>
         <span className="text-xs text-primary-foreground/80">26 provinces</span>
       </div>
-      <div className="relative h-[220px] sm:h-[300px] lg:h-[420px] xl:h-[460px] flex items-center justify-center">
+      <div className="relative h-[170px] sm:h-[240px] lg:h-[380px] xl:h-[420px] flex items-center justify-center">
         {svg ? (
           <div
+            ref={mapRef}
             className="home-province-map h-full w-full"
             onClick={(event: MouseEvent<HTMLDivElement>) => selectFromTarget(event.target)}
             onKeyDown={handleKeyDown}
