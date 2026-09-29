@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { displayHomeCount, HOME_BIC_INDICATORS, validCount, type HomeBicCounts } from '@/lib/homeBicCounts';
 
 export default function HomeBicIndicators({ configured }: { configured: Record<string, unknown> }) {

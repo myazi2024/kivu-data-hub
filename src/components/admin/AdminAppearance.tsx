@@ -16,6 +16,7 @@ import AppearancePresets, { type AppearancePreset } from './appearance/Appearanc
 import AppearanceHistoryTab from './appearance/AppearanceHistoryTab';
 import { useGoogleFontInjection } from '@/hooks/useGoogleFontInjection';
 import { applyLoadingLogo } from '@/lib/loadingLogo';
+import { HOME_BIC_INDICATORS, validCount } from '@/lib/homeBicCounts';
 
 const FONT_OPTIONS = [
   { value: 'Inter, sans-serif', label: 'Inter' },
@@ -266,6 +267,9 @@ const AdminAppearance = () => {
   const [heroImageUrl, setHeroImageUrl] = useState('');
   const [heroTitle, setHeroTitle] = useState('Consultez les informations cadastrales des parcelles depuis chez vous.');
   const [heroOverlayOpacity, setHeroOverlayOpacity] = useState(80);
+  const [heroCounts, setHeroCounts] = useState<Record<string, string>>(
+    Object.fromEntries(HOME_BIC_INDICATORS.map(({ key, defaultValue }) => [key, String(defaultValue)]))
+  );
   const [uploadingHero, setUploadingHero] = useState(false);
 
   // Google Fonts custom URL
@@ -317,6 +321,11 @@ const AdminAppearance = () => {
               case 'hero_image_url': setHeroImageUrl(typeof val === 'string' ? val : ''); break;
               case 'hero_title': setHeroTitle(typeof val === 'string' ? val : 'Consultez les informations cadastrales des parcelles depuis chez vous.'); break;
               case 'hero_overlay_opacity': setHeroOverlayOpacity(typeof val === 'number' ? val : 80); break;
+              case 'hero_parcels_count':
+              case 'hero_services_count':
+              case 'hero_disputes_count':
+                if (validCount(val) !== null) setHeroCounts(prev => ({ ...prev, [row.config_key]: String(val) }));
+                break;
               case 'google_font_url': setGoogleFontUrl(typeof val === 'string' ? val : ''); break;
             }
           }
@@ -391,6 +400,14 @@ const AdminAppearance = () => {
   };
 
   const handleSave = async () => {
+    const invalid = HOME_BIC_INDICATORS.some(({ key }) => {
+      const raw = heroCounts[key];
+      return !/^\d+$/.test(raw) || validCount(Number(raw)) === null;
+    });
+    if (invalid) {
+      toast({ title: 'Valeur incorrecte', description: 'Saisissez des nombres entiers positifs ou zéro pour les trois indicateurs.', variant: 'destructive' });
+      return;
+    }
     setSaving(true);
     try {
       await Promise.all([
@@ -409,6 +426,7 @@ const AdminAppearance = () => {
         upsertConfig('hero_image_url', heroImageUrl),
         upsertConfig('hero_title', heroTitle),
         upsertConfig('hero_overlay_opacity', heroOverlayOpacity),
+        ...HOME_BIC_INDICATORS.map(({ key }) => upsertConfig(key, Number(heroCounts[key]))),
         upsertConfig('google_font_url', googleFontUrl),
       ]);
       applyLoadingLogo(loadingLogoUrl || logoUrl, loadingAnimation);
@@ -434,6 +452,7 @@ const AdminAppearance = () => {
     setHeroImageUrl('');
     setHeroTitle('Consultez les informations cadastrales des parcelles depuis chez vous.');
     setHeroOverlayOpacity(80);
+    setHeroCounts(Object.fromEntries(HOME_BIC_INDICATORS.map(({ key, defaultValue }) => [key, String(defaultValue)])));
     toast({ title: 'Valeurs réinitialisées', description: 'Cliquez sur Sauvegarder pour appliquer.' });
   };
 
@@ -591,7 +610,7 @@ const AdminAppearance = () => {
               <CardTitle className="flex items-center gap-2 text-base">
                 <Home className="h-4 w-4" /> Page d'accueil
               </CardTitle>
-              <CardDescription>Image de fond, titre et overlay de la section Hero.</CardDescription>
+              <CardDescription>Image de fond, titre et indicateurs de l'Accueil.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Hero Image */}
@@ -638,6 +657,20 @@ const AdminAppearance = () => {
                   step={5}
                 />
                 <p className="text-[10px] text-muted-foreground">Contrôle la transparence du dégradé de couleur au-dessus de l'image.</p>
+              </div>
+              <div className="border-t pt-4 space-y-3">
+                <div>
+                  <p className="text-sm font-medium">BIC en chiffres</p>
+                  <p className="text-xs text-muted-foreground">Ces valeurs s'affichent jusqu'à ce que chaque total réel dépasse 10 000.</p>
+                </div>
+                <div className="grid gap-4 sm:grid-cols-3">
+                  {HOME_BIC_INDICATORS.map(({ key, label }) => (
+                    <div key={key} className="space-y-2">
+                      <Label htmlFor={key} className="text-xs">{label}</Label>
+                      <Input id={key} type="number" inputMode="numeric" min="0" step="1" value={heroCounts[key]} onChange={e => setHeroCounts(prev => ({ ...prev, [key]: e.target.value }))} />
+                    </div>
+                  ))}
+                </div>
               </div>
             </CardContent>
           </Card>
