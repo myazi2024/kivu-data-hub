@@ -74,7 +74,7 @@ export default function HomeProvinceMap() {
 
   return (
     <div className="relative min-w-0" aria-label="Explorer les circonscriptions par province">
-      <div className="relative h-[108px] sm:h-[220px] lg:h-[380px] xl:h-[420px] flex items-center justify-center">
+      <div className="relative h-[108px] sm:h-[220px] lg:h-[clamp(215px,calc(100dvh-490px),320px)] flex items-center justify-center">
         {svg ? (
           <div
             ref={mapRef}
@@ -90,7 +90,7 @@ export default function HomeProvinceMap() {
           </div>
         )}
       </div>
-      <div className="min-h-[52px] sm:min-h-[76px] border-t border-primary-foreground/25 pt-2 sm:pt-3 text-primary-foreground">
+      <div className="min-h-[52px] sm:min-h-[76px] lg:min-h-[58px] border-t border-primary-foreground/25 pt-2 sm:pt-3 lg:pt-2 text-primary-foreground">
         {selected ? (
           <div className="flex flex-wrap items-start justify-between gap-2">
             <div className="min-w-0 flex-1">
