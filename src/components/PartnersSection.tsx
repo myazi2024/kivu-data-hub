@@ -27,7 +27,7 @@ const PartnerItem = ({ partner, ariaHidden = false }: { partner: Partner; ariaHi
         <img
           src={partner.logo_url}
           alt={ariaHidden ? '' : partner.name}
-          className="h-7 md:h-9 w-auto object-contain opacity-60 grayscale transition-all duration-300 hover:opacity-100 hover:grayscale-0"
+          className="h-7 md:h-9 w-auto object-contain transition-opacity duration-300 hover:opacity-90"
           loading="lazy"
         />
       ) : (
@@ -90,7 +90,7 @@ const PartnersSection = () => {
       <div className="mb-3 md:mb-4 text-center">
         <h2
           id="partners-heading"
-          className="text-[10px] md:text-[11px] font-bold uppercase tracking-[0.18em] text-primary/80"
+          className="text-[9px] md:text-[10px] font-medium lowercase tracking-[0.14em] text-muted-foreground/90"
         >
           Ce projet trouve écho auprès de
         </h2>
