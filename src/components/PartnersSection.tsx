@@ -22,22 +22,25 @@ const fetchPartners = async (): Promise<Partner[]> => {
 
 const PartnerItem = ({ partner, ariaHidden = false }: { partner: Partner; ariaHidden?: boolean }) => {
   const content = (
-    <div className="flex flex-col items-center gap-2 px-6 md:px-10 min-w-[140px] md:min-w-[180px]">
+    <div className="flex shrink-0 items-center gap-2.5 md:gap-3">
       {partner.logo_url ? (
         <img
           src={partner.logo_url}
           alt={ariaHidden ? '' : partner.name}
-          className="h-12 md:h-16 w-auto object-contain grayscale hover:grayscale-0 transition-all duration-300"
+          className="h-7 md:h-9 w-auto object-contain opacity-60 grayscale transition-all duration-300 hover:opacity-100 hover:grayscale-0"
           loading="lazy"
         />
       ) : (
-        <div className="h-12 md:h-16 w-12 md:w-16 rounded-full bg-muted flex items-center justify-center">
-          <span className="text-lg md:text-xl font-bold text-muted-foreground">
+        <div className="flex h-7 w-7 md:h-9 md:w-9 shrink-0 items-center justify-center rounded-full border border-border/70 bg-muted/60">
+          <span className="text-[11px] md:text-sm font-bold text-muted-foreground">
             {partner.name.charAt(0)}
           </span>
         </div>
       )}
-      <span className="text-xs md:text-sm text-muted-foreground font-medium whitespace-nowrap">
+      <span
+        title={partner.name}
+        className="max-w-[9rem] md:max-w-[13rem] truncate text-[11px] md:text-xs font-medium text-muted-foreground transition-colors duration-300 hover:text-foreground"
+      >
         {partner.name}
       </span>
     </div>
@@ -49,15 +52,26 @@ const PartnerItem = ({ partner, ariaHidden = false }: { partner: Partner; ariaHi
         href={partner.website_url}
         target="_blank"
         rel="noopener noreferrer"
-        className="hover:opacity-80 transition-opacity"
+        className="group/item shrink-0 transition-opacity duration-300 hover:opacity-100"
         onClick={() => trackEvent('partner_logo_click', { partner_id: partner.id, name: partner.name })}
       >
         {content}
       </a>
     );
   }
-  return content;
+  return <div className="shrink-0">{content}</div>;
 };
+
+const PartnerGroup = ({ partners, ariaHidden = false }: { partners: Partner[]; ariaHidden?: boolean }) => (
+  <div
+    className="flex w-max items-center gap-8 md:gap-12 px-6 md:px-8"
+    aria-hidden={ariaHidden || undefined}
+  >
+    {partners.map((partner) => (
+      <PartnerItem key={`${ariaHidden ? 'b' : 'a'}-${partner.id}`} partner={partner} ariaHidden={ariaHidden} />
+    ))}
+  </div>
+);
 
 const PartnersSection = () => {
   const { data: partners = [] } = useQuery({
@@ -69,24 +83,30 @@ const PartnersSection = () => {
   if (partners.length === 0) return null;
 
   return (
-    <section className="py-10 md:py-16 bg-muted/30 overflow-hidden" aria-labelledby="partners-heading">
-      <div className="container mx-auto px-4 mb-6 md:mb-8">
-        <h2 id="partners-heading" className="text-xl md:text-2xl font-bold text-center text-foreground">
+    <section
+      className="relative overflow-hidden border-y border-border/60 bg-background py-4 md:py-5"
+      aria-labelledby="partners-heading"
+    >
+      <div className="mb-3 md:mb-4 text-center">
+        <h2
+          id="partners-heading"
+          className="text-[10px] md:text-[11px] font-bold uppercase tracking-[0.18em] text-primary/80"
+        >
           Ce projet trouve écho auprès de
         </h2>
       </div>
-      <div className="relative">
-        <div className="flex animate-marquee">
-          {/* Real partners (visible to AT) */}
-          {partners.map((partner) => (
-            <PartnerItem key={`a-${partner.id}`} partner={partner} />
-          ))}
-          {/* Visual duplicate for seamless scroll, hidden from AT */}
-          <div className="flex" aria-hidden="true">
-            {partners.map((partner) => (
-              <PartnerItem key={`b-${partner.id}`} partner={partner} ariaHidden />
-            ))}
-          </div>
+      <div className="relative flex items-center">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-y-0 left-0 z-10 w-8 bg-gradient-to-r from-background to-transparent md:w-24"
+        />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-y-0 right-0 z-10 w-8 bg-gradient-to-l from-background to-transparent md:w-24"
+        />
+        <div className="flex w-max animate-marquee items-center">
+          <PartnerGroup partners={partners} />
+          <PartnerGroup partners={partners} ariaHidden />
         </div>
       </div>
     </section>
