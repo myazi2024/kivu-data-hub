@@ -1,3 +1,3 @@
 - Keep loading-image settings in `app_appearance_config`, applying them once at the root and styling existing loading indicators through shared CSS; this avoids per-indicator network calls across lazy-loaded screens.
-- The home geography display reuses the existing province SVG and province-to-land-district catalogue; it never approximates district borders because no verified district geometry is bundled.
+- The home land-district map is built from the bundled territories GeoJSON: only areas whose name matches exactly one land district of the same province are coloured, others stay greyed; borders are never approximated because no verified district geometry is bundled.
 - Home BIC figures are public aggregates from a service-only database function exposed through a counts-only Edge Function; this keeps personal records private while switching each configured display figure after 10,000 real records.

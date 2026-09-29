@@ -18,7 +18,12 @@ Deno.serve(async (req) => {
     const { data, error } = await client.rpc("get_home_bic_counts");
     if (error || !data?.[0]) throw error ?? new Error("Counts unavailable");
     const { parcels_count, services_count, disputes_count } = data[0];
-    return new Response(JSON.stringify({ parcels_count, services_count, disputes_count }), {
+    const { data: byDistrict } = await client.rpc("get_home_district_parcel_counts");
+    const parcels_by_district: Record<string, number> = {};
+    for (const row of (byDistrict ?? []) as { land_district: string; parcels_count: number }[]) {
+      parcels_by_district[row.land_district] = Number(row.parcels_count) || 0;
+    }
+    return new Response(JSON.stringify({ parcels_count, services_count, disputes_count, parcels_by_district }), {
       headers: { ...corsHeaders, "Content-Type": "application/json", "Cache-Control": "public, max-age=300" },
     });
   } catch (error) {
