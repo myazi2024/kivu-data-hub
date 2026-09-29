@@ -86,7 +86,7 @@ export default function HomeProvinceMap() {
           />
         ) : (
           <div className="text-center text-sm text-primary-foreground/80">
-            {failed ? 'Carte indisponible. Choisissez une province ci-dessous.' : 'Chargement de la carte…'}
+            {failed ? 'Carte indisponible pour le moment.' : 'Chargement de la carte…'}
           </div>
         )}
       </div>
