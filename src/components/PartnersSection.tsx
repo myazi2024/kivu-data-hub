@@ -39,7 +39,7 @@ const PartnerItem = ({ partner, ariaHidden = false }: { partner: Partner; ariaHi
       )}
       <span
         title={partner.name}
-        className="max-w-[9rem] md:max-w-[13rem] truncate text-[11px] md:text-xs font-medium text-muted-foreground transition-colors duration-300 hover:text-foreground"
+        className="max-w-[9rem] md:max-w-[16rem] truncate text-[11px] md:text-xs font-medium text-muted-foreground transition-colors duration-300 hover:text-foreground"
       >
         {partner.name}
       </span>
