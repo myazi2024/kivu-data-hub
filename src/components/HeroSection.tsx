@@ -51,8 +51,8 @@ const HeroSection = () => {
           />
         </div>
 
-        <div className="relative z-10 w-full max-w-7xl mx-auto px-5 sm:px-8 grid gap-8 lg:gap-12 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] items-center text-primary-foreground">
-          <div className="min-w-0 lg:pl-2 order-first lg:order-last">
+        <div className="relative z-10 w-full max-w-7xl mx-auto px-5 sm:px-8 grid gap-6 md:gap-8 lg:gap-12 md:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] items-center text-primary-foreground">
+          <div className="min-w-0 lg:pl-2 order-last md:order-last">
             <p className="mb-4 text-xs font-bold uppercase tracking-widest text-primary-foreground/85">BIC · Informations cadastrales en RDC</p>
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight max-w-xl">{heroTitle}</h1>
             <div className="mt-4 max-w-xl text-left [&>div]:justify-start [&_p]:!mx-0 [&_p]:!px-0 [&_p]:!text-primary-foreground/90">
@@ -61,10 +61,10 @@ const HeroSection = () => {
             <p className="mt-1 mb-6 text-sm sm:text-base leading-relaxed text-primary-foreground/90 max-w-lg">
               Consultez les parcelles, repérez les circonscriptions foncières et découvrez les données disponibles pour votre territoire.
             </p>
-            <div className="flex flex-col sm:flex-row gap-3 items-stretch">
+            <div className="flex flex-col lg:flex-row gap-3 items-stretch">
             <Link
               to={cadastreTarget}
-              className="w-full sm:w-auto"
+              className="w-full lg:w-auto"
               onClick={() => trackEvent('hero_cta_click', { id: 'cadastre', authed: !!user })}
             >
               <Button
@@ -79,7 +79,7 @@ const HeroSection = () => {
 
             <Link
               to="/map"
-              className="w-full sm:w-auto"
+              className="w-full lg:w-auto"
               onClick={() => trackEvent('hero_cta_click', { id: 'donnees-foncieres' })}
             >
               <Button
@@ -115,7 +115,7 @@ const HeroSection = () => {
             </div>
             )}
           </div>
-          <div className="order-last lg:order-first min-w-0"><HomeProvinceMap /></div>
+          <div className="order-first md:order-first min-w-0"><HomeProvinceMap /></div>
         </div>
       </section>
     </>

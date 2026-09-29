@@ -78,7 +78,7 @@ export default function HomeProvinceMap() {
         <span className="text-xs font-semibold uppercase tracking-widest">Territoire · RDC</span>
         <span className="text-xs text-primary-foreground/80">26 provinces</span>
       </div>
-      <div className="relative h-[170px] sm:h-[240px] lg:h-[380px] xl:h-[420px] flex items-center justify-center">
+      <div className="relative h-[150px] sm:h-[220px] lg:h-[380px] xl:h-[420px] flex items-center justify-center">
         {svg ? (
           <div
             ref={mapRef}
