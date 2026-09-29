@@ -75,7 +75,7 @@ const TypewriterAnimation = () => {
 
   return (
     <div
-      className="min-h-[3.5rem] sm:min-h-[4rem] md:min-h-[4.5rem] flex items-center justify-center"
+      className="min-h-[2.75rem] sm:min-h-[4rem] md:min-h-[4.5rem] flex items-center justify-center"
       aria-live="polite"
     >
       <p className="text-xs xs:text-sm sm:text-base md:text-lg font-light text-primary-foreground/95 max-w-xl lg:max-w-2xl mx-auto leading-relaxed px-2">

@@ -34,7 +34,7 @@ const HeroSection = () => {
         <link rel="preload" as="image" href={heroImage} />
       </Helmet>
 
-      <section className="relative isolate overflow-hidden flex items-center py-6 sm:py-8 lg:py-12">
+      <section className="relative isolate overflow-hidden flex items-center py-4 sm:py-8 lg:py-12">
         <div className="absolute inset-0">
           <img
             src={heroImage}
@@ -51,14 +51,14 @@ const HeroSection = () => {
           />
         </div>
 
-        <div className="relative z-10 w-full max-w-7xl mx-auto px-5 sm:px-8 grid gap-6 md:gap-8 lg:gap-12 md:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] items-center text-primary-foreground">
+        <div className="relative z-10 w-full max-w-7xl mx-auto px-5 sm:px-8 grid gap-4 md:gap-8 lg:gap-12 md:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] items-center text-primary-foreground">
           <div className="min-w-0 lg:pl-2 order-last md:order-last">
             <p className="mb-4 text-xs font-bold uppercase tracking-widest text-primary-foreground/85">BIC · Informations cadastrales en RDC</p>
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight max-w-xl">{heroTitle}</h1>
-            <div className="mt-4 max-w-xl text-left [&>div]:justify-start [&_p]:!mx-0 [&_p]:!px-0 [&_p]:!text-primary-foreground/90">
+            <div className="mt-2 sm:mt-4 max-w-xl text-left [&>div]:justify-start [&_p]:!mx-0 [&_p]:!px-0 [&_p]:!text-primary-foreground/90">
               <TypewriterAnimation />
             </div>
-            <p className="mt-1 mb-6 text-sm sm:text-base leading-relaxed text-primary-foreground/90 max-w-lg">
+            <p className="mt-1 mb-4 sm:mb-6 text-sm sm:text-base leading-relaxed text-primary-foreground/90 max-w-lg">
               Consultez les parcelles, repérez les circonscriptions foncières et découvrez les données disponibles pour votre territoire.
             </p>
             <div className="flex flex-col lg:flex-row gap-3 items-stretch">
@@ -93,11 +93,11 @@ const HeroSection = () => {
             </Link>
             </div>
 
-            <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-2 text-xs text-primary-foreground/90">
+            <div className="mt-4 sm:mt-6 flex flex-wrap items-center gap-x-6 gap-y-2 text-xs text-primary-foreground/90">
               <span className="inline-flex items-center gap-1.5"><Check className="h-3.5 w-3.5" /> Circonscriptions foncières</span>
               <span className="inline-flex items-center gap-1.5"><Check className="h-3.5 w-3.5" /> Services cadastraux</span>
             </div>
-            <div className="mt-6">
+            <div className="mt-4 sm:mt-6">
             <Link
               to={secondaryHref}
               onClick={() => trackEvent('hero_cta_click', { id: 'secondary', href: secondaryHref })}
