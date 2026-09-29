@@ -1,7 +1,11 @@
 import { useEffect, useState } from 'react';
 import { displayHomeCount, HOME_BIC_INDICATORS, validCount, type HomeBicCounts } from '@/lib/homeBicCounts';
 
-export default function HomeBicIndicators({ configured }: { configured: Record<string, unknown> }) {
+export default function HomeBicIndicators({ configured }: { configured: {
+  hero_parcels_count?: number;
+  hero_services_count?: number;
+  hero_disputes_count?: number;
+} }) {
   const [counts, setCounts] = useState<HomeBicCounts | null>(null);
 
   useEffect(() => {
