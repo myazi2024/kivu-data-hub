@@ -76,7 +76,7 @@ const AdminCadastralMap = () => {
       // Récupérer les contributions validées avec pagination (exclure TEST-%)
       const { data, error } = await supabase
         .from('cadastral_contributions')
-        .select('id, parcel_number, current_owner_name, area_sqm, property_title_type, province, ville, commune, quartier, gps_coordinates, created_at, verified_at')
+        .select('id, parcel_number, current_owner_name, area_sqm, property_title_type, province, land_district, ville, commune, quartier, gps_coordinates, created_at, verified_at')
         .eq('status', 'approved')
         .not('parcel_number', 'ilike', 'TEST-%')
         .order('verified_at', { ascending: false })
