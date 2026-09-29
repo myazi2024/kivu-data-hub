@@ -59,7 +59,7 @@ const Index = () => {
         {/* JSON-LD Organization */}
         <script type="application/ld+json">{JSON.stringify(orgJsonLd)}</script>
       </Helmet>
-      <div className="min-h-dvh">
+      <div className="min-h-dvh lg:flex lg:flex-col">
         <Navigation />
         <HeroSection />
         <PartnersSection />

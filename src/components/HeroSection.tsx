@@ -35,7 +35,7 @@ const HeroSection = () => {
         <link rel="preload" as="image" href={heroImage} />
       </Helmet>
 
-      <section className="relative isolate overflow-hidden py-3 sm:py-6 lg:py-4">
+      <section className="relative isolate overflow-hidden py-3 sm:py-6 lg:py-4 lg:flex-1 lg:flex lg:items-center">
         <div className="absolute inset-0">
           <img
             src={heroImage}
