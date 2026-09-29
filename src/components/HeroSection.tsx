@@ -52,7 +52,7 @@ const HeroSection = () => {
           />
         </div>
 
-        <div className="relative z-10 w-full max-w-7xl mx-auto px-5 sm:px-8 grid gap-3 md:gap-8 lg:gap-4 md:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] items-center text-primary-foreground">
+        <div className="relative z-10 w-full max-w-7xl mx-auto px-5 sm:px-8 grid gap-3 md:gap-8 lg:gap-4 md:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] items-center lg:self-stretch lg:grid-rows-[minmax(0,1fr)] text-primary-foreground">
           <div className="min-w-0 lg:pl-2 order-last md:order-last">
             <h1 className="text-3xl sm:text-4xl lg:text-4xl font-bold leading-tight max-w-xl">{heroTitle}</h1>
             <div className="mt-2 sm:mt-4 lg:mt-1 max-w-xl text-left [&>div]:justify-start [&_p]:!mx-0 [&_p]:!px-0 [&_p]:!text-primary-foreground/90">
@@ -119,7 +119,7 @@ const HeroSection = () => {
               <HomeBicIndicators configured={appearanceConfig} />
             </div>
           </div>
-          <div className="order-first md:order-first min-w-0"><HomeProvinceMap /></div>
+          <div className="order-first md:order-first min-w-0 md:self-stretch md:h-full md:flex md:flex-col"><HomeProvinceMap /></div>
         </div>
       </section>
     </>
