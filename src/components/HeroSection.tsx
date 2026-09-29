@@ -114,9 +114,12 @@ const HeroSection = () => {
               </p>
             </div>
             )}
+
+            <div className="mt-3 lg:mt-2 lg:max-w-md lg:ml-auto w-full">
+              <HomeBicIndicators configured={appearanceConfig} />
+            </div>
           </div>
           <div className="order-first md:order-first min-w-0"><HomeProvinceMap /></div>
-          <div className="md:col-span-2 order-last"><HomeBicIndicators configured={appearanceConfig} /></div>
         </div>
       </section>
     </>
