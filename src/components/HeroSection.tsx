@@ -1,7 +1,7 @@
 import React from 'react';
 import { Helmet } from 'react-helmet';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, MapPin, Map } from 'lucide-react';
+import { ArrowRight, MapPin, Map, Check } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import heroSkyline from '@/assets/hero-skyline.webp';
 import TypewriterAnimation from '@/components/TypewriterAnimation';
@@ -9,6 +9,7 @@ import { useCatalogConfig } from '@/hooks/useCatalogConfig';
 import { useAppAppearance } from '@/hooks/useAppAppearance';
 import { useAuth } from '@/hooks/useAuth';
 import { trackEvent } from '@/lib/analytics';
+import HomeProvinceMap from '@/components/home/HomeProvinceMap';
 
 const HeroSection = () => {
   const { config: catalogConfig } = useCatalogConfig();
@@ -17,7 +18,7 @@ const HeroSection = () => {
   const provinces = catalogConfig.available_provinces || [];
 
   const heroImage = appearanceConfig.hero_image_url || heroSkyline;
-  const heroTitle = appearanceConfig.hero_title || 'Consultez les informations cadastrales des parcelles depuis chez vous.';
+  const heroTitle = appearanceConfig.hero_title || 'Explorez le cadastre numérique de la RDC.';
   const overlayOpacity = appearanceConfig.hero_overlay_opacity ?? 80;
 
   // CTA #1 — Cadastre numérique : protégé. Si non connecté, on passe par /auth?redirect=
@@ -33,12 +34,11 @@ const HeroSection = () => {
         <link rel="preload" as="image" href={heroImage} />
       </Helmet>
 
-      <section className="relative min-h-[85dvh] flex items-center justify-center overflow-hidden">
-        {/* Background Image with Overlay */}
+      <section className="relative isolate overflow-hidden flex items-center py-4 sm:py-8 lg:py-12">
         <div className="absolute inset-0">
           <img
             src={heroImage}
-            alt="Illustration urbaine stylisée — skyline et données territoriales"
+            alt=""
             className="w-full h-full object-cover object-center"
             loading="eager"
             decoding="async"
@@ -46,73 +46,76 @@ const HeroSection = () => {
             fetchpriority="high"
           />
           <div
-            className="absolute inset-0 bg-gradient-to-br from-primary via-primary/70 to-primary"
+            className="absolute inset-0 bg-primary"
             style={{ opacity: overlayOpacity / 100 }}
           />
         </div>
 
-        {/* Content */}
-        <div className="relative z-10 w-full max-w-6xl mx-auto px-4 sm:px-6 text-center text-primary-foreground">
-          {/* Main Heading */}
-          <div className="mb-8 sm:mb-10">
-            <h1 className="text-xl xs:text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-2 sm:mb-3 leading-tight">
-              {heroTitle}
-            </h1>
-            <TypewriterAnimation />
-          </div>
-
-          {/* CTA — 1 primary + 1 outline + 1 text link */}
-          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-stretch px-4 max-w-2xl mx-auto">
+        <div className="relative z-10 w-full max-w-7xl mx-auto px-5 sm:px-8 grid gap-4 md:gap-8 lg:gap-12 md:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] items-center text-primary-foreground">
+          <div className="min-w-0 lg:pl-2 order-last md:order-last">
+            <p className="mb-4 text-xs font-bold uppercase tracking-widest text-primary-foreground/85">BIC · Informations cadastrales en RDC</p>
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight max-w-xl">{heroTitle}</h1>
+            <div className="mt-2 sm:mt-4 max-w-xl text-left [&>div]:justify-start [&_p]:!mx-0 [&_p]:!px-0 [&_p]:!text-primary-foreground/90">
+              <TypewriterAnimation />
+            </div>
+            <p className="mt-1 mb-4 sm:mb-6 text-sm sm:text-base leading-relaxed text-primary-foreground/90 max-w-lg">
+              Consultez les parcelles, repérez les circonscriptions foncières et découvrez les données disponibles pour votre territoire.
+            </p>
+            <div className="flex flex-col lg:flex-row gap-3 items-stretch">
             <Link
               to={cadastreTarget}
-              className="w-full sm:flex-1"
+              className="w-full lg:w-auto"
               onClick={() => trackEvent('hero_cta_click', { id: 'cadastre', authed: !!user })}
             >
               <Button
                 size="lg"
-                className="w-full bg-background text-primary hover:bg-background/95 hover:scale-[1.02] font-bold px-6 sm:px-8 py-6 sm:py-7 text-base sm:text-lg group transition-all duration-300 rounded-xl shadow-2xl"
+                className="w-full bg-background text-primary hover:bg-background/90 font-bold px-5 h-12 text-sm sm:text-base group"
               >
-                <Map className="mr-3 h-6 w-6 sm:h-7 sm:w-7" />
+                <Map className="h-5 w-5" />
                 <span>Cadastre numérique</span>
-                <ArrowRight className="ml-3 h-5 w-5 sm:h-6 sm:w-6 group-hover:translate-x-1 transition-transform duration-300" />
+                <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform duration-300" />
               </Button>
             </Link>
 
             <Link
               to="/map"
-              className="w-full sm:flex-1"
+              className="w-full lg:w-auto"
               onClick={() => trackEvent('hero_cta_click', { id: 'donnees-foncieres' })}
             >
               <Button
                 variant="outline"
                 size="lg"
-                className="w-full bg-primary-foreground/10 backdrop-blur-sm border-2 border-primary-foreground/30 text-primary-foreground hover:bg-background hover:text-primary hover:scale-[1.02] font-semibold px-6 sm:px-8 py-6 sm:py-7 text-base sm:text-lg transition-all duration-300 rounded-xl shadow-lg"
+                className="w-full bg-primary/30 border border-primary-foreground/50 text-primary-foreground hover:bg-background hover:text-primary font-semibold px-5 h-12 text-sm sm:text-base"
               >
-                <MapPin className="mr-3 h-5 w-5 sm:h-6 sm:w-6" />
+                <MapPin className="h-5 w-5" />
                 <span>Données foncières</span>
               </Button>
             </Link>
-          </div>
+            </div>
 
-          {/* Secondary text link */}
-          <div className="mt-4">
+            <div className="mt-4 sm:mt-6 flex flex-wrap items-center gap-x-6 gap-y-2 text-xs text-primary-foreground/90">
+              <span className="inline-flex items-center gap-1.5"><Check className="h-3.5 w-3.5" /> Circonscriptions foncières</span>
+              <span className="inline-flex items-center gap-1.5"><Check className="h-3.5 w-3.5" /> Services cadastraux</span>
+            </div>
+            <div className="mt-4 sm:mt-6">
             <Link
               to={secondaryHref}
               onClick={() => trackEvent('hero_cta_click', { id: 'secondary', href: secondaryHref })}
-              className="text-sm text-primary-foreground/85 hover:text-primary-foreground underline underline-offset-4 transition-colors"
+              className="inline-flex items-center gap-2 text-sm font-medium text-primary-foreground hover:underline underline-offset-4 transition-colors"
             >
               {secondaryLabel} →
             </Link>
-          </div>
+            </div>
 
-          {/* Available Provinces */}
-          {provinces.length > 0 && (
-            <div className="mt-6 px-4">
-              <p className="text-[11px] text-primary-foreground/60 leading-relaxed break-words">
+            {provinces.length > 0 && (
+            <div className="mt-6">
+              <p className="text-xs text-primary-foreground/75 leading-relaxed break-words">
                 Service disponible pour : {provinces.join(', ')}
               </p>
             </div>
-          )}
+            )}
+          </div>
+          <div className="order-first md:order-first min-w-0"><HomeProvinceMap /></div>
         </div>
       </section>
     </>

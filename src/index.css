@@ -636,6 +636,31 @@ All colors MUST be HSL.
   animation-play-state: paused;
 }
 
+/* Carte des provinces dans l'Accueil : dessin existant, teinté par la charte BIC. */
+.home-province-map svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  display: block;
+}
+.home-province-map path[data-province] {
+  fill: hsl(var(--primary-foreground) / .18);
+  stroke: hsl(var(--primary-foreground) / .72);
+  stroke-width: 1.4;
+  cursor: pointer;
+  transition: fill .2s ease, stroke-width .2s ease;
+}
+.home-province-map path[data-province]:hover,
+.home-province-map path[data-province]:focus-visible,
+.home-province-map path[data-province][aria-pressed="true"] {
+  fill: hsl(var(--primary-foreground) / .55);
+  stroke-width: 2.5;
+  outline: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .home-province-map path[data-province] { transition: none; }
+}
+
 /* Existing Loader2 icons and CSS rings share the admin-selected loading logo.
    No logo (or a failed image) leaves the original spinner intact. */
 @keyframes loading-logo-pulse {

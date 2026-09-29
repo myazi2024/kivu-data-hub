@@ -20,7 +20,7 @@ const TypewriterAnimation = () => {
 
   const [reduced, setReduced] = useState<boolean>(() => prefersReducedMotion());
   const [currentPhraseIndex, setCurrentPhraseIndex] = useState(0);
-  const [currentText, setCurrentText] = useState('');
+  const [currentText, setCurrentText] = useState(FALLBACK_PHRASES[0]);
   const [isTyping, setIsTyping] = useState(true);
   const [showCursor, setShowCursor] = useState(true);
 
@@ -75,15 +75,15 @@ const TypewriterAnimation = () => {
 
   return (
     <div
-      className="min-h-[3.5rem] sm:min-h-[4rem] md:min-h-[4.5rem] flex items-center justify-center"
+      className="min-h-[2.75rem] sm:min-h-[4rem] md:min-h-[4.5rem] flex items-center justify-center"
       aria-live="polite"
     >
-      <p className="text-xs xs:text-sm sm:text-base md:text-lg font-light text-white/95 max-w-xl lg:max-w-2xl mx-auto leading-relaxed px-2">
+      <p className="text-xs xs:text-sm sm:text-base md:text-lg font-light text-primary-foreground/95 max-w-xl lg:max-w-2xl mx-auto leading-relaxed px-2">
         {currentText}
         {!reduced && (
           <span
             aria-hidden="true"
-            className={`inline-block w-0.5 h-4 sm:h-5 md:h-6 bg-white/90 ml-1 align-middle ${
+            className={`inline-block w-0.5 h-4 sm:h-5 md:h-6 bg-primary-foreground/90 ml-1 align-middle ${
               showCursor ? 'opacity-100' : 'opacity-0'
             } transition-opacity duration-100`}
           />
