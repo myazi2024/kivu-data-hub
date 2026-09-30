@@ -280,16 +280,10 @@ const AdminCCCContributions: React.FC = () => {
 
       console.log('Rejet de la contribution:', contributionId);
 
-      const { error: updateError } = await supabase
-        .from('cadastral_contributions')
-        .update({ 
-          status: 'rejected',
-          rejection_reason: rejectionReason,
-          rejected_by: user.id,
-          reviewed_by: user.id,
-          reviewed_at: new Date().toISOString()
-        })
-        .eq('id', contributionId);
+      const { error: updateError } = await supabase.rpc('reject_ccc_contribution', {
+        p_id: contributionId,
+        p_reason: rejectionReason,
+      });
 
       if (updateError) {
         console.error('Erreur lors de la mise à jour:', updateError);
@@ -527,17 +521,10 @@ const AdminCCCContributions: React.FC = () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       const ids = Array.from(selectedIds);
-      const { error } = await supabase
-        .from('cadastral_contributions')
-        .update({
-          status: 'rejected',
-          rejection_reason: reason,
-          rejected_by: user?.id,
-          reviewed_by: user?.id,
-          reviewed_at: new Date().toISOString(),
-        })
-        .in('id', ids);
-      if (error) throw error;
+      void user;
+      const results = await Promise.all(ids.map(id => supabase.rpc('reject_ccc_contribution', { p_id: id, p_reason: reason })));
+      const failed = results.find(r => r.error);
+      if (failed?.error) throw failed.error;
       await Promise.all(ids.map(id =>
         logContributionAudit({ contributionId: id, action: 'bulk_reject', payload: { reason, count: ids.length } })
       ));

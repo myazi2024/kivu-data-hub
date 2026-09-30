@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { MIN_GPS_POINTS } from '@/lib/ccc/gpsRules';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
@@ -537,7 +538,7 @@ export const useCadastralContribution = () => {
         return { valid: false, message: "Les coordonnées doivent être dans les plages valides (lat: -90 à 90, lng: -180 à 180)" };
       }
 
-      if (data.gpsCoordinates.length < 3) {
+      if (data.gpsCoordinates.length < MIN_GPS_POINTS) {
         return { valid: false, message: "Veuillez fournir au moins 3 points GPS pour définir la parcelle" };
       }
     }

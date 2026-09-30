@@ -9,6 +9,8 @@ import { TaxRecord, MortgageRecord } from '@/components/cadastral/ccc-tabs/Oblig
 import { AdditionalConstruction } from '@/components/cadastral/AdditionalConstructionBlock';
 import { normalizeConstructionNature } from '@/utils/constructionNatureNormalizer';
 import { isTerrainNuCategory, isUnbuiltLand, computeParcelNumberRequired } from '@/utils/cccPredicates';
+import { MIN_GPS_POINTS } from '@/lib/ccc/gpsRules';
+import { PROPERTY_TITLE_TYPES } from '@/components/cadastral/PropertyTitleTypeSelect';
 import { buildVacantTargets } from '@/components/cadastral/ccc-tabs/market-value/marketValueUtils';
 
 export type MissingField = { field: string; label: string; tab: string };
@@ -100,6 +102,7 @@ export function useFormValidation(params: UseFormValidationParams) {
     // GENERAL
     if (!formData.propertyTitleType || formData.propertyTitleType.trim() === '') missing.push({ field: 'propertyTitleType', label: 'Type de titre de propriété', tab: 'general' });
     if (formData.propertyTitleType === 'Autre' && (!customTitleName || customTitleName.trim() === '')) missing.push({ field: 'customTitleName', label: 'Nom du titre de propriété (Autre)', tab: 'general' });
+    if (PROPERTY_TITLE_TYPES.some(t => t.value === formData.propertyTitleType && t.isRenewable) && !formData.leaseType) missing.push({ field: 'leaseType', label: 'Type de bail (initial ou renouvellement)', tab: 'general' });
     if (formData.titleReferenceNumber && formData.titleReferenceNumber.trim() !== '' && formData.isTitleInCurrentOwnerName === undefined) missing.push({ field: 'isTitleInCurrentOwnerName', label: 'Ce titre est-il au nom du propriétaire actuel ?', tab: 'general' });
     if (!ownerDocFile && !(editingContributionId && formData.ownerDocumentUrl)) missing.push({ field: 'ownerDocFile', label: 'Pièce jointe du propriétaire', tab: 'general' });
     if (titleDocFiles.length === 0 && !(editingContributionId && formData.titleDocumentUrl)) missing.push({ field: 'titleDocFiles', label: 'Pièce jointe du titre de propriété', tab: 'general' });
@@ -332,7 +335,7 @@ export function useFormValidation(params: UseFormValidationParams) {
     }
     // Aligné sur la validation de soumission : des points GPS partiels bloquent l'envoi.
     const filledGps = (gpsCoordinates || []).filter(c => String(c?.lat ?? '').trim() !== '' && String(c?.lng ?? '').trim() !== '');
-    if (filledGps.length > 0 && filledGps.length < 3) {
+    if (filledGps.length > 0 && filledGps.length < MIN_GPS_POINTS) {
       missing.push({ field: 'gpsCoordinates', label: 'Points GPS (au moins 3 bornes renseignées)', tab: 'location' });
     }
     if (isAppartement) {
