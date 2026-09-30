@@ -13,3 +13,12 @@
 ## Non vérifié
 - Parcours navigateur avec compte connecté.
 - Revue détaillée des règles d'accès serveur, rubrique par rubrique.
+
+## Passe 2
+| Rubrique | Problème | Gravité | Correction |
+|---|---|---|---|
+| Expertises, préférences, autorisations, hypothèques, litiges, titres fonciers | Liste rechargée à chaque rafraîchissement de session (dépendance à l'objet utilisateur) | Moyenne (performance) | Dépendance sur l'identifiant utilisateur |
+| Serveur | Toutes les lectures des rubriques sont filtrées sur l'utilisateur ; règles d'accès des demandes limitées à `auth.uid()` | — | Vérifié |
+
+## Ouvert (hors espace utilisateur)
+- `payment_transactions` : la règle d'accès permet encore l'enregistrement d'un paiement depuis le navigateur, utilisé par `useCadastralPayment` et `BuildingPermitRequestDialog`. Le retirer demande de déplacer ces deux parcours de paiement côté serveur.
