@@ -27,21 +27,17 @@ export default function HomeBicIndicators({ configured }: { configured: {
 
   return (
     <div
-      className="grid grid-cols-3 rounded-lg sm:rounded-xl border border-primary-foreground/25 bg-primary-foreground/10 backdrop-blur-md shadow-md overflow-hidden divide-x divide-y-0 divide-primary-foreground/15"
+      className="flex flex-wrap items-baseline justify-center gap-x-2 gap-y-0.5 text-[9px] leading-none"
       aria-label="BIC en chiffres"
     >
-      {HOME_BIC_INDICATORS.map(({ key, countKey, label, defaultValue }) => (
-        <div
-          key={key}
-          className="flex flex-col items-center justify-center px-1.5 py-2 sm:px-6 sm:py-5 lg:py-2 text-center transition-colors hover:bg-primary-foreground/5"
-        >
-          <strong className="text-base sm:text-2xl lg:text-xl font-black tracking-tight tabular-nums leading-none text-primary-foreground">
+      {HOME_BIC_INDICATORS.map(({ key, countKey, label, defaultValue }, index) => (
+        <span key={key} className="flex items-baseline gap-1 whitespace-nowrap">
+          {index > 0 && <span aria-hidden="true" className="text-muted-foreground/50 mr-1">·</span>}
+          <strong className="font-semibold tabular-nums text-foreground/90">
             {displayHomeCount(counts?.[countKey], configured[key], defaultValue).toLocaleString('fr-FR')}
           </strong>
-          <span className="mt-1 sm:mt-2 lg:mt-1 text-[7px] sm:text-[10px] lg:text-[8.5px] font-bold uppercase tracking-[0.12em] sm:tracking-[0.16em] leading-tight text-primary-foreground/70 break-words">
-            {label}
-          </span>
-        </div>
+          <span className="text-muted-foreground">{label}</span>
+        </span>
       ))}
     </div>
   );
