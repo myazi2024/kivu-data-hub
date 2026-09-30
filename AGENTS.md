@@ -4,3 +4,4 @@
 - District-level home activity totals join paid delivered service access and registered disputes to existing parcel numbers in a service-only function; this avoids exposing individual records or guessing districts for unmatched parcels.- Home counts (map + footer) come from one shared react-query hook `useHomeBicCounts`; avoids duplicate calls to home-bic-counts.
 - CCC admin approve/reject go through approve_ccc_contribution / reject_ccc_contribution RPCs (admin check + status guard + rejection notification server-side); never direct table updates.
 - payment_transactions : insertion réservée au serveur (record-test-payment pour le mode test) ; le navigateur ne crée jamais de transaction.
+- Recours et retrait de contribution CCC passent par process_ccc_appeal / withdraw_ccc_contribution (contrôle admin + statut serveur) ; jamais de mise à jour directe.

@@ -19,3 +19,8 @@
 - Recours (appels) et retrait de contribution sur la carte admin modifient encore directement la table ; à migrer vers des fonctions serveur.
 - Aucun module ouvert dans le navigateur avec un compte admin.
 - 101 alertes de sécurité générales de la base, non traitées.
+
+## Passe 2
+- Recours CCC : acceptation/rejet via `process_ccc_appeal` (admin, recours en attente, réponse obligatoire, notification serveur). Résolu.
+- Retrait depuis la carte admin : via `withdraw_ccc_contribution` (admin, pas de double retrait). Résolu.
+- Test navigateur avec compte admin impossible : base gérée par vous, aucune session ne peut être créée depuis l'outil.

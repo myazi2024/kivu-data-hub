@@ -8889,6 +8889,10 @@ export type Database = {
         Args: { p_construction_type: string; p_usage: string }
         Returns: string
       }
+      process_ccc_appeal: {
+        Args: { p_accept: boolean; p_id: string; p_response: string }
+        Returns: undefined
+      }
       process_mutation_decision: {
         Args: {
           p_action: string
@@ -9050,6 +9054,7 @@ export type Database = {
           version: number
         }[]
       }
+      withdraw_ccc_contribution: { Args: { p_id: string }; Returns: undefined }
     }
     Enums: {
       app_role:

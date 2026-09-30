@@ -46,56 +46,15 @@ export const AppealManagementDialog: React.FC<AppealManagementDialogProps> = ({
 
     setProcessing(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (action === 'accept') {
-        // Accepter l'appel = remettre la contribution en pending
-        const { error } = await supabase
-          .from('cadastral_contributions')
-          .update({
-            status: 'pending',
-            appeal_status: 'accepted',
-            rejection_reason: null,
-            rejection_reasons: null,
-            reviewed_by: null,
-            reviewed_at: null
-          })
-          .eq('id', contributionId);
+      const { error } = await supabase.rpc('process_ccc_appeal', {
+        p_id: contributionId,
+        p_accept: action === 'accept',
+        p_response: adminResponse.trim(),
+      });
+      if (error) throw error;
 
-        if (error) throw error;
-
-        // Créer notification
-        await supabase.from('notifications').insert({
-          user_id: appealData?.user_id,
-          type: 'success',
-          title: 'Appel accepté',
-          message: `Votre appel pour la parcelle ${parcelNumber} a été accepté. La contribution est en cours de révision.`,
-          action_url: '/user-dashboard?tab=contributions'
-        });
-
-        toast.success('Appel accepté - Contribution remise en révision');
-      } else {
-        // Rejeter l'appel
-        const { error } = await supabase
-          .from('cadastral_contributions')
-          .update({
-            appeal_status: 'rejected'
-          })
-          .eq('id', contributionId);
-
-        if (error) throw error;
-
-        // Créer notification
-        await supabase.from('notifications').insert({
-          user_id: appealData?.user_id,
-          type: 'error',
-          title: 'Appel rejeté',
-          message: `Votre appel pour la parcelle ${parcelNumber} a été rejeté. Motif: ${adminResponse}`,
-          action_url: '/user-dashboard?tab=contributions'
-        });
-
-        toast.error('Appel rejeté');
-      }
+      if (action === 'accept') toast.success('Appel accepté - Contribution remise en révision');
+      else toast.error('Appel rejeté');
 
       onAppealProcessed();
       onOpenChange(false);
