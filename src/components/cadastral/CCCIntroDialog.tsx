@@ -134,7 +134,7 @@ const CCCIntroDialog = ({ open, onOpenChange, onContinue }: CCCIntroDialogProps)
                   </div>
                   <div className="flex items-start gap-1.5">
                     <CheckCircle className="h-3.5 w-3.5 text-green-500 mt-0.5 flex-shrink-0" />
-                    <span>permis de construire et leur numéro, si disponibles</span>
+                    <span>autorisations de bâtir et leur numéro, si disponibles</span>
                   </div>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1.5">

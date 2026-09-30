@@ -378,7 +378,7 @@ const PermitFormStep: React.FC<PermitFormStepProps> = ({
               </div>
               {requiresOriginalPermit() && (
                 <div className="space-y-1.5">
-                  <Label className="text-sm">Numéro du permis initial *</Label>
+                  <Label className="text-sm">Numéro de l'autorisation initiale *</Label>
                   <Input type="text" placeholder="Ex: PC/2020/001234" value={formData.originalPermitNumber} onChange={(e) => handleInputChange('originalPermitNumber', e.target.value)} className="h-10 text-sm rounded-xl border-2" />
                 </div>
               )}
