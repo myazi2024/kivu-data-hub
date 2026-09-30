@@ -55,10 +55,7 @@ const HeroSection = () => {
             <div className="mt-2 sm:mt-4 lg:mt-1 max-w-xl text-left [&>div]:justify-start [&_p]:!mx-0 [&_p]:!px-0 [&_p]:!text-primary-foreground/90">
               <TypewriterAnimation />
             </div>
-            <p className="mt-1 mb-4 sm:mb-6 lg:mb-3 text-sm sm:text-base leading-relaxed text-primary-foreground/90 max-w-lg">
-              Consultez les parcelles, repérez les circonscriptions foncières et découvrez les données disponibles pour votre territoire.
-            </p>
-            <div className="flex flex-col lg:flex-row gap-3 lg:gap-2 items-stretch">
+            <div className="mt-1 sm:mt-2 lg:mt-1 flex flex-col lg:flex-row gap-3 lg:gap-2 items-stretch">
             <Link
               to={cadastreTarget}
               className="w-full lg:w-auto"
