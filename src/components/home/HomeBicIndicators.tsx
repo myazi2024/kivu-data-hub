@@ -32,11 +32,11 @@ export default function HomeBicIndicators({ configured }: { configured: {
     >
       {HOME_BIC_INDICATORS.map(({ key, countKey, label, defaultValue }, index) => (
         <span key={key} className="flex items-baseline gap-1 whitespace-nowrap">
-          {index > 0 && <span aria-hidden="true" className="text-muted-foreground/50 mr-1">·</span>}
-          <strong className="font-semibold tabular-nums text-foreground/90">
+          {index > 0 && <span aria-hidden="true" className="text-background/40 mr-1">·</span>}
+          <strong className="font-semibold tabular-nums text-background/90">
             {displayHomeCount(counts?.[countKey], configured[key], defaultValue).toLocaleString('fr-FR')}
           </strong>
-          <span className="text-muted-foreground">{label}</span>
+          <span className="text-background/55">{label}</span>
         </span>
       ))}
     </div>
