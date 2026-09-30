@@ -1,3 +1,4 @@
 - Keep loading-image settings in `app_appearance_config`, applying them once at the root and styling existing loading indicators through shared CSS; this avoids per-indicator network calls across lazy-loaded screens.
 - The home land-district map combines bundled territory and commune GeoJSON: only same-province exact-name matches are coloured, unvalidated suggestions stay grey, and no boundary is approximated.
 - Home BIC figures are public aggregates from a service-only database function exposed through a counts-only Edge Function; this keeps personal records private while switching each configured display figure after 10,000 real records.
+- District-level home activity totals join paid delivered service access and registered disputes to existing parcel numbers in a service-only function; this avoids exposing individual records or guessing districts for unmatched parcels.
