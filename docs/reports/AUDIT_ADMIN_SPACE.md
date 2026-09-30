@@ -1,0 +1,21 @@
+# Audit espace admin — 2026-09-30
+
+## Corrigé
+| Module | Problème | Gravité | Correction |
+|---|---|---|---|
+| Hypothèques | Approbation par modification directe, sans contrôle du statut : une demande déjà traitée pouvait être ré-approuvée | Haute | Passe par la fonction serveur `approve_ccc_contribution` (rôle admin + statut) |
+| Hypothèques | Rejet possible d'une demande déjà traitée | Moyenne | Rejet limité aux demandes en attente, renvoyées ou en examen |
+| CCC | Renvoi possible d'une contribution déjà approuvée ou rejetée ; trace de débogage | Moyenne | Renvoi limité aux contributions en attente ou en examen ; trace retirée |
+| CCC, documents, configuration des contributions | Terme « Permis » affiché | Faible | « Autorisation(s) » |
+| Général | Fichiers jamais utilisés : RequestAuditTimeline, UserSearchSelect | Faible | Supprimés |
+
+## Vérifié sans anomalie
+- Aucune règle d'accès en écriture ouverte à tous, sauf le formulaire de contact partenaires (voulu).
+- Aucun `Math.random` dans l'admin.
+- Contrôle de types OK, 185 tests OK.
+
+## Ouvert / non vérifié
+- `AdminSubdivisionZoningRules.tsx` (1 400 lignes) reste à découper.
+- Recours (appels) et retrait de contribution sur la carte admin modifient encore directement la table ; à migrer vers des fonctions serveur.
+- Aucun module ouvert dans le navigateur avec un compte admin.
+- 101 alertes de sécurité générales de la base, non traitées.
