@@ -5,7 +5,6 @@ import { ArrowRight, MapPin, Map, Check } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import heroSkyline from '@/assets/hero-skyline.webp';
 import TypewriterAnimation from '@/components/TypewriterAnimation';
-import { useCatalogConfig } from '@/hooks/useCatalogConfig';
 import { useAppAppearance } from '@/hooks/useAppAppearance';
 import { useAuth } from '@/hooks/useAuth';
 import { trackEvent } from '@/lib/analytics';
@@ -13,10 +12,8 @@ import HomeProvinceMap from '@/components/home/HomeProvinceMap';
 import HomeBicIndicators from '@/components/home/HomeBicIndicators';
 
 const HeroSection = () => {
-  const { config: catalogConfig } = useCatalogConfig();
   const { config: appearanceConfig } = useAppAppearance();
   const { user } = useAuth();
-  const provinces = catalogConfig.available_provinces || [];
 
   const heroImage = appearanceConfig.hero_image_url || heroSkyline;
   const heroTitle = appearanceConfig.hero_title || 'Explorez le cadastre numérique de la RDC.';
