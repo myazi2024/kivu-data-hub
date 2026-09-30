@@ -26,7 +26,7 @@ export default function HomeProvinceMap() {
   const [dims, setDims] = useState({ w: 400, h: 400 });
   const [active, setActive] = useState<string | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
-  const [counts, setCounts] = useState<DistrictCounts | null>(null);
+  const [counts, setCounts] = useState<{ parcels: Record<string, number> | null; services: Record<string, number> | null; disputes: Record<string, number> | null } | null>(null);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -47,7 +47,7 @@ export default function HomeProvinceMap() {
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error('indisponible'))))
       .then((res: { parcels_by_district?: Record<string, number>; services_by_district?: Record<string, number>; disputes_by_district?: Record<string, number> }) => {
         const normalizeCounts = (input?: Record<string, number>) => {
-          if (!input) return {};
+          if (!input) return null;
           const map: Record<string, number> = {};
           for (const [name, value] of Object.entries(input)) {
             const key = normalizeGeoName(name);
@@ -171,7 +171,7 @@ export default function HomeProvinceMap() {
                     ['disputes', 'Litiges fonciers répertoriés'],
                   ] as const).map(([key, label]) => (
                     <span key={key}>
-                      {label} : {counts ? (counts[key][normalizeGeoName(activeArea.district)] ?? 0).toLocaleString('fr-FR') : 'indisponible'}
+                      {label} : {counts?.[key] ? (counts[key][normalizeGeoName(activeArea.district)] ?? 0).toLocaleString('fr-FR') : 'indisponible'}
                     </span>
                   ))}
                 </div>
