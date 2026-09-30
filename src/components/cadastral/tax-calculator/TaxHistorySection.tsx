@@ -60,7 +60,7 @@ const TaxHistorySection: React.FC<TaxHistorySectionProps> = ({ parcelNumber, tax
       setLoading(false);
     };
     fetch();
-  }, [user, parcelNumber, taxTypeFilter]);
+  }, [user?.id, parcelNumber, taxTypeFilter]);
 
   if (loading) {
     return (
