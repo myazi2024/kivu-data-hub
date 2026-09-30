@@ -107,14 +107,6 @@ const HeroSection = () => {
             </Link>
             </div>
 
-            {provinces.length > 0 && (
-            <div className="mt-6 lg:mt-2">
-              <p className="text-xs text-primary-foreground/75 leading-relaxed break-words">
-                Service disponible pour : {provinces.join(', ')}
-              </p>
-            </div>
-            )}
-
             <div className="mt-3 lg:mt-2 lg:max-w-md lg:ml-auto w-full">
               <HomeBicIndicators configured={appearanceConfig} />
             </div>
