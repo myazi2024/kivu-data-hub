@@ -24,11 +24,12 @@ export const RoleAssignForm: React.FC<Props> = ({ allUsers, currentUserId, isSup
   );
 
   const isSensitive = SENSITIVE_ROLES.includes(selectedRole);
-  const canAssignSelected = !isSensitive || isSuperAdmin || selectedRole === 'admin';
+  const superOnly = (r: AppRole) => r === 'super_admin' || r === 'admin';
+  const canAssignSelected = !superOnly(selectedRole) || isSuperAdmin;
 
   const handleAdd = async () => {
     if (!selectedUserId || !selectedRole) { toast.error('Sélectionnez un utilisateur et un rôle'); return; }
-    if (selectedRole === 'super_admin' && !isSuperAdmin) { toast.error('Seul un super admin peut attribuer ce rôle'); return; }
+    if (superOnly(selectedRole) && !isSuperAdmin) { toast.error('Seul un super admin peut attribuer ce rôle'); return; }
     if (SENSITIVE_ROLES.includes(selectedRole)) {
       if (!confirm(`Attribuer le rôle sensible "${ROLE_CONFIG[selectedRole].label}" ?`)) return;
     }
@@ -66,8 +67,8 @@ export const RoleAssignForm: React.FC<Props> = ({ allUsers, currentUserId, isSup
           <SelectTrigger className="w-full sm:w-40 text-xs h-7"><SelectValue /></SelectTrigger>
           <SelectContent>
             {ROLE_HIERARCHY.map(r => (
-              <SelectItem key={r} value={r} className="text-xs" disabled={r === 'super_admin' && !isSuperAdmin}>
-                {ROLE_CONFIG[r].label}{r === 'super_admin' && !isSuperAdmin ? ' (réservé)' : ''}
+              <SelectItem key={r} value={r} className="text-xs" disabled={superOnly(r) && !isSuperAdmin}>
+                {ROLE_CONFIG[r].label}{superOnly(r) && !isSuperAdmin ? ' (super admin)' : ''}
               </SelectItem>
             ))}
           </SelectContent>
