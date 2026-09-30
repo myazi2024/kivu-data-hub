@@ -40,6 +40,11 @@ import {
   isTransferMutation as checkIsTransfer,
   hasLateFees as checkHasLateFees,
 } from './mutation/MutationConstants';
+import FormStep from './mutation-request/FormStep';
+import PreviewStep from './mutation-request/PreviewStep';
+import PaymentStep from './mutation-request/PaymentStep';
+import ConfirmationStep from './mutation-request/ConfirmationStep';
+import type { Step, RequiredDocument } from './mutation-request/types';
 
 interface MutationRequestDialogProps {
   parcelNumber: string;
@@ -59,14 +64,6 @@ interface MutationRequestDialogProps {
   onOpenChange?: (open: boolean) => void;
 }
 
-type Step = 'form' | 'preview' | 'payment' | 'confirmation';
-
-type RequiredDocument = {
-  key: string;
-  label: string;
-  required: boolean;
-  handledByExpertiseCertificate?: boolean;
-};
 
 const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
   parcelNumber,
