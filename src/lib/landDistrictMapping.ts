@@ -10,12 +10,49 @@ export const normalizeGeoName = (value: string): string =>
  */
 const ALIASES: Record<string, string> = {};
 
+export interface LandDistrictSuggestion {
+  province: string;
+  city: string;
+  communes: string[];
+  district: string;
+  validated: boolean;
+  reason: string;
+}
+
+/**
+ * Probable spelling variants or multi-commune groupings awaiting an official
+ * source. They are deliberately excluded from rendered district boundaries.
+ */
+export const LAND_DISTRICT_SUGGESTIONS: LandDistrictSuggestion[] = [
+  {
+    province: 'Haut-Katanga',
+    city: 'Lubumbashi',
+    communes: ['Ruashi'],
+    district: 'Lubumbashi-Est',
+    validated: false,
+    reason: 'Possible spelling or administrative grouping; exact limits not established.',
+  },
+  {
+    province: 'Nord-Kivu',
+    city: 'Butembo',
+    communes: ['Kimeni'],
+    district: 'Butembo II',
+    validated: false,
+    reason: 'Possible spelling variant of Kimemi; district composition not established.',
+  },
+];
+
 export interface DistrictMatch {
   /** Nom de la zone dans la carte des territoires. */
   area: string;
   province?: string;
   /** Circonscription foncière équivalente, ou null si la zone n'est pas identifiée. */
   district: string | null;
+}
+
+export interface CommuneDistrictMatch extends DistrictMatch {
+  city: string;
+  isSuggested: boolean;
 }
 
 const provinceByArea = (() => {
@@ -28,6 +65,36 @@ const provinceByArea = (() => {
   }
   return map;
 })();
+
+const provinceByCity = (() => {
+  const map = new Map<string, string>();
+  for (const [province, data] of Object.entries(geographicData)) {
+    for (const city of Object.keys(data.villes)) map.set(normalizeGeoName(city), province);
+  }
+  return map;
+})();
+
+/** Match a commune only when its normalized name equals one district in its province. */
+export function matchCommuneToDistrict(commune: string, city: string): CommuneDistrictMatch {
+  const province = provinceByCity.get(normalizeGeoName(city));
+  const communeKey = normalizeGeoName(commune);
+  const exact = (province ? landDistrictsData[province] ?? [] : [])
+    .filter((district) => normalizeGeoName(district) === communeKey);
+  const suggestion = LAND_DISTRICT_SUGGESTIONS.some((item) =>
+    item.province === province
+      && normalizeGeoName(item.city) === normalizeGeoName(city)
+      && item.communes.some((name) => normalizeGeoName(name) === communeKey)
+      && !item.validated,
+  );
+
+  return {
+    area: commune,
+    city,
+    province,
+    district: exact.length === 1 ? exact[0] : null,
+    isSuggested: suggestion,
+  };
+}
 
 export function matchAreaToDistrict(area: string): DistrictMatch {
   const key = normalizeGeoName(area);
