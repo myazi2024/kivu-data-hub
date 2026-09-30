@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import MapZoomBackButton from '@/components/map/ui/MapZoomBackButton';
 import { computeBBox, projectFeature, useAnimatedBbox, useGeoJsonData } from '@/lib/mapProjection';
 import { buildDistrictColors, matchAreaToDistrict, matchCommuneToDistrict, normalizeGeoName } from '@/lib/landDistrictMapping';
+import { useHomeBicCounts } from '@/hooks/useHomeBicCounts';
 
 interface AreaFeature {
   properties: { name: string };
@@ -25,7 +26,7 @@ export default function HomeProvinceMap() {
   const [dims, setDims] = useState({ w: 400, h: 400 });
   const [active, setActive] = useState<string | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
-  const [counts, setCounts] = useState<{ parcels: Record<string, number> | null; services: Record<string, number> | null; disputes: Record<string, number> | null } | null>(null);
+  const { data: countsData } = useHomeBicCounts();
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -37,32 +38,23 @@ export default function HomeProvinceMap() {
     return () => obs.disconnect();
   }, []);
 
-  useEffect(() => {
-    const controller = new AbortController();
-    const baseUrl = import.meta.env.VITE_SUPABASE_URL;
-    const publicKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-    if (!baseUrl || !publicKey) return () => controller.abort();
-    fetch(`${baseUrl}/functions/v1/home-bic-counts`, { signal: controller.signal, headers: { apikey: publicKey } })
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error('indisponible'))))
-      .then((res: { parcels_by_district?: Record<string, number>; services_by_district?: Record<string, number>; disputes_by_district?: Record<string, number> }) => {
-        const normalizeCounts = (input?: Record<string, number>) => {
-          if (!input) return null;
-          const map: Record<string, number> = {};
-          for (const [name, value] of Object.entries(input)) {
-            const key = normalizeGeoName(name);
-            map[key] = (map[key] ?? 0) + (Number(value) || 0);
-          }
-          return map;
-        };
-        setCounts({
-          parcels: normalizeCounts(res.parcels_by_district),
-          services: normalizeCounts(res.services_by_district),
-          disputes: normalizeCounts(res.disputes_by_district),
-        });
-      })
-      .catch(() => { /* compteur indisponible : affiché comme tel */ });
-    return () => controller.abort();
-  }, []);
+  const counts = useMemo(() => {
+    if (!countsData) return null;
+    const normalizeCounts = (input?: Record<string, number>) => {
+      if (!input) return null;
+      const map: Record<string, number> = {};
+      for (const [name, value] of Object.entries(input)) {
+        const key = normalizeGeoName(name);
+        map[key] = (map[key] ?? 0) + (Number(value) || 0);
+      }
+      return map;
+    };
+    return {
+      parcels: normalizeCounts(countsData.parcels_by_district),
+      services: normalizeCounts(countsData.services_by_district),
+      disputes: normalizeCounts(countsData.disputes_by_district),
+    };
+  }, [countsData]);
 
   const areas = useMemo(() => features.map((f) => ({ feature: f, ...matchAreaToDistrict(f.properties.name) })), [features]);
   const communes = useMemo(() => communeFeatures.map((f) => ({
@@ -107,18 +99,18 @@ export default function HomeProvinceMap() {
             onMouseLeave={() => { if (!selected) setActive(null); }}
           >
             <g aria-hidden="true">
-            {areas.map(({ feature, district, area }) => {
-              const d = projectFeature(feature.geometry, bbox, dims.w, dims.h, PADDING);
+            {areas.map(({ feature, district, area }, index) => {
               if (district) return null;
-              return <path key={area} d={d} className="fill-primary-foreground/25 stroke-primary/40" strokeWidth={0.5} aria-hidden="true" />;
+              const d = projectFeature(feature.geometry, bbox, dims.w, dims.h, PADDING);
+              return <path key={`area-${index}-${area}`} d={d} className="fill-primary-foreground/25 stroke-primary/40" strokeWidth={0.5} aria-hidden="true" />;
             })}
             </g>
-            {districtFeatures.map(({ feature, district, area, source }) => {
+            {districtFeatures.map(({ feature, district, area, source }, index) => {
               const d = projectFeature(feature.geometry, bbox, dims.w, dims.h, PADDING);
               const isActive = displayedDistrict === district;
               return (
                 <path
-                  key={`${source}-${area}`}
+                  key={`${source}-${index}-${area}`}
                   d={d}
                   fill={colors.get(district)}
                   className="stroke-primary-foreground cursor-pointer outline-none transition-opacity focus-visible:opacity-100"
@@ -177,13 +169,13 @@ export default function HomeProvinceMap() {
               </div>
             </div>
             <Button asChild size="sm" className="bg-background text-primary hover:bg-background/90">
-              <Link to="/map">Explorer <ArrowRight className="h-3 w-3" /></Link>
+              <Link to="/map">Données foncières <ArrowRight className="h-3 w-3" /></Link>
             </Button>
           </div>
         ) : (
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-primary-foreground/85">
             <span>Survolez ou sélectionnez une circonscription pour voir ses données.</span>
-            <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm bg-accent" aria-hidden="true" />{identified} identifiées</span>
+            <span className="flex items-center gap-1.5"><span className="h-2.5 w-4 rounded-sm" style={{ background: `linear-gradient(90deg, ${[...colors.values()].slice(0, 5).join(', ') || 'transparent'})` }} aria-hidden="true" />Circonscriptions identifiées ({identified})</span>
             <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm bg-primary-foreground/25" aria-hidden="true" />Découpage en cours</span>
           </div>
         )}
