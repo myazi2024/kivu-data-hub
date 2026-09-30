@@ -257,14 +257,7 @@ const AdminCadastralMap = () => {
 
     try {
       // Rejeter la contribution au lieu de la supprimer
-      const { error } = await supabase
-        .from('cadastral_contributions')
-        .update({ 
-          status: 'rejected',
-          rejection_reason: 'Supprimée par l\'administrateur',
-          rejection_date: new Date().toISOString()
-        })
-        .eq('id', parcelId);
+      const { error } = await supabase.rpc('withdraw_ccc_contribution', { p_id: parcelId });
 
       if (error) throw error;
 
