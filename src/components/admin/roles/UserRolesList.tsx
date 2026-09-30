@@ -35,7 +35,7 @@ export const UserRolesList: React.FC<Props> = ({ userRoles, currentUserId, isSup
 
   const removeRole = async (roleId: string, targetUserId: string, roleToRemove: AppRole) => {
     if (targetUserId === currentUserId) { toast.error('Vous ne pouvez pas retirer votre propre rôle'); return; }
-    if (roleToRemove === 'super_admin' && !isSuperAdmin) { toast.error('Seul un super admin peut retirer ce rôle'); return; }
+    if ((roleToRemove === 'super_admin' || roleToRemove === 'admin') && !isSuperAdmin) { toast.error('Seul un super admin peut retirer ce rôle'); return; }
     if (!confirm(`Retirer le rôle ${ROLE_CONFIG[roleToRemove].label} ?`)) return;
     const { error } = await supabase.from('user_roles').delete().eq('id', roleId);
     if (error) { toast.error(error.message); return; }
@@ -87,7 +87,7 @@ export const UserRolesList: React.FC<Props> = ({ userRoles, currentUserId, isSup
                   {data.roles.map(role => {
                     const rcfg = ROLE_CONFIG[role.role as AppRole];
                     const isOwn = userId === currentUserId;
-                    const isProtectedSA = role.role === 'super_admin' && !isSuperAdmin;
+                    const isProtectedSA = (role.role === 'super_admin' || role.role === 'admin') && !isSuperAdmin;
                     const disabled = isOwn || isProtectedSA;
                     return (
                       <Badge key={role.id} variant="secondary" className="flex items-center gap-0.5 text-[9px] py-0 px-1">
