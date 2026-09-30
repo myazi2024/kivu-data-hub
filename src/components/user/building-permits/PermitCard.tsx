@@ -219,7 +219,7 @@ export function PermitCard({ permit, onAppealClick }: PermitCardProps) {
           </div>
         )}
 
-        {/* Permis délivrés */}
+        {/* Autorisations délivrées */}
         {permit.building_permits && Array.isArray(permit.building_permits) && permit.building_permits.length > 0 && (
           <div className="space-y-1.5 md:space-y-2">
             <h4 className="text-xs md:text-sm font-semibold flex items-center gap-1 md:gap-1.5">

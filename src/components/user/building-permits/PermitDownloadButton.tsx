@@ -56,7 +56,7 @@ export function PermitDownloadButton({ permit, className }: PermitDownloadButton
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
 
-      toast.success('Permis téléchargé avec succès');
+      toast.success('Autorisation téléchargée avec succès');
     } catch (error) {
       console.error('Error downloading permit:', error);
       toast.error('Erreur lors du téléchargement du permis');
