@@ -41,7 +41,7 @@ const ConstructionSection: React.FC<ConstructionSectionProps> = ({ number, parce
           <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
             <FileText className="h-3.5 w-3.5" /> Autorisations de bâtir
           </h4>
-          <DocTable headers={['N° Permis', 'Émission', 'Validité', 'Statut', 'Service']}>
+          <DocTable headers={['N° Autorisation', 'Émission', 'Validité', 'Statut', 'Service']}>
             {buildingPermits.map((permit) => {
               const issueDate = new Date(permit.issue_date);
               const endDate = new Date(issueDate);

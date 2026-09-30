@@ -59,7 +59,7 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
         setShowBillingPanel(false);
       }
     }
-  }, [user, parcel.parcel_number]);
+  }, [user?.id, parcel.parcel_number]);
 
   React.useEffect(() => {
     checkAllServices();
