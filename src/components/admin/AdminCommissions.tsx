@@ -127,7 +127,8 @@ const AdminCommissions = () => {
           commission_paid: true,
           commission_paid_at: new Date().toISOString()
         })
-        .in('id', commissionIds);
+        .in('id', commissionIds)
+        .eq('commission_paid', false);
 
       if (error) throw error;
 
