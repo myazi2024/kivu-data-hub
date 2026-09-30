@@ -7890,6 +7890,51 @@ export type Database = {
           },
         ]
       }
+      cadastral_ownership_history_stats: {
+        Row: {
+          created_at: string | null
+          id: string | null
+          legal_status: string | null
+          mutation_type: string | null
+          ownership_end_date: string | null
+          ownership_start_date: string | null
+          parcel_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string | null
+          legal_status?: string | null
+          mutation_type?: string | null
+          ownership_end_date?: string | null
+          ownership_start_date?: string | null
+          parcel_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string | null
+          legal_status?: string | null
+          mutation_type?: string | null
+          ownership_end_date?: string | null
+          ownership_start_date?: string | null
+          parcel_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cadastral_ownership_history_parcel_id_fkey"
+            columns: ["parcel_id"]
+            isOneToOne: false
+            referencedRelation: "cadastral_parcels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cadastral_ownership_history_parcel_id_fkey"
+            columns: ["parcel_id"]
+            isOneToOne: false
+            referencedRelation: "cadastral_parcels_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cadastral_parcels_public: {
         Row: {
           area_hectares: number | null
@@ -7976,6 +8021,51 @@ export type Database = {
           ville?: string | null
         }
         Relationships: []
+      }
+      cadastral_tax_history_stats: {
+        Row: {
+          amount_usd: number | null
+          created_at: string | null
+          id: string | null
+          parcel_id: string | null
+          payment_date: string | null
+          payment_status: string | null
+          tax_year: number | null
+        }
+        Insert: {
+          amount_usd?: number | null
+          created_at?: string | null
+          id?: string | null
+          parcel_id?: string | null
+          payment_date?: string | null
+          payment_status?: string | null
+          tax_year?: number | null
+        }
+        Update: {
+          amount_usd?: number | null
+          created_at?: string | null
+          id?: string | null
+          parcel_id?: string | null
+          payment_date?: string | null
+          payment_status?: string | null
+          tax_year?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cadastral_tax_history_parcel_id_fkey"
+            columns: ["parcel_id"]
+            isOneToOne: false
+            referencedRelation: "cadastral_parcels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cadastral_tax_history_parcel_id_fkey"
+            columns: ["parcel_id"]
+            isOneToOne: false
+            referencedRelation: "cadastral_parcels_public"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       content_hub_stats: {
         Row: {
@@ -8688,6 +8778,7 @@ export type Database = {
         Args: { p_parcel_number: string }
         Returns: Json
       }
+      get_parcel_paid_history: { Args: { p_parcel_id: string }; Returns: Json }
       get_parcel_timeline: {
         Args: { _parcel_number: string }
         Returns: {
