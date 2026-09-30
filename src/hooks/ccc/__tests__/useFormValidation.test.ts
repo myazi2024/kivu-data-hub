@@ -432,3 +432,29 @@ describe('useFormValidation — cohérence étages / hauteur (RDC + 3 m par éta
   });
 });
 
+
+describe('Contrat de location — type de bail', () => {
+  const lease = "Contrat de location (Contrat d'occupation provisoire)";
+  it('exige le type de bail pour un contrat de location', () => {
+    const p = baseParams();
+    p.formData = { ...(p.formData as any), propertyTitleType: lease };
+    expect(fields(p)).toContain('leaseType');
+  });
+  it('accepte un contrat de location avec type de bail', () => {
+    const p = baseParams();
+    p.formData = { ...(p.formData as any), propertyTitleType: lease, leaseType: 'renewal' };
+    expect(fields(p)).not.toContain('leaseType');
+  });
+  it("ne l'exige pas pour un certificat d'enregistrement", () => {
+    expect(fields(baseParams())).not.toContain('leaseType');
+  });
+});
+
+describe('Points GPS', () => {
+  it('bloque avec moins de 3 bornes et accepte à partir de 3', () => {
+    const p = baseParams();
+    const pt = { lat: '-11.6', lng: '27.4' };
+    expect(fields({ ...p, gpsCoordinates: [pt, pt] } as any)).toContain('gpsCoordinates');
+    expect(fields({ ...p, gpsCoordinates: [pt, pt, pt] } as any)).not.toContain('gpsCoordinates');
+  });
+});
