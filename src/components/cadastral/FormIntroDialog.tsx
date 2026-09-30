@@ -324,7 +324,7 @@ export const FORM_INTRO_CONFIGS: Record<string, FormIntroConfig> = {
       'Étude d\'impact environnemental le cas échéant',
       'Coordonnées complètes du demandeur et du maître d\'œuvre'
     ],
-    userResponsibility: 'En déposant cette demande, vous vous engagez formellement à respecter l\'ensemble des normes de construction, d\'urbanisme et de sécurité en vigueur en République Démocratique du Congo. L'autorisation obtenue vous lie au respect strict des conditions et prescriptions qui y sont mentionnées.',
+    userResponsibility: 'En déposant cette demande, vous vous engagez formellement à respecter l\'ensemble des normes de construction, d\'urbanisme et de sécurité en vigueur en République Démocratique du Congo. L\'autorisation obtenue vous lie au respect strict des conditions et prescriptions qui y sont mentionnées.',
     helpInfo: [
       'Un assistant pas-à-pas vous guide tout au long de la procédure de demande',
       'Le système vérifie la complétude de votre dossier avant soumission',
