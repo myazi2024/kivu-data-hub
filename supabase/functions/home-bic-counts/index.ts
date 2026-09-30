@@ -22,7 +22,9 @@ Deno.serve(async (req) => {
       client.rpc("get_home_district_parcel_counts"),
       client.rpc("get_home_district_activity_counts"),
     ]);
-    if (parcelError || activityError) throw parcelError ?? activityError;
+    // District breakdowns are optional: never fail the global counts because of them.
+    if (parcelError) console.error("District parcel counts unavailable", parcelError);
+    if (activityError) console.error("District activity counts unavailable", activityError);
     const parcels_by_district: Record<string, number> = {};
     for (const row of (byDistrict ?? []) as { land_district: string; parcels_count: number }[]) {
       parcels_by_district[row.land_district] = Number(row.parcels_count) || 0;
