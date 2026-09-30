@@ -246,20 +246,12 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
     // Step 2b: Test mode — simulate payment
     if (isTestModeActive && isTestSimulation) {
       try {
-        // Create a test transaction
-        const { data: txn } = await supabase
-          .from('payment_transactions')
-          .insert({
-            user_id: user.id,
-            payment_method: 'TEST',
-            provider: 'TEST_SIMULATION',
-            amount_usd: form.totalFeeUSD,
-            currency_code: 'USD',
-            status: 'completed',
-            transaction_reference: `TEST-PERMIT-${Date.now()}`,
-          })
-          .select('id')
-          .single();
+        // Test transaction recorded server-side
+        const { data: txnData, error: txnError } = await supabase.functions.invoke('record-test-payment', {
+          body: { kind: 'permit_request', amount_usd: form.totalFeeUSD },
+        });
+        if (txnError || !txnData?.transaction_id) throw txnError ?? new Error(txnData?.error || 'Transaction test refusée');
+        const txn = { id: txnData.transaction_id as string };
 
         const contributionId = await savePermitRequest(uploadedUrls, txn?.id);
         setSavedContributionId(contributionId);
