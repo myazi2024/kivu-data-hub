@@ -142,16 +142,14 @@ const AdminMortgages = () => {
     const request = pendingApproveRequest;
     setProcessingAction(true);
     try {
-      const { error: updateError } = await supabase
-        .from('cadastral_contributions')
-        .update({
-          status: 'approved',
-          reviewed_at: new Date().toISOString(),
-          reviewed_by: user?.id || null,
-        })
-        .eq('id', request.id);
+      // Server-side guard: admin role + status check (no re-approval)
+      const { error: updateError } = await supabase.rpc('approve_ccc_contribution', { p_id: request.id });
 
-      if (updateError) throw updateError;
+      if (updateError) {
+        throw new Error(updateError.message.includes('déjà traitée')
+          ? 'Cette demande a déjà été traitée.'
+          : updateError.message);
+      }
 
       const mortgage = request.mortgage_history[0];
 
@@ -253,7 +251,7 @@ const AdminMortgages = () => {
     }
     setProcessingAction(true);
     try {
-      const { error } = await supabase
+      const { data: rejected, error } = await supabase
         .from('cadastral_contributions')
         .update({
           status: 'rejected',
@@ -263,9 +261,12 @@ const AdminMortgages = () => {
           rejected_by: user?.id || null,
           rejection_date: new Date().toISOString(),
         })
-        .eq('id', selectedRequest.id);
+        .eq('id', selectedRequest.id)
+        .in('status', ['pending', 'returned', 'in_review'])
+        .select('id');
 
       if (error) throw error;
+      if (!rejected?.length) throw new Error('Cette demande a déjà été traitée.');
 
       // Fix #11: Notify user of rejection
       try {

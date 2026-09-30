@@ -30,7 +30,7 @@ export const TAB_LABELS: Record<CCCValidationTab, string> = {
   location: 'Localisation',
   environment: 'Env. & Occup.',
   market: 'Valeur marchande',
-  permits: 'Permis',
+  permits: 'Autorisations',
   history: 'Historiques',
   obligations: 'Obligations',
   documents: 'Documents',

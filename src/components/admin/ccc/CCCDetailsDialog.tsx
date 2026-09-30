@@ -151,7 +151,7 @@ export const CCCDetailsDialog: React.FC<CCCDetailsDialogProps> = ({
                   className="gap-1 md:gap-2 w-full h-8 md:h-9 text-xs md:text-sm px-2 md:px-4"
                 >
                   <Building2 className="h-3 w-3 md:h-4 md:w-4" />
-                  <span className="truncate">Permis</span>
+                  <span className="truncate">Autorisations</span>
                   {contribution.permit_request_data.status === 'pending' && (
                     <Badge variant="outline" className="ml-auto text-[10px] md:text-xs px-1 py-0">Attente</Badge>
                   )}
@@ -175,7 +175,7 @@ export const CCCDetailsDialog: React.FC<CCCDetailsDialogProps> = ({
                 <TabsTrigger value="location" className="text-xs md:text-sm px-1 md:px-3">Localisation</TabsTrigger>
                 <TabsTrigger value="environment" className="text-xs md:text-sm px-1 md:px-3">Env. & Occup.</TabsTrigger>
                 <TabsTrigger value="market" className="text-xs md:text-sm px-1 md:px-3">Valeur</TabsTrigger>
-                <TabsTrigger value="permits" className="text-xs md:text-sm px-1 md:px-3">Permis</TabsTrigger>
+                <TabsTrigger value="permits" className="text-xs md:text-sm px-1 md:px-3">Autorisations</TabsTrigger>
                 <TabsTrigger value="history" className="text-xs md:text-sm px-1 md:px-3">Historiques</TabsTrigger>
                 <TabsTrigger value="obligations" className="text-xs md:text-sm px-1 md:px-3">Obligations</TabsTrigger>
                 <TabsTrigger value="documents" className="text-xs md:text-sm px-1 md:px-3">Documents</TabsTrigger>

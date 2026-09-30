@@ -332,9 +332,7 @@ const AdminCCCContributions: React.FC = () => {
         return;
       }
 
-      console.log('Renvoi de la contribution:', contributionId);
-
-      const { error: updateError } = await supabase
+      const { data: returned, error: updateError } = await supabase
         .from('cadastral_contributions')
         .update({ 
           status: 'returned',
@@ -342,7 +340,14 @@ const AdminCCCContributions: React.FC = () => {
           reviewed_by: user.id,
           reviewed_at: new Date().toISOString()
         })
-        .eq('id', contributionId);
+        .eq('id', contributionId)
+        .in('status', ['pending', 'in_review'])
+        .select('id');
+
+      if (!updateError && !returned?.length) {
+        toast.error('Cette contribution a déjà été traitée.');
+        return;
+      }
 
       if (updateError) {
         console.error('Erreur lors du renvoi:', updateError);
