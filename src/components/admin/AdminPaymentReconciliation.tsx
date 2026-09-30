@@ -80,15 +80,21 @@ const AdminPaymentReconciliation = () => {
     setReconciling(true);
     try {
       const oldStatus = reconcileTarget.status;
-      const { error } = await supabase
+      const { data: updated, error } = await supabase
         .from('payment_transactions')
         .update({
           status: 'completed',
           updated_at: new Date().toISOString(),
         })
-        .eq('id', reconcileTarget.id);
+        .eq('id', reconcileTarget.id)
+        .neq('status', 'completed')
+        .select('id');
 
       if (error) throw error;
+      if (!updated || updated.length === 0) {
+        toast.error('Cette transaction a déjà été réconciliée.');
+        return;
+      }
 
       // Audit log obligatoire
       await logBillingAudit({
