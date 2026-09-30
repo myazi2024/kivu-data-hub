@@ -113,16 +113,16 @@ export const useParcelHistory = (parcelId: string | null) => {
       if (!parcelId) {
         return { ownership_history: [], tax_history: [], mortgage_history: [], boundary_history: [], building_permits: [] };
       }
-      const [ownershipRes, taxRes, mortgageRes, boundaryRes, permitsRes] = await Promise.all([
-        supabase.from('cadastral_ownership_history').select('*').eq('parcel_id', parcelId),
-        supabase.from('cadastral_tax_history').select('*').eq('parcel_id', parcelId),
+      // Historique propriétaires / taxes : servi par le serveur seulement si le service est payé.
+      const [paidRes, mortgageRes, boundaryRes, permitsRes] = await Promise.all([
+        (supabase.rpc as any)('get_parcel_paid_history', { p_parcel_id: parcelId }),
         supabase.from('cadastral_mortgages').select('*').eq('parcel_id', parcelId),
         supabase.from('cadastral_boundary_history').select('*').eq('parcel_id', parcelId),
         supabase.from('cadastral_building_permits').select('*').eq('parcel_id', parcelId),
       ]);
       return {
-        ownership_history: ownershipRes.data || [],
-        tax_history: taxRes.data || [],
+        ownership_history: paidRes.data?.ownership_history || [],
+        tax_history: paidRes.data?.tax_history || [],
         mortgage_history: mortgageRes.data || [],
         boundary_history: boundaryRes.data || [],
         building_permits: permitsRes.data || [],

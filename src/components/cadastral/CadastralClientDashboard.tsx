@@ -144,9 +144,8 @@ const CadastralClientDashboard: React.FC = () => {
       }
 
       // 2. Fetch related data in parallel
-      const [ownership, tax, mortgage, boundary, permits, disputes] = await Promise.all([
-        supabase.from('cadastral_ownership_history').select('*').eq('parcel_id', parcel.id),
-        supabase.from('cadastral_tax_history').select('*').eq('parcel_id', parcel.id),
+      const [paidHistory, mortgage, boundary, permits, disputes] = await Promise.all([
+        (supabase.rpc as any)('get_parcel_paid_history', { p_parcel_id: parcel.id }),
         supabase.from('cadastral_mortgages').select('*, cadastral_mortgage_payments(*)').eq('parcel_id', parcel.id),
         supabase.from('cadastral_boundary_history').select('*').eq('parcel_id', parcel.id),
         supabase.from('cadastral_building_permits').select('*').eq('parcel_id', parcel.id),
@@ -169,8 +168,8 @@ const CadastralClientDashboard: React.FC = () => {
 
       const cadastralResult = {
         parcel,
-        ownership_history: ownership.data || [],
-        tax_history: tax.data || [],
+        ownership_history: paidHistory.data?.ownership_history || [],
+        tax_history: paidHistory.data?.tax_history || [],
         mortgage_history: formattedMortgages,
         boundary_history: boundary.data || [],
         building_permits: permits.data || [],

@@ -8666,6 +8666,18 @@ export type Database = {
         }[]
       }
       get_orphan_reseller_invoices_count: { Args: never; Returns: number }
+      get_ownership_history_stats: {
+        Args: never
+        Returns: {
+          created_at: string
+          id: string
+          legal_status: string
+          mutation_type: string
+          ownership_end_date: string
+          ownership_start_date: string
+          parcel_id: string
+        }[]
+      }
       get_parcel_contribution_history: {
         Args: { p_parcel_id: string }
         Returns: {
@@ -8688,6 +8700,7 @@ export type Database = {
         Args: { p_parcel_number: string }
         Returns: Json
       }
+      get_parcel_paid_history: { Args: { p_parcel_id: string }; Returns: Json }
       get_parcel_timeline: {
         Args: { _parcel_number: string }
         Returns: {
@@ -8753,6 +8766,18 @@ export type Database = {
         Returns: string
       }
       get_subdivision_admin_stats: { Args: never; Returns: Json }
+      get_tax_history_stats: {
+        Args: never
+        Returns: {
+          amount_usd: number
+          created_at: string
+          id: string
+          parcel_id: string
+          payment_date: string
+          payment_status: string
+          tax_year: number
+        }[]
+      }
       get_test_cleanup_history: {
         Args: { p_limit?: number }
         Returns: {

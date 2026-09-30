@@ -196,7 +196,7 @@ export const useAdvancedCadastralSearch = () => {
             ? supabase.from('cadastral_mortgages').select('parcel_id').in('parcel_id', parcelIds)
             : Promise.resolve({ data: [] }),
           activeFilters.hasTaxArrears
-            ? supabase.from('cadastral_tax_history').select('parcel_id').eq('payment_status', 'overdue').in('parcel_id', parcelIds)
+            ? (supabase.rpc as any)('get_tax_history_stats').select('parcel_id').eq('payment_status', 'overdue').in('parcel_id', parcelIds)
             : Promise.resolve({ data: [] })
         ]);
 

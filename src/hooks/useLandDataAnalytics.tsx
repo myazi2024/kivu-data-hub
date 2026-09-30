@@ -36,6 +36,11 @@ const TEST_FILTER_COLUMN: Record<string, string> = {
   subdivision_requests: 'reference_number',
 };
 
+const STATS_RPC: Record<string, string> = {
+  cadastral_ownership_history: 'get_ownership_history_stats',
+  cadastral_tax_history: 'get_tax_history_stats',
+};
+
 /** Fetch all rows with pagination to bypass 1000-row limit.
  *  Filters TEST-% rows based on isTestRoute context. */
 async function fetchAll(
@@ -50,7 +55,9 @@ async function fetchAll(
   const testCol = TEST_FILTER_COLUMN[table];
 
   while (true) {
-    let query = (supabase.from as any)(table).select(select);
+    // Tables contenant des données personnelles : lues via une fonction serveur sans ces colonnes.
+    const rpcName = STATS_RPC[table];
+    let query = rpcName ? (supabase.rpc as any)(rpcName).select(select) : (supabase.from as any)(table).select(select);
     if (filters) query = filters(query);
     // Filter test data based on route context
     if (testCol) {
@@ -122,7 +129,7 @@ export const useLandDataAnalytics = (isTestRoute = false) => {
           isTestRoute),
         // New tables
         fetchAll('cadastral_ownership_history',
-          'id, parcel_id, owner_name, legal_status, mutation_type, ownership_start_date, ownership_end_date, created_at',
+          'id, parcel_id, legal_status, mutation_type, ownership_start_date, ownership_end_date, created_at',
           isTestRoute),
         fetchAll('generated_certificates',
           'id, certificate_type, parcel_number, recipient_name, reference_number, status, generated_at',
