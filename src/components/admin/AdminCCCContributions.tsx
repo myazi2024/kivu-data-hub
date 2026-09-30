@@ -287,24 +287,11 @@ const AdminCCCContributions: React.FC = () => {
 
       if (updateError) {
         console.error('Erreur lors de la mise à jour:', updateError);
-        toast.error(`Erreur lors du rejet: ${updateError.message}`);
+        toast.error(/déjà traitée/i.test(updateError.message) ? 'Cette contribution a déjà été traitée.' : `Erreur lors du rejet: ${updateError.message}`);
         return;
       }
 
-      // Créer notification pour l'utilisateur
-      const { error: notifError } = await supabase.from('notifications').insert({
-        user_id: contribution.user_id,
-        type: 'error',
-        title: 'Contribution rejetée',
-        message: `Votre contribution pour la parcelle ${contribution.parcel_number} a été rejetée. Motif: ${rejectionReason}. Vous pouvez faire appel de cette décision.`,
-        action_url: '/user-dashboard?tab=contributions'
-      });
-
-      if (notifError) {
-        console.error('Erreur lors de la création de la notification:', notifError);
-        // Ne pas bloquer le rejet si la notification échoue
-      }
-
+      // La notification à l'utilisateur est envoyée par la fonction serveur de rejet.
       toast.success('Contribution rejetée');
       await logContributionAudit({ contributionId, action: 'reject', payload: { reason: rejectionReason } });
       trackAdminAction({ module: 'ccc', action: 'reject', ref: { contribution_id: contributionId }, meta: { reason: rejectionReason } });
