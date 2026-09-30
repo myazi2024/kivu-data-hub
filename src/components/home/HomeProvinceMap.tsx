@@ -101,20 +101,8 @@ export default function HomeProvinceMap() {
             <g aria-hidden="true">
             {areas.map(({ feature, district, area }) => {
               const d = projectFeature(feature.geometry, bbox, dims.w, dims.h, PADDING);
-              if (!district) {
-                return <path key={area} d={d} className="fill-primary-foreground/25 stroke-primary/40" strokeWidth={0.5} aria-hidden="true" />;
-              }
-              const isActive = displayedDistrict === district;
-              return (
-                <path
-                  key={`territory-${area}`}
-                  d={d}
-                  fill={colors.get(district)}
-                  className="stroke-primary-foreground transition-opacity"
-                  strokeWidth={isActive ? 2 : 0.6}
-                  opacity={displayedDistrict && !isActive ? 0.45 : 1}
-                />
-              );
+              if (district) return null;
+              return <path key={area} d={d} className="fill-primary-foreground/25 stroke-primary/40" strokeWidth={0.5} aria-hidden="true" />;
             })}
             </g>
             {districtFeatures.map(({ feature, district, area, source }) => {
