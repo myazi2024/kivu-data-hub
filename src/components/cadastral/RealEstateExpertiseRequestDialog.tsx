@@ -88,6 +88,12 @@ import {
   ACCESSIBILITY_OPTIONS,
   YEAR_OPTIONS,
 } from './real-estate-expertise/constants';
+import {
+  CONDITION_LABELS,
+  ROAD_LABELS, ROOF_LABELS,
+  WINDOW_LABELS, FLOOR_LABELS, FACADE_ORIENTATION_LABELS,
+  BUILDING_POSITION_LABELS, ACCESSIBILITY_LABELS
+} from '@/constants/expertiseLabels';
 const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialogProps> = ({
   parcelNumber,
   parcelId,
