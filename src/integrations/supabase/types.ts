@@ -7890,51 +7890,6 @@ export type Database = {
           },
         ]
       }
-      cadastral_ownership_history_stats: {
-        Row: {
-          created_at: string | null
-          id: string | null
-          legal_status: string | null
-          mutation_type: string | null
-          ownership_end_date: string | null
-          ownership_start_date: string | null
-          parcel_id: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string | null
-          legal_status?: string | null
-          mutation_type?: string | null
-          ownership_end_date?: string | null
-          ownership_start_date?: string | null
-          parcel_id?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          id?: string | null
-          legal_status?: string | null
-          mutation_type?: string | null
-          ownership_end_date?: string | null
-          ownership_start_date?: string | null
-          parcel_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "cadastral_ownership_history_parcel_id_fkey"
-            columns: ["parcel_id"]
-            isOneToOne: false
-            referencedRelation: "cadastral_parcels"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "cadastral_ownership_history_parcel_id_fkey"
-            columns: ["parcel_id"]
-            isOneToOne: false
-            referencedRelation: "cadastral_parcels_public"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       cadastral_parcels_public: {
         Row: {
           area_hectares: number | null
@@ -8021,51 +7976,6 @@ export type Database = {
           ville?: string | null
         }
         Relationships: []
-      }
-      cadastral_tax_history_stats: {
-        Row: {
-          amount_usd: number | null
-          created_at: string | null
-          id: string | null
-          parcel_id: string | null
-          payment_date: string | null
-          payment_status: string | null
-          tax_year: number | null
-        }
-        Insert: {
-          amount_usd?: number | null
-          created_at?: string | null
-          id?: string | null
-          parcel_id?: string | null
-          payment_date?: string | null
-          payment_status?: string | null
-          tax_year?: number | null
-        }
-        Update: {
-          amount_usd?: number | null
-          created_at?: string | null
-          id?: string | null
-          parcel_id?: string | null
-          payment_date?: string | null
-          payment_status?: string | null
-          tax_year?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "cadastral_tax_history_parcel_id_fkey"
-            columns: ["parcel_id"]
-            isOneToOne: false
-            referencedRelation: "cadastral_parcels"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "cadastral_tax_history_parcel_id_fkey"
-            columns: ["parcel_id"]
-            isOneToOne: false
-            referencedRelation: "cadastral_parcels_public"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       content_hub_stats: {
         Row: {
@@ -8756,6 +8666,18 @@ export type Database = {
         }[]
       }
       get_orphan_reseller_invoices_count: { Args: never; Returns: number }
+      get_ownership_history_stats: {
+        Args: never
+        Returns: {
+          created_at: string
+          id: string
+          legal_status: string
+          mutation_type: string
+          ownership_end_date: string
+          ownership_start_date: string
+          parcel_id: string
+        }[]
+      }
       get_parcel_contribution_history: {
         Args: { p_parcel_id: string }
         Returns: {
@@ -8844,6 +8766,18 @@ export type Database = {
         Returns: string
       }
       get_subdivision_admin_stats: { Args: never; Returns: Json }
+      get_tax_history_stats: {
+        Args: never
+        Returns: {
+          amount_usd: number
+          created_at: string
+          id: string
+          parcel_id: string
+          payment_date: string
+          payment_status: string
+          tax_year: number
+        }[]
+      }
       get_test_cleanup_history: {
         Args: { p_limit?: number }
         Returns: {
