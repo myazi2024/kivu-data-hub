@@ -9,7 +9,6 @@ import { useAppAppearance } from '@/hooks/useAppAppearance';
 import { useAuth } from '@/hooks/useAuth';
 import { trackEvent } from '@/lib/analytics';
 import HomeProvinceMap from '@/components/home/HomeProvinceMap';
-import HomeBicIndicators from '@/components/home/HomeBicIndicators';
 
 const HeroSection = () => {
   const { config: appearanceConfig } = useAppAppearance();

@@ -1,9 +1,13 @@
+import { useLocation } from 'react-router-dom';
 import { Cookie, Globe } from 'lucide-react';
 import { useAppAppearance } from '@/hooks/useAppAppearance';
 import { useCookies } from '@/hooks/useCookies';
 import { useCatalogConfig } from '@/hooks/useCatalogConfig';
+import HomeBicIndicators from '@/components/home/HomeBicIndicators';
 
 const Footer = () => {
+  const location = useLocation();
+  const isHomePage = location.pathname === '/';
   const { config } = useAppAppearance();
   const { reopenBanner } = useCookies();
   const { config: catalogConfig } = useCatalogConfig();
