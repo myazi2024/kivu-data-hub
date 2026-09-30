@@ -16,7 +16,6 @@ interface CommuneFeature extends AreaFeature {
 }
 
 const PADDING = 6;
-type DistrictCounts = { parcels: Record<string, number>; services: Record<string, number>; disputes: Record<string, number> };
 
 /** Carte des circonscriptions foncières construite à partir des territoires et villes. */
 export default function HomeProvinceMap() {
