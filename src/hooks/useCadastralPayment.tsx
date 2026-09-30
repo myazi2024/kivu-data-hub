@@ -301,21 +301,11 @@ export const useCadastralPayment = () => {
       setLoading(true);
       setPaymentStep('processing');
 
-      // Transaction simulée (RLS autorise INSERT du propriétaire)
-      const { error: txnError } = await supabase
-        .from('payment_transactions')
-        .insert({
-          user_id: user.id,
-          invoice_id: invoiceId,
-          payment_method: 'TEST',
-          provider: 'TEST_SIMULATION',
-          phone_number: '0000000000',
-          amount_usd: 0,
-          currency_code: 'USD',
-          status: 'completed',
-          transaction_reference: `TEST-${Date.now()}`,
-        });
-      if (txnError) throw txnError;
+      // Transaction simulée enregistrée côté serveur (mode test vérifié serveur)
+      const { data: txnData, error: txnError } = await supabase.functions.invoke('record-test-payment', {
+        body: { kind: 'cadastral_invoice', invoice_id: invoiceId },
+      });
+      if (txnError || !txnData?.transaction_id) throw txnError ?? new Error(txnData?.error || 'Transaction test refusée');
 
       // RPC atomique : marque payée + grant cadastral_service_access
       const { error: markError } = await supabase.rpc('mark_cadastral_invoice_paid_safe', {

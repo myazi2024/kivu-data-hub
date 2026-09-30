@@ -22,3 +22,6 @@
 
 ## Ouvert (hors espace utilisateur)
 - `payment_transactions` : la règle d'accès permet encore l'enregistrement d'un paiement depuis le navigateur, utilisé par `useCadastralPayment` et `BuildingPermitRequestDialog`. Le retirer demande de déplacer ces deux parcours de paiement côté serveur.
+
+## Passe 3 — paiements
+- Point ouvert résolu : les paiements test (cadastre, autorisation de bâtir) passent par la fonction serveur `record-test-payment` (utilisateur vérifié, mode test vérifié côté serveur, facture appartenant à l'utilisateur). Règle d'insertion navigateur sur `payment_transactions` supprimée.
