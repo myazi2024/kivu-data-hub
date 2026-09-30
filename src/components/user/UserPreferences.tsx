@@ -47,7 +47,7 @@ export const UserPreferences: React.FC = () => {
 
   useEffect(() => {
     fetchPreferences();
-  }, [user]);
+  }, [user?.id]);
 
   const fetchPreferences = async () => {
     if (!user) return;

@@ -46,7 +46,7 @@ export function UserBuildingPermits() {
     if (user) {
       fetchBuildingPermits();
     }
-  }, [user]);
+  }, [user?.id]);
 
   const fetchBuildingPermits = async () => {
     if (!user) return;
