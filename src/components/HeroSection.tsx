@@ -9,7 +9,6 @@ import { useAppAppearance } from '@/hooks/useAppAppearance';
 import { useAuth } from '@/hooks/useAuth';
 import { trackEvent } from '@/lib/analytics';
 import HomeProvinceMap from '@/components/home/HomeProvinceMap';
-import HomeBicIndicators from '@/components/home/HomeBicIndicators';
 
 const HeroSection = () => {
   const { config: appearanceConfig } = useAppAppearance();
@@ -101,9 +100,6 @@ const HeroSection = () => {
             </Link>
             </div>
 
-            <div className="mt-3 lg:mt-2 lg:max-w-md lg:ml-auto w-full">
-              <HomeBicIndicators configured={appearanceConfig} />
-            </div>
           </div>
           <div className="order-first md:order-first min-w-0 md:self-stretch md:h-full md:flex md:flex-col"><HomeProvinceMap /></div>
         </div>
