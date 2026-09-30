@@ -1,5 +1,5 @@
 import { useLocation } from 'react-router-dom';
-import { Cookie, Globe } from 'lucide-react';
+import { Cookie } from 'lucide-react';
 import { useAppAppearance } from '@/hooks/useAppAppearance';
 import { useCookies } from '@/hooks/useCookies';
 import HomeBicIndicators from '@/components/home/HomeBicIndicators';
@@ -9,7 +9,6 @@ const Footer = () => {
   const isHomePage = location.pathname === '/';
   const { config } = useAppAppearance();
   const { reopenBanner } = useCookies();
-  const provincesCount = 26; // Provinces de la RDC
   const appName = config.app_name || 'BIC';
   const currentYear = new Date().getFullYear();
 
@@ -33,10 +32,6 @@ const Footer = () => {
               <Cookie className="h-3 w-3 text-primary" />
               <span className="text-background text-xs font-medium">Gérer les cookies</span>
             </button>
-            <div className="flex items-center gap-1 bg-background/10 px-2 py-1 rounded">
-              <Globe className="h-3 w-3 text-primary" />
-              <span className="text-background text-xs font-medium">{provincesCount} provinces</span>
-            </div>
           </div>
         </div>
       </div>
