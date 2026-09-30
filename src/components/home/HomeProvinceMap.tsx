@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import MapZoomBackButton from '@/components/map/ui/MapZoomBackButton';
 import { computeBBox, projectFeature, useAnimatedBbox, useGeoJsonData } from '@/lib/mapProjection';
 import { buildDistrictColors, matchAreaToDistrict, matchCommuneToDistrict, normalizeGeoName } from '@/lib/landDistrictMapping';
+import { useHomeBicCounts } from '@/hooks/useHomeBicCounts';
 
 interface AreaFeature {
   properties: { name: string };
@@ -25,7 +26,7 @@ export default function HomeProvinceMap() {
   const [dims, setDims] = useState({ w: 400, h: 400 });
   const [active, setActive] = useState<string | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
-  const [counts, setCounts] = useState<{ parcels: Record<string, number> | null; services: Record<string, number> | null; disputes: Record<string, number> | null } | null>(null);
+  const { data: countsData } = useHomeBicCounts();
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -37,32 +38,23 @@ export default function HomeProvinceMap() {
     return () => obs.disconnect();
   }, []);
 
-  useEffect(() => {
-    const controller = new AbortController();
-    const baseUrl = import.meta.env.VITE_SUPABASE_URL;
-    const publicKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-    if (!baseUrl || !publicKey) return () => controller.abort();
-    fetch(`${baseUrl}/functions/v1/home-bic-counts`, { signal: controller.signal, headers: { apikey: publicKey } })
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error('indisponible'))))
-      .then((res: { parcels_by_district?: Record<string, number>; services_by_district?: Record<string, number>; disputes_by_district?: Record<string, number> }) => {
-        const normalizeCounts = (input?: Record<string, number>) => {
-          if (!input) return null;
-          const map: Record<string, number> = {};
-          for (const [name, value] of Object.entries(input)) {
-            const key = normalizeGeoName(name);
-            map[key] = (map[key] ?? 0) + (Number(value) || 0);
-          }
-          return map;
-        };
-        setCounts({
-          parcels: normalizeCounts(res.parcels_by_district),
-          services: normalizeCounts(res.services_by_district),
-          disputes: normalizeCounts(res.disputes_by_district),
-        });
-      })
-      .catch(() => { /* compteur indisponible : affiché comme tel */ });
-    return () => controller.abort();
-  }, []);
+  const counts = useMemo(() => {
+    if (!countsData) return null;
+    const normalizeCounts = (input?: Record<string, number>) => {
+      if (!input) return null;
+      const map: Record<string, number> = {};
+      for (const [name, value] of Object.entries(input)) {
+        const key = normalizeGeoName(name);
+        map[key] = (map[key] ?? 0) + (Number(value) || 0);
+      }
+      return map;
+    };
+    return {
+      parcels: normalizeCounts(countsData.parcels_by_district),
+      services: normalizeCounts(countsData.services_by_district),
+      disputes: normalizeCounts(countsData.disputes_by_district),
+    };
+  }, [countsData]);
 
   const areas = useMemo(() => features.map((f) => ({ feature: f, ...matchAreaToDistrict(f.properties.name) })), [features]);
   const communes = useMemo(() => communeFeatures.map((f) => ({
