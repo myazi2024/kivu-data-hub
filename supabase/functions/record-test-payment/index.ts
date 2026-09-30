@@ -18,7 +18,7 @@ const json = (body: unknown, status = 200) =>
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
-  const rl = await enforceRateLimit(req, "payment.test_record");
+  const rl = await enforceRateLimit(req, "payment.create");
   if (!rl.allowed) return rateLimitResponse(rl, corsHeaders);
 
   try {
