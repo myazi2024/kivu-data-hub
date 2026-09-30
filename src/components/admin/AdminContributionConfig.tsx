@@ -609,7 +609,7 @@ const AdminContributionConfig = ({ initialTab, scrollToLegend }: { initialTab?: 
                 </div>
 
                 <div className="flex items-center justify-between p-4 border rounded-lg">
-                  <Label>Permis obligatoire</Label>
+                  <Label>Autorisation obligatoire</Label>
                   <Switch
                     checked={validationRules.require_building_permit || false}
                     onCheckedChange={(checked) => {

@@ -127,7 +127,7 @@ export const DocumentsGalleryDialog: React.FC<DocumentsGalleryDialogProps> = ({
             <Tabs defaultValue="main" className="w-full">
               <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="main">Principaux</TabsTrigger>
-                <TabsTrigger value="permits">Permis</TabsTrigger>
+                <TabsTrigger value="permits">Autorisations</TabsTrigger>
                 <TabsTrigger value="obligations">Obligations</TabsTrigger>
                 <TabsTrigger value="history">Historique</TabsTrigger>
               </TabsList>
