@@ -85,7 +85,7 @@ export function PermitRenewalAlert({ permits }: PermitRenewalAlertProps) {
                     Parcelle {permit.parcel_number}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    Permis N° {permit.building_permits?.permit_number || "N/A"}
+                    Autorisation N° {permit.building_permits?.permit_number || "N/A"}
                   </p>
                   <p className="text-xs text-muted-foreground">
                     Expire le {format(permit.expiryDate, "d MMMM yyyy", { locale: fr })}
