@@ -24,17 +24,22 @@ export const approveContributionCore = async (
 ): Promise<ApproveOutcome> => {
   const warnings: string[] = [];
 
+  // Fonction serveur : contrôle du rôle admin + refus des contributions déjà traitées.
+  void userId;
+  const { error: rpcError } = await supabase.rpc('approve_ccc_contribution', { p_id: contributionId });
+  if (rpcError) {
+    const alreadyDone = /déjà traitée/i.test(rpcError.message);
+    return {
+      ok: false,
+      isUpdateContribution: false,
+      warnings,
+      error: alreadyDone ? 'Cette contribution a déjà été traitée.' : rpcError.message || 'Échec de l\'approbation',
+    };
+  }
   const { data: updated, error } = await supabase
     .from('cadastral_contributions')
-    .update({
-      status: 'approved',
-      reviewed_by: userId,
-      reviewed_at: new Date().toISOString(),
-      verified_by: userId,
-      verified_at: new Date().toISOString(),
-    })
+    .select('contribution_type, original_parcel_id, parcel_number')
     .eq('id', contributionId)
-    .select()
     .single();
 
   if (error || !updated) {

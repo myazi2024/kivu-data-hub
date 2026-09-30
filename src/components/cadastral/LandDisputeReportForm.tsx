@@ -255,11 +255,22 @@ const LandDisputeReportForm: React.FC<LandDisputeReportFormProps> = ({
         uploadedPaths = uploadResult.paths;
       }
 
+      // Lier le litige à la parcelle existante si elle est connue (sinon, lien par numéro).
+      let resolvedParcelId = parcelId ?? null;
+      if (!resolvedParcelId && parcelNumber) {
+        const { data: parcelRow } = await supabase
+          .from('cadastral_parcels_public')
+          .select('id')
+          .eq('parcel_number', parcelNumber)
+          .maybeSingle();
+        resolvedParcelId = parcelRow?.id ?? null;
+      }
+
       // Always persist as 'en_cours'; resolution_level is stored separately
       const { error } = await supabase
         .from('cadastral_land_disputes' as any)
         .insert({
-          parcel_id: parcelId,
+          parcel_id: resolvedParcelId,
           parcel_number: parcelNumber,
           reference_number: referenceNumber,
           dispute_type: 'report',
