@@ -42,7 +42,7 @@ export const UserLandTitleRequests: React.FC = () => {
     if (user) {
       fetchRequests();
     }
-  }, [user]);
+  }, [user?.id]);
 
   const fetchRequests = async () => {
     try {

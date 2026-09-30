@@ -53,7 +53,7 @@ export const UserLandDisputes: React.FC = () => {
 
       return () => { supabase.removeChannel(channel); };
     }
-  }, [user]);
+  }, [user?.id]);
 
   const fetchDisputes = async () => {
     try {

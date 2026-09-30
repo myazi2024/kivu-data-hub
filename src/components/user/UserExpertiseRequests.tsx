@@ -50,7 +50,7 @@ export const UserExpertiseRequests: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [user?.id]);
 
   useEffect(() => {
     fetchRequests();

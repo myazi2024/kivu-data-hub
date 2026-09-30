@@ -61,7 +61,7 @@ export const UserMortgageRequests: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [user?.id]);
 
   useEffect(() => {
     fetchRequests();
