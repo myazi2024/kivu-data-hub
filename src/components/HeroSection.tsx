@@ -11,7 +11,7 @@ import { trackEvent } from '@/lib/analytics';
 import HomeProvinceMap from '@/components/home/HomeProvinceMap';
 
 const HeroSection = () => {
-  const { config: appearanceConfig } = useAppAppearance();
+  const { config: appearanceConfig, loading: appearanceLoading } = useAppAppearance();
   const { user } = useAuth();
 
   const heroImage = appearanceConfig.hero_image_url || heroSkyline;
@@ -27,9 +27,11 @@ const HeroSection = () => {
 
   return (
     <>
-      <Helmet>
-        <link rel="preload" as="image" href={heroImage} />
-      </Helmet>
+      {!appearanceLoading && (
+        <Helmet>
+          <link rel="preload" as="image" href={heroImage} />
+        </Helmet>
+      )}
 
       <section className="relative isolate overflow-hidden py-3 sm:py-6 lg:py-4 lg:flex-1 lg:flex lg:items-center">
         <div className="absolute inset-0">

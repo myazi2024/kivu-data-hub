@@ -2,7 +2,6 @@ import { useLocation } from 'react-router-dom';
 import { Cookie, Globe } from 'lucide-react';
 import { useAppAppearance } from '@/hooks/useAppAppearance';
 import { useCookies } from '@/hooks/useCookies';
-import { useCatalogConfig } from '@/hooks/useCatalogConfig';
 import HomeBicIndicators from '@/components/home/HomeBicIndicators';
 
 const Footer = () => {
@@ -10,8 +9,7 @@ const Footer = () => {
   const isHomePage = location.pathname === '/';
   const { config } = useAppAppearance();
   const { reopenBanner } = useCookies();
-  const { config: catalogConfig } = useCatalogConfig();
-  const provincesCount = (catalogConfig.available_provinces || []).length || 26;
+  const provincesCount = 26; // Provinces de la RDC
   const appName = config.app_name || 'BIC';
   const currentYear = new Date().getFullYear();
 
