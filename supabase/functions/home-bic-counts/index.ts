@@ -18,12 +18,22 @@ Deno.serve(async (req) => {
     const { data, error } = await client.rpc("get_home_bic_counts");
     if (error || !data?.[0]) throw error ?? new Error("Counts unavailable");
     const { parcels_count, services_count, disputes_count } = data[0];
-    const { data: byDistrict } = await client.rpc("get_home_district_parcel_counts");
+    const [{ data: byDistrict, error: parcelError }, { data: activity, error: activityError }] = await Promise.all([
+      client.rpc("get_home_district_parcel_counts"),
+      client.rpc("get_home_district_activity_counts"),
+    ]);
+    if (parcelError || activityError) throw parcelError ?? activityError;
     const parcels_by_district: Record<string, number> = {};
     for (const row of (byDistrict ?? []) as { land_district: string; parcels_count: number }[]) {
       parcels_by_district[row.land_district] = Number(row.parcels_count) || 0;
     }
-    return new Response(JSON.stringify({ parcels_count, services_count, disputes_count, parcels_by_district }), {
+    const services_by_district: Record<string, number> = {};
+    const disputes_by_district: Record<string, number> = {};
+    for (const row of (activity ?? []) as { land_district: string; services_count: number; disputes_count: number }[]) {
+      services_by_district[row.land_district] = Number(row.services_count) || 0;
+      disputes_by_district[row.land_district] = Number(row.disputes_count) || 0;
+    }
+    return new Response(JSON.stringify({ parcels_count, services_count, disputes_count, parcels_by_district, services_by_district, disputes_by_district }), {
       headers: { ...corsHeaders, "Content-Type": "application/json", "Cache-Control": "public, max-age=300" },
     });
   } catch (error) {

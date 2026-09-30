@@ -8639,6 +8639,14 @@ export type Database = {
           services_count: number
         }[]
       }
+      get_home_district_activity_counts: {
+        Args: never
+        Returns: {
+          disputes_count: number
+          land_district: string
+          services_count: number
+        }[]
+      }
       get_home_district_parcel_counts: {
         Args: never
         Returns: {

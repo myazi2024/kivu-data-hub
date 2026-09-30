@@ -25,7 +25,7 @@ export default function HomeProvinceMap() {
   const [dims, setDims] = useState({ w: 400, h: 400 });
   const [active, setActive] = useState<string | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
-  const [counts, setCounts] = useState<Record<string, number> | null>(null);
+  const [counts, setCounts] = useState<{ parcels: Record<string, number> | null; services: Record<string, number> | null; disputes: Record<string, number> | null } | null>(null);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -44,13 +44,21 @@ export default function HomeProvinceMap() {
     if (!baseUrl || !publicKey) return () => controller.abort();
     fetch(`${baseUrl}/functions/v1/home-bic-counts`, { signal: controller.signal, headers: { apikey: publicKey } })
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error('indisponible'))))
-      .then((res: { parcels_by_district?: Record<string, number> }) => {
-        const map: Record<string, number> = {};
-        for (const [k, v] of Object.entries(res.parcels_by_district ?? {})) {
-          const key = normalizeGeoName(k);
-          map[key] = (map[key] ?? 0) + (Number(v) || 0);
-        }
-        setCounts(map);
+      .then((res: { parcels_by_district?: Record<string, number>; services_by_district?: Record<string, number>; disputes_by_district?: Record<string, number> }) => {
+        const normalizeCounts = (input?: Record<string, number>) => {
+          if (!input) return null;
+          const map: Record<string, number> = {};
+          for (const [name, value] of Object.entries(input)) {
+            const key = normalizeGeoName(name);
+            map[key] = (map[key] ?? 0) + (Number(value) || 0);
+          }
+          return map;
+        };
+        setCounts({
+          parcels: normalizeCounts(res.parcels_by_district),
+          services: normalizeCounts(res.services_by_district),
+          disputes: normalizeCounts(res.disputes_by_district),
+        });
       })
       .catch(() => { /* compteur indisponible : affiché comme tel */ });
     return () => controller.abort();
@@ -136,21 +144,36 @@ export default function HomeProvinceMap() {
         ) : (
           <div className="flex h-full items-center justify-center text-sm text-primary-foreground/80">Chargement de la carte…</div>
         )}
-        {selected && <MapZoomBackButton onBack={resetZoom} label="Retour à la carte de la RDC" />}
+        {selected && (
+          <>
+            <MapZoomBackButton onBack={resetZoom} label="Retour à la carte de la RDC" />
+            <div className="pointer-events-none absolute inset-x-0 bottom-2 flex justify-center px-3" aria-live="polite">
+              <span className="max-w-full break-words rounded-sm bg-primary px-2 py-1 text-center text-xs font-semibold text-primary-foreground shadow-sm sm:text-sm">
+                Circonscription foncière de {selected}
+              </span>
+            </div>
+          </>
+        )}
       </div>
       <div className="min-h-[52px] sm:min-h-[64px] lg:min-h-[54px] border-t border-primary-foreground/25 pt-2 text-primary-foreground" aria-live="polite">
         {activeArea?.district ? (
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex min-w-0 items-center gap-2">
+            <div className="flex min-w-0 items-start gap-2">
               <span className="h-3 w-3 shrink-0 rounded-sm border border-primary-foreground/60" style={{ background: colors.get(activeArea.district) }} aria-hidden="true" />
               <div className="min-w-0">
-                <strong className="block truncate text-sm">{activeArea.district}</strong>
-                <p className="text-xs text-primary-foreground/80">
-                  {activeArea.province ? `${activeArea.province} · ` : ''}
-                  {counts
-                    ? `${(counts[normalizeGeoName(activeArea.district)] ?? 0).toLocaleString('fr-FR')} parcelle(s) enregistrée(s)`
-                    : 'Nombre de parcelles indisponible'}
-                </p>
+                <strong className="block text-sm">{activeArea.district}</strong>
+                {activeArea.province && <p className="text-xs text-primary-foreground/80">{activeArea.province}</p>}
+                <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-primary-foreground/90">
+                  {([
+                    ['parcels', 'Parcelles enregistrées'],
+                    ['services', 'Services cadastraux et fonciers délivrés'],
+                    ['disputes', 'Litiges fonciers répertoriés'],
+                  ] as const).map(([key, label]) => (
+                    <span key={key}>
+                      {label} : {counts?.[key] ? (counts[key][normalizeGeoName(activeArea.district)] ?? 0).toLocaleString('fr-FR') : 'indisponible'}
+                    </span>
+                  ))}
+                </div>
               </div>
             </div>
             <Button asChild size="sm" className="bg-background text-primary hover:bg-background/90">
@@ -159,7 +182,7 @@ export default function HomeProvinceMap() {
           </div>
         ) : (
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-primary-foreground/85">
-            <span>Survolez ou sélectionnez une circonscription pour voir ses parcelles.</span>
+            <span>Survolez ou sélectionnez une circonscription pour voir ses données.</span>
             <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm bg-accent" aria-hidden="true" />{identified} identifiées</span>
             <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm bg-primary-foreground/25" aria-hidden="true" />Découpage en cours</span>
           </div>
