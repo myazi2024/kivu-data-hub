@@ -10,3 +10,6 @@
 - Historique des propriétaires et historique fiscal lisibles par tout utilisateur connecté, sans paiement (contraire au modèle « données personnelles après paiement »). Les restreindre casserait l'affichage actuel de la carte et du tableau client : décision à prendre, puis passage par une fonction serveur vérifiant l'accès payé.
 - Dialogues très longs à découper (expertise 4 069 lignes, titre foncier 3 496, aperçu parcelle 3 160, mutation 1 409, bloc construction 1 141) — sans impact fonctionnel, travail à planifier séparément.
 - `useAdvancedAnalytics` affiche des indicateurs simulés au hasard (hors carte).
+
+## Suite — accès payé aux historiques (corrigé)
+Lecture libre supprimée ; carte et tableau client passent par `get_parcel_paid_history` ; Données foncières et recherche avancée par des fonctions statistiques sans données personnelles.

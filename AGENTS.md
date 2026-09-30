@@ -5,3 +5,4 @@
 - CCC admin approve/reject go through approve_ccc_contribution / reject_ccc_contribution RPCs (admin check + status guard + rejection notification server-side); never direct table updates.
 - payment_transactions : insertion réservée au serveur (record-test-payment pour le mode test) ; le navigateur ne crée jamais de transaction.
 - Recours et retrait de contribution CCC passent par process_ccc_appeal / withdraw_ccc_contribution (contrôle admin + statut serveur) ; jamais de mise à jour directe.
+- Historique des propriétaires et des taxes : détail uniquement via `get_parcel_paid_history` (service « history » / « obligations » payé, ou admin) ; statistiques via `get_ownership_history_stats` / `get_tax_history_stats` sans nom ni justificatif ; plus aucune lecture directe par les utilisateurs connectés.
