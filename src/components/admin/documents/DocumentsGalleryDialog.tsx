@@ -146,7 +146,7 @@ export const DocumentsGalleryDialog: React.FC<DocumentsGalleryDialogProps> = ({
                     buildingPermits.map((permit, idx) => 
                       permit.attachmentUrl && renderDocument(
                         permit.attachmentUrl, 
-                        `Permis ${permit.permitType || ''} - ${permit.permitNumber || `N°${idx + 1}`}`
+                        `Autorisation ${permit.permitType || ''} - ${permit.permitNumber || `N°${idx + 1}`}`
                       )
                     )
                   ) : (
