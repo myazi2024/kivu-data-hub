@@ -22,6 +22,15 @@ import {
 } from "@/components/ui/alert-dialog";
 import { AlertCircle, MapPin, AlertTriangle, Info, Move, Hand, Plus, Trash2, Target, Pencil, Check, Navigation, Eye, Building2, Layers, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, X, RotateCw, RotateCcw, Compass, Copy } from 'lucide-react';
 import { BoundaryConflictDialog } from './BoundaryConflictDialog';
+import { DimensionEditOverlay } from './parcel-map-preview/DimensionEditOverlay';
+import { BorneCoordsEditOverlay } from './parcel-map-preview/BorneCoordsEditOverlay';
+import { BuildingVertexEditOverlay } from './parcel-map-preview/BuildingVertexEditOverlay';
+import { CompassControl } from './parcel-map-preview/CompassControl';
+import { MarkerMovePanel } from './parcel-map-preview/MarkerMovePanel';
+import { ParcelControlPanel } from './parcel-map-preview/ParcelControlPanel';
+import { ClearAllDialog } from './parcel-map-preview/ClearAllDialog';
+import { BuildingDeleteConfirmDialog } from './parcel-map-preview/BuildingDeleteConfirmDialog';
+import { BuildingsListCard } from './parcel-map-preview/BuildingsListCard';
 import { supabase } from '@/integrations/supabase/client';
 import { useTestEnvironment, applyTestFilter } from '@/hooks/useTestEnvironment';
 import { RoadSideInfo } from './RoadBorderingSidesPanel';
@@ -2087,182 +2096,71 @@ export const ParcelMapPreview = ({
         
         {/* Overlay d'édition de dimension */}
         {editingSideIndex !== null && (
-          <div className="absolute inset-0 z-[1100] flex items-center justify-center bg-black/30 rounded-2xl">
-            <div className="bg-card rounded-xl p-4 shadow-2xl border border-border/50 w-56 space-y-3">
-              <p className="text-xs font-semibold text-foreground text-center">
-                Modifier Côté {editingSideIndex + 1}
-              </p>
-              <div className="flex items-center gap-2">
-                <input
-                  type="number"
-                  step="0.1"
-                  min="0.1"
-                  value={editingSideValue}
-                  onChange={(e) => setEditingSideValue(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') confirmDimensionEdit();
-                    if (e.key === 'Escape') { setEditingSideIndex(null); setEditingSideValue(''); }
-                  }}
-                  autoFocus
-                  className="flex-1 h-9 rounded-lg border border-border bg-background px-3 text-sm font-mono text-center focus:outline-none focus:ring-2 focus:ring-primary/50"
-                />
-                <span className="text-sm font-medium text-muted-foreground">m</span>
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  className="flex-1 h-8 rounded-lg text-xs"
-                  onClick={() => { setEditingSideIndex(null); setEditingSideValue(''); }}
-                >
-                  Annuler
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  className="flex-1 h-8 rounded-lg text-xs"
-                  onClick={confirmDimensionEdit}
-                >
-                  Appliquer
-                </Button>
-              </div>
-            </div>
-          </div>
+          <DimensionEditOverlay
+            editingSideIndex={editingSideIndex}
+            editingSideValue={editingSideValue}
+            onValueChange={setEditingSideValue}
+            onConfirm={confirmDimensionEdit}
+            onCancel={() => { setEditingSideIndex(null); setEditingSideValue(''); }}
+          />
         )}
 
         {/* Overlay d'édition de coordonnées GPS de borne */}
         {editingBorneIndex !== null && (
-          <div className="absolute inset-0 z-[1100] flex items-center justify-center bg-black/30 rounded-2xl">
-            <div className="bg-card rounded-xl p-4 shadow-2xl border border-border/50 w-64 space-y-3">
-              <p className="text-xs font-semibold text-foreground text-center">
-                📍 Borne {editingBorneIndex + 1} — Coordonnées GPS
-              </p>
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-medium text-muted-foreground w-8">Lat</span>
-                  <input
-                    type="number"
-                    step="0.000001"
-                    value={editingBorneCoords.lat}
-                    onChange={(e) => setEditingBorneCoords(prev => ({ ...prev, lat: e.target.value }))}
-                    onBlur={() => {}}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Escape') { setEditingBorneIndex(null); }
-                    }}
-                    autoFocus
-                    className="flex-1 h-9 rounded-lg border border-border bg-background px-3 text-sm font-mono text-center focus:outline-none focus:ring-2 focus:ring-primary/50"
-                  />
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-medium text-muted-foreground w-8">Lng</span>
-                  <input
-                    type="number"
-                    step="0.000001"
-                    value={editingBorneCoords.lng}
-                    onChange={(e) => setEditingBorneCoords(prev => ({ ...prev, lng: e.target.value }))}
-                    onBlur={() => {}}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Escape') { setEditingBorneIndex(null); }
-                    }}
-                    className="flex-1 h-9 rounded-lg border border-border bg-background px-3 text-sm font-mono text-center focus:outline-none focus:ring-2 focus:ring-primary/50"
-                  />
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  className="flex-1 h-8 rounded-lg text-xs"
-                  onClick={() => setEditingBorneIndex(null)}
-                >
-                  Fermer
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  className="flex-1 h-8 rounded-lg text-xs"
-                  onClick={() => {
-                    if (editingBorneIndex !== null) {
-                      const lat = parseFloat(editingBorneCoords.lat);
-                      const lng = parseFloat(editingBorneCoords.lng);
-                      if (!isNaN(lat) && !isNaN(lng)) {
-                        const updatedCoords = [...coordinates];
-                        updatedCoords[editingBorneIndex] = { ...updatedCoords[editingBorneIndex], lat: lat.toFixed(6), lng: lng.toFixed(6) };
-                        onCoordinatesUpdate(updatedCoords);
-                        updateParcelSidesFromCoordinates(updatedCoords);
-                      }
-                    }
-                    setEditingBorneIndex(null);
-                  }}
-                >
-                  Appliquer
-                </Button>
-              </div>
-            </div>
-          </div>
+          <BorneCoordsEditOverlay
+            editingBorneIndex={editingBorneIndex}
+            editingBorneCoords={editingBorneCoords}
+            onCoordsChange={setEditingBorneCoords}
+            onClose={() => setEditingBorneIndex(null)}
+            onApply={() => {
+              if (editingBorneIndex !== null) {
+                const lat = parseFloat(editingBorneCoords.lat);
+                const lng = parseFloat(editingBorneCoords.lng);
+                if (!isNaN(lat) && !isNaN(lng)) {
+                  const updatedCoords = [...coordinates];
+                  updatedCoords[editingBorneIndex] = { ...updatedCoords[editingBorneIndex], lat: lat.toFixed(6), lng: lng.toFixed(6) };
+                  onCoordinatesUpdate(updatedCoords);
+                  updateParcelSidesFromCoordinates(updatedCoords);
+                }
+              }
+              setEditingBorneIndex(null);
+            }}
+          />
         )}
         
         {/* Overlay d'édition GPS d'un sommet de construction */}
         {editingBuildingVertex !== null && (
-          <div className="absolute inset-0 z-[1100] flex items-center justify-center bg-black/30 rounded-2xl">
-            <div className="bg-card rounded-xl p-4 shadow-2xl border border-border/50 w-64 space-y-3">
-              <p className="text-xs font-semibold text-foreground text-center">
-                🏗️ {constructionLabels[buildingShapes.find(s => s.id === editingBuildingVertex.shapeId)?.linkedIndex ?? 0] || 'Construction'} — Sommet {editingBuildingVertex.vertexIdx + 1}
-              </p>
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-medium text-muted-foreground w-8">Lat</span>
-                  <input
-                    type="number" step="0.000001"
-                    value={editingBuildingVertexCoords.lat}
-                    onChange={(e) => setEditingBuildingVertexCoords(prev => ({ ...prev, lat: e.target.value }))}
-                    onKeyDown={(e) => { if (e.key === 'Escape') setEditingBuildingVertex(null); }}
-                    autoFocus
-                    className="flex-1 h-9 rounded-lg border border-border bg-background px-3 text-sm font-mono text-center focus:outline-none focus:ring-2 focus:ring-primary/50"
-                  />
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-medium text-muted-foreground w-8">Lng</span>
-                  <input
-                    type="number" step="0.000001"
-                    value={editingBuildingVertexCoords.lng}
-                    onChange={(e) => setEditingBuildingVertexCoords(prev => ({ ...prev, lng: e.target.value }))}
-                    onKeyDown={(e) => { if (e.key === 'Escape') setEditingBuildingVertex(null); }}
-                    className="flex-1 h-9 rounded-lg border border-border bg-background px-3 text-sm font-mono text-center focus:outline-none focus:ring-2 focus:ring-primary/50"
-                  />
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <Button type="button" size="sm" variant="outline" className="flex-1 h-8 rounded-lg text-xs" onClick={() => setEditingBuildingVertex(null)}>Fermer</Button>
-                <Button type="button" size="sm" className="flex-1 h-8 rounded-lg text-xs" onClick={() => {
-                  if (editingBuildingVertex && onBuildingShapesChange) {
-                    const lat = parseFloat(editingBuildingVertexCoords.lat);
-                    const lng = parseFloat(editingBuildingVertexCoords.lng);
-                    if (!isNaN(lat) && !isNaN(lng)) {
-                      const updated = buildingShapes.map(s => {
-                        if (s.id !== editingBuildingVertex.shapeId) return s;
-                        const newVerts = [...s.vertices];
-                        newVerts[editingBuildingVertex.vertexIdx] = { lat, lng };
-                        const newSides: { name: string; length: string }[] = [];
-                        let newPerimeter = 0;
-                        for (let i = 0; i < newVerts.length; i++) {
-                          const nxt = newVerts[(i + 1) % newVerts.length];
-                          const d = calculateDistance(newVerts[i].lat, newVerts[i].lng, nxt.lat, nxt.lng);
-                          newSides.push({ name: `Côté ${i + 1}`, length: d.toFixed(2) });
-                          newPerimeter += d;
-                        }
-                        return { ...s, vertices: newVerts, sides: newSides, areaSqm: Math.round(calculateBuildingArea(newVerts) * 100) / 100, perimeterM: Math.round(newPerimeter * 100) / 100 };
-                      });
-                      onBuildingShapesChange(updated);
+          <BuildingVertexEditOverlay
+            vertexLabel={String(editingBuildingVertex.vertexIdx + 1)}
+            constructionLabel={constructionLabels[buildingShapes.find(s => s.id === editingBuildingVertex.shapeId)?.linkedIndex ?? 0] || 'Construction'}
+            coords={editingBuildingVertexCoords}
+            onCoordsChange={setEditingBuildingVertexCoords}
+            onClose={() => setEditingBuildingVertex(null)}
+            onApply={() => {
+              if (editingBuildingVertex && onBuildingShapesChange) {
+                const lat = parseFloat(editingBuildingVertexCoords.lat);
+                const lng = parseFloat(editingBuildingVertexCoords.lng);
+                if (!isNaN(lat) && !isNaN(lng)) {
+                  const updated = buildingShapes.map(s => {
+                    if (s.id !== editingBuildingVertex.shapeId) return s;
+                    const newVerts = [...s.vertices];
+                    newVerts[editingBuildingVertex.vertexIdx] = { lat, lng };
+                    const newSides: { name: string; length: string }[] = [];
+                    let newPerimeter = 0;
+                    for (let i = 0; i < newVerts.length; i++) {
+                      const nxt = newVerts[(i + 1) % newVerts.length];
+                      const d = calculateDistance(newVerts[i].lat, newVerts[i].lng, nxt.lat, nxt.lng);
+                      newSides.push({ name: `Côté ${i + 1}`, length: d.toFixed(2) });
+                      newPerimeter += d;
                     }
-                  }
-                  setEditingBuildingVertex(null);
-                }}>Appliquer</Button>
-              </div>
-            </div>
-          </div>
+                    return { ...s, vertices: newVerts, sides: newSides, areaSqm: Math.round(calculateBuildingArea(newVerts) * 100) / 100, perimeterM: Math.round(newPerimeter * 100) / 100 };
+                  });
+                  onBuildingShapesChange(updated);
+                }
+              }
+              setEditingBuildingVertex(null);
+            }}
+          />
         )}
 
         {/* Boutons Tracer/Terminer + Superficie/Périmètre sur la carte (en haut à gauche) */}
@@ -2324,111 +2222,7 @@ export const ParcelMapPreview = ({
         {/* Indicateur Nord / Boussole + Boutons suppression - coin inférieur gauche */}
         {!isDrawingBuilding && (
         <div className="absolute bottom-10 left-2 z-[1000] flex flex-col items-center gap-1.5">
-          {/* Boussole avec indicateur Nord */}
-          <div 
-            className="relative w-10 h-10 bg-white/95 dark:bg-card/95 backdrop-blur-sm rounded-full shadow-lg border border-border/50 flex items-center justify-center"
-            style={{ transform: `rotate(${-mapBearing}deg)` }}
-          >
-            {/* Flèche Nord */}
-            <div className="absolute top-0.5 left-1/2 -translate-x-1/2">
-              <div className="w-0 h-0 border-l-[4px] border-l-transparent border-r-[4px] border-r-transparent border-b-[8px] border-b-red-500" />
-            </div>
-            {/* Indicateur N */}
-            <span className="absolute top-2 text-[7px] font-bold text-red-500">N</span>
-            {/* Indicateur S */}
-            <span className="absolute bottom-1 text-[6px] font-medium text-muted-foreground">S</span>
-            {/* Indicateur E */}
-            <span className="absolute right-1 text-[6px] font-medium text-muted-foreground">E</span>
-            {/* Indicateur O */}
-            <span className="absolute left-1 text-[6px] font-medium text-muted-foreground">O</span>
-            {/* Centre */}
-            <div className="w-1.5 h-1.5 rounded-full bg-primary/30" />
-          </div>
-          
-          {/* Bouton calibrer orientation */}
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                className="h-8 w-10 p-0 rounded-xl bg-white/95 hover:bg-blue-50 shadow-md border-border/50"
-                title="Calibrer l'orientation de la carte"
-              >
-                <Compass className="h-4 w-4" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent 
-              side="right" 
-              align="end" 
-              className="w-56 p-3 rounded-xl shadow-lg bg-background border"
-              sideOffset={5}
-            >
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <Compass className="h-4 w-4 text-primary" />
-                  <p className="text-sm font-semibold">Orientation carte</p>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Ajustez l'orientation de la carte pour qu'elle corresponde à l'orientation réelle du terrain.
-                </p>
-                
-                {/* Contrôles de rotation de la carte */}
-                <div className="flex items-center justify-between gap-2">
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    onClick={() => {
-                      const newBearing = (mapBearing - 15 + 360) % 360;
-                      setMapBearing(newBearing);
-                      // Note: Leaflet standard ne supporte pas setBearing — seule la boussole et les orientations changent
-                    }}
-                    className="h-8 w-8 p-0 rounded-lg"
-                    title="-15°"
-                  >
-                    <RotateCcw className="h-4 w-4" />
-                  </Button>
-                  
-                  <div className="flex-1 text-center">
-                    <span className="text-sm font-medium">{mapBearing.toFixed(0)}°</span>
-                  </div>
-                  
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    onClick={() => {
-                      const newBearing = (mapBearing + 15) % 360;
-                      setMapBearing(newBearing);
-                    }}
-                    className="h-8 w-8 p-0 rounded-lg"
-                    title="+15°"
-                  >
-                    <RotateCw className="h-4 w-4" />
-                  </Button>
-                </div>
-                
-                {/* Bouton recalibrer au Nord */}
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="default"
-                  onClick={() => {
-                    setMapBearing(0);
-                  }}
-                  className="w-full h-8 rounded-lg text-xs"
-                >
-                  <Navigation className="h-3 w-3 mr-1" />
-                  Recalibrer au Nord
-                </Button>
-                
-                <p className="text-[10px] text-muted-foreground text-center">
-                  Le Nord (N) est indiqué par la flèche rouge sur la boussole
-                </p>
-              </div>
-            </PopoverContent>
-          </Popover>
+          <CompassControl mapBearing={mapBearing} onBearingChange={setMapBearing} />
           
           {/* Boutons de suppression */}
           {enableDrawingMode && validCoords.length > 0 && (
@@ -2624,170 +2418,23 @@ export const ParcelMapPreview = ({
         
         {/* Panneau de contrôle parcelle compact (déplacement + rotation) - aligné avec zoom, au-dessus de l'attribution - taille réduite sur desktop */}
         {!isDrawingMode && !isDrawingBuilding && !selectedBorne && validCoords.length >= 3 && (
-          <div className="absolute bottom-8 right-14 z-[1000] md:scale-[0.65] md:origin-bottom-right">
-            <div className="flex flex-col items-end gap-0.5">
-              {/* Indicateurs compacts */}
-              <div className="flex items-center gap-1 bg-white/90 dark:bg-card/90 backdrop-blur-sm rounded-lg px-1 py-0.5 shadow-sm border border-blue-400/30">
-                <span className="text-[8px] text-blue-600 dark:text-blue-400 font-medium">{moveStepMeters.toFixed(1)}m</span>
-                <span className="text-[8px] text-muted-foreground">|</span>
-                <span className="text-[8px] text-blue-600 dark:text-blue-400 font-medium">{parcelRotationDegrees.toFixed(0)}°</span>
-              </div>
-              
-              {/* Contrôles compacts en ligne */}
-              <div className="flex items-center gap-0.5 bg-white/95 dark:bg-card/95 backdrop-blur-sm rounded-lg p-0.5 shadow-md border border-blue-400/30">
-                {/* Flèches directionnelles */}
-                <div className="flex flex-col gap-0.5">
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    {...getLongPressProps(() => nudgeEntireParcel('N'))}
-                    className="h-6 w-6 p-0 rounded-md border-0 bg-transparent hover:bg-blue-100 dark:hover:bg-blue-900/30 active:bg-blue-200 dark:active:bg-blue-800/50 touch-none select-none"
-                    title="Nord (maintenir pour répéter)"
-                  >
-                    <ArrowUp className="h-3 w-3" />
-                  </Button>
-                  <div className="flex gap-0.5">
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      {...getLongPressProps(() => nudgeEntireParcel('W'))}
-                      className="h-6 w-6 p-0 rounded-md border-0 bg-transparent hover:bg-blue-100 dark:hover:bg-blue-900/30 active:bg-blue-200 dark:active:bg-blue-800/50 touch-none select-none"
-                      title="Ouest (maintenir pour répéter)"
-                    >
-                      <ArrowLeft className="h-3 w-3" />
-                    </Button>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      {...getLongPressProps(() => nudgeEntireParcel('E'))}
-                      className="h-6 w-6 p-0 rounded-md border-0 bg-transparent hover:bg-blue-100 dark:hover:bg-blue-900/30 active:bg-blue-200 dark:active:bg-blue-800/50 touch-none select-none"
-                      title="Est (maintenir pour répéter)"
-                    >
-                      <ArrowRight className="h-3 w-3" />
-                    </Button>
-                  </div>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    {...getLongPressProps(() => nudgeEntireParcel('S'))}
-                    className="h-6 w-6 p-0 rounded-md border-0 bg-transparent hover:bg-blue-100 dark:hover:bg-blue-900/30 active:bg-blue-200 dark:active:bg-blue-800/50 touch-none select-none"
-                    title="Sud (maintenir pour répéter)"
-                  >
-                    <ArrowDown className="h-3 w-3" />
-                  </Button>
-                </div>
-                
-                {/* Séparateur fin */}
-                <div className="w-px h-10 bg-border/50 mx-0.5" />
-                
-                {/* Rotation */}
-                <div className="flex flex-col gap-0.5">
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    {...getLongPressProps(() => rotateParcel(-1))}
-                    className="h-6 w-6 p-0 rounded-md border-0 bg-transparent hover:bg-blue-100 dark:hover:bg-blue-900/30 active:bg-blue-200 dark:active:bg-blue-800/50 touch-none select-none"
-                    title="-1° (maintenir pour répéter)"
-                  >
-                    <RotateCcw className="h-3 w-3" />
-                  </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    {...getLongPressProps(() => rotateParcel(1))}
-                    className="h-6 w-6 p-0 rounded-md border-0 bg-transparent hover:bg-blue-100 dark:hover:bg-blue-900/30 active:bg-blue-200 dark:active:bg-blue-800/50 touch-none select-none"
-                    title="+1° (maintenir pour répéter)"
-                  >
-                    <RotateCw className="h-3 w-3" />
-                  </Button>
-                </div>
-                
-              </div>
-            </div>
-          </div>
+          <ParcelControlPanel
+            moveStepMeters={moveStepMeters}
+            parcelRotationDegrees={parcelRotationDegrees}
+            getLongPressProps={getLongPressProps}
+            onNudgeEntireParcel={nudgeEntireParcel}
+            onRotateParcel={rotateParcel}
+          />
         )}
         
         {/* Panel de déplacement précis de borne — mobile uniquement */}
         {selectedBorne && (
-          <div className="absolute bottom-12 left-1/2 -translate-x-1/2 z-[1000]">
-            <Card className="p-2 rounded-2xl shadow-lg bg-white/95 dark:bg-card/95 backdrop-blur-sm border-primary/30">
-              <div className="flex flex-col items-center gap-1.5">
-                <div className="flex items-center gap-1">
-                  <Badge variant="outline" className="text-xs h-5 px-2 rounded-lg bg-primary/10 border-primary/30">
-                    Borne {selectedBorne}
-                  </Badge>
-                  <Badge variant="outline" className="text-xs h-5 px-1.5 rounded-lg text-muted-foreground">
-                    {moveStepMeters.toFixed(1)}m/mvt
-                  </Badge>
-                </div>
-                
-                <div className="grid grid-cols-3 gap-0.5">
-                  <div />
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    onClick={() => nudgeSelectedMarker('N')}
-                    className="h-8 w-8 p-0 rounded-lg"
-                  >
-                    <ArrowUp className="h-4 w-4" />
-                  </Button>
-                  <div />
-                  
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    onClick={() => nudgeSelectedMarker('W')}
-                    className="h-8 w-8 p-0 rounded-lg"
-                  >
-                    <ArrowLeft className="h-4 w-4" />
-                  </Button>
-                  
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="destructive"
-                    onClick={exitMarkerMoveMode}
-                    className="h-8 w-8 p-0 rounded-lg"
-                    title="Quitter mode déplacement"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                  
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    onClick={() => nudgeSelectedMarker('E')}
-                    className="h-8 w-8 p-0 rounded-lg"
-                  >
-                    <ArrowRight className="h-4 w-4" />
-                  </Button>
-                  
-                  <div />
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    onClick={() => nudgeSelectedMarker('S')}
-                    className="h-8 w-8 p-0 rounded-lg"
-                  >
-                    <ArrowDown className="h-4 w-4" />
-                  </Button>
-                  <div />
-                </div>
-                
-                <p className="text-[10px] text-muted-foreground">Appui long sur borne = sélection</p>
-              </div>
-            </Card>
-          </div>
+          <MarkerMovePanel
+            selectedBorne={selectedBorne}
+            moveStepMeters={moveStepMeters}
+            onNudge={nudgeSelectedMarker}
+            onExit={exitMarkerMoveMode}
+          />
         )}
       </Card>
 
@@ -2812,116 +2459,32 @@ export const ParcelMapPreview = ({
 
       {/* Constructions ajoutées — liste détaillée avec suppression individuelle */}
       {!isTerrainNu && requiredBuildingCount > 0 && (
-        <Card className={`p-3 rounded-2xl shadow-sm border-border/50 ${buildingShapes.length >= requiredBuildingCount ? 'bg-green-50 dark:bg-green-950/20 border-green-200/50' : 'bg-orange-50 dark:bg-orange-950/20 border-orange-200/50'}`}>
-          <div className="flex items-center gap-2 mb-2">
-            <Building2 className={`h-4 w-4 ${buildingShapes.length >= requiredBuildingCount ? 'text-green-500' : 'text-orange-500'}`} />
-            <span className={`text-sm font-medium ${buildingShapes.length >= requiredBuildingCount ? 'text-green-700 dark:text-green-300' : 'text-orange-700 dark:text-orange-300'}`}>
-              {buildingShapes.length}/{requiredBuildingCount} construction{requiredBuildingCount > 1 ? 's' : ''} tracée{requiredBuildingCount > 1 ? 's' : ''}
-            </span>
-          </div>
-          {buildingShapes.length > 0 && (
-           <div className="space-y-1.5">
-              {buildingShapes.map((shape, idx) => {
-                const label = constructionLabels[shape.linkedIndex ?? idx] || `Construction ${idx + 1}`;
-                return (
-                    <div
-                      key={shape.id}
-                      onMouseEnter={() => setHoveredBuildingId(shape.id)}
-                      onMouseLeave={() => setHoveredBuildingId(prev => (prev === shape.id ? null : prev))}
-                      className={`space-y-1.5 text-xs bg-background/60 rounded-lg px-2 py-1.5 border transition-colors ${hoveredBuildingId === shape.id ? 'border-primary/60 bg-primary/5' : 'border-border/30'}`}
-                    >
-
-                      <div className="flex items-center justify-between gap-1.5">
-                        <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                          <Layers className="h-3 w-3 text-primary flex-shrink-0" />
-                          {requiredBuildingCount > 1 && constructionLabels.length > 1 ? (
-                            <Select
-                              value={String(shape.linkedIndex ?? idx)}
-                              onValueChange={(val) => reassignBuildingLinkedIndex(shape.id, parseInt(val))}
-                            >
-                              <SelectTrigger className="h-6 text-xs border-border/50 rounded-md px-1.5 min-w-0 flex-1">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {constructionLabels.map((cl, i) => {
-                                  const takenBy = buildingShapes.find(s => s.linkedIndex === i && s.id !== shape.id);
-                                  return (
-                                    <SelectItem key={i} value={String(i)}>
-                                      {cl}{takenBy ? ' ↔ permuter' : ''}
-                                    </SelectItem>
-                                  );
-                                })}
-                              </SelectContent>
-                            </Select>
-                          ) : (
-                            <span className="font-medium truncate">{label}</span>
-                          )}
-                          <span className="text-muted-foreground flex-shrink-0">
-                            {shape.areaSqm.toFixed(1)} m²
-                            {heightInputExternal && shape.heightM != null && ` · H: ${shape.heightM} m`}
-                          </span>
-                        </div>
-                        <Button type="button" variant="ghost" size="sm" onClick={() => setPendingBuildingDeletion(shape.id)} title="Supprimer cette construction" className="h-6 w-6 p-0 text-destructive hover:bg-destructive/10 flex-shrink-0">
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
-
-                      </div>
-                      {!heightInputExternal && (
-                      <div className="flex flex-col gap-0.5 pl-4">
-                        <div className="flex items-center gap-1.5">
-                          <label className="text-muted-foreground whitespace-nowrap">Hauteur :</label>
-                          <Input
-                            type="number"
-                            min={3}
-                            step={0.1}
-                            placeholder="≥ 3"
-                            value={shape.heightM ?? ''}
-                            onChange={(e) => {
-                              const val = e.target.value === '' ? undefined : parseFloat(e.target.value);
-                              const updated = buildingShapes.map(s =>
-                                s.id === shape.id ? { ...s, heightM: val } : s
-                              );
-                              onBuildingShapesChange(updated);
-                            }}
-                            className={`h-6 w-20 text-xs px-1.5 ${(shape.heightM == null || shape.heightM < 3) ? 'border-destructive' : ''}`}
-                          />
-                          <span className="text-muted-foreground">m</span>
-                        </div>
-                        {(shape.heightM == null || shape.heightM < 3) && (
-                          <p className="text-[10px] text-destructive">Hauteur minimale : 3 m</p>
-                        )}
-                      </div>
-                      )}
-                    </div>
-                );
-              })}
-            </div>
-          )}
-        </Card>
+        <BuildingsListCard
+          buildingShapes={buildingShapes}
+          constructionLabels={constructionLabels}
+          requiredBuildingCount={requiredBuildingCount}
+          heightInputExternal={heightInputExternal}
+          hoveredBuildingId={hoveredBuildingId}
+          onHoverChange={setHoveredBuildingId}
+          onReassignLinkedIndex={reassignBuildingLinkedIndex}
+          onDeleteRequest={setPendingBuildingDeletion}
+          onHeightChange={(buildingId, heightM) => {
+            if (!onBuildingShapesChange) return;
+            const updated = buildingShapes.map(s => s.id === buildingId ? { ...s, heightM } : s);
+            onBuildingShapesChange(updated);
+          }}
+        />
       )}
 
       {/* Confirmation de suppression d'une construction */}
-      <AlertDialog open={!!pendingBuildingDeletion} onOpenChange={(open) => { if (!open) setPendingBuildingDeletion(null); }}>
-        <AlertDialogContent className="rounded-2xl">
-          <AlertDialogHeader>
-            <AlertDialogTitle>Supprimer cette construction ?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Le tracé sera retiré de la carte. Les autres constructions et la hauteur saisie dans le bloc Construction sont conservées. Vous pourrez annuler juste après la suppression.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Annuler</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                if (pendingBuildingDeletion) removeBuildingById(pendingBuildingDeletion);
-                setPendingBuildingDeletion(null);
-              }}
-            >
-              Supprimer
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <BuildingDeleteConfirmDialog
+        pendingBuildingDeletion={pendingBuildingDeletion}
+        onOpenChange={(open) => { if (!open) setPendingBuildingDeletion(null); }}
+        onConfirm={() => {
+          if (pendingBuildingDeletion) removeBuildingById(pendingBuildingDeletion);
+          setPendingBuildingDeletion(null);
+        }}
+      />
 
       {isTerrainNu && buildingShapes.length > 0 && (
         <Card className="p-3 bg-red-50 dark:bg-red-950/20 rounded-2xl shadow-sm border-red-200/50">
@@ -2973,40 +2536,11 @@ export const ParcelMapPreview = ({
       />
 
       {/* Dialogue de confirmation pour supprimer toutes les bornes - placé en dehors du conteneur carte avec z-index élevé */}
-      <AlertDialog open={showClearAllDialog} onOpenChange={setShowClearAllDialog}>
-        <AlertDialogContent className="max-w-[180px] rounded-xl p-2 shadow-2xl z-[99999] bg-background border border-border">
-          <AlertDialogHeader className="space-y-1">
-            <div className="flex items-center gap-1.5">
-              <div className="h-6 w-6 rounded-lg bg-destructive/10 flex items-center justify-center">
-                <AlertTriangle className="h-3.5 w-3.5 text-destructive" />
-              </div>
-              <AlertDialogTitle className="text-xs font-semibold">
-                Supprimer tout ?
-              </AlertDialogTitle>
-            </div>
-            <AlertDialogDescription className="text-[10px] text-muted-foreground leading-tight">
-              Supprime toutes les bornes et données associées.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <div className="mt-1 p-1.5 rounded-lg bg-muted/50 border border-border/50">
-            <p className="text-[9px] text-muted-foreground flex items-start gap-1">
-              <Info className="h-2.5 w-2.5 mt-0.5 flex-shrink-0 text-primary" />
-              <span>Utilisez <Trash2 className="inline h-2 w-2" /> pour une seule borne.</span>
-            </p>
-          </div>
-          <AlertDialogFooter className="mt-1.5 gap-1 sm:gap-1">
-            <AlertDialogCancel className="h-6 px-2 rounded-lg text-[10px]">
-              Annuler
-            </AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={clearAllMarkers}
-              className="h-6 px-2 rounded-lg text-[10px] bg-destructive hover:bg-destructive/90 text-destructive-foreground"
-            >
-              Supprimer
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ClearAllDialog
+        open={showClearAllDialog}
+        onOpenChange={setShowClearAllDialog}
+        onConfirm={clearAllMarkers}
+      />
     </div>
   );
 };
