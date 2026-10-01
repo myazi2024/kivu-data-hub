@@ -38,6 +38,8 @@ import { ParcelSidesDimensionsPanel, ServitudeInfo } from './ParcelSidesDimensio
 import { useMapConfig, MapConfig } from '@/hooks/useMapConfig';
 import type { Coordinate, ConflictingParcel, ParcelSide, BuildingShape, ParcelMapPreviewProps } from './parcel-map-preview/types';
 import { calculateBuildingArea, calculateDistance, calculateBounds, calculatePolygonArea, isPointInPolygon, checkPolygonOverlap } from './parcel-map-preview/geometry';
+import { useParcelMarkers } from './parcel-map-preview/useParcelMarkers';
+import { useBuildingLayers } from './parcel-map-preview/useBuildingLayers';
 
 
 export const ParcelMapPreview = ({ 
@@ -723,589 +725,138 @@ export const ParcelMapPreview = ({
     setConflictingParcels([]);
   }, []);
 
-  // Mettre à jour les marqueurs et polygone
-  useEffect(() => {
-    if (!isMapReady || !mapInstanceRef.current) return;
-
-    let cancelled = false;
-    const seq = ++renderSeqRef.current;
-
-    const updateMap = async () => {
-      try {
-        const L = await import('leaflet');
-        if (cancelled || seq !== renderSeqRef.current) return;
-
-        const map = mapInstanceRef.current;
-        if (!map) return;
-
-        const container = map.getContainer();
-        if (!container.dataset.markerMoving) container.dataset.markerMoving = 'false';
-
-        // Nettoyer les anciens éléments
-        markersRef.current.forEach(marker => {
-          try {
-            if (marker && map.hasLayer(marker)) map.removeLayer(marker);
-          } catch (e) {
-            console.error('remove marker error', e);
-          }
-        });
-        markersRef.current = [];
-
-        if (polygonRef.current) {
-          try {
-            if (map.hasLayer(polygonRef.current)) map.removeLayer(polygonRef.current);
-          } catch (e) {
-            console.error('remove polygon error', e);
-          }
-          polygonRef.current = null;
+  // Afficher dimensions des côtés (interactives : double-clic / appui prolongé pour éditer)
+  const displaySideDimensions = (L: any, map: any, coords: [number, number][]) => {
+    coords.forEach((coord, index) => {
+      const nextIndex = (index + 1) % coords.length;
+      const nextCoord = coords[nextIndex];
+      
+      const midLat = (coord[0] + nextCoord[0]) / 2;
+      const midLng = (coord[1] + nextCoord[1]) / 2;
+      
+      const storedSide = parcelSides[index];
+      const displayDistance = storedSide?.length 
+        ? parseFloat(storedSide.length) 
+        : calculateDistance(coord[0], coord[1], nextCoord[0], nextCoord[1]);
+      
+      const label = L.divIcon({
+        className: 'dimension-label',
+        html: `<div data-side-index="${index}" style="
+          background: rgba(255,255,255,0.95);
+          padding: 3px 8px;
+          border-radius: 6px;
+          font-size: 11px;
+          font-weight: 700;
+          white-space: nowrap;
+          box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+          border: 1.5px solid hsl(var(--primary) / 0.3);
+          cursor: pointer;
+          user-select: none;
+          transition: all 0.15s ease;
+        ">${displayDistance.toFixed(1)}m ✏️</div>`,
+        iconSize: [60, 20],
+        iconAnchor: [30, 10]
+      });
+      
+      const marker = L.marker([midLat, midLng], { icon: label, interactive: true }).addTo(map);
+      
+      // Double-clic pour éditer (desktop)
+      marker.on('dblclick', (e: any) => {
+        e.originalEvent?.stopPropagation();
+        e.originalEvent?.preventDefault();
+        setEditingSideIndex(index);
+        setEditingSideValue(displayDistance.toFixed(1));
+      });
+      
+      // Appui prolongé pour éditer (mobile)
+      let longPressTimer: number | null = null;
+      const cancelLongPress = () => {
+        if (longPressTimer) {
+          window.clearTimeout(longPressTimer);
+          markerLongPressTimersRef.current.delete(longPressTimer);
+          longPressTimer = null;
         }
-
-        dimensionLayersRef.current.forEach(layer => {
-          try {
-            if (layer && map.hasLayer(layer)) map.removeLayer(layer);
-          } catch (e) {
-            console.error('remove dimension error', e);
-          }
-        });
-        dimensionLayersRef.current = [];
-        // Les marqueurs retirés ne doivent plus ouvrir une édition sur un côté réindexé
-        clearMarkerLongPressTimers();
-
-        segmentLayersRef.current.forEach(layer => {
-          try {
-            if (layer && map.hasLayer(layer)) map.removeLayer(layer);
-          } catch (e) {
-            console.error('remove segment error', e);
-          }
-        });
-        segmentLayersRef.current = [];
-
-
-        const latLngs: [number, number][] = [];
-        const markerColor = mapConfig.markerColor || '#3b82f6';
-        const isMarkerMoveMode = Boolean(selectedBorneRef.current);
-        const shouldAutoCenter = !isDrawingMode && !isDrawingBuilding && !isGroupDragMode && !selectedBorne && !isMarkerMoveMode;
-
-        // Créer les marqueurs
-        validCoords.forEach((coord, index) => {
-          const lat = parseFloat(coord.lat);
-          const lng = parseFloat(coord.lng);
-          if (Number.isNaN(lat) || Number.isNaN(lng)) return;
-          latLngs.push([lat, lng]);
-
-          const isSelected = selectedBorne === coord.borne;
-          const marker = L.marker([lat, lng], {
-            draggable: !isGroupDragMode && !isDrawingMode && !isDrawingBuilding && !isMarkerMoveMode && mapConfig.enableDragging !== false,
-            icon: L.divIcon({
-              className: 'custom-marker',
-              html: `<div style="
-                background-color: ${markerColor};
-                color: white;
-                width: ${isSelected ? 32 : 28}px;
-                height: ${isSelected ? 32 : 28}px;
-                border-radius: 50% 50% 50% 0;
-                transform: rotate(-45deg);
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                border: ${isSelected ? 3 : 2}px solid white;
-                box-shadow: 0 2px 10px rgba(0,0,0,0.35);
-              ">
-                <span style="transform: rotate(45deg); font-weight: 800; font-size: 11px;">${index + 1}</span>
-              </div>`,
-              iconSize: [isSelected ? 32 : 28, isSelected ? 32 : 28],
-              iconAnchor: [14, 28],
-            }),
-          }).addTo(map);
-
-          // Appui prolongé = sélection + mode déplacement précis
-          const startLongPress = () => {
-            if (isDrawingMode || isGroupDragMode || isDrawingBuilding) return;
-            if (longPressTimerRef.current) window.clearTimeout(longPressTimerRef.current);
-
-            longPressTimerRef.current = window.setTimeout(() => {
-              selectedBorneRef.current = coord.borne;
-              selectedMarkerRef.current = marker;
-              setSelectedBorne(coord.borne);
-
-              const mapNow = mapInstanceRef.current;
-              if (mapNow) {
-                const cont = mapNow.getContainer();
-                cont.dataset.markerMoving = 'true';
-                mapNow.dragging.disable();
-                mapNow.scrollWheelZoom.disable();
-                mapNow.doubleClickZoom.disable();
-                mapNow.touchZoom.disable();
-              }
-            }, 450);
-          };
-
-          const cancelLongPress = () => {
-            if (longPressTimerRef.current) {
-              window.clearTimeout(longPressTimerRef.current);
-              longPressTimerRef.current = null;
-            }
-          };
-
-          marker.on('mousedown', startLongPress);
-          marker.on('touchstart', startLongPress);
-          marker.on('mouseup', cancelLongPress);
-          marker.on('touchend', cancelLongPress);
-          marker.on('mouseout', cancelLongPress);
-          marker.on('dragstart', cancelLongPress);
-
-          marker.on('dragend', () => {
-            const newPos = marker.getLatLng();
-            const originalIndex = coordinates.findIndex(c => c.borne === coord.borne);
-            if (originalIndex !== -1) {
-              const updatedCoords = [...coordinates];
-              updatedCoords[originalIndex] = {
-                ...updatedCoords[originalIndex],
-                lat: newPos.lat.toFixed(6),
-                lng: newPos.lng.toFixed(6),
-              };
-              onCoordinatesUpdate(updatedCoords);
-              updateParcelSidesFromCoordinates(updatedCoords);
-            }
-          });
-
-          // Double-clic = édition manuelle des coordonnées GPS
-          marker.on('dblclick', (e: any) => {
-            e.originalEvent?.stopPropagation();
-            e.originalEvent?.preventDefault();
-            const idx = coordinates.findIndex(c => c.borne === coord.borne);
-            if (idx !== -1) {
-              setEditingBorneIndex(idx);
-              setEditingBorneCoords({ lat: coordinates[idx].lat, lng: coordinates[idx].lng });
-            }
-          });
-
-          markersRef.current.push(marker);
-        });
-
-        // Dessiner le polygone
-        const minMarkers = mapConfig.minMarkers || 3;
-        if (latLngs.length >= minMarkers) {
-          // Segments avec interaction
-          validCoords.forEach((coord, index) => {
-            const nextIndex = (index + 1) % validCoords.length;
-            const nextCoord = validCoords[nextIndex];
-
-            const roadSide = roadSides.find(s => s.sideIndex === index);
-            const isRoadBordering = roadSide?.bordersRoad && roadSide?.isConfirmed;
-            const lineColor = mapConfig.lineColor || '#3b82f6';
-
-            const segment = L.polyline(
-              [
-                [parseFloat(coord.lat), parseFloat(coord.lng)],
-                [parseFloat(nextCoord.lat), parseFloat(nextCoord.lng)]
-              ],
-              {
-                color: isRoadBordering ? '#f59e0b' : lineColor,
-                weight: isRoadBordering ? 4 : (mapConfig.lineWidth || 3),
-                opacity: 0.9,
-                dashArray: mapConfig.lineStyle === 'dashed' ? '10, 10' : undefined,
-              }
-            ).addTo(map);
-
-            if (mapConfig.enableRoadBorderingFeature !== false) {
-              segment.on('click', () => {
-                if (onRoadSidesChange) {
-                  const updatedSides = [...roadSides];
-                  const sideIndex = updatedSides.findIndex(s => s.sideIndex === index);
-                  if (sideIndex !== -1) {
-                    updatedSides[sideIndex] = {
-                      ...updatedSides[sideIndex],
-                      bordersRoad: !updatedSides[sideIndex].bordersRoad,
-                    };
-                  }
-                  onRoadSidesChange(updatedSides);
-                }
-              });
-            }
-
-            segmentLayersRef.current.push(segment);
-          });
-
-          // Polygone rempli
-          const fillColor = mapConfig.fillColor || '#3b82f6';
-          const polygon = L.polygon(latLngs, {
-            color: 'transparent',
-            fillColor: fillColor,
-            fillOpacity: mapConfig.fillOpacity || 0.2,
-            weight: 0,
-            interactive: false,
-          }).addTo(map);
-
-          polygonRef.current = polygon;
-
-          // Calculer la surface et le périmètre à partir des dimensions stockées (stables)
-          if (mapConfig.autoCalculateSurface) {
-            // Créer une clé représentant les longueurs des côtés pour détecter les vrais changements
-            const currentSidesKey = parcelSides.map(s => s.length).join(',');
-            
-            // Calculer le périmètre à partir des dimensions stockées
-            if (parcelSides.length > 0 && parcelSides.length === latLngs.length) {
-              const perimeter = parcelSides.reduce((sum, side) => {
-                const len = parseFloat(side.length);
-                return sum + (isNaN(len) ? 0 : len);
-              }, 0);
-              const roundedPerimeter = Math.round(perimeter * 100) / 100;
-              
-              // Ne recalculer la superficie que si les dimensions des côtés ont vraiment changé
-              // (pas lors d'une simple rotation/translation)
-              if (lastParcelSidesLengthRef.current !== currentSidesKey || stableSurfaceRef.current === 0) {
-                lastParcelSidesLengthRef.current = currentSidesKey;
-                const area = calculatePolygonArea(latLngs);
-                stableSurfaceRef.current = area;
-                stablePerimeterRef.current = roundedPerimeter;
-              }
-              
-              // Utiliser les valeurs stables
-              setSurfaceArea(stableSurfaceRef.current);
-              setPerimeterLength(stablePerimeterRef.current);
-              if (onSurfaceChange) {
-                onSurfaceChange(stableSurfaceRef.current);
-              }
-            } else {
-              // Pas de parcelSides valides, calculer normalement
-              const area = calculatePolygonArea(latLngs);
-              setSurfaceArea(area);
-              setPerimeterLength(0);
-              stableSurfaceRef.current = area;
-              stablePerimeterRef.current = 0;
-              lastParcelSidesLengthRef.current = '';
-              if (onSurfaceChange) {
-                onSurfaceChange(area);
-              }
-            }
-          }
-
-          // Afficher les dimensions (masquées pendant le tracé d'une construction)
-          if (mapConfig.showSideDimensions && !isDrawingBuilding) {
-            displaySideDimensions(L, map, latLngs);
-          }
-
-          if (shouldAutoCenter) {
-            map.fitBounds(polygon.getBounds(), { padding: [40, 40] });
-          }
-        } else if (latLngs.length > 0) {
-          if (shouldAutoCenter && mapInstanceRef.current && (map as any)?._loaded && map.getContainer()?.isConnected) {
-            try { map.setView(latLngs[0], 19); } catch (e) { console.warn('setView skipped:', e); }
-          }
-          setSurfaceArea(0);
-          setPerimeterLength(0);
-          stableSurfaceRef.current = 0;
-          stablePerimeterRef.current = 0;
-          lastParcelSidesLengthRef.current = '';
-        }
-
-      } catch (err) {
-        console.error('ParcelMapPreview updateMap error:', err);
-      }
-    };
-
-    // Utiliser requestAnimationFrame pour éviter les mises à jour trop rapides
-    const rafId = requestAnimationFrame(() => {
-      updateMap();
+      };
+      marker.on('mousedown touchstart', () => {
+        cancelLongPress();
+        longPressTimer = window.setTimeout(() => {
+          if (longPressTimer) markerLongPressTimersRef.current.delete(longPressTimer);
+          longPressTimer = null;
+          setEditingSideIndex(index);
+          setEditingSideValue(displayDistance.toFixed(1));
+        }, 500);
+        markerLongPressTimersRef.current.add(longPressTimer);
+      });
+      marker.on('mouseup touchend mouseout', cancelLongPress);
+      
+      dimensionLayersRef.current.push(marker);
     });
+  };
 
-    return () => {
-      cancelAnimationFrame(rafId);
-      cancelled = true;
-    };
-  }, [isMapReady, validCoords, roadSides, mapConfig, isGroupDragMode, isDrawingMode, selectedBorne, isDrawingBuilding, buildingVertices]);
+
+  // Mettre à jour les marqueurs et polygone
+  useParcelMarkers({
+    isMapReady,
+    mapInstanceRef,
+    renderSeqRef,
+    markersRef,
+    polygonRef,
+    dimensionLayersRef,
+    segmentLayersRef,
+    clearMarkerLongPressTimers,
+    longPressTimerRef,
+    selectedBorneRef,
+    selectedMarkerRef,
+    stableSurfaceRef,
+    stablePerimeterRef,
+    lastParcelSidesLengthRef,
+    validCoords,
+    roadSides,
+    mapConfig,
+    isGroupDragMode,
+    isDrawingMode,
+    selectedBorne,
+    isDrawingBuilding,
+    buildingVertices,
+    coordinates,
+    onCoordinatesUpdate,
+    updateParcelSidesFromCoordinates,
+    setSelectedBorne,
+    setEditingBorneIndex,
+    setEditingBorneCoords,
+    onRoadSidesChange,
+    parcelSides,
+    setSurfaceArea,
+    setPerimeterLength,
+    onSurfaceChange,
+    displaySideDimensions,
+  });
+
 
   // Effet dédié au rendu des constructions (formes validées + tracé en cours).
-  // Isolé du rendu des bornes pour que toute modification de `buildingShapes`
-  // (ajout, suppression, édition d'un sommet, changement de libellé) redessine
-  // immédiatement la carte.
-  useEffect(() => {
-    if (!isMapReady || !mapInstanceRef.current) return;
+  useBuildingLayers({
+    isMapReady,
+    mapInstanceRef,
+    buildingLayersRef,
+    buildingPolygonsRef,
+    buildingVerticesRef,
+    markerLongPressTimersRef,
+    bvDragActiveRef,
+    bvDragShapeIdRef,
+    bvDragVertexIdxRef,
+    bvDragMarkerRef,
+    buildingShapes,
+    buildingShapesSignature,
+    buildingVertices,
+    isDrawingBuilding,
+    isDrawingMode,
+    isGroupDragMode,
+    constructionLabels,
+    onBuildingShapesChange,
+    setEditingBuildingVertex,
+    setEditingBuildingVertexCoords,
+  });
 
-    let cancelled = false;
-    const mapHandlers: [string, (e: any) => void][] = [];
-
-    const clearBuildingLayers = (map: any) => {
-      buildingLayersRef.current.forEach(layer => {
-        try { if (layer && map.hasLayer(layer)) map.removeLayer(layer); } catch (e) { console.error('remove building layer error', e); }
-      });
-      buildingLayersRef.current = [];
-      buildingPolygonsRef.current.clear();
-    };
-
-    const drawBuildings = async () => {
-      try {
-        const L = await import('leaflet');
-        if (cancelled) return;
-        const map = mapInstanceRef.current;
-        if (!map) return;
-
-        // Ne pas détruire les couches pendant un drag de sommet actif
-        if (bvDragActiveRef.current) return;
-        clearBuildingLayers(map);
-
-        // Dessiner les constructions validées (polygones à partir de vertices)
-        buildingShapes.forEach((shape, idx) => {
-          if (!shape.vertices || shape.vertices.length < 3) return;
-          const bldLatLngs = shape.vertices.map(v => [v.lat, v.lng] as [number, number]);
-          const bldPolygon = L.polygon(bldLatLngs, {
-            color: '#dc2626',
-            fillColor: '#dc2626',
-            fillOpacity: 0.3,
-            weight: 2,
-          }).addTo(map);
-          const label = constructionLabels[shape.linkedIndex ?? idx] || `Construction ${idx + 1}`;
-          bldPolygon.bindPopup(`
-            <div style="font-size: 12px;">
-              <strong style="color: #dc2626;">${label}</strong><br/>
-              <span>Surface: ${shape.areaSqm.toFixed(1)} m²</span><br/>
-              <span>Périmètre: ${shape.perimeterM.toFixed(1)} m</span>
-            </div>
-          `);
-          buildingPolygonsRef.current.set(shape.id, bldPolygon);
-          buildingLayersRef.current.push(bldPolygon);
-          
-          // Marqueurs interactifs sur chaque sommet (double-clic = éditer GPS)
-          shape.vertices.forEach((v, vi) => {
-            const vertexMarker = L.circleMarker([v.lat, v.lng], {
-              radius: 7,
-              color: '#dc2626',
-              fillColor: '#ffffff',
-              fillOpacity: 1,
-              weight: 2,
-              interactive: !isDrawingBuilding,
-            }).addTo(map);
-
-            // Double-clic = édition manuelle GPS
-            vertexMarker.on('dblclick', (e: any) => {
-              e.originalEvent?.stopPropagation();
-              e.originalEvent?.preventDefault();
-              setEditingBuildingVertex({ shapeId: shape.id, vertexIdx: vi });
-              setEditingBuildingVertexCoords({ lat: v.lat.toFixed(6), lng: v.lng.toFixed(6) });
-            });
-
-            // Appui prolongé = mode drag du sommet de construction (via refs)
-            let bvLongPressTimer: number | null = null;
-
-            const startBvLongPress = (e: any) => {
-              if (isDrawingMode || isGroupDragMode || isDrawingBuilding) return;
-              e.originalEvent?.preventDefault();
-              if (bvLongPressTimer) {
-                window.clearTimeout(bvLongPressTimer);
-                markerLongPressTimersRef.current.delete(bvLongPressTimer);
-              }
-              bvLongPressTimer = window.setTimeout(() => {
-                if (bvLongPressTimer) markerLongPressTimersRef.current.delete(bvLongPressTimer);
-                bvLongPressTimer = null;
-                bvDragActiveRef.current = true;
-                bvDragShapeIdRef.current = shape.id;
-                bvDragVertexIdxRef.current = vi;
-                bvDragMarkerRef.current = vertexMarker;
-                vertexMarker.setStyle({ color: '#facc15', fillColor: '#facc15', radius: 9 });
-                if (map) {
-                  map.dragging.disable();
-                  map.scrollWheelZoom.disable();
-                  map.touchZoom.disable();
-                  map.getContainer().style.cursor = 'grabbing';
-                }
-              }, 450);
-              markerLongPressTimersRef.current.add(bvLongPressTimer);
-            };
-
-            const cancelBvLongPress = () => {
-              if (bvLongPressTimer) {
-                window.clearTimeout(bvLongPressTimer);
-                markerLongPressTimersRef.current.delete(bvLongPressTimer);
-                bvLongPressTimer = null;
-              }
-            };
-
-            const moveBvDrag = (e: any) => {
-              if (!bvDragActiveRef.current || bvDragMarkerRef.current !== vertexMarker) return;
-              const latlng = e.latlng || (map && map.mouseEventToLatLng(e.originalEvent));
-              if (!latlng) return;
-              vertexMarker.setLatLng(latlng);
-            };
-
-            const touchMoveBvDrag = (e: any) => {
-              if (!bvDragActiveRef.current || bvDragMarkerRef.current !== vertexMarker) return;
-              const touch = e.originalEvent?.touches?.[0];
-              if (touch && map) {
-                const latlng = map.containerPointToLatLng(L.point(touch.clientX - map.getContainer().getBoundingClientRect().left, touch.clientY - map.getContainer().getBoundingClientRect().top));
-                vertexMarker.setLatLng(latlng);
-              }
-            };
-
-            const endBvDrag = () => {
-              cancelBvLongPress();
-              if (!bvDragActiveRef.current || bvDragMarkerRef.current !== vertexMarker) return;
-              
-              const finalLatLng = vertexMarker.getLatLng();
-              const dragShapeId = bvDragShapeIdRef.current;
-              const dragVertexIdx = bvDragVertexIdxRef.current;
-
-              // Reset refs BEFORE triggering re-render
-              bvDragActiveRef.current = false;
-              bvDragShapeIdRef.current = null;
-              bvDragVertexIdxRef.current = -1;
-              bvDragMarkerRef.current = null;
-
-              vertexMarker.setStyle({ color: '#dc2626', fillColor: '#ffffff', radius: 7 });
-              if (map) {
-                map.dragging.enable();
-                map.scrollWheelZoom.enable();
-                map.touchZoom.enable();
-                map.getContainer().style.cursor = '';
-                // Clean up map-level listeners for this vertex
-                map.off('mousemove', moveBvDrag);
-                map.off('touchmove', touchMoveBvDrag);
-              }
-
-              if (onBuildingShapesChange && dragShapeId) {
-                const updated = buildingShapes.map(s => {
-                  if (s.id !== dragShapeId) return s;
-                  const newVerts = [...s.vertices];
-                  newVerts[dragVertexIdx] = { lat: finalLatLng.lat, lng: finalLatLng.lng };
-                  const newSides: { name: string; length: string }[] = [];
-                  let newPerimeter = 0;
-                  for (let i = 0; i < newVerts.length; i++) {
-                    const nxt = newVerts[(i + 1) % newVerts.length];
-                    const d = calculateDistance(newVerts[i].lat, newVerts[i].lng, nxt.lat, nxt.lng);
-                    newSides.push({ name: `Côté ${i + 1}`, length: d.toFixed(2) });
-                    newPerimeter += d;
-                  }
-                  return { ...s, vertices: newVerts, sides: newSides, areaSqm: Math.round(calculateBuildingArea(newVerts) * 100) / 100, perimeterM: Math.round(newPerimeter * 100) / 100 };
-                });
-                onBuildingShapesChange(updated);
-              }
-            };
-
-            vertexMarker.on('mousedown', startBvLongPress);
-            vertexMarker.on('touchstart', startBvLongPress);
-            vertexMarker.on('mouseup', () => { cancelBvLongPress(); endBvDrag(); });
-            vertexMarker.on('touchend', () => { cancelBvLongPress(); endBvDrag(); });
-            vertexMarker.on('mouseout', () => { if (bvDragActiveRef.current) return; cancelBvLongPress(); });
-            map.on('mousemove', moveBvDrag);
-            map.on('touchmove', touchMoveBvDrag);
-            mapHandlers.push(['mousemove', moveBvDrag], ['touchmove', touchMoveBvDrag]);
-
-            buildingLayersRef.current.push(vertexMarker);
-          });
-          
-          // Afficher les dimensions des côtés de la construction
-          shape.vertices.forEach((v, vi) => {
-            const nextV = shape.vertices[(vi + 1) % shape.vertices.length];
-            const midLat = (v.lat + nextV.lat) / 2;
-            const midLng = (v.lng + nextV.lng) / 2;
-            const side = shape.sides[vi];
-            if (!side) return;
-            const dimMarker = L.marker([midLat, midLng], {
-              icon: L.divIcon({
-                className: 'building-dim-label',
-                html: `<div style="background:rgba(220,38,38,0.9);color:white;padding:1px 4px;border-radius:3px;font-size:9px;font-weight:600;white-space:nowrap;">${side.length}m</div>`,
-                iconSize: [0, 0],
-                iconAnchor: [0, 0],
-              }),
-              interactive: false,
-            }).addTo(map);
-            buildingLayersRef.current.push(dimMarker);
-          });
-        });
-
-        // Dessiner le tracé de construction en cours
-        const currentBuildingVerts = buildingVerticesRef.current;
-        if (currentBuildingVerts.length > 0) {
-          // Lignes entre sommets
-          const bvLatLngs = currentBuildingVerts.map(v => [v.lat, v.lng] as [number, number]);
-          if (bvLatLngs.length >= 2) {
-            const polyline = L.polyline(bvLatLngs, {
-              color: '#dc2626',
-              weight: 2,
-              dashArray: '6,4',
-              opacity: 0.8,
-            }).addTo(map);
-            buildingLayersRef.current.push(polyline);
-            
-            // Ligne de fermeture en pointillé (preview)
-            if (bvLatLngs.length >= 3) {
-              const closingLine = L.polyline([bvLatLngs[bvLatLngs.length - 1], bvLatLngs[0]], {
-                color: '#dc2626',
-                weight: 1.5,
-                dashArray: '3,6',
-                opacity: 0.4,
-              }).addTo(map);
-              buildingLayersRef.current.push(closingLine);
-            }
-          }
-          
-          // Marqueurs pour chaque sommet
-          currentBuildingVerts.forEach((v, vi) => {
-            const vertMarker = L.circleMarker([v.lat, v.lng], {
-              radius: 5,
-              color: '#dc2626',
-              fillColor: '#ffffff',
-              fillOpacity: 1,
-              weight: 2,
-            }).addTo(map);
-            buildingLayersRef.current.push(vertMarker);
-            
-            // Afficher la distance du segment
-            if (vi > 0) {
-              const prevV = currentBuildingVerts[vi - 1];
-              const dist = calculateDistance(prevV.lat, prevV.lng, v.lat, v.lng);
-              const midLat = (prevV.lat + v.lat) / 2;
-              const midLng = (prevV.lng + v.lng) / 2;
-              const dimLabel = L.marker([midLat, midLng], {
-                icon: L.divIcon({
-                  className: 'building-dim-temp',
-                  html: `<div style="background:rgba(220,38,38,0.8);color:white;padding:1px 4px;border-radius:3px;font-size:9px;font-weight:600;white-space:nowrap;">${dist.toFixed(1)}m</div>`,
-                  iconSize: [0, 0],
-                  iconAnchor: [0, 0],
-                }),
-                interactive: false,
-              }).addTo(map);
-              buildingLayersRef.current.push(dimLabel);
-            }
-          });
-          
-          // Afficher la distance de fermeture et la surface en temps réel
-          if (currentBuildingVerts.length >= 3) {
-            const firstV = currentBuildingVerts[0];
-            const lastV = currentBuildingVerts[currentBuildingVerts.length - 1];
-            const closingDist = calculateDistance(lastV.lat, lastV.lng, firstV.lat, firstV.lng);
-            const closingMidLat = (lastV.lat + firstV.lat) / 2;
-            const closingMidLng = (lastV.lng + firstV.lng) / 2;
-            const closingLabel = L.marker([closingMidLat, closingMidLng], {
-              icon: L.divIcon({
-                className: 'building-dim-closing',
-                html: `<div style="background:rgba(220,38,38,0.5);color:white;padding:1px 4px;border-radius:3px;font-size:9px;font-weight:600;white-space:nowrap;font-style:italic;">${closingDist.toFixed(1)}m</div>`,
-                iconSize: [0, 0],
-                iconAnchor: [0, 0],
-              }),
-              interactive: false,
-            }).addTo(map);
-            buildingLayersRef.current.push(closingLabel);
-          }
-        }
-      } catch (err) {
-        console.error('ParcelMapPreview drawBuildings error:', err);
-      }
-    };
-
-    const rafId = requestAnimationFrame(() => { drawBuildings(); });
-
-    return () => {
-      cancelAnimationFrame(rafId);
-      cancelled = true;
-      const map = mapInstanceRef.current;
-      if (map) {
-        mapHandlers.forEach(([evt, fn]) => { try { map.off(evt, fn); } catch {} });
-        if (!bvDragActiveRef.current) clearBuildingLayers(map);
-      }
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isMapReady, buildingShapesSignature, buildingVertices, isDrawingBuilding, isDrawingMode, isGroupDragMode, constructionLabels]);
 
   // Surbrillance de la construction survolée dans la liste sous la carte
   useEffect(() => {
@@ -1556,74 +1107,6 @@ export const ParcelMapPreview = ({
     setEditingSideIndex(null);
     setEditingSideValue('');
   }, [editingSideIndex, editingSideValue, resizeSide]);
-
-  // Afficher dimensions des côtés (interactives : double-clic / appui prolongé pour éditer)
-  const displaySideDimensions = (L: any, map: any, coords: [number, number][]) => {
-    coords.forEach((coord, index) => {
-      const nextIndex = (index + 1) % coords.length;
-      const nextCoord = coords[nextIndex];
-      
-      const midLat = (coord[0] + nextCoord[0]) / 2;
-      const midLng = (coord[1] + nextCoord[1]) / 2;
-      
-      const storedSide = parcelSides[index];
-      const displayDistance = storedSide?.length 
-        ? parseFloat(storedSide.length) 
-        : calculateDistance(coord[0], coord[1], nextCoord[0], nextCoord[1]);
-      
-      const label = L.divIcon({
-        className: 'dimension-label',
-        html: `<div data-side-index="${index}" style="
-          background: rgba(255,255,255,0.95);
-          padding: 3px 8px;
-          border-radius: 6px;
-          font-size: 11px;
-          font-weight: 700;
-          white-space: nowrap;
-          box-shadow: 0 1px 4px rgba(0,0,0,0.25);
-          border: 1.5px solid hsl(var(--primary) / 0.3);
-          cursor: pointer;
-          user-select: none;
-          transition: all 0.15s ease;
-        ">${displayDistance.toFixed(1)}m ✏️</div>`,
-        iconSize: [60, 20],
-        iconAnchor: [30, 10]
-      });
-      
-      const marker = L.marker([midLat, midLng], { icon: label, interactive: true }).addTo(map);
-      
-      // Double-clic pour éditer (desktop)
-      marker.on('dblclick', (e: any) => {
-        e.originalEvent?.stopPropagation();
-        e.originalEvent?.preventDefault();
-        setEditingSideIndex(index);
-        setEditingSideValue(displayDistance.toFixed(1));
-      });
-      
-      // Appui prolongé pour éditer (mobile)
-      let longPressTimer: number | null = null;
-      const cancelLongPress = () => {
-        if (longPressTimer) {
-          window.clearTimeout(longPressTimer);
-          markerLongPressTimersRef.current.delete(longPressTimer);
-          longPressTimer = null;
-        }
-      };
-      marker.on('mousedown touchstart', () => {
-        cancelLongPress();
-        longPressTimer = window.setTimeout(() => {
-          if (longPressTimer) markerLongPressTimersRef.current.delete(longPressTimer);
-          longPressTimer = null;
-          setEditingSideIndex(index);
-          setEditingSideValue(displayDistance.toFixed(1));
-        }, 500);
-        markerLongPressTimersRef.current.add(longPressTimer);
-      });
-      marker.on('mouseup touchend mouseout', cancelLongPress);
-      
-      dimensionLayersRef.current.push(marker);
-    });
-  };
 
   // Mise à jour de roadSide
   const handleRoadSideUpdate = useCallback((sideIndex: number, updates: Partial<RoadSideInfo>) => {
