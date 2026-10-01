@@ -26,7 +26,6 @@ export default function BuildingPermitSection({ data, permit, permitMode, update
   });
 
   return (
-    <>
   <>
     <div className="border-t border-border/50 my-2" />
     <div className="flex items-start justify-between gap-2">
@@ -282,6 +281,5 @@ export default function BuildingPermitSection({ data, permit, permitMode, update
       </div>
     )}
   </>
-    </>
   );
 }
