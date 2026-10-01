@@ -88,6 +88,12 @@ import {
   ACCESSIBILITY_OPTIONS,
   YEAR_OPTIONS,
 } from './real-estate-expertise/constants';
+import DocumentsTab from './real-estate-expertise/DocumentsTab';
+import EnvironmentTab from './real-estate-expertise/EnvironmentTab';
+import BuildingTab from './real-estate-expertise/BuildingTab';
+import PaymentTab from './real-estate-expertise/PaymentTab';
+import ConfirmationTab from './real-estate-expertise/ConfirmationTab';
+
 import {
   CONDITION_LABELS,
   ROAD_LABELS, ROOF_LABELS,
@@ -2417,399 +2423,68 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
 
           {/* === ONGLET MATÉRIAUX === */}
           <TabsContent value="materiaux" className="space-y-3 pr-2 mt-0">
-            {!showBuildingBlocks && (
-              <Card className="border rounded-xl">
-                <CardContent className="p-3">
-                  <p className="text-xs text-muted-foreground">
-                    Aucune construction n'est concernée par cette expertise : il n'y a pas de matériaux à décrire.
-                  </p>
-                </CardContent>
-              </Card>
-            )}
-            {showBuildingBlocks && (
-            <>
-            {isMultiBuilding && (
-              <Card className="border-2 border-primary/20 bg-primary/5 rounded-xl">
-                <CardContent className="p-3 space-y-2">
-                  <h4 className="text-sm font-semibold flex items-center gap-2">
-                    <Building2 className="h-4 w-4 text-primary" />
-                    Fiche par construction
-                  </h4>
-                  <div className="flex flex-wrap gap-1.5">
-                    {buildingsToDescribe.map((b, i) => (
-                      <button
-                        key={b.ref}
-                        type="button"
-                        onClick={() => handleSelectFiche(b.ref)}
-                        className={cn(
-                          'px-2.5 py-1.5 rounded-xl border-2 text-[11px] font-medium transition-colors',
-                          activeFicheRef === b.ref
-                            ? 'border-primary bg-primary/10 text-primary'
-                            : 'border-border bg-background hover:border-primary/50',
-                        )}
-                      >
-                        {i + 1}. {b.label}
-                      </button>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-            <Card className="border rounded-xl">
-              <CardContent className="p-3 space-y-3">
-                <h4 className="text-sm font-semibold flex items-center gap-2">
-                  <Building className="h-4 w-4 text-muted-foreground" />
-                  Matériaux & finitions
-                  <SectionHelpPopover
-                    title="Matériaux & finitions"
-                    description="Précisez les matériaux utilisés pour la toiture, les fenêtres et le sol. Les matériaux de murs/élévation sont définis dans le bloc Construction de l'onglet Général."
-                  />
-                </h4>
-
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Toiture</Label>
-                  <Select value={roofMaterial} onValueChange={setRoofMaterial}>
-                    <SelectTrigger className="h-9 text-sm rounded-xl border-2">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {ROOF_MATERIAL_OPTIONS.map(opt => (
-                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Fenêtres</Label>
-                  <Select value={windowType} onValueChange={setWindowType}>
-                    <SelectTrigger className="h-9 text-sm rounded-xl border-2">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {WINDOW_TYPE_OPTIONS.map(opt => (
-                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Sol / Revêtement</Label>
-                  <Select value={floorMaterial} onValueChange={setFloorMaterial}>
-                    <SelectTrigger className="h-9 text-sm rounded-xl border-2">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {FLOOR_MATERIAL_OPTIONS.map(opt => (
-                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <Separator className="my-2" />
-
-                <h5 className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
-                  Finitions
-                  <SectionHelpPopover
-                    title="Finitions"
-                    description="Indiquez l'état des finitions intérieures : crépi, peinture, plafond et isolation. Des finitions de qualité augmentent significativement la valeur du bien."
-                  />
-                </h5>
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted/50">
-                    <Checkbox checked={hasPlaster} onCheckedChange={(c) => setHasPlaster(c === true)} />
-                    <span className="text-sm">Crépi</span>
-                  </div>
-                  <div className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted/50">
-                    <Checkbox checked={hasPainting} onCheckedChange={(c) => setHasPainting(c === true)} />
-                    <span className="text-sm">Peinture</span>
-                  </div>
-                  <div className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted/50">
-                    <Checkbox checked={hasCeiling} onCheckedChange={(c) => setHasCeiling(c === true)} />
-                    <span className="text-sm">Plafond</span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted/50">
-                  <Checkbox checked={hasDoubleGlazing} onCheckedChange={(c) => setHasDoubleGlazing(c === true)} />
-                  <span className="text-sm">Double vitrage (isolation phonique)</span>
-                </div>
-              </CardContent>
-            </Card>
-            </>
-            )}
+            <BuildingTab
+              showBuildingBlocks={showBuildingBlocks}
+              isMultiBuilding={isMultiBuilding}
+              buildingsToDescribe={buildingsToDescribe}
+              activeFicheRef={activeFicheRef}
+              onSelectFiche={handleSelectFiche}
+              roofMaterial={roofMaterial}
+              setRoofMaterial={setRoofMaterial}
+              windowType={windowType}
+              setWindowType={setWindowType}
+              floorMaterial={floorMaterial}
+              setFloorMaterial={setFloorMaterial}
+              hasPlaster={hasPlaster}
+              setHasPlaster={setHasPlaster}
+              hasPainting={hasPainting}
+              setHasPainting={setHasPainting}
+              hasCeiling={hasCeiling}
+              setHasCeiling={setHasCeiling}
+              hasDoubleGlazing={hasDoubleGlazing}
+              setHasDoubleGlazing={setHasDoubleGlazing}
+            />
           </TabsContent>
 
           {/* === ONGLET ENVIRONNEMENT === */}
           <TabsContent value="environnement" className="space-y-3 pr-2 mt-0">
-            {/* Environnement sonore — supprimé, maintenant dans le formulaire CCC */}
-
-            {/* Accessibilité */}
-            <Card className="border rounded-xl">
-              <CardContent className="p-3 space-y-3">
-                <h4 className="text-sm font-semibold flex items-center gap-2">
-                  Accessibilité & distances
-                  <SectionHelpPopover
-                    title="Accessibilité & distances"
-                    description="Indiquez les distances vers les services essentiels (hôpital, école, marché) et le type d'accès routier. La proximité des commodités augmente la valeur du bien."
-                  />
-                </h4>
-                
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Type d'accès routier</Label>
-                  <Select value={roadAccessType} onValueChange={setRoadAccessType}>
-                    <SelectTrigger className="h-9 text-sm rounded-xl border-2">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {ROAD_ACCESS_OPTIONS.map(opt => (
-                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
-                    <Label className="text-xs">Route principale (m)</Label>
-                    <Input
-                      type="number"
-                      min="0"
-                      value={distanceToMainRoad}
-                      onChange={handleNonNegativeChange(setDistanceToMainRoad)}
-                      placeholder="Ex: 50"
-                      className="h-9 text-sm rounded-xl border-2"
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-xs">Hôpital (km)</Label>
-                    <Input
-                      type="number"
-                      min="0"
-                      value={distanceToHospital}
-                      onChange={handleNonNegativeChange(setDistanceToHospital)}
-                      placeholder="Ex: 2"
-                      className="h-9 text-sm rounded-xl border-2"
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-xs">École (km)</Label>
-                    <Input
-                      type="number"
-                      min="0"
-                      value={distanceToSchool}
-                      onChange={handleNonNegativeChange(setDistanceToSchool)}
-                      placeholder="Ex: 1"
-                      className="h-9 text-sm rounded-xl border-2"
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-xs">Marché (km)</Label>
-                    <Input
-                      type="number"
-                      min="0"
-                      value={distanceToMarket}
-                      onChange={handleNonNegativeChange(setDistanceToMarket)}
-                      placeholder="Ex: 0.5"
-                      className="h-9 text-sm rounded-xl border-2"
-                    />
-                  </div>
-                </div>
-
-                <SuggestivePicklist
-                  picklistKey="nearby_amenities"
-                  label="Commodités à proximité"
-                  placeholder="Rechercher ou ajouter..."
-                  selectedValues={nearbyAmenities}
-                  onSelectionChange={setNearbyAmenities}
-                />
-              </CardContent>
-            </Card>
-
-            {/* Risques */}
-            <Card className="border rounded-xl border-amber-200 bg-amber-50/30 dark:border-amber-800 dark:bg-amber-950/20">
-              <CardContent className="p-3 space-y-3">
-                <h4 className="text-sm font-semibold flex items-center gap-2 text-amber-700 dark:text-amber-400">
-                  <AlertTriangle className="h-4 w-4" />
-                  Zones à risque
-                  <SectionHelpPopover
-                    title="Zones à risque"
-                    description="Signalez si le bien se trouve dans une zone inondable ou d'érosion. Ces facteurs de risque sont pris en compte dans l'évaluation et peuvent réduire la valeur estimée."
-                  />
-                </h4>
-                
-                <div className="flex flex-col gap-2">
-                  <div className="flex items-center gap-2">
-                    <Checkbox checked={floodRiskZone} onCheckedChange={(c) => setFloodRiskZone(c === true)} />
-                    <span className="text-sm text-amber-700 dark:text-amber-300">Zone inondable</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Checkbox checked={erosionRiskZone} onCheckedChange={(c) => setErosionRiskZone(c === true)} />
-                    <span className="text-sm text-amber-700 dark:text-amber-300">Zone d'érosion</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <EnvironmentTab
+              roadAccessType={roadAccessType}
+              setRoadAccessType={setRoadAccessType}
+              distanceToMainRoad={distanceToMainRoad}
+              distanceToHospital={distanceToHospital}
+              distanceToSchool={distanceToSchool}
+              distanceToMarket={distanceToMarket}
+              onNonNegativeChange={handleNonNegativeChange}
+              setDistanceToMainRoad={setDistanceToMainRoad}
+              setDistanceToHospital={setDistanceToHospital}
+              setDistanceToSchool={setDistanceToSchool}
+              setDistanceToMarket={setDistanceToMarket}
+              nearbyAmenities={nearbyAmenities}
+              setNearbyAmenities={setNearbyAmenities}
+              floodRiskZone={floodRiskZone}
+              setFloodRiskZone={setFloodRiskZone}
+              erosionRiskZone={erosionRiskZone}
+              setErosionRiskZone={setErosionRiskZone}
+            />
           </TabsContent>
 
           {/* === ONGLET DOCUMENTS === */}
           <TabsContent value="documents" className="space-y-3 pr-2 mt-0">
-            {/* Documents parcelle */}
-            <Card className="border rounded-xl">
-              <CardContent className="p-3 space-y-3">
-                <h4 className="text-sm font-semibold flex items-center gap-2">
-                  <FileText className="h-4 w-4 text-blue-600" />
-                  Documents de la parcelle
-                  <SectionHelpPopover
-                    title="Documents de la parcelle"
-                    description="Joignez les documents juridiques liés à la parcelle : titre foncier, certificat d'enregistrement, PV de bornage. Ces documents accéléreront le processus d'expertise."
-                  />
-                </h4>
-                <p className="text-xs text-muted-foreground">
-                  Titre foncier, certificat d'enregistrement, PV de bornage, attestation de propriété...
-                </p>
-                
-                <input
-                  ref={parcelDocsInputRef}
-                  type="file"
-                  accept=".pdf,image/*"
-                  multiple
-                  onChange={handleParcelDocSelect}
-                  className="hidden"
-                />
-                
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => parcelDocsInputRef.current?.click()}
-                  className="w-full h-10 text-sm rounded-xl border-2 border-dashed"
-                >
-                  <Upload className="h-4 w-4 mr-2" />
-                  Documents parcelle (PDF, images)
-                </Button>
-                
-                {parcelDocuments.length > 0 && (
-                  <div className="space-y-2">
-                    {parcelDocuments.map((file, index) => (
-                      <div key={index} className="flex items-center gap-2 p-2 bg-blue-50 dark:bg-blue-950/30 rounded-xl">
-                        <FileText className="h-4 w-4 text-blue-600 flex-shrink-0" />
-                        <span className="flex-1 truncate text-sm">{file.name}</span>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => removeParcelDoc(index)}
-                          className="h-7 w-7 rounded-lg"
-                        >
-                          <X className="h-3.5 w-3.5" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Images construction */}
-            <Card className="border rounded-xl">
-              <CardContent className="p-3 space-y-3">
-                <h4 className="text-sm font-semibold flex items-center gap-2">
-                  <Camera className="h-4 w-4 text-green-600" />
-                  Photos de la construction
-                  <SectionHelpPopover
-                    title="Photos de la construction"
-                    description="Ajoutez des photos récentes de votre bien (façade, intérieur, cuisine, chambres, jardin). Plus vous fournissez de photos, plus l'expert pourra préparer sa visite efficacement."
-                  />
-                </h4>
-                <p className="text-xs text-muted-foreground">
-                  Façade, intérieur, cuisine, chambres, salles de bain, jardin, terrasse...
-                </p>
-                
-                <input
-                  ref={constructionImagesInputRef}
-                  type="file"
-                  accept="image/*"
-                  capture="environment"
-                  multiple
-                  onChange={handleConstructionImageSelect}
-                  className="hidden"
-                />
-                <input
-                  ref={constructionGalleryInputRef}
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  onChange={handleConstructionImageSelect}
-                  className="hidden"
-                />
-
-                <div className="grid grid-cols-2 gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => constructionImagesInputRef.current?.click()}
-                    className="h-10 text-xs sm:text-sm rounded-xl border-2 border-dashed"
-                  >
-                    <Camera className="h-4 w-4 mr-1.5 flex-shrink-0" />
-                    Prendre photo
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => constructionGalleryInputRef.current?.click()}
-                    className="h-10 text-xs sm:text-sm rounded-xl border-2 border-dashed"
-                  >
-                    <Image className="h-4 w-4 mr-1.5 flex-shrink-0" />
-                    Galerie
-                  </Button>
-                </div>
-                
-                {constructionImages.length > 0 && (
-                  <div className="grid grid-cols-3 gap-2">
-                    {constructionImages.map((file, index) => (
-                      <div key={index} className="relative group">
-                         <div className="aspect-square rounded-lg overflow-hidden bg-muted">
-                           <img
-                             src={constructionImageUrls[index] || ''}
-                             alt={file.name}
-                             className="w-full h-full object-cover"
-                          />
-                        </div>
-                        <Button
-                          variant="destructive"
-                          size="icon"
-                          onClick={() => removeConstructionImage(index)}
-                          className="absolute -top-1 -right-1 h-5 w-5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          <X className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Notes additionnelles */}
-            <Card className="border rounded-xl">
-              <CardContent className="p-3 space-y-3">
-                <h4 className="text-sm font-semibold">Notes additionnelles</h4>
-                <Textarea
-                  value={additionalNotes}
-                  onChange={(e) => setAdditionalNotes(e.target.value)}
-                  placeholder="Autres informations pertinentes : servitudes, litiges, potentiel de développement, travaux récents, historique du bien..."
-                  className="min-h-[100px] text-sm rounded-xl border-2"
-                />
-              </CardContent>
-            </Card>
-
-            <Alert className="rounded-xl bg-green-50 border-green-200 dark:bg-green-950/30 dark:border-green-800">
-              <CheckCircle2 className="h-4 w-4 text-green-600" />
-              <AlertDescription className="text-sm text-green-800 dark:text-green-200">
-                Plus vous fournissez d'informations et de photos, plus l'expertise sera précise et rapide !
-              </AlertDescription>
-            </Alert>
+            <DocumentsTab
+              parcelDocsInputRef={parcelDocsInputRef}
+              constructionImagesInputRef={constructionImagesInputRef}
+              constructionGalleryInputRef={constructionGalleryInputRef}
+              parcelDocuments={parcelDocuments}
+              onParcelDocSelect={handleParcelDocSelect}
+              onRemoveParcelDoc={removeParcelDoc}
+              constructionImages={constructionImages}
+              constructionImageUrls={constructionImageUrls}
+              onConstructionImageSelect={handleConstructionImageSelect}
+              onRemoveConstructionImage={removeConstructionImage}
+              additionalNotes={additionalNotes}
+              setAdditionalNotes={setAdditionalNotes}
+            />
           </TabsContent>
         </div>
       </Tabs>
@@ -3609,177 +3284,29 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
   };
 
   const renderPayment = () => (
-    <div className="space-y-3">
-      <div className="bg-gradient-to-br from-primary/15 to-primary/5 rounded-2xl p-3 border border-primary/20">
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 min-w-0">
-            <div className="h-9 w-9 bg-primary/20 rounded-xl flex items-center justify-center flex-shrink-0">
-              <DollarSign className="h-4 w-4 text-primary" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-[11px] text-muted-foreground leading-tight">Parcelle</p>
-              <p className="font-mono font-bold text-sm truncate">{parcelNumber}</p>
-            </div>
-          </div>
-          <div className="text-right flex-shrink-0">
-            <p className="text-[11px] text-muted-foreground leading-tight">Total</p>
-            <p className="text-xl font-bold text-primary">${getTotalAmount()}</p>
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-muted/30 rounded-2xl p-2.5">
-        <p className="text-[11px] font-semibold text-muted-foreground mb-1.5 px-0.5">Détails des frais</p>
-        <div className="space-y-1">
-          {quotedFees.map((fee, idx) => (
-            <div key={`${fee.fee_name}-${idx}`} className="flex justify-between items-center px-0.5">
-              <span className="text-sm">{fee.fee_name}</span>
-              <span className="font-semibold text-sm">${fee.amount_usd}</span>
-            </div>
-          ))}
-
-        </div>
-      </div>
-
-      <div>
-        <p className="text-xs font-semibold mb-2">Mode de paiement</p>
-        <div className="grid grid-cols-2 gap-2">
-          <button
-            type="button"
-            onClick={() => setPaymentMethod('mobile_money')}
-            className={`p-2.5 rounded-2xl border-2 transition-all flex items-center justify-center gap-2 ${
-              paymentMethod === 'mobile_money' 
-                ? 'border-primary bg-primary/10 text-primary' 
-                : 'border-border hover:border-primary/50 bg-background'
-            }`}
-          >
-            <Phone className="h-4 w-4" />
-            <span className="text-sm font-medium">Mobile Money</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setPaymentMethod('bank_card')}
-            className={`p-2.5 rounded-2xl border-2 transition-all flex items-center justify-center gap-2 ${
-              paymentMethod === 'bank_card' 
-                ? 'border-primary bg-primary/10 text-primary' 
-                : 'border-border hover:border-primary/50 bg-background'
-            }`}
-          >
-            <CreditCard className="h-4 w-4" />
-            <span className="text-sm font-medium">Carte bancaire</span>
-          </button>
-        </div>
-      </div>
-
-      {paymentMethod === 'mobile_money' && (
-        <div className="bg-muted/20 rounded-2xl p-2.5 space-y-2">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            <div>
-              <Label className="text-[11px] font-medium mb-1 block">Opérateur</Label>
-              <Select value={paymentProvider} onValueChange={setPaymentProvider}>
-                <SelectTrigger className="h-9 rounded-xl text-sm">
-                  <SelectValue placeholder="Choisir..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="airtel_money">Airtel Money</SelectItem>
-                  <SelectItem value="orange_money">Orange Money</SelectItem>
-                   <SelectItem value="mpesa">M-Pesa</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label className="text-[11px] font-medium mb-1 block">Téléphone</Label>
-              <Input
-                value={paymentPhone}
-                onChange={(e) => setPaymentPhone(e.target.value)}
-                placeholder="+243 ..."
-                className="h-9 rounded-xl text-sm"
-              />
-            </div>
-          </div>
-        </div>
-      )}
-
-      {paymentMethod === 'bank_card' && (
-        <div className="flex items-center gap-2 p-2.5 bg-blue-50 dark:bg-blue-900/20 rounded-2xl border border-blue-200 dark:border-blue-800">
-          <CreditCard className="h-4 w-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
-          <p className="text-xs text-blue-700 dark:text-blue-300">
-            Redirection vers Stripe pour un paiement sécurisé.
-          </p>
-        </div>
-      )}
-
-      <div className="flex gap-2 pt-1">
-        <Button 
-          variant="outline" 
-          onClick={() => setStep('summary')}
-          disabled={processingPayment}
-          className="flex-1 h-10 rounded-2xl text-sm"
-        >
-          Retour
-        </Button>
-        <Button 
-          variant="seloger"
-          onClick={handlePayment}
-          disabled={processingPayment || !isPaymentValid() || (paymentMethod === 'mobile_money' && (!paymentProvider || !paymentPhone))}
-          className="flex-1 h-10 rounded-2xl text-sm font-semibold"
-        >
-          {processingPayment ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin mr-1.5" />
-              Traitement...
-            </>
-          ) : (
-            <>
-              <CheckCircle2 className="h-4 w-4 mr-1.5" />
-              Payer ${getTotalAmount()}
-            </>
-          )}
-        </Button>
-      </div>
-    </div>
+    <PaymentTab
+      parcelNumber={parcelNumber}
+      quotedFees={quotedFees}
+      getTotalAmount={getTotalAmount}
+      paymentMethod={paymentMethod}
+      setPaymentMethod={setPaymentMethod}
+      paymentProvider={paymentProvider}
+      setPaymentProvider={setPaymentProvider}
+      paymentPhone={paymentPhone}
+      setPaymentPhone={setPaymentPhone}
+      processingPayment={processingPayment}
+      isPaymentValid={isPaymentValid}
+      handlePayment={handlePayment}
+      onBack={() => setStep('summary')}
+    />
   );
 
   const renderConfirmation = () => (
-    <div className="space-y-4 text-center py-4">
-      <div className="h-16 w-16 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mx-auto">
-        <CheckCircle2 className="h-8 w-8 text-green-600" />
-      </div>
-      
-      <div className="space-y-1">
-        <h3 className="font-bold text-lg">Demande envoyée !</h3>
-        <p className="text-sm text-muted-foreground">
-          Votre demande d'expertise immobilière a été enregistrée avec succès.
-        </p>
-      </div>
-
-      {createdRequest && (
-        <div className="bg-muted/50 rounded-xl p-3 space-y-2 text-left">
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Référence</span>
-            <span className="font-mono font-bold">{createdRequest.reference_number}</span>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Parcelle</span>
-            <span className="font-mono">{parcelNumber}</span>
-          </div>
-        </div>
-      )}
-
-      <Alert className="rounded-xl text-left">
-        <AlertDescription className="text-sm">
-          Un expert immobilier analysera votre demande et vous contactera prochainement. 
-          Vous pouvez suivre l'avancement depuis votre tableau de bord.
-        </AlertDescription>
-      </Alert>
-
-      <Button 
-        onClick={handleClose}
-        className="w-full h-11 rounded-xl"
-      >
-        Fermer
-      </Button>
-    </div>
+    <ConfirmationTab
+      parcelNumber={parcelNumber}
+      createdRequest={createdRequest}
+      onClose={handleClose}
+    />
   );
 
   // Reset showIntro when dialog opens
