@@ -77,7 +77,6 @@ export interface GeneralTabProps {
   isTerrainNu: boolean;
 
   hasBuildingPermit: 'yes' | 'no' | '';
-  _unused?: never;
   setHasBuildingPermit: (v: 'yes' | 'no') => void;
   buildingPermitType: 'construction' | 'regularization';
   setBuildingPermitType: (v: 'construction' | 'regularization') => void;
