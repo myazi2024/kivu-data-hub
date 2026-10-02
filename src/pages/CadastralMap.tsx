@@ -905,15 +905,19 @@ const CadastralMap = () => {
           </div>
         )}
 
-        <CadastralMapLegend
-          legend={mapConfig?.legend}
-          hasRoadSides={Boolean(selectedParcel && parcelRoadSides.length > 0 && Array.isArray(selectedParcel.gps_coordinates) && selectedParcel.gps_coordinates.length >= 3)}
-          hasBuildings={parcelBuildings.length > 0}
-          hasCalculatedSides={parcelBuildings.some(building => building.sides.some(side => side.calculated && side.lengthM !== null))}
-          hasMissingHeight={parcelBuildings.some(building => building.heightM === null)}
-          hasSubdividedParcels={filteredParcels.some(parcel => parcel.is_subdivided === true && Array.isArray(parcel.gps_coordinates) && parcel.gps_coordinates.length >= 3)}
-          hasLots={subdivisionLots.some(lot => Array.isArray(lot.gps_coordinates) && lot.gps_coordinates.length >= 3)}
-        />
+        {/* Légende masquée quand le menu Actions est ouvert : l'attention se
+            porte sur les services disponibles, pas sur les repères cartographiques. */}
+        {!actionsExpanded && (
+          <CadastralMapLegend
+            legend={mapConfig?.legend}
+            hasRoadSides={Boolean(selectedParcel && parcelRoadSides.length > 0 && Array.isArray(selectedParcel.gps_coordinates) && selectedParcel.gps_coordinates.length >= 3)}
+            hasBuildings={parcelBuildings.length > 0}
+            hasCalculatedSides={parcelBuildings.some(building => building.sides.some(side => side.calculated && side.lengthM !== null))}
+            hasMissingHeight={parcelBuildings.some(building => building.heightM === null)}
+            hasSubdividedParcels={filteredParcels.some(parcel => parcel.is_subdivided === true && Array.isArray(parcel.gps_coordinates) && parcel.gps_coordinates.length >= 3)}
+            hasLots={subdivisionLots.some(lot => Array.isArray(lot.gps_coordinates) && lot.gps_coordinates.length >= 3)}
+          />
+        )}
       </main>
 
       {showIntroDialog && (
