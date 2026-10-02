@@ -463,6 +463,25 @@ All colors MUST be HSL.
   background: hsl(var(--primary));
   color: hsl(var(--primary-foreground));
 }
+.building-side-marker__label,
+.building-height-marker__label {
+  display: inline-block;
+  text-align: center;
+  min-width: 48px;
+  padding: 2px 4px;
+  border: 1px solid hsl(var(--primary));
+  border-radius: 4px;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  box-shadow: 0 1px 4px hsl(var(--foreground) / 0.15);
+  font-size: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.building-height-marker__label {
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+}
 .leaflet-control-zoom {
   border: none !important;
   border-radius: 0.75rem !important;

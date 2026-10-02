@@ -10,3 +10,4 @@
 - Fonctions internes (tâches planifiées, remboursements, relances, test prestataire) : accès via `_shared/internalAuth.ts` (secret cron en base `internal_cron_secrets` ou admin/super_admin) ; jamais publiques.
 - Exports CSV : toute cellule passe par `sanitizeCsvCell` (neutralise les formules tableur).
 - Cadastral map road details read the public `road_sides` and annotate only the selected parcel's declared boundary segments; this preserves free access without inventing road geometry.
+- Cadastral map building overlays read only the sanitized public `building_outlines` projection of approved parcel shapes; this exposes requested measurements without leaking raw building JSON or inventing footprints.

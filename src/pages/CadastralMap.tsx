@@ -19,7 +19,9 @@ import SearchHistory from '@/components/cadastral/SearchHistory';
 import CadastralSearchModeToggle, { type CadastralSearchMode } from '@/components/cadastral/CadastralSearchModeToggle';
 import ParcelActionsDropdown from '@/components/cadastral/ParcelActionsDropdown';
 import ParcelRoadDetails from '@/components/cadastral/ParcelRoadDetails';
+import ParcelBuildingsDetails from '@/components/cadastral/ParcelBuildingsDetails';
 import { getParcelRoadSides } from '@/lib/parcelRoadSides';
+import { getParcelBuildings } from '@/lib/parcelBuildings';
 import LandTitleRequestDialog from '@/components/cadastral/LandTitleRequestDialog';
 import LandTitleTermsDialog from '@/components/cadastral/LandTitleTermsDialog';
 import CadastralResultsDialog from '@/components/cadastral/CadastralResultsDialog';
@@ -56,6 +58,7 @@ const CadastralMap = () => {
   // Selection
   const [selectedParcel, setSelectedParcel] = useState<ParcelData | null>(null);
   const [focusedRoadSide, setFocusedRoadSide] = useState<number | null>(null);
+  const [focusedBuilding, setFocusedBuilding] = useState<number | null>(null);
   const { data: selectedParcelHistory, isLoading: loadingHistory } = useParcelHistory(selectedParcel?.id ?? null);
   const selectedParcelEffectiveArea = useMemo(() => {
     if (!selectedParcel) return 0;
@@ -67,6 +70,7 @@ const CadastralMap = () => {
     return computeEffectiveAreaSqm(gps, selectedParcel.area_sqm || 0);
   }, [selectedParcel]);
   const parcelRoadSides = useMemo(() => getParcelRoadSides(selectedParcel?.road_sides), [selectedParcel]);
+  const parcelBuildings = useMemo(() => getParcelBuildings(selectedParcel?.building_outlines), [selectedParcel]);
   const hasIncompleteData = useMemo(() => {
     if (!selectedParcel || !selectedParcelHistory) return false;
     const hasLocation = !!(selectedParcel.province && selectedParcel.ville);
@@ -153,15 +157,19 @@ const CadastralMap = () => {
   const searchHint = useSearchHintFlow(searchMode, searchQuery.trim().length > 0 || !!selectedParcel);
 
   // Leaflet map (init + tiles via provider + on-demand geo + incremental render)
-  const { mapReady, renderLayers, requestUserLocation, centerOnParcel, showParcelRoadSides } = useLeafletMap({
+  const { mapReady, renderLayers, requestUserLocation, centerOnParcel, showParcelRoadSides, showParcelBuildings } = useLeafletMap({
     containerRef: mapContainerRef,
     ready: !loading,
-    onParcelClick: (p) => { setFocusedRoadSide(null); setSelectedParcel(p); },
+    onParcelClick: (p) => { setFocusedRoadSide(null); setFocusedBuilding(null); setSelectedParcel(p); },
   });
 
   useEffect(() => {
     if (mapReady) showParcelRoadSides(selectedParcel, focusedRoadSide);
   }, [mapReady, selectedParcel, focusedRoadSide, showParcelRoadSides]);
+
+  useEffect(() => {
+    if (mapReady) showParcelBuildings(selectedParcel, focusedBuilding);
+  }, [mapReady, selectedParcel, focusedBuilding, showParcelBuildings]);
 
   // Sync filteredParcels with base data
   useEffect(() => { setFilteredParcels(parcels); }, [parcels]);
@@ -243,6 +251,7 @@ const CadastralMap = () => {
       : parcel.parcel_number;
     setSelectedParcel(parcel);
     setFocusedRoadSide(null);
+    setFocusedBuilding(null);
     setSearchQuery(label);
     setSearchSuggestions([]);
     setHighlightedIndex(-1);
@@ -260,6 +269,7 @@ const CadastralMap = () => {
     setFilteredParcels(parcels);
     setSelectedParcel(null);
     setFocusedRoadSide(null);
+    setFocusedBuilding(null);
   };
 
   /**
@@ -800,7 +810,7 @@ const CadastralMap = () => {
                     variant="ghost"
                     size="sm"
                     className="h-9 w-9 p-0 rounded-xl text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all"
-                     onClick={() => { setSelectedParcel(null); setFocusedRoadSide(null); setActionsExpanded(false); }}
+                      onClick={() => { setSelectedParcel(null); setFocusedRoadSide(null); setFocusedBuilding(null); setActionsExpanded(false); }}
                     aria-label="Fermer le panneau parcelle"
                   >
                     <X className="h-4 w-4" />
@@ -829,6 +839,7 @@ const CadastralMap = () => {
                 </div>
 
                  <ParcelRoadDetails sides={parcelRoadSides} selectedSide={focusedRoadSide} onSelectSide={setFocusedRoadSide} coordinateCount={Array.isArray(selectedParcel.gps_coordinates) ? selectedParcel.gps_coordinates.length : 0} />
+                 <ParcelBuildingsDetails buildings={parcelBuildings} selectedBuilding={focusedBuilding} onSelectBuilding={setFocusedBuilding} />
 
                 <div className="flex gap-1.5">
                   <Button

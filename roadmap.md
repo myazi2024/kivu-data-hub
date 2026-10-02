@@ -8,3 +8,4 @@
 - [x] Alertes de sécurité : faux paiements, remboursements, relances, test prestataire, retour de paiement, exports CSV, tuiles, MCP.
 - [x] Protéger relevés de santé + contrôle des alertes : migration du secret cron et déploiements effectués.
 - [x] Afficher la voirie publique par côté sur la parcelle sélectionnée, avec repères limités aux segments déclarés.
+- [x] Afficher chaque construction enregistrée sur la parcelle avec les longueurs des côtés et sa hauteur, sans exposer d'autres champs privés.
