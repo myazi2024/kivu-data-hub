@@ -112,6 +112,22 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
     lastFocusedIndexRef.current = index;
   }, []);
 
+  // Conditions d'accès alignées sur le formulaire CCC : hypothèque et mutation
+  // exigent un titre enregistré ; la demande de titre foncier n'est proposée
+  // que s'il n'y en a pas. On ne bloque que si la donnée a bien été chargée.
+  const titleKnown = !!parcelData && Object.prototype.hasOwnProperty.call(parcelData, 'property_title_type');
+  const hasTitle = titleKnown && !!String(parcelData?.property_title_type ?? '').trim();
+  const getBlockedReason = (key: string): string | null => {
+    if (!titleKnown) return null;
+    if ((key === 'mortgage_management' || key === 'mutation') && !hasTitle) {
+      return 'Indisponible : aucun titre de propriété enregistré pour cette parcelle.';
+    }
+    if (key === 'land_title_request' && hasTitle) {
+      return 'Indisponible : un titre de propriété est déjà enregistré pour cette parcelle.';
+    }
+    return null;
+  };
+
   const getActionHandler = (key: string) => {
     const handlers: Record<string, () => void> = {
       'expertise': () => setShowExpertiseDialog(true),
@@ -180,7 +196,8 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
               {groupedActions.map((item, index) => {
                 if (item === 'separator') return null;
                 const action = item;
-                const disabled = !action.isActive;
+                const blockedReason = action.isActive ? getBlockedReason(action.key) : null;
+                const disabled = !action.isActive || !!blockedReason;
                 return (
                   <button
                     key={action.id}
@@ -201,6 +218,9 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
                         <ActionBadge badge={action.badge} />
                       </div>
                       <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{action.description}</p>
+                      {blockedReason && (
+                        <p className="text-[11px] font-medium text-foreground/80 mt-0.5">{blockedReason}</p>
+                      )}
                       <div className="mt-1.5 flex items-center gap-2 flex-wrap">
                         {action.detailedDescription && (
                           <span
