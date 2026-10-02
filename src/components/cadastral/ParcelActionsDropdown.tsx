@@ -201,26 +201,38 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
                         <ActionBadge badge={action.badge} />
                       </div>
                       <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{action.description}</p>
-                      {action.detailedDescription && (
-                        <div className="mt-1">
+                      <div className="mt-1.5 flex items-center gap-2 flex-wrap">
+                        {action.detailedDescription && (
                           <span
                             role="button"
                             tabIndex={0}
-                            aria-expanded={expandedDetails.has(action.id)}
-                            aria-label={expandedDetails.has(action.id) ? `Réduire l'explication de ${action.label}` : `En savoir plus sur ${action.label}`}
+                            aria-expanded={expandedDetailId === action.id}
+                            aria-label={expandedDetailId === action.id ? `Réduire l'explication de ${action.label}` : `En savoir plus sur ${action.label}`}
                             onClick={(e) => { e.stopPropagation(); toggleDetails(action.id); }}
                             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); toggleDetails(action.id); } }}
                             className="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:text-primary/80 transition-colors cursor-pointer select-none rounded focus-visible-ring"
                           >
-                            {expandedDetails.has(action.id) ? 'Réduire' : 'En savoir plus'}
-                            <ChevronDown className={`h-3 w-3 transition-transform duration-200 ${expandedDetails.has(action.id) ? 'rotate-180' : ''}`} />
+                            {expandedDetailId === action.id ? 'Réduire' : 'En savoir plus'}
+                            <ChevronDown className={`h-3 w-3 transition-transform duration-200 ${expandedDetailId === action.id ? 'rotate-180' : ''}`} />
                           </span>
-                          {expandedDetails.has(action.id) && (
-                            <p className="text-xs text-muted-foreground leading-relaxed mt-1.5 pr-1">
-                              {action.detailedDescription}
-                            </p>
-                          )}
-                        </div>
+                        )}
+                        {!disabled && (
+                          <span
+                            role="button"
+                            tabIndex={0}
+                            aria-label={`Ouvrir ${action.label}`}
+                            onClick={(e) => { e.stopPropagation(); handleActionClick(action); }}
+                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); handleActionClick(action); } }}
+                            className="inline-flex items-center gap-1 rounded-full bg-primary px-2.5 py-1 text-[11px] font-semibold text-primary-foreground shadow-sm hover:bg-primary/90 transition-colors cursor-pointer select-none focus-visible-ring"
+                          >
+                            Ouvrir
+                          </span>
+                        )}
+                      </div>
+                      {action.detailedDescription && expandedDetailId === action.id && (
+                        <p className="text-xs text-muted-foreground leading-relaxed mt-1.5 pr-1">
+                          {action.detailedDescription}
+                        </p>
                       )}
                     </div>
                   </button>
