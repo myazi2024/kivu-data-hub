@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
+import { isCronCaller, getAdminUserId, forbidden } from '../_shared/internalAuth.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -12,6 +13,14 @@ Deno.serve(async (req) => {
     Deno.env.get('SUPABASE_URL')!,
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
   );
+
+  // Simple ping de disponibilité (sans écriture)
+  if (req.method === 'HEAD' || new URL(req.url).searchParams.has('ping')) {
+    return new Response(null, { status: 204, headers: corsHeaders });
+  }
+  if (!(await isCronCaller(req, supabase)) && !(await getAdminUserId(req, supabase))) {
+    return forbidden(corsHeaders);
+  }
 
   const ping = async (fn: () => Promise<unknown>) => {
     const t0 = performance.now();

@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { getAdminUserId, forbidden } from "../_shared/internalAuth.ts";
 import { enforceRateLimit, rateLimitResponse } from "../_shared/rateLimit.ts";
 
 const corsHeaders = {
@@ -27,6 +28,7 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
+    if (!(await getAdminUserId(req, supabase))) return forbidden(corsHeaders);
 
     const { provider_id, config_type } = await req.json();
 

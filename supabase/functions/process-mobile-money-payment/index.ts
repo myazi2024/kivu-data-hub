@@ -11,17 +11,26 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+import { computePermitTotal, parsePermitContext, verifyPermitPayment } from "../_shared/permitFees.ts";
+
+const ALLOWED_TYPES = new Set([
+  'publication', 'cadastral_service', 'expertise_fee', 'certificate_access',
+  'mutation_request', 'mortgage_cancellation', 'land_title_request',
+  'permit_request', 'permit_fee',
+]);
+
 interface PaymentRequest {
   item_id?: string;
   items?: string[];
   payment_provider: string;
   phone_number: string;
   amount_usd: number;
-  payment_type: 'publication' | 'cadastral_service' | 'expertise_fee' | 'certificate_access' | 'mutation_request' | 'mortgage_cancellation' | 'land_title_request';
+  payment_type: 'publication' | 'cadastral_service' | 'expertise_fee' | 'certificate_access' | 'mutation_request' | 'mortgage_cancellation' | 'land_title_request' | 'permit_request' | 'permit_fee';
   invoice_id?: string;
   test_mode?: boolean;
   currency_code?: string;
   amount_local?: number;
+  permit_context?: unknown;
 }
 
 Deno.serve(async (req) => {
@@ -59,6 +68,26 @@ Deno.serve(async (req) => {
     }
 
     const { payment_provider, phone_number, amount_usd, payment_type, invoice_id, currency_code: clientCurrency } = body;
+
+    if (!ALLOWED_TYPES.has(payment_type)) throw new Error('Type de paiement inconnu.');
+    const sameCents = (a: number, b: number) => Math.round(Number(a) * 100) === Math.round(Number(b) * 100);
+
+    // Autorisation de bâtir (nouvelle demande) : montant recalculé sur le barème.
+    if (payment_type === 'permit_request') {
+      const ctx = parsePermitContext(body.permit_context);
+      if (!ctx) throw new Error('Informations de la demande d\'autorisation manquantes.');
+      const due = await computePermitTotal(supabase, ctx);
+      if (due <= 0 || !sameCents(due, amount_usd)) {
+        throw new Error('Le montant du paiement ne correspond pas au barème en vigueur.');
+      }
+    }
+
+    // Autorisation de bâtir (paiement enregistré) : propriété + barème.
+    if (payment_type === 'permit_fee') {
+      if (!invoice_id) throw new Error('Identifiant du paiement manquant.');
+      const due = await verifyPermitPayment(supabase, invoice_id, user.id);
+      if (!sameCents(due, amount_usd)) throw new Error('Le montant ne correspond pas au paiement enregistré.');
+    }
 
     if (payment_type === 'mutation_request') {
       if (!invoice_id) throw new Error('Mutation request id required');
@@ -134,6 +163,46 @@ Deno.serve(async (req) => {
 
       if (Math.round(dueAmount * 100) !== Math.round(Number(amount_usd) * 100)) {
         throw new Error('Le montant du paiement ne correspond pas au barème en vigueur.');
+      }
+    }
+
+    // Expertise / certificat : paiement de l'appelant, en attente, montant identique.
+    if (payment_type === 'expertise_fee' || payment_type === 'certificate_access') {
+      if (!invoice_id) throw new Error('Identifiant du paiement manquant.');
+      const { data: ep, error: epError } = await supabase
+        .from('expertise_payments')
+        .select('id, user_id, status, total_amount_usd')
+        .eq('id', invoice_id)
+        .eq('user_id', user.id)
+        .single();
+      if (epError || !ep) throw new Error('Paiement introuvable.');
+      if (ep.status !== 'pending') throw new Error("Ce paiement n'est plus payable.");
+      if (Math.round(Number(ep.total_amount_usd) * 100) !== Math.round(Number(amount_usd) * 100)) {
+        throw new Error('Le montant du paiement ne correspond pas au montant enregistré.');
+      }
+    }
+
+    // Publication : prix lu en base.
+    if (payment_type === 'publication') {
+      if (!body.item_id) throw new Error('Publication manquante.');
+      const { data: pub } = await supabase
+        .from('publications').select('id, price_usd').eq('id', body.item_id).single();
+      if (!pub || Math.round(Number(pub.price_usd) * 100) !== Math.round(Number(amount_usd) * 100)) {
+        throw new Error('Le montant ne correspond pas au prix de la publication.');
+      }
+    }
+
+    // Service cadastral : facture de l'appelant, non payée, montant identique.
+    if (payment_type === 'cadastral_service') {
+      if (!invoice_id) throw new Error('Facture manquante.');
+      const { data: inv } = await supabase
+        .from('cadastral_invoices')
+        .select('id, user_id, status, total_amount_usd')
+        .eq('id', invoice_id).eq('user_id', user.id).single();
+      if (!inv) throw new Error('Facture introuvable.');
+      if (inv.status === 'paid') throw new Error('Cette facture est déjà payée.');
+      if (Math.round(Number(inv.total_amount_usd) * 100) !== Math.round(Number(amount_usd) * 100)) {
+        throw new Error('Le montant ne correspond pas à la facture.');
       }
     }
 
@@ -242,6 +311,7 @@ Deno.serve(async (req) => {
         .from('expertise_payments')
         .update(expertiseUpdate)
         .eq('id', invoice_id)
+        .eq('user_id', user.id)
         .select('expertise_request_id')
         .maybeSingle();
 
@@ -376,8 +446,16 @@ Deno.serve(async (req) => {
 
     if (txError) throw txError;
 
-    // In test mode or if no real API credentials, simulate payment
-    if (test_mode || !providerConfig.api_credentials?.apiKey) {
+    // Hors mode test, un prestataire sans identifiants réels ne peut pas encaisser.
+    if (!test_mode && !providerConfig.api_credentials?.apiKey) {
+      await supabase.from('payment_transactions')
+        .update({ status: 'failed', error_message: 'provider_not_configured' })
+        .eq('id', transaction.id);
+      throw new Error('Ce moyen de paiement n\'est pas encore disponible.');
+    }
+
+    // Simulation réservée au mode test activé côté serveur.
+    if (test_mode) {
       console.log('⚠️ SIMULATION MODE - Payment will be auto-completed after 3 seconds');
 
       setTimeout(async () => {
@@ -427,30 +505,9 @@ Deno.serve(async (req) => {
         })
         .eq('id', transaction.id);
 
-      // Temporary simulation until provider callbacks are fully integrated
-      setTimeout(async () => {
-        const completedAt = new Date().toISOString();
-        await supabase
-          .from('payment_transactions')
-          .update({
-            status: 'completed',
-            provider_fee_usd: computedFeeUsd,
-            provider_fee_currency: 'USD',
-            provider_fee_raw: feeBreakdown,
-            metadata: {
-              ...transaction.metadata,
-              provider_simulated: true,
-              completed_at: completedAt,
-            }
-          })
-          .eq('id', transaction.id);
-
-        await createPublicationPaymentRecord(`REAL-${transaction.id}`);
-        await syncExpertisePaymentState('completed', transaction.id);
-        await syncMutationPaymentState(transaction.id);
-        await syncMortgageCancellationState('completed', transaction.id);
-        await syncLandTitlePaymentState(transaction.id);
-      }, 5000);
+      // SÉCURITÉ : hors mode test, aucune complétion automatique.
+      // La transaction reste « processing » jusqu'à la confirmation du prestataire
+      // (callback / update-payment-status), seule source de vérité.
 
       return new Response(
         JSON.stringify({

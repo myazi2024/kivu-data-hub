@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
+import { getAdminUserId, isCronCaller, forbidden } from '../_shared/internalAuth.ts';
 import { enforceRateLimit, rateLimitResponse } from '../_shared/rateLimit.ts';
 
 const corsHeaders = {
@@ -13,17 +14,20 @@ Deno.serve(async (req) => {
   if (!rl.allowed) return rateLimitResponse(rl, corsHeaders);
 
   try {
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+    );
+    if (!(await isCronCaller(req, supabase)) && !(await getAdminUserId(req, supabase))) {
+      return forbidden(corsHeaders);
+    }
+
     const { invoice_id, reminder_number } = await req.json();
     if (!invoice_id) {
       return new Response(JSON.stringify({ error: 'invoice_id required' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
-
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
-    );
 
     const { data: invoice, error } = await supabase
       .from('cadastral_invoices')
@@ -34,9 +38,9 @@ Deno.serve(async (req) => {
     if (invoice.status !== 'pending') throw new Error('Invoice not pending');
 
     // TODO: Wire to actual email provider. Currently logs only.
-    console.log(`[REMINDER #${reminder_number}] To: ${invoice.client_email} | Invoice ${invoice.invoice_number} | $${invoice.total_amount_usd}`);
+    console.log(`[REMINDER #${Number(reminder_number) || 1}] queued for invoice ${String(invoice_id).slice(0, 8)}`);
 
-    return new Response(JSON.stringify({ ok: true, queued: true, recipient: invoice.client_email }), {
+    return new Response(JSON.stringify({ ok: true, queued: true }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (e) {

@@ -7,6 +7,19 @@ export interface CSVExportOptions {
 }
 
 /**
+ * Neutralise les formules tableur (injection CSV) : une cellule texte commençant
+ * par = + - @ tabulation ou retour chariot est préfixée d'une apostrophe.
+ * Les nombres (ex. -12.5) restent inchangés.
+ */
+export const sanitizeCsvCell = (value: unknown): string => {
+  if (value === null || value === undefined) return '';
+  if (typeof value === 'number') return String(value);
+  const s = String(value);
+  if (/^-?\d+([.,]\d+)?$/.test(s)) return s;
+  return /^[=+\-@\t\r]/.test(s) ? `'${s}` : s;
+};
+
+/**
  * Exports data to CSV format and triggers download
  */
 export const exportToCSV = ({ filename, headers, data }: CSVExportOptions): void => {
@@ -14,7 +27,7 @@ export const exportToCSV = ({ filename, headers, data }: CSVExportOptions): void
     headers.join(','),
     ...data.map(row => row.map(cell => {
       // Handle cells with commas or quotes
-      const cellStr = String(cell ?? '');
+      const cellStr = sanitizeCsvCell(cell);
       if (cellStr.includes(',') || cellStr.includes('"') || cellStr.includes('\n')) {
         return `"${cellStr.replace(/"/g, '""')}"`;
       }

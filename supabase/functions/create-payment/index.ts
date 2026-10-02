@@ -5,6 +5,7 @@ import {
   computeMortgageCancellationDue,
   loadMortgageCancellationFees,
 } from "../_shared/mortgageFees.ts";
+import { computePermitTotal, parsePermitContext } from "../_shared/permitFees.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -17,6 +18,7 @@ interface PaymentRequest {
   invoice_id?: string;
   payment_type: 'publications' | 'cadastral_service' | 'expertise_fee' | 'certificate_access' | 'mutation_request' | 'permit_request' | 'mortgage_cancellation' | 'land_title_request' | 'subdivision_request';
   amount_usd?: number;
+  permit_context?: unknown;
 }
 
 Deno.serve(async (req) => {
@@ -218,7 +220,12 @@ Deno.serve(async (req) => {
       orderMetadata.invoice_id = invoice_id;
     }
     // Handle Building Permit Request payment
-    else if (payment_type === 'permit_request' && invoice_id && amount_usd) {
+    else if (payment_type === 'permit_request' && invoice_id) {
+      // Montant recalculé côté serveur à partir du barème ; jamais le montant client.
+      const ctx = parsePermitContext(body.permit_context);
+      if (!ctx) throw new Error("Informations de la demande d'autorisation manquantes.");
+      const due = await computePermitTotal(supabase, ctx);
+      if (due <= 0) throw new Error("Aucun frais applicable à cette demande.");
       lineItems = [{
         price_data: {
           currency: "usd",
@@ -226,12 +233,12 @@ Deno.serve(async (req) => {
             name: `Demande d'autorisation de bâtir`,
             description: `Paiement frais d'autorisation`,
           },
-          unit_amount: Math.round(amount_usd * 100),
+          unit_amount: Math.round(due * 100),
         },
         quantity: 1,
       }];
 
-      totalAmount = Math.round(amount_usd * 100);
+      totalAmount = Math.round(due * 100);
       orderMetadata.permit_request_id = invoice_id;
       orderMetadata.invoice_id = invoice_id;
     }
@@ -354,7 +361,23 @@ Deno.serve(async (req) => {
     }
 
     // Build URLs
-    const origin = req.headers.get("origin") || "";
+    // Adresse de retour : uniquement les domaines de l'application (jamais l'en-tête brut).
+    const rawOrigin = req.headers.get("origin") || "";
+    const extraOrigins = (Deno.env.get("ALLOWED_RETURN_ORIGINS") || "")
+      .split(",").map((s) => s.trim()).filter(Boolean);
+    const isAllowedOrigin = (o: string) => {
+      try {
+        const u = new URL(o);
+        if (u.protocol !== "https:" && u.hostname !== "localhost") return false;
+        return extraOrigins.includes(u.origin)
+          || u.hostname.endsWith(".lovable.app")
+          || u.hostname.endsWith(".lovableproject.com")
+          || u.hostname === "localhost";
+      } catch { return false; }
+    };
+    const origin = isAllowedOrigin(rawOrigin)
+      ? new URL(rawOrigin).origin
+      : (extraOrigins[0] || "https://id-preview--bee4d138-def6-42cb-81c8-f5965006e0e1.lovable.app");
     let successUrl: string;
     let cancelUrl: string;
 
