@@ -1,3 +1,4 @@
+import { PROPERTY_CATEGORY_OPTIONS as SHARED_PROPERTY_CATEGORY_OPTIONS, CATEGORY_TO_CONSTRUCTION_TYPES as SHARED_CATEGORY_TO_CONSTRUCTION_TYPES } from '@/lib/ccc/propertyCategories';
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { createLongLivedSignedUrl } from '@/utils/storageSignedUrl';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -162,17 +163,9 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
   const { getOptions, getDependentOptions, loading: picklistsLoading } = useCCCFormPicklists();
   
   // CCC construction categories
-  const PROPERTY_CATEGORY_OPTIONS = useMemo(() => [
-    'Appartement', 'Villa', 'Maison', 'Maison basse', 'Local commercial',
-    'Immeuble/Bâtiment', 'Entrepôt/Hangar', 'Terrain nu',
-  ], []);
+  const PROPERTY_CATEGORY_OPTIONS = SHARED_PROPERTY_CATEGORY_OPTIONS as unknown as string[];
 
-  const CATEGORY_TO_CONSTRUCTION_TYPES: Record<string, string[]> = useMemo(() => ({
-    'Appartement': ['Résidentielle'], 'Villa': ['Résidentielle'], 'Maison': ['Résidentielle'],
-    'Maison basse': ['Résidentielle'],
-    'Local commercial': ['Commerciale'], 'Immeuble/Bâtiment': ['Résidentielle', 'Commerciale', 'Industrielle'],
-    'Entrepôt/Hangar': ['Industrielle', 'Agricole'], 'Terrain nu': ['Terrain nu'],
-  }), []);
+  const CATEGORY_TO_CONSTRUCTION_TYPES = SHARED_CATEGORY_TO_CONSTRUCTION_TYPES;
 
   const MATERIALS_BY_NATURE_FALLBACK: Record<string, string[]> = useMemo(() => ({
     Durable: ['Béton armé', 'Briques cuites', 'Parpaings', 'Pierre naturelle'],

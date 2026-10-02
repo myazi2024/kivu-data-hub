@@ -1,16 +1,6 @@
 // Static constants for the Land Title Request dialog and its sub-components.
 
-export const PROPERTY_CATEGORY_OPTIONS = [
-  'Appartement', 'Villa', 'Maison', 'Maison basse', 'Local commercial',
-  'Immeuble/Bâtiment', 'Entrepôt/Hangar', 'Terrain nu',
-] as const;
-
-export const CATEGORY_TO_CONSTRUCTION_TYPES: Record<string, string[]> = {
-  'Appartement': ['Résidentielle'], 'Villa': ['Résidentielle'], 'Maison': ['Résidentielle'],
-  'Maison basse': ['Résidentielle'],
-  'Local commercial': ['Commerciale'], 'Immeuble/Bâtiment': ['Résidentielle', 'Commerciale', 'Industrielle'],
-  'Entrepôt/Hangar': ['Industrielle', 'Agricole'], 'Terrain nu': ['Terrain nu'],
-};
+export { PROPERTY_CATEGORY_OPTIONS, CATEGORY_TO_CONSTRUCTION_TYPES } from '@/lib/ccc/propertyCategories';
 
 // Materials -> Nature auto-determination (aligned with CCC)
 export const MATERIAL_TO_NATURE: Record<string, string> = {

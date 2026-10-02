@@ -1,17 +1,4 @@
-export const PROPERTY_CATEGORY_OPTIONS_NO_TERRAIN = [
-  'Villa', 'Maison', 'Maison basse', 'Local commercial',
-  'Immeuble/Bâtiment', 'Entrepôt/Hangar',
-];
-
-export const CATEGORY_TO_CONSTRUCTION_TYPES: Record<string, string[]> = {
-  'Appartement': ['Résidentielle'],
-  'Villa': ['Résidentielle'],
-  'Maison': ['Résidentielle'],
-  'Maison basse': ['Résidentielle'],
-  'Local commercial': ['Commerciale'],
-  'Immeuble/Bâtiment': ['Résidentielle', 'Commerciale', 'Industrielle'],
-  'Entrepôt/Hangar': ['Industrielle', 'Agricole'],
-};
+export { PROPERTY_CATEGORY_OPTIONS_NO_TERRAIN, CATEGORY_TO_CONSTRUCTION_TYPES } from '@/lib/ccc/propertyCategories';
 
 export const MATERIALS_BY_NATURE_FALLBACK: Record<string, string[]> = {
   Durable: ['Béton armé', 'Briques cuites', 'Parpaings', 'Pierre naturelle'],

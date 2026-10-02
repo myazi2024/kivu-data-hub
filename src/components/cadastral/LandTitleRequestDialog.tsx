@@ -1,3 +1,4 @@
+import { PROPERTY_CATEGORY_OPTIONS as SHARED_PROPERTY_CATEGORY_OPTIONS, CATEGORY_TO_CONSTRUCTION_TYPES as SHARED_CATEGORY_TO_CONSTRUCTION_TYPES } from '@/lib/ccc/propertyCategories';
 import DocumentsTab from './land-title-request/DocumentsTab';
 import ApplicantTab from './land-title-request/ApplicantTab';
 import LocationTab from './land-title-request/LocationTab';
@@ -213,17 +214,9 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
   const [availableConstructionNatures, setAvailableConstructionNatures] = useState<string[]>([]);
   const [availableDeclaredUsages, setAvailableDeclaredUsages] = useState<string[]>([]);
 
-  const PROPERTY_CATEGORY_OPTIONS = useMemo(() => [
-    'Appartement', 'Villa', 'Maison', 'Maison basse', 'Local commercial',
-    'Immeuble/Bâtiment', 'Entrepôt/Hangar', 'Terrain nu',
-  ], []);
+  const PROPERTY_CATEGORY_OPTIONS = SHARED_PROPERTY_CATEGORY_OPTIONS as unknown as string[];
 
-  const CATEGORY_TO_CONSTRUCTION_TYPES: Record<string, string[]> = useMemo(() => ({
-    'Appartement': ['Résidentielle'], 'Villa': ['Résidentielle'], 'Maison': ['Résidentielle'],
-    'Maison basse': ['Résidentielle'],
-    'Local commercial': ['Commerciale'], 'Immeuble/Bâtiment': ['Résidentielle', 'Commerciale', 'Industrielle'],
-    'Entrepôt/Hangar': ['Industrielle', 'Agricole'], 'Terrain nu': ['Terrain nu'],
-  }), []);
+  const CATEGORY_TO_CONSTRUCTION_TYPES = SHARED_CATEGORY_TO_CONSTRUCTION_TYPES;
   
   // New fields for land title deduction
   const [nationality, setNationality] = useState<'congolais' | 'etranger' | ''>('');
