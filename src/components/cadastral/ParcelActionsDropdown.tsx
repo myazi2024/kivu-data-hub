@@ -158,7 +158,7 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
 
   const handleActionClick = async (action: ParcelAction) => {
     const handler = getActionHandler(action.key);
-    if (!handler) return;
+    if (!handler || getBlockedReason(action.key)) return;
 
     // Auth guard
     if (action.requiresAuth) {
