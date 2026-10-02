@@ -478,7 +478,7 @@ const PermitFormStep: React.FC<PermitFormStepProps> = ({
                         <span className="text-xs font-medium block truncate">{label}</span>
                         <span className="text-[10px] text-muted-foreground truncate block">{attachments[key]!.file.name}</span>
                       </div>
-                      <Button type="button" variant="ghost" size="sm" onClick={() => setAttachments(prev => ({ ...prev, [key]: null }))} className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10 rounded-lg flex-shrink-0">
+                      <Button type="button" variant="ghost" size="sm" onClick={() => setAttachments(prev => ({ ...prev, [key]: null }))} className="h-11 w-11 p-0 text-destructive hover:bg-destructive/10 rounded-lg flex-shrink-0 sm:h-9 sm:w-9">
                         <X className="h-3.5 w-3.5" />
                       </Button>
                     </div>

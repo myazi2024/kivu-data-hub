@@ -190,7 +190,7 @@ const AdminCatalogConfig = () => {
       </div>
 
       <Tabs defaultValue="search" className="space-y-4">
-        <TabsList className="grid grid-cols-6 w-full">
+        <TabsList className="flex h-11 w-full justify-start overflow-x-auto lg:grid lg:grid-cols-6">
           <TabsTrigger value="search"><Search className="h-4 w-4 mr-2" />Recherche</TabsTrigger>
           <TabsTrigger value="discounts"><Tag className="h-4 w-4 mr-2" />Remises</TabsTrigger>
           <TabsTrigger value="ccc"><Gift className="h-4 w-4 mr-2" />Codes CCC</TabsTrigger>

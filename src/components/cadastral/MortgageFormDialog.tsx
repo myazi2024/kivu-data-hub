@@ -581,7 +581,7 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
                   variant="ghost"
                   size="sm"
                   onClick={previewFile}
-                  className="h-7 w-7 p-0 text-primary hover:bg-primary/10 rounded-lg"
+                  className="h-11 w-11 p-0 text-primary hover:bg-primary/10 rounded-lg sm:h-9 sm:w-9"
                   title="Aperçu"
                 >
                   <Eye className="h-4 w-4" />
@@ -591,7 +591,7 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
                   variant="ghost"
                   size="sm"
                   onClick={removeFile}
-                  className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10 rounded-lg"
+                  className="h-11 w-11 p-0 text-destructive hover:bg-destructive/10 rounded-lg sm:h-9 sm:w-9"
                 >
                   <X className="h-4 w-4" />
                 </Button>
