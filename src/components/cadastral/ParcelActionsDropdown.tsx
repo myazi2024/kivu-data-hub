@@ -168,7 +168,7 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
     <>
       {/* Expandable services panel */}
       {expanded && (
-        <div className="bg-gradient-to-b from-muted/30 to-muted/10">
+         <div className="shrink-0 bg-gradient-to-b from-muted/30 to-muted/10">
           <div className="px-3 py-1.5 flex items-center justify-between">
             <div className="flex items-center gap-1.5">
               <div className="h-1.5 w-1.5 rounded-full bg-primary/60 animate-pulse" />
@@ -176,8 +176,8 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
             </div>
             <span className="text-[9px] text-muted-foreground font-medium bg-muted/50 px-1.5 py-0.5 rounded-full">{visibleActions.length}</span>
           </div>
-          <div className="overflow-y-auto overscroll-contain max-h-[40dvh] sm:max-h-[210px] scrollbar-thin">
-            <div className="px-2 pb-1.5 space-y-1">
+          <div>
+             <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 px-2 pb-1.5">
               {groupedActions.map((item, index) => {
                 if (item === 'separator') return null;
                 const action = item;

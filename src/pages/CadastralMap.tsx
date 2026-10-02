@@ -772,10 +772,10 @@ const CadastralMap = () => {
         {/* Selected parcel panel */}
         {selectedParcel && (
           <div
-            className={`absolute z-[1000] ${isMobile ? 'inset-x-0 bottom-0' : 'bottom-4 right-4 w-80'}`}
+            className={`absolute z-[1000] ${isMobile ? 'inset-x-0 bottom-0' : `bottom-4 right-4 ${actionsExpanded ? 'w-[min(25rem,calc(100vw-2rem))]' : 'w-80'}`}`}
             style={isMobile ? { paddingBottom: 'env(safe-area-inset-bottom)' } : undefined}
           >
-            <div className={`bg-background/98 backdrop-blur-xl ${isMobile ? 'rounded-t-lg border-t' : 'rounded-lg border'} shadow-lg border-border/40 overflow-hidden max-h-[min(68dvh,540px)] flex flex-col`}>
+            <div className={`bg-background/98 backdrop-blur-xl ${isMobile ? 'rounded-t-lg border-t' : 'rounded-lg border'} shadow-lg border-border/40 ${actionsExpanded ? 'max-h-[calc(100dvh-5rem)] overflow-y-auto overscroll-contain' : 'max-h-[min(68dvh,540px)] overflow-hidden'} flex flex-col`}>
               <ParcelActionsDropdown
                 parcelNumber={selectedParcel.parcel_number}
                 parcelId={selectedParcel.id}
@@ -785,7 +785,7 @@ const CadastralMap = () => {
                 onRequestLandTitle={() => setShowLandTitleTermsDialog(true)}
               />
 
-              <div className="relative px-3 py-2 flex items-center justify-between">
+               <div className="relative shrink-0 px-3 py-2 flex items-center justify-between">
                 <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
                 <div className="flex items-center gap-2.5">
                   <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-primary/15 to-primary/5 flex items-center justify-center border border-primary/10">
@@ -818,7 +818,8 @@ const CadastralMap = () => {
                 </div>
               </div>
 
-               <div className="px-3 pb-3 overflow-y-auto min-h-0 overscroll-contain">
+               <div className={`px-3 pb-3 ${actionsExpanded ? 'shrink-0' : 'overflow-y-auto min-h-0 overscroll-contain'}`}>
+                {!actionsExpanded && <>
                 <div className="flex flex-wrap gap-1 mb-2">
                   <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/5 border border-primary/10 text-[10px]">
                     <span className="text-muted-foreground">Surface</span>
@@ -839,7 +840,8 @@ const CadastralMap = () => {
                 </div>
 
                  <ParcelRoadDetails sides={parcelRoadSides} selectedSide={focusedRoadSide} onSelectSide={setFocusedRoadSide} coordinateCount={Array.isArray(selectedParcel.gps_coordinates) ? selectedParcel.gps_coordinates.length : 0} />
-                 <ParcelBuildingsDetails buildings={parcelBuildings} selectedBuilding={focusedBuilding} onSelectBuilding={setFocusedBuilding} />
+                  <ParcelBuildingsDetails buildings={parcelBuildings} selectedBuilding={focusedBuilding} onSelectBuilding={setFocusedBuilding} />
+                </>}
 
                 <div className="flex gap-1.5">
                   <Button
@@ -882,7 +884,7 @@ const CadastralMap = () => {
                   </Button>
                 </div>
 
-                {hasIncompleteData && (
+                {!actionsExpanded && hasIncompleteData && (
                   <button
                     onClick={() => setShowContributionDialog(true)}
                     className="w-full mt-2 flex items-center gap-2 px-3 py-2 rounded-xl bg-orange-500/10 border border-orange-500/20 hover:bg-orange-500/15 transition-colors text-left"
@@ -896,7 +898,7 @@ const CadastralMap = () => {
           </div>
         )}
 
-        <CadastralMapLegend
+        {!actionsExpanded && <CadastralMapLegend
           legend={mapConfig?.legend}
           hasRoadSides={Boolean(selectedParcel && parcelRoadSides.length > 0 && Array.isArray(selectedParcel.gps_coordinates) && selectedParcel.gps_coordinates.length >= 3)}
           hasBuildings={parcelBuildings.length > 0}
@@ -904,7 +906,7 @@ const CadastralMap = () => {
           hasMissingHeight={parcelBuildings.some(building => building.heightM === null)}
           hasSubdividedParcels={filteredParcels.some(parcel => parcel.is_subdivided === true && Array.isArray(parcel.gps_coordinates) && parcel.gps_coordinates.length >= 3)}
           hasLots={subdivisionLots.some(lot => Array.isArray(lot.gps_coordinates) && lot.gps_coordinates.length >= 3)}
-        />
+        />}
       </main>
 
       {showIntroDialog && (
