@@ -472,7 +472,7 @@ const CadastralMap = () => {
                   <span>
                     {searchMode === 'title'
                       ? "Saisissez le numéro exact du titre de propriété (ex. certificat d'enregistrement). Lettres, chiffres, / et - acceptés."
-                      : 'Le numéro SU/SR figure sur votre titre foncier ou votre fiche parcellaire.'}
+                      : 'Le numéro SU/SR ou le numéro de votre document foncier figure sur votre titre foncier ou sur votre fiche parcellaire.'}
                   </span>
                 </button>
               )}
