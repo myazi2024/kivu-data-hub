@@ -768,6 +768,8 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
               </CardHeader>
               <CardContent className="flex-1 p-0 overflow-hidden charts-compact text-[10px] min-h-0">
                 <div className="h-full p-1.5 sm:p-2">
+                <LandDistrictFilterContext.Provider value={selectedLandDistrict || null}>
+                <LandDistrictChangeContext.Provider value={handleLandDistrictFromFilter}>
                 <ProvinceDataVisualization 
                     analytics={analytics!}
                     selectedProvince={selectedProvince}
@@ -787,6 +789,8 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                     forcedTab={forcedTab}
                     onForcedTabApplied={handleForcedTabApplied}
                   />
+                </LandDistrictChangeContext.Provider>
+                </LandDistrictFilterContext.Provider>
                 </div>
               </CardContent>
             </Card>
