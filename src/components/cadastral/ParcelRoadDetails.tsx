@@ -9,9 +9,10 @@ interface Props {
   sides: RoadSideInfo[];
   selectedSide: number | null;
   onSelectSide: (side: number | null) => void;
+  hasGeometry: boolean;
 }
 
-export default function ParcelRoadDetails({ sides, selectedSide, onSelectSide }: Props) {
+export default function ParcelRoadDetails({ sides, selectedSide, onSelectSide, hasGeometry }: Props) {
   return (
     <section aria-label="Voirie de la parcelle" className="border-t border-border pt-3 mb-3">
       <div className="flex items-center gap-2 mb-2">
@@ -35,6 +36,7 @@ export default function ParcelRoadDetails({ sides, selectedSide, onSelectSide }:
                     type="button" variant={isSelected ? 'default' : 'outline'} size="sm"
                     className="h-7 w-7 shrink-0 p-0 text-xs"
                     onClick={() => onSelectSide(isSelected ? null : number - 1)}
+                    disabled={!hasGeometry || number > 0 && number > (hasGeometry ? 10000 : 0)}
                     aria-label={`Repérer le côté ${number} sur la carte`}
                     aria-pressed={isSelected}
                     title={`Repérer le côté ${number} sur la carte`}
@@ -42,22 +44,18 @@ export default function ParcelRoadDetails({ sides, selectedSide, onSelectSide }:
                   <div className="min-w-0 flex-1">
                     <p className="text-xs font-semibold text-foreground break-words">{roadLabel || `Côté ${number} · Route sans nom renseigné`}</p>
                     <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1 text-[11px] text-muted-foreground">
-                      {side.roadSurface && <span>Revêtement : <strong className="text-foreground font-medium">{roadSurfaceLabel(side.roadSurface)}</strong></span>}
-                      {Number.isFinite(width) && width > 0 && <span>Largeur : <strong className="text-foreground font-medium">{width.toLocaleString('fr-FR')} m</strong></span>}
+                      <span>Revêtement : <strong className="text-foreground font-medium">{side.roadSurface ? roadSurfaceLabel(side.roadSurface) : 'Non renseigné'}</strong></span>
+                      <span>Largeur : <strong className="text-foreground font-medium">{Number.isFinite(width) && width > 0 ? `${width.toLocaleString('fr-FR')} m` : 'Non renseignée'}</strong></span>
                     </div>
                     <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1.5 text-[11px]">
-                      {side.hasStreetLighting !== undefined && (
-                        <span className={cn('inline-flex items-center gap-1', side.hasStreetLighting ? 'text-foreground' : 'text-muted-foreground')}>
-                          <Lamp className="h-3 w-3" aria-hidden="true" />
-                          {side.hasStreetLighting ? `Éclairage public${Number(side.streetLampCount) > 0 ? ` · ${side.streetLampCount} lampadaire(s)` : ''}` : 'Sans éclairage public'}
-                        </span>
-                      )}
-                      {side.hasGutter !== undefined && (
-                        <span className={cn('inline-flex items-center gap-1', side.hasGutter ? 'text-foreground' : 'text-muted-foreground')}>
-                          <Droplets className="h-3 w-3" aria-hidden="true" />
-                          {side.hasGutter ? `Caniveau${side.gutterConnected === true ? ' raccordé' : side.gutterConnected === false ? ' non raccordé' : ''}` : 'Sans caniveau'}
-                        </span>
-                      )}
+                      <span className={cn('inline-flex items-center gap-1', side.hasStreetLighting ? 'text-foreground' : 'text-muted-foreground')}>
+                        <Lamp className="h-3 w-3" aria-hidden="true" />
+                        {side.hasStreetLighting === true ? `Éclairage public${Number(side.streetLampCount) > 0 ? ` · ${side.streetLampCount} lampadaire(s)` : ''}` : side.hasStreetLighting === false ? 'Sans éclairage public' : 'Éclairage non renseigné'}
+                      </span>
+                      <span className={cn('inline-flex items-center gap-1', side.hasGutter ? 'text-foreground' : 'text-muted-foreground')}>
+                        <Droplets className="h-3 w-3" aria-hidden="true" />
+                        {side.hasGutter === true ? `Caniveau${side.gutterConnected === true ? ' raccordé' : side.gutterConnected === false ? ' non raccordé' : ''}` : side.hasGutter === false ? 'Sans caniveau' : 'Caniveau non renseigné'}
+                      </span>
                     </div>
                   </div>
                 </div>

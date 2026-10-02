@@ -828,7 +828,7 @@ const CadastralMap = () => {
                   )}
                 </div>
 
-                 <ParcelRoadDetails sides={parcelRoadSides} selectedSide={focusedRoadSide} onSelectSide={setFocusedRoadSide} />
+                 <ParcelRoadDetails sides={parcelRoadSides} selectedSide={focusedRoadSide} onSelectSide={setFocusedRoadSide} hasGeometry={Array.isArray(selectedParcel.gps_coordinates) && selectedParcel.gps_coordinates.length >= 3} />
 
                 <div className="flex gap-1.5">
                   <Button
