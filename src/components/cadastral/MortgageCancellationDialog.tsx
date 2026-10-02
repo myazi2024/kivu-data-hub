@@ -29,10 +29,11 @@ interface MortgageCancellationDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   embedded?: boolean;
+  parcelData?: any;
 }
 
 const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
-  parcelNumber, parcelId, open, onOpenChange, embedded = false
+  parcelNumber, parcelId, open, onOpenChange, embedded = false, parcelData: initialParcelData
 }) => {
   const isMobile = useIsMobile();
   const { user, profile } = useAuth();
@@ -89,16 +90,22 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
 
   const loadParcelData = useCallback(async () => {
     if (!parcelId || parcelDataLoadedRef.current) return;
+    // Données transmises par la carte : pas de nouvelle lecture.
+    if (initialParcelData?.id === parcelId || initialParcelData?.parcel_number === parcelNumber) {
+      setParcelData(initialParcelData as ParcelData);
+      parcelDataLoadedRef.current = true;
+      return;
+    }
     setLoadingData(true);
     try {
       const { data, error } = await supabase
-        .from('cadastral_parcels')
+        .from('cadastral_parcels_public')
         .select('*')
         .eq('id', parcelId)
         .maybeSingle();
       if (error) throw error;
       if (data) {
-        setParcelData(data);
+        setParcelData(data as unknown as ParcelData);
         parcelDataLoadedRef.current = true;
       }
     } catch {
@@ -106,7 +113,7 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
     } finally {
       setLoadingData(false);
     }
-  }, [parcelId]);
+  }, [parcelId, parcelNumber, initialParcelData]);
 
   useEffect(() => {
     if (open) {

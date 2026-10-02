@@ -247,8 +247,8 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
 
       {/* All dialogs */}
       <MutationRequestDialog parcelNumber={parcelNumber} parcelId={parcelId} parcelData={parcelData} open={showMutationDialog} onOpenChange={setShowMutationDialog} />
-      <MortgageManagementDialog parcelNumber={parcelNumber} parcelId={parcelId} open={showMortgageManagementDialog} onOpenChange={setShowMortgageManagementDialog} />
-      <BuildingPermitManagementDialog parcelNumber={parcelNumber} parcelId={parcelId} open={showBuildingPermitManagementDialog} onOpenChange={setShowBuildingPermitManagementDialog} />
+      <MortgageManagementDialog parcelNumber={parcelNumber} parcelId={parcelId} parcelData={parcelData} open={showMortgageManagementDialog} onOpenChange={setShowMortgageManagementDialog} />
+      <BuildingPermitManagementDialog parcelNumber={parcelNumber} parcelId={parcelId} parcelData={parcelData} open={showBuildingPermitManagementDialog} onOpenChange={setShowBuildingPermitManagementDialog} />
       <TaxManagementDialog parcelNumber={parcelNumber} parcelId={parcelId} parcelData={parcelData} open={showTaxDialog} onOpenChange={setShowTaxDialog}
         onOpenServiceCatalog={() => { setShowTaxDialog(false); setTimeout(() => { window.dispatchEvent(new CustomEvent('open-cadastral-results-dialog')); }, 150); }}
       />
