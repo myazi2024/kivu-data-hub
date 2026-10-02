@@ -4,7 +4,7 @@ import type { RoadSideInfo } from '@/components/cadastral/RoadBorderingSidesPane
 export function getParcelRoadSides(value: unknown): RoadSideInfo[] {
   if (!Array.isArray(value)) return [];
   return value.flatMap((side, index): RoadSideInfo[] => {
-    if (!side || typeof side !== 'object') return false;
+    if (!side || typeof side !== 'object') return [];
     const data = side as Partial<RoadSideInfo>;
     if (!(data.hasRoad ?? (data.bordersRoad === true || data.borderType === 'route'))) return [];
     return [{ ...data, sideIndex: typeof data.sideIndex === 'number' ? data.sideIndex : index } as RoadSideInfo];

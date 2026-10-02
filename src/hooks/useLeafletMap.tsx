@@ -3,6 +3,7 @@ import { useMapProvider } from '@/hooks/useMapProvider';
 import { toast } from 'sonner';
 import { useIsMobile } from '@/hooks/use-mobile';
 import type { ParcelData, SubdivisionLot } from '@/hooks/useCadastralMapData';
+import { getParcelRoadSides, sideNumber } from '@/lib/parcelRoadSides';
 
 // Use bundled Leaflet marker assets (no external CDN)
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
@@ -48,6 +49,7 @@ export const useLeafletMap = ({ containerRef, ready, onParcelClick }: UseLeaflet
   const userLocationLayerRef = useRef<any>(null);
   const clusterRef = useRef<any>(null);
   const tileLayerRef = useRef<any>(null);
+  const selectedRoadLayerRef = useRef<any>(null);
   const onParcelClickRef = useRef(onParcelClick);
   onParcelClickRef.current = onParcelClick;
   const [mapReady, setMapReady] = useState(false);
@@ -105,6 +107,7 @@ export const useLeafletMap = ({ containerRef, ready, onParcelClick }: UseLeaflet
         setMapReady(false);
         parcelLayersRef.current.clear();
         lotLayersRef.current.clear();
+        selectedRoadLayerRef.current = null;
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -173,6 +176,44 @@ export const useLeafletMap = ({ containerRef, ready, onParcelClick }: UseLeaflet
   const centerOnParcel = useCallback((parcel: ParcelData, zoom = 19) => {
     if (!mapRef.current || !parcel.latitude || !parcel.longitude) return;
     mapRef.current.setView([parcel.latitude, parcel.longitude], zoom);
+  }, []);
+
+  /** Road declarations annotate existing parcel boundaries, never a guessed road axis. */
+  const showParcelRoadSides = useCallback((parcel: ParcelData | null, focusedSide: number | null) => {
+    const L = LRef.current;
+    const map = mapRef.current;
+    if (!L || !map) return;
+    if (selectedRoadLayerRef.current) map.removeLayer(selectedRoadLayerRef.current);
+    selectedRoadLayerRef.current = null;
+    if (!parcel || !Array.isArray(parcel.gps_coordinates)) return;
+    const coords = parcel.gps_coordinates;
+    if (coords.length < 3) return;
+    const group = L.layerGroup();
+    for (const [index, side] of getParcelRoadSides(parcel.road_sides).entries()) {
+      const number = sideNumber(side, index);
+      const sideIndex = number - 1;
+      if (sideIndex >= coords.length) continue;
+      const start = coords[sideIndex];
+      const end = coords[(sideIndex + 1) % coords.length];
+      const lat1 = Number(start?.lat), lng1 = Number(start?.lng);
+      const lat2 = Number(end?.lat), lng2 = Number(end?.lng);
+      if (![lat1, lng1, lat2, lng2].every(Number.isFinite)) continue;
+      const focused = focusedSide === sideIndex;
+      L.polyline([[lat1, lng1], [lat2, lng2]], {
+        color: 'hsl(var(--primary))', weight: focused ? 8 : 5, opacity: focused ? 1 : 0.78,
+        interactive: false,
+      }).addTo(group);
+      L.marker([(lat1 + lat2) / 2, (lng1 + lng2) / 2], {
+        interactive: false,
+        icon: L.divIcon({
+          className: 'road-side-marker',
+          html: `<span class="road-side-marker__number${focused ? ' road-side-marker__number--active' : ''}">${number}</span>`,
+          iconSize: [26, 26], iconAnchor: [13, 13],
+        }),
+      }).addTo(group);
+    }
+    group.addTo(map);
+    selectedRoadLayerRef.current = group;
   }, []);
 
   /**
@@ -320,5 +361,5 @@ export const useLeafletMap = ({ containerRef, ready, onParcelClick }: UseLeaflet
     }
   }, []);
 
-  return { mapReady, renderLayers, requestUserLocation, centerOnParcel };
+  return { mapReady, renderLayers, requestUserLocation, centerOnParcel, showParcelRoadSides };
 };
