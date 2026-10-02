@@ -87,6 +87,17 @@ export const useLeafletMap = ({ containerRef, ready, onParcelClick }: UseLeaflet
       L.control.zoom({ position: 'bottomright' }).addTo(map);
 
       mapRef.current = map;
+
+      // Étiquettes proportionnelles au zoom : échelle 1 au zoom 19, ±25 % par niveau.
+      const applyLabelScale = () => {
+        const el = map.getContainer();
+        const z = map.getZoom();
+        const scale = Math.min(1.8, Math.max(0.6, Math.pow(1.25, z - 19)));
+        el.style.setProperty('--map-label-scale', scale.toFixed(3));
+        el.classList.toggle('map-zoom-far', z <= 15);
+      };
+      applyLabelScale();
+      map.on('zoom zoomend', applyLabelScale);
       setMapReady(true);
       // Multi-pass invalidateSize: container peut grandir pendant le mount (auth, tabs, etc.)
       [50, 200, 500, 1000].forEach(d => setTimeout(() => map.invalidateSize(), d));
@@ -324,7 +335,7 @@ export const useLeafletMap = ({ containerRef, ready, onParcelClick }: UseLeaflet
           L.marker([cLat, cLng], {
             icon: L.divIcon({
               className: 'subdivided-label',
-              html: '<div style="background:hsl(var(--muted));color:hsl(var(--muted-foreground));padding:1px 6px;border-radius:4px;border:1px solid hsl(var(--border));font-size:9px;font-weight:600;white-space:nowrap;opacity:.85">Lotie</div>',
+              html: '<div class="map-subdivided-label__box">Lotie</div>',
               iconSize: [36, 16], iconAnchor: [18, 8],
             }),
           }).addTo(group);
@@ -346,7 +357,7 @@ export const useLeafletMap = ({ containerRef, ready, onParcelClick }: UseLeaflet
             L.marker([midLat, midLng], {
               icon: L.divIcon({
                 className: 'dimension-label',
-                html: `<div style="background:white;padding:2px 6px;border-radius:4px;border:1px solid #ef4444;font-size:11px;font-weight:600;color:#ef4444;white-space:nowrap;box-shadow:0 2px 4px rgba(0,0,0,.2)">${distance.toFixed(1)} m</div>`,
+                html: `<div class="map-dimension-label__box">${distance.toFixed(1)} m</div>`,
                 iconSize: [60, 20], iconAnchor: [30, 10],
               }),
             }).addTo(group);
