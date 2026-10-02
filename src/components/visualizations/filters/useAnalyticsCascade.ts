@@ -11,6 +11,7 @@ import {
   AnalyticsFilter,
   extractUnique,
   getSectionType,
+  sameGeo,
 } from '@/utils/analyticsHelpers';
 import {
   getAllProvinces,
@@ -38,7 +39,7 @@ export const useAnalyticsCascade = ({ data, filter }: CascadeOptions) => {
   }, [filter.province]);
 
   const provinceScoped = useMemo(
-    () => (filter.province ? data.filter((r) => r.province === filter.province) : data),
+    () => (filter.province ? data.filter((r) => sameGeo(r.province, filter.province)) : data),
     [data, filter.province],
   );
 
@@ -65,7 +66,7 @@ export const useAnalyticsCascade = ({ data, filter }: CascadeOptions) => {
   const communesFinal = useMemo(() => {
     if (communes.length > 0) return communes;
     if (!filter.ville) return [];
-    const scoped = provinceScoped.filter((r) => getSectionType(r) === 'urbaine' && r.ville === filter.ville);
+    const scoped = provinceScoped.filter((r) => getSectionType(r) === 'urbaine' && sameGeo(r.ville, filter.ville));
     return extractUnique(scoped, 'commune');
   }, [communes, provinceScoped, filter.ville]);
 
@@ -80,7 +81,7 @@ export const useAnalyticsCascade = ({ data, filter }: CascadeOptions) => {
     if (quartiers.length > 0) return quartiers;
     if (!filter.commune) return [];
     const scoped = provinceScoped.filter(
-      (r) => getSectionType(r) === 'urbaine' && r.commune === filter.commune,
+      (r) => getSectionType(r) === 'urbaine' && sameGeo(r.commune, filter.commune),
     );
     return extractUnique(scoped, 'quartier');
   }, [quartiers, provinceScoped, filter.commune]);
@@ -98,8 +99,8 @@ export const useAnalyticsCascade = ({ data, filter }: CascadeOptions) => {
     const scoped = provinceScoped.filter(
       (r) =>
         getSectionType(r) === 'urbaine' &&
-        r.commune === filter.commune &&
-        r.quartier === filter.quartier,
+        sameGeo(r.commune, filter.commune) &&
+        sameGeo(r.quartier, filter.quartier),
     );
     return extractUnique(scoped, 'avenue');
   }, [avenues, provinceScoped, filter.commune, filter.quartier]);
@@ -128,7 +129,7 @@ export const useAnalyticsCascade = ({ data, filter }: CascadeOptions) => {
     if (collectivites.length > 0) return collectivites;
     if (!filter.territoire) return [];
     const scoped = provinceScoped.filter(
-      (r) => getSectionType(r) === 'rurale' && r.territoire === filter.territoire,
+      (r) => getSectionType(r) === 'rurale' && sameGeo(r.territoire, filter.territoire),
     );
     return extractUnique(scoped, 'collectivite');
   }, [collectivites, provinceScoped, filter.territoire]);
@@ -136,11 +137,10 @@ export const useAnalyticsCascade = ({ data, filter }: CascadeOptions) => {
   const sectionScoped = useMemo(() => {
     let scoped = provinceScoped;
     if (filter.landDistrict) {
-      const target = filter.landDistrict.toLowerCase();
-      scoped = scoped.filter((r) => (r.land_district || '').toLowerCase() === target);
+      scoped = scoped.filter((r) => sameGeo(r.land_district, filter.landDistrict));
     } else if (filter.sectionType !== 'all') scoped = scoped.filter((r) => getSectionType(r) === filter.sectionType);
-    if (filter.territoire) scoped = scoped.filter((r) => r.territoire === filter.territoire);
-    if (filter.collectivite) scoped = scoped.filter((r) => r.collectivite === filter.collectivite);
+    if (filter.territoire) scoped = scoped.filter((r) => sameGeo(r.territoire, filter.territoire));
+    if (filter.collectivite) scoped = scoped.filter((r) => sameGeo(r.collectivite, filter.collectivite));
     return scoped;
   }, [provinceScoped, filter.landDistrict, filter.sectionType, filter.territoire, filter.collectivite]);
 
@@ -150,7 +150,7 @@ export const useAnalyticsCascade = ({ data, filter }: CascadeOptions) => {
   );
 
   const groupementScoped = useMemo(
-    () => (filter.groupement ? sectionScoped.filter((r) => r.groupement === filter.groupement) : sectionScoped),
+    () => (filter.groupement ? sectionScoped.filter((r) => sameGeo(r.groupement, filter.groupement)) : sectionScoped),
     [sectionScoped, filter.groupement],
   );
 

@@ -21,3 +21,6 @@ export const TerritoireChangeContext = createContext<((territoire: string | unde
 
 export const SectionTypeContext = createContext<string | null>(null);
 export const SectionTypeChangeContext = createContext<((sectionType: string) => void) | null>(null);
+
+export const LandDistrictFilterContext = createContext<string | null>(null);
+export const LandDistrictChangeContext = createContext<((district: string | undefined) => void) | null>(null);

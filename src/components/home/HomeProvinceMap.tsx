@@ -3,25 +3,16 @@ import { ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import MapZoomBackButton from '@/components/map/ui/MapZoomBackButton';
-import { computeBBox, projectFeature, useAnimatedBbox, useGeoJsonData } from '@/lib/mapProjection';
-import { buildDistrictColors, matchAreaToDistrict, matchCommuneToDistrict, normalizeGeoName } from '@/lib/landDistrictMapping';
+import { computeBBox, projectFeature, useAnimatedBbox } from '@/lib/mapProjection';
+import { normalizeGeoName } from '@/lib/landDistrictMapping';
 import { useHomeBicCounts } from '@/hooks/useHomeBicCounts';
-
-interface AreaFeature {
-  properties: { name: string };
-  geometry: { type: string; coordinates: unknown[] };
-}
-
-interface CommuneFeature extends AreaFeature {
-  properties: { name: string; is_in_admi: string };
-}
+import { useLandDistrictFeatures } from '@/hooks/useLandDistrictFeatures';
 
 const PADDING = 6;
 
 /** Carte des circonscriptions foncières construite à partir des territoires et villes. */
 export default function HomeProvinceMap() {
-  const features = useGeoJsonData<AreaFeature>('/drc-territoires.geojson');
-  const communeFeatures = useGeoJsonData<CommuneFeature>('/drc-communes.geojson');
+  const { features, areas, districtFeatures, colors } = useLandDistrictFeatures();
   const containerRef = useRef<HTMLDivElement>(null);
   const [dims, setDims] = useState({ w: 400, h: 400 });
   const [active, setActive] = useState<string | null>(null);
@@ -56,16 +47,6 @@ export default function HomeProvinceMap() {
     };
   }, [countsData]);
 
-  const areas = useMemo(() => features.map((f) => ({ feature: f, ...matchAreaToDistrict(f.properties.name) })), [features]);
-  const communes = useMemo(() => communeFeatures.map((f) => ({
-    feature: f,
-    ...matchCommuneToDistrict(f.properties.name, f.properties.is_in_admi),
-  })), [communeFeatures]);
-  const districtFeatures = useMemo(() => [
-    ...areas.flatMap((item) => item.district ? [{ ...item, source: 'area' as const }] : []),
-    ...communes.flatMap((item) => item.district ? [{ ...item, source: 'commune' as const }] : []),
-  ], [areas, communes]);
-  const colors = useMemo(() => buildDistrictColors(districtFeatures.map((item) => item.district)), [districtFeatures]);
   const nationalBbox = useMemo(() => computeBBox(features), [features]);
   const selectedFeature = selected ? districtFeatures.find((item) => item.district === selected) : undefined;
   const targetBbox = useMemo(

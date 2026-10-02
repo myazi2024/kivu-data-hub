@@ -31,14 +31,19 @@ export const defaultFilter: AnalyticsFilter = { sectionType: 'all', year: null }
 export function getSectionType(record: any): 'urbaine' | 'rurale' | null {
   const fromDistrict = getSectionTypeForLandDistrict(record?.land_district);
   if (fromDistrict) return fromDistrict;
-  if (record.section_type === 'urbaine' || record.parcel_type === 'SU') return 'urbaine';
-  if (record.section_type === 'rurale' || record.parcel_type === 'SR') return 'rurale';
+  if (record?.section_type === 'urbaine' || record?.parcel_type === 'SU') return 'urbaine';
+  if (record?.section_type === 'rurale' || record?.parcel_type === 'SR') return 'rurale';
+  // Règle du CCC : la zone se lit au début du numéro de parcelle.
+  const prefix = String(record?.parcel_number || '').trim().toUpperCase().slice(0, 2);
+  if (prefix === 'SU') return 'urbaine';
+  if (prefix === 'SR') return 'rurale';
   return null;
 }
 
 export function matchesPeriod(dateStr: string | null | undefined, filter: AnalyticsFilter): boolean {
-  if (!dateStr) return true;
   if (filter.year === null) return true; // all years
+  // Une période est choisie : un enregistrement sans date ne peut pas y appartenir.
+  if (!dateStr) return false;
   const d = new Date(dateStr);
   if (d.getFullYear() !== filter.year) return false;
   if (filter.semester) {
@@ -59,9 +64,12 @@ export function matchesPeriod(dateStr: string | null | undefined, filter: Analyt
   return true;
 }
 
-const _norm = (s?: string | null) => (s || '').trim().toLowerCase();
-const _normDistrict = (s?: string | null) =>
+/** Comparaison de lieux insensible aux accents, à la casse et aux séparateurs. */
+export const normGeo = (s?: string | null) =>
   (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '');
+export const sameGeo = (a?: string | null, b?: string | null) => normGeo(a) === normGeo(b);
+const _norm = normGeo;
+const _normDistrict = normGeo;
 
 export function matchesLocation(r: any, f: AnalyticsFilter): boolean {
   if (f.sectionType !== 'all') {
