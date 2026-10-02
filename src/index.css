@@ -493,7 +493,7 @@ All colors MUST be HSL.
 .road-side-marker > *, .building-side-marker > *, .building-height-marker > *,
 .dimension-label > *, .subdivided-label > *, .lot-label > * {
   flex-shrink: 0;
-  transform: scale(var(--map-label-scale, 1));
+  transform: scale(calc(var(--map-label-scale, 1) * 0.5));
   transform-origin: center;
   transition: transform 0.15s ease-out;
 }
