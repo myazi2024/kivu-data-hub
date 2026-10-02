@@ -42,6 +42,10 @@ export default {
 				roboto: ['Roboto', 'sans-serif'],
 			},
 			colors: {
+				'map-building': {
+					DEFAULT: 'hsl(var(--map-building))',
+					foreground: 'hsl(var(--map-building-foreground))'
+				},
 				border: 'hsl(var(--border))',
 				input: 'hsl(var(--input))',
 				ring: 'hsl(var(--ring))',
