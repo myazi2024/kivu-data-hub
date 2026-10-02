@@ -11,13 +11,13 @@ interface Props {
 export default function ParcelBuildingsDetails({ buildings, selectedBuilding, onSelectBuilding }: Props) {
   if (buildings.length === 0) return null;
   return (
-    <section aria-label="Constructions de la parcelle" className="border-t border-border pt-3 mb-3">
-      <div className="flex items-center gap-2 mb-2">
-        <Building2 className="h-4 w-4 text-primary" aria-hidden="true" />
-        <h3 className="text-xs font-semibold text-foreground">Constructions</h3>
-        <span className="ml-auto text-[10px] text-muted-foreground">{buildings.length}</span>
+    <section aria-label="Constructions de la parcelle" className="border-t border-border pt-2 mb-2.5">
+      <div className="flex items-center gap-1.5 mb-1.5">
+        <Building2 className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
+        <h3 className="text-[11px] font-semibold text-foreground">Constructions</h3>
+        <span className="ml-auto text-[9px] text-muted-foreground">{buildings.length}</span>
       </div>
-      <div className="space-y-2">
+      <div className="space-y-1.5">
         {buildings.map((building, position) => {
           const active = selectedBuilding === position;
           return (

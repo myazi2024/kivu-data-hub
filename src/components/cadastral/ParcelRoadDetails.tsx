@@ -14,16 +14,16 @@ interface Props {
 
 export default function ParcelRoadDetails({ sides, selectedSide, onSelectSide, coordinateCount }: Props) {
   return (
-    <section aria-label="Voirie de la parcelle" className="border-t border-border pt-3 mb-3">
-      <div className="flex items-center gap-2 mb-2">
-        <Route className="h-4 w-4 text-primary" aria-hidden="true" />
-        <h3 className="text-xs font-semibold text-foreground">Voirie et équipements</h3>
-        <span className="ml-auto text-[10px] text-muted-foreground">{sides.length} côté{sides.length > 1 ? 's' : ''}</span>
+    <section aria-label="Voirie de la parcelle" className="border-t border-border pt-2 mb-2.5">
+      <div className="flex items-center gap-1.5 mb-1.5">
+        <Route className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
+        <h3 className="text-[11px] font-semibold text-foreground">Voirie et équipements</h3>
+        <span className="ml-auto text-[9px] text-muted-foreground">{sides.length} côté{sides.length > 1 ? 's' : ''}</span>
       </div>
       {sides.length === 0 ? (
-        <p className="text-xs text-muted-foreground">Aucune donnée de voirie renseignée pour cette parcelle.</p>
+        <p className="text-[10px] text-muted-foreground">Aucune donnée de voirie renseignée pour cette parcelle.</p>
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           {sides.map((side, index) => {
             const number = sideNumber(side, index);
             const isSelected = selectedSide === number - 1;
