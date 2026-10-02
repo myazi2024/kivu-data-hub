@@ -15,6 +15,7 @@ export function getParcelBuildings(value: unknown): PublicBuilding[] {
     const vertices = raw.vertices.map((point: unknown) => {
       if (!point || typeof point !== 'object') return null;
       const candidate = point as Record<string, unknown>;
+      if (candidate.lat == null || candidate.lng == null || candidate.lat === '' || candidate.lng === '') return null;
       const lat = Number(candidate.lat), lng = Number(candidate.lng);
       return Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180 ? { lat, lng } : null;
     });
