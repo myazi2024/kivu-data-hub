@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
+import { getAdminUserId, isCronCaller, forbidden } from '../_shared/internalAuth.ts';
 import { enforceRateLimit, rateLimitResponse } from '../_shared/rateLimit.ts';
 
 const corsHeaders = {
@@ -13,6 +14,13 @@ Deno.serve(async (req) => {
   if (!rl.allowed) return rateLimitResponse(rl, corsHeaders);
 
   try {
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+    );
+    const adminId = await getAdminUserId(req, supabase);
+    if (!adminId) return forbidden(corsHeaders);
+
     const { refund_id } = await req.json();
     if (!refund_id) {
       return new Response(JSON.stringify({ error: 'refund_id required' }), {
@@ -20,20 +28,20 @@ Deno.serve(async (req) => {
       });
     }
 
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
-    );
-
     const { data: refund, error: fetchErr } = await supabase
       .from('payment_refunds')
       .select('*')
       .eq('id', refund_id)
       .single();
     if (fetchErr || !refund) throw new Error('Refund not found');
+    if (refund.status !== 'pending') {
+      return new Response(JSON.stringify({ error: 'Ce remboursement a déjà été traité.' }), {
+        status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
-    // Mark as processing
-    await supabase.from('payment_refunds').update({ status: 'processing' }).eq('id', refund_id);
+    // Mark as processing (garde de statut)
+    await supabase.from('payment_refunds').update({ status: 'processing' }).eq('id', refund_id).eq('status', 'pending');
 
     // TODO: route to provider (stripe/mobile money) based on refund.provider
     // Currently a stub — admins finalize manually until PSP secrets are added.
