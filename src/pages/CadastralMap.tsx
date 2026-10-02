@@ -785,7 +785,7 @@ const CadastralMap = () => {
                 onRequestLandTitle={() => setShowLandTitleTermsDialog(true)}
               />
 
-              <div className="relative px-3 py-2 flex items-center justify-between">
+               <div className="relative shrink-0 px-3 py-2 flex items-center justify-between">
                 <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
                 <div className="flex items-center gap-2.5">
                   <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-primary/15 to-primary/5 flex items-center justify-center border border-primary/10">
