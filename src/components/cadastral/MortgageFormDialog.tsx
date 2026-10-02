@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent } from '@/components/ui/card';
 import { Loader2, Landmark, CheckCircle2, X, Plus, ArrowLeft, FileText, ExternalLink, Eye, User } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { useCCCFormPicklists } from '@/hooks/useCCCFormPicklists';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -76,6 +77,7 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
 }) => {
   const isMobile = useIsMobile();
   const { user, profile } = useAuth();
+  const { getOptions: getPicklistOptions } = useCCCFormPicklists();
   const navigate = useNavigate();
   const [step, setStep] = useState<Step>('form');
   const [loading, setLoading] = useState(false);
@@ -514,11 +516,7 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
                   <SelectValue placeholder="Type" />
                 </SelectTrigger>
                 <SelectContent className="rounded-xl bg-popover">
-                  <SelectItem value="Banque">Banque</SelectItem>
-                  <SelectItem value="Microfinance">Microfinance</SelectItem>
-                  <SelectItem value="Coopérative">Coopérative</SelectItem>
-                  <SelectItem value="Particulier">Particulier</SelectItem>
-                  <SelectItem value="Autre institution">Autre</SelectItem>
+                  {getPicklistOptions('picklist_creditor_type').map(opt => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
