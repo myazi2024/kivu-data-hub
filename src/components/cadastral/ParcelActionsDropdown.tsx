@@ -169,15 +169,15 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
       {/* Expandable services panel */}
       {expanded && (
         <div className="bg-gradient-to-b from-muted/30 to-muted/10">
-          <div className="px-3.5 py-2.5 flex items-center justify-between">
+          <div className="px-3 py-1.5 flex items-center justify-between">
             <div className="flex items-center gap-1.5">
               <div className="h-1.5 w-1.5 rounded-full bg-primary/60 animate-pulse" />
               <p className="text-[10px] font-semibold text-foreground/70 uppercase tracking-wider">Services disponibles</p>
             </div>
             <span className="text-[9px] text-muted-foreground font-medium bg-muted/50 px-1.5 py-0.5 rounded-full">{visibleActions.length}</span>
           </div>
-          <div className="overflow-y-auto overscroll-contain max-h-[55dvh] sm:max-h-[260px] scrollbar-thin">
-            <div className="px-2.5 pb-2 space-y-2">
+          <div className="overflow-y-auto overscroll-contain max-h-[40dvh] sm:max-h-[210px] scrollbar-thin">
+            <div className="px-2 pb-1.5 space-y-1">
               {groupedActions.map((item, index) => {
                 if (item === 'separator') return null;
                 const action = item;
@@ -188,22 +188,22 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
                     onClick={() => handleActionClick(action)}
                     onFocus={() => handleMenuItemFocus(index)}
                     disabled={disabled}
-                    className={`w-full flex items-center gap-3 p-3 min-h-12 rounded-2xl border-2 shadow-md text-left transition-all duration-200
+                    className={`w-full flex items-center gap-2 p-1.5 min-h-9 rounded-lg border text-left transition-all duration-200
                       ${disabled
                         ? 'opacity-40 cursor-not-allowed border-border/50 bg-muted/20'
-                        : 'border-primary/40 bg-background hover:border-primary/60 hover:bg-primary/5 hover:shadow-lg active:scale-[0.99] cursor-pointer'}`}
+                        : 'border-primary/40 bg-background hover:border-primary/60 hover:bg-primary/5 hover:shadow-sm active:scale-[0.99] cursor-pointer'}`}
                   >
-                    <div className={`shrink-0 p-2 rounded-xl ${disabled ? 'bg-muted text-muted-foreground/50' : 'bg-primary/10 text-primary'}`}>
-                      <ActionIcon iconName={action.iconName} actionKey={action.key} className="h-4 w-4" />
+                    <div className={`shrink-0 p-1.5 rounded-md ${disabled ? 'bg-muted text-muted-foreground/50' : 'bg-primary/10 text-primary'}`}>
+                      <ActionIcon iconName={action.iconName} actionKey={action.key} className="h-3.5 w-3.5" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <h4 className="font-medium text-sm text-foreground leading-tight truncate">{action.label}</h4>
+                      <div className="flex items-center gap-1.5">
+                        <h4 className="font-medium text-[12px] text-foreground leading-tight truncate">{action.label}</h4>
                         <ActionBadge badge={action.badge} />
                       </div>
-                      <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{action.description}</p>
+                      <p className="text-[10px] text-muted-foreground leading-tight mt-0 line-clamp-1">{action.description}</p>
                       {action.detailedDescription && (
-                        <div className="mt-1">
+                        <div className="mt-0.5">
                           <span
                             role="button"
                             tabIndex={0}
@@ -211,13 +211,13 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
                             aria-label={expandedDetails.has(action.id) ? `Réduire l'explication de ${action.label}` : `En savoir plus sur ${action.label}`}
                             onClick={(e) => { e.stopPropagation(); toggleDetails(action.id); }}
                             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); toggleDetails(action.id); } }}
-                            className="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:text-primary/80 transition-colors cursor-pointer select-none rounded focus-visible-ring"
+                            className="inline-flex items-center gap-1 text-[10px] font-medium text-primary hover:text-primary/80 transition-colors cursor-pointer select-none rounded focus-visible-ring"
                           >
                             {expandedDetails.has(action.id) ? 'Réduire' : 'En savoir plus'}
-                            <ChevronDown className={`h-3 w-3 transition-transform duration-200 ${expandedDetails.has(action.id) ? 'rotate-180' : ''}`} />
+                            <ChevronDown className={`h-2.5 w-2.5 transition-transform duration-200 ${expandedDetails.has(action.id) ? 'rotate-180' : ''}`} />
                           </span>
                           {expandedDetails.has(action.id) && (
-                            <p className="text-xs text-muted-foreground leading-relaxed mt-1.5 pr-1">
+                            <p className="text-[10px] text-muted-foreground leading-snug mt-0.5 pr-1">
                               {action.detailedDescription}
                             </p>
                           )}
