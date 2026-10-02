@@ -160,7 +160,7 @@ const AdminSubdivisionFeesConfig: React.FC = () => {
   return (
     <div className="space-y-4">
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <CardHeader className="flex flex-col items-start justify-between gap-3 pb-2 sm:flex-row sm:items-center">
           <CardTitle className="flex items-center gap-2 text-base">
             <DollarSign className="h-4 w-4" />
             Configuration des Frais de Lotissement
@@ -333,7 +333,7 @@ const AdminSubdivisionFeesConfig: React.FC = () => {
               <Label>Emplacement</Label>
               <Input value={form.location_name} onChange={e => setForm(f => ({ ...f, location_name: e.target.value }))} placeholder="Nom du quartier/village ou * pour défaut" />
             </div>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
               <div>
                 <Label>Tarif/m² (USD)</Label>
                 <Input type="number" step="0.01" value={form.rate_per_sqm_usd} onChange={e => setForm(f => ({ ...f, rate_per_sqm_usd: e.target.value }))} />
@@ -347,7 +347,7 @@ const AdminSubdivisionFeesConfig: React.FC = () => {
                 <Input type="number" step="0.01" value={form.max_fee_per_lot_usd} onChange={e => setForm(f => ({ ...f, max_fee_per_lot_usd: e.target.value }))} placeholder="Optionnel" />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               <div>
                 <Label>Seuil dégressif (m²)</Label>
                 <Input type="number" step="1" value={form.tier_threshold_sqm} onChange={e => setForm(f => ({ ...f, tier_threshold_sqm: e.target.value }))} placeholder="Ex: 500" />
@@ -357,7 +357,7 @@ const AdminSubdivisionFeesConfig: React.FC = () => {
                 <Input type="number" step="0.01" value={form.tier_rate_per_sqm_usd} onChange={e => setForm(f => ({ ...f, tier_rate_per_sqm_usd: e.target.value }))} placeholder="Ex: 0.30" />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-2 opacity-70">
+            <div className="grid grid-cols-1 gap-2 opacity-70 sm:grid-cols-2">
               <div>
                 <Label>Voirie ($ / m linéaire) <span className="text-[10px] text-amber-600">(legacy)</span></Label>
                 <Input type="number" step="0.01" value={form.road_fee_per_linear_m_usd} onChange={e => setForm(f => ({ ...f, road_fee_per_linear_m_usd: e.target.value }))} placeholder="Optionnel — remplacé par tarifs infrastructure" />

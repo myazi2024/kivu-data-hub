@@ -155,7 +155,7 @@ export default function AdminPermitFeesConfig() {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
             <div>
               <CardTitle>Configuration des frais de permis</CardTitle>
               <CardDescription>
@@ -172,6 +172,7 @@ export default function AdminPermitFeesConfig() {
           {/* Autorisation de bâtir */}
           <div>
             <h3 className="text-lg font-semibold mb-3">Autorisation de bâtir</h3>
+            <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -223,11 +224,13 @@ export default function AdminPermitFeesConfig() {
                 ))}
               </TableBody>
             </Table>
+            </div>
           </div>
 
           {/* Autorisation de régularisation */}
           <div>
             <h3 className="text-lg font-semibold mb-3">Autorisation de régularisation</h3>
+            <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -279,6 +282,7 @@ export default function AdminPermitFeesConfig() {
                 ))}
               </TableBody>
             </Table>
+            </div>
           </div>
         </CardContent>
       </Card>

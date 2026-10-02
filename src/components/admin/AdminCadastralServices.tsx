@@ -382,7 +382,7 @@ const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefre
               <DollarSign className="h-5 w-5" />
               Gestion du Catalogue de Services Cadastraux
             </CardTitle>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <Switch id="show-deleted" checked={showDeleted} onCheckedChange={setShowDeleted} />
                 <Label htmlFor="show-deleted" className="cursor-pointer">Afficher la corbeille</Label>
@@ -449,7 +449,7 @@ const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefre
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div>
                       <Label htmlFor="display_order">Ordre d'affichage</Label>
                       <Input
@@ -474,7 +474,7 @@ const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefre
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div>
                       <Label htmlFor="category">Catégorie *</Label>
                       <Select
@@ -551,6 +551,7 @@ const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefre
           </div>
         </CardHeader>
         <CardContent>
+          <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
@@ -637,6 +638,7 @@ const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefre
               ))}
             </TableBody>
           </Table>
+          </div>
         </CardContent>
       </Card>
 
