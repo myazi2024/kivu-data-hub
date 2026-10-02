@@ -7,3 +7,4 @@
 - [x] Afficher la circonscription sélectionnée dans la carte et ses trois indicateurs agrégés sous la carte.
 - [x] Alertes de sécurité : faux paiements, remboursements, relances, test prestataire, retour de paiement, exports CSV, tuiles, MCP.
 - [ ] Protéger relevés de santé + contrôle des alertes : code prêt, migration (secret cron) et déploiement en attente — base de données injoignable.
+- [x] Afficher la voirie publique par côté sur la parcelle sélectionnée, avec repères limités aux segments déclarés.
