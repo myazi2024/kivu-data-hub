@@ -17,6 +17,7 @@ import {
   VilleChangeContext, CommuneChangeContext, QuartierChangeContext,
   TerritoireChangeContext, TerritoireFilterContext,
   SectionTypeChangeContext, SectionTypeContext,
+  LandDistrictFilterContext, LandDistrictChangeContext,
 } from './analyticsFilterContexts';
 import { useAnalyticsCascade } from './useAnalyticsCascade';
 import { AnalyticsTimeRow } from './AnalyticsTimeRow';
@@ -60,6 +61,8 @@ export const AnalyticsFilters: React.FC<Props> = ({
   const territoireChangeCtx = useContext(TerritoireChangeContext);
   const mapTerritoire = useContext(TerritoireFilterContext);
   const sectionTypeChangeCtx = useContext(SectionTypeChangeContext);
+  const mapLandDistrict = useContext(LandDistrictFilterContext);
+  const landDistrictChangeCtx = useContext(LandDistrictChangeContext);
 
   const handleVilleChange = onVilleChange || villeChangeCtx || (() => {});
   const handleCommuneChange = onCommuneChange || communeChangeCtx || (() => {});
@@ -88,6 +91,27 @@ export const AnalyticsFilters: React.FC<Props> = ({
     }
     prevMapTerritoire.current = mapTerritoire;
   }, [mapTerritoire, mapProvince]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Sync filter when the map selects or clears a land district
+  const prevMapDistrict = useRef(mapLandDistrict);
+  useEffect(() => {
+    const prev = prevMapDistrict.current;
+    prevMapDistrict.current = mapLandDistrict;
+    if (mapLandDistrict === prev) return;
+    if (mapLandDistrict && mapLandDistrict !== filter.landDistrict) {
+      const zone = getSectionTypeForLandDistrict(mapLandDistrict);
+      onChange({
+        ...filter,
+        province: mapProvince || filter.province,
+        landDistrict: mapLandDistrict,
+        sectionType: (zone || 'all') as AnalyticsFilter['sectionType'],
+        ville: undefined, commune: undefined, quartier: undefined, avenue: undefined,
+        territoire: undefined, collectivite: undefined, groupement: undefined, villageFilter: undefined,
+      });
+    } else if (!mapLandDistrict && prev && filter.landDistrict === prev) {
+      onChange({ ...filter, landDistrict: undefined, sectionType: 'all' });
+    }
+  }, [mapLandDistrict, mapProvince]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const years = useMemo(() => {
     const dataYears = getAvailableYears(data, dateField);
@@ -187,6 +211,7 @@ export const AnalyticsFilters: React.FC<Props> = ({
           onQuartierChange={handleQuartierChange}
           onTerritoireChange={handleTerritoireChange}
           onSectionTypeChange={sectionTypeChangeCtx ?? undefined}
+          onLandDistrictChange={landDistrictChangeCtx ?? undefined}
         />
       )}
     </div>

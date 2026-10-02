@@ -36,6 +36,7 @@ interface Props {
   onQuartierChange: (quartier: string | undefined) => void;
   onTerritoireChange: (territoire: string | undefined) => void;
   onSectionTypeChange?: (sectionType: string) => void;
+  onLandDistrictChange?: (district: string | undefined) => void;
 }
 
 export const AnalyticsLocationRow: React.FC<Props> = ({
@@ -44,7 +45,7 @@ export const AnalyticsLocationRow: React.FC<Props> = ({
   territoiresFinal, collectivitesFinal, groupements, villages,
   hasUrbanData, hasRuralData,
   onProvinceFilter, onVilleChange, onCommuneChange, onQuartierChange, onTerritoireChange,
-  onSectionTypeChange,
+  onSectionTypeChange, onLandDistrictChange,
 }) => {
   const showUrbanSub =
     filter.sectionType === 'urbaine' || (filter.sectionType === 'all' && hasUrbanData && !hasRuralData);
@@ -74,6 +75,7 @@ export const AnalyticsLocationRow: React.FC<Props> = ({
             territoire: undefined, collectivite: undefined, groupement: undefined, villageFilter: undefined,
           });
           onProvinceFilter(newProvince);
+          onLandDistrictChange?.(undefined);
           onVilleChange(undefined);
           onCommuneChange(undefined);
         }}
@@ -102,6 +104,7 @@ export const AnalyticsLocationRow: React.FC<Props> = ({
           onVilleChange(undefined);
           onCommuneChange(undefined);
           onSectionTypeChange?.(sectionType);
+          onLandDistrictChange?.(district);
         }}
       >
         <SelectTrigger className={selectCls} aria-label="Circonscription foncière"><SelectValue placeholder="Circonscription" /></SelectTrigger>
