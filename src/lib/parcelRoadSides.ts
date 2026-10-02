@@ -3,10 +3,11 @@ import type { RoadSideInfo } from '@/components/cadastral/RoadBorderingSidesPane
 /** Declared road-facing sides only; geometry alone never implies a road. */
 export function getParcelRoadSides(value: unknown): RoadSideInfo[] {
   if (!Array.isArray(value)) return [];
-  return value.filter((side): side is RoadSideInfo => {
+  return value.flatMap((side, index): RoadSideInfo[] => {
     if (!side || typeof side !== 'object') return false;
     const data = side as Partial<RoadSideInfo>;
-    return data.hasRoad ?? (data.bordersRoad === true || data.borderType === 'route');
+    if (!(data.hasRoad ?? (data.bordersRoad === true || data.borderType === 'route'))) return [];
+    return [{ ...data, sideIndex: typeof data.sideIndex === 'number' ? data.sideIndex : index } as RoadSideInfo];
   });
 }
 
