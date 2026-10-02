@@ -395,7 +395,7 @@ const CadastralMap = () => {
           height: 'calc(100dvh - 4rem)',
           // CSS var consumed by the inline rule below — no JS viewport math.
           ['--map-zoom-offset' as any]: selectedParcel
-            ? (isMobile ? (actionsExpanded ? '70dvh' : '32dvh') : (actionsExpanded ? '24rem' : '10rem'))
+            ? (isMobile ? (actionsExpanded ? '84dvh' : '32dvh') : (actionsExpanded ? '36rem' : '10rem'))
             : (isMobile ? '1rem' : '1rem'),
         }}
       >
@@ -775,7 +775,7 @@ const CadastralMap = () => {
             className={`absolute z-[1000] ${isMobile ? 'inset-x-0 bottom-0' : 'bottom-4 right-4 w-80'}`}
             style={isMobile ? { paddingBottom: 'env(safe-area-inset-bottom)' } : undefined}
           >
-            <div className={`bg-background/98 backdrop-blur-xl ${isMobile ? 'rounded-t-lg border-t' : 'rounded-lg border'} shadow-lg border-border/40 overflow-hidden max-h-[min(68dvh,540px)] flex flex-col`}>
+            <div className={`bg-background/98 backdrop-blur-xl ${isMobile ? 'rounded-t-lg border-t' : 'rounded-lg border'} shadow-lg border-border/40 overflow-hidden max-h-[min(82dvh,700px)] flex flex-col`}>
               <ParcelActionsDropdown
                 parcelNumber={selectedParcel.parcel_number}
                 parcelId={selectedParcel.id}

@@ -176,7 +176,9 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
             </div>
             <span className="text-[9px] text-muted-foreground font-medium bg-muted/50 px-1.5 py-0.5 rounded-full">{visibleActions.length}</span>
           </div>
-          <div className="overflow-y-auto overscroll-contain max-h-[55dvh] sm:max-h-[260px] scrollbar-thin">
+          {/* Hauteur liée au panneau (max 82dvh) moins l'en-tête + rang de boutons
+              (~11rem) : les boutons restent toujours visibles sous la liste. */}
+          <div className="overflow-y-auto overscroll-contain max-h-[calc(82dvh-11rem)] sm:max-h-[420px] scrollbar-thin">
             <div className="px-2.5 pb-2 space-y-2">
               {groupedActions.map((item, index) => {
                 if (item === 'separator') return null;
