@@ -1,3 +1,4 @@
+import { sanitizeCsvCell } from '@/utils/csvExport';
 import { supabase } from '@/integrations/supabase/client';
 
 interface ExportRow {
@@ -11,7 +12,7 @@ interface ExportRow {
 
 const csvEscape = (v: any): string => {
   if (v === null || v === undefined) return '';
-  const s = String(v);
+  const s = sanitizeCsvCell(v);
   if (/[",\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
   return s;
 };
