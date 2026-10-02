@@ -9096,8 +9096,6 @@ export type Database = {
           ville: string
         }[]
       }
-      show_limit: { Args: never; Returns: number }
-      show_trgm: { Args: { "": string }; Returns: string[] }
       swap_theme_order: {
         Args: { _theme_a: string; _theme_b: string }
         Returns: undefined
