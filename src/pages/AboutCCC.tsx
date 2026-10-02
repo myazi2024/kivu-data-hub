@@ -786,11 +786,11 @@ const AboutCCC = () => {
             </div>
           </div>
 
-          <div className="flex gap-3 pt-4">
-            <Button asChild>
+          <div className="flex flex-col gap-3 pt-4 sm:flex-row">
+            <Button asChild className="w-full whitespace-normal sm:w-auto">
               <Link to="/cadastral-map">Commencer une recherche</Link>
             </Button>
-            <Button variant="outline" asChild>
+            <Button variant="outline" asChild className="w-full whitespace-normal sm:w-auto">
               <Link to="/mon-compte?tab=contributions">Voir mes contributions</Link>
             </Button>
           </div>

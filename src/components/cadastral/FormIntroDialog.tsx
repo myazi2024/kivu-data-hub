@@ -183,11 +183,11 @@ const FormIntroDialog: React.FC<FormIntroDialogProps> = ({
         </div>
 
         {/* Bouton fixé en bas */}
-        <div className="sticky bottom-0 left-0 right-0 bg-gradient-to-t from-background via-background to-background/80 backdrop-blur-sm border-t border-border/20 p-3 space-y-2 rounded-b-2xl">
+        <div className="mobile-safe-bottom sticky bottom-0 left-0 right-0 bg-gradient-to-t from-background via-background to-background/80 backdrop-blur-sm border-t border-border/20 px-3 pt-3 space-y-2 rounded-b-2xl">
           <Button 
             onClick={onContinue}
             disabled={!hasScrolledToBottom}
-            className={`w-full h-10 text-sm font-semibold rounded-xl shadow-lg transition-all duration-300 ${
+            className={`w-full text-sm font-semibold rounded-xl shadow-lg transition-all duration-300 ${
               hasScrolledToBottom 
                 ? 'bg-primary hover:bg-primary/90 hover:scale-[1.02] active:scale-[0.98]' 
                 : 'bg-muted cursor-not-allowed opacity-60'

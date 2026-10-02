@@ -470,16 +470,16 @@ const LandTitleReviewTab: React.FC<LandTitleReviewTabProps> = ({
         </Card>
       )}
 
-      <div className="sticky bottom-0 bg-background/95 backdrop-blur-sm border-t pt-3 -mx-3 px-3 -mb-3 pb-3">
+      <div className="mobile-safe-bottom sticky bottom-0 bg-background/95 backdrop-blur-sm border-t pt-3 -mx-3 px-3 -mb-3">
         <div className="flex gap-2">
-          <Button type="button" variant="outline" onClick={() => onEditTab("payment")} className="flex-1 h-9 text-xs rounded-lg">
+          <Button type="button" variant="outline" onClick={() => onEditTab("payment")} className="flex-1 text-xs rounded-lg">
             Retour
           </Button>
           <Button
             type="button"
             onClick={onProceedToPayment}
             disabled={!!loading || !allComplete}
-            className="flex-1 h-9 text-xs rounded-lg gap-2"
+            className="flex-1 text-xs rounded-lg gap-2"
           >
             {loading ? (
               "Chargement…"

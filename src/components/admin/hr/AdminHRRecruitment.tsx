@@ -150,12 +150,12 @@ export default function AdminHRRecruitment({ hook, candidatesHook, onConvertToEm
               </Dialog>
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex flex-col gap-2 sm:flex-row">
               <div className="relative flex-1">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input placeholder="Rechercher un poste..." className="pl-8" value={search} onChange={e => setSearch(e.target.value)} />
               </div>
-              <Tabs value={filterStatus} onValueChange={setFilterStatus}>
+              <Tabs value={filterStatus} onValueChange={setFilterStatus} className="max-w-full">
                 <TabsList>
                   <TabsTrigger value="all">Tous</TabsTrigger>
                   <TabsTrigger value="open">Ouverts</TabsTrigger>

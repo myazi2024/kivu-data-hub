@@ -659,7 +659,7 @@ const AdminCCCContributions: React.FC = () => {
           />
 
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-7 h-8 md:h-10">
+            <TabsList className="flex h-11 w-full justify-start overflow-x-auto md:grid md:grid-cols-7">
               <TabsTrigger value="pending" className="text-xs md:text-sm px-1 md:px-3">Attente</TabsTrigger>
               <TabsTrigger value="returned" className="text-xs md:text-sm px-1 md:px-3">Renvoyés</TabsTrigger>
               <TabsTrigger value="approved" className="text-xs md:text-sm px-1 md:px-3">Approuvés</TabsTrigger>

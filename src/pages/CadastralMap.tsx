@@ -800,7 +800,7 @@ const CadastralMap = () => {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className={`h-9 w-9 p-0 rounded-xl transition-all ${searchHistory.isFavorite(selectedParcel.id) ? 'text-yellow-500 bg-yellow-500/10 hover:bg-yellow-500/20' : 'text-muted-foreground hover:bg-muted'}`}
+                    className={`h-11 w-11 p-0 rounded-xl transition-all ${searchHistory.isFavorite(selectedParcel.id) ? 'text-yellow-500 bg-yellow-500/10 hover:bg-yellow-500/20' : 'text-muted-foreground hover:bg-muted'}`}
                     onClick={handleAddToFavorites}
                     aria-label="Ajouter aux favoris"
                   >
@@ -809,7 +809,7 @@ const CadastralMap = () => {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-9 w-9 p-0 rounded-xl text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all"
+                    className="h-11 w-11 p-0 rounded-xl text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all"
                       onClick={() => { setSelectedParcel(null); setFocusedRoadSide(null); setFocusedBuilding(null); setActionsExpanded(false); }}
                     aria-label="Fermer le panneau parcelle"
                   >

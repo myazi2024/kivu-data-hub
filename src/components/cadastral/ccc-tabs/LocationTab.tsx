@@ -439,13 +439,13 @@ const LocationTab: React.FC<LocationTabProps> = ({
 
 
       {/* Navigation buttons */}
-      <div className="sticky bottom-0 z-10 bg-background/95 backdrop-blur-sm border-t pt-3 pb-3 px-1 -mx-1">
+      <div className="mobile-safe-bottom sticky bottom-0 z-10 bg-background/95 backdrop-blur-sm border-t pt-3 px-1 -mx-1">
         <div className="flex justify-between">
           <Button
             type="button"
             variant="outline"
             onClick={() => handleTabChange('general')}
-            className="gap-2 rounded-xl h-10 text-sm"
+            className="gap-2 rounded-xl text-sm"
           >
             <ChevronLeft className="h-4 w-4" />
             Précédent
@@ -453,7 +453,7 @@ const LocationTab: React.FC<LocationTabProps> = ({
           <Button
             type="button"
             onClick={() => handleNextTab('location', 'history')}
-            className="gap-2 rounded-xl h-10 text-sm shadow-md hover:shadow-lg transition-all"
+            className="gap-2 rounded-xl text-sm shadow-md hover:shadow-lg transition-all"
           >
             Suivant
             <ChevronRight className="h-4 w-4" />

@@ -146,7 +146,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
             }}
           >
             <div className="sticky top-0 z-20 bg-background px-2 sm:px-4 pt-2 pb-1.5 border-b shadow-sm">
-              <TabsList className="grid w-full grid-cols-6 h-10 bg-muted/50 p-0.5 rounded-xl shadow-inner gap-0.5">
+              <TabsList className="flex h-11 w-full snap-x snap-mandatory justify-start gap-0.5 overflow-x-auto bg-muted/50 p-0.5 rounded-xl shadow-inner">
                 {TAB_ORDER.map((tab) => {
                   const locked = !state.isTabAccessible(tab);
                   return (
@@ -157,7 +157,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                       data-locked={locked || undefined}
                       title={locked ? 'Complétez les onglets précédents pour continuer' : undefined}
                       className={cn(
-                        'data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-[11px] sm:text-sm font-semibold py-1.5 rounded-lg',
+                        'min-w-max snap-start data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-xs sm:text-sm font-semibold py-1.5 rounded-lg',
                         locked && 'opacity-40',
                       )}
                     >

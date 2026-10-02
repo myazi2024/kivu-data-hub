@@ -341,6 +341,11 @@ All colors MUST be HSL.
     @apply min-h-[44px] min-w-[44px] flex items-center justify-center;
   }
 
+  /* Keep sticky mobile actions above iOS and Android gesture areas. */
+  .mobile-safe-bottom {
+    padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+  }
+
   /* Status colors with proper contrast */
   .status-success {
     @apply bg-green-100 text-green-800 border-green-300 dark:bg-green-900 dark:text-green-100 dark:border-green-700;
