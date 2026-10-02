@@ -15,6 +15,17 @@ export interface CadastralService {
   category?: CadastralServiceCategory | string | null;
 }
 
+const mapService = (service: any): CadastralService => ({
+  id: service.service_id,
+  name: service.name,
+  price: Number(service.price_usd),
+  description: service.description || '',
+  icon_name: service.icon_name ?? null,
+  required_data_fields: service.required_data_fields ?? null,
+  display_order: service.display_order ?? null,
+  category: (service.category as CadastralServiceCategory | string | null) ?? 'consultation',
+});
+
 /**
  * Hook réactif pour gérer le catalogue de services cadastraux
  * avec synchronisation en temps réel via Supabase Realtime
@@ -39,16 +50,7 @@ export const useCadastralServices = () => {
 
       if (fetchError) throw fetchError;
 
-      const mappedServices = (data || []).map(service => ({
-        id: service.service_id,
-        name: service.name,
-        price: Number(service.price_usd),
-        description: service.description || '',
-        icon_name: service.icon_name ?? null,
-        required_data_fields: service.required_data_fields ?? null,
-        display_order: service.display_order ?? null,
-        category: (service.category as CadastralServiceCategory | string | null) ?? 'consultation',
-      }));
+      const mappedServices = (data || []).map(mapService);
 
       setServices(mappedServices);
     } catch (err: any) {
@@ -88,8 +90,23 @@ export const useCadastralServices = () => {
         'postgres_changes',
         { event: '*', schema: 'public', table: 'cadastral_services_config' },
         (payload) => {
-          loadServices();
           const t = payload.eventType as 'INSERT' | 'UPDATE' | 'DELETE';
+          const changed = payload.new as any;
+          const removed = payload.old as any;
+          setServices((current) => {
+            if (t === 'DELETE' && removed?.service_id) {
+              return current.filter((service) => service.id !== removed.service_id);
+            }
+            if ((t === 'INSERT' || t === 'UPDATE') && changed?.service_id) {
+              const withoutChanged = current.filter((service) => service.id !== changed.service_id);
+              if (!changed.is_active || changed.deleted_at) return withoutChanged;
+              return [...withoutChanged, mapService(changed)].sort(
+                (a, b) => (a.display_order ?? 0) - (b.display_order ?? 0)
+              );
+            }
+            void loadServices();
+            return current;
+          });
           pendingEvents.add(t);
           if (toastTimer) clearTimeout(toastTimer);
           // Pas de toast quand l'onglet est en arrière-plan

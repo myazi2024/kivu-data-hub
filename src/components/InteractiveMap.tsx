@@ -61,7 +61,8 @@ const InteractiveMap = () => {
       // Use the public view that excludes sensitive contact information
       const { data, error } = await supabase
         .from('properties_public')
-        .select('*');
+        .select('id, title, description, property_type, price, currency, area_sqm, latitude, longitude, address, city, bedrooms, bathrooms, features')
+        .limit(500);
 
       if (error) throw error;
       setProperties(data || []);
@@ -294,7 +295,7 @@ const InteractiveMap = () => {
 
         {/* Map Container */}
         <div className="lg:col-span-3">
-          <div className="w-full h-[600px] rounded-lg border border-border overflow-hidden">
+          <div className="h-[min(600px,65dvh)] min-h-[360px] w-full overflow-hidden rounded-lg border border-border">
             <MapContainer
               center={[-1.6792, 29.2348]}
               zoom={12}
@@ -313,7 +314,7 @@ const InteractiveMap = () => {
                   icon={DefaultIcon}
                 >
                   <Popup>
-                    <div className="p-2 min-w-[200px]">
+                    <div className="w-[min(200px,70vw)] p-2">
                       <h3 className="font-semibold text-sm mb-2">{property.title}</h3>
                        <p className="text-xs text-muted-foreground mb-1">Type: {getPropertyTypeLabel(property.property_type)}</p>
                        <p className="text-xs text-muted-foreground mb-1">Surface: {property.area_sqm}m²</p>

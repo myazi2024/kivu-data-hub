@@ -140,6 +140,7 @@ export function useAnimatedBbox(targetBbox: BBox, durationMs: number = DEFAULT_A
 
 // Module-level cache for GeoJSON data
 const geoJsonCache = new Map<string, any>();
+const geoJsonRequests = new Map<string, Promise<any>>();
 
 export function useGeoJsonData<T = any>(url: string): T[] {
   const [data, setData] = useState<T[]>(() => {
@@ -152,13 +153,19 @@ export function useGeoJsonData<T = any>(url: string): T[] {
       setData(geoJsonCache.get(url).features || []);
       return;
     }
-    fetch(url)
-      .then(r => r.json())
+    const request = geoJsonRequests.get(url) ?? fetch(url)
+      .then(r => {
+        if (!r.ok) throw new Error(`GeoJSON indisponible (${r.status})`);
+        return r.json();
+      });
+    geoJsonRequests.set(url, request);
+    request
       .then(json => {
         geoJsonCache.set(url, json);
         setData(json.features || []);
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => geoJsonRequests.delete(url));
   }, [url]);
 
   return data;

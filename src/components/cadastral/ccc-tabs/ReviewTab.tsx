@@ -620,7 +620,7 @@ const ReviewTab: React.FC<ReviewTabProps> = ({
 
       {/* Submit button */}
       {user ? (
-        <div className="sticky bottom-0 bg-background/95 backdrop-blur-sm border-t pt-3 -mx-3 px-3 -mb-3 pb-3">
+        <div className="mobile-safe-bottom sticky bottom-0 bg-background/95 backdrop-blur-sm border-t pt-3 -mx-3 px-3 -mb-3">
           <Button type="button" size="lg" onClick={handleSubmit} disabled={loading || uploading || !isFormValidForSubmission()} className="w-full h-11 text-sm font-semibold gap-2 shadow-lg hover:shadow-xl transition-all bg-gradient-to-r from-primary to-primary/80 rounded-xl">
             {loading || uploading ? (<><Loader2 className="h-4 w-4 animate-spin" />{uploading ? "Téléchargement..." : "Envoi..."}</>) : (<><CheckCircle2 className="h-4 w-4" />Soumettre</>)}
           </Button>
@@ -628,7 +628,7 @@ const ReviewTab: React.FC<ReviewTabProps> = ({
           <p className="text-xs text-center text-muted-foreground mt-2">En soumettant, vous acceptez la vérification des données</p>
         </div>
       ) : (
-        <div className="sticky bottom-0 bg-background/95 backdrop-blur-sm border-t pt-3 -mx-3 px-3 -mb-3 pb-3">
+        <div className="mobile-safe-bottom sticky bottom-0 bg-background/95 backdrop-blur-sm border-t pt-3 -mx-3 px-3 -mb-3">
           <div className="text-center mb-2">
             <p className="text-xs font-medium">Formulaire complété</p>
             <p className="text-xs text-muted-foreground">Connectez-vous pour soumettre</p>

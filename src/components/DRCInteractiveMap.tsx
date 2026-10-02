@@ -437,7 +437,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                           type="button"
                           aria-pressed={mapView === v}
                           onClick={() => { setMapView(v); if (v === 'provinces') setSelectedLandDistrict(undefined); }}
-                          className={`text-[10px] px-1.5 py-0.5 rounded border transition-colors ${mapView === v ? 'bg-primary text-primary-foreground border-primary' : 'border-border text-muted-foreground hover:bg-muted'}`}
+                          className={`min-h-9 px-2 py-1 text-xs rounded border transition-colors ${mapView === v ? 'bg-primary text-primary-foreground border-primary' : 'border-border text-muted-foreground hover:bg-muted'}`}
                         >
                           {label}
                         </button>
@@ -502,7 +502,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                     </div>
                   )}
 
-                   <div className="flex-1 min-h-0 overflow-hidden flex items-center justify-center p-1">
+                   <div data-swipe-ignore className="flex-1 min-h-0 overflow-hidden flex items-center justify-center p-1" style={{ touchAction: isMobile ? 'auto' : undefined }}>
                     {mapView === 'districts' ? (
                       <div key="districts" className="w-full h-full animate-fade-in">
                         <LandDistrictMap
@@ -662,7 +662,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                       <Button
                         variant="outline"
                         size="icon"
-                        className="h-6 w-6 rounded-full bg-background/80 backdrop-blur-sm border-border/50 shadow-sm"
+                        className="h-11 w-11 lg:h-8 lg:w-8 rounded-full bg-background/80 backdrop-blur-sm border-border/50 shadow-sm"
                         onClick={resetToDefaultMap}
                         title="Revenir à la vue cartographique par défaut"
                         aria-label="Revenir à la vue cartographique par défaut"
@@ -681,7 +681,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                     <Button
                       variant="outline"
                       size="icon"
-                      className="h-6 w-6 rounded-full bg-background/80 backdrop-blur-sm border-border/50 shadow-sm"
+                      className="h-11 w-11 lg:h-8 lg:w-8 rounded-full bg-background/80 backdrop-blur-sm border-border/50 shadow-sm"
                       onClick={toggleFullscreen}
                       title={isFullscreen ? 'Quitter le plein écran' : 'Plein écran'}
                     >
@@ -689,7 +689,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                     </Button>
                     <Popover>
                       <PopoverTrigger asChild>
-                        <Button variant="outline" size="icon" className="h-6 w-6 rounded-full bg-background/80 backdrop-blur-sm border-border/50 shadow-sm">
+                        <Button variant="outline" size="icon" className="h-11 w-11 lg:h-8 lg:w-8 rounded-full bg-background/80 backdrop-blur-sm border-border/50 shadow-sm">
                           <Info className="h-3 w-3 text-muted-foreground" />
                         </Button>
                       </PopoverTrigger>
@@ -766,7 +766,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                   )}
                 </div>
               </CardHeader>
-              <CardContent className="flex-1 p-0 overflow-hidden charts-compact text-[10px] min-h-0">
+              <CardContent className="flex-1 p-0 overflow-hidden charts-compact text-xs min-h-0">
                 <div className="h-full p-1.5 sm:p-2">
                 <LandDistrictFilterContext.Provider value={selectedLandDistrict || null}>
                 <LandDistrictChangeContext.Provider value={handleLandDistrictFromFilter}>

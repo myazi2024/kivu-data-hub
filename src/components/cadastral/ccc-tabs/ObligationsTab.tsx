@@ -616,12 +616,12 @@ const ObligationsTab: React.FC<ObligationsTabProps> = ({
       )}
       
       {/* Navigation */}
-      <div className="sticky bottom-0 z-10 bg-background/95 backdrop-blur-sm border-t pt-3 pb-3 px-1 -mx-1">
+      <div className="mobile-safe-bottom sticky bottom-0 z-10 bg-background/95 backdrop-blur-sm border-t pt-3 px-1 -mx-1">
         <div className="flex justify-between">
-          <Button type="button" variant="outline" onClick={() => { if (obligationType === 'disputes') setObligationType('mortgages'); else if (obligationType === 'mortgages') setObligationType('taxes'); else handleTabChange('history'); }} className="gap-2 rounded-xl h-10 text-sm">
+          <Button type="button" variant="outline" onClick={() => { if (obligationType === 'disputes') setObligationType('mortgages'); else if (obligationType === 'mortgages') setObligationType('taxes'); else handleTabChange('history'); }} className="gap-2 rounded-xl text-sm">
             <ChevronLeft className="h-4 w-4" /> Précédent
           </Button>
-          <Button type="button" onClick={() => { if (obligationType === 'taxes') setObligationType('mortgages'); else if (obligationType === 'mortgages') setObligationType('disputes'); else handleNextTab('obligations', 'market-value'); }} className="gap-2 rounded-xl h-10 text-sm shadow-md hover:shadow-lg transition-all">
+          <Button type="button" onClick={() => { if (obligationType === 'taxes') setObligationType('mortgages'); else if (obligationType === 'mortgages') setObligationType('disputes'); else handleNextTab('obligations', 'market-value'); }} className="gap-2 rounded-xl text-sm shadow-md hover:shadow-lg transition-all">
             Suivant <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
