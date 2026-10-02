@@ -20,6 +20,7 @@ import {
   LandDistrictFilterContext, LandDistrictChangeContext,
 } from './analyticsFilterContexts';
 import { useAnalyticsCascade } from './useAnalyticsCascade';
+import { getSectionTypeForLandDistrict } from '@/lib/geographicData';
 import { AnalyticsTimeRow } from './AnalyticsTimeRow';
 import { AnalyticsLocationRow } from './AnalyticsLocationRow';
 
