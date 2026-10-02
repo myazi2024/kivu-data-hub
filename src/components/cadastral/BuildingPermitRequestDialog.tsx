@@ -276,7 +276,15 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
     try {
       const { data: paymentResult, error: paymentError } = await supabase.functions.invoke(
         'process-mobile-money-payment',
-        { body: { payment_provider: paymentProvider, phone_number: paymentPhone, amount_usd: form.totalFeeUSD, payment_type: 'permit_request' } }
+        { body: {
+          payment_provider: paymentProvider, phone_number: paymentPhone, amount_usd: form.totalFeeUSD, payment_type: 'permit_request',
+          permit_context: {
+            permit_type: form.requestType === 'new' ? 'construction' : 'regularization',
+            area: parseFloat(form.formData.plannedArea) || 0,
+            declared_usage: form.formData.declaredUsage || null,
+            construction_nature: form.formData.constructionNature || null,
+          },
+        } }
       );
       if (paymentError) throw paymentError;
       if (!paymentResult?.success) throw new Error(paymentResult?.error || 'Payment failed');
