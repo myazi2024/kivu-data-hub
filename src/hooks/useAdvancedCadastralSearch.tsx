@@ -2,6 +2,9 @@ import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { untypedTables } from '@/integrations/supabase/untyped';
 import { useTestEnvironment, applyTestFilter } from '@/hooks/useTestEnvironment';
+
+/** Statuts de taxe du formulaire CCC (onglet Obligations) considérés comme arriérés. */
+export const TAX_ARREARS_STATUSES = ['Impayé', 'En retard'] as const;
 import { escapeIlike } from '@/utils/escapeIlike';
 import { toast } from 'sonner';
 
@@ -12,7 +15,6 @@ export interface SearchFilters {
   ville?: string;
   commune?: string;
   quartier?: string;
-  avenue?: string;
   // Champs ruraux
   territoire?: string;
   collectivite?: string;
@@ -21,7 +23,6 @@ export interface SearchFilters {
   // Autres critères
   areaSqmMin?: number;
   areaSqmMax?: number;
-  parcelType?: string;
   titleType?: string;
 
   hasBuildingPermit?: boolean;
@@ -113,9 +114,6 @@ export const useAdvancedCadastralSearch = () => {
     if (activeFilters.quartier) {
       query = query.ilike('quartier', `%${escapeIlike(activeFilters.quartier)}%`);
     }
-    if (activeFilters.avenue) {
-      query = query.ilike('avenue', `%${escapeIlike(activeFilters.avenue)}%`);
-    }
     // Filtres ruraux
     if (activeFilters.territoire) {
       query = query.ilike('territoire', `%${escapeIlike(activeFilters.territoire)}%`);
@@ -141,9 +139,6 @@ export const useAdvancedCadastralSearch = () => {
     }
 
     // Filtres de type
-    if (activeFilters.parcelType) {
-      query = query.eq('parcel_type', activeFilters.parcelType);
-    }
     if (activeFilters.titleType) {
       query = query.eq('property_title_type', activeFilters.titleType);
     }
@@ -196,7 +191,7 @@ export const useAdvancedCadastralSearch = () => {
             ? supabase.from('cadastral_mortgages').select('parcel_id').in('parcel_id', parcelIds)
             : Promise.resolve({ data: [] }),
           activeFilters.hasTaxArrears
-            ? (supabase.rpc as any)('get_tax_history_stats').select('parcel_id').eq('payment_status', 'overdue').in('parcel_id', parcelIds)
+            ? (supabase.rpc as any)('get_tax_history_stats').select('parcel_id').in('payment_status', [...TAX_ARREARS_STATUSES]).in('parcel_id', parcelIds)
             : Promise.resolve({ data: [] })
         ]);
 

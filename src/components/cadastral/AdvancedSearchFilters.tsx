@@ -95,7 +95,6 @@ const AdvancedSearchFilters: React.FC<AdvancedSearchFiltersProps> = ({
         ville: undefined,
         commune: undefined,
         quartier: undefined,
-        avenue: undefined
       });
     }
   };
@@ -163,7 +162,6 @@ const AdvancedSearchFilters: React.FC<AdvancedSearchFiltersProps> = ({
                       ville: undefined,
                       commune: undefined,
                       quartier: undefined,
-                      avenue: undefined,
                       territoire: undefined,
                       collectivite: undefined,
                       groupement: undefined,
@@ -244,7 +242,6 @@ const AdvancedSearchFilters: React.FC<AdvancedSearchFiltersProps> = ({
                             ville: v === '_all' ? undefined : v,
                             commune: undefined,
                             quartier: undefined,
-                            avenue: undefined
                           })}
                           disabled={availableVilles.length === 0}
                         >
@@ -266,7 +263,6 @@ const AdvancedSearchFilters: React.FC<AdvancedSearchFiltersProps> = ({
                           onValueChange={(v) => onFiltersChange({ 
                             commune: v === '_all' ? undefined : v,
                             quartier: undefined,
-                            avenue: undefined
                           })}
                           disabled={!filters.ville || availableCommunes.length === 0}
                         >
@@ -289,7 +285,6 @@ const AdvancedSearchFilters: React.FC<AdvancedSearchFiltersProps> = ({
                           value={filters.quartier || '_all'} 
                           onValueChange={(v) => onFiltersChange({ 
                             quartier: v === '_all' ? undefined : v,
-                            avenue: undefined
                           })}
                           disabled={!filters.commune || availableQuartiers.length === 0}
                         >
@@ -303,16 +298,6 @@ const AdvancedSearchFilters: React.FC<AdvancedSearchFiltersProps> = ({
                             ))}
                           </SelectContent>
                         </Select>
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs text-muted-foreground">Avenue</Label>
-                        <Input
-                          value={filters.avenue || ''}
-                          onChange={(e) => onFiltersChange({ avenue: e.target.value || undefined })}
-                          placeholder="Nom de l'avenue..."
-                          className="h-8 text-xs rounded-xl"
-                          disabled={!filters.quartier}
-                        />
                       </div>
                     </div>
                   </div>
@@ -427,20 +412,7 @@ const AdvancedSearchFilters: React.FC<AdvancedSearchFiltersProps> = ({
                       />
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-2.5">
-                    <div className="space-y-1.5">
-                      <Label className="text-sm text-muted-foreground">Type parcelle</Label>
-                      <Select value={filters.parcelType || '_all'} onValueChange={(v) => onFiltersChange({ parcelType: v === '_all' ? undefined : v })}>
-                        <SelectTrigger className="h-10 text-sm rounded-xl">
-                          <SelectValue placeholder="Tous" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="_all">Tous</SelectItem>
-                          <SelectItem value="Terrain nu">Terrain nu</SelectItem>
-                          <SelectItem value="Terrain bâti">Terrain bâti</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
+                  <div className="grid grid-cols-1 gap-2.5">
                     <div className="space-y-1.5">
                       <Label className="text-sm text-muted-foreground">Type titre</Label>
                       <Select value={filters.titleType || '_all'} onValueChange={(v) => onFiltersChange({ titleType: v === '_all' ? undefined : v })}>
