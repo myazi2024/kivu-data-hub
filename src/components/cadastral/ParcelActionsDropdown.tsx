@@ -97,14 +97,11 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
   const [showSubdivisionDialog, setShowSubdivisionDialog] = useState(false);
   const [showExpertiseDialog, setShowExpertiseDialog] = useState(false);
   const [showLandDisputeDialog, setShowLandDisputeDialog] = useState(false);
-  // Explications détaillées dépliées (par id d'action)
-  const [expandedDetails, setExpandedDetails] = useState<Set<string>>(new Set());
+  // Explication détaillée dépliée : une seule à la fois (l'ouverture d'une
+  // autre réduit automatiquement la précédente)
+  const [expandedDetailId, setExpandedDetailId] = useState<string | null>(null);
   const toggleDetails = useCallback((actionId: string) => {
-    setExpandedDetails(prev => {
-      const next = new Set(prev);
-      if (next.has(actionId)) next.delete(actionId); else next.add(actionId);
-      return next;
-    });
+    setExpandedDetailId(prev => (prev === actionId ? null : actionId));
   }, []);
 
   const lastFocusedIndexRef = useRef<number | null>(null);
