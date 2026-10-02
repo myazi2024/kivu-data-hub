@@ -201,6 +201,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
 
 // Construction type state
   const [propertyCategory, setPropertyCategory] = useState<string>('');
+  const { getDependentOptions } = useCCCFormPicklists();
   const [constructionType, setConstructionType] = useState<string>('');
   const [constructionNature, setConstructionNature] = useState<string>('');
   const [constructionMaterials, setConstructionMaterials] = useState<string>('');
@@ -427,13 +428,6 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
       }
     }
   }, [constructionMaterials, availableConstructionNatures]);
-
-  // Location-eligible combinations for "Location" usage
-  const LOCATION_ELIGIBLE_KEYS = useMemo(() => new Set([
-    'Résidentielle_Durable', 'Résidentielle_Semi-durable',
-    'Commerciale_Durable', 'Commerciale_Semi-durable',
-    'Industrielle_Durable', 'Industrielle_Semi-durable',
-  ]), []);
 
   // Construction type + Nature -> Usage logic
   useEffect(() => {
