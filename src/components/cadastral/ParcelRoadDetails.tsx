@@ -9,10 +9,10 @@ interface Props {
   sides: RoadSideInfo[];
   selectedSide: number | null;
   onSelectSide: (side: number | null) => void;
-  hasGeometry: boolean;
+  coordinateCount: number;
 }
 
-export default function ParcelRoadDetails({ sides, selectedSide, onSelectSide, hasGeometry }: Props) {
+export default function ParcelRoadDetails({ sides, selectedSide, onSelectSide, coordinateCount }: Props) {
   return (
     <section aria-label="Voirie de la parcelle" className="border-t border-border pt-3 mb-3">
       <div className="flex items-center gap-2 mb-2">
@@ -36,10 +36,10 @@ export default function ParcelRoadDetails({ sides, selectedSide, onSelectSide, h
                     type="button" variant={isSelected ? 'default' : 'outline'} size="sm"
                     className="h-7 w-7 shrink-0 p-0 text-xs"
                     onClick={() => onSelectSide(isSelected ? null : number - 1)}
-                    disabled={!hasGeometry || number > 0 && number > (hasGeometry ? 10000 : 0)}
+                    disabled={coordinateCount < 3 || number > coordinateCount}
                     aria-label={`Repérer le côté ${number} sur la carte`}
                     aria-pressed={isSelected}
-                    title={`Repérer le côté ${number} sur la carte`}
+                    title={coordinateCount < 3 || number > coordinateCount ? 'Tracé de parcelle indisponible' : `Repérer le côté ${number} sur la carte`}
                   >{number}</Button>
                   <div className="min-w-0 flex-1">
                     <p className="text-xs font-semibold text-foreground break-words">{roadLabel || `Côté ${number} · Route sans nom renseigné`}</p>
