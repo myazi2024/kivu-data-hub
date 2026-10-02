@@ -272,11 +272,11 @@ const AboutDiscountCodes = () => {
             </div>
           </div>
 
-          <div className="flex gap-3 pt-4">
-            <Button asChild>
+          <div className="flex flex-col gap-3 pt-4 sm:flex-row">
+            <Button asChild className="w-full whitespace-normal sm:w-auto">
               <Link to="/">Commencer une recherche</Link>
             </Button>
-            <Button variant="outline" asChild>
+            <Button variant="outline" asChild className="w-full whitespace-normal sm:w-auto">
               <Link to="/partnership">
                 <Users className="mr-2 h-4 w-4" />
                 Devenir revendeur

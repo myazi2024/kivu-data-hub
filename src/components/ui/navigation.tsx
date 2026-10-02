@@ -213,7 +213,7 @@ const Navigation = () => {
             <Button
               variant="ghost"
               size="sm"
-              className="lg:hidden p-1 sm:p-2"
+              className="lg:hidden h-11 w-11 p-0"
               onClick={() => setIsOpen(!isOpen)}
               aria-expanded={isOpen}
               aria-label="Menu de navigation"
@@ -225,14 +225,14 @@ const Navigation = () => {
 
         {/* Mobile Navigation */}
         <div className={cn(
-          "lg:hidden transition-all duration-300 ease-in-out overflow-hidden bg-background/95 backdrop-blur-sm border-t border-border",
-          isOpen ? "max-h-[700px] opacity-100" : "max-h-0 opacity-0"
+          "lg:hidden overflow-hidden border-t border-border bg-background/95 backdrop-blur-sm transition-all duration-300 ease-in-out",
+          isOpen ? "max-h-[calc(100dvh-4rem)] overflow-y-auto overscroll-contain opacity-100" : "max-h-0 opacity-0"
         )}>
           <div className="pb-3 sm:pb-4 space-y-1 px-2">
             {/* Accueil */}
             <Link
               to="/"
-              className="block px-3 py-2 text-sm font-medium text-foreground hover:text-primary-foreground hover:bg-primary/90 rounded-md transition-colors duration-200"
+              className="flex min-h-11 items-center px-3 py-2 text-sm font-medium text-foreground hover:text-primary-foreground hover:bg-primary/90 rounded-md transition-colors duration-200"
               onClick={() => setIsOpen(false)}
             >
               Accueil
@@ -242,7 +242,7 @@ const Navigation = () => {
             <div>
               <button
                 onClick={() => setMobileMediaOpen(!mobileMediaOpen)}
-                className="w-full flex items-center justify-between px-3 py-2 text-sm font-medium text-foreground hover:text-primary-foreground hover:bg-primary/90 rounded-md transition-colors duration-200"
+                className="min-h-11 w-full flex items-center justify-between px-3 py-2 text-sm font-medium text-foreground hover:text-primary-foreground hover:bg-primary/90 rounded-md transition-colors duration-200"
               >
                 Media
                 <ChevronDown className={cn("h-4 w-4 transition-transform", mobileMediaOpen && "rotate-180")} />
@@ -259,7 +259,7 @@ const Navigation = () => {
                           <Link
                             key={item.name}
                             to={item.href}
-                            className="flex items-center gap-2.5 px-3 py-2 text-sm font-medium text-muted-foreground hover:text-primary-foreground hover:bg-primary/90 rounded-md transition-colors duration-200"
+                            className="flex min-h-11 items-center gap-2.5 px-3 py-2 text-sm font-medium text-muted-foreground hover:text-primary-foreground hover:bg-primary/90 rounded-md transition-colors duration-200"
                             onClick={() => setIsOpen(false)}
                           >
                             <item.icon className="h-4 w-4 shrink-0" />
@@ -278,7 +278,7 @@ const Navigation = () => {
               <Link
                 key={item.name}
                 to={item.href}
-                className="flex items-center justify-between px-3 py-2 text-sm font-medium text-foreground hover:text-primary-foreground hover:bg-primary/90 rounded-md transition-colors duration-200"
+                className="flex min-h-11 items-center justify-between px-3 py-2 text-sm font-medium text-foreground hover:text-primary-foreground hover:bg-primary/90 rounded-md transition-colors duration-200"
                 onClick={() => setIsOpen(false)}
               >
                 <span>{item.name}</span>

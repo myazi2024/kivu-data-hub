@@ -249,7 +249,7 @@ const Admin = () => {
       <div className="flex-1 flex flex-col overflow-hidden">
         <AdminDashboardHeader onMenuClick={() => setMobileMenuOpen(true)} />
         <main className="flex-1 overflow-y-auto p-2 md:p-3 lg:p-4">
-          <div className="max-w-[360px] mx-auto md:max-w-none">
+          <div className="mx-auto w-full max-w-full">
             {/* Breadcrumb (4 niveaux si sub-tab détecté) */}
             {activeTab !== 'dashboard' && (
               <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-3 flex-wrap">

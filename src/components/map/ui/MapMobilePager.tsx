@@ -29,7 +29,7 @@ export const MapMobilePager: React.FC<Props> = ({
   const inactiveBarW = 6 + progressTowardNext * 10;
 
   return (
-    <div className="lg:hidden fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50">
+    <div className="lg:hidden fixed bottom-[calc(env(safe-area-inset-bottom,0px)+0.75rem)] left-1/2 transform -translate-x-1/2 z-50">
       <div className="flex flex-col items-center gap-1.5">
         <div className="flex items-center gap-1.5" role="tablist" aria-label="Vue active">
           <span
@@ -64,7 +64,7 @@ export const MapMobilePager: React.FC<Props> = ({
             onClick={() => setActiveMobilePanel('map')}
             aria-label="Carte & Données"
             aria-live="polite"
-            className="rounded-full h-7 px-3 text-[10px] gap-1"
+            className="h-11 rounded-full px-4 text-xs gap-1.5"
           >
             <MapPin className="w-3 h-3" />
             Carte
@@ -75,7 +75,7 @@ export const MapMobilePager: React.FC<Props> = ({
             onClick={() => setActiveMobilePanel('analytics')}
             aria-label="Analytics"
             aria-live="polite"
-            className="rounded-full h-7 px-3 text-[10px] gap-1"
+            className="h-11 rounded-full px-4 text-xs gap-1.5"
           >
             <BarChart3 className="w-3 h-3" />
             Analytics
