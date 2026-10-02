@@ -11,17 +11,26 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+import { computePermitTotal, parsePermitContext, verifyPermitPayment } from "../_shared/permitFees.ts";
+
+const ALLOWED_TYPES = new Set([
+  'publication', 'cadastral_service', 'expertise_fee', 'certificate_access',
+  'mutation_request', 'mortgage_cancellation', 'land_title_request',
+  'permit_request', 'permit_fee',
+]);
+
 interface PaymentRequest {
   item_id?: string;
   items?: string[];
   payment_provider: string;
   phone_number: string;
   amount_usd: number;
-  payment_type: 'publication' | 'cadastral_service' | 'expertise_fee' | 'certificate_access' | 'mutation_request' | 'mortgage_cancellation' | 'land_title_request';
+  payment_type: 'publication' | 'cadastral_service' | 'expertise_fee' | 'certificate_access' | 'mutation_request' | 'mortgage_cancellation' | 'land_title_request' | 'permit_request' | 'permit_fee';
   invoice_id?: string;
   test_mode?: boolean;
   currency_code?: string;
   amount_local?: number;
+  permit_context?: unknown;
 }
 
 Deno.serve(async (req) => {
@@ -59,6 +68,26 @@ Deno.serve(async (req) => {
     }
 
     const { payment_provider, phone_number, amount_usd, payment_type, invoice_id, currency_code: clientCurrency } = body;
+
+    if (!ALLOWED_TYPES.has(payment_type)) throw new Error('Type de paiement inconnu.');
+    const sameCents = (a: number, b: number) => Math.round(Number(a) * 100) === Math.round(Number(b) * 100);
+
+    // Autorisation de bâtir (nouvelle demande) : montant recalculé sur le barème.
+    if (payment_type === 'permit_request') {
+      const ctx = parsePermitContext(body.permit_context);
+      if (!ctx) throw new Error('Informations de la demande d\'autorisation manquantes.');
+      const due = await computePermitTotal(supabase, ctx);
+      if (due <= 0 || !sameCents(due, amount_usd)) {
+        throw new Error('Le montant du paiement ne correspond pas au barème en vigueur.');
+      }
+    }
+
+    // Autorisation de bâtir (paiement enregistré) : propriété + barème.
+    if (payment_type === 'permit_fee') {
+      if (!invoice_id) throw new Error('Identifiant du paiement manquant.');
+      const due = await verifyPermitPayment(supabase, invoice_id, user.id);
+      if (!sameCents(due, amount_usd)) throw new Error('Le montant ne correspond pas au paiement enregistré.');
+    }
 
     if (payment_type === 'mutation_request') {
       if (!invoice_id) throw new Error('Mutation request id required');
