@@ -4,6 +4,7 @@ import type { LandAnalyticsData } from '@/hooks/useLandDataAnalytics';
 /** Minimal geo-scoped shape used for predicate filtering across analytics arrays */
 export type GeoScopedRecord = {
   province?: string | null;
+  land_district?: string | null;
   ville?: string | null;
   commune?: string | null;
   quartier?: string | null;

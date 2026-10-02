@@ -20,6 +20,8 @@ export function useMapDrilldown(getProvincesData: () => ProvinceData[]) {
   const [selectedQuartier, setSelectedQuartier] = useState<string | undefined>(() => searchParams.get('quartier') || undefined);
   const [selectedTerritoire, setSelectedTerritoire] = useState<string | undefined>(() => searchParams.get('territoire') || undefined);
   const [selectedSectionType, setSelectedSectionType] = useState<string>(() => searchParams.get('section') || 'all');
+  const [mapView, setMapView] = useState<'provinces' | 'districts'>(() => (searchParams.get('view') === 'districts' ? 'districts' : 'provinces'));
+  const [selectedLandDistrict, setSelectedLandDistrict] = useState<string | undefined>(() => searchParams.get('district') || undefined);
   const [activeAnalyticsTab, setActiveAnalyticsTab] = useState<string>(() => searchParams.get('tab') || 'rdc-map');
 
   const urlInitRef = useRef(false);
@@ -51,10 +53,12 @@ export function useMapDrilldown(getProvincesData: () => ProvinceData[]) {
     if (selectedQuartier) params.set('quartier', selectedQuartier);
     if (selectedTerritoire) params.set('territoire', selectedTerritoire);
     if (selectedSectionType !== 'all') params.set('section', selectedSectionType);
+    if (mapView === 'districts') params.set('view', 'districts');
+    if (selectedLandDistrict) params.set('district', selectedLandDistrict);
     if (activeAnalyticsTab && activeAnalyticsTab !== 'rdc-map') params.set('tab', activeAnalyticsTab);
     setSearchParams(params, { replace: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedProvince, selectedVille, selectedCommune, selectedQuartier, selectedTerritoire, selectedSectionType, activeAnalyticsTab]);
+  }, [selectedProvince, selectedVille, selectedCommune, selectedQuartier, selectedTerritoire, selectedSectionType, activeAnalyticsTab, mapView, selectedLandDistrict]);
 
   /** Handle province filter from Analytics → zoom map */
   const handleProvinceFilter = useCallback((provinceName: string | undefined) => {
@@ -96,6 +100,10 @@ export function useMapDrilldown(getProvincesData: () => ProvinceData[]) {
     selectedTerritoire,
     selectedSectionType,
     activeAnalyticsTab,
+    mapView,
+    setMapView,
+    selectedLandDistrict,
+    setSelectedLandDistrict,
     setSelectedProvince,
     setExternalProvinceId,
     setSelectedVille,
