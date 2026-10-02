@@ -31,7 +31,7 @@ export default function CadastralMapLegend({ legend, hasRoadSides, hasBuildings,
     ...(hasLots ? [{ key: 'lot', label: 'Lot de lotissement (contour pointillé, couleur variable)', symbol: <span className="w-4 shrink-0 border-t-2 border-dashed border-muted-foreground" /> }] : []),
     ...(hasRoadSides ? [{ key: 'road', label: 'Côté donnant sur une voie déclarée · numéro du côté', symbol: <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-primary bg-background text-[9px] font-bold text-primary">1</span> }] : []),
     ...(hasBuildings ? [
-      { key: 'building', label: 'Emprise d’une construction déclarée (bleu-vert)', symbol: <span className="h-3 w-4 shrink-0 border-[3px] border-map-building bg-map-building/25" /> },
+      { key: 'building', label: 'Emprise d’une construction déclarée', symbol: <span className="h-3 w-4 shrink-0 border-[3px] border-map-building bg-map-building/25" /> },
       { key: 'side', label: 'Longueur d’un côté de construction', symbol: <span className="shrink-0 rounded-sm border border-map-building bg-background px-0.5 text-[8px]">5 m</span> },
       { key: 'height', label: '1 · H 6 m : construction n° 1, hauteur', symbol: <span className="shrink-0 rounded-sm bg-map-building px-0.5 text-[8px] text-map-building-foreground">H</span> },
     ] : []),
