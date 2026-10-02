@@ -21,16 +21,9 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useNavigate } from 'react-router-dom';
 
 /** Small component to display current owner from parcel data */
-const ParcelOwnerInfo: React.FC<{ parcelId: string }> = ({ parcelId }) => {
-  const [ownerName, setOwnerName] = useState<string | null>(null);
-  useEffect(() => {
-    supabase
-      .from('cadastral_parcels')
-      .select('current_owner_name')
-      .eq('id', parcelId)
-      .maybeSingle()
-      .then(({ data }) => { if (data) setOwnerName(data.current_owner_name); });
-  }, [parcelId]);
+// Le nom vient des données de parcelle déjà chargées par la carte (aucune
+// lecture directe de la table des parcelles, réservée aux administrateurs).
+const ParcelOwnerInfo: React.FC<{ ownerName?: string | null }> = ({ ownerName }) => {
   if (!ownerName) return null;
   return (
     <div className="flex items-center gap-2 p-2.5 rounded-xl bg-muted/50 border border-border/50">
@@ -49,6 +42,7 @@ interface MortgageFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   embedded?: boolean;
+  parcelData?: any;
 }
 
 type Step = 'form' | 'preview' | 'confirmation';
@@ -75,6 +69,7 @@ const MAX_MORTGAGE_AMOUNT_USD = 1_000_000_000;
 const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
   parcelNumber,
   parcelId,
+  parcelData,
   open,
   onOpenChange,
   embedded = false
@@ -281,7 +276,7 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
 
       // Fix #8: Verify parcel actually exists in DB
       const { data: parcelExists, error: parcelError } = await supabase
-        .from('cadastral_parcels')
+        .from('cadastral_parcels_public')
         .select('id')
         .eq('id', parcelId!)
         .maybeSingle();
@@ -468,7 +463,7 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
 
           {/* Propriétaire actuel (depuis données CCC) */}
           {parcelId && (
-            <ParcelOwnerInfo parcelId={parcelId} />
+            <ParcelOwnerInfo ownerName={parcelData?.current_owner_name} />
           )}
 
 
@@ -652,7 +647,7 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
               <span className="text-muted-foreground">Parcelle</span>
               <span className="font-mono font-bold">{parcelNumber}</span>
             </div>
-            {parcelId && <ParcelOwnerInfo parcelId={parcelId} />}
+            {parcelId && <ParcelOwnerInfo ownerName={parcelData?.current_owner_name} />}
             <div className="flex justify-between py-2 border-b">
               <span className="text-muted-foreground">Montant</span>
               <span className="font-semibold">{parseFloat(mortgageRecord.mortgageAmount).toLocaleString()} USD</span>

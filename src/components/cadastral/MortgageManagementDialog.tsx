@@ -12,6 +12,7 @@ import { supabase } from '@/integrations/supabase/client';
 interface MortgageManagementDialogProps {
   parcelNumber: string;
   parcelId?: string;
+  parcelData?: any;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
@@ -21,6 +22,7 @@ type MortgageTab = 'add' | 'remove';
 const MortgageManagementDialog: React.FC<MortgageManagementDialogProps> = ({
   parcelNumber,
   parcelId,
+  parcelData,
   open,
   onOpenChange
 }) => {
@@ -151,6 +153,7 @@ const MortgageManagementDialog: React.FC<MortgageManagementDialogProps> = ({
             <MortgageFormDialog
               parcelNumber={parcelNumber}
               parcelId={parcelId}
+              parcelData={parcelData}
               open={true}
               onOpenChange={(isOpen) => {
                 if (!isOpen) handleClose();
@@ -180,6 +183,7 @@ const MortgageManagementDialog: React.FC<MortgageManagementDialogProps> = ({
                 <MortgageCancellationDialog
                   parcelNumber={parcelNumber}
                   parcelId={parcelId}
+                  parcelData={parcelData}
                   open={true}
                   onOpenChange={(isOpen) => {
                     if (!isOpen) handleClose();

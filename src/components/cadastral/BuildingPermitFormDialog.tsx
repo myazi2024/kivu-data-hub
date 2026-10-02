@@ -21,6 +21,8 @@ interface BuildingPermitFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   embedded?: boolean;
+  /** Données de la parcelle transmises par la carte (lecture seule). */
+  parcelData?: any;
 }
 
 type Step = 'form' | 'preview' | 'confirmation';

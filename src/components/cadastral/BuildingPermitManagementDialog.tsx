@@ -8,6 +8,7 @@ import BuildingPermitFormDialog from './BuildingPermitFormDialog';
 interface BuildingPermitManagementDialogProps {
   parcelNumber: string;
   parcelId?: string;
+  parcelData?: any;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
@@ -17,6 +18,7 @@ type PermitTab = 'construction' | 'regularisation';
 const BuildingPermitManagementDialog: React.FC<BuildingPermitManagementDialogProps> = ({
   parcelNumber,
   parcelId,
+  parcelData,
   open,
   onOpenChange
 }) => {
@@ -94,6 +96,7 @@ const BuildingPermitManagementDialog: React.FC<BuildingPermitManagementDialogPro
             key={activeTab}
             parcelNumber={parcelNumber}
             parcelId={parcelId}
+            parcelData={parcelData}
             permitType={activeTab}
             open={true}
             onOpenChange={(isOpen) => {
