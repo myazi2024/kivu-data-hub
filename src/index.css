@@ -482,6 +482,49 @@ All colors MUST be HSL.
   background: hsl(var(--primary));
   color: hsl(var(--primary-foreground));
 }
+/* Étiquettes de carte proportionnelles au zoom (--map-label-scale posé par useLeafletMap) */
+.road-side-marker, .building-side-marker, .building-height-marker,
+.dimension-label, .subdivided-label, .lot-label {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+}
+.road-side-marker > *, .building-side-marker > *, .building-height-marker > *,
+.dimension-label > *, .subdivided-label > *, .lot-label > * {
+  flex-shrink: 0;
+  transform: scale(var(--map-label-scale, 1));
+  transform-origin: center;
+  transition: transform 0.15s ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .road-side-marker > *, .building-side-marker > *, .building-height-marker > *,
+  .dimension-label > *, .subdivided-label > *, .lot-label > * { transition: none; }
+}
+.map-zoom-far .building-side-marker,
+.map-zoom-far .dimension-label { display: none !important; }
+.map-dimension-label__box {
+  background: hsl(var(--background));
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid hsl(var(--destructive));
+  font-size: 11px;
+  font-weight: 600;
+  color: hsl(var(--destructive));
+  white-space: nowrap;
+  box-shadow: 0 2px 4px hsl(var(--foreground) / 0.2);
+}
+.map-subdivided-label__box {
+  background: hsl(var(--muted));
+  color: hsl(var(--muted-foreground));
+  padding: 1px 6px;
+  border-radius: 4px;
+  border: 1px solid hsl(var(--border));
+  font-size: 9px;
+  font-weight: 600;
+  white-space: nowrap;
+  opacity: .85;
+}
 .leaflet-control-zoom {
   border: none !important;
   border-radius: 0.75rem !important;
