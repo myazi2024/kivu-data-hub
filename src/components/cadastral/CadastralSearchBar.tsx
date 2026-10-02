@@ -426,12 +426,6 @@ const CadastralSearchBar = () => {
             )}
           </div>
 
-          {/* Suggestions indisponibles */}
-          {suggestionsError && !loadingSuggestions && searchQuery.trim() && (
-            <div className="border-t border-border/30 px-4 py-2" role="status">
-              <p className="text-xs text-muted-foreground">{suggestionsError}</p>
-            </div>
-          )}
 
           {/* Suggestions dropdown */}
           {searchSuggestions.length > 0 && (
