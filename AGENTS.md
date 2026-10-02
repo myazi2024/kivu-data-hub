@@ -12,3 +12,4 @@
 - Cadastral map road details read the public `road_sides` and annotate only the selected parcel's declared boundary segments; this preserves free access without inventing road geometry.
 - Cadastral map building overlays read only the sanitized public `building_outlines` projection of approved parcel shapes; this exposes requested measurements without leaking raw building JSON or inventing footprints.
 - CCC fraud fields (is_suspicious, fraud_score, fraud_reason) are recomputed by the `enforce_contribution_fraud_score` trigger and suspicious rows logged to fraud_attempts by `log_suspicious_contribution`; the browser never sends them, since client values could be forged.
+- Browser-callable SECURITY DEFINER RPCs must check the caller's role or ownership inside the function; legacy unguarded ones are wrapped (`<name>` guard → `<name>__impl`, service_role only) so cron/service calls still work. Server-only helpers have no anon/authenticated EXECUTE.
