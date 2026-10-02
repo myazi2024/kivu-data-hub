@@ -22,14 +22,14 @@ export function getParcelBuildings(value: unknown): PublicBuilding[] {
     const validVertices = vertices as { lat: number; lng: number }[];
     const declaredSides = Array.isArray(raw.sides) ? raw.sides : [];
     const sides = validVertices.map((point, sideIndex) => {
-      const declared = Number(declaredSides[sideIndex]?.length);
+      const declared = declaredSides[sideIndex]?.length == null ? NaN : Number(declaredSides[sideIndex].length);
       if (Number.isFinite(declared) && declared > 0) return { lengthM: declared, calculated: false };
       const next = validVertices[(sideIndex + 1) % validVertices.length];
       const measured = calculateDistance(point.lat, point.lng, next.lat, next.lng);
       return { lengthM: measured > 0 ? measured : null, calculated: true };
     });
-    const height = Number(raw.heightM);
-    const linkedIndex = Number(raw.linkedIndex);
+    const height = raw.heightM == null ? NaN : Number(raw.heightM);
+    const linkedIndex = raw.linkedIndex == null ? NaN : Number(raw.linkedIndex);
     return [{
       index: Number.isInteger(linkedIndex) && linkedIndex >= 0 ? linkedIndex : index,
       vertices: validVertices,

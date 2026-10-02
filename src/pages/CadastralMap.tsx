@@ -251,6 +251,7 @@ const CadastralMap = () => {
       : parcel.parcel_number;
     setSelectedParcel(parcel);
     setFocusedRoadSide(null);
+    setFocusedBuilding(null);
     setSearchQuery(label);
     setSearchSuggestions([]);
     setHighlightedIndex(-1);
@@ -268,6 +269,7 @@ const CadastralMap = () => {
     setFilteredParcels(parcels);
     setSelectedParcel(null);
     setFocusedRoadSide(null);
+    setFocusedBuilding(null);
   };
 
   /**
