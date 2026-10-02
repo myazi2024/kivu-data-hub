@@ -30,11 +30,11 @@ export default function ParcelRoadDetails({ sides, selectedSide, onSelectSide, c
             const roadLabel = [side.roadType?.trim(), side.roadName?.trim()].filter(Boolean).join(' · ');
             const width = Number(side.roadWidth);
             return (
-              <div key={`${number}-${index}`} className={cn('border-l-2 pl-2.5 py-1.5 bg-muted/30', isSelected ? 'border-primary' : 'border-border')}>
-                <div className="flex items-start gap-2">
+              <div key={`${number}-${index}`} className={cn('border-l-2 pl-2 py-1 bg-muted/30', isSelected ? 'border-primary' : 'border-border')}>
+                <div className="flex items-start gap-1.5">
                   <Button
                     type="button" variant={isSelected ? 'default' : 'outline'} size="sm"
-                    className="h-7 w-7 shrink-0 p-0 text-xs"
+                    className="h-5.5 w-5.5 shrink-0 p-0 text-[10px]"
                     onClick={() => onSelectSide(isSelected ? null : number - 1)}
                     disabled={coordinateCount < 3 || number > coordinateCount}
                     aria-label={`Repérer le côté ${number} sur la carte`}
@@ -42,12 +42,12 @@ export default function ParcelRoadDetails({ sides, selectedSide, onSelectSide, c
                     title={coordinateCount < 3 || number > coordinateCount ? 'Tracé de parcelle indisponible' : `Repérer le côté ${number} sur la carte`}
                   >{number}</Button>
                   <div className="min-w-0 flex-1">
-                    <p className="text-xs font-semibold text-foreground break-words">{roadLabel || `Côté ${number} · Route sans nom renseigné`}</p>
-                    <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1 text-[11px] text-muted-foreground">
+                    <p className="text-[11px] font-semibold text-foreground break-words leading-tight">{roadLabel || `Côté ${number} · Route sans nom renseigné`}</p>
+                    <div className="flex flex-wrap gap-x-2.5 gap-y-0.5 mt-0.5 text-[10px] text-muted-foreground">
                       <span>Revêtement : <strong className="text-foreground font-medium">{side.roadSurface ? roadSurfaceLabel(side.roadSurface) : 'Non renseigné'}</strong></span>
                       <span>Largeur : <strong className="text-foreground font-medium">{Number.isFinite(width) && width > 0 ? `${width.toLocaleString('fr-FR')} m` : 'Non renseignée'}</strong></span>
                     </div>
-                    <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1.5 text-[11px]">
+                    <div className="flex flex-wrap gap-x-2.5 gap-y-0.5 mt-0.5 text-[10px]">
                       <span className={cn('inline-flex items-center gap-1', side.hasStreetLighting ? 'text-foreground' : 'text-muted-foreground')}>
                         <Lamp className="h-3 w-3" aria-hidden="true" />
                         {side.hasStreetLighting === true ? `Éclairage public${Number(side.streetLampCount) > 0 ? ` · ${side.streetLampCount} lampadaire(s)` : ''}` : side.hasStreetLighting === false ? 'Sans éclairage public' : 'Éclairage non renseigné'}
