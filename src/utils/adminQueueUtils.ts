@@ -1,3 +1,4 @@
+import { sanitizeCsvCell } from '@/utils/csvExport';
 /**
  * Compute SLA progress for an admin request.
  * Returns a level + label suitable for badge styling.
@@ -37,7 +38,7 @@ export const downloadCsv = (filename: string, rows: Record<string, any>[]) => {
   const headers = Object.keys(rows[0]);
   const escape = (v: any) => {
     if (v === null || v === undefined) return '';
-    const s = String(v).replace(/"/g, '""');
+    const s = sanitizeCsvCell(v).replace(/"/g, '""');
     return /[",\n;]/.test(s) ? `"${s}"` : s;
   };
   const csv = [
