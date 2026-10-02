@@ -295,7 +295,7 @@ export const ResellerDiscountCodes: React.FC = () => {
                             variant="ghost"
                             size="sm"
                             onClick={() => handleCopyCode(code.code)}
-                            className="h-6 w-6 p-0"
+                            className="h-11 w-11 p-0 sm:h-9 sm:w-9"
                           >
                             {copiedCode === code.code ? (
                               <Check className="h-3 w-3 text-green-600" />

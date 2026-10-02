@@ -135,7 +135,7 @@ export const ProjectOnMapButton: React.FC<Props> = ({
             size="icon"
             variant={isActive ? 'default' : 'ghost'}
             onClick={handleClick}
-            className="h-7 w-7 sm:h-5 sm:w-5 shrink-0"
+            className="h-11 w-11 shrink-0 sm:h-9 sm:w-9"
             aria-label={isActive ? 'Retirer de la carte' : 'Afficher sur la carte'}
             aria-pressed={isActive}
           >

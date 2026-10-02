@@ -53,7 +53,7 @@ export const RichTextEditor = ({
       onClick={onClick}
       disabled={disabled}
       title={title}
-      className="h-8 w-8 p-0"
+      className="h-11 w-11 p-0 sm:h-9 sm:w-9"
     >
       {children}
     </Button>

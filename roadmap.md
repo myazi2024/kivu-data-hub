@@ -11,10 +11,10 @@
 - [x] Afficher chaque construction enregistrée sur la parcelle avec les longueurs des côtés et sa hauteur, sans exposer d'autres champs privés.
 
 ## Adaptation mobile complète
-- [ ] Socle mobile et pages publiques
-- [ ] Carte cadastrale, CCC et services
-- [ ] Données foncières et Analytics
-- [ ] Espaces utilisateur, revendeur et RH
-- [ ] Espace admin
-- [ ] Charge réseau et serveur mobile
-- [ ] Vérifications multi-écrans et rapport
+- [x] Socle mobile et pages publiques
+- [x] Carte cadastrale, CCC et services
+- [x] Données foncières et Analytics
+- [x] Espaces utilisateur, revendeur et RH
+- [x] Espace admin
+- [x] Charge réseau et serveur mobile
+- [x] Vérifications multi-écrans et rapport
