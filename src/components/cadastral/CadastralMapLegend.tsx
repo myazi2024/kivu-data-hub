@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { AlertTriangle, HelpCircle, MapPin, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -13,7 +14,7 @@ interface CadastralMapLegendProps {
   hasLots: boolean;
 }
 
-const icons: Record<string, React.ReactNode> = {
+const icons: Record<string, ReactNode> = {
   bornage_gps: <span className="h-3 w-3 shrink-0 border-2 border-primary bg-primary/15" />,
   sans_bornage: <MapPin className="h-3 w-3 shrink-0 text-primary" />,
   limites: <span className="w-3 shrink-0 border-t-2 border-primary" />,
@@ -27,7 +28,7 @@ export default function CadastralMapLegend({ legend, hasRoadSides, hasBuildings,
   const items = (legend?.items ?? []).filter(item => item.enabled);
   const additional = [
     ...(hasSubdividedParcels ? [{ key: 'subdivided', label: 'Parcelle lotie', symbol: <span className="w-4 shrink-0 border-t-2 border-dashed border-muted-foreground" /> }] : []),
-    ...(hasLots ? [{ key: 'lot', label: 'Lot de lotissement (contour pointillé)', symbol: <span className="w-4 shrink-0 border-t-2 border-dashed border-primary" /> }] : []),
+    ...(hasLots ? [{ key: 'lot', label: 'Lot de lotissement (contour pointillé, couleur variable)', symbol: <span className="w-4 shrink-0 border-t-2 border-dashed border-muted-foreground" /> }] : []),
     ...(hasRoadSides ? [{ key: 'road', label: 'Côté donnant sur une voie déclarée · numéro du côté', symbol: <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-primary bg-background text-[9px] font-bold text-primary">1</span> }] : []),
     ...(hasBuildings ? [
       { key: 'building', label: 'Emprise d’une construction déclarée', symbol: <span className="h-3 w-4 shrink-0 border-2 border-primary bg-primary/20" /> },
