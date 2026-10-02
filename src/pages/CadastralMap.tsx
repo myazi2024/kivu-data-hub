@@ -4,11 +4,10 @@ import Navigation from '@/components/ui/navigation';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 
-import { MapPin, Loader2, Search, X, MessageCircle, AlertTriangle, Settings2, Star, Sparkles, HelpCircle, MapPinPlus, FileCheck2, AlertCircle, LocateFixed } from 'lucide-react';
+import { MapPin, Loader2, Search, X, MessageCircle, AlertTriangle, Settings2, Star, Sparkles, MapPinPlus, FileCheck2, AlertCircle, LocateFixed } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useDebounce } from '@/hooks/useDebounce';
 import { toast } from 'sonner';
@@ -20,6 +19,7 @@ import CadastralSearchModeToggle, { type CadastralSearchMode } from '@/component
 import ParcelActionsDropdown from '@/components/cadastral/ParcelActionsDropdown';
 import ParcelRoadDetails from '@/components/cadastral/ParcelRoadDetails';
 import ParcelBuildingsDetails from '@/components/cadastral/ParcelBuildingsDetails';
+import CadastralMapLegend from '@/components/cadastral/CadastralMapLegend';
 import { getParcelRoadSides } from '@/lib/parcelRoadSides';
 import { getParcelBuildings } from '@/lib/parcelBuildings';
 import LandTitleRequestDialog from '@/components/cadastral/LandTitleRequestDialog';
@@ -896,74 +896,15 @@ const CadastralMap = () => {
           </div>
         )}
 
-        {/* Legend */}
-        {mapConfig?.legend?.enabled !== false && (() => {
-          const legendItems = (mapConfig?.legend?.items || []).filter(item => item.enabled);
-          const legendIconMap: Record<string, { desktop: React.ReactNode; mobile: React.ReactNode }> = {
-            bornage_gps: {
-              desktop: <div className="w-2 h-2 bg-red-500/20 border border-red-500 rounded-sm" />,
-              mobile: <div className="w-2 h-2 bg-red-500/20 border border-red-500 rounded-sm shrink-0" />,
-            },
-            sans_bornage: {
-              desktop: <MapPin className="h-2 w-2 text-blue-500" />,
-              mobile: <MapPin className="h-2 w-2 text-blue-500 shrink-0" />,
-            },
-            limites: {
-              desktop: <div className="w-2 h-px bg-red-500" />,
-              mobile: <div className="w-2 h-px bg-red-500 shrink-0" />,
-            },
-            dimensions: {
-              desktop: <div className="px-0.5 text-[5px] font-bold text-red-500 border border-red-500 rounded bg-white leading-none">12m</div>,
-              mobile: <div className="px-0.5 text-[5px] font-bold text-red-500 border border-red-500 rounded bg-white leading-none shrink-0">12m</div>,
-            },
-            incompletes: {
-              desktop: <AlertTriangle className="h-2 w-2 text-orange-500" />,
-              mobile: <AlertTriangle className="h-2 w-2 text-orange-500 shrink-0" />,
-            },
-            favorite: {
-              desktop: <Star className="h-2 w-2 text-yellow-500 fill-yellow-500" />,
-              mobile: <Star className="h-2 w-2 text-yellow-500 fill-yellow-500 shrink-0" />,
-            },
-          };
-          if (legendItems.length === 0) return null;
-          return (
-            <>
-              <div className="absolute top-3 right-3 z-[800] hidden md:block max-h-[calc(100vh-8rem)] overflow-auto">
-                <div className="bg-background/95 backdrop-blur-md rounded-lg shadow-lg border border-border/50 p-1.5">
-                  <p className="text-[7px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">Légende</p>
-                  <div className="space-y-0.5">
-                    {legendItems.map(item => (
-                      <div key={item.key} className="flex items-center gap-1 text-[7px]">
-                        {legendIconMap[item.key]?.desktop}
-                        <span className="text-muted-foreground">{item.label}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-              <div className="absolute right-3 z-[800] md:hidden top-[8rem]">
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="secondary" size="sm" className="h-9 w-9 rounded-xl shadow-lg p-0" aria-label="Afficher la légende">
-                      <HelpCircle className="h-4 w-4" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent side="left" align="start" sideOffset={8} className="w-40 rounded-lg p-1.5">
-                    <p className="text-[7px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">Légende</p>
-                    <div className="space-y-0.5">
-                      {legendItems.map(item => (
-                        <div key={item.key} className="flex items-center gap-1 text-[7px]">
-                          {legendIconMap[item.key]?.mobile}
-                          <span className="text-muted-foreground">{item.mobileLabel}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </PopoverContent>
-                </Popover>
-              </div>
-            </>
-          );
-        })()}
+        <CadastralMapLegend
+          legend={mapConfig?.legend}
+          hasRoadSides={Boolean(selectedParcel && parcelRoadSides.length > 0 && Array.isArray(selectedParcel.gps_coordinates) && selectedParcel.gps_coordinates.length >= 3)}
+          hasBuildings={parcelBuildings.length > 0}
+          hasCalculatedSides={parcelBuildings.some(building => building.sides.some(side => side.calculated && side.lengthM !== null))}
+          hasMissingHeight={parcelBuildings.some(building => building.heightM === null)}
+          hasSubdividedParcels={filteredParcels.some(parcel => parcel.is_subdivided === true && Array.isArray(parcel.gps_coordinates) && parcel.gps_coordinates.length >= 3)}
+          hasLots={subdivisionLots.some(lot => Array.isArray(lot.gps_coordinates) && lot.gps_coordinates.length >= 3)}
+        />
       </main>
 
       {showIntroDialog && (
