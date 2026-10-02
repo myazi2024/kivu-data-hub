@@ -1,3 +1,4 @@
+import { detectZoneType } from './taxSharedUtils';
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -49,7 +50,7 @@ const createEmptyFormData = (parcelNumber: string, parcelData?: any): ExemptionF
   constructionYear: parcelData?.construction_year || null,
   areaSqm: parcelData?.area_sqm || 0,
   usageType: parcelData?.declared_usage || '',
-  zoneType: parcelData?.parcel_type || 'urban',
+  zoneType: detectZoneType(parcelNumber, parcelData),
   justification: '',
   supportingDocuments: [],
   irlExemptionType: '',

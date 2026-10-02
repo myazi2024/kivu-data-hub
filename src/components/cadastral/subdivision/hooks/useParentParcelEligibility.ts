@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { inferSectionType } from '../utils/sectionType';
 
 export interface ParcelGeoContext {
   province?: string | null;
@@ -62,9 +63,9 @@ export const useParentParcelEligibility = (
   });
 
   const sectionType: 'urban' | 'rural' = useMemo(() => {
-    if (!geo) return 'urban';
-    return (geo.quartier || geo.commune || geo.ville) ? 'urban' : 'rural';
-  }, [geo]);
+    if (!geo && !parcel?.parcel_number) return 'urban';
+    return inferSectionType({ ...(geo ?? {}), parcel_number: parcel?.parcel_number });
+  }, [geo, parcel?.parcel_number]);
 
   const candidates = useMemo<string[]>(() => {
     if (!geo) return ['*'];

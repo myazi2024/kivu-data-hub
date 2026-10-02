@@ -5,14 +5,18 @@
  */
 
 export const detectZoneType = (parcelNumber: string, parcelData?: any): 'urban' | 'rural' => {
-  if (parcelNumber?.startsWith('SR')) return 'rural';
-  if (parcelNumber?.startsWith('SU')) return 'urban';
-  if (parcelData?.parcel_type === 'rural') return 'rural';
+  // Même règle que le formulaire CCC : préfixe SU/SR du numéro, puis type de parcelle.
+  const num = String(parcelNumber || '').trim().toUpperCase();
+  if (num.startsWith('SR')) return 'rural';
+  if (num.startsWith('SU')) return 'urban';
+  const t = String(parcelData?.parcel_type || '').trim().toUpperCase();
+  if (t === 'SR' || t === 'RURAL' || t === 'RURALE') return 'rural';
   return 'urban';
 };
 
 export const isZoneAutoDetected = (parcelNumber: string): boolean => {
-  return parcelNumber?.startsWith('SR') || parcelNumber?.startsWith('SU');
+  const num = String(parcelNumber || '').trim().toUpperCase();
+  return num.startsWith('SR') || num.startsWith('SU');
 };
 
 /**
