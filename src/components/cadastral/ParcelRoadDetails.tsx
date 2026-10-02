@@ -34,7 +34,7 @@ export default function ParcelRoadDetails({ sides, selectedSide, onSelectSide, c
                 <div className="flex items-start gap-1.5">
                   <Button
                     type="button" variant={isSelected ? 'default' : 'outline'} size="sm"
-                    className="h-5.5 w-5.5 shrink-0 p-0 text-[10px]"
+                    className="h-6 w-6 shrink-0 p-0 text-[10px]"
                     onClick={() => onSelectSide(isSelected ? null : number - 1)}
                     disabled={coordinateCount < 3 || number > coordinateCount}
                     aria-label={`Repérer le côté ${number} sur la carte`}
