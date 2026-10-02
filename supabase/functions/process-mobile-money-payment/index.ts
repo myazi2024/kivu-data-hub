@@ -137,6 +137,46 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Expertise / certificat : paiement de l'appelant, en attente, montant identique.
+    if (payment_type === 'expertise_fee' || payment_type === 'certificate_access') {
+      if (!invoice_id) throw new Error('Identifiant du paiement manquant.');
+      const { data: ep, error: epError } = await supabase
+        .from('expertise_payments')
+        .select('id, user_id, status, total_amount_usd')
+        .eq('id', invoice_id)
+        .eq('user_id', user.id)
+        .single();
+      if (epError || !ep) throw new Error('Paiement introuvable.');
+      if (ep.status !== 'pending') throw new Error("Ce paiement n'est plus payable.");
+      if (Math.round(Number(ep.total_amount_usd) * 100) !== Math.round(Number(amount_usd) * 100)) {
+        throw new Error('Le montant du paiement ne correspond pas au montant enregistré.');
+      }
+    }
+
+    // Publication : prix lu en base.
+    if (payment_type === 'publication') {
+      if (!body.item_id) throw new Error('Publication manquante.');
+      const { data: pub } = await supabase
+        .from('publications').select('id, price_usd').eq('id', body.item_id).single();
+      if (!pub || Math.round(Number(pub.price_usd) * 100) !== Math.round(Number(amount_usd) * 100)) {
+        throw new Error('Le montant ne correspond pas au prix de la publication.');
+      }
+    }
+
+    // Service cadastral : facture de l'appelant, non payée, montant identique.
+    if (payment_type === 'cadastral_service') {
+      if (!invoice_id) throw new Error('Facture manquante.');
+      const { data: inv } = await supabase
+        .from('cadastral_invoices')
+        .select('id, user_id, status, total_amount_usd')
+        .eq('id', invoice_id).eq('user_id', user.id).single();
+      if (!inv) throw new Error('Facture introuvable.');
+      if (inv.status === 'paid') throw new Error('Cette facture est déjà payée.');
+      if (Math.round(Number(inv.total_amount_usd) * 100) !== Math.round(Number(amount_usd) * 100)) {
+        throw new Error('Le montant ne correspond pas à la facture.');
+      }
+    }
+
 
     // Fetch server-side exchange rate for the requested currency
     const requestedCurrency = clientCurrency || 'USD';
