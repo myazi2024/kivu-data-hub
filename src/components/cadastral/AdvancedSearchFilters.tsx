@@ -95,7 +95,6 @@ const AdvancedSearchFilters: React.FC<AdvancedSearchFiltersProps> = ({
         ville: undefined,
         commune: undefined,
         quartier: undefined,
-        avenue: undefined
       });
     }
   };
@@ -163,7 +162,6 @@ const AdvancedSearchFilters: React.FC<AdvancedSearchFiltersProps> = ({
                       ville: undefined,
                       commune: undefined,
                       quartier: undefined,
-                      avenue: undefined,
                       territoire: undefined,
                       collectivite: undefined,
                       groupement: undefined,
@@ -244,7 +242,6 @@ const AdvancedSearchFilters: React.FC<AdvancedSearchFiltersProps> = ({
                             ville: v === '_all' ? undefined : v,
                             commune: undefined,
                             quartier: undefined,
-                            avenue: undefined
                           })}
                           disabled={availableVilles.length === 0}
                         >
@@ -266,7 +263,6 @@ const AdvancedSearchFilters: React.FC<AdvancedSearchFiltersProps> = ({
                           onValueChange={(v) => onFiltersChange({ 
                             commune: v === '_all' ? undefined : v,
                             quartier: undefined,
-                            avenue: undefined
                           })}
                           disabled={!filters.ville || availableCommunes.length === 0}
                         >
@@ -289,7 +285,6 @@ const AdvancedSearchFilters: React.FC<AdvancedSearchFiltersProps> = ({
                           value={filters.quartier || '_all'} 
                           onValueChange={(v) => onFiltersChange({ 
                             quartier: v === '_all' ? undefined : v,
-                            avenue: undefined
                           })}
                           disabled={!filters.commune || availableQuartiers.length === 0}
                         >

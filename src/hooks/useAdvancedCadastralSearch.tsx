@@ -15,7 +15,6 @@ export interface SearchFilters {
   ville?: string;
   commune?: string;
   quartier?: string;
-  avenue?: string;
   // Champs ruraux
   territoire?: string;
   collectivite?: string;
@@ -24,7 +23,6 @@ export interface SearchFilters {
   // Autres critères
   areaSqmMin?: number;
   areaSqmMax?: number;
-  parcelType?: string;
   titleType?: string;
 
   hasBuildingPermit?: boolean;
