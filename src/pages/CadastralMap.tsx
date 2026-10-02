@@ -452,6 +452,32 @@ const CadastralMap = () => {
             top: isSearchBarActive || selectedParcel ? '0.75rem' : `${Math.max(mapContainerHeight - (searchCardHeight || 160) - 24, 12)}px`,
           } : undefined}
         >
+          {/* Infobulle contextuelle — notification flottante en dehors de la barre, juste au-dessus */}
+          {!(selectedParcel && isMobile) && (
+            <div
+              aria-live="polite"
+              className={cn(
+                'absolute bottom-full left-0 right-0 z-10 transition-all duration-300 ease-out motion-reduce:transition-none',
+                searchHint.showHint ? 'mb-2 opacity-100' : 'mb-1 opacity-0 pointer-events-none'
+              )}
+            >
+              {searchHint.showHint && (
+                <button
+                  type="button"
+                  onClick={searchHint.dismiss}
+                  title="Cliquer pour fermer"
+                  className="w-full text-left flex items-start gap-2 rounded-xl border border-border/50 bg-background/95 backdrop-blur-md px-3 py-2 text-[11px] leading-relaxed text-muted-foreground shadow-lg hover:bg-background transition-colors"
+                >
+                  <Sparkles className="h-3.5 w-3.5 mt-0.5 shrink-0 text-primary" aria-hidden="true" />
+                  <span>
+                    {searchMode === 'title'
+                      ? "Saisissez le numéro exact du titre de propriété (ex. certificat d'enregistrement). Lettres, chiffres, / et - acceptés."
+                      : 'Le numéro SU/SR figure sur votre titre foncier ou votre fiche parcellaire.'}
+                  </span>
+                </button>
+              )}
+            </div>
+          )}
           <div ref={searchCardRef} className="bg-background/95 backdrop-blur-md rounded-2xl shadow-[0_10px_40px_-8px_rgba(0,0,0,0.9),0_4px_16px_-4px_rgba(0,0,0,0.6)] border border-border/50 overflow-hidden">
             <div className="p-2.5">
               {!(selectedParcel && isMobile) && (
@@ -469,32 +495,6 @@ const CadastralMap = () => {
                 />
               )}
 
-              {/* Infobulle contextuelle par mode de recherche (une seule fois par session) */}
-              {!(selectedParcel && isMobile) && (
-                <div
-                  aria-live="polite"
-                  className={cn(
-                    'overflow-hidden transition-all duration-300 ease-out motion-reduce:transition-none',
-                    searchHint.showHint ? 'max-h-24 opacity-100 mb-2' : 'max-h-0 opacity-0'
-                  )}
-                >
-                  {searchHint.showHint && (
-                    <button
-                      type="button"
-                      onClick={searchHint.dismiss}
-                      title="Cliquer pour fermer"
-                      className="w-full text-left flex items-start gap-2 rounded-lg border border-border/50 bg-muted/60 px-3 py-2 text-[11px] leading-relaxed text-muted-foreground hover:bg-muted transition-colors"
-                    >
-                      <Sparkles className="h-3.5 w-3.5 mt-0.5 shrink-0 text-primary" aria-hidden="true" />
-                      <span>
-                        {searchMode === 'title'
-                          ? "Saisissez le numéro exact du titre de propriété (ex. certificat d'enregistrement). Lettres, chiffres, / et - acceptés."
-                          : 'Le numéro SU/SR figure sur votre titre foncier ou votre fiche parcellaire.'}
-                      </span>
-                    </button>
-                  )}
-                </div>
-              )}
               <div className="flex items-center gap-2">
                 <div className="relative flex-1">
                   <div className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground z-10">
