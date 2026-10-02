@@ -47,10 +47,17 @@ export const AnalyticsLocationRow: React.FC<Props> = ({
   onProvinceFilter, onVilleChange, onCommuneChange, onQuartierChange, onTerritoireChange,
   onSectionTypeChange, onLandDistrictChange,
 }) => {
-  const showUrbanSub =
-    filter.sectionType === 'urbaine' || (filter.sectionType === 'all' && hasUrbanData && !hasRuralData);
-  const showRuralSub =
-    filter.sectionType === 'rurale' || (filter.sectionType === 'all' && hasRuralData && !hasUrbanData);
+  // Même logique que l'onglet Localisation du CCC :
+  // Province → Circonscription → zone (déduite, sinon choisie) → niveaux urbains OU ruraux.
+  void hasUrbanData; void hasRuralData;
+  const districtZone = filter.landDistrict ? getSectionTypeForLandDistrict(filter.landDistrict) : '';
+  const needsManualZone = !!filter.landDistrict && !districtZone;
+  const showUrbanSub = filter.sectionType === 'urbaine' && (!!filter.landDistrict || !!filter.ville);
+  const showRuralSub = filter.sectionType === 'rurale' && (!!filter.landDistrict || !!filter.territoire);
+  const clearSub = {
+    ville: undefined, commune: undefined, quartier: undefined, avenue: undefined,
+    territoire: undefined, collectivite: undefined, groupement: undefined, villageFilter: undefined,
+  };
 
   return (
     <div className="flex items-center gap-1 flex-wrap">
@@ -107,12 +114,37 @@ export const AnalyticsLocationRow: React.FC<Props> = ({
           onLandDistrictChange?.(district);
         }}
       >
-        <SelectTrigger className={selectCls} aria-label="Circonscription foncière"><SelectValue placeholder="Circonscription" /></SelectTrigger>
+        <SelectTrigger className={selectCls} aria-label="Circonscription foncière" disabled={!filter.province}>
+          <SelectValue placeholder={filter.province ? 'Circonscription' : "Province d'abord"} />
+        </SelectTrigger>
         <SelectContent>
           <SelectItem value="__all__">Toutes les circonscriptions</SelectItem>
           {landDistricts.map((d) => (<SelectItem key={d} value={d}>{d}</SelectItem>))}
         </SelectContent>
       </Select>
+
+      {needsManualZone && (
+        <>
+          {sep}
+          <Select
+            value={filter.sectionType === 'all' ? '__none__' : filter.sectionType}
+            onValueChange={(v) => {
+              const sectionType = (v === '__none__' ? 'all' : v) as AnalyticsFilter['sectionType'];
+              onChange({ ...filter, sectionType, ...clearSub });
+              onVilleChange(undefined);
+              onCommuneChange(undefined);
+              onSectionTypeChange?.(sectionType);
+            }}
+          >
+            <SelectTrigger className={selectCls} aria-label="Zone"><SelectValue placeholder="Zone" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__none__">Zone</SelectItem>
+              <SelectItem value="urbaine">Urbaine</SelectItem>
+              <SelectItem value="rurale">Rurale</SelectItem>
+            </SelectContent>
+          </Select>
+        </>
+      )}
 
       {showUrbanSub && (
         <>
