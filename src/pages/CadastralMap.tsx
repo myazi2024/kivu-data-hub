@@ -775,7 +775,7 @@ const CadastralMap = () => {
             className={`absolute z-[1000] ${isMobile ? 'inset-x-0 bottom-0' : 'bottom-4 right-4 w-80'}`}
             style={isMobile ? { paddingBottom: 'env(safe-area-inset-bottom)' } : undefined}
           >
-            <div className={`bg-background/98 backdrop-blur-xl ${isMobile ? 'rounded-t-lg border-t' : 'rounded-lg border'} shadow-lg border-border/40 overflow-hidden max-h-[min(68dvh,540px)] flex flex-col`}>
+            <div className={`bg-background/98 backdrop-blur-xl ${isMobile ? 'rounded-t-lg border-t' : 'rounded-lg border'} shadow-lg border-border/40 overflow-hidden max-h-[min(88dvh,760px)] flex flex-col`}>
               <ParcelActionsDropdown
                 parcelNumber={selectedParcel.parcel_number}
                 parcelId={selectedParcel.id}
@@ -896,6 +896,7 @@ const CadastralMap = () => {
           </div>
         )}
 
+        {!actionsExpanded && (
         <CadastralMapLegend
           legend={mapConfig?.legend}
           hasRoadSides={Boolean(selectedParcel && parcelRoadSides.length > 0 && Array.isArray(selectedParcel.gps_coordinates) && selectedParcel.gps_coordinates.length >= 3)}
