@@ -184,7 +184,6 @@ const MortgageManagementDialog: React.FC<MortgageManagementDialogProps> = ({
                   parcelNumber={parcelNumber}
                   parcelId={parcelId}
                   parcelData={parcelData}
-              parcelData={parcelData}
                   open={true}
                   onOpenChange={(isOpen) => {
                     if (!isOpen) handleClose();
