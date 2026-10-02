@@ -1,3 +1,4 @@
+import { PROPERTY_CATEGORY_OPTIONS as SHARED_PROPERTY_CATEGORY_OPTIONS, CATEGORY_TO_CONSTRUCTION_TYPES as SHARED_CATEGORY_TO_CONSTRUCTION_TYPES } from '@/lib/ccc/propertyCategories';
 import { reindexShapesAfterRemoval } from '@/utils/buildingShapes';
 import { isConstructionRented } from '@/utils/rentalStatus';
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
@@ -169,17 +170,9 @@ export const useCCCFormState = ({
 
   const [obligationType, setObligationType] = useState<'taxes' | 'mortgages' | 'disputes'>('taxes');
 
-  const PROPERTY_CATEGORY_OPTIONS = [
-    'Appartement', 'Villa', 'Maison', 'Maison basse', 'Local commercial',
-    'Immeuble/Bâtiment', 'Entrepôt/Hangar', 'Terrain nu',
-  ];
+  const PROPERTY_CATEGORY_OPTIONS = SHARED_PROPERTY_CATEGORY_OPTIONS as unknown as string[];
 
-  const CATEGORY_TO_CONSTRUCTION_TYPES: Record<string, string[]> = {
-    'Appartement': ['Résidentielle'], 'Villa': ['Résidentielle'], 'Maison': ['Résidentielle'],
-    'Maison basse': ['Résidentielle'],
-    'Local commercial': ['Commerciale'], 'Immeuble/Bâtiment': ['Résidentielle', 'Commerciale', 'Industrielle'],
-    'Entrepôt/Hangar': ['Industrielle', 'Agricole'], 'Terrain nu': ['Terrain nu'],
-  };
+  const CATEGORY_TO_CONSTRUCTION_TYPES = SHARED_CATEGORY_TO_CONSTRUCTION_TYPES;
 
   const [availableConstructionTypes, setAvailableConstructionTypes] = useState<string[]>([]);
   const [availableConstructionNatures, setAvailableConstructionNatures] = useState<string[]>([]);
