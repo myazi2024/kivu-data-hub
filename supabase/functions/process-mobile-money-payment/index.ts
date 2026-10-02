@@ -282,6 +282,7 @@ Deno.serve(async (req) => {
         .from('expertise_payments')
         .update(expertiseUpdate)
         .eq('id', invoice_id)
+        .eq('user_id', user.id)
         .select('expertise_request_id')
         .maybeSingle();
 
@@ -416,8 +417,16 @@ Deno.serve(async (req) => {
 
     if (txError) throw txError;
 
-    // In test mode or if no real API credentials, simulate payment
-    if (test_mode || !providerConfig.api_credentials?.apiKey) {
+    // Hors mode test, un prestataire sans identifiants réels ne peut pas encaisser.
+    if (!test_mode && !providerConfig.api_credentials?.apiKey) {
+      await supabase.from('payment_transactions')
+        .update({ status: 'failed', error_message: 'provider_not_configured' })
+        .eq('id', transaction.id);
+      throw new Error('Ce moyen de paiement n\'est pas encore disponible.');
+    }
+
+    // Simulation réservée au mode test activé côté serveur.
+    if (test_mode) {
       console.log('⚠️ SIMULATION MODE - Payment will be auto-completed after 3 seconds');
 
       setTimeout(async () => {
@@ -467,30 +476,9 @@ Deno.serve(async (req) => {
         })
         .eq('id', transaction.id);
 
-      // Temporary simulation until provider callbacks are fully integrated
-      setTimeout(async () => {
-        const completedAt = new Date().toISOString();
-        await supabase
-          .from('payment_transactions')
-          .update({
-            status: 'completed',
-            provider_fee_usd: computedFeeUsd,
-            provider_fee_currency: 'USD',
-            provider_fee_raw: feeBreakdown,
-            metadata: {
-              ...transaction.metadata,
-              provider_simulated: true,
-              completed_at: completedAt,
-            }
-          })
-          .eq('id', transaction.id);
-
-        await createPublicationPaymentRecord(`REAL-${transaction.id}`);
-        await syncExpertisePaymentState('completed', transaction.id);
-        await syncMutationPaymentState(transaction.id);
-        await syncMortgageCancellationState('completed', transaction.id);
-        await syncLandTitlePaymentState(transaction.id);
-      }, 5000);
+      // SÉCURITÉ : hors mode test, aucune complétion automatique.
+      // La transaction reste « processing » jusqu'à la confirmation du prestataire
+      // (callback / update-payment-status), seule source de vérité.
 
       return new Response(
         JSON.stringify({
