@@ -819,27 +819,36 @@ const CadastralMap = () => {
               </div>
 
                <div className="px-3.5 pb-3.5 overflow-y-auto min-h-0 overscroll-contain">
-                <div className="flex flex-wrap gap-1.5 mb-3">
-                  <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary/5 border border-primary/10 text-[10px]">
-                    <span className="text-muted-foreground">Surface</span>
-                    <span className="font-semibold text-foreground">
-                      {selectedParcelEffectiveArea.toLocaleString()} m²
-                    </span>
-                  </div>
-                  {selectedParcel.commune && (
-                    <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-muted/60 text-[10px]">
-                      <span className="font-medium text-foreground/80">{selectedParcel.commune}</span>
+                {/*
+                  Données détaillées masquées quand le menu Actions est ouvert :
+                  libère l'espace de la feuille pour les services, seul le rang
+                  de boutons (Plus de données / Actions / WhatsApp) reste visible.
+                */}
+                {!actionsExpanded && (
+                  <>
+                    <div className="flex flex-wrap gap-1.5 mb-3">
+                      <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary/5 border border-primary/10 text-[10px]">
+                        <span className="text-muted-foreground">Surface</span>
+                        <span className="font-semibold text-foreground">
+                          {selectedParcelEffectiveArea.toLocaleString()} m²
+                        </span>
+                      </div>
+                      {selectedParcel.commune && (
+                        <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-muted/60 text-[10px]">
+                          <span className="font-medium text-foreground/80">{selectedParcel.commune}</span>
+                        </div>
+                      )}
+                      {selectedParcel.quartier && (
+                        <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-muted/60 text-[10px]">
+                          <span className="font-medium text-foreground/80">{selectedParcel.quartier}</span>
+                        </div>
+                      )}
                     </div>
-                  )}
-                  {selectedParcel.quartier && (
-                    <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-muted/60 text-[10px]">
-                      <span className="font-medium text-foreground/80">{selectedParcel.quartier}</span>
-                    </div>
-                  )}
-                </div>
 
-                 <ParcelRoadDetails sides={parcelRoadSides} selectedSide={focusedRoadSide} onSelectSide={setFocusedRoadSide} coordinateCount={Array.isArray(selectedParcel.gps_coordinates) ? selectedParcel.gps_coordinates.length : 0} />
-                 <ParcelBuildingsDetails buildings={parcelBuildings} selectedBuilding={focusedBuilding} onSelectBuilding={setFocusedBuilding} />
+                    <ParcelRoadDetails sides={parcelRoadSides} selectedSide={focusedRoadSide} onSelectSide={setFocusedRoadSide} coordinateCount={Array.isArray(selectedParcel.gps_coordinates) ? selectedParcel.gps_coordinates.length : 0} />
+                    <ParcelBuildingsDetails buildings={parcelBuildings} selectedBuilding={focusedBuilding} onSelectBuilding={setFocusedBuilding} />
+                  </>
+                )}
 
                 <div className="flex gap-1.5">
                   <Button
