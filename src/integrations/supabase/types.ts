@@ -7913,6 +7913,7 @@ export type Database = {
           area_hectares: number | null
           area_sqm: number | null
           avenue: string | null
+          building_outlines: Json | null
           collectivite: string | null
           commune: string | null
           created_at: string | null
@@ -7941,6 +7942,7 @@ export type Database = {
           area_hectares?: number | null
           area_sqm?: number | null
           avenue?: string | null
+          building_outlines?: never
           collectivite?: string | null
           commune?: string | null
           created_at?: string | null
@@ -7969,6 +7971,7 @@ export type Database = {
           area_hectares?: number | null
           area_sqm?: number | null
           avenue?: string | null
+          building_outlines?: never
           collectivite?: string | null
           commune?: string | null
           created_at?: string | null
