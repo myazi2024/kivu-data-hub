@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import CadastralMapLegend from '../CadastralMapLegend';
 
 const base = {
@@ -14,11 +14,11 @@ describe('CadastralMapLegend', () => {
     expect(screen.getAllByText('Dimensions parcelle')).toHaveLength(1);
     expect(screen.queryByText('Emprise d’une construction déclarée')).not.toBeInTheDocument();
     rerender(<CadastralMapLegend {...base} hasRoadSides hasBuildings hasCalculatedSides hasMissingHeight />);
-    expect(screen.getAllByText('Côté donnant sur une voie déclarée · numéro du côté')).toHaveLength(2);
-    expect(screen.getAllByText('Emprise d’une construction déclarée')).toHaveLength(2);
-    expect(screen.getAllByText('Longueur d’un côté de construction')).toHaveLength(2);
-    expect(screen.getAllByText('≈ : longueur calculée depuis les coordonnées')).toHaveLength(2);
-    expect(screen.getAllByText('H — : hauteur non renseignée')).toHaveLength(2);
+    expect(screen.getByText('Côté donnant sur une voie déclarée · numéro du côté')).toBeInTheDocument();
+    expect(screen.getByText('Emprise d’une construction déclarée')).toBeInTheDocument();
+    expect(screen.getByText('Longueur d’un côté de construction')).toBeInTheDocument();
+    expect(screen.getByText('≈ : longueur calculée depuis les coordonnées')).toBeInTheDocument();
+    expect(screen.getByText('H — : hauteur non renseignée')).toBeInTheDocument();
   });
 
   it('respects the configured visibility of the whole legend', () => {
