@@ -522,9 +522,9 @@ export function useFormValidation(params: UseFormValidationParams) {
     // BUILDING PERMITS
     if (!isTerrainNu && !isAppartement && permitMode === 'existing') {
       const hasValidExistingPermit = buildingPermits.some(permit => permit.permitNumber && permit.permitNumber.trim() !== '' && permit.issueDate && permit.issueDate.trim() !== '');
-      if (!hasValidExistingPermit) missing.push({ field: 'buildingPermit', label: 'Informations du permis existant', tab: 'location' });
+      if (!hasValidExistingPermit) missing.push({ field: 'buildingPermit', label: "Informations de l'autorisation existante", tab: 'location' });
       buildingPermits.forEach((permit, idx) => {
-        if (permit.permitNumber && permit.permitNumber.trim() !== '' && !permit.attachmentFile && !permit.existingAttachmentUrl) missing.push({ field: `permitAttachment_${idx}`, label: `Pièce jointe du permis #${idx + 1}`, tab: 'location' });
+        if (permit.permitNumber && permit.permitNumber.trim() !== '' && !permit.attachmentFile && !permit.existingAttachmentUrl) missing.push({ field: `permitAttachment_${idx}`, label: `Pièce jointe de l'autorisation #${idx + 1}`, tab: 'location' });
       });
       if (formData.constructionYear) {
         const invalidPermit = buildingPermits.find(permit => {
