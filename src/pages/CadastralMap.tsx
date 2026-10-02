@@ -785,7 +785,7 @@ const CadastralMap = () => {
                 onRequestLandTitle={() => setShowLandTitleTermsDialog(true)}
               />
 
-              <div className="relative px-3.5 py-3 flex items-center justify-between">
+              <div className="relative px-3 py-2 flex items-center justify-between">
                 <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
                 <div className="flex items-center gap-2.5">
                   <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-primary/15 to-primary/5 flex items-center justify-center border border-primary/10">
@@ -818,21 +818,21 @@ const CadastralMap = () => {
                 </div>
               </div>
 
-               <div className="px-3.5 pb-3.5 overflow-y-auto min-h-0 overscroll-contain">
-                <div className="flex flex-wrap gap-1.5 mb-3">
-                  <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary/5 border border-primary/10 text-[10px]">
+               <div className="px-3 pb-3 overflow-y-auto min-h-0 overscroll-contain">
+                <div className="flex flex-wrap gap-1 mb-2">
+                  <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/5 border border-primary/10 text-[10px]">
                     <span className="text-muted-foreground">Surface</span>
                     <span className="font-semibold text-foreground">
                       {selectedParcelEffectiveArea.toLocaleString()} m²
                     </span>
                   </div>
                   {selectedParcel.commune && (
-                    <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-muted/60 text-[10px]">
+                    <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-muted/60 text-[10px]">
                       <span className="font-medium text-foreground/80">{selectedParcel.commune}</span>
                     </div>
                   )}
                   {selectedParcel.quartier && (
-                    <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-muted/60 text-[10px]">
+                    <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-muted/60 text-[10px]">
                       <span className="font-medium text-foreground/80">{selectedParcel.quartier}</span>
                     </div>
                   )}
