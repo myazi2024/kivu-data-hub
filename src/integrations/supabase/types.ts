@@ -8251,6 +8251,7 @@ export type Database = {
         Returns: number
       }
       _purge_stale_test_generation_jobs: { Args: never; Returns: number }
+      _purge_stale_test_generation_jobs__impl: { Args: never; Returns: number }
       apply_ccc_correction_request: {
         Args: {
           p_decision: string
@@ -8274,6 +8275,12 @@ export type Database = {
         Returns: string
       }
       auto_archive_stale_articles: {
+        Args: never
+        Returns: {
+          archived_count: number
+        }[]
+      }
+      auto_archive_stale_articles__impl: {
         Args: never
         Returns: {
           archived_count: number
@@ -8327,6 +8334,14 @@ export type Database = {
         Returns: Json
       }
       check_contribution_abuse: {
+        Args: { p_parcel_id?: string; p_user_id: string }
+        Returns: {
+          is_abuse: boolean
+          reason: string
+          recent_count: number
+        }[]
+      }
+      check_contribution_abuse__impl: {
         Args: { p_parcel_id?: string; p_user_id: string }
         Returns: {
           is_abuse: boolean
@@ -8435,6 +8450,14 @@ export type Database = {
           reasons: string[]
         }[]
       }
+      detect_suspicious_contribution__impl: {
+        Args: { p_parcel_number: string; p_user_id: string }
+        Returns: {
+          fraud_score: number
+          is_suspicious: boolean
+          reasons: string[]
+        }[]
+      }
       enforce_rate_limit: {
         Args: { _action: string; _key: string }
         Returns: undefined
@@ -8454,6 +8477,13 @@ export type Database = {
         }[]
       }
       escalate_stale_requests: {
+        Args: { p_days?: number }
+        Returns: {
+          escalated_count: number
+          service: string
+        }[]
+      }
+      escalate_stale_requests__impl: {
         Args: { p_days?: number }
         Returns: {
           escalated_count: number
@@ -8500,6 +8530,7 @@ export type Database = {
       }
       generate_ccc_code: { Args: never; Returns: string }
       generate_credit_note_number: { Args: never; Returns: string }
+      generate_credit_note_number__impl: { Args: never; Returns: string }
       generate_invoice_number: { Args: never; Returns: string }
       generate_journal_entries_for_invoice: {
         Args: { p_invoice_id: string }
@@ -8652,6 +8683,18 @@ export type Database = {
           txn_count: number
         }[]
       }
+      get_eligible_passthrough_transactions_count__impl: {
+        Args: {
+          p_period_end: string
+          p_period_start: string
+          p_scope_id: string
+          p_scope_type: string
+        }
+        Returns: {
+          total_fees_usd: number
+          txn_count: number
+        }[]
+      }
       get_home_bic_counts: {
         Args: never
         Returns: {
@@ -8687,6 +8730,7 @@ export type Database = {
         }[]
       }
       get_orphan_reseller_invoices_count: { Args: never; Returns: number }
+      get_orphan_reseller_invoices_count__impl: { Args: never; Returns: number }
       get_ownership_history_stats: {
         Args: never
         Returns: {
@@ -8738,6 +8782,15 @@ export type Database = {
       }
       get_parcel_with_pii: { Args: { p_parcel_number: string }; Returns: Json }
       get_reseller_statistics: {
+        Args: {
+          end_date?: string
+          reseller_user_id: string
+          start_date?: string
+          stat_type?: string
+        }
+        Returns: Json
+      }
+      get_reseller_statistics__impl: {
         Args: {
           end_date?: string
           reseller_user_id: string
@@ -8826,6 +8879,17 @@ export type Database = {
           total_activities: number
         }[]
       }
+      get_user_activity_stats__impl: {
+        Args: { _end_date?: string; _start_date?: string; _user_id: string }
+        Returns: {
+          contribution_count: number
+          last_activity: string
+          login_count: number
+          payment_count: number
+          search_count: number
+          total_activities: number
+        }[]
+      }
       get_user_dashboard_stats: {
         Args: { target_user_id: string }
         Returns: Json
@@ -8871,6 +8935,19 @@ export type Database = {
         Returns: boolean
       }
       list_dispute_mortgage_overlaps: {
+        Args: never
+        Returns: {
+          active_disputes_count: number
+          active_mortgages_count: number
+          dispute_references: string[]
+          mortgage_references: string[]
+          parcel_id: string
+          parcel_number: string
+          risk_level: string
+          total_mortgage_amount_usd: number
+        }[]
+      }
+      list_dispute_mortgage_overlaps__impl: {
         Args: never
         Returns: {
           active_disputes_count: number
