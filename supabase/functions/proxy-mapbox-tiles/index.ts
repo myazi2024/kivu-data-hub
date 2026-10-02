@@ -14,6 +14,23 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Refuse l'usage des tuiles depuis un site tiers (Referer/Origin d'un autre domaine).
+  const src = req.headers.get('origin') || req.headers.get('referer');
+  if (src) {
+    let ok = false;
+    try {
+      const h = new URL(src).hostname;
+      const extra = (Deno.env.get('ALLOWED_RETURN_ORIGINS') || '').split(',')
+        .map((s) => { try { return new URL(s.trim()).hostname; } catch { return ''; } }).filter(Boolean);
+      ok = h === 'localhost' || h.endsWith('.lovable.app') || h.endsWith('.lovableproject.com') || extra.includes(h);
+    } catch { ok = false; }
+    if (!ok) {
+      return new Response(JSON.stringify({ error: 'Origin not allowed' }), {
+        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+  }
+
   const rl = await enforceRateLimit(req, 'mapbox.tile');
   if (!rl.allowed) return rateLimitResponse(rl, corsHeaders);
 
