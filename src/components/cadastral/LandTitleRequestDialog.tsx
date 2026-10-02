@@ -49,6 +49,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { validateLandTitleFile } from '@/types/landTitleRequest';
 import { saveDraft, loadDraft, clearDraft, hasDraft } from '@/utils/landTitleDraftStorage';
 import { BuildingPermitIssuingServiceSelect } from './BuildingPermitIssuingServiceSelect';
+import { useCCCFormPicklists } from '@/hooks/useCCCFormPicklists';
 
 interface LandTitleRequestDialogProps {
   open: boolean;
@@ -200,6 +201,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
 
 // Construction type state
   const [propertyCategory, setPropertyCategory] = useState<string>('');
+  const { getDependentOptions } = useCCCFormPicklists();
   const [constructionType, setConstructionType] = useState<string>('');
   const [constructionNature, setConstructionNature] = useState<string>('');
   const [constructionMaterials, setConstructionMaterials] = useState<string>('');
@@ -401,30 +403,15 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
       return;
     }
 
-    let natures: string[] = [];
-    
-    switch (constructionType) {
-      case 'Résidentielle':
-      case 'Commerciale':
-      case 'Industrielle':
-        natures = ['Durable', 'Semi-durable', 'Précaire'];
-        break;
-      case 'Agricole':
-        natures = ['Durable', 'Semi-durable', 'Précaire', 'Non bâti'];
-        break;
-      case 'Terrain nu':
-        natures = ['Non bâti'];
-        break;
-      default:
-        natures = [];
-    }
+    // Listes du formulaire CCC (configurables dans l'admin), sans copie locale.
+    const natures: string[] = getDependentOptions('picklist_construction_nature')[constructionType] ?? [];
     
     setAvailableConstructionNatures(natures);
     
     if (constructionNature && !natures.includes(constructionNature)) {
       setConstructionNature('');
     }
-  }, [constructionType]);
+  }, [constructionType, getDependentOptions]);
 
   // Materials -> Nature auto-determination (aligned with CCC)
   const MATERIAL_TO_NATURE: Record<string, string> = useMemo(() => ({
@@ -442,13 +429,6 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     }
   }, [constructionMaterials, availableConstructionNatures]);
 
-  // Location-eligible combinations for "Location" usage
-  const LOCATION_ELIGIBLE_KEYS = useMemo(() => new Set([
-    'Résidentielle_Durable', 'Résidentielle_Semi-durable',
-    'Commerciale_Durable', 'Commerciale_Semi-durable',
-    'Industrielle_Durable', 'Industrielle_Semi-durable',
-  ]), []);
-
   // Construction type + Nature -> Usage logic
   useEffect(() => {
     if (skipCascadeRef.current) return;
@@ -458,56 +438,17 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
       return;
     }
 
-    let usages: string[] = [];
-    
-    if (constructionNature === 'Non bâti') {
-      usages = ['Terrain vacant', 'Agriculture', 'Parking'];
-    } else if (constructionType === 'Résidentielle') {
-      if (constructionNature === 'Durable') {
-        usages = ['Habitation', 'Usage mixte'];
-      } else if (constructionNature === 'Semi-durable') {
-        usages = ['Habitation', 'Usage mixte'];
-      } else if (constructionNature === 'Précaire') {
-        usages = ['Habitation'];
-      }
-    } else if (constructionType === 'Commerciale') {
-      if (constructionNature === 'Durable') {
-        usages = ['Commerce', 'Bureau', 'Usage mixte', 'Entrepôt'];
-      } else if (constructionNature === 'Semi-durable') {
-        usages = ['Commerce', 'Bureau', 'Entrepôt'];
-      } else if (constructionNature === 'Précaire') {
-        usages = ['Commerce'];
-      }
-    } else if (constructionType === 'Industrielle') {
-      if (constructionNature === 'Durable') {
-        usages = ['Industrie', 'Entrepôt'];
-      } else if (constructionNature === 'Semi-durable') {
-        usages = ['Industrie', 'Entrepôt'];
-      } else if (constructionNature === 'Précaire') {
-        usages = ['Industrie'];
-      }
-    } else if (constructionType === 'Agricole') {
-      if (constructionNature === 'Non bâti') {
-        usages = ['Agriculture'];
-      } else {
-        usages = ['Agriculture', 'Habitation'];
-      }
-    } else if (constructionType === 'Terrain nu') {
-      usages = ['Terrain vacant', 'Agriculture', 'Parking'];
-    }
-
-    // Inject 'Location' for eligible type+nature combinations (aligned with CCC)
-    const specificKey = `${constructionType}_${constructionNature}`;
-    if (LOCATION_ELIGIBLE_KEYS.has(specificKey) && !usages.includes('Location')) {
-      usages.push('Location');
-    }
+    // Usages du formulaire CCC : clé « type_nature », puis repli sur la nature.
+    const usageMap = getDependentOptions('picklist_declared_usage');
+    const usages: string[] = [...(usageMap[`${constructionType}_${constructionNature}`]
+      ?? usageMap[constructionNature] ?? [])];
     
     setAvailableDeclaredUsages(usages);
     
     if (declaredUsage && !usages.includes(declaredUsage)) {
       setDeclaredUsage('');
     }
-  }, [constructionType, constructionNature]);
+  }, [constructionType, constructionNature, getDependentOptions]);
 
   // Pre-fill with user info — only on mount (when dialog opens), not on every profile change
   const hasPrefilledRef = useRef(false);
