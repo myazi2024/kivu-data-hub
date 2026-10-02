@@ -25,6 +25,8 @@ import { getTerritoiresForProvince, getProvinceForTerritoire } from '@/lib/geogr
 import { MAP_TAB_PROFILES, computeAdaptiveTiers, NO_DATA_COLOR, type MapTabProfile, type MapTier } from '@/config/mapTabProfiles';
 import { norm, buildScopePredicate, sliceAnalyticsByPredicate, type GeoScopedRecord } from './map/meta/mapMeta';
 import { useMapDrilldown } from './map/hooks/useMapDrilldown';
+import LandDistrictMap from './map/LandDistrictMap';
+import { LandDistrictFilterContext, LandDistrictChangeContext } from './visualizations/filters/analyticsFilterContexts';
 import { useMapIndicators } from './map/hooks/useMapIndicators';
 import { useMapFullscreen } from './map/hooks/useMapFullscreen';
 import { useMobilePagerEffects } from './map/hooks/useMobilePagerEffects';
@@ -55,6 +57,10 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
     selectedTerritoire,
     selectedSectionType,
     activeAnalyticsTab,
+    mapView,
+    setMapView,
+    selectedLandDistrict,
+    setSelectedLandDistrict,
     setSelectedProvince,
     setExternalProvinceId,
     setSelectedVille,
@@ -310,7 +316,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
   /** Generic per-entity color factory: re-uses the active profile's metric on a slice
    *  filtered by the chosen geographic level (commune | quartier | territoire). */
   const buildEntityColorFn = useCallback(
-    (level: 'commune' | 'quartier' | 'territoire') => {
+    (level: 'commune' | 'quartier' | 'territoire' | 'land_district') => {
       if (!activeProfile || !analytics) return undefined;
 
       const matchPredicate = (name: string): ((r: GeoScopedRecord) => boolean) => {
@@ -318,6 +324,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
         return (r) => {
           if (level === 'commune') return norm(r.commune) === n && (!selectedVille || norm(r.ville) === norm(selectedVille));
           if (level === 'quartier') return norm(r.quartier) === n && (!selectedCommune || norm(r.commune) === norm(selectedCommune));
+          if (level === 'land_district') return norm(r.land_district) === n;
           return norm(r.territoire) === n && (!selectedProvince || norm(r.province) === norm(selectedProvince.name));
         };
       };
@@ -337,6 +344,34 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
   const getCommuneColor = useMemo(() => buildEntityColorFn('commune'), [buildEntityColorFn]);
   const getQuartierColor = useMemo(() => buildEntityColorFn('quartier'), [buildEntityColorFn]);
   const getTerritoireColor = useMemo(() => buildEntityColorFn('territoire'), [buildEntityColorFn]);
+  const getLandDistrictColor = useMemo(() => buildEntityColorFn('land_district'), [buildEntityColorFn]);
+
+  /** Nombre de parcelles par circonscription (données déjà chargées, sans appel réseau). */
+  const parcelsByDistrict = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const p of (analytics?.parcels || []) as GeoScopedRecord[]) {
+      if (!p.land_district) continue;
+      const k = norm(p.land_district);
+      map.set(k, (map.get(k) ?? 0) + 1);
+    }
+    return map;
+  }, [analytics]);
+
+  /** Filtre Analytics → carte : ouvre la vue circonscriptions et zoome. */
+  const handleLandDistrictFromFilter = useCallback((district: string | undefined) => {
+    setSelectedLandDistrict(district);
+    if (district) setMapView('districts');
+  }, [setSelectedLandDistrict, setMapView]);
+
+  /** Carte → filtre : sélection d'une circonscription (province déduite si besoin). */
+  const handleLandDistrictFromMap = useCallback((district: string | undefined, provinceName?: string) => {
+    setSelectedLandDistrict(district);
+    if (district && provinceName && !selectedProvince) {
+      const province = provincesData.find(p => normalizeProvinceName(p.name) === normalizeProvinceName(provinceName));
+      if (province) { setSelectedProvince(province); setExternalProvinceId(province.id); }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedProvince, provincesData]);
 
   /** Whether the current adaptive tiers contain any non-zero data */
   const hasAnyMetricData = useMemo(() => {
@@ -393,10 +428,25 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                       className="text-[10px] sm:text-xs font-medium text-foreground flex items-center gap-1 outline-none"
                     >
                       <MapPin className="h-3 w-3 text-primary" />
-                      <span>{selectedTerritoire ? `${selectedTerritoire} — ${selectedProvince?.name || ''}` : selectedSectionType === 'rurale' && selectedProvince ? `Territoires — ${selectedProvince.name}` : selectedSectionType === 'rurale' ? 'Territoires — RDC' : selectedVille ? `${selectedVille}${selectedCommune ? ` — ${selectedCommune}` : ''}${selectedQuartier ? ` — ${selectedQuartier}` : ''}` : selectedProvince ? `${activeProfile ? `${activeProfile.label} — ` : ''}${selectedProvince.name}` : activeProfile ? `${activeProfile.label} — République Démocratique du Congo` : 'République Démocratique du Congo'}</span>
+                      <span>{mapView === 'districts' ? (selectedLandDistrict ? `Circonscription foncière de ${selectedLandDistrict}` : `Circonscriptions foncières — ${selectedProvince?.name || 'RDC'}`) : selectedTerritoire ? `${selectedTerritoire} — ${selectedProvince?.name || ''}` : selectedSectionType === 'rurale' && selectedProvince ? `Territoires — ${selectedProvince.name}` : selectedSectionType === 'rurale' ? 'Territoires — RDC' : selectedVille ? `${selectedVille}${selectedCommune ? ` — ${selectedCommune}` : ''}${selectedQuartier ? ` — ${selectedQuartier}` : ''}` : selectedProvince ? `${activeProfile ? `${activeProfile.label} — ` : ''}${selectedProvince.name}` : activeProfile ? `${activeProfile.label} — République Démocratique du Congo` : 'République Démocratique du Congo'}</span>
                     </h2>
+                    <div className="flex gap-1 py-0.5" role="group" aria-label="Type de carte">
+                      {([['provinces', 'Provinces'], ['districts', 'Circonscriptions foncières']] as const).map(([v, label]) => (
+                        <button
+                          key={v}
+                          type="button"
+                          aria-pressed={mapView === v}
+                          onClick={() => { setMapView(v); if (v === 'provinces') setSelectedLandDistrict(undefined); }}
+                          className={`text-[10px] px-1.5 py-0.5 rounded border transition-colors ${mapView === v ? 'bg-primary text-primary-foreground border-primary' : 'border-border text-muted-foreground hover:bg-muted'}`}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
                     <p className="text-[10px] text-muted-foreground leading-tight">
-                      {selectedTerritoire
+                      {mapView === 'districts'
+                        ? 'Territoires et communes correspondant exactement à une circonscription ; zones grises : découpage en cours'
+                        : selectedTerritoire
                         ? `Découpe du territoire de ${selectedTerritoire} — ${selectedProvince?.name || ''}`
                         : selectedSectionType === 'rurale' && selectedProvince
                         ? `Territoires de la province de ${selectedProvince.name}`
@@ -453,7 +503,31 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                   )}
 
                    <div className="flex-1 min-h-0 overflow-hidden flex items-center justify-center p-1">
-                    {selectedSectionType === 'rurale' || (selectedTerritoire && selectedProvince) ? (
+                    {mapView === 'districts' ? (
+                      <div key="districts" className="w-full h-full animate-fade-in">
+                        <LandDistrictMap
+                          province={selectedProvince?.name}
+                          selected={selectedLandDistrict}
+                          onSelect={handleLandDistrictFromMap}
+                          getDistrictColor={getLandDistrictColor}
+                          renderDetails={(district, provinceName, color) => (
+                            <div className="flex items-start gap-1.5">
+                              <span className="mt-0.5 h-2.5 w-2.5 shrink-0 rounded-sm border border-border" style={{ background: color }} aria-hidden="true" />
+                              <div className="min-w-0">
+                                <strong className="text-foreground">{district}</strong>
+                                {provinceName && <span className="text-muted-foreground"> — {provinceName}</span>}
+                                <div className="text-muted-foreground">
+                                  Parcelles enregistrées : {analytics ? (parcelsByDistrict.get(norm(district)) ?? 0).toLocaleString('fr-FR') : 'indisponible'}
+                                  {activeProfile && analytics && (
+                                    <> · {activeProfile.legendTitle} : {activeProfile.metric({ analytics: sliceAnalyticsByPredicate(analytics, (r) => norm(r.land_district) === norm(district), '__entity__'), provinceName: '__entity__' }).toLocaleString('fr-FR')}</>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        />
+                      </div>
+                    ) : selectedSectionType === 'rurale' || (selectedTerritoire && selectedProvince) ? (
                       <div key="territoires" className="w-full h-full animate-scale-in">
                         <DRCTerritoiresMap
                           province={selectedProvince?.name}
