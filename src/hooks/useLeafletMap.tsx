@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { useIsMobile } from '@/hooks/use-mobile';
 import type { ParcelData, SubdivisionLot } from '@/hooks/useCadastralMapData';
 import { getParcelRoadSides, sideNumber } from '@/lib/parcelRoadSides';
+import { getParcelBuildings } from '@/lib/parcelBuildings';
 
 // Use bundled Leaflet marker assets (no external CDN)
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
@@ -50,6 +51,7 @@ export const useLeafletMap = ({ containerRef, ready, onParcelClick }: UseLeaflet
   const clusterRef = useRef<any>(null);
   const tileLayerRef = useRef<any>(null);
   const selectedRoadLayerRef = useRef<any>(null);
+  const selectedBuildingLayerRef = useRef<any>(null);
   const onParcelClickRef = useRef(onParcelClick);
   onParcelClickRef.current = onParcelClick;
   const [mapReady, setMapReady] = useState(false);
@@ -108,6 +110,7 @@ export const useLeafletMap = ({ containerRef, ready, onParcelClick }: UseLeaflet
         parcelLayersRef.current.clear();
         lotLayersRef.current.clear();
         selectedRoadLayerRef.current = null;
+        selectedBuildingLayerRef.current = null;
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -214,6 +217,52 @@ export const useLeafletMap = ({ containerRef, ready, onParcelClick }: UseLeaflet
     }
     group.addTo(map);
     selectedRoadLayerRef.current = group;
+  }, []);
+
+  /** Draw declared construction footprints only for the selected parcel. */
+  const showParcelBuildings = useCallback((parcel: ParcelData | null, focusedBuilding: number | null) => {
+    const L = LRef.current;
+    const map = mapRef.current;
+    if (!L || !map) return;
+    if (selectedBuildingLayerRef.current) map.removeLayer(selectedBuildingLayerRef.current);
+    selectedBuildingLayerRef.current = null;
+    const buildings = getParcelBuildings(parcel?.building_outlines);
+    if (!buildings.length) return;
+    const group = L.layerGroup();
+    buildings.forEach((building, position) => {
+      const active = focusedBuilding === position;
+      const points = building.vertices.map((v): [number, number] => [v.lat, v.lng]);
+      L.polygon(points, {
+        color: 'hsl(var(--primary))', fillColor: 'hsl(var(--primary))',
+        weight: active ? 4 : 2, fillOpacity: active ? 0.35 : 0.18,
+        interactive: false,
+      }).addTo(group);
+      building.vertices.forEach((point, index) => {
+        const next = building.vertices[(index + 1) % building.vertices.length];
+        const side = building.sides[index];
+        const label = side.lengthM === null ? '—' : `${side.calculated ? '≈ ' : ''}${side.lengthM.toLocaleString('fr-FR', { maximumFractionDigits: 1 })} m`;
+        L.marker([(point.lat + next.lat) / 2, (point.lng + next.lng) / 2], {
+          interactive: false,
+          icon: L.divIcon({
+            className: 'building-side-marker',
+            html: `<span class="building-side-marker__label">${label}</span>`,
+            iconSize: [64, 20], iconAnchor: [32, 10],
+          }),
+        }).addTo(group);
+      });
+      const center = building.vertices.reduce((sum, point) => ({ lat: sum.lat + point.lat, lng: sum.lng + point.lng }), { lat: 0, lng: 0 });
+      const heightLabel = building.heightM === null ? 'H —' : `H ${building.heightM.toLocaleString('fr-FR')} m`;
+      L.marker([center.lat / points.length, center.lng / points.length], {
+        interactive: false,
+        icon: L.divIcon({
+          className: 'building-height-marker',
+          html: `<span class="building-height-marker__label">${building.index + 1} · ${heightLabel}</span>`,
+          iconSize: [84, 22], iconAnchor: [42, 11],
+        }),
+      }).addTo(group);
+    });
+    group.addTo(map);
+    selectedBuildingLayerRef.current = group;
   }, []);
 
   /**
@@ -361,5 +410,5 @@ export const useLeafletMap = ({ containerRef, ready, onParcelClick }: UseLeaflet
     }
   }, []);
 
-  return { mapReady, renderLayers, requestUserLocation, centerOnParcel, showParcelRoadSides };
+  return { mapReady, renderLayers, requestUserLocation, centerOnParcel, showParcelRoadSides, showParcelBuildings };
 };

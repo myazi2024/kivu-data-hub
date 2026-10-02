@@ -10,6 +10,8 @@ export interface ParcelData {
   parcel_sides: any;
   /** Voirie par côté : type, revêtement, caniveau et raccordement (non PII). */
   road_sides?: any;
+  /** Public building outlines contain only vertices, side lengths, and height. */
+  building_outlines?: unknown;
   latitude: number;
   longitude: number;
   /** PII payante : non exposée par la vue publique (voir modèle d'accès PII). */
@@ -31,7 +33,7 @@ async function fetchParcels(isTestEnv: boolean): Promise<ParcelData[]> {
   // la table directe renvoie donc 0 ligne aux visiteurs et utilisateurs standards.
   let query = untypedTables
     .generic('cadastral_parcels_public')
-    .select('id, parcel_number, gps_coordinates, parcel_sides, road_sides, area_sqm, province, ville, commune, quartier, latitude, longitude, is_subdivided, title_reference_number, property_title_type');
+    .select('id, parcel_number, gps_coordinates, parcel_sides, road_sides, building_outlines, area_sqm, province, ville, commune, quartier, latitude, longitude, is_subdivided, title_reference_number, property_title_type');
   query = applyTestFilter(query, 'parcel_number', isTestEnv);
   const { data, error } = await query.limit(PARCELS_LIMIT);
   if (error) throw error;
