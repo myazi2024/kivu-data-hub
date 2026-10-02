@@ -668,13 +668,6 @@ export const useCadastralContribution = () => {
         variant: "destructive",
       });
       
-      await supabase.from('fraud_attempts').insert({
-        user_id: authenticatedUserId,
-        fraud_type: 'suspicious_contribution',
-        severity: 'high',
-        description: Array.isArray(fraudReasons) ? fraudReasons.join(', ') : 'Score de fraude élevé'
-      });
-      
       return { allowed: false, isSuspicious, fraudScore, fraudReasons };
     }
 
@@ -723,14 +716,11 @@ export const useCadastralContribution = () => {
         return { success: false };
       }
 
-      // Submit the contribution
+      // Statut et score de fraude sont fixés par le serveur (déclencheurs).
       const contributionPayload = {
         ...buildContributionPayload(data),
         user_id: authenticatedUserId,
         status: 'pending',
-        is_suspicious: security.isSuspicious,
-        fraud_score: security.fraudScore,
-        fraud_reason: security.fraudReasons.length > 0 ? security.fraudReasons.join('; ') : null
       };
 
       const { data: contributionData, error: contributionError } = await supabase
@@ -763,18 +753,8 @@ export const useCadastralContribution = () => {
         return { success: false };
       }
 
-      // Record fraud attempt if suspicious
-      if (security.isSuspicious) {
-        await supabase
-          .from('fraud_attempts')
-          .insert({
-            user_id: authenticatedUserId,
-            contribution_id: contributionData.id,
-            fraud_type: 'suspicious_contribution',
-            description: security.fraudReasons.join('; '),
-            severity: security.fraudScore >= 80 ? 'critical' : security.fraudScore >= 50 ? 'high' : 'medium'
-          });
-      }
+      // Le registre des tentatives de fraude est alimenté par le serveur.
+
 
       toast({
         title: "Contribution enregistrée !",
@@ -900,12 +880,9 @@ export const useCadastralContribution = () => {
         return { success: false };
       }
 
-      // Build update payload using shared builder
+      // Score de fraude recalculé par le serveur (déclencheur) : jamais envoyé.
       const contributionPayload = {
         ...buildContributionPayload(data),
-        is_suspicious: security.isSuspicious,
-        fraud_score: security.fraudScore,
-        fraud_reason: security.fraudReasons.length > 0 ? security.fraudReasons.join('; ') : null,
         updated_at: new Date().toISOString(),
       };
 
