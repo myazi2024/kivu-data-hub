@@ -35,6 +35,8 @@ All colors MUST be HSL.
     --border: 0 0% 91%;
     --input: 0 0% 96%;
     --ring: 348 100% 44%;
+    --map-building: 186 83% 29%;
+    --map-building-foreground: 0 0% 100%;
 
     /* SeLoger Inspired Design System */
     --seloger-red: 348 100% 44%;
@@ -109,6 +111,8 @@ All colors MUST be HSL.
     --border: 0 0% 20%;
     --input: 0 0% 15%;
     --ring: 348 100% 54%;
+    --map-building: 186 74% 54%;
+    --map-building-foreground: 0 0% 7%;
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
@@ -469,7 +473,7 @@ All colors MUST be HSL.
   text-align: center;
   min-width: 48px;
   padding: 2px 4px;
-  border: 1px solid hsl(var(--primary));
+  border: 1px solid hsl(var(--map-building));
   border-radius: 4px;
   background: hsl(var(--background));
   color: hsl(var(--foreground));
@@ -479,8 +483,8 @@ All colors MUST be HSL.
   white-space: nowrap;
 }
 .building-height-marker__label {
-  background: hsl(var(--primary));
-  color: hsl(var(--primary-foreground));
+  background: hsl(var(--map-building));
+  color: hsl(var(--map-building-foreground));
 }
 /* Étiquettes de carte proportionnelles au zoom (--map-label-scale posé par useLeafletMap) */
 .road-side-marker, .building-side-marker, .building-height-marker,

@@ -15,9 +15,9 @@ interface CadastralMapLegendProps {
 }
 
 const icons: Record<string, ReactNode> = {
-  bornage_gps: <span className="h-3 w-3 shrink-0 border-2 border-primary bg-primary/15" />,
+  bornage_gps: <span className="h-3 w-3 shrink-0 border-[3px] border-primary bg-primary/10" />,
   sans_bornage: <MapPin className="h-3 w-3 shrink-0 text-primary" />,
-  limites: <span className="w-3 shrink-0 border-t-2 border-primary" />,
+  limites: <span className="w-3 shrink-0 border-t-[3px] border-primary" />,
   dimensions: <span className="shrink-0 border border-primary bg-background px-0.5 text-[8px] font-bold text-primary">12 m</span>,
   incompletes: <AlertTriangle className="h-3 w-3 shrink-0 text-warning" />,
   favorite: <Star className="h-3 w-3 shrink-0 fill-warning text-warning" />,
@@ -31,9 +31,9 @@ export default function CadastralMapLegend({ legend, hasRoadSides, hasBuildings,
     ...(hasLots ? [{ key: 'lot', label: 'Lot de lotissement (contour pointillé, couleur variable)', symbol: <span className="w-4 shrink-0 border-t-2 border-dashed border-muted-foreground" /> }] : []),
     ...(hasRoadSides ? [{ key: 'road', label: 'Côté donnant sur une voie déclarée · numéro du côté', symbol: <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-primary bg-background text-[9px] font-bold text-primary">1</span> }] : []),
     ...(hasBuildings ? [
-      { key: 'building', label: 'Emprise d’une construction déclarée', symbol: <span className="h-3 w-4 shrink-0 border-2 border-primary bg-primary/20" /> },
-      { key: 'side', label: 'Longueur d’un côté de construction', symbol: <span className="shrink-0 rounded-sm border border-primary bg-background px-0.5 text-[8px]">5 m</span> },
-      { key: 'height', label: '1 · H 6 m : construction n° 1, hauteur', symbol: <span className="shrink-0 rounded-sm bg-primary px-0.5 text-[8px] text-primary-foreground">H</span> },
+      { key: 'building', label: 'Emprise d’une construction déclarée', symbol: <span className="h-3 w-4 shrink-0 border-[3px] border-map-building bg-map-building/25" /> },
+      { key: 'side', label: 'Longueur d’un côté de construction', symbol: <span className="shrink-0 rounded-sm border border-map-building bg-background px-0.5 text-[8px]">5 m</span> },
+      { key: 'height', label: '1 · H 6 m : construction n° 1, hauteur', symbol: <span className="shrink-0 rounded-sm bg-map-building px-0.5 text-[8px] text-map-building-foreground">H</span> },
     ] : []),
     ...(hasCalculatedSides ? [{ key: 'estimate', label: '≈ : longueur calculée depuis les coordonnées', symbol: <span className="shrink-0 text-xs font-semibold text-primary">≈</span> }] : []),
     ...(hasMissingHeight ? [{ key: 'unknown', label: 'H — : hauteur non renseignée', symbol: <span className="shrink-0 text-xs font-semibold text-primary">—</span> }] : []),

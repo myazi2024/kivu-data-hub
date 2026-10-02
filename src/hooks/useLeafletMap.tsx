@@ -244,8 +244,8 @@ export const useLeafletMap = ({ containerRef, ready, onParcelClick }: UseLeaflet
       const active = focusedBuilding === position;
       const points = building.vertices.map((v): [number, number] => [v.lat, v.lng]);
       L.polygon(points, {
-        color: 'hsl(var(--primary))', fillColor: 'hsl(var(--primary))',
-        weight: active ? 4 : 2, fillOpacity: active ? 0.35 : 0.18,
+        color: 'hsl(var(--map-building))', fillColor: 'hsl(var(--map-building))',
+        weight: active ? 4 : 3, fillOpacity: active ? 0.38 : 0.26,
         interactive: false,
       }).addTo(group);
       building.vertices.forEach((point, index) => {
@@ -319,9 +319,9 @@ export const useLeafletMap = ({ containerRef, ready, onParcelClick }: UseLeaflet
         polygonCount += 1;
         const points: [number, number][] = parcel.gps_coordinates.map((c: any) => [c.lat, c.lng]);
 
-        let color = '#ef4444', weight = 2, fillOpacity = 0.2;
+        let color = 'hsl(var(--primary))', weight = 3, fillOpacity = 0.08;
         let dashArray: string | undefined;
-        if (isSubdivided) { color = '#6b7280'; weight = 1.5; fillOpacity = 0.05; dashArray = '6 4'; }
+        if (isSubdivided) { color = 'hsl(var(--muted-foreground))'; weight = 1.5; fillOpacity = 0.05; dashArray = '6 4'; }
 
         const polygon = L.polygon(points, { color, weight, fillColor: color, fillOpacity, dashArray });
         polygon.on('click', () => onParcelClickRef.current?.(parcel));
