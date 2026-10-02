@@ -1,4 +1,3 @@
-import { roadSurfaceLabel } from '@/components/cadastral/RoadBorderingSidesPanel';
 import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import Navigation from '@/components/ui/navigation';
@@ -19,6 +18,8 @@ import AdvancedSearchFilters from '@/components/cadastral/AdvancedSearchFilters'
 import SearchHistory from '@/components/cadastral/SearchHistory';
 import CadastralSearchModeToggle, { type CadastralSearchMode } from '@/components/cadastral/CadastralSearchModeToggle';
 import ParcelActionsDropdown from '@/components/cadastral/ParcelActionsDropdown';
+import ParcelRoadDetails from '@/components/cadastral/ParcelRoadDetails';
+import { getParcelRoadSides } from '@/lib/parcelRoadSides';
 import LandTitleRequestDialog from '@/components/cadastral/LandTitleRequestDialog';
 import LandTitleTermsDialog from '@/components/cadastral/LandTitleTermsDialog';
 import CadastralResultsDialog from '@/components/cadastral/CadastralResultsDialog';
@@ -54,6 +55,7 @@ const CadastralMap = () => {
 
   // Selection
   const [selectedParcel, setSelectedParcel] = useState<ParcelData | null>(null);
+  const [focusedRoadSide, setFocusedRoadSide] = useState<number | null>(null);
   const { data: selectedParcelHistory, isLoading: loadingHistory } = useParcelHistory(selectedParcel?.id ?? null);
   const selectedParcelEffectiveArea = useMemo(() => {
     if (!selectedParcel) return 0;
@@ -64,35 +66,7 @@ const CadastralMap = () => {
       : [];
     return computeEffectiveAreaSqm(gps, selectedParcel.area_sqm || 0);
   }, [selectedParcel]);
-  /** Côtés bordant une route : « type · revêtement » (voirie publique, non PII). */
-  const parcelRoadAccess = useMemo(() => {
-    const sides = Array.isArray(selectedParcel?.road_sides) ? (selectedParcel!.road_sides as any[]) : [];
-    return sides
-      .filter((s) => s?.hasRoad ?? (s?.bordersRoad || s?.borderType === 'route'))
-      .map((s) => [s.roadType, s.roadSurface ? roadSurfaceLabel(s.roadSurface) : null].filter(Boolean).join(' · '))
-      .filter((label) => label.length > 0)
-      .slice(0, 2);
-  }, [selectedParcel]);
-  /** Assainissement : caniveau présent sur au moins un côté, et raccordement de la parcelle. */
-  const parcelGutter = useMemo(() => {
-    const sides = Array.isArray(selectedParcel?.road_sides) ? (selectedParcel!.road_sides as any[]) : [];
-    const roadSides = sides.filter((s) => s?.hasRoad ?? (s?.bordersRoad || s?.borderType === 'route'));
-    const withGutter = roadSides.filter((s) => s?.hasGutter === true);
-    if (withGutter.length === 0) return null;
-    return withGutter.some((s) => s.gutterConnected) ? 'Caniveau raccordé' : 'Caniveau non raccordé';
-  }, [selectedParcel]);
-  /** Éclairage public : nombre total de lampadaires déclarés le long de la parcelle. */
-  const parcelStreetLighting = useMemo(() => {
-    const sides = Array.isArray(selectedParcel?.road_sides) ? (selectedParcel!.road_sides as any[]) : [];
-    const roadSides = sides.filter((s) => s?.hasRoad ?? (s?.bordersRoad || s?.borderType === 'route'));
-    if (roadSides.length === 0) return null;
-    const lit = roadSides.filter((s) => s?.hasStreetLighting === true);
-    if (lit.length === 0) {
-      return roadSides.some((s) => s?.hasStreetLighting === false) ? 'Sans éclairage public' : null;
-    }
-    const lamps = lit.reduce((sum, s) => sum + (Number(s?.streetLampCount) || 0), 0);
-    return lamps > 0 ? `Éclairage public · ${lamps} lampadaire${lamps > 1 ? 's' : ''}` : 'Éclairage public';
-  }, [selectedParcel]);
+  const parcelRoadSides = useMemo(() => getParcelRoadSides(selectedParcel?.road_sides), [selectedParcel]);
   const hasIncompleteData = useMemo(() => {
     if (!selectedParcel || !selectedParcelHistory) return false;
     const hasLocation = !!(selectedParcel.province && selectedParcel.ville);
@@ -179,11 +153,15 @@ const CadastralMap = () => {
   const searchHint = useSearchHintFlow(searchMode, searchQuery.trim().length > 0 || !!selectedParcel);
 
   // Leaflet map (init + tiles via provider + on-demand geo + incremental render)
-  const { mapReady, renderLayers, requestUserLocation, centerOnParcel } = useLeafletMap({
+  const { mapReady, renderLayers, requestUserLocation, centerOnParcel, showParcelRoadSides } = useLeafletMap({
     containerRef: mapContainerRef,
     ready: !loading,
-    onParcelClick: (p) => setSelectedParcel(p),
+    onParcelClick: (p) => { setFocusedRoadSide(null); setSelectedParcel(p); },
   });
+
+  useEffect(() => {
+    if (mapReady) showParcelRoadSides(selectedParcel, focusedRoadSide);
+  }, [mapReady, selectedParcel, focusedRoadSide, showParcelRoadSides]);
 
   // Sync filteredParcels with base data
   useEffect(() => { setFilteredParcels(parcels); }, [parcels]);
@@ -264,6 +242,7 @@ const CadastralMap = () => {
       ? parcel.title_reference_number
       : parcel.parcel_number;
     setSelectedParcel(parcel);
+    setFocusedRoadSide(null);
     setSearchQuery(label);
     setSearchSuggestions([]);
     setHighlightedIndex(-1);
@@ -280,6 +259,7 @@ const CadastralMap = () => {
     setAdvancedFiltersApplied(false);
     setFilteredParcels(parcels);
     setSelectedParcel(null);
+    setFocusedRoadSide(null);
   };
 
   /**
@@ -785,7 +765,7 @@ const CadastralMap = () => {
             className={`absolute z-[1000] ${isMobile ? 'inset-x-0 bottom-0' : 'bottom-4 right-4 w-80'}`}
             style={isMobile ? { paddingBottom: 'env(safe-area-inset-bottom)' } : undefined}
           >
-            <div className={`bg-background/98 backdrop-blur-xl ${isMobile ? 'rounded-t-3xl border-t' : 'rounded-3xl border'} shadow-[0_8px_40px_-12px_hsl(var(--primary)/1),0_4px_16px_-4px_rgba(0,0,0,1)] border-border/40 overflow-hidden`}>
+            <div className={`bg-background/98 backdrop-blur-xl ${isMobile ? 'rounded-t-lg border-t' : 'rounded-lg border'} shadow-lg border-border/40 overflow-hidden max-h-[min(68dvh,540px)] flex flex-col`}>
               <ParcelActionsDropdown
                 parcelNumber={selectedParcel.parcel_number}
                 parcelId={selectedParcel.id}
@@ -820,7 +800,7 @@ const CadastralMap = () => {
                     variant="ghost"
                     size="sm"
                     className="h-9 w-9 p-0 rounded-xl text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all"
-                    onClick={() => { setSelectedParcel(null); setActionsExpanded(false); }}
+                     onClick={() => { setSelectedParcel(null); setFocusedRoadSide(null); setActionsExpanded(false); }}
                     aria-label="Fermer le panneau parcelle"
                   >
                     <X className="h-4 w-4" />
@@ -828,7 +808,7 @@ const CadastralMap = () => {
                 </div>
               </div>
 
-              <div className="px-3.5 pb-3.5">
+               <div className="px-3.5 pb-3.5 overflow-y-auto min-h-0 overscroll-contain">
                 <div className="flex flex-wrap gap-1.5 mb-3">
                   <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary/5 border border-primary/10 text-[10px]">
                     <span className="text-muted-foreground">Surface</span>
@@ -846,23 +826,9 @@ const CadastralMap = () => {
                       <span className="font-medium text-foreground/80">{selectedParcel.quartier}</span>
                     </div>
                   )}
-                  {parcelRoadAccess.map((info, i) => (
-                    <div key={i} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-muted/60 text-[10px]">
-                      <span className="text-muted-foreground">Accès</span>
-                      <span className="font-medium text-foreground/80">{info}</span>
-                    </div>
-                  ))}
-                  {parcelStreetLighting && (
-                    <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-muted/60 text-[10px]">
-                      <span className="font-medium text-foreground/80">{parcelStreetLighting}</span>
-                    </div>
-                  )}
-                  {parcelGutter && (
-                    <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-muted/60 text-[10px]">
-                      <span className="font-medium text-foreground/80">{parcelGutter}</span>
-                    </div>
-                  )}
                 </div>
+
+                 <ParcelRoadDetails sides={parcelRoadSides} selectedSide={focusedRoadSide} onSelectSide={setFocusedRoadSide} coordinateCount={Array.isArray(selectedParcel.gps_coordinates) ? selectedParcel.gps_coordinates.length : 0} />
 
                 <div className="flex gap-1.5">
                   <Button

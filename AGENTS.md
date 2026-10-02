@@ -9,3 +9,4 @@
 - Paiements : une transaction ne passe à « completed » qu'après confirmation du prestataire, ou par simulation si le mode test est activé côté serveur ; chaque type de paiement vérifie la propriété et le montant enregistré (barème serveur pour les autorisations via `_shared/permitFees.ts`).
 - Fonctions internes (tâches planifiées, remboursements, relances, test prestataire) : accès via `_shared/internalAuth.ts` (secret cron en base `internal_cron_secrets` ou admin/super_admin) ; jamais publiques.
 - Exports CSV : toute cellule passe par `sanitizeCsvCell` (neutralise les formules tableur).
+- Cadastral map road details read the public `road_sides` and annotate only the selected parcel's declared boundary segments; this preserves free access without inventing road geometry.

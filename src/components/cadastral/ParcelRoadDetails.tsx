@@ -1,0 +1,69 @@
+import { Droplets, Lamp, Route } from 'lucide-react';
+import type { RoadSideInfo } from './RoadBorderingSidesPanel';
+import { roadSurfaceLabel } from './RoadBorderingSidesPanel';
+import { sideNumber } from '@/lib/parcelRoadSides';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
+
+interface Props {
+  sides: RoadSideInfo[];
+  selectedSide: number | null;
+  onSelectSide: (side: number | null) => void;
+  coordinateCount: number;
+}
+
+export default function ParcelRoadDetails({ sides, selectedSide, onSelectSide, coordinateCount }: Props) {
+  return (
+    <section aria-label="Voirie de la parcelle" className="border-t border-border pt-3 mb-3">
+      <div className="flex items-center gap-2 mb-2">
+        <Route className="h-4 w-4 text-primary" aria-hidden="true" />
+        <h3 className="text-xs font-semibold text-foreground">Voirie et équipements</h3>
+        <span className="ml-auto text-[10px] text-muted-foreground">{sides.length} côté{sides.length > 1 ? 's' : ''}</span>
+      </div>
+      {sides.length === 0 ? (
+        <p className="text-xs text-muted-foreground">Aucune donnée de voirie renseignée pour cette parcelle.</p>
+      ) : (
+        <div className="space-y-2">
+          {sides.map((side, index) => {
+            const number = sideNumber(side, index);
+            const isSelected = selectedSide === number - 1;
+            const roadLabel = [side.roadType?.trim(), side.roadName?.trim()].filter(Boolean).join(' · ');
+            const width = Number(side.roadWidth);
+            return (
+              <div key={`${number}-${index}`} className={cn('border-l-2 pl-2.5 py-1.5 bg-muted/30', isSelected ? 'border-primary' : 'border-border')}>
+                <div className="flex items-start gap-2">
+                  <Button
+                    type="button" variant={isSelected ? 'default' : 'outline'} size="sm"
+                    className="h-7 w-7 shrink-0 p-0 text-xs"
+                    onClick={() => onSelectSide(isSelected ? null : number - 1)}
+                    disabled={coordinateCount < 3 || number > coordinateCount}
+                    aria-label={`Repérer le côté ${number} sur la carte`}
+                    aria-pressed={isSelected}
+                    title={coordinateCount < 3 || number > coordinateCount ? 'Tracé de parcelle indisponible' : `Repérer le côté ${number} sur la carte`}
+                  >{number}</Button>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-semibold text-foreground break-words">{roadLabel || `Côté ${number} · Route sans nom renseigné`}</p>
+                    <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1 text-[11px] text-muted-foreground">
+                      <span>Revêtement : <strong className="text-foreground font-medium">{side.roadSurface ? roadSurfaceLabel(side.roadSurface) : 'Non renseigné'}</strong></span>
+                      <span>Largeur : <strong className="text-foreground font-medium">{Number.isFinite(width) && width > 0 ? `${width.toLocaleString('fr-FR')} m` : 'Non renseignée'}</strong></span>
+                    </div>
+                    <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1.5 text-[11px]">
+                      <span className={cn('inline-flex items-center gap-1', side.hasStreetLighting ? 'text-foreground' : 'text-muted-foreground')}>
+                        <Lamp className="h-3 w-3" aria-hidden="true" />
+                        {side.hasStreetLighting === true ? `Éclairage public${Number(side.streetLampCount) > 0 ? ` · ${side.streetLampCount} lampadaire(s)` : ''}` : side.hasStreetLighting === false ? 'Sans éclairage public' : 'Éclairage non renseigné'}
+                      </span>
+                      <span className={cn('inline-flex items-center gap-1', side.hasGutter ? 'text-foreground' : 'text-muted-foreground')}>
+                        <Droplets className="h-3 w-3" aria-hidden="true" />
+                        {side.hasGutter === true ? `Caniveau${side.gutterConnected === true ? ' raccordé' : side.gutterConnected === false ? ' non raccordé' : ''}` : side.hasGutter === false ? 'Sans caniveau' : 'Caniveau non renseigné'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </section>
+  );
+}
