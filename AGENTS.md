@@ -14,4 +14,4 @@
 - Cadastral map parcels use the primary boundary treatment while declared building footprints use the semantic map-building token; this keeps land boundaries and structures visually distinct in both themes.
 - CCC fraud fields (is_suspicious, fraud_score, fraud_reason) are recomputed by the `enforce_contribution_fraud_score` trigger and suspicious rows logged to fraud_attempts by `log_suspicious_contribution`; the browser never sends them, since client values could be forged.
 - Browser-callable SECURITY DEFINER RPCs must check the caller's role or ownership inside the function; legacy unguarded ones are wrapped (`<name>` guard → `<name>__impl`, service_role only) so cron/service calls still work. Server-only helpers have no anon/authenticated EXECUTE.
-- Catalogue service availability rules read the server's  existence flags, never the gated history arrays; histories stay empty until payment.
+- Catalogue service availability rules read the server data_availability existence flags, never the gated history arrays; histories stay empty until payment.
