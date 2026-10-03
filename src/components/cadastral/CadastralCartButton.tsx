@@ -35,6 +35,7 @@ const CadastralCartButton: React.FC = () => {
     clearParcel,
     setParcelNumber,
     addServiceForParcel,
+    syncWithCatalog,
     parcelNumber: activeParcelNumber,
   } = useCadastralCart();
 
