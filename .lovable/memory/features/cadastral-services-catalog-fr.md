@@ -28,6 +28,9 @@ Promesse `inflight` mémoïsée pour éviter doubles fetches concurrents, invali
 ## Validation règles `required_data_fields`
 `src/lib/cadastralServiceRules.ts` — `validateRequiredDataFieldsJson(raw)` valide `{ mode: 'any'|'all', rules: [...] }`. Synchronisé avec `evaluateServiceAvailability` (`src/lib/serviceAvailability.ts`).
 
+## Disponibilité avant paiement
+Les règles `required_data_fields` des services payants lisent `data_availability.*` (booléens renvoyés par `get_cadastral_parcel_data`), jamais les historiques eux-mêmes (vides avant paiement).
+
 ## Devise
 Tous les prix UI passent par `formatCurrency(convertFromUsd(price), selectedCurrency)`. `ServiceListItem` accepte `priceLabel` en prop (O1) — calculé une fois côté `CadastralBillingPanel`.
 
