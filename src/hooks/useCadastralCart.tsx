@@ -46,6 +46,7 @@ interface CadastralCartContextType {
   isSelected: (serviceId: string) => boolean;
   toggleService: (service: CadastralCartService) => void;
   updateServicePrices: (updates: { id: string; price: number }[]) => void;
+  syncWithCatalog: (catalog: { id: string; name: string; price: number; category?: string | null }[]) => void;
   parcelNumber: string | null;
   setParcelNumber: (parcelNumber: string) => void;
 }
