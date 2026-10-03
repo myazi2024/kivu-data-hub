@@ -462,6 +462,7 @@ export const CadastralCartProvider = ({ children }: { children: ReactNode }) => 
       isSelected,
       toggleService,
       updateServicePrices,
+      syncWithCatalog,
       parcelNumber: activeParcelNumber,
       setParcelNumber,
     }}>
