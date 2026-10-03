@@ -35,11 +35,16 @@ const CadastralCartButton: React.FC = () => {
     clearParcel,
     setParcelNumber,
     addServiceForParcel,
+    syncWithCatalog,
     parcelNumber: activeParcelNumber,
   } = useCadastralCart();
 
   const { isOwned, allOwnedFor } = useCartAccessCheck(parcels);
-  const { services: catalogServices } = useCadastralServices();
+  const { services: catalogServices, loading: catalogLoading } = useCadastralServices();
+  // Retire du panier les services archivés/désactivés et aligne prix/libellés sur le catalogue.
+  React.useEffect(() => {
+    if (!catalogLoading) syncWithCatalog(catalogServices);
+  }, [catalogLoading, catalogServices, syncWithCatalog]);
   const { selectedCurrency, convertFromUsd } = useCurrencyConfig();
   const { map: discountsMap, clear: clearDiscount } = useCartDiscounts();
   const { validateDiscountCode } = useDiscountCodes();

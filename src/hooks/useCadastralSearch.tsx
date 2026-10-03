@@ -102,6 +102,11 @@ export interface CadastralSearchResult {
   building_permits: BuildingPermit[];
   land_disputes: LandDispute[];
   legal_verification: LegalVerification | null;
+  /** Indicateurs d'existence fournis par le serveur avant paiement (aucune donnée personnelle). */
+  data_availability?: Partial<Record<
+    'ownership_history' | 'tax_history' | 'mortgage_history' | 'boundary_history' | 'gps_coordinates' | 'building_permits',
+    boolean
+  >>;
 }
 
 // Default error messages (no longer depends on useSearchConfig)
@@ -184,6 +189,7 @@ export const useCadastralSearch = () => {
         building_permits: result.building_permits || [],
         land_disputes: result.land_disputes || [],
         legal_verification: result.legal_verification || null,
+        data_availability: result.data_availability || {},
       });
 
     } catch (err) {

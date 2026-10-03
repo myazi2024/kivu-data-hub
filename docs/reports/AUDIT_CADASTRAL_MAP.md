@@ -13,3 +13,18 @@
 
 ## Suite — accès payé aux historiques (corrigé)
 Lecture libre supprimée ; carte et tableau client passent par `get_parcel_paid_history` ; Données foncières et recherche avancée par des fonctions statistiques sans données personnelles.
+
+## Catalogue de services et panier (2026-10-02)
+
+### Problèmes trouvés et corrigés
+- **Services « Historique des propriétaires » et « Obligations fiscales et hypothécaires » toujours indisponibles avant paiement** : leurs règles de disponibilité lisaient les historiques, que le serveur ne renvoie qu'après paiement. `get_cadastral_parcel_data` renvoie maintenant `data_availability` (booléens d'existence, sans donnée personnelle) et les règles du catalogue pointent vers ces indicateurs.
+- **« Localisation et historique de bornage »** : la règle GPS lisait un champ non renvoyé avant paiement ; elle utilise désormais `data_availability.gps_coordinates` / `boundary_history`.
+- **Panier** : un service archivé ou désactivé restait dans le panier, et seuls les prix de la parcelle active étaient synchronisés. `syncWithCatalog` aligne maintenant toutes les parcelles (prix, nom, catégorie, retrait des services retirés).
+- **Synchronisation des prix** : un indicateur partagé entre parcelles recopiait inutilement les parcelles non modifiées ; corrigé.
+
+### Vérifié sans écart
+- Montants recalculés par `create_cadastral_invoice_safe` à partir du catalogue actif (non archivé) ; accès accordé par `mark_cadastral_invoice_paid_safe`.
+- Purge des services payés après paiement ; données personnelles toujours servies uniquement après paiement.
+
+### Points ouverts
+- Parcours connectés (ajout au panier, paiement) non cliqués dans le navigateur de contrôle.

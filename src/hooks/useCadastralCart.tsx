@@ -46,6 +46,7 @@ interface CadastralCartContextType {
   isSelected: (serviceId: string) => boolean;
   toggleService: (service: CadastralCartService) => void;
   updateServicePrices: (updates: { id: string; price: number }[]) => void;
+  syncWithCatalog: (catalog: { id: string; name: string; price: number; category?: string | null }[]) => void;
   parcelNumber: string | null;
   setParcelNumber: (parcelNumber: string) => void;
 }
@@ -386,15 +387,43 @@ export const CadastralCartProvider = ({ children }: { children: ReactNode }) => 
       let changed = false;
       const next: Record<string, CadastralCartParcel> = {};
       for (const [pn, p] of Object.entries(prev)) {
+        let parcelChanged = false;
         const newServices = p.services.map(s => {
           const np = priceMap.get(s.id);
           if (np !== undefined && np !== s.price) {
-            changed = true;
+            parcelChanged = true;
             return { ...s, price: np };
           }
           return s;
         });
-        next[pn] = changed ? { ...p, services: newServices } : p;
+        if (parcelChanged) changed = true;
+        next[pn] = parcelChanged ? { ...p, services: newServices } : p;
+      }
+      return changed ? next : prev;
+    });
+  }, []);
+
+  /** Aligne tout le panier (toutes parcelles) sur le catalogue actif : prix, nom, catégorie, services retirés. */
+  const syncWithCatalog = useCallback((catalog: { id: string; name: string; price: number; category?: string | null }[]) => {
+    if (catalog.length === 0) return;
+    const byId = new Map(catalog.map(c => [c.id, c]));
+    setParcelsMap(prev => {
+      let changed = false;
+      const next: Record<string, CadastralCartParcel> = {};
+      for (const [pn, p] of Object.entries(prev)) {
+        let parcelChanged = false;
+        const services: CadastralCartService[] = [];
+        for (const s of p.services) {
+          const c = byId.get(s.id);
+          if (!c) { parcelChanged = true; continue; }
+          const category = c.category ?? s.category;
+          if (c.price !== s.price || c.name !== s.name || category !== s.category) {
+            parcelChanged = true;
+            services.push({ ...s, price: c.price, name: c.name, category: category ?? undefined });
+          } else services.push(s);
+        }
+        if (parcelChanged) changed = true;
+        if (services.length > 0) next[pn] = parcelChanged ? { ...p, services } : p;
       }
       return changed ? next : prev;
     });
@@ -433,6 +462,7 @@ export const CadastralCartProvider = ({ children }: { children: ReactNode }) => 
       isSelected,
       toggleService,
       updateServicePrices,
+      syncWithCatalog,
       parcelNumber: activeParcelNumber,
       setParcelNumber,
     }}>
