@@ -111,7 +111,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       <Dialog open={open} onOpenChange={state.handleAttemptClose}>
         <DialogContent
           ref={dialogContentRef}
-          className="left-0 top-0 h-dvh max-h-dvh w-screen max-w-none translate-x-0 translate-y-0 grid-cols-[minmax(0,1fr)] content-start gap-0 overflow-x-hidden overflow-y-auto overscroll-contain border-0 bg-background p-0 pb-[env(safe-area-inset-bottom)] shadow-2xl rounded-none z-[9999] lg:left-auto lg:right-0 lg:w-[420px] lg:rounded-l-2xl lg:data-[state=open]:slide-in-from-right lg:data-[state=closed]:slide-out-to-right"
+          className="!left-0 !top-0 h-dvh !max-h-dvh w-screen max-w-none translate-x-0 translate-y-0 grid-cols-[minmax(0,1fr)] content-start gap-0 overflow-x-hidden overflow-y-auto overscroll-contain border-0 bg-background p-0 pb-[env(safe-area-inset-bottom)] shadow-2xl rounded-none z-[9999] lg:!left-auto lg:right-0 lg:w-[420px] lg:rounded-l-2xl lg:data-[state=open]:slide-in-from-right lg:data-[state=closed]:slide-out-to-right"
           onInteractOutside={(e) => {
             const target = e.target as HTMLElement;
             if (target.closest('[data-whatsapp-button="true"]')) {
