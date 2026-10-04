@@ -111,7 +111,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       <Dialog open={open} onOpenChange={state.handleAttemptClose}>
         <DialogContent
           ref={dialogContentRef}
-          className="w-[calc(100%-1rem)] max-w-[380px] max-h-[92vh] overflow-y-auto border-0 shadow-2xl p-0 rounded-2xl z-[9999] sm:left-auto sm:right-0 sm:top-0 sm:translate-x-0 sm:translate-y-0 sm:h-dvh sm:max-h-none sm:w-[368px] sm:max-w-none sm:rounded-none sm:rounded-l-2xl sm:data-[state=open]:slide-in-from-right sm:data-[state=closed]:slide-out-to-right"
+          className="!left-0 !top-0 h-dvh !max-h-dvh w-screen max-w-none translate-x-0 translate-y-0 grid-cols-[minmax(0,1fr)] content-start gap-0 overflow-x-hidden overflow-y-auto overscroll-contain border-0 bg-background p-0 pb-[env(safe-area-inset-bottom)] shadow-2xl rounded-none z-[9999] lg:!left-auto lg:right-0 lg:w-[420px] lg:rounded-l-2xl lg:data-[state=open]:slide-in-from-right lg:data-[state=closed]:slide-out-to-right"
           onInteractOutside={(e) => {
             const target = e.target as HTMLElement;
             if (target.closest('[data-whatsapp-button="true"]')) {
@@ -119,16 +119,16 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
             }
           }}
         >
-          <DialogHeader className="px-3 sm:px-4 pt-2 sm:pt-3 pb-1.5 sm:pb-2 border-b bg-gradient-to-r from-primary/5 to-transparent rounded-t-2xl">
-            <DialogTitle className="text-sm sm:text-base font-semibold leading-tight flex items-center gap-2 justify-center sm:justify-start">
-              <Badge variant="secondary" className="text-[10px] sm:text-xs font-medium px-1.5 py-0.5 rounded-lg">{state.formData.parcelNumber || parcelNumber || 'Nouvelle parcelle'}</Badge>
-              <span className="text-xs sm:text-sm text-muted-foreground">Contribution CCC</span>
+          <DialogHeader className="min-w-0 px-3 sm:px-4 pt-[calc(env(safe-area-inset-top)+0.75rem)] pb-2 pr-14 border-b bg-gradient-to-r from-primary/5 to-transparent">
+            <DialogTitle className="min-w-0 text-sm sm:text-base font-semibold leading-tight flex items-center gap-2 justify-start">
+              <Badge variant="secondary" className="min-w-0 max-w-[50%] truncate text-[10px] sm:text-xs font-medium px-1.5 py-0.5 rounded-lg">{state.formData.parcelNumber || parcelNumber || 'Nouvelle parcelle'}</Badge>
+              <span className="min-w-0 text-xs sm:text-sm text-muted-foreground">Contribution CCC</span>
             </DialogTitle>
           </DialogHeader>
 
           <Tabs
             value={state.activeTab}
-            className="w-full"
+            className="min-w-0 w-full"
             onValueChange={(next) => {
               // Intercepte les clics sur onglets verrouillés pour afficher un toast explicite
               // au lieu du feedback silencieux de Radix (`disabled` ignore l'action).
@@ -168,7 +168,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
               </TabsList>
             </div>
 
-            <div className="px-3 sm:px-6 pb-4 sm:pb-6">
+            <div className="min-w-0 px-3 sm:px-6 pb-4 sm:pb-6 [&>div]:min-w-0">
               <TabsContent value="general" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
                 <GeneralTab
                   formData={state.formData} handleInputChange={state.handleInputChange}
