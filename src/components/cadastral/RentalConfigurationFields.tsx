@@ -598,6 +598,7 @@ export const MonthlyRentFields: React.FC<CommonProps> = ({
                   )}
 
                   {!ownerOccupied && (
+                  <>
                   <div className="space-y-1">
                     <Label className={cn('text-xs font-medium', missingDate ? 'text-destructive' : 'text-muted-foreground')}>
                       {!vocab.isTerrainNu && unit.isOccupied === false ? 'Inoccupé depuis le' : 'En location depuis le'} {missingDate && <span className="text-destructive">*</span>}
@@ -631,6 +632,7 @@ export const MonthlyRentFields: React.FC<CommonProps> = ({
                       )}
                     />
                   </div>
+                  </>
                   )}
 
                   {unit.isOccupied === true && !ownerOccupied && (
