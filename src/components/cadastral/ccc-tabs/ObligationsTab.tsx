@@ -187,33 +187,7 @@ const ObligationsTab: React.FC<ObligationsTabProps> = ({
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-1">
-                    <Label className="text-sm font-medium">Année</Label>
-                    <Select value={tax.taxYear} onValueChange={(value) => updateTaxRecord(index, 'taxYear', value)}>
-                      <SelectTrigger className="h-10 text-sm rounded-xl"><SelectValue placeholder="Année" /></SelectTrigger>
-                      <SelectContent className="rounded-xl">
-                        {Array.from({ length: 10 }, (_, i) => {
-                          const year = new Date().getFullYear() - i;
-                          const yearStr = year.toString();
-                          // Block year if same taxType+year already declared "Payé" in another record
-                          const isIrl = tax.taxType === 'Impôt sur les revenus locatifs';
-                          const isBlocked = tax.taxType && taxRecords.some((other, otherIdx) =>
-                            otherIdx !== index &&
-                            other.taxType === tax.taxType &&
-                            other.taxYear === yearStr &&
-                            (isIrl
-                              ? !!tax.constructionRef && other.constructionRef === tax.constructionRef
-                              : other.paymentStatus === 'Payé')
-                          );
-                          return (
-                            <SelectItem key={year} value={yearStr} disabled={isBlocked}>
-                              {year}{isBlocked ? ' (déjà payé)' : ''}
-                            </SelectItem>
-                          );
-                        })}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  {tax.taxType !== 'Impôt sur les revenus locatifs' && renderYearSelect(tax, index)}
                 </div>
 
                 {/* IRL : sélecteur de la construction concernée (1 IRL ↔ 1 construction Location) */}
@@ -322,6 +296,8 @@ const ObligationsTab: React.FC<ObligationsTabProps> = ({
                     </div>
                   );
                 })()}
+
+                {tax.taxType === 'Impôt sur les revenus locatifs' && renderYearSelect(tax, index)}
 
                 <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-1">
