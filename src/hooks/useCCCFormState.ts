@@ -1,6 +1,7 @@
 import { PROPERTY_CATEGORY_OPTIONS as SHARED_PROPERTY_CATEGORY_OPTIONS, CATEGORY_TO_CONSTRUCTION_TYPES as SHARED_CATEGORY_TO_CONSTRUCTION_TYPES } from '@/lib/ccc/propertyCategories';
 import { reindexShapesAfterRemoval } from '@/utils/buildingShapes';
-import { isConstructionRented } from '@/utils/rentalStatus';
+import { isConstructionRented, hasTenantRentalIncome } from '@/utils/rentalStatus';
+import { normalizeRentalUnitFromDb } from '@/utils/rentalStatus';
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useFormPersistence } from '@/hooks/ccc/useFormPersistence';
 import { useGeographicCascade } from '@/hooks/ccc/useGeographicCascade';
@@ -543,29 +544,30 @@ export const useCCCFormState = ({
   const updateTaxRecord = (index: number, field: string, value: string) => {
     const updated = [...taxRecords];
     updated[index] = { ...updated[index], [field]: value };
-    // Auto-assign / clear constructionRef on taxType change
+    const IRL = 'Impôt sur les revenus locatifs';
+    // Ordre IRL : Type → Construction concernée → Année.
     if (field === 'taxType') {
-      if (value === 'Impôt sur les revenus locatifs') {
-        // Auto-assign first available rentalRef if none yet
-        // 1 IRL par construction et par exercice : seules les refs déjà prises pour la même année sont écartées
-        const year = updated[index].taxYear;
-        const usedRefs = new Set(
-          updated
-            .filter((t, i) => i !== index && t.taxType === 'Impôt sur les revenus locatifs' && t.constructionRef && (!year || t.taxYear === year))
-            .map(t => t.constructionRef as string)
-        );
+      if (value === IRL) {
         const available: string[] = [];
-        if (isConstructionRented(formData as any)) available.push('main');
+        if (hasTenantRentalIncome(formData as any)) available.push('main');
         additionalConstructions.forEach((c, idx) => {
-          if (isConstructionRented(c as any)) available.push(`additional:${idx}`);
+          if (hasTenantRentalIncome(c as any)) available.push(`additional:${idx}`);
         });
-        const free = available.find(r => !usedRefs.has(r)) ?? available[0];
-        if (free && !updated[index].constructionRef) {
-          updated[index] = { ...updated[index], constructionRef: free };
-        }
+        const current = updated[index].constructionRef;
+        const ref = current && available.includes(current) ? current : (available.length === 1 ? available[0] : undefined);
+        updated[index] = { ...updated[index], constructionRef: ref };
       } else {
-        // Non-IRL : clear constructionRef
         updated[index] = { ...updated[index], constructionRef: undefined };
+      }
+    }
+    // Année incohérente après changement de type ou de construction : on la réinitialise.
+    if (field === 'taxType' || field === 'constructionRef') {
+      const rec = updated[index];
+      const isIrl = rec.taxType === IRL;
+      const conflict = !!rec.taxYear && updated.some((o, i) => i !== index && o.taxType === rec.taxType && o.taxYear === rec.taxYear
+        && (isIrl ? !!rec.constructionRef && o.constructionRef === rec.constructionRef : o.paymentStatus === 'Payé'));
+      if ((isIrl && !rec.constructionRef) || conflict) {
+        updated[index] = { ...updated[index], taxYear: '' };
       }
     }
     setTaxRecords(updated);
@@ -1230,7 +1232,7 @@ export const useCCCFormState = ({
           rentalConfiguration: (contrib as any).rental_configuration || undefined,
           rentalUnitsCount: (contrib as any).rental_units_count ?? undefined,
           monthlyRentUsd: (contrib as any).monthly_rent_usd != null ? Number((contrib as any).monthly_rent_usd) : undefined,
-          rentalUnits: Array.isArray((contrib as any).rental_units) ? (contrib as any).rental_units : undefined,
+          rentalUnits: Array.isArray((contrib as any).rental_units) ? (contrib as any).rental_units.map(normalizeRentalUnitFromDb) : undefined,
           isOccupied: (contrib as any).is_occupied ?? undefined,
           occupantCount: (contrib as any).occupant_count || undefined,
           hostingCapacity: (contrib as any).hosting_capacity || undefined,
@@ -1313,7 +1315,7 @@ export const useCCCFormState = ({
         const additionalConstr = (contrib as any).additional_constructions as any[];
         if (additionalConstr && Array.isArray(additionalConstr) && additionalConstr.length > 0) {
           setConstructionMode('multiple');
-          setAdditionalConstructions(additionalConstr.map((c: any) => ({ propertyCategory: c.propertyCategory || '', constructionType: c.constructionType || '', constructionNature: c.constructionNature || '', constructionMaterials: c.constructionMaterials || '', declaredUsage: c.declaredUsage || '', standing: c.standing || '', constructionYear: c.constructionYear || undefined, constructionStatus: c.constructionStatus || undefined, rentalStartDate: c.rentalStartDate || undefined, apartmentNumber: c.apartmentNumber || undefined, floorNumber: c.floorNumber || undefined, isOccupied: c.isOccupied ?? undefined, occupantCount: c.occupantCount ?? undefined, hostingCapacity: c.hostingCapacity ?? undefined, actualUsage: c.actualUsage || undefined, actualUsageOther: c.actualUsageOther || undefined, operationalCapacity: c.operationalCapacity ?? undefined, operationalCapacityUnit: c.operationalCapacityUnit || undefined, leaseContractUrl: c.leaseContractUrl || undefined, rentalConfiguration: c.rentalConfiguration || undefined, rentalUnitsCount: c.rentalUnitsCount ?? undefined, monthlyRentUsd: c.monthlyRentUsd ?? undefined, rentalUnits: Array.isArray(c.rentalUnits) ? c.rentalUnits : undefined, permitMode: c.permitMode || undefined, permit: c.permit || undefined })));
+          setAdditionalConstructions(additionalConstr.map((c: any) => ({ propertyCategory: c.propertyCategory || '', constructionType: c.constructionType || '', constructionNature: c.constructionNature || '', constructionMaterials: c.constructionMaterials || '', declaredUsage: c.declaredUsage || '', standing: c.standing || '', constructionYear: c.constructionYear || undefined, constructionStatus: c.constructionStatus || undefined, rentalStartDate: c.rentalStartDate || undefined, apartmentNumber: c.apartmentNumber || undefined, floorNumber: c.floorNumber || undefined, isOccupied: c.isOccupied ?? undefined, occupantCount: c.occupantCount ?? undefined, hostingCapacity: c.hostingCapacity ?? undefined, actualUsage: c.actualUsage || undefined, actualUsageOther: c.actualUsageOther || undefined, operationalCapacity: c.operationalCapacity ?? undefined, operationalCapacityUnit: c.operationalCapacityUnit || undefined, leaseContractUrl: c.leaseContractUrl || undefined, rentalConfiguration: c.rentalConfiguration || undefined, rentalUnitsCount: c.rentalUnitsCount ?? undefined, monthlyRentUsd: c.monthlyRentUsd ?? undefined, rentalUnits: Array.isArray(c.rentalUnits) ? c.rentalUnits.map(normalizeRentalUnitFromDb) : undefined, permitMode: c.permitMode || undefined, permit: c.permit || undefined })));
         }
 
         // Restore roadSides, servitude, hasDispute, disputeData, buildingShapes from DB

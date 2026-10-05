@@ -441,6 +441,7 @@ export const useCadastralContribution = () => {
             label: u.label ?? null,
             monthly_rent_usd: blankNum(u.monthlyRentUsd),
             is_occupied: u.isOccupied ?? null,
+            occupied_by: u.isOccupied === true ? (u.occupiedBy ?? null) : null,
             occupant_count: blankNum(u.occupantCount),
             hosting_capacity: blankNum(u.hostingCapacity),
             actual_usage: blank(u.actualUsage),

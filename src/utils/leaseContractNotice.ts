@@ -6,14 +6,14 @@ interface LeaseContractCheckData {
   isOccupied?: boolean;
   leaseContractUrl?: string;
   parcelNumber?: string;
-  rentalUnits?: Array<{ label?: string; isOccupied?: boolean; leaseContractUrl?: string }>;
+  rentalUnits?: Array<{ label?: string; isOccupied?: boolean; occupiedBy?: 'owner' | 'tenant'; leaseContractUrl?: string }>;
 }
 
 /** Nombre de locaux occupés dont le contrat de location n'a pas été joint. */
 function countMissingLeaseContracts(data: LeaseContractCheckData): number {
   if (!data?.isRented) return 0;
   if (data.rentalConfiguration === 'multi') {
-    return (data.rentalUnits || []).filter((u) => u?.isOccupied === true && !u?.leaseContractUrl).length;
+    return (data.rentalUnits || []).filter((u) => u?.isOccupied === true && u?.occupiedBy !== 'owner' && !u?.leaseContractUrl).length;
   }
   return data.isOccupied === true && !data.leaseContractUrl ? 1 : 0;
 }
