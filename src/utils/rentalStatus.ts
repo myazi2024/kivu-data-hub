@@ -107,3 +107,29 @@ export function isOwnerOccupiedUnit(u: any): boolean {
   const by = u.occupiedBy ?? u.occupied_by;
   return occupied === true && by === 'owner';
 }
+
+/**
+ * Convertit un local enregistré (clés snake_case en base, camelCase pour les
+ * brouillons et constructions additionnelles) vers la forme du formulaire.
+ */
+export function normalizeRentalUnitFromDb(u: any): any {
+  if (!u || typeof u !== 'object') return u;
+  const pick = (camel: string, snake: string) => (u[camel] !== undefined && u[camel] !== null ? u[camel] : u[snake] ?? undefined);
+  const numOrUndef = (v: unknown) => (v === undefined || v === null || v === '' ? undefined : Number(v));
+  const by = pick('occupiedBy', 'occupied_by');
+  return {
+    label: pick('label', 'label') ?? undefined,
+    monthlyRentUsd: numOrUndef(pick('monthlyRentUsd', 'monthly_rent_usd')),
+    isOccupied: pick('isOccupied', 'is_occupied'),
+    occupiedBy: by === 'owner' || by === 'tenant' ? by : undefined,
+    occupantCount: numOrUndef(pick('occupantCount', 'occupant_count')),
+    hostingCapacity: numOrUndef(pick('hostingCapacity', 'hosting_capacity')),
+    actualUsage: pick('actualUsage', 'actual_usage'),
+    actualUsageOther: pick('actualUsageOther', 'actual_usage_other'),
+    operationalCapacity: numOrUndef(pick('operationalCapacity', 'operational_capacity')),
+    operationalCapacityUnit: pick('operationalCapacityUnit', 'operational_capacity_unit'),
+    leaseContractUrl: pick('leaseContractUrl', 'lease_contract_url'),
+    rentalStartDate: pick('rentalStartDate', 'rental_start_date'),
+    floor: pick('floor', 'floor'),
+  };
+}

@@ -15,6 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { normalizeRentalUnitFromDb } from '@/utils/rentalStatus';
 import { AdditionalConstruction } from '@/components/cadastral/AdditionalConstructionBlock';
 import { PROPERTY_TITLE_TYPES, getEffectiveTitleName } from '@/components/cadastral/PropertyTitleTypeSelect';
 import { CurrentOwner, BuildingPermit } from '@/components/cadastral/ccc-tabs/GeneralTab';
