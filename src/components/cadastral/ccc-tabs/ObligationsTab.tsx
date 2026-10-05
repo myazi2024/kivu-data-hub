@@ -1,4 +1,4 @@
-import { isConstructionRented } from '@/utils/rentalStatus';
+import { isConstructionRented, hasTenantRentalIncome, isOwnerOccupiedUnit } from '@/utils/rentalStatus';
 import React from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -39,11 +39,11 @@ export const buildRentalConstructionRefs = (
 ): { ref: string; label: string }[] => {
   const refs: { ref: string; label: string }[] = [];
   const mainLike = typeof main === 'string' ? { declaredUsage: main } : main;
-  if (isConstructionRented(mainLike)) {
+  if (hasTenantRentalIncome(mainLike)) {
     refs.push({ ref: 'main', label: 'Construction principale' });
   }
   additionalConstructions.forEach((c, idx) => {
-    if (isConstructionRented(c)) {
+    if (hasTenantRentalIncome(c)) {
       const parts = [
         c.propertyCategory || c.constructionType || 'Construction',
         c.constructionYear ? String(c.constructionYear) : null,
@@ -121,6 +121,41 @@ const ObligationsTab: React.FC<ObligationsTabProps> = ({
   getPicklistOptions, handleTabChange, handleNextTab,
   resetTaxBlock, resetMortgageBlock
 }) => {
+  const renderYearSelect = (tax: TaxRecord, index: number) => {
+    const isIrl = tax.taxType === 'Impôt sur les revenus locatifs';
+    const locked = !tax.taxType || (isIrl && !tax.constructionRef);
+    return (
+      <div className="space-y-1">
+        <Label className="text-sm font-medium">Année</Label>
+        <Select value={tax.taxYear} onValueChange={(value) => updateTaxRecord(index, 'taxYear', value)} disabled={locked}>
+          <SelectTrigger className="h-10 text-sm rounded-xl">
+            <SelectValue placeholder={isIrl && !tax.constructionRef ? "Choisir d'abord la construction" : 'Année'} />
+          </SelectTrigger>
+          <SelectContent className="rounded-xl">
+            {Array.from({ length: 10 }, (_, i) => {
+              const year = new Date().getFullYear() - i;
+              const yearStr = year.toString();
+              // IRL : 1 déclaration par construction et par année ; autres taxes : année bloquée si déjà « Payé ».
+              const isBlocked = !!tax.taxType && taxRecords.some((other, otherIdx) =>
+                otherIdx !== index &&
+                other.taxType === tax.taxType &&
+                other.taxYear === yearStr &&
+                (isIrl
+                  ? !!tax.constructionRef && other.constructionRef === tax.constructionRef
+                  : other.paymentStatus === 'Payé')
+              );
+              return (
+                <SelectItem key={year} value={yearStr} disabled={isBlocked}>
+                  {year}{isBlocked ? (isIrl ? ' (déjà déclarée)' : ' (déjà payé)') : ''}
+                </SelectItem>
+              );
+            })}
+          </SelectContent>
+        </Select>
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-3 mt-4 animate-fade-in">
       {/* Toggle */}
@@ -171,7 +206,7 @@ const ObligationsTab: React.FC<ObligationsTabProps> = ({
                   )}
                 </div>
 
-                <div className="grid grid-cols-2 gap-2">
+                <div className={tax.taxType === 'Impôt sur les revenus locatifs' ? 'grid grid-cols-1 gap-2' : 'grid grid-cols-2 gap-2'}>
                   <div className="space-y-1">
                     <Label className="text-sm font-medium">Type</Label>
                     <Select value={tax.taxType} onValueChange={(value) => updateTaxRecord(index, 'taxType', value)}>
@@ -179,7 +214,7 @@ const ObligationsTab: React.FC<ObligationsTabProps> = ({
                       <SelectContent className="rounded-xl">
                         {(() => {
                           const additional = additionalConstructions ?? (Array.isArray((formData as any).additionalConstructions) ? (formData as any).additionalConstructions : []);
-                          const hasAnyRental = isConstructionRented(formData as any) || additional.some((c: any) => isConstructionRented(c));
+                          const hasAnyRental = hasTenantRentalIncome(formData as any) || additional.some((c: any) => hasTenantRentalIncome(c));
                           return ['Impôt foncier annuel', ...(hasAnyRental ? ['Impôt sur les revenus locatifs'] : [])].map(opt => (
                             <SelectItem key={opt} value={opt}>{opt}</SelectItem>
                           ));
@@ -196,11 +231,6 @@ const ObligationsTab: React.FC<ObligationsTabProps> = ({
                     formData as any,
                     Array.isArray(additionalConstructions) ? additionalConstructions : []
                   );
-                  const usedRefs = new Set(
-                    taxRecords
-                      .filter((t, i) => i !== index && t.taxType === 'Impôt sur les revenus locatifs' && t.constructionRef && !!tax.taxYear && t.taxYear === tax.taxYear)
-                      .map(t => t.constructionRef as string)
-                  );
                   const isMissing = !tax.constructionRef;
 
                   // Résolution du contexte locatif (single/multi + loyers)
@@ -215,10 +245,10 @@ const ObligationsTab: React.FC<ObligationsTabProps> = ({
                       config: formData.rentalConfiguration,
                       monthlyTotal:
                         formData.rentalConfiguration === 'multi'
-                          ? (formData.rentalUnits || []).reduce((s, u) => s + (Number(u?.monthlyRentUsd) || 0), 0)
+                          ? (formData.rentalUnits || []).filter(u => !isOwnerOccupiedUnit(u)).reduce((s, u) => s + (Number(u?.monthlyRentUsd) || 0), 0)
                           : Number(formData.monthlyRentUsd) || 0,
                       units: formData.rentalConfiguration === 'multi'
-                        ? (formData.rentalUnits || [])
+                        ? (formData.rentalUnits || []).filter(u => !isOwnerOccupiedUnit(u))
                         : (formData.monthlyRentUsd ? [{ label: 'Local unique', monthlyRentUsd: formData.monthlyRentUsd }] : []),
                     };
                   } else if (ref?.startsWith('additional:')) {
@@ -229,10 +259,10 @@ const ObligationsTab: React.FC<ObligationsTabProps> = ({
                         config: c.rentalConfiguration,
                         monthlyTotal:
                           c.rentalConfiguration === 'multi'
-                            ? (c.rentalUnits || []).reduce((s: number, u: any) => s + (Number(u?.monthlyRentUsd) || 0), 0)
+                            ? (c.rentalUnits || []).filter((u: any) => !isOwnerOccupiedUnit(u)).reduce((s: number, u: any) => s + (Number(u?.monthlyRentUsd) || 0), 0)
                             : Number(c.monthlyRentUsd) || 0,
                         units: c.rentalConfiguration === 'multi'
-                          ? (c.rentalUnits || [])
+                          ? (c.rentalUnits || []).filter((u: any) => !isOwnerOccupiedUnit(u))
                           : (c.monthlyRentUsd ? [{ label: 'Local unique', monthlyRentUsd: c.monthlyRentUsd }] : []),
                       };
                     }
@@ -255,10 +285,9 @@ const ObligationsTab: React.FC<ObligationsTabProps> = ({
                             <div className="px-2 py-1.5 text-xs text-muted-foreground">Aucune construction en location.</div>
                           ) : (
                             allRefs.map(opt => {
-                              const taken = usedRefs.has(opt.ref) && opt.ref !== tax.constructionRef;
                               return (
-                                <SelectItem key={opt.ref} value={opt.ref} disabled={taken}>
-                                  {opt.label}{taken ? ' (déjà déclarée)' : ''}
+                                <SelectItem key={opt.ref} value={opt.ref}>
+                                  {opt.label}
                                 </SelectItem>
                               );
                             })
