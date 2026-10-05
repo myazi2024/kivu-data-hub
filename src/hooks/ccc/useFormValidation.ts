@@ -197,7 +197,8 @@ export function useFormValidation(params: UseFormValidationParams) {
         const showFloor = !isTerrainNu && formData.floorNumber ? parseInt(formData.floorNumber, 10) >= 1 : false;
         const unitWord = isTerrainNu ? 'Terrain' : 'Local';
         units.forEach((u: any, i: number) => {
-          if (!u || !u.monthlyRentUsd || Number(u.monthlyRentUsd) <= 0) {
+          const ownerOcc = !isTerrainNu && isOwnerOccupiedUnit(u);
+          if (!ownerOcc && (!u || !u.monthlyRentUsd || Number(u.monthlyRentUsd) <= 0)) {
             missing.push({ field: `rentalUnit_${i}`, label: `Loyer mensuel du ${unitWord.toLowerCase()} #${i + 1}`, tab: 'location' });
           }
           if (!isTerrainNu) {
@@ -207,13 +208,18 @@ export function useFormValidation(params: UseFormValidationParams) {
             } else if (residentialUse && (!u.hostingCapacity || Number(u.hostingCapacity) <= 0)) {
               missing.push({ field: `rentalUnitCapacity_${i}`, label: `${unitWord} #${i + 1} : capacité d'accueil`, tab: 'location' });
             }
+            if (u && u.isOccupied === true && !u.occupiedBy) {
+              missing.push({ field: `rentalUnitOccupiedBy_${i}`, label: `${unitWord} #${i + 1} : occupé par le propriétaire ou un locataire`, tab: 'location' });
+            }
             if (u && u.isOccupied === true && residentialUse) {
               if (!u.occupantCount || Number(u.occupantCount) <= 0) {
                 missing.push({ field: `rentalUnitOccupants_${i}`, label: `${unitWord} #${i + 1} : nombre de personnes qui y vivent`, tab: 'location' });
               }
             }
           }
-          if (!u || !u.rentalStartDate) {
+          if (ownerOcc) {
+            // Local occupé par le propriétaire : ni date de mise en location ni loyer.
+          } else if (!u || !u.rentalStartDate) {
             missing.push({ field: `rentalUnitDate_${i}`, label: `${unitWord} #${i + 1} : date de mise en location`, tab: 'location' });
           } else if (isBeforeConstructionYear(u.rentalStartDate, formData.constructionYear)) {
             missing.push({ field: `rentalUnitDate_${i}`, label: `${unitWord} #${i + 1} : date < 01/01/${formData.constructionYear}`, tab: 'location' });
@@ -266,7 +272,8 @@ export function useFormValidation(params: UseFormValidationParams) {
           }
           const showFloor = !cIsTerrainNu && c.floorNumber ? parseInt(c.floorNumber, 10) >= 1 : false;
           units.forEach((u: any, i: number) => {
-            if (!u || !u.monthlyRentUsd || Number(u.monthlyRentUsd) <= 0) {
+            const ownerOcc = !cIsTerrainNu && isOwnerOccupiedUnit(u);
+            if (!ownerOcc && (!u || !u.monthlyRentUsd || Number(u.monthlyRentUsd) <= 0)) {
               missing.push({ field: `additionalRentalUnit_${idx}_${i}`, label: `Loyer du ${unitWord.toLowerCase()} #${i + 1} (construction #${idx + 2})`, tab: 'location' });
             }
             if (!cIsTerrainNu) {
@@ -276,13 +283,18 @@ export function useFormValidation(params: UseFormValidationParams) {
               } else if (uResidentialUse && (!u.hostingCapacity || Number(u.hostingCapacity) <= 0)) {
                 missing.push({ field: `additionalRentalUnitCapacity_${idx}_${i}`, label: `${unitWord} #${i + 1} : capacité (construction #${idx + 2})`, tab: 'location' });
               }
+              if (u && u.isOccupied === true && !u.occupiedBy) {
+                missing.push({ field: `additionalRentalUnitOccupiedBy_${idx}_${i}`, label: `${unitWord} #${i + 1} : occupé par le propriétaire ou un locataire (construction #${idx + 2})`, tab: 'location' });
+              }
               if (u && u.isOccupied === true && uResidentialUse) {
                 if (!u.occupantCount || Number(u.occupantCount) <= 0) {
                   missing.push({ field: `additionalRentalUnitOccupants_${idx}_${i}`, label: `${unitWord} #${i + 1} : nombre d'occupants (construction #${idx + 2})`, tab: 'location' });
                 }
               }
             }
-            if (!u || !u.rentalStartDate) {
+            if (ownerOcc) {
+              // Local occupé par le propriétaire : ni date ni loyer.
+            } else if (!u || !u.rentalStartDate) {
               missing.push({ field: `additionalRentalUnitDate_${idx}_${i}`, label: `${unitWord} #${i + 1} : date de mise en location (construction #${idx + 2})`, tab: 'location' });
             } else if (isBeforeConstructionYear(u.rentalStartDate, Number(c.constructionYear) || undefined)) {
               missing.push({ field: `additionalRentalUnitDate_${idx}_${i}`, label: `${unitWord} #${i + 1} : date < 01/01/${c.constructionYear} (construction #${idx + 2})`, tab: 'location' });

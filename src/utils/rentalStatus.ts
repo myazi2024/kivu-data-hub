@@ -95,3 +95,15 @@ export function deduceRealUsage(constructionType?: string | null): string {
       return 'Habitation';
   }
 }
+
+/**
+ * Local d'un bien « divisé en plusieurs locaux » occupé par le propriétaire
+ * (bailleur) : aucun loyer, date de mise en location ni contrat ne s'applique.
+ * Accepte les clés camelCase (formulaire) et snake_case (base).
+ */
+export function isOwnerOccupiedUnit(u: any): boolean {
+  if (!u || typeof u !== 'object') return false;
+  const occupied = u.isOccupied ?? u.is_occupied;
+  const by = u.occupiedBy ?? u.occupied_by;
+  return occupied === true && by === 'owner';
+}
