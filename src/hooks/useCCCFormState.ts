@@ -1,6 +1,7 @@
 import { PROPERTY_CATEGORY_OPTIONS as SHARED_PROPERTY_CATEGORY_OPTIONS, CATEGORY_TO_CONSTRUCTION_TYPES as SHARED_CATEGORY_TO_CONSTRUCTION_TYPES } from '@/lib/ccc/propertyCategories';
 import { reindexShapesAfterRemoval } from '@/utils/buildingShapes';
-import { isConstructionRented } from '@/utils/rentalStatus';
+import { isConstructionRented, hasTenantRentalIncome } from '@/utils/rentalStatus';
+import { normalizeRentalUnitFromDb } from '@/utils/rentalStatus';
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useFormPersistence } from '@/hooks/ccc/useFormPersistence';
 import { useGeographicCascade } from '@/hooks/ccc/useGeographicCascade';
@@ -15,7 +16,6 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { normalizeRentalUnitFromDb } from '@/utils/rentalStatus';
 import { AdditionalConstruction } from '@/components/cadastral/AdditionalConstructionBlock';
 import { PROPERTY_TITLE_TYPES, getEffectiveTitleName } from '@/components/cadastral/PropertyTitleTypeSelect';
 import { CurrentOwner, BuildingPermit } from '@/components/cadastral/ccc-tabs/GeneralTab';
