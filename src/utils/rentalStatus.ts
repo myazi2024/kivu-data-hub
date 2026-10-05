@@ -133,3 +133,17 @@ export function normalizeRentalUnitFromDb(u: any): any {
     floor: pick('floor', 'floor'),
   };
 }
+
+/**
+ * Construction en location produisant un loyer : exclut le cas « plusieurs
+ * locaux » où tous les locaux sont occupés par le propriétaire.
+ */
+export function hasTenantRentalIncome(c: any): boolean {
+  if (!isConstructionRented(c)) return false;
+  const config = c?.rentalConfiguration ?? c?.rental_configuration;
+  const units = c?.rentalUnits ?? c?.rental_units;
+  if (config === 'multi' && Array.isArray(units) && units.length > 0) {
+    return units.some((u: any) => !isOwnerOccupiedUnit(u));
+  }
+  return true;
+}

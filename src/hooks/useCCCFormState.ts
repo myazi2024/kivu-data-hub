@@ -544,29 +544,30 @@ export const useCCCFormState = ({
   const updateTaxRecord = (index: number, field: string, value: string) => {
     const updated = [...taxRecords];
     updated[index] = { ...updated[index], [field]: value };
-    // Auto-assign / clear constructionRef on taxType change
+    const IRL = 'Impôt sur les revenus locatifs';
+    // Ordre IRL : Type → Construction concernée → Année.
     if (field === 'taxType') {
-      if (value === 'Impôt sur les revenus locatifs') {
-        // Auto-assign first available rentalRef if none yet
-        // 1 IRL par construction et par exercice : seules les refs déjà prises pour la même année sont écartées
-        const year = updated[index].taxYear;
-        const usedRefs = new Set(
-          updated
-            .filter((t, i) => i !== index && t.taxType === 'Impôt sur les revenus locatifs' && t.constructionRef && (!year || t.taxYear === year))
-            .map(t => t.constructionRef as string)
-        );
+      if (value === IRL) {
         const available: string[] = [];
-        if (isConstructionRented(formData as any)) available.push('main');
+        if (hasTenantRentalIncome(formData as any)) available.push('main');
         additionalConstructions.forEach((c, idx) => {
-          if (isConstructionRented(c as any)) available.push(`additional:${idx}`);
+          if (hasTenantRentalIncome(c as any)) available.push(`additional:${idx}`);
         });
-        const free = available.find(r => !usedRefs.has(r)) ?? available[0];
-        if (free && !updated[index].constructionRef) {
-          updated[index] = { ...updated[index], constructionRef: free };
-        }
+        const current = updated[index].constructionRef;
+        const ref = current && available.includes(current) ? current : (available.length === 1 ? available[0] : undefined);
+        updated[index] = { ...updated[index], constructionRef: ref };
       } else {
-        // Non-IRL : clear constructionRef
         updated[index] = { ...updated[index], constructionRef: undefined };
+      }
+    }
+    // Année incohérente après changement de type ou de construction : on la réinitialise.
+    if (field === 'taxType' || field === 'constructionRef') {
+      const rec = updated[index];
+      const isIrl = rec.taxType === IRL;
+      const conflict = !!rec.taxYear && updated.some((o, i) => i !== index && o.taxType === rec.taxType && o.taxYear === rec.taxYear
+        && (isIrl ? !!rec.constructionRef && o.constructionRef === rec.constructionRef : o.paymentStatus === 'Payé'));
+      if ((isIrl && !rec.constructionRef) || conflict) {
+        updated[index] = { ...updated[index], taxYear: '' };
       }
     }
     setTaxRecords(updated);
