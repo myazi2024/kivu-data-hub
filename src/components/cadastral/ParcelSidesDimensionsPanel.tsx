@@ -607,7 +607,7 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
                       : 'grid-rows-[0fr] opacity-0'
                   }`}
                 >
-                  <div className="overflow-hidden">
+                  <div className="overflow-hidden flex flex-col">
                     {isEditingThis && isRoad && (
                       <div className="space-y-1.5 pl-6 pt-2">
                         <div className="flex items-center gap-1.5 mb-1">
@@ -776,8 +776,8 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
                         )}
                       </div>
                     )}
-                    {isEditingThis && isWall && (
-                      <div className="space-y-1.5 pl-6 pt-2 animate-fade-in">
+                    {isEditingThis && (
+                      <div className="order-first space-y-1.5 pl-6 pt-2 animate-fade-in">
                         <div className="flex items-center gap-1.5 mb-1">
                           <BrickWall className="h-3.5 w-3.5 text-amber-600" />
                           <span className="text-xs font-medium text-amber-700 dark:text-amber-300">Limite de la parcelle</span>
@@ -854,9 +854,42 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
                             />
                           </div>
                         )}
+
+                        {(boundaryKind === 'mur' || boundaryKind === 'limite') && (
+                          <div className="space-y-1 pt-1 animate-fade-in">
+                            <p className="text-xs font-medium text-foreground">Une route borde-t-elle ce côté ? *</p>
+                            <div role="radiogroup" aria-label="Une route borde-t-elle ce côté ?" className="grid grid-cols-2 gap-1.5">
+                              {([['oui', true], ['non', false]] as const).map(([label, value]) => {
+                                const selected = value ? isRoad : roadSide?.hasRoad === false;
+                                return (
+                                  <Button
+                                    key={label}
+                                    type="button"
+                                    role="radio"
+                                    aria-checked={selected}
+                                    variant={selected ? 'default' : 'outline'}
+                                    size="sm"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleRoadAnswer(index, value);
+                                    }}
+                                    className="h-8 text-xs rounded-lg"
+                                  >
+                                    {value ? 'Oui' : 'Non'}
+                                  </Button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
                     {/* Boutons d'action — communs aux blocs Mur et Route */}
+                    {isEditingThis && (
+                      <div className="order-last">
+                      {null}
+                      </div>
+                    )}
                     {isEditingThis && (
                       <div className="flex gap-1.5 pt-2 pl-6">
                         <Button
