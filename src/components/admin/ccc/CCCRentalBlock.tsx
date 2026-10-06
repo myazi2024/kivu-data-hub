@@ -110,19 +110,19 @@ export const CCCRentalBlock: React.FC<Props> = ({ contribution }) => {
                     <div className="flex items-center gap-1">
                       {u.floor && <Badge variant="outline" className="text-[9px]">{formatFloorLabel(u.floor)}</Badge>}
                       <Badge variant={u.isOccupied ? 'default' : 'outline'} className="text-[9px]">
-                        {u.isOccupied ? 'Occupé' : 'Vacant'}
+                        {u.isOccupied ? (u.occupiedBy === 'owner' ? 'Occupé · propriétaire' : u.occupiedBy === 'tenant' ? 'Occupé · locataire' : 'Occupé') : 'Vacant'}
                       </Badge>
                     </div>
                   </div>
                   <p className="text-muted-foreground">
-                    Loyer : {fmtUsd(u.monthlyRentUsd)}
+                    {u.isOccupied === true && u.occupiedBy === 'owner' ? 'Loyer : sans objet' : `Loyer : ${fmtUsd(u.monthlyRentUsd)}`}
                     {u.hostingCapacity ? ` · Capacité : ${u.hostingCapacity}` : ''}
                     {u.isOccupied === true && u.occupantCount ? ` · Occupants : ${u.occupantCount}` : ''}
                     {u.actualUsage ? ` · Usage réel : ${u.actualUsage === 'Autre' && u.actualUsageOther ? u.actualUsageOther : u.actualUsage}` : ''}
                     {u.operationalCapacity != null ? ` · Capacité d'exploitation : ${u.operationalCapacity}${u.operationalCapacityUnit ? ` ${u.operationalCapacityUnit}` : ''}` : ''}
                     {u.rentalStartDate ? ` · ${rentalDateLabel(u.isOccupied)} le ${new Date(u.rentalStartDate).toLocaleDateString('fr-FR')}` : ''}
                   </p>
-                  {u.isOccupied === true && (
+                  {u.isOccupied === true && u.occupiedBy !== 'owner' && (
                     u.leaseContractUrl ? (
                       <a href={u.leaseContractUrl} target="_blank" rel="noopener noreferrer" className="text-primary underline">
                         Contrat de location
