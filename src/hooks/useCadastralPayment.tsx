@@ -40,7 +40,7 @@ export const useCadastralPayment = () => {
   const [paymentStep, setPaymentStep] = useState<'form' | 'processing' | 'success'>('form');
   const { user } = useAuth();
   const { toast } = useToast();
-  const { selectedServices, parcelNumber, clearServices } = useCadastralCart();
+  const { selectedServices, parcelNumber, removeServicesForParcel } = useCadastralCart();
   const { isTestModeActive } = useTestMode();
   const { paymentMode, availableMethods, isPaymentRequired } = usePaymentConfig();
 
@@ -127,7 +127,7 @@ export const useCadastralPayment = () => {
           payment_method: 'BYPASS',
         });
         toast({ title: "Accès accordé", description: "Services accessibles gratuitement" });
-        clearServices();
+        removeServicesForParcel(parcelNumber, (result.selected_services as string[] | undefined) ?? serviceIds);
         window.dispatchEvent(new CustomEvent('cadastralPaymentCompleted'));
       } else {
         toast({
@@ -154,7 +154,7 @@ export const useCadastralPayment = () => {
     } finally {
       setLoading(false);
     }
-  }, [user, selectedServices, parcelNumber, isPaymentRequired, isTestModeActive, clearServices, toast]);
+  }, [user, selectedServices, parcelNumber, isPaymentRequired, isTestModeActive, removeServicesForParcel, toast]);
 
 
   const processMobileMoneyPayment = useCallback(async (invoiceId: string, paymentData: CadastralPaymentData) => {
@@ -231,7 +231,7 @@ export const useCadastralPayment = () => {
           payment_method: paymentData.provider,
         });
 
-        clearServices();
+        removeServicesForParcel(invoice.data.parcel_number, invoiceServiceIds);
         window.dispatchEvent(new CustomEvent('cadastralPaymentCompleted'));
 
         return invoice.data;
@@ -255,7 +255,7 @@ export const useCadastralPayment = () => {
     } finally {
       setLoading(false);
     }
-  }, [user, availableMethods, clearServices, toast]);
+  }, [user, availableMethods, removeServicesForParcel, toast]);
 
   const processStripePayment = useCallback(async (invoiceId: string) => {
     try {
@@ -340,7 +340,7 @@ export const useCadastralPayment = () => {
       }
 
 
-      clearServices();
+      if (invoiceData?.parcel_number) removeServicesForParcel(invoiceData.parcel_number, serviceIds);
       window.dispatchEvent(new CustomEvent('cadastralPaymentCompleted'));
 
       return invoiceData ?? null;
@@ -353,7 +353,7 @@ export const useCadastralPayment = () => {
     } finally {
       setLoading(false);
     }
-  }, [user, clearServices, toast]);
+  }, [user, removeServicesForParcel, toast]);
 
   const resetPaymentState = useCallback(() => {
     pollingAbortRef.current?.abort();
