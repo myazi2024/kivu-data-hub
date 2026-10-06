@@ -198,7 +198,8 @@ export function useFormValidation(params: UseFormValidationParams) {
         const unitWord = isTerrainNu ? 'Terrain' : 'Local';
         units.forEach((u: any, i: number) => {
           const ownerOcc = !isTerrainNu && isOwnerOccupiedUnit(u);
-          if (!ownerOcc && (!u || !u.monthlyRentUsd || Number(u.monthlyRentUsd) <= 0)) {
+          const vacant = !isTerrainNu && u?.isOccupied === false;
+          if (!ownerOcc && !vacant && (!u || !u.monthlyRentUsd || Number(u.monthlyRentUsd) <= 0)) {
             missing.push({ field: `rentalUnit_${i}`, label: `Loyer mensuel du ${unitWord.toLowerCase()} #${i + 1}`, tab: 'location' });
           }
           if (!isTerrainNu) {

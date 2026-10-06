@@ -115,6 +115,17 @@ export function isOwnerOccupiedUnit(u: any): boolean {
   return occupied === true && by === 'owner';
 }
 
+/** Local déclaré inoccupé : son loyer demandé se saisit dans l'onglet Valeur. */
+export function isVacantUnit(u: any): boolean {
+  if (!u || typeof u !== 'object') return false;
+  return (u.isOccupied ?? u.is_occupied) === false;
+}
+
+/** Local sans loyer dans l'onglet Localisation (propriétaire ou vacant). */
+export function isRentExemptUnit(u: any): boolean {
+  return isOwnerOccupiedUnit(u) || isVacantUnit(u);
+}
+
 /**
  * Convertit un local enregistré (clés snake_case en base, camelCase pour les
  * brouillons et constructions additionnelles) vers la forme du formulaire.
