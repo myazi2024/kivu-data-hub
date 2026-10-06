@@ -108,6 +108,53 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
         onLeaseYearsChange={setLeaseYears}
         customTitleName={customTitleName}
         onCustomTitleNameChange={setCustomTitleName}
+        titleOwnershipContent={formData.titleReferenceNumber?.trim() ? (
+          <div className="space-y-3 border-t border-border/50 pt-3 animate-fade-in">
+            <div className="flex items-start justify-between gap-2">
+              <Label className="text-sm font-medium leading-snug">
+                Ce titre de type « {getEffectiveTitleName(formData.propertyTitleType, customTitleName) || 'non sélectionné'} » est-il au nom du propriétaire actuel ?
+              </Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-6 w-6 shrink-0 p-0 rounded-full">
+                    <Info className="h-3.5 w-3.5 text-muted-foreground" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-72 rounded-xl text-xs">
+                  <p className="text-muted-foreground">
+                    Votre réponse nous permet de déterminer si nous pouvons vous recommander un service de mutation foncière, afin de sécuriser davantage le droit foncier qui couvre cette parcelle.
+                  </p>
+                </PopoverContent>
+              </Popover>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                type="button"
+                variant={formData.isTitleInCurrentOwnerName === true ? 'default' : 'outline'}
+                onClick={() => handleInputChange('isTitleInCurrentOwnerName', true)}
+                className="h-10 rounded-xl"
+              >
+                Oui
+              </Button>
+              <Button
+                type="button"
+                variant={formData.isTitleInCurrentOwnerName === false ? 'default' : 'outline'}
+                onClick={() => handleInputChange('isTitleInCurrentOwnerName', false)}
+                className="h-10 rounded-xl"
+              >
+                Non
+              </Button>
+            </div>
+            {formData.isTitleInCurrentOwnerName === false && (() => {
+              const ownerSinceDate = currentOwners[0]?.since;
+              if (!ownerSinceDate) return null;
+              const daysDiff = Math.floor((new Date().getTime() - new Date(ownerSinceDate).getTime()) / (1000 * 60 * 60 * 24));
+              return daysDiff >= 20
+                ? <p className="text-xs text-destructive">Hors délai légal de mutation (de 1 à 20 jours après acquisition).</p>
+                : <p className="text-xs text-success">Pensez à faire la mutation dès que possible, vous êtes encore dans le délai légal (de 1 à 20 jours après acquisition).</p>;
+            })()}
+          </div>
+        ) : undefined}
       />
 
       {/* Numéro de titre préchargé depuis une recherche cadastrale par n° de titre */}
@@ -223,67 +270,6 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
                 <Input id="titleIssueDate" type="date" max={new Date().toISOString().split('T')[0]} value={formData.titleIssueDate || ''} onChange={(e) => handleInputChange('titleIssueDate', e.target.value)} className="h-9 text-sm rounded-xl" />
               </div>
             </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Is title in current owner name? */}
-      {formData.titleReferenceNumber && formData.titleReferenceNumber.trim() !== '' && (
-        <Card className="max-w-[360px] mx-auto rounded-2xl shadow-md border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 overflow-hidden">
-          <CardContent className="p-3 space-y-3">
-            <div className="flex items-center justify-between">
-              <Label className="text-sm font-medium text-amber-900 dark:text-amber-100">
-                Ce titre de type "{getEffectiveTitleName(formData.propertyTitleType, customTitleName) || 'non sélectionné'}" est-il au nom du propriétaire actuel ?
-              </Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-5 w-5 p-0 rounded-full hover:bg-transparent">
-                    <Info className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-72 rounded-xl text-xs">
-                  <p className="text-muted-foreground">
-                    Votre réponse nous permet de déterminer si nous pouvons vous recommander un service de mutation foncière, afin de sécuriser davantage le droit foncier qui couvre cette parcelle.
-                  </p>
-                </PopoverContent>
-              </Popover>
-            </div>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  handleInputChange('isTitleInCurrentOwnerName', true);
-                }}
-                className={`flex-1 py-2.5 px-3 rounded-xl text-sm font-medium transition-all ${
-                  formData.isTitleInCurrentOwnerName === true
-                    ? 'bg-primary text-primary-foreground shadow-md'
-                    : 'bg-background text-muted-foreground hover:bg-background/80 border border-border'
-                }`}
-              >
-                Oui
-              </button>
-              <button
-                type="button"
-                onClick={() => handleInputChange('isTitleInCurrentOwnerName', false)}
-                className={`flex-1 py-2.5 px-3 rounded-xl text-sm font-medium transition-all ${
-                  formData.isTitleInCurrentOwnerName === false
-                    ? 'bg-primary text-primary-foreground shadow-md'
-                    : 'bg-background text-muted-foreground hover:bg-background/80 border border-border'
-                }`}
-              >
-                Non
-              </button>
-            </div>
-            {formData.isTitleInCurrentOwnerName === false && (() => {
-              const ownerSinceDate = currentOwners[0]?.since;
-              if (!ownerSinceDate) return null;
-              const daysDiff = Math.floor((new Date().getTime() - new Date(ownerSinceDate).getTime()) / (1000 * 60 * 60 * 24));
-              if (daysDiff >= 20) {
-                return <p className="text-xs text-amber-700 dark:text-amber-400">⚠️ Hors délai légal de mutation (De 1 à 20 jours après acquisition).</p>;
-              } else {
-                return <p className="text-xs text-green-700 dark:text-green-400">✓ Pensez à faire la mutation dès que possible, vous êtes encore dans le délai légal (De 1 à 20 jours après acquisition).</p>;
-              }
-            })()}
           </CardContent>
         </Card>
       )}
