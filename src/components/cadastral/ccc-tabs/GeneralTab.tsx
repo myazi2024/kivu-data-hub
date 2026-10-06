@@ -243,6 +243,8 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
               <Input id="titleDoc" type="file" accept="image/jpeg,image/jpg,image/png,image/webp,application/pdf" onChange={(e) => handleFileChange(e, 'title')} className="hidden" />
               <p className="text-xs text-muted-foreground text-center">JPG, PNG, PDF • Max 10 MB</p>
             </div>
+
+            {titleOwnershipQuestion}
           </CardContent>
         </Card>
       )}
@@ -274,6 +276,8 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
           </CardContent>
         </Card>
       )}
+
+      {formData.propertyTitleType === 'Autre' && customTitleName?.trim() && titleOwnershipQuestion}
 
       {/* Current owners section */}
       <CurrentOwnersSection
