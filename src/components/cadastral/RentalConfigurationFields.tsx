@@ -637,6 +637,7 @@ export const MonthlyRentFields: React.FC<CommonProps> = ({
                     />
                   </div>
 
+                  {showRent && (
                   <div className="space-y-1">
                     <Label className={cn('text-xs font-medium', missingRent ? 'text-destructive' : 'text-muted-foreground')}>
                       Loyer mensuel (USD) {missingRent && <span className="text-destructive">*</span>}
@@ -656,6 +657,7 @@ export const MonthlyRentFields: React.FC<CommonProps> = ({
                       )}
                     />
                   </div>
+                  )}
                   </>
                   )}
 
