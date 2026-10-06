@@ -357,7 +357,7 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
                   💡 Définissez les limites et l'entrée
                 </p>
                 <p className="text-[11px] text-amber-700 dark:text-amber-300 leading-relaxed">
-                   Sur chaque côté, activez <span className="inline-flex items-center gap-0.5 px-1 py-0.5 rounded bg-amber-200 dark:bg-amber-800 text-amber-700 dark:text-amber-300 font-medium text-[10px]"><BrickWall className="h-2 w-2" />Limite</span> — puis précisez s'il s'agit d'un <strong>mur</strong> ou d'une <strong>simple limite</strong> — et/ou <span className="inline-flex items-center gap-0.5 px-1 py-0.5 rounded bg-primary/10 text-primary font-medium text-[10px]"><Route className="h-2 w-2" />Route</span> si le côté borde une voie. Les deux peuvent être déclarés sur un même côté. Cochez enfin <span className="inline-flex items-center gap-0.5 px-1 py-0.5 rounded bg-primary/10 text-primary font-medium text-[10px]"><DoorOpen className="h-2 w-2" />Entrée</span> sur le côté d'accès.
+                   Touchez un côté pour indiquer sa <strong>limite</strong>, puis précisez si une <strong>route</strong> le borde. Cochez enfin <span className="inline-flex items-center gap-0.5 px-1 py-0.5 rounded bg-primary/10 text-primary font-medium text-[10px]"><DoorOpen className="h-2 w-2" />Entrée</span> sur le côté d'accès.
                 </p>
               </div>
             </div>
