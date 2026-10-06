@@ -25,7 +25,7 @@ export interface ParcelSide {
 export type SideBorderType = 'route' | 'mur_mitoyen';
 
 /** Nature de la limite non routière d'un côté : mur ou simple limite de parcelle. */
-export type BoundaryKind = 'mur' | 'limite';
+export type BoundaryKind = 'mur' | 'mur_mitoyen' | 'limite';
 
 export interface RoadSideInfo {
   sideIndex: number;
@@ -86,6 +86,13 @@ export const sideBoundaryKind = (s?: Partial<RoadSideInfo> | null): BoundaryKind
   return undefined;
 };
 
+/** « Mur » et « Mur mitoyen » partagent les mêmes champs (matériau, hauteur). */
+export const isWallKind = (kind?: BoundaryKind | null): boolean =>
+  kind === 'mur' || kind === 'mur_mitoyen';
+
+export const boundaryKindLabel = (kind?: BoundaryKind | null): string =>
+  kind === 'mur_mitoyen' ? 'Mur mitoyen' : kind === 'limite' ? 'Limite (sans mur)' : 'Mur';
+
 export interface ServitudeInfo {
   hasServitude: boolean;
   width?: number;
@@ -141,8 +148,9 @@ const getOrientationColor = (orientation?: string) => {
 const BorderTypeToggle: React.FC<{
   wallActive: boolean;
   roadActive: boolean;
+  roadDisabled?: boolean;
   onToggle: (type: SideBorderType) => void;
-}> = ({ wallActive, roadActive, onToggle }) => {
+}> = ({ wallActive, roadActive, roadDisabled, onToggle }) => {
   return (
     <div
       role="group"
@@ -185,11 +193,13 @@ const BorderTypeToggle: React.FC<{
       <button
         type="button"
         aria-pressed={roadActive}
-        aria-label="Route"
+        aria-label={roadDisabled ? 'Route non applicable : ce côté est un mur mitoyen' : 'Route'}
+        title={roadDisabled ? 'Route non applicable : ce côté est un mur mitoyen' : undefined}
+        disabled={roadDisabled}
         onClick={() => onToggle('route')}
         className={cn(
           'relative z-10 flex-1 h-6 px-2 rounded-full text-[10px] font-semibold transition-colors select-none',
-          'flex items-center justify-center gap-1',
+          'flex items-center justify-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed',
           roadActive ? 'text-green-950 dark:text-white' : 'text-muted-foreground hover:text-foreground'
         )}
       >
@@ -225,7 +235,7 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
     return {
       confirmedSidesCount: confirmed.length,
       roadCount: confirmed.filter(s => sideHasRoad(s)).length,
-      wallCount: confirmed.filter(s => sideBoundaryKind(s) === 'mur').length,
+      wallCount: confirmed.filter(s => isWallKind(sideBoundaryKind(s))).length,
       plainBoundaryCount: confirmed.filter(s => sideBoundaryKind(s) === 'limite').length,
       hasAnyRoute: roadSides.some(s => s.bordersRoad && sideHasRoad(s)),
       missingEntrance: confirmed.length > 0 && !roadSides.some(s => s.hasEntrance),
@@ -312,6 +322,8 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
   /** Active ou désactive un type de limite sur un côté (mur et route cumulables). */
   const toggleBorderType = (sideIndex: number, type: SideBorderType) => {
     const side = roadSides.find(s => s.sideIndex === sideIndex);
+    // Un mur mitoyen exclut la route
+    if (type === 'route' && sideBoundaryKind(side) === 'mur_mitoyen' && !sideHasRoad(side)) return;
     const currentRoad = sideHasRoad(side);
     const currentWall = sideHasWall(side);
     const nextRoad = type === 'route' ? !currentRoad : currentRoad;
@@ -335,11 +347,14 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
     });
   };
 
-  /** Bascule entre « Mur » et « Limite » : une simple limite n'a aucune dépendance. */
+  /** Bascule Mur / Mur mitoyen / Limite. Un mur mitoyen désactive la route. */
   const handleBoundaryKindChange = (sideIndex: number, kind: BoundaryKind) => {
     onRoadSideUpdate(sideIndex, {
       boundaryKind: kind,
       ...(kind === 'limite' ? WALL_FIELDS_RESET : {}),
+      ...(kind === 'mur_mitoyen'
+        ? { hasRoad: false, borderType: 'mur_mitoyen' as const, ...ROAD_FIELDS_RESET }
+        : {}),
     });
   };
 
@@ -360,7 +375,8 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
     if (hasWall) {
       const kind = sideBoundaryKind(side);
       if (!kind) return false;
-      if (kind === 'mur' && !side.wallMaterial) return false;
+      if (isWallKind(kind) && !side.wallMaterial) return false;
+      if (kind === 'mur_mitoyen' && hasRoad) return false;
     }
     return true;
   };
@@ -520,6 +536,7 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
                       <BorderTypeToggle
                         wallActive={isWall}
                         roadActive={isRoad}
+                        roadDisabled={boundaryKind === 'mur_mitoyen'}
                         onToggle={(type) => toggleBorderType(index, type)}
                       />
                     )}
@@ -576,7 +593,7 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
                     {isPlainBoundary
                       ? 'Limite de parcelle (sans mur)'
                       : [
-                          `Mur : ${wallMaterials.find(m => m.value === roadSide?.wallMaterial)?.label || roadSide?.wallMaterial || '—'}`,
+                          `${boundaryKind === 'mur_mitoyen' ? 'Mur mitoyen' : 'Mur'} : ${wallMaterials.find(m => m.value === roadSide?.wallMaterial)?.label || roadSide?.wallMaterial || '—'}`,
                           roadSide?.wallHeight ? `Hauteur: ${roadSide.wallHeight}m` : null,
                         ].filter(Boolean).join(' · ')}
                   </p>
@@ -778,13 +795,14 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="mur" className="text-xs">Mur</SelectItem>
+                            <SelectItem value="mur_mitoyen" className="text-xs">Mur mitoyen</SelectItem>
                             <SelectItem value="limite" className="text-xs">Limite (sans mur)</SelectItem>
                           </SelectContent>
                         </Select>
 
                         {!boundaryKind && (
                           <p className="text-[11px] text-muted-foreground leading-snug">
-                            Ce côté est-il fermé par un mur, ou s'agit-il d'une simple limite de parcelle ?
+                            Ce côté est-il fermé par un mur, un mur mitoyen, ou s'agit-il d'une simple limite de parcelle ?
                           </p>
                         )}
 
@@ -794,7 +812,13 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
                           </p>
                         )}
 
-                        {boundaryKind === 'mur' && (
+                        {boundaryKind === 'mur_mitoyen' && (
+                          <p className="text-[11px] text-muted-foreground leading-snug animate-fade-in">
+                            Mur partagé avec la parcelle voisine — précisez le matériau. Ce côté ne peut pas border une route.
+                          </p>
+                        )}
+
+                        {isWallKind(boundaryKind) && (
                           <div className="space-y-1.5 animate-fade-in">
                             <p className="text-[11px] text-muted-foreground leading-snug">
                               Précisez le matériau du mur ; la hauteur est facultative mais utile pour l'évaluation.
