@@ -76,7 +76,7 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
   // Fix #10: Une seule instanciation de usePaymentConfig, passée au dialog
   const { paymentMode, isPaymentRequired, availableMethods } = usePaymentConfig();
   const { services: catalogServices, loading: catalogLoading, error: catalogError } = useCadastralServices();
-  const { selectedServices, addService, addServices, removeService, toggleService, getTotalAmount, setParcelNumber, isSelected, updateServicePrices } = useCadastralCart();
+  const { selectedServices, addService, addServices, removeService, toggleService, getTotalAmount, setParcelNumber, isSelected, setParcelAvailability } = useCadastralCart();
   const { loading, createInvoice, processMobileMoneyPayment, processStripePayment, processTestPayment, paymentStep, resetPaymentState } = useCadastralPayment();
   const { currencies, selectedCurrency, setSelectedCurrency, convertFromUsd, exchangeRate } = useCurrencyConfig();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -120,23 +120,15 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
     return result;
   }, [searchResult, catalogServices]);
 
-  // B5/O2 : sync prix du panier (dep selectedServices ajoutée).
+  // Le panier mémorise les services disponibles de cette parcelle (règles du catalogue),
+  // pour que ses suggestions restent cohérentes avec le catalogue. Les prix sont alignés par le panier.
   React.useEffect(() => {
     if (catalogServices.length === 0 || selectedServices.length === 0) return;
-    const updates = selectedServices
-      .map(cartItem => {
-        const catalogItem = catalogServices.find(s => s.id === cartItem.id);
-        if (catalogItem && catalogItem.price !== cartItem.price) {
-          return { id: catalogItem.id, price: catalogItem.price };
-        }
-        return null;
-      })
-      .filter((u): u is { id: string; price: number } => u !== null);
-
-    if (updates.length > 0) {
-      updateServicePrices(updates);
-    }
-  }, [catalogServices, selectedServices, updateServicePrices]);
+    setParcelAvailability(
+      searchResult.parcel.parcel_number,
+      catalogServices.filter(s => serviceAvailability[s.id] ?? true).map(s => s.id),
+    );
+  }, [catalogServices, serviceAvailability, selectedServices.length, searchResult.parcel.parcel_number, setParcelAvailability]);
 
   React.useEffect(() => {
     setParcelNumber(searchResult.parcel.parcel_number);

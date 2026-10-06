@@ -23,6 +23,8 @@ export interface CadastralCartParcel {
   services: CadastralCartService[];
   /** Timestamp d'ajout (ms epoch) — sert au tri stable du drawer. */
   addedAt: number;
+  /** Services disponibles pour cette parcelle selon les règles du catalogue (calculé avec les données de la parcelle). */
+  availableServiceIds?: string[];
 }
 
 interface CadastralCartContextType {
@@ -31,6 +33,10 @@ interface CadastralCartContextType {
   addServiceForParcel: (parcelNumber: string, parcelLocation: string, service: CadastralCartService) => void;
   removeServiceForParcel: (parcelNumber: string, serviceId: string) => void;
   clearParcel: (parcelNumber: string) => void;
+  /** Retire uniquement les services indiqués (ex. services confirmés payés par le serveur). */
+  removeServicesForParcel: (parcelNumber: string, serviceIds: string[]) => void;
+  /** Mémorise les services disponibles d'une parcelle (règles du catalogue). */
+  setParcelAvailability: (parcelNumber: string, serviceIds: string[]) => void;
   getParcelCount: () => number;
   getTotalAcrossParcels: () => number;
 
@@ -39,13 +45,9 @@ interface CadastralCartContextType {
   addService: (service: CadastralCartService) => void;
   addServices: (services: CadastralCartService[]) => void;
   removeService: (serviceId: string) => void;
-  clearServices: () => void;
-  resetCart: () => void;
   getTotalAmount: () => number;
-  getServiceCount: () => number;
   isSelected: (serviceId: string) => boolean;
   toggleService: (service: CadastralCartService) => void;
-  updateServicePrices: (updates: { id: string; price: number }[]) => void;
   syncWithCatalog: (catalog: { id: string; name: string; price: number; category?: string | null }[]) => void;
   parcelNumber: string | null;
   setParcelNumber: (parcelNumber: string) => void;
@@ -97,6 +99,7 @@ export const CadastralCartProvider = ({ children }: { children: ReactNode }) => 
             parcelLocation: p.parcelLocation ?? '',
             services: p.services ?? [],
             addedAt: typeof p.addedAt === 'number' ? p.addedAt : now - (1000 - idx),
+            availableServiceIds: Array.isArray(p.availableServiceIds) ? p.availableServiceIds : undefined,
           };
         });
         setParcelsMap(migrated);
@@ -105,18 +108,6 @@ export const CadastralCartProvider = ({ children }: { children: ReactNode }) => 
         return;
       }
 
-      // v1 : { services: [...], parcelNumber, savedAt } → migration
-      const legacyServices: CadastralCartService[] = parsed.services || [];
-      const legacyParcel: string | null = parsed.parcelNumber || null;
-      if (legacyParcel && legacyServices.length > 0) {
-        const location = legacyServices[0]?.parcel_location || '';
-        setParcelsMap({
-          [legacyParcel]: { parcelNumber: legacyParcel, parcelLocation: location, services: legacyServices, addedAt: Date.now() },
-        });
-        setActiveParcelNumber(legacyParcel);
-      } else if (legacyParcel) {
-        setActiveParcelNumber(legacyParcel);
-      }
       setHydrated(true);
     } catch (error) {
       console.error('Error loading cadastral cart:', error);
@@ -187,6 +178,7 @@ export const CadastralCartProvider = ({ children }: { children: ReactNode }) => 
               parcelLocation: p.parcelLocation ?? '',
               services: p.services ?? [],
               addedAt: typeof p.addedAt === 'number' ? p.addedAt : Date.now(),
+              availableServiceIds: Array.isArray(p.availableServiceIds) ? p.availableServiceIds : undefined,
             };
           });
           setParcelsMap(migrated);
@@ -221,55 +213,6 @@ export const CadastralCartProvider = ({ children }: { children: ReactNode }) => 
     return () => clearTimeout(timer);
   }, [parcelsMap, activeParcelNumber, userId, hydrated]);
 
-  // ---------- Purge post-paiement (P6) ----------
-  // Listener stable (pas de dépendance) — utilise une ref pour lire le dernier parcelsMap.
-  // Évite la fenêtre de course où un événement serait perdu entre remove/addEventListener.
-  const parcelsMapRef = useRef(parcelsMap);
-  useEffect(() => { parcelsMapRef.current = parcelsMap; }, [parcelsMap]);
-
-  useEffect(() => {
-    const handler = async () => {
-      const { data: userRes } = await supabase.auth.getUser();
-      const userId = userRes.user?.id;
-      if (!userId) return;
-      const initial = Object.values(parcelsMapRef.current);
-      if (initial.length === 0) return;
-      try {
-        const { data, error } = await supabase
-          .from('cadastral_service_access')
-          .select('parcel_number, service_type, expires_at')
-          .eq('user_id', userId)
-          .in('parcel_number', initial.map(p => p.parcelNumber));
-        if (error || !data) return;
-        const ownedByParcel = new Map<string, Set<string>>();
-        for (const row of data) {
-          if (row.expires_at && new Date(row.expires_at) <= new Date()) continue;
-          if (!ownedByParcel.has(row.parcel_number)) ownedByParcel.set(row.parcel_number, new Set());
-          ownedByParcel.get(row.parcel_number)!.add(row.service_type);
-        }
-        // P0-2: re-snapshot après la requête réseau pour ne pas purger une parcelle ajoutée entre-temps.
-        setParcelsMap(prev => {
-          const next: Record<string, CadastralCartParcel> = {};
-          let changed = false;
-          for (const [pn, p] of Object.entries(prev)) {
-            const owned = ownedByParcel.get(pn);
-            if (!owned || owned.size === 0) { next[pn] = p; continue; }
-            const remaining = p.services.filter(s => !owned.has(s.id));
-            if (remaining.length === p.services.length) { next[pn] = p; continue; }
-            changed = true;
-            if (remaining.length > 0) next[pn] = { ...p, services: remaining };
-          }
-          return changed ? next : prev;
-        });
-      } catch (e) {
-        console.error('Cart purge after payment failed:', e);
-      }
-    };
-    window.addEventListener('cadastralPaymentCompleted', handler);
-    return () => window.removeEventListener('cadastralPaymentCompleted', handler);
-  }, []);
-
-
   // ---------- API multi-parcelles ----------
   const addServiceForParcel = useCallback((parcelNumber: string, parcelLocation: string, service: CadastralCartService) => {
     setParcelsMap(prev => {
@@ -300,6 +243,33 @@ export const CadastralCartProvider = ({ children }: { children: ReactNode }) => 
       if (!prev[parcelNumber]) return prev;
       const { [parcelNumber]: _, ...rest } = prev;
       return rest;
+    });
+  }, []);
+
+  const removeServicesForParcel = useCallback((parcelNumber: string, serviceIds: string[]) => {
+    if (serviceIds.length === 0) return;
+    const ids = new Set(serviceIds);
+    setParcelsMap(prev => {
+      const existing = prev[parcelNumber];
+      if (!existing) return prev;
+      const services = existing.services.filter(s => !ids.has(s.id));
+      if (services.length === existing.services.length) return prev;
+      if (services.length === 0) {
+        const { [parcelNumber]: _, ...rest } = prev;
+        return rest;
+      }
+      return { ...prev, [parcelNumber]: { ...existing, services } };
+    });
+  }, []);
+
+  const setParcelAvailability = useCallback((parcelNumber: string, serviceIds: string[]) => {
+    setParcelsMap(prev => {
+      const existing = prev[parcelNumber];
+      if (!existing) return prev;
+      const sorted = [...serviceIds].sort();
+      const current = existing.availableServiceIds;
+      if (current && current.length === sorted.length && current.every((id, i) => id === sorted[i])) return prev;
+      return { ...prev, [parcelNumber]: { ...existing, availableServiceIds: sorted } };
     });
   }, []);
 
@@ -381,28 +351,6 @@ export const CadastralCartProvider = ({ children }: { children: ReactNode }) => 
     if (!activeParcelNumber) setActiveParcelNumber(pn);
   }, [activeParcelNumber]);
 
-  const updateServicePrices = useCallback((updates: { id: string; price: number }[]) => {
-    const priceMap = new Map(updates.map(u => [u.id, u.price]));
-    setParcelsMap(prev => {
-      let changed = false;
-      const next: Record<string, CadastralCartParcel> = {};
-      for (const [pn, p] of Object.entries(prev)) {
-        let parcelChanged = false;
-        const newServices = p.services.map(s => {
-          const np = priceMap.get(s.id);
-          if (np !== undefined && np !== s.price) {
-            parcelChanged = true;
-            return { ...s, price: np };
-          }
-          return s;
-        });
-        if (parcelChanged) changed = true;
-        next[pn] = parcelChanged ? { ...p, services: newServices } : p;
-      }
-      return changed ? next : prev;
-    });
-  }, []);
-
   /** Aligne tout le panier (toutes parcelles) sur le catalogue actif : prix, nom, catégorie, services retirés. */
   const syncWithCatalog = useCallback((catalog: { id: string; name: string; price: number; category?: string | null }[]) => {
     if (catalog.length === 0) return;
@@ -429,18 +377,7 @@ export const CadastralCartProvider = ({ children }: { children: ReactNode }) => 
     });
   }, []);
 
-  const clearServices = useCallback(() => {
-    if (!activeParcelNumber) return;
-    clearParcel(activeParcelNumber);
-  }, [activeParcelNumber, clearParcel]);
-
-  const resetCart = useCallback(() => {
-    setParcelsMap({});
-    setActiveParcelNumber(null);
-  }, []);
-
   const getTotalAmount = useCallback(() => activeServices.reduce((t, s) => t + s.price, 0), [activeServices]);
-  const getServiceCount = useCallback(() => activeServices.length, [activeServices]);
   const isSelected = useCallback((serviceId: string) => activeServices.some(s => s.id === serviceId), [activeServices]);
 
   return (
@@ -449,19 +386,17 @@ export const CadastralCartProvider = ({ children }: { children: ReactNode }) => 
       addServiceForParcel,
       removeServiceForParcel,
       clearParcel,
+      removeServicesForParcel,
+      setParcelAvailability,
       getParcelCount,
       getTotalAcrossParcels,
       selectedServices: activeServices,
       addService,
       addServices,
       removeService,
-      clearServices,
-      resetCart,
       getTotalAmount,
-      getServiceCount,
       isSelected,
       toggleService,
-      updateServicePrices,
       syncWithCatalog,
       parcelNumber: activeParcelNumber,
       setParcelNumber,
