@@ -119,7 +119,7 @@ const LocationSection: React.FC<LocationSectionProps> = ({ number, parcel, bound
                   {(s.hasWall ?? s.borderType === 'mur_mitoyen')
                     ? (((s as any).boundaryKind ?? (s.wallMaterial || s.wallHeight ? 'mur' : 'mur')) === 'limite'
                         ? 'Limite (sans mur)'
-                        : `Mur${s.wallMaterial ? ` — ${s.wallMaterial}` : ''}${s.wallHeight ? ` — ${s.wallHeight} m` : ''}`)
+                        : `${(s as any).boundaryKind === 'mur_mitoyen' ? 'Mur mitoyen' : 'Mur'}${s.wallMaterial ? ` — ${s.wallMaterial}` : ''}${s.wallHeight ? ` — ${s.wallHeight} m` : ''}`)
                     : '—'}
                 </td>
               </tr>

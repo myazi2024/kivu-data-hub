@@ -289,7 +289,7 @@ const ReviewTab: React.FC<ReviewTabProps> = ({
                     details.push(
                       kind === 'limite'
                         ? 'Limite (sans mur)'
-                        : `Mur${side.wallMaterial ? `: ${side.wallMaterial}` : ''}${side.wallHeight ? ` (${side.wallHeight} m)` : ''}`
+                        : `${kind === 'mur_mitoyen' ? 'Mur mitoyen' : 'Mur'}${side.wallMaterial ? `: ${side.wallMaterial}` : ''}${side.wallHeight ? ` (${side.wallHeight} m)` : ''}`
                     );
                   }
                   return (
