@@ -279,10 +279,7 @@ export interface CadastralContributionData {
   saleListing?: {
     coverImageUrls?: string[];
     coverImageMainUrl?: string;
-    priceNegotiable?: boolean;
     paymentTerms?: 'cash' | 'installments' | 'both';
-    availability?: 'immediate' | 'conditional';
-    availabilityNote?: string;
     description?: string;
     contactChannel?: 'whatsapp' | 'phone' | 'email';
     contactValue?: string;
