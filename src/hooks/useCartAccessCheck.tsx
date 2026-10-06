@@ -5,13 +5,14 @@ import type { CadastralCartParcel } from '@/hooks/useCadastralCart';
 
 /**
  * Pour chaque parcelle du panier, batch-check les services déjà payés/accessibles.
- * Retourne une map { [parcelNumber]: Set<serviceId> } + helpers.
+ * Source unique des « services déjà acquis » du panier (badges, totaux, exclusion du paiement).
+ * Retourne { [parcelNumber]: { [serviceId]: expiresAt | null } } + helpers.
  *
  * Se rafraîchit automatiquement sur l'événement `cadastralPaymentCompleted`.
  */
 export const useCartAccessCheck = (parcels: CadastralCartParcel[]) => {
   const { user } = useAuth();
-  const [accessMap, setAccessMap] = useState<Record<string, string[]>>({});
+  const [accessMap, setAccessMap] = useState<Record<string, Record<string, string | null>>>({});
   const [loading, setLoading] = useState(false);
 
   // Signature stable des parcelles + services pour éviter les re-fetch inutiles.
@@ -36,8 +37,8 @@ export const useCartAccessCheck = (parcels: CadastralCartParcel[]) => {
       const allServiceIds = Array.from(
         new Set(parcels.flatMap((p) => p.services.map((s) => s.id)))
       );
-      const next: Record<string, string[]> = {};
-      parcels.forEach((p) => { next[p.parcelNumber] = []; });
+      const next: Record<string, Record<string, string | null>> = {};
+      parcels.forEach((p) => { next[p.parcelNumber] = {}; });
 
       if (parcelNumbers.length > 0 && allServiceIds.length > 0) {
         const { data, error } = await supabase
@@ -51,8 +52,8 @@ export const useCartAccessCheck = (parcels: CadastralCartParcel[]) => {
           const now = Date.now();
           for (const row of data) {
             if (row.expires_at && new Date(row.expires_at).getTime() <= now) continue;
-            const list = next[row.parcel_number];
-            if (list && !list.includes(row.service_type)) list.push(row.service_type);
+            const owned = next[row.parcel_number];
+            if (owned) owned[row.service_type] = row.expires_at ?? null;
           }
         }
       }
@@ -74,23 +75,21 @@ export const useCartAccessCheck = (parcels: CadastralCartParcel[]) => {
   }, [refresh]);
 
   const isOwned = useCallback(
-    (parcelNumber: string, serviceId: string) =>
-      (accessMap[parcelNumber] || []).includes(serviceId),
+    (parcelNumber: string, serviceId: string) => !!accessMap[parcelNumber] && serviceId in accessMap[parcelNumber],
     [accessMap]
   );
 
-  const ownedCountFor = useCallback(
-    (parcelNumber: string) => (accessMap[parcelNumber] || []).length,
+  /** Date de fin d'accès d'un service acquis (null = accès sans limite). */
+  const ownedUntil = useCallback(
+    (parcelNumber: string, serviceId: string) => accessMap[parcelNumber]?.[serviceId] ?? null,
     [accessMap]
   );
 
   const allOwnedFor = useCallback(
-    (parcel: CadastralCartParcel) => {
-      const owned = accessMap[parcel.parcelNumber] || [];
-      return parcel.services.length > 0 && parcel.services.every((s) => owned.includes(s.id));
-    },
-    [accessMap]
+    (parcel: CadastralCartParcel) =>
+      parcel.services.length > 0 && parcel.services.every((s) => isOwned(parcel.parcelNumber, s.id)),
+    [isOwned]
   );
 
-  return { accessMap, loading, refresh, isOwned, ownedCountFor, allOwnedFor };
+  return { loading, refresh, isOwned, ownedUntil, allOwnedFor };
 };
