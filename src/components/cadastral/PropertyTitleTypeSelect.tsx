@@ -64,6 +64,8 @@ interface PropertyTitleTypeSelectProps {
   disabledValues?: string[];
   /** Explication affichée sous le select lorsque des valeurs sont désactivées. */
   disabledReason?: string;
+  /** Contenu contextuel affiché dans le même bloc que le type de titre. */
+  titleOwnershipContent?: React.ReactNode;
 }
 
 const PropertyTitleTypeSelect: React.FC<PropertyTitleTypeSelectProps> = ({ 
@@ -78,6 +80,7 @@ const PropertyTitleTypeSelect: React.FC<PropertyTitleTypeSelectProps> = ({
   onCustomTitleNameChange,
   disabledValues,
   disabledReason,
+  titleOwnershipContent,
 }) => {
   const [openPopoverId, setOpenPopoverId] = React.useState<string | null>(null);
   const [ficheAttempt, setFicheAttempt] = React.useState(false);
@@ -272,6 +275,8 @@ const PropertyTitleTypeSelect: React.FC<PropertyTitleTypeSelectProps> = ({
             )}
           </div>
         )}
+
+        {titleOwnershipContent}
       </CardContent>
     </Card>
   );
