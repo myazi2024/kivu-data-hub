@@ -367,8 +367,8 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
                   };
                   return (
                     <div className="space-y-3 pt-2 mt-2 border-t border-border animate-fade-in">
-                      <Label className="text-[11px] font-semibold text-foreground uppercase tracking-wide flex items-center gap-1.5">
-                        <Home className="h-3.5 w-3.5 text-primary" /> Détails de l'annonce de vente
+                      <Label className="text-[11px] font-semibold text-foreground flex items-center gap-1.5">
+                        <Home className="h-3.5 w-3.5 text-primary" /> Pouvez-vous ajouter quelques images de cette parcelle qui la met en valeur ?
                       </Label>
 
                       {/* Images parcelle */}
@@ -439,37 +439,10 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
                         )}
                       </div>
 
-                      {/* Disponibilité */}
-                      <div className="min-w-0 rounded-xl border border-border bg-background p-2 sm:p-2.5 space-y-2">
-                        <Label className="text-[11px] font-semibold text-foreground uppercase tracking-wide">Disponibilité</Label>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                          <div className="space-y-1">
-                            <Label className="text-[11px] font-medium text-foreground">Disponible <span className="text-destructive">*</span></Label>
-                            <Select value={sale.availability || ''} onValueChange={(v) => updateSale({ availability: v as any })}>
-                              <SelectTrigger className="h-10 w-full min-w-0 rounded-xl text-sm"><SelectValue placeholder="Choisir…" /></SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="immediate">Immédiatement</SelectItem>
-                                <SelectItem value="conditional">Sous conditions</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          {sale.availability === 'conditional' && (
-                            <div className="space-y-1">
-                              <Label className="text-[11px] font-medium text-foreground">Précisions</Label>
-                              <Input
-                                type="text" placeholder="Ex. après récolte 2026"
-                                value={sale.availabilityNote || ''}
-                                onChange={(e) => updateSale({ availabilityNote: e.target.value || undefined })}
-                                className="h-10 w-full min-w-0 rounded-xl text-sm"
-                              />
-                            </div>
-                          )}
-                        </div>
-                      </div>
 
                       {/* Description & contact */}
                       <div className="min-w-0 rounded-xl border border-border bg-background p-2 sm:p-2.5 space-y-2">
-                        <Label className="text-[11px] font-semibold text-foreground uppercase tracking-wide">Comment décririez-vous cette propriété en quelques mots ?</Label>
+                        <Label className="text-[11px] font-semibold text-foreground">Comment décririez-vous cette propriété en quelques mots ?</Label>
                         <div className="space-y-1">
                           <Label className="text-[11px] font-medium text-foreground">Description (500 caractères max)</Label>
                           <Textarea
@@ -944,7 +917,7 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
 
                                   {/* Description & contact */}
                                   <div className="min-w-0 rounded-xl border border-border bg-background p-2 sm:p-2.5 space-y-2">
-                                    <Label className="text-[11px] font-semibold text-foreground uppercase tracking-wide">Comment décririez-vous cette propriété en quelques mots ?</Label>
+                                    <Label className="text-[11px] font-semibold text-foreground">Comment décririez-vous cette propriété en quelques mots ?</Label>
                                     <div className="space-y-1">
                                       <Label className="text-[11px] font-medium text-foreground">Description de l'annonce (500 caractères max)</Label>
                                       <Textarea
@@ -1042,10 +1015,6 @@ const MarketValueTab: React.FC<MarketValueTabProps> = ({
                 const saleImgs = Array.isArray(sale.coverImageUrls) ? sale.coverImageUrls.filter(Boolean) : [];
                 if (saleImgs.length < 1) {
                   toast.error("Ajoutez au moins une photo de la parcelle pour l'annonce de vente.");
-                  return;
-                }
-                if (!sale.availability) {
-                  toast.error("Renseignez la disponibilité de la parcelle.");
                   return;
                 }
               }
