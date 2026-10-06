@@ -256,7 +256,7 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
     onRoadSideUpdate(sideIndex, {
       boundaryKind: kind,
       bordersRoad: true,
-      hasWall: true,
+      hasWall: isWallKind(kind),
       ...(prev === 'mur_mitoyen' && kind !== 'mur_mitoyen'
         ? { hasRoad: undefined, borderType: undefined }
         : {}),
@@ -271,7 +271,7 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
   const handleRoadAnswer = (sideIndex: number, value: boolean) => {
     onRoadSideUpdate(sideIndex, value
       ? { hasRoad: true, borderType: 'route' }
-      : { hasRoad: false, borderType: 'mur_mitoyen', ...ROAD_FIELDS_RESET });
+      : { hasRoad: false, borderType: undefined, ...ROAD_FIELDS_RESET });
   };
 
   const canConfirm = (side: RoadSideInfo) => {
