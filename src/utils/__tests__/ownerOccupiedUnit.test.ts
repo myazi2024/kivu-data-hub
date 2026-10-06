@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
 import { isOwnerOccupiedUnit, hasTenantRentalIncome, normalizeRentalUnitFromDb } from '@/utils/rentalStatus';
-import { countMissingLeaseContracts } from '@/utils/leaseContractNotice';
 
 describe('locaux occupés par le propriétaire', () => {
   it('reconnaît camelCase et snake_case', () => {
