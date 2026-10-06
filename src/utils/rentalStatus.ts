@@ -23,28 +23,35 @@ export function isConstructionRented(c: RentedLike | null | undefined): boolean 
 }
 
 /**
- * Combinaisons type + nature pour lesquelles la question
+ * Types de construction pour lesquels la question
  * « Ce bien est-il mis en location ? » a du sens.
+ *
+ * L'éligibilité dépend du type de construction seul, jamais de la nature :
+ * la logique locative est identique pour toutes les valeurs du picklist
+ * « Matériaux » (Durable, Semi-durable ou Précaire).
  */
-const RENTAL_ELIGIBLE_KEYS = new Set([
-  'Résidentielle_Durable',
-  'Résidentielle_Semi-durable',
-  'Commerciale_Durable',
-  'Commerciale_Semi-durable',
-  'Industrielle_Durable',
-  'Industrielle_Semi-durable',
-  // Biens non bâtis pouvant être loués (parking, terrain agricole)
-  'Terrain nu_Non bâti',
-  'Agricole_Non bâti',
+const RENTAL_ELIGIBLE_TYPES = new Set([
+  'Résidentielle',
+  'Commerciale',
+  'Industrielle',
 ]);
 
+/** Biens non bâtis pouvant être loués (parking, terrain agricole). */
+const RENTAL_ELIGIBLE_UNBUILT_TYPES = new Set([
+  'Terrain nu',
+  'Agricole',
+]);
 
 export function isRentalEligible(
   constructionType?: string | null,
   constructionNature?: string | null,
 ): boolean {
   if (!constructionType || !constructionNature) return false;
-  return RENTAL_ELIGIBLE_KEYS.has(`${constructionType}_${constructionNature}`);
+  if (RENTAL_ELIGIBLE_TYPES.has(constructionType)) return true;
+  return (
+    constructionNature === 'Non bâti' &&
+    RENTAL_ELIGIBLE_UNBUILT_TYPES.has(constructionType)
+  );
 }
 
 /**

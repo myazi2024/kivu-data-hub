@@ -46,10 +46,20 @@ describe('rentalStatus — éligibilité locative', () => {
     ['Industrielle', 'Durable', true],
     ['Terrain nu', 'Non bâti', true],
     ['Agricole', 'Non bâti', true],
-    ['Résidentielle', 'Précaire', false],
+    // La nature Précaire (Bois, Tôle, Paille) n'exclut plus la location :
+    // la logique est identique pour tous les matériaux.
+    ['Résidentielle', 'Précaire', true],
+    ['Commerciale', 'Précaire', true],
+    ['Industrielle', 'Précaire', true],
     ['Agricole', 'Durable', false],
   ] as const)('isRentalEligible(%s, %s) = %s', (type, nature, expected) => {
     expect(isRentalEligible(type, nature)).toBe(expected);
+  });
+
+  it('maison basse avec matériau précaire : location applicable', () => {
+    for (const nature of ['Durable', 'Semi-durable', 'Précaire'] as const) {
+      expect(isRentalEligible('Résidentielle', nature)).toBe(true);
+    }
   });
 
   it('sans type ou sans nature, aucune éligibilité', () => {
