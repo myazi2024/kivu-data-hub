@@ -114,7 +114,10 @@ const buildRentalAsset = (
 
   const monthlyRentUsd =
     configuration === 'multi'
-      ? units.reduce((sum, u) => sum + (u.monthlyRentUsd ?? 0), 0)
+      ? units.reduce(
+          (sum, u) => sum + (u.isOccupied === true && u.occupiedBy === 'owner' ? 0 : (u.monthlyRentUsd ?? 0)),
+          0,
+        )
       : declaredMonthlyRentUsd ?? 0;
 
   const totalCapacity =

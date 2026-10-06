@@ -2,7 +2,7 @@ import React, { useRef, useState } from 'react';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { FileText, Loader2, Upload, X } from 'lucide-react';
+import { FileText, Loader2, Plus, X } from 'lucide-react';
 import { uploadCccDocument } from '@/utils/cccUpload';
 import { useToast } from '@/hooks/use-toast';
 
@@ -44,25 +44,25 @@ export const LeaseContractField: React.FC<Props> = ({ value, onChange, className
   };
 
   return (
-    <div className={cn('space-y-1', className)}>
-      <Label className="text-xs font-medium text-muted-foreground">Contrat de location (optionnel)</Label>
+    <div className={cn('space-y-2 pt-1 border-t border-border/50', className)}>
+      <Label className="text-sm font-medium">Contrat de location (optionnel)</Label>
 
       {value ? (
-        <div className="flex items-center gap-2 rounded-xl border border-border bg-muted/40 px-3 py-2">
+        <div className="flex items-center gap-2 p-2.5 bg-muted/50 rounded-xl border overflow-hidden min-w-0">
           <FileText className="h-4 w-4 text-primary shrink-0" />
           <a
             href={value}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-xs text-foreground underline truncate flex-1"
+            className="text-sm text-foreground underline truncate flex-1 min-w-0"
           >
-            Contrat joint
+            Contrat de location joint
           </a>
           <Button
             type="button"
             variant="ghost"
             size="icon"
-            className="h-7 w-7"
+            className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10 rounded-lg shrink-0"
             aria-label="Retirer le contrat de location"
             onClick={() => onChange(undefined)}
           >
@@ -83,12 +83,13 @@ export const LeaseContractField: React.FC<Props> = ({ value, onChange, className
             variant="outline"
             disabled={busy}
             onClick={() => inputRef.current?.click()}
-            className="h-9 w-full rounded-xl text-xs"
+            className="gap-2 w-full text-sm h-10 rounded-xl border-dashed border-2 hover:bg-primary/5"
           >
-            {busy ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Upload className="h-3.5 w-3.5 mr-1.5" />}
-            {busy ? 'Envoi en cours…' : 'Joindre le contrat (PDF, JPG, PNG — 5 Mo max)'}
+            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+            {busy ? 'Envoi en cours…' : 'Ajouter le contrat de location'}
           </Button>
-          <p className="text-[11px] text-muted-foreground leading-snug">
+          <p className="text-xs text-muted-foreground text-center">JPG, PNG, PDF • Max 5 Mo</p>
+          <p className="text-[11px] text-muted-foreground leading-snug text-center">
             Facultatif : si vous n'avez pas le contrat sous la main, vous pourrez l'ajouter plus tard depuis votre espace utilisateur.
           </p>
         </>
