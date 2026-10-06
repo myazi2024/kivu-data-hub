@@ -9,3 +9,5 @@ type: feature
 - Contrat de location optionnel après « Loyer mensuel (USD) » quand le bien est loué et occupé : un par local occupé en multi, un seul en mode single. Upload via `uploadCccDocument` (bucket privé `cadastral-documents`, chemin préfixé `auth.uid()`).
 - À la soumission, `notifyMissingLeaseContract` crée une notification invitant à ajouter le contrat plus tard depuis l'espace utilisateur.
 - Colonnes : `actual_usage`, `actual_usage_other`, `operational_capacity`, `operational_capacity_unit`, `lease_contract_url` sur `cadastral_contributions` ; mêmes clés snake_case dans le jsonb `rental_units`.
+- Mode « Divisé en plusieurs locaux » : local occupé → « occupé par » propriétaire (bailleur) / locataire, obligatoire. Propriétaire → pas de date de location, loyer ni contrat ; exclu des loyers, de l'IRL et du rappel de contrat. Clé jsonb `occupied_by` ('owner'|'tenant').
+- Taxe IRL : ordre Type → Construction concernée → Année (année verrouillée tant que la construction n'est pas choisie).

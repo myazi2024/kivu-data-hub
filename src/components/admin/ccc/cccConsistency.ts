@@ -11,6 +11,7 @@ export interface AdminRentalUnit {
   label: string | null;
   monthlyRentUsd: number | null;
   isOccupied: boolean | null;
+  occupiedBy: string | null;
   occupantCount: number | null;
   hostingCapacity: number | null;
   actualUsage: string | null;
@@ -55,6 +56,7 @@ export const parseRentalUnits = (raw: unknown): AdminRentalUnit[] => {
       label: rr(u, 'label', 'name'),
       monthlyRentUsd: num(rr(u, 'monthly_rent_usd', 'monthlyRentUsd')),
       isOccupied: (rr(u, 'is_occupied', 'isOccupied') as boolean | null) ?? null,
+      occupiedBy: rr(u, 'occupied_by', 'occupiedBy'),
       occupantCount: num(rr(u, 'occupant_count', 'occupantCount')),
       hostingCapacity: num(rr(u, 'hosting_capacity', 'hostingCapacity')),
       actualUsage: rr(u, 'actual_usage', 'actualUsage'),
@@ -125,7 +127,7 @@ export const detectCCCInconsistencies = (c: any): string[] => {
       if (c.rental_units_count && Number(c.rental_units_count) !== units.length) {
         issues.push(`Nombre de locaux déclaré (${c.rental_units_count}) ≠ locaux détaillés (${units.length}).`);
       }
-      if (units.some((u) => !u.monthlyRentUsd || u.monthlyRentUsd <= 0)) {
+      if (units.some((u) => !(u.isOccupied === true && u.occupiedBy === 'owner') && (!u.monthlyRentUsd || u.monthlyRentUsd <= 0))) {
         issues.push('Au moins un local est déclaré sans loyer mensuel valide.');
       }
       const total = sumUnitsRent(units);

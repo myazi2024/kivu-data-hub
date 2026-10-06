@@ -48,6 +48,7 @@ export interface CadastralContributionData {
     label?: string;
     monthlyRentUsd?: number;
     isOccupied?: boolean;
+    occupiedBy?: 'owner' | 'tenant';
     occupantCount?: number;
     hostingCapacity?: number;
     actualUsage?: string;
@@ -203,6 +204,7 @@ export interface CadastralContributionData {
       label?: string;
       monthlyRentUsd?: number;
       isOccupied?: boolean;
+      occupiedBy?: 'owner' | 'tenant';
       occupantCount?: number;
       hostingCapacity?: number;
       actualUsage?: string;
@@ -214,6 +216,7 @@ export interface CadastralContributionData {
       floor?: string;
     }>;
     isOccupied?: boolean;
+    occupiedBy?: 'owner' | 'tenant';
     occupantCount?: number;
     hostingCapacity?: number;
     actualUsage?: string;

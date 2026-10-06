@@ -298,6 +298,7 @@ export const buildClientIssues = (c: Contribution | null): CCCValidationIssue[] 
         });
       }
       units.forEach((u, i) => {
+        if (u.isOccupied === true && u.occupiedBy === 'owner') return;
         if (!u.monthlyRentUsd || u.monthlyRentUsd <= 0) {
           push({
             fieldId: `rental_units[${i}].monthly_rent_usd`,

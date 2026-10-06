@@ -38,7 +38,7 @@ export const calculateCCCCompleteness = (contribution: any): number => {
     if (contribution.rental_configuration) filled++;
     if (contribution.rental_configuration === 'multi') {
       if (units.length > 0) filled++;
-      if (units.length > 0 && units.every((u: any) => Number(u?.monthly_rent_usd ?? u?.monthlyRentUsd) > 0)) filled++;
+      if (units.length > 0 && units.every((u: any) => ((u?.is_occupied ?? u?.isOccupied) === true && (u?.occupied_by ?? u?.occupiedBy) === 'owner') || Number(u?.monthly_rent_usd ?? u?.monthlyRentUsd) > 0)) filled++;
     } else {
       if (Number(contribution.monthly_rent_usd) > 0) filled++;
       if (contribution.rental_start_date) filled++;

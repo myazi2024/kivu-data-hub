@@ -198,6 +198,20 @@ describe('useFormValidation — champs conditionnels Appartement', () => {
     }));
     expect(f).toEqual([]);
   });
+
+  it('mode multi : local du propriétaire sans loyer ni date = valide ; occupant non précisé = bloquant', () => {
+    const owner = { isOccupied: true, occupiedBy: 'owner', hostingCapacity: 4, occupantCount: 3 };
+    const ok = fields(build('Villa', {
+      formData: { isRented: true, rentalConfiguration: 'multi', rentalUnitsCount: 2,
+        rentalUnits: [owner, { monthlyRentUsd: 150, isOccupied: false, hostingCapacity: 2, rentalStartDate: '2023-02-01' }] } as any,
+    }));
+    expect(ok).toEqual([]);
+    const ko = fields(build('Villa', {
+      formData: { isRented: true, rentalConfiguration: 'multi', rentalUnitsCount: 2,
+        rentalUnits: [{ ...owner, occupiedBy: undefined }, { ...owner, occupiedBy: 'tenant' }] } as any,
+    }));
+    expect(ko).toEqual(expect.arrayContaining(['rentalUnitOccupiedBy_0', 'rentalUnit_1', 'rentalUnitDate_1']));
+  });
 });
 
 describe('useFormValidation — champs conditionnels Terrain nu', () => {
@@ -282,7 +296,7 @@ describe('useFormValidation — configuration locative', () => {
   });
 
   it('mode multi complet : aucun champ manquant', () => {
-    const unit = { monthlyRentUsd: 200, isOccupied: true, hostingCapacity: 4, occupantCount: 3, rentalStartDate: '2023-02-01' };
+    const unit = { monthlyRentUsd: 200, isOccupied: true, occupiedBy: 'tenant', hostingCapacity: 4, occupantCount: 3, rentalStartDate: '2023-02-01' };
     const f = fields(build('Villa', {
       formData: {
         isRented: true, rentalConfiguration: 'multi', rentalUnitsCount: 2,
