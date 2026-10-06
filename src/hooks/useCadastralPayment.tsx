@@ -127,7 +127,7 @@ export const useCadastralPayment = () => {
           payment_method: 'BYPASS',
         });
         toast({ title: "Accès accordé", description: "Services accessibles gratuitement" });
-        removeServicesForParcel(parcelNumber, (result.selected_services as string[] | undefined) ?? serviceIds);
+        removeServicesForParcel(parcelNumber, await getInvoiceServices(result.invoice_id).catch(() => serviceIds));
         window.dispatchEvent(new CustomEvent('cadastralPaymentCompleted'));
       } else {
         toast({
