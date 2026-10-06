@@ -141,75 +141,6 @@ const getOrientationColor = (orientation?: string) => {
   }
 };
 
-/**
- * Contrôle segmenté [Mur | Route] — multi-sélection : un côté peut porter
- * un mur ET une route en même temps.
- */
-const BorderTypeToggle: React.FC<{
-  wallActive: boolean;
-  roadActive: boolean;
-  roadDisabled?: boolean;
-  onToggle: (type: SideBorderType) => void;
-}> = ({ wallActive, roadActive, roadDisabled, onToggle }) => {
-  return (
-    <div
-      role="group"
-      aria-label="Type de limite (mur et/ou route)"
-      onClick={(e) => e.stopPropagation()}
-      className="relative flex items-center rounded-full bg-muted/60 p-0.5 border border-border/40 shadow-inner"
-    >
-      {wallActive && (
-        <div
-          className="absolute top-0.5 bottom-0.5 left-0.5 rounded-full pointer-events-none bg-amber-400 dark:bg-amber-600"
-          style={{ width: 'calc(50% - 0.125rem)', transition: 'opacity 0.2s ease-out' }}
-          aria-hidden="true"
-        />
-      )}
-      {roadActive && (
-        <div
-          className="absolute top-0.5 bottom-0.5 left-0.5 rounded-full pointer-events-none bg-green-400 dark:bg-green-600"
-          style={{
-            width: 'calc(50% - 0.125rem)',
-            transform: 'translateX(100%)',
-            transition: 'transform 0.28s cubic-bezier(0.34, 1.4, 0.64, 1)',
-          }}
-          aria-hidden="true"
-        />
-      )}
-      <button
-        type="button"
-        aria-pressed={wallActive}
-        aria-label="Limite (mur ou simple limite)"
-        onClick={() => onToggle('mur_mitoyen')}
-        className={cn(
-          'relative z-10 flex-1 h-6 px-2 rounded-full text-[10px] font-semibold transition-colors select-none',
-          'flex items-center justify-center gap-1',
-          wallActive ? 'text-amber-950 dark:text-white' : 'text-muted-foreground hover:text-foreground'
-        )}
-      >
-        <BrickWall className="h-2.5 w-2.5" />
-        Limite
-      </button>
-      <button
-        type="button"
-        aria-pressed={roadActive}
-        aria-label={roadDisabled ? 'Route non applicable : ce côté est un mur mitoyen' : 'Route'}
-        title={roadDisabled ? 'Route non applicable : ce côté est un mur mitoyen' : undefined}
-        disabled={roadDisabled}
-        onClick={() => onToggle('route')}
-        className={cn(
-          'relative z-10 flex-1 h-6 px-2 rounded-full text-[10px] font-semibold transition-colors select-none',
-          'flex items-center justify-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed',
-          roadActive ? 'text-green-950 dark:text-white' : 'text-muted-foreground hover:text-foreground'
-        )}
-      >
-        <Route className="h-2.5 w-2.5" />
-        Route
-      </button>
-    </div>
-  );
-};
-
 export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProps> = ({
   parcelSides,
   roadSides,
@@ -305,52 +236,30 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
     setEditingSide(null);
   };
 
-  const handleStartEdit = (sideIndex: number, borderType: SideBorderType = 'route') => {
+  const handleStartEdit = (sideIndex: number) => {
     setEditingSide(sideIndex);
     setShowNotification(false);
     const roadSide = roadSides.find(s => s.sideIndex === sideIndex);
     if (!roadSide?.bordersRoad) {
       onRoadSideUpdate(sideIndex, {
         bordersRoad: true,
-        borderType,
-        hasRoad: borderType === 'route',
-        hasWall: borderType === 'mur_mitoyen',
+        borderType: undefined,
+        hasRoad: undefined,
+        hasWall: true,
       });
     }
   };
 
-  /** Active ou désactive un type de limite sur un côté (mur et route cumulables). */
-  const toggleBorderType = (sideIndex: number, type: SideBorderType) => {
-    const side = roadSides.find(s => s.sideIndex === sideIndex);
-    // Un mur mitoyen exclut la route
-    if (type === 'route' && sideBoundaryKind(side) === 'mur_mitoyen' && !sideHasRoad(side)) return;
-    const currentRoad = sideHasRoad(side);
-    const currentWall = sideHasWall(side);
-    const nextRoad = type === 'route' ? !currentRoad : currentRoad;
-    const nextWall = type === 'mur_mitoyen' ? !currentWall : currentWall;
-
-    if (!nextRoad && !nextWall) {
-      handleRemoveSide(sideIndex);
-      return;
-    }
-
-    setEditingSide(sideIndex);
-    setShowNotification(false);
-    onRoadSideUpdate(sideIndex, {
-      bordersRoad: true,
-      hasRoad: nextRoad,
-      hasWall: nextWall,
-      // Champ dérivé : la route prime pour les indicateurs d'accès
-      borderType: nextRoad ? 'route' : 'mur_mitoyen',
-      ...(nextRoad ? {} : ROAD_FIELDS_RESET),
-      ...(nextWall ? {} : { ...WALL_FIELDS_RESET, boundaryKind: undefined }),
-    });
-  };
-
   /** Bascule Mur / Mur mitoyen / Limite. Un mur mitoyen désactive la route. */
   const handleBoundaryKindChange = (sideIndex: number, kind: BoundaryKind) => {
+    const prev = sideBoundaryKind(roadSides.find(s => s.sideIndex === sideIndex));
     onRoadSideUpdate(sideIndex, {
       boundaryKind: kind,
+      bordersRoad: true,
+      hasWall: true,
+      ...(prev === 'mur_mitoyen' && kind !== 'mur_mitoyen'
+        ? { hasRoad: undefined, borderType: undefined }
+        : {}),
       ...(kind === 'limite' ? WALL_FIELDS_RESET : {}),
       ...(kind === 'mur_mitoyen'
         ? { hasRoad: false, borderType: 'mur_mitoyen' as const, ...ROAD_FIELDS_RESET }
@@ -358,11 +267,19 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
     });
   };
 
+  /** Réponse à « Une route borde-t-elle ce côté ? ». */
+  const handleRoadAnswer = (sideIndex: number, value: boolean) => {
+    onRoadSideUpdate(sideIndex, value
+      ? { hasRoad: true, borderType: 'route' }
+      : { hasRoad: false, borderType: 'mur_mitoyen', ...ROAD_FIELDS_RESET });
+  };
+
   const canConfirm = (side: RoadSideInfo) => {
     if (!side.bordersRoad) return false;
     const hasRoad = sideHasRoad(side);
-    const hasWall = sideHasWall(side);
-    if (!hasRoad && !hasWall) return false;
+    const kind = sideBoundaryKind(side) ?? side.boundaryKind;
+    if (!kind) return false;
+    if (kind !== 'mur_mitoyen' && !hasRoad && side.hasRoad !== false) return false;
     if (hasRoad) {
       const base = !!side.roadType && !!side.roadWidth && side.roadWidth > 0
         && !!side.roadSurface && side.hasStreetLighting !== undefined
@@ -372,12 +289,8 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
       const gutter = side.hasGutter !== true || side.gutterConnected !== undefined;
       if (!(base && lighting && gutter)) return false;
     }
-    if (hasWall) {
-      const kind = sideBoundaryKind(side);
-      if (!kind) return false;
-      if (isWallKind(kind) && !side.wallMaterial) return false;
-      if (kind === 'mur_mitoyen' && hasRoad) return false;
-    }
+    if (isWallKind(kind) && !side.wallMaterial) return false;
+    if (kind === 'mur_mitoyen' && hasRoad) return false;
     return true;
   };
 
@@ -531,15 +444,6 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
                         Entrée
                       </label>
                     </div>
-                    {/* Contrôle segmenté Mur/Route (cumulables) — visible si pas confirmé */}
-                    {!hasConfirmed && (
-                      <BorderTypeToggle
-                        wallActive={isWall}
-                        roadActive={isRoad}
-                        roadDisabled={boundaryKind === 'mur_mitoyen'}
-                        onToggle={(type) => toggleBorderType(index, type)}
-                      />
-                    )}
                     {hasConfirmed && (
                       <>
                         <Button
@@ -886,12 +790,7 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
                     )}
                     {/* Boutons d'action — communs aux blocs Mur et Route */}
                     {isEditingThis && (
-                      <div className="order-last">
-                      {null}
-                      </div>
-                    )}
-                    {isEditingThis && (
-                      <div className="flex gap-1.5 pt-2 pl-6">
+                      <div className="order-last flex gap-1.5 pt-2 pl-6">
                         <Button
                           type="button"
                           size="sm"
