@@ -434,62 +434,69 @@ export const ConstructionSection: React.FC<ConstructionSectionProps> = ({
       })()}
 
 
-      {/* Construction year */}
-      {formData.propertyCategory && formData.propertyCategory !== 'Terrain nu' && formData.constructionType && formData.constructionType !== 'Terrain nu' && (
-        <div className="space-y-1.5">
-          <Label className="text-sm font-medium">
-            {formData.constructionStatus === 'in_progress' ? 'Année de début des travaux' : 'Année de construction'}
-          </Label>
-          <Select value={formData.constructionYear?.toString() || ''} onValueChange={(value) => {
-            const y = parseInt(value);
-            handleInputChange('constructionYear', y);
-            if (y) {
-              const min = new Date(y, 0, 1);
-              if (formData.rentalStartDate && new Date(formData.rentalStartDate) < min) {
-                handleInputChange('rentalStartDate', undefined);
-              }
-              const units = formData.rentalUnits;
-              if (Array.isArray(units) && units.some((u: any) => u?.rentalStartDate && new Date(u.rentalStartDate) < min)) {
-                handleInputChange('rentalUnits', units.map((u: any) =>
-                  u?.rentalStartDate && new Date(u.rentalStartDate) < min
-                    ? { ...u, rentalStartDate: undefined }
-                    : u
-                ));
-              }
-            }
-          }}>
-            <SelectTrigger className="h-10 rounded-xl text-sm"><SelectValue placeholder="Sélectionner l'année" /></SelectTrigger>
-            <SelectContent className="rounded-xl max-h-60">
-              {Array.from({ length: new Date().getFullYear() - 1950 + 1 }, (_, i) => new Date().getFullYear() - i).map(year => (
-                <SelectItem key={year} value={year.toString()}>{year}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      )}
-
-      {/* Standing — pleine largeur */}
-      {!!formData.constructionNature && formData.constructionNature !== 'Non bâti' && availableStandings.length > 0 && (
-        <div className="space-y-1.5">
-          <div className="flex items-center gap-1">
-            <Label className="text-sm font-medium">Standing</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-4 w-4 p-0 rounded-full"><Info className="h-3 w-3 text-muted-foreground" /></Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-64 rounded-xl text-xs">
-                <p className="text-muted-foreground">Niveau de finition de la construction : haut standing, moyen standing ou économique.</p>
-              </PopoverContent>
-            </Popover>
+      {/* Construction year + Standing — côte à côte quand les deux sont visibles */}
+      {(() => {
+        const showYear = !!(formData.propertyCategory && formData.propertyCategory !== 'Terrain nu' && formData.constructionType && formData.constructionType !== 'Terrain nu');
+        const showStanding = !!formData.constructionNature && formData.constructionNature !== 'Non bâti' && availableStandings.length > 0;
+        if (!showYear && !showStanding) return null;
+        return (
+          <div className="grid gap-3 md:grid-cols-2">
+            {showYear && (
+              <div className={showStanding ? 'space-y-1.5' : 'space-y-1.5 md:col-span-2'}>
+                <Label className="text-sm font-medium">
+                  {formData.constructionStatus === 'in_progress' ? 'Année de début des travaux' : 'Année de construction'}
+                </Label>
+                <Select value={formData.constructionYear?.toString() || ''} onValueChange={(value) => {
+                  const y = parseInt(value);
+                  handleInputChange('constructionYear', y);
+                  if (y) {
+                    const min = new Date(y, 0, 1);
+                    if (formData.rentalStartDate && new Date(formData.rentalStartDate) < min) {
+                      handleInputChange('rentalStartDate', undefined);
+                    }
+                    const units = formData.rentalUnits;
+                    if (Array.isArray(units) && units.some((u: any) => u?.rentalStartDate && new Date(u.rentalStartDate) < min)) {
+                      handleInputChange('rentalUnits', units.map((u: any) =>
+                        u?.rentalStartDate && new Date(u.rentalStartDate) < min
+                          ? { ...u, rentalStartDate: undefined }
+                          : u
+                      ));
+                    }
+                  }
+                }}>
+                  <SelectTrigger className="h-10 rounded-xl text-sm"><SelectValue placeholder="Sélectionner l'année" /></SelectTrigger>
+                  <SelectContent className="rounded-xl max-h-60">
+                    {Array.from({ length: new Date().getFullYear() - 1950 + 1 }, (_, i) => new Date().getFullYear() - i).map(year => (
+                      <SelectItem key={year} value={year.toString()}>{year}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            {showStanding && (
+              <div className={showYear ? 'space-y-1.5' : 'space-y-1.5 md:col-span-2'}>
+                <div className="flex items-center gap-1">
+                  <Label className="text-sm font-medium">Standing</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="ghost" size="sm" className="h-4 w-4 p-0 rounded-full"><Info className="h-3 w-3 text-muted-foreground" /></Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-64 rounded-xl text-xs">
+                      <p className="text-muted-foreground">Niveau de finition de la construction : haut standing, moyen standing ou économique.</p>
+                    </PopoverContent>
+                  </Popover>
+                </div>
+                <Select value={formData.standing || ''} onValueChange={(value) => handleInputChange('standing', value)}>
+                  <SelectTrigger className="h-10 rounded-xl text-sm"><SelectValue placeholder="Sélectionner le standing" /></SelectTrigger>
+                  <SelectContent className="rounded-xl">
+                    {availableStandings.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
-          <Select value={formData.standing || ''} onValueChange={(value) => handleInputChange('standing', value)}>
-            <SelectTrigger className="h-10 rounded-xl text-sm"><SelectValue placeholder="Sélectionner le standing" /></SelectTrigger>
-            <SelectContent className="rounded-xl">
-              {availableStandings.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Mise en location — remplace l'ancienne valeur « Location » du picklist Usage */}
       {rentalEligible && (
