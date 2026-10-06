@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { withSupabaseRetry, isTransientSupabaseError } from '@/lib/supabaseRetry';
+import { isOwnerOccupiedUnit } from '@/utils/rentalStatus';
 
 export interface CadastralContributionData {
   parcelNumber: string;
@@ -442,7 +443,7 @@ export const useCadastralContribution = () => {
       rental_units: data.rentalUnits && data.rentalUnits.length > 0
         ? data.rentalUnits.map(u => ({
             label: u.label ?? null,
-            monthly_rent_usd: blankNum(u.monthlyRentUsd),
+            monthly_rent_usd: isOwnerOccupiedUnit(u) ? null : blankNum(u.monthlyRentUsd),
             is_occupied: u.isOccupied ?? null,
             occupied_by: u.isOccupied === true ? (u.occupiedBy ?? null) : null,
             occupant_count: blankNum(u.occupantCount),
@@ -451,8 +452,8 @@ export const useCadastralContribution = () => {
             actual_usage_other: blank(u.actualUsageOther),
             operational_capacity: blankNum(u.operationalCapacity),
             operational_capacity_unit: blank(u.operationalCapacityUnit),
-            lease_contract_url: blank(u.leaseContractUrl),
-            rental_start_date: blankDate(u.rentalStartDate),
+            lease_contract_url: isOwnerOccupiedUnit(u) ? null : blank(u.leaseContractUrl),
+            rental_start_date: isOwnerOccupiedUnit(u) ? null : blankDate(u.rentalStartDate),
             floor: u.floor ?? null,
           }))
         : null,

@@ -11,6 +11,7 @@ import { Home, Building2, DollarSign } from 'lucide-react';
 import { isTerrainNuCategory as isTerrainNuCategoryShared } from '@/utils/cccPredicates';
 import { buildActualUsageOptions, isResidentialActualUsage, resolveOperationalCapacityField, ACTUAL_USAGE_OTHER } from '@/utils/actualUsage';
 import LeaseContractField from './LeaseContractField';
+import { isOwnerOccupiedUnit } from '@/utils/rentalStatus';
 
 export type RentalConfiguration = 'single' | 'multi';
 
@@ -308,7 +309,10 @@ export const MonthlyRentFields: React.FC<CommonProps> = ({
 
   const total = useMemo(() => {
     if (state.rentalConfiguration === 'multi') {
-      return (state.rentalUnits || []).reduce((sum, u) => sum + (Number(u?.monthlyRentUsd) || 0), 0);
+      return (state.rentalUnits || []).reduce(
+        (sum, u) => sum + (isOwnerOccupiedUnit(u) ? 0 : (Number(u?.monthlyRentUsd) || 0)),
+        0,
+      );
     }
     return Number(state.monthlyRentUsd) || 0;
   }, [state.rentalConfiguration, state.rentalUnits, state.monthlyRentUsd]);
@@ -665,7 +669,10 @@ export const MonthlyRentFields: React.FC<CommonProps> = ({
 /** Compute total monthly rent (USD) given a rental state. */
 export const computeMonthlyRentTotal = (state: RentalConfigurationState): number => {
   if (state.rentalConfiguration === 'multi') {
-    return (state.rentalUnits || []).reduce((s, u) => s + (Number(u?.monthlyRentUsd) || 0), 0);
+    return (state.rentalUnits || []).reduce(
+      (sum, u) => sum + (isOwnerOccupiedUnit(u) ? 0 : (Number(u?.monthlyRentUsd) || 0)),
+      0,
+    );
   }
   return Number(state.monthlyRentUsd) || 0;
 };

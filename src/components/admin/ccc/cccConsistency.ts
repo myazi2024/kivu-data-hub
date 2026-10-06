@@ -102,7 +102,10 @@ export const parseMarketListings = (raw: unknown): AdminMarketListing[] => {
 };
 
 export const sumUnitsRent = (units: AdminRentalUnit[]): number =>
-  units.reduce((s, u) => s + (u.monthlyRentUsd ?? 0), 0);
+  units.reduce(
+    (sum, u) => sum + (u.isOccupied === true && u.occupiedBy === 'owner' ? 0 : (u.monthlyRentUsd ?? 0)),
+    0,
+  );
 
 export const sumUnitsCapacity = (units: AdminRentalUnit[]): number =>
   units.reduce((s, u) => s + (u.hostingCapacity ?? 0), 0);
