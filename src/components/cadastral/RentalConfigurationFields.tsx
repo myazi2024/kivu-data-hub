@@ -601,7 +601,7 @@ export const MonthlyRentFields: React.FC<CommonProps> = ({
                   <>
                   <div className="space-y-1">
                     <Label className={cn('text-xs font-medium', missingDate ? 'text-destructive' : 'text-muted-foreground')}>
-                      {!vocab.isTerrainNu && unit.isOccupied === false ? 'Inoccupé depuis le' : 'En location depuis le'} {missingDate && <span className="text-destructive">*</span>}
+                      {`${rentalDateLabel(unit.isOccupied)} le`} {missingDate && <span className="text-destructive">*</span>}
                     </Label>
                     <Input
                       type="date"
@@ -703,4 +703,8 @@ export const formatFloorLabel = (value?: string | null): string => {
 
 /** Libellé de date adapté au statut d'occupation du local. */
 export const rentalDateLabel = (isOccupied?: boolean | null): string =>
-  isOccupied === false ? 'Inoccupé depuis' : 'En location depuis';
+  isOccupied === false
+    ? 'Inoccupé depuis'
+    : isOccupied === true
+      ? 'Occupé par le locataire actuel depuis'
+      : 'En location depuis';

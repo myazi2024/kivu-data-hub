@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { isOwnerOccupiedUnit, hasTenantRentalIncome, normalizeRentalUnitFromDb } from '@/utils/rentalStatus';
+import { rentalDateLabel } from '@/components/cadastral/RentalConfigurationFields';
 
 describe('locaux occupés par le propriétaire', () => {
   it('reconnaît camelCase et snake_case', () => {
@@ -19,5 +20,11 @@ describe('locaux occupés par le propriétaire', () => {
   it('convertit un local enregistré vers le formulaire', () => {
     const u = normalizeRentalUnitFromDb({ is_occupied: true, occupied_by: 'owner', monthly_rent_usd: null, hosting_capacity: '4' });
     expect(u).toMatchObject({ isOccupied: true, occupiedBy: 'owner', hostingCapacity: 4, monthlyRentUsd: undefined });
+  });
+
+  it("adapte le libellé de date à l'occupation", () => {
+    expect(rentalDateLabel(true)).toBe('Occupé par le locataire actuel depuis');
+    expect(rentalDateLabel(false)).toBe('Inoccupé depuis');
+    expect(rentalDateLabel(undefined)).toBe('En location depuis');
   });
 });

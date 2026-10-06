@@ -8,14 +8,14 @@ interface RentalStartDateFieldProps {
   onChange: (value: string | undefined) => void;
   constructionYear?: number;
   highlightRequired?: boolean;
-  /** Statut d'occupation : si false, le libellé devient « Inoccupé depuis quand ? ». */
+  /** Statut d'occupation utilisé pour adapter le libellé de la date. */
   isOccupied?: boolean | null;
 }
 
 const TODAY = new Date().toISOString().slice(0, 10);
 
 /**
- * Champ date natif "En location depuis quand ?" / "Inoccupé depuis quand ?"
+ * Champ date natif dont le libellé reflète l'occupation actuelle.
  * — Affiché en mode « Un seul local » (sous le sélecteur de configuration locative).
  * — Utilise le même <input type="date"> natif que le mode « Divisé en plusieurs
  *   locaux » (RentalConfigurationFields) pour une UX cohérente.
@@ -33,7 +33,11 @@ const RentalStartDateField: React.FC<RentalStartDateFieldProps> = ({
       missing && 'ring-2 ring-destructive rounded-xl p-2 bg-destructive/5 animate-pulse'
     )}>
       <Label className="text-sm font-medium flex items-center gap-1">
-        {isOccupied === false ? 'Inoccupé depuis quand ?' : 'En location depuis quand ?'}
+        {isOccupied === false
+          ? 'Inoccupé depuis le'
+          : isOccupied === true
+            ? 'Occupé par le locataire actuel depuis le'
+            : 'En location depuis le'}
         {missing && <span className="text-destructive text-xs font-semibold">*</span>}
       </Label>
       <Input
