@@ -177,7 +177,7 @@ export const buildVacantTargets = (
           unitIndex: i,
           label: u?.label || `Local #${i + 1}${floorLbl ? ` · ${floorLbl}` : ''}`,
           subject: subj,
-          currentRentUsd: u?.monthlyRentUsd,
+          currentRentUsd: undefined,
           hostingCapacity: u?.hostingCapacity,
           floor: u?.floor,
           constructionType: type,

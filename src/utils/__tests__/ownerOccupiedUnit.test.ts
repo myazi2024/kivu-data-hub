@@ -39,3 +39,16 @@ describe('locaux occupés par le propriétaire', () => {
     })).toBe(425);
   });
 });
+
+import { isVacantUnit, isRentExemptUnit } from '@/utils/rentalStatus';
+import { sideBoundaryKind } from '@/components/cadastral/ParcelSidesDimensionsPanel';
+describe('locaux vacants et limite', () => {
+  it('local vacant exempt de loyer', () => {
+    expect(isVacantUnit({ isOccupied: false })).toBe(true);
+    expect(isRentExemptUnit({ is_occupied: false })).toBe(true);
+    expect(isRentExemptUnit({ isOccupied: true, occupiedBy: 'tenant' })).toBe(false);
+  });
+  it('relit le choix Limite (sans mur)', () => {
+    expect(sideBoundaryKind({ boundaryKind: 'limite', hasWall: false } as any)).toBe('limite');
+  });
+});

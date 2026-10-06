@@ -80,8 +80,9 @@ export const sideHasWall = (s?: Partial<RoadSideInfo> | null): boolean =>
  * `borderType === 'mur_mitoyen'`) vaut « mur ».
  */
 export const sideBoundaryKind = (s?: Partial<RoadSideInfo> | null): BoundaryKind | undefined => {
-  if (!s || !sideHasWall(s)) return undefined;
+  if (!s) return undefined;
   if (s.boundaryKind) return s.boundaryKind;
+  if (!sideHasWall(s)) return undefined;
   if (s.wallMaterial || s.wallHeight || s.borderType === 'mur_mitoyen') return 'mur';
   return undefined;
 };

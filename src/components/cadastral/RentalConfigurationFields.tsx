@@ -310,7 +310,7 @@ export const MonthlyRentFields: React.FC<CommonProps> = ({
   const total = useMemo(() => {
     if (state.rentalConfiguration === 'multi') {
       return (state.rentalUnits || []).reduce(
-        (sum, u) => sum + (isOwnerOccupiedUnit(u) ? 0 : (Number(u?.monthlyRentUsd) || 0)),
+        (sum, u) => sum + (isOwnerOccupiedUnit(u) || u?.isOccupied === false ? 0 : (Number(u?.monthlyRentUsd) || 0)),
         0,
       );
     }
@@ -389,7 +389,9 @@ export const MonthlyRentFields: React.FC<CommonProps> = ({
               && residentialUse && !unit.occupantCount;
             const ownerOccupied = !vocab.isTerrainNu && unit.isOccupied === true && unit.occupiedBy === 'owner';
             const missingOccupiedBy = !vocab.isTerrainNu && highlightRequired && unit.isOccupied === true && !unit.occupiedBy;
-            const missingRent = highlightRequired && !ownerOccupied && !unit.monthlyRentUsd;
+            const vacant = !vocab.isTerrainNu && unit.isOccupied === false;
+            const showRent = vocab.isTerrainNu || (unit.isOccupied === true && !ownerOccupied);
+            const missingRent = highlightRequired && showRent && !unit.monthlyRentUsd;
             const missingDate = highlightRequired && !ownerOccupied && !unit.rentalStartDate;
             const missingFloor = highlightRequired && showFloorSelect && !unit.floor;
             return (
@@ -399,7 +401,7 @@ export const MonthlyRentFields: React.FC<CommonProps> = ({
               >
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-semibold text-foreground">{vocab.cardTitle} #{idx + 1}</span>
-                  {unit.monthlyRentUsd ? (
+                  {unit.monthlyRentUsd && !vacant ? (
                     <span className="text-[11px] text-muted-foreground">
                       {Number(unit.monthlyRentUsd).toFixed(2)} USD/mois
                     </span>
@@ -464,7 +466,7 @@ export const MonthlyRentFields: React.FC<CommonProps> = ({
                         type="button"
                         role="radio"
                         aria-checked={unit.isOccupied === false}
-                        onClick={() => updateUnit(idx, { isOccupied: false, occupiedBy: undefined, occupantCount: undefined, actualUsage: undefined, actualUsageOther: undefined, operationalCapacity: undefined, operationalCapacityUnit: undefined, leaseContractUrl: undefined })}
+                        onClick={() => updateUnit(idx, { isOccupied: false, monthlyRentUsd: undefined, occupiedBy: undefined, occupantCount: undefined, actualUsage: undefined, actualUsageOther: undefined, operationalCapacity: undefined, operationalCapacityUnit: undefined, leaseContractUrl: undefined })}
                         className={cn(
                           'flex-1 h-9 rounded-xl text-xs font-semibold transition-all border-2',
                           unit.isOccupied === false
@@ -635,6 +637,7 @@ export const MonthlyRentFields: React.FC<CommonProps> = ({
                     />
                   </div>
 
+                  {showRent && (
                   <div className="space-y-1">
                     <Label className={cn('text-xs font-medium', missingRent ? 'text-destructive' : 'text-muted-foreground')}>
                       Loyer mensuel (USD) {missingRent && <span className="text-destructive">*</span>}
@@ -654,6 +657,7 @@ export const MonthlyRentFields: React.FC<CommonProps> = ({
                       )}
                     />
                   </div>
+                  )}
                   </>
                   )}
 
@@ -688,7 +692,7 @@ export const MonthlyRentFields: React.FC<CommonProps> = ({
 export const computeMonthlyRentTotal = (state: RentalConfigurationState): number => {
   if (state.rentalConfiguration === 'multi') {
     return (state.rentalUnits || []).reduce(
-      (sum, u) => sum + (isOwnerOccupiedUnit(u) ? 0 : (Number(u?.monthlyRentUsd) || 0)),
+      (sum, u) => sum + (isOwnerOccupiedUnit(u) || u?.isOccupied === false ? 0 : (Number(u?.monthlyRentUsd) || 0)),
       0,
     );
   }
