@@ -15,10 +15,26 @@ import { useToast } from '@/hooks/use-toast';
 import { formatCurrency } from '@/utils/formatters';
 import { trackEvent } from '@/lib/analytics';
 import { cn } from '@/lib/utils';
-import { evaluateServiceAvailability } from '@/lib/serviceAvailability';
 import CartParcelDiscountInput from './cart/CartParcelDiscountInput';
 
-import { getCadastralCategoryMeta } from '@/constants/cadastralServiceCategories';
+import { getCadastralCategoryMeta, CADASTRAL_SERVICE_CATEGORIES } from '@/constants/cadastralServiceCategories';
+import type { CadastralCartService } from '@/hooks/useCadastralCart';
+
+const CATEGORY_ORDER: readonly string[] = CADASTRAL_SERVICE_CATEGORIES;
+
+/** Regroupe les services par catégorie, dans l'ordre du catalogue. */
+const groupByCategory = (services: CadastralCartService[]) => {
+  const groups = new Map<string, CadastralCartService[]>();
+  for (const s of services) {
+    const key = s.category || 'consultation';
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key)!.push(s);
+  }
+  const rank = (k: string) => { const i = CATEGORY_ORDER.indexOf(k); return i === -1 ? CATEGORY_ORDER.length : i; };
+  return [...groups.entries()].sort((a, b) => rank(a[0]) - rank(b[0]));
+};
+
+const formatDate = (iso: string) => new Date(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
 
 /**
  * Bouton flottant + Sheet récapitulant le panier multi-parcelles cadastral.
@@ -39,16 +55,26 @@ const CadastralCartButton: React.FC = () => {
     parcelNumber: activeParcelNumber,
   } = useCadastralCart();
 
-  const { isOwned, allOwnedFor } = useCartAccessCheck(parcels);
+  const { toast } = useToast();
+  const { isOwned, ownedUntil, allOwnedFor } = useCartAccessCheck(parcels);
   const { services: catalogServices, loading: catalogLoading } = useCadastralServices();
   // Retire du panier les services archivés/désactivés et aligne prix/libellés sur le catalogue.
   React.useEffect(() => {
-    if (!catalogLoading) syncWithCatalog(catalogServices);
+    if (catalogLoading || catalogServices.length === 0) return;
+    const activeIds = new Set(catalogServices.map((c) => c.id));
+    const removed = parcels.flatMap((p) => p.services.filter((s) => !activeIds.has(s.id)).map((s) => s.name));
+    syncWithCatalog(catalogServices);
+    if (removed.length > 0) {
+      toast({
+        title: 'Panier mis à jour',
+        description: `${removed.length > 1 ? 'Ces services ne sont plus proposés et ont été retirés' : "Ce service n'est plus proposé et a été retiré"} : ${removed.join(', ')}.`,
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [catalogLoading, catalogServices, syncWithCatalog]);
   const { selectedCurrency, convertFromUsd } = useCurrencyConfig();
   const { map: discountsMap, clear: clearDiscount } = useCartDiscounts();
   const { validateDiscountCode } = useDiscountCodes();
-  const { toast } = useToast();
 
   const fmt = (usd: number) => formatCurrency(convertFromUsd(usd), selectedCurrency);
 
@@ -175,7 +201,7 @@ const CadastralCartButton: React.FC = () => {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-7 w-7 shrink-0"
+                      className="h-11 w-11 shrink-0"
                       onClick={() => {
                         trackEvent('cadastral_cart_clear_parcel', {
                           parcel_number: p.parcelNumber,
@@ -191,85 +217,66 @@ const CadastralCartButton: React.FC = () => {
 
                   <Separator />
 
-                  <ul className="space-y-1.5">
-                    {p.services.map((s) => {
-                      const owned = isOwned(p.parcelNumber, s.id);
-                      const meta = getCadastralCategoryMeta(s.category);
+                  <div className="space-y-2">
+                    {groupByCategory(p.services).map(([category, services]) => {
+                      const meta = getCadastralCategoryMeta(category);
                       return (
-                        <li
-                          key={s.id}
-                          className={cn(
-                            'flex items-center justify-between gap-2 text-xs',
-                            owned && 'opacity-60'
-                          )}
-                        >
-                          <div className="flex flex-col min-w-0 flex-1 gap-0.5">
-                            <span className={cn('truncate', owned && 'line-through')}>{s.name}</span>
-                            <div className="flex items-center gap-1 flex-wrap">
-                              {meta && (
-                                <Badge variant="outline" className={cn('h-4 px-1 text-[9px] font-normal', meta.className)}>
-                                  {meta.label}
-                                </Badge>
-                              )}
-                              {owned && (
-                                <Badge variant="outline" className="h-4 px-1 text-[9px] gap-0.5 border-primary/40 text-primary">
-                                  <Check className="h-2.5 w-2.5" />
-                                  Déjà acheté
-                                </Badge>
-                              )}
-                            </div>
-                          </div>
-                          <span className="tabular-nums text-muted-foreground" aria-label={`Prix : ${fmt(s.price)}`}>
-                            {fmt(s.price)}
-                          </span>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-6 w-6 shrink-0"
-                            onClick={() => {
-                              trackEvent('cadastral_cart_remove_service', {
-                                parcel_number: p.parcelNumber,
-                                service_id: s.id,
-                                price_usd: s.price,
-                              });
-                              removeServiceForParcel(p.parcelNumber, s.id);
-                            }}
-                            aria-label={`Retirer ${s.name}`}
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        </li>
+                        <div key={category} className="space-y-1">
+                          <Badge variant="outline" className={cn('h-5 px-1.5 text-[10px] font-normal', meta.className)}>
+                            {meta.label}
+                          </Badge>
+                          <ul className="space-y-1">
+                            {services.map((s) => {
+                              const owned = isOwned(p.parcelNumber, s.id);
+                              const until = owned ? ownedUntil(p.parcelNumber, s.id) : null;
+                              return (
+                                <li key={s.id} className={cn('flex items-center justify-between gap-2 text-xs', owned && 'opacity-70')}>
+                                  <div className="flex flex-col min-w-0 flex-1 gap-0.5">
+                                    <span className={cn('truncate', owned && 'line-through')}>{s.name}</span>
+                                    {owned && (
+                                      <span className="flex items-center gap-1 text-[10px] text-primary">
+                                        <Check className="h-3 w-3" />
+                                        {until ? `Déjà acquis · accès jusqu'au ${formatDate(until)}` : 'Déjà acquis'}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <span className="tabular-nums text-muted-foreground" aria-label={`Prix : ${fmt(s.price)}`}>
+                                    {owned ? '—' : fmt(s.price)}
+                                  </span>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-11 w-11 shrink-0"
+                                    onClick={() => {
+                                      trackEvent('cadastral_cart_remove_service', {
+                                        parcel_number: p.parcelNumber,
+                                        service_id: s.id,
+                                        price_usd: s.price,
+                                      });
+                                      removeServiceForParcel(p.parcelNumber, s.id);
+                                    }}
+                                    aria-label={`Retirer ${s.name}`}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        </div>
                       );
                     })}
-                  </ul>
+                  </div>
 
-                  {/* P2 — Suggestion bundle : services manquants pour compléter le dossier.
-                      Lot U : on évalue `required_data_fields` contre le contexte minimal de la parcelle
-                      (parcel.ville/province depuis parcelLocation) pour inclure les services dont les règles
-                      passent malgré un contexte limité, au lieu d'exclure systématiquement tout service à règles. */}
+                  {/* Suggestions : uniquement les services que le catalogue déclare disponibles pour cette parcelle. */}
                   {(() => {
+                    if (!p.availableServiceIds || catalogServices.length === 0) return null;
+                    const available = new Set(p.availableServiceIds);
                     const inCartIds = new Set(p.services.map((s) => s.id));
-                    // B4 : si parcelLocation est non vide, on suppose que ville ET province
-                    // existent côté BD (la chaîne d'affichage agrège les deux). Sinon, on
-                    // parse en best-effort (séparateur virgule), et on laisse les services
-                    // à règle dure (ownership_history non vide, etc.) être écartés naturellement.
-                    const locTokens = (p.parcelLocation || '').split(',').map((s) => s.trim()).filter(Boolean);
-                    const hasLoc = locTokens.length > 0;
-                    const parcelCtx = {
-                      parcel: {
-                        ville: hasLoc ? (locTokens[0] || 'unknown') : null,
-                        province: hasLoc ? (locTokens[1] || locTokens[0] || 'unknown') : null,
-                        parcel_number: p.parcelNumber,
-                      },
-                    };
                     const missing = catalogServices.filter(
-                      (cs) =>
-                        !inCartIds.has(cs.id) &&
-                        !isOwned(p.parcelNumber, cs.id) &&
-                        evaluateServiceAvailability(cs.required_data_fields, parcelCtx)
+                      (cs) => available.has(cs.id) && !inCartIds.has(cs.id) && !isOwned(p.parcelNumber, cs.id)
                     );
-
-                    if (missing.length === 0 || catalogServices.length === 0) return null;
+                    if (missing.length === 0) return null;
                     const missingTotal = missing.reduce((acc, m) => acc + m.price, 0);
                     return (
                       <div className="rounded-lg border border-dashed border-primary/30 bg-primary/5 p-2 space-y-1.5">
@@ -278,12 +285,12 @@ const CadastralCartButton: React.FC = () => {
                           Compléter le dossier
                         </div>
                         <p className="text-[10px] text-muted-foreground leading-tight">
-                          {missing.length} service{missing.length > 1 ? 's' : ''} disponible{missing.length > 1 ? 's' : ''} pour {fmt(missingTotal)}.
+                          {missing.length} autre{missing.length > 1 ? 's' : ''} service{missing.length > 1 ? 's' : ''} disponible{missing.length > 1 ? 's' : ''} pour cette parcelle : {missing.map((m) => m.name).join(', ')}.
                         </p>
                         <Button
                           variant="outline"
                           size="sm"
-                          className="w-full h-7 text-[11px] border-primary/30 hover:bg-primary/10"
+                          className="w-full h-11 text-xs border-primary/30 hover:bg-primary/10"
                           onClick={() => {
                             missing.forEach((cs) => {
                               addServiceForParcel(p.parcelNumber, p.parcelLocation, {
@@ -323,7 +330,7 @@ const CadastralCartButton: React.FC = () => {
                   <Button
                     variant={isActive ? 'default' : 'outline'}
                     size="sm"
-                    className="w-full h-8 text-xs"
+                    className="w-full h-11 text-xs"
                     disabled={allOwned || subtotal <= 0}
                     onClick={() => {
                       trackEvent('cadastral_cart_pay_parcel', {
@@ -354,7 +361,7 @@ const CadastralCartButton: React.FC = () => {
             <span className="text-lg font-bold tabular-nums">{fmt(totalRemaining)}</span>
           </div>
           <p className="text-[11px] text-muted-foreground text-center">
-            Le paiement se fait par parcelle. Les services déjà acquis sont exclus du total.
+            Le paiement se fait parcelle par parcelle. Les services déjà acquis ne sont pas facturés ; le montant final est confirmé par le serveur.
           </p>
         </SheetFooter>
       </SheetContent>
