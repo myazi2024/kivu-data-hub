@@ -168,57 +168,59 @@ const LocationTab: React.FC<LocationTabProps> = ({
             <BlockResetButton blockName="Localisation" onReset={resetLocationBlock} />
           </div>
 
-          {/* Province */}
-          <div className="space-y-1.5">
-            <Label htmlFor="province" className="text-sm">Province *</Label>
-            <Select
-              value={formData.province}
-              onValueChange={(value) => handleInputChange('province', value)}
-            >
-              <SelectTrigger className="h-9 text-sm rounded-xl border">
-                <SelectValue placeholder="Sélectionner la province" />
-              </SelectTrigger>
-              <SelectContent className="rounded-xl max-h-48 overflow-y-auto w-56">
-                {getAllProvinces().map(province => (
-                  <SelectItem key={province} value={province} className="text-sm py-2 rounded-lg">{province}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Circonscription foncière — dépendante de la province */}
-          <div className="space-y-1.5">
-            <Label htmlFor="landDistrict" className="text-sm">Circonscription foncière *</Label>
-            {formData.province && getLandDistrictsForProvince(formData.province).length > 0 ? (
+          <div className="grid grid-cols-2 gap-2 items-start">
+            {/* Province */}
+            <div className="space-y-1.5 min-w-0">
+              <Label htmlFor="province" className="text-sm min-h-10 flex items-end leading-tight">Province *</Label>
               <Select
-                value={formData.landDistrict || ''}
-                onValueChange={(value) => handleInputChange('landDistrict', value)}
+                value={formData.province}
+                onValueChange={(value) => handleInputChange('province', value)}
               >
-                <SelectTrigger id="landDistrict" className="h-9 text-sm rounded-xl border">
-                  <SelectValue placeholder="Sélectionner la circonscription" />
+                <SelectTrigger className="h-9 text-sm rounded-xl border min-w-0">
+                  <SelectValue placeholder="Sélectionner" />
                 </SelectTrigger>
                 <SelectContent className="rounded-xl max-h-48 overflow-y-auto w-56">
-                  {getLandDistrictsForProvince(formData.province).map(d => (
-                    <SelectItem key={d} value={d} className="text-sm py-2 rounded-lg">{d}</SelectItem>
+                  {getAllProvinces().map(province => (
+                    <SelectItem key={province} value={province} className="text-sm py-2 rounded-lg">{province}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-            ) : (
-              <Input
-                id="landDistrict"
-                value={formData.landDistrict || ''}
-                onChange={(e) => handleInputChange('landDistrict', e.target.value)}
-                disabled={!formData.province}
-                placeholder={!formData.province ? "Province d'abord" : 'Saisir la circonscription foncière'}
-                className="h-9 text-sm rounded-xl border"
-              />
-            )}
-            {formData.province && getLandDistrictsForProvince(formData.province).length === 0 && (
-              <p className="text-xs text-muted-foreground">
-                Aucune circonscription répertoriée pour cette province : saisissez-la manuellement.
-              </p>
-            )}
+            </div>
+
+            {/* Circonscription foncière — dépendante de la province */}
+            <div className="space-y-1.5 min-w-0">
+              <Label htmlFor="landDistrict" className="text-sm min-h-10 flex items-end leading-tight">Circonscription foncière *</Label>
+              {formData.province && getLandDistrictsForProvince(formData.province).length > 0 ? (
+                <Select
+                  value={formData.landDistrict || ''}
+                  onValueChange={(value) => handleInputChange('landDistrict', value)}
+                >
+                  <SelectTrigger id="landDistrict" className="h-9 text-sm rounded-xl border min-w-0">
+                    <SelectValue placeholder="Sélectionner" />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-xl max-h-48 overflow-y-auto w-56">
+                    {getLandDistrictsForProvince(formData.province).map(d => (
+                      <SelectItem key={d} value={d} className="text-sm py-2 rounded-lg">{d}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Input
+                  id="landDistrict"
+                  value={formData.landDistrict || ''}
+                  onChange={(e) => handleInputChange('landDistrict', e.target.value)}
+                  disabled={!formData.province}
+                  placeholder={!formData.province ? "Province d'abord" : 'Saisir la circonscription'}
+                  className="h-9 text-sm rounded-xl border min-w-0"
+                />
+              )}
+            </div>
           </div>
+          {formData.province && getLandDistrictsForProvince(formData.province).length === 0 && (
+            <p className="text-xs text-muted-foreground">
+              Aucune circonscription répertoriée pour cette province : saisissez-la manuellement.
+            </p>
+          )}
 
           {/* Zone cadastrale : déduite de la circonscription foncière */}
           {formData.province && (

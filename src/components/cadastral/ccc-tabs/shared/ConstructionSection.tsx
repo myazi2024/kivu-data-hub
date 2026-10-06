@@ -416,15 +416,15 @@ export const ConstructionSection: React.FC<ConstructionSectionProps> = ({
                 <RadioGroup
                   value={formData.constructionStatus || ''}
                   onValueChange={(value) => handleInputChange('constructionStatus', value)}
-                  className="flex flex-wrap gap-4"
+                  className="grid grid-cols-2 gap-2"
                 >
-                  <div className="flex items-center gap-2">
+                  <div className="flex min-h-11 items-center gap-2 rounded-xl border border-border px-2.5 py-2">
                     <RadioGroupItem value="completed" id="construction-status-completed" />
-                    <label htmlFor="construction-status-completed" className="text-sm cursor-pointer select-none">Construction achevée</label>
+                    <label htmlFor="construction-status-completed" className="text-sm leading-tight cursor-pointer select-none">Construction achevée</label>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex min-h-11 items-center gap-2 rounded-xl border border-border px-2.5 py-2">
                     <RadioGroupItem value="in_progress" id="construction-status-in-progress" />
-                    <label htmlFor="construction-status-in-progress" className="text-sm cursor-pointer select-none">Construction en cours</label>
+                    <label htmlFor="construction-status-in-progress" className="text-sm leading-tight cursor-pointer select-none">Construction en cours</label>
                   </div>
                 </RadioGroup>
               </div>

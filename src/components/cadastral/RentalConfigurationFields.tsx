@@ -206,14 +206,14 @@ export const RentalConfigurationSelector: React.FC<CommonProps> = ({
         {subject} {vocab.introQuestion}
       </p>
 
-      <div className="grid grid-cols-1 gap-2" role="radiogroup" aria-label="Mode de mise en location">
+      <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Mode de mise en location">
         <button
           type="button"
           role="radio"
           aria-checked={state.rentalConfiguration === 'single'}
           onClick={() => selectMode('single')}
           className={cn(
-            'flex items-start gap-2 rounded-2xl border-2 p-3 text-left transition-all',
+            'flex min-h-28 flex-col items-start gap-2 rounded-2xl border-2 p-2.5 text-left transition-all sm:min-h-24 sm:flex-row sm:p-3',
             state.rentalConfiguration === 'single'
               ? 'border-primary bg-primary/5 shadow-md'
               : 'border-border bg-card hover:bg-muted/40',
@@ -235,7 +235,7 @@ export const RentalConfigurationSelector: React.FC<CommonProps> = ({
           aria-checked={state.rentalConfiguration === 'multi'}
           onClick={() => selectMode('multi')}
           className={cn(
-            'flex items-start gap-2 rounded-2xl border-2 p-3 text-left transition-all',
+            'flex min-h-28 flex-col items-start gap-2 rounded-2xl border-2 p-2.5 text-left transition-all sm:min-h-24 sm:flex-row sm:p-3',
             state.rentalConfiguration === 'multi'
               ? 'border-primary bg-primary/5 shadow-md'
               : 'border-border bg-card hover:bg-muted/40',
@@ -512,29 +512,47 @@ export const MonthlyRentFields: React.FC<CommonProps> = ({
                   )}
 
                   {!vocab.isTerrainNu && unit.isOccupied === true && (
-                    <div className="space-y-1">
-                      <Label className="text-xs font-medium text-muted-foreground">
-                        Usage réel du {vocab.singular} (optionnel)
-                      </Label>
-                      <Select
-                        value={unit.actualUsage ?? ''}
-                        onValueChange={(v) => updateUnit(idx, {
-                          actualUsage: v,
-                          actualUsageOther: v === ACTUAL_USAGE_OTHER ? unit.actualUsageOther : undefined,
-                          ...(isResidentialActualUsage(v)
-                            ? { operationalCapacity: undefined, operationalCapacityUnit: undefined }
-                            : { occupantCount: undefined, hostingCapacity: undefined }),
-                        })}
-                      >
-                        <SelectTrigger className="h-9 rounded-xl text-sm">
-                          <SelectValue placeholder="Ce que l'occupant en fait réellement" />
-                        </SelectTrigger>
-                        <SelectContent className="rounded-xl max-h-60">
-                          {actualUsageOptions.map((opt) => (
-                            <SelectItem key={opt} value={opt}>{opt}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                    <div className={cn('min-w-0', residentialUse && 'grid grid-cols-2 gap-2 items-end')}>
+                      <div className="space-y-1 min-w-0">
+                        <Label className="text-xs font-medium text-muted-foreground leading-tight min-h-8 flex items-end">
+                          Usage réel du {vocab.singular} (optionnel)
+                        </Label>
+                        <Select
+                          value={unit.actualUsage ?? ''}
+                          onValueChange={(v) => updateUnit(idx, {
+                            actualUsage: v,
+                            actualUsageOther: v === ACTUAL_USAGE_OTHER ? unit.actualUsageOther : undefined,
+                            ...(isResidentialActualUsage(v)
+                              ? { operationalCapacity: undefined, operationalCapacityUnit: undefined }
+                              : { occupantCount: undefined, hostingCapacity: undefined }),
+                          })}
+                        >
+                          <SelectTrigger className="h-9 rounded-xl text-sm min-w-0">
+                            <SelectValue placeholder="Sélectionner" />
+                          </SelectTrigger>
+                          <SelectContent className="rounded-xl max-h-60">
+                            {actualUsageOptions.map((opt) => (
+                              <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {residentialUse && (
+                        <div className="space-y-1 min-w-0">
+                          <Label className={cn('text-xs font-medium leading-tight min-h-8 flex items-end', missingCapacity ? 'text-destructive' : 'text-muted-foreground')}>
+                            Capacité d'accueil (personnes) {missingCapacity && <span className="text-destructive">*</span>}
+                          </Label>
+                          <Input
+                            type="number"
+                            min={1}
+                            value={unit.hostingCapacity ?? ''}
+                            onChange={(e) => updateUnit(idx, { hostingCapacity: e.target.value ? parseInt(e.target.value) : undefined })}
+                            placeholder="Ex: 4"
+                            className={cn('h-9 rounded-xl text-sm min-w-0', missingCapacity && 'border-destructive ring-1 ring-destructive/40')}
+                          />
+                        </div>
+                      )}
                     </div>
                   )}
 
@@ -566,7 +584,7 @@ export const MonthlyRentFields: React.FC<CommonProps> = ({
                     </div>
                   )}
 
-                  {!vocab.isTerrainNu && unit.isOccupied !== undefined && (unit.isOccupied === false || residentialUse) && (
+                  {!vocab.isTerrainNu && unit.isOccupied === false && (
                     <div className="space-y-1">
                       <Label className={cn('text-xs font-medium', missingCapacity ? 'text-destructive' : 'text-muted-foreground')}>
                         Capacité d'accueil (personnes) {missingCapacity && <span className="text-destructive">*</span>}
