@@ -92,6 +92,54 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
   disallowFicheParcellaire = false,
 }) => {
 
+  const titleOwnershipQuestion = formData.titleReferenceNumber?.trim() ? (
+    <div className="space-y-3 border-t border-border/50 pt-3 animate-fade-in">
+      <div className="flex items-start justify-between gap-2">
+        <Label className="text-sm font-medium leading-snug">
+          Ce titre de type « {getEffectiveTitleName(formData.propertyTitleType, customTitleName) || 'non sélectionné'} » est-il au nom du propriétaire actuel ?
+        </Label>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="ghost" size="sm" className="h-6 w-6 shrink-0 p-0 rounded-full">
+              <Info className="h-3.5 w-3.5 text-muted-foreground" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-72 rounded-xl text-xs">
+            <p className="text-muted-foreground">
+              Votre réponse nous permet de déterminer si nous pouvons vous recommander un service de mutation foncière, afin de sécuriser davantage le droit foncier qui couvre cette parcelle.
+            </p>
+          </PopoverContent>
+        </Popover>
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <Button
+          type="button"
+          variant={formData.isTitleInCurrentOwnerName === true ? 'default' : 'outline'}
+          onClick={() => handleInputChange('isTitleInCurrentOwnerName', true)}
+          className="h-10 rounded-xl"
+        >
+          Oui
+        </Button>
+        <Button
+          type="button"
+          variant={formData.isTitleInCurrentOwnerName === false ? 'default' : 'outline'}
+          onClick={() => handleInputChange('isTitleInCurrentOwnerName', false)}
+          className="h-10 rounded-xl"
+        >
+          Non
+        </Button>
+      </div>
+      {formData.isTitleInCurrentOwnerName === false && (() => {
+        const ownerSinceDate = currentOwners[0]?.since;
+        if (!ownerSinceDate) return null;
+        const daysDiff = Math.floor((new Date().getTime() - new Date(ownerSinceDate).getTime()) / (1000 * 60 * 60 * 24));
+        return daysDiff >= 20
+          ? <p className="text-xs text-destructive">Hors délai légal de mutation (de 1 à 20 jours après acquisition).</p>
+          : <p className="text-xs text-success">Pensez à faire la mutation dès que possible, vous êtes encore dans le délai légal (de 1 à 20 jours après acquisition).</p>;
+      })()}
+    </div>
+  ) : null;
+
   return (
     <div className="space-y-4 sm:space-y-6 mt-4 sm:mt-6 animate-fade-in">
       <PropertyTitleTypeSelect 
@@ -108,53 +156,6 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
         onLeaseYearsChange={setLeaseYears}
         customTitleName={customTitleName}
         onCustomTitleNameChange={setCustomTitleName}
-        titleOwnershipContent={formData.titleReferenceNumber?.trim() ? (
-          <div className="space-y-3 border-t border-border/50 pt-3 animate-fade-in">
-            <div className="flex items-start justify-between gap-2">
-              <Label className="text-sm font-medium leading-snug">
-                Ce titre de type « {getEffectiveTitleName(formData.propertyTitleType, customTitleName) || 'non sélectionné'} » est-il au nom du propriétaire actuel ?
-              </Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-6 w-6 shrink-0 p-0 rounded-full">
-                    <Info className="h-3.5 w-3.5 text-muted-foreground" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-72 rounded-xl text-xs">
-                  <p className="text-muted-foreground">
-                    Votre réponse nous permet de déterminer si nous pouvons vous recommander un service de mutation foncière, afin de sécuriser davantage le droit foncier qui couvre cette parcelle.
-                  </p>
-                </PopoverContent>
-              </Popover>
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <Button
-                type="button"
-                variant={formData.isTitleInCurrentOwnerName === true ? 'default' : 'outline'}
-                onClick={() => handleInputChange('isTitleInCurrentOwnerName', true)}
-                className="h-10 rounded-xl"
-              >
-                Oui
-              </Button>
-              <Button
-                type="button"
-                variant={formData.isTitleInCurrentOwnerName === false ? 'default' : 'outline'}
-                onClick={() => handleInputChange('isTitleInCurrentOwnerName', false)}
-                className="h-10 rounded-xl"
-              >
-                Non
-              </Button>
-            </div>
-            {formData.isTitleInCurrentOwnerName === false && (() => {
-              const ownerSinceDate = currentOwners[0]?.since;
-              if (!ownerSinceDate) return null;
-              const daysDiff = Math.floor((new Date().getTime() - new Date(ownerSinceDate).getTime()) / (1000 * 60 * 60 * 24));
-              return daysDiff >= 20
-                ? <p className="text-xs text-destructive">Hors délai légal de mutation (de 1 à 20 jours après acquisition).</p>
-                : <p className="text-xs text-success">Pensez à faire la mutation dès que possible, vous êtes encore dans le délai légal (de 1 à 20 jours après acquisition).</p>;
-            })()}
-          </div>
-        ) : undefined}
       />
 
       {/* Numéro de titre préchargé depuis une recherche cadastrale par n° de titre */}
@@ -242,6 +243,8 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
               <Input id="titleDoc" type="file" accept="image/jpeg,image/jpg,image/png,image/webp,application/pdf" onChange={(e) => handleFileChange(e, 'title')} className="hidden" />
               <p className="text-xs text-muted-foreground text-center">JPG, PNG, PDF • Max 10 MB</p>
             </div>
+
+            {titleOwnershipQuestion}
           </CardContent>
         </Card>
       )}
@@ -273,6 +276,8 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
           </CardContent>
         </Card>
       )}
+
+      {formData.propertyTitleType === 'Autre' && customTitleName?.trim() && titleOwnershipQuestion}
 
       {/* Current owners section */}
       <CurrentOwnersSection
