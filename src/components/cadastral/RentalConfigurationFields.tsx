@@ -692,7 +692,7 @@ export const MonthlyRentFields: React.FC<CommonProps> = ({
 export const computeMonthlyRentTotal = (state: RentalConfigurationState): number => {
   if (state.rentalConfiguration === 'multi') {
     return (state.rentalUnits || []).reduce(
-      (sum, u) => sum + (isOwnerOccupiedUnit(u) ? 0 : (Number(u?.monthlyRentUsd) || 0)),
+      (sum, u) => sum + (isOwnerOccupiedUnit(u) || u?.isOccupied === false ? 0 : (Number(u?.monthlyRentUsd) || 0)),
       0,
     );
   }
