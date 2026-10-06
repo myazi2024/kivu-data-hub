@@ -12,10 +12,6 @@ interface MarketValueSummaryProps {
 
 const fmtDate = (d?: string) => (d ? new Date(d).toLocaleDateString('fr-FR') : '');
 
-const AVAILABILITY_LABELS: Record<string, string> = {
-  immediate: 'Immédiate',
-  conditional: 'Sous conditions',
-};
 const CONTACT_LABELS: Record<string, string> = {
   whatsapp: 'WhatsApp',
   phone: 'Téléphone',
@@ -104,11 +100,6 @@ export const MarketValueSummary: React.FC<MarketValueSummaryProps> = ({ formData
               <div className="font-medium">Annonce de vente:</div>
               <div className="ml-2 text-muted-foreground space-y-0.5">
                 <div>Photos: {sale.coverImageUrls?.length || 0}{sale.coverImageMainUrl ? ' (couverture définie)' : ''}</div>
-                <div>Prix: {sale.priceNegotiable ? 'Négociable' : 'Ferme'}</div>
-                {sale.availability && (
-                  <div>Disponibilité: {AVAILABILITY_LABELS[sale.availability] || sale.availability}
-                    {sale.availabilityNote ? ` — ${sale.availabilityNote}` : ''}</div>
-                )}
                 {sale.description && (
                   <div>Description: {sale.description.length > 80 ? `${sale.description.substring(0, 80)}…` : sale.description}</div>
                 )}
