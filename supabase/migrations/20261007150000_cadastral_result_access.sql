@@ -27,21 +27,15 @@ BEGIN
   END IF;
   v_paid_services := COALESCE(v_paid_services, ARRAY[]::text[]);
 
-  -- Liste d'accès officielle (seule source utilisée par la fiche et le PDF).
+  -- Liste d'accès officielle (seule source utilisée par la fiche et le PDF) :
+  -- { service_id: date de fin | null (sans limite) }.
   IF v_user_id IS NOT NULL THEN
-    SELECT COALESCE(jsonb_object_agg(service_type, expires_at), '{}'::jsonb) INTO v_access
-    FROM (SELECT service_type, max(expires_at) AS expires_at,
-                 bool_or(expires_at IS NULL) AS unlimited
+    SELECT jsonb_object_agg(service_type, CASE WHEN unlimited THEN NULL ELSE last_expiry END) INTO v_access
+    FROM (SELECT service_type, bool_or(expires_at IS NULL) AS unlimited, max(expires_at) AS last_expiry
           FROM cadastral_service_access
           WHERE user_id = v_user_id AND upper(parcel_number) = v_number
             AND (expires_at IS NULL OR expires_at > now())
           GROUP BY service_type) s;
-    -- Un accès sans limite l'emporte sur un accès daté.
-    SELECT COALESCE(jsonb_object_agg(service_type, NULL), '{}'::jsonb) || COALESCE(v_access, '{}'::jsonb) INTO v_access
-    FROM (SELECT 1) d LEFT JOIN LATERAL (SELECT NULL::text AS service_type) x ON false;
-    SELECT v_access || COALESCE((SELECT jsonb_object_agg(service_type, NULL)
-      FROM cadastral_service_access WHERE user_id = v_user_id AND upper(parcel_number) = v_number
-        AND expires_at IS NULL), '{}'::jsonb) INTO v_access;
   END IF;
   v_access := COALESCE(v_access, '{}'::jsonb);
 
