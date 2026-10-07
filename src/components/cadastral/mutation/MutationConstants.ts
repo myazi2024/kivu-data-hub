@@ -43,6 +43,10 @@ export const TRANSFER_MUTATION_TYPES = ['vente', 'donation', 'succession', 'expr
 export const NO_LATE_FEE_TYPES = ['correction', 'mise_a_jour', 'expropriation'];
 
 export const isTransferMutation = (type: string) => TRANSFER_MUTATION_TYPES.includes(type);
+
+/** Transferts exigeant un certificat d'expertise (l'expropriation en est exclue). */
+export const CERTIFICATE_MUTATION_TYPES = ['vente', 'donation', 'succession', 'echange'];
+export const requiresExpertiseCertificate = (type: string) => CERTIFICATE_MUTATION_TYPES.includes(type);
 export const hasLateFees = (type: string) => !NO_LATE_FEE_TYPES.includes(type);
 
 /**

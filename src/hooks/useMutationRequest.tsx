@@ -12,7 +12,7 @@ export const useMutationRequest = () => {
   const [loading, setLoading] = useState(false);
   const [fees, setFees] = useState<MutationFee[]>([]);
   const [userRequests, setUserRequests] = useState<MutationRequest[]>([]);
-  const { user, profile } = useAuth();
+  const { user } = useAuth();
   const { isTestRoute } = useTestEnvironment();
   const { toast } = useToast();
 
@@ -58,7 +58,7 @@ export const useMutationRequest = () => {
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [user, isTestRoute]);
 
   /**
    * Check if user already has a pending/in_review mutation request for this parcel.
@@ -96,6 +96,7 @@ export const useMutationRequest = () => {
     proposed_changes: Record<string, any>;
     justification?: string;
     selected_fees: MutationFee[];
+    /** Estimation affichée ; le serveur recalcule et écrase le montant. */
     total_amount_override?: number;
     // New dedicated column fields
     supporting_documents?: string[];
@@ -157,6 +158,8 @@ export const useMutationRequest = () => {
         late_fee_days: data.late_fee_days ?? null,
       };
 
+      // Le serveur (trigger enforce_mutation_request_insert) recalcule les frais,
+      // le total et force les statuts « pending ».
       const { data: request, error } = await supabase
         .from('mutation_requests')
         .insert(insertData as any)
