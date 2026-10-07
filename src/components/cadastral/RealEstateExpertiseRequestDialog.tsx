@@ -1134,6 +1134,8 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     setStep('payment');
   };
 
+  const pendingRequestRef = useRef<Awaited<ReturnType<typeof createExpertiseRequest>>>(null);
+
   const handlePayment = async () => {
     if (!user || !formData || processingPayment) return;
 
@@ -1151,19 +1153,24 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     setProcessingPayment(true);
 
     try {
-      // Upload files first
-      const uploadedFiles = await uploadFiles();
-      const allDocUrls = [...uploadedFiles.parcelDocs, ...uploadedFiles.constructionImages];
-
-      // Create the expertise request (montant calculé par le serveur à l'insertion)
-      const request = await createExpertiseRequest({
-        ...formData,
-        supporting_documents: allDocUrls,
-        building_permit_document_url: uploadedFiles.permitDocUrl || undefined,
-      });
-
+      // Après un paiement échoué, on réutilise la demande déjà créée au lieu
+      // d'en créer une seconde (et de renvoyer les fichiers).
+      let request = pendingRequestRef.current;
       if (!request) {
-        throw new Error('Erreur lors de la création de la demande');
+        const uploadedFiles = await uploadFiles();
+        const allDocUrls = [...uploadedFiles.parcelDocs, ...uploadedFiles.constructionImages];
+
+        // Montant calculé par le serveur à l'insertion
+        request = await createExpertiseRequest({
+          ...formData,
+          supporting_documents: allDocUrls,
+          building_permit_document_url: uploadedFiles.permitDocUrl || undefined,
+        });
+
+        if (!request) {
+          throw new Error('Erreur lors de la création de la demande');
+        }
+        pendingRequestRef.current = request;
       }
 
       // Ligne de paiement créée par le serveur avec le montant de la demande
