@@ -152,39 +152,9 @@ export const AnalyticsFilters: React.FC<Props> = ({
     handleQuartierChange(undefined);
   }, [onChange, handleVilleChange, handleCommuneChange, handleQuartierChange]);
 
-  // Auto-hide on mouse idle (3s)
-  const [filtersVisible, setFiltersVisible] = useState(true);
-  const idleTimerRef = useRef<ReturnType<typeof setTimeout>>();
-
-  const resetIdleTimer = useCallback(() => {
-    setFiltersVisible(true);
-    document.body.classList.remove('cursor-none');
-    clearTimeout(idleTimerRef.current);
-    idleTimerRef.current = setTimeout(() => {
-      setFiltersVisible(false);
-      document.body.classList.add('cursor-none');
-    }, 3000);
-  }, []);
-
-  useEffect(() => {
-    document.addEventListener('mousemove', resetIdleTimer);
-    idleTimerRef.current = setTimeout(() => {
-      setFiltersVisible(false);
-      document.body.classList.add('cursor-none');
-    }, 3000);
-    return () => {
-      document.removeEventListener('mousemove', resetIdleTimer);
-      clearTimeout(idleTimerRef.current);
-      document.body.classList.remove('cursor-none');
-    };
-  }, [resetIdleTimer]);
-
   return (
     <div
-      className={`space-y-1 bg-background/95 backdrop-blur-sm rounded-md border border-border/30 shadow-sm sticky top-0 z-10 transition-all duration-300 ease-in-out ${
-        filtersVisible ? 'opacity-100 max-h-40 p-1.5' : 'opacity-0 max-h-0 p-0 overflow-hidden'
-      }`}
-      onMouseEnter={resetIdleTimer}
+      className="space-y-1 bg-background/95 backdrop-blur-sm rounded-md border border-border/30 shadow-sm sticky top-0 z-10 p-1.5"
     >
       {!hideTime && (
         <AnalyticsTimeRow

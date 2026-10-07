@@ -119,20 +119,10 @@ const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = ({
       return () => clearTimeout(id);
     }
   }, [forcedTab]);
-  const [isIdle, setIsIdle] = useState(false);
-
   // Notify parent when active tab changes (used by DRC map to swap profile)
   useEffect(() => {
     if (activeTab) onActiveTabChange?.(activeTab);
   }, [activeTab, onActiveTabChange]);
-
-  useEffect(() => {
-    const observer = new MutationObserver(() => {
-      setIsIdle(document.body.classList.contains('cursor-none'));
-    });
-    observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
-    return () => observer.disconnect();
-  }, []);
 
   // Load global watermark config
   const globalDefaults = ANALYTICS_TABS_REGISTRY['_global']
@@ -169,7 +159,7 @@ const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = ({
   return (
     <div className="flex flex-row lg:flex-col h-full w-full min-h-0 overflow-hidden">
       {/* Tabs */}
-      <div className={`${isIdle ? 'w-8' : 'w-20 sm:w-24'} lg:w-full shrink-0 border-r lg:border-r-0 lg:border-b border-border/40 bg-background ${isIdle ? 'overflow-hidden' : 'overflow-y-auto overflow-x-hidden'} lg:overflow-y-hidden lg:overflow-x-auto scrollbar-hide transition-all duration-300`}>
+      <div className="w-20 sm:w-24 lg:w-full shrink-0 border-r lg:border-r-0 lg:border-b border-border/40 bg-background overflow-y-auto overflow-x-hidden lg:overflow-y-hidden lg:overflow-x-auto scrollbar-hide transition-all duration-300">
         <div className="flex flex-col lg:flex-row lg:items-center gap-0.5 p-0.5 lg:w-max">
           {visibleTabs.map((tab) => {
             const isActive = activeTab === tab.key;
@@ -186,7 +176,7 @@ const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = ({
                 title={tab.label}
               >
                 {IconComp && <IconComp className="h-3 w-3 shrink-0" />}
-                {!isIdle && <span>{tab.label}</span>}
+                <span>{tab.label}</span>
               </button>
             );
           })}
