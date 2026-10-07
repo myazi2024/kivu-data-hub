@@ -287,7 +287,6 @@ export interface CertificateRecord extends GeoFields {
   id: string;
   certificate_type: string;
   parcel_number: string;
-  recipient_name: string;
   reference_number: string;
   status: string;
   generated_at: string;
@@ -297,7 +296,6 @@ export interface InvoiceRecord extends GeoFields {
   id: string;
   invoice_number: string;
   parcel_number: string;
-  client_email: string;
   total_amount_usd: number;
   status: string;
   payment_method?: string | null;

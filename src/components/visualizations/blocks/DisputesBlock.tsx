@@ -9,6 +9,7 @@ import { ChartCard, StackedBarCard, FilterLabelContext, MultiAreaChartCard } fro
 import { BlockUnscopedRecordsProvider } from '../shared/BlockUnscopedRecordsContext';
 import { GeoCharts } from '../shared/GeoCharts';
 import { generateInsight, generateStackedInsight } from '@/utils/chartInsights';
+import { isDisputeResolved, openDisputeAvgAgeDays } from '@/utils/analyticsTabRules';
 import { useBlockFilter } from '@/hooks/useBlockFilter';
 
 interface Props { data: LandAnalyticsData; }
@@ -19,8 +20,8 @@ export const DisputesBlock: React.FC<Props> = memo(({ data }) => {
   const { filter, setFilter, filterLabel, filtered, filteredUnscoped, filterConfig, v, ct, cx, ty, ord } = useBlockFilter(TAB_KEY, data.disputes);
 
   const { enCours, resolus, byNature, byType, byStatus, byResolutionLevel, byDeclarantQuality, trend, natureStatusCross, resolutionStatus } = useMemo(() => {
-    const enCours = filtered.filter(d => !['resolved', 'closed', 'resolu', 'leve'].includes(d.current_status));
-    const resolus = filtered.filter(d => ['resolved', 'closed', 'resolu', 'leve'].includes(d.current_status));
+    const enCours = filtered.filter(d => !isDisputeResolved(d.current_status));
+    const resolus = filtered.filter(d => isDisputeResolved(d.current_status));
     const byNature = countBy(filtered, 'dispute_nature');
     const byType = countBy(filtered, 'dispute_type');
     const byStatus = countBy(filtered, 'current_status');
@@ -33,23 +34,14 @@ export const DisputesBlock: React.FC<Props> = memo(({ data }) => {
       const n = d.dispute_nature || '(Non renseigné)';
       if (!map.has(n)) map.set(n, { enCours: 0, resolu: 0 });
       const e = map.get(n)!;
-      if (['resolved', 'closed', 'resolu', 'leve'].includes(d.current_status)) e.resolu++; else e.enCours++;
+      if (isDisputeResolved(d.current_status)) e.resolu++; else e.enCours++;
     });
     const natureStatusCross = Array.from(map.entries()).map(([name, d]) => ({ name, ...d })).sort((a, b) => (b.enCours + b.resolu) - (a.enCours + a.resolu));
     const resolutionStatus = [{ name: 'En cours', value: enCours.length }, { name: 'Résolus', value: resolus.length }];
     return { enCours, resolus, byNature, byType, byStatus, byResolutionLevel, byDeclarantQuality, trend, natureStatusCross, resolutionStatus };
   }, [filtered]);
 
-  const avgDuration = useMemo(() => {
-    const withStart = filtered.filter(d => d.dispute_start_date);
-    if (withStart.length === 0) return 0;
-    const now = Date.now();
-    const total = withStart.reduce((s, d) => {
-      const start = new Date(d.dispute_start_date).getTime();
-      return s + (now - start) / (1000 * 60 * 60 * 24);
-    }, 0);
-    return Math.round(total / withStart.length);
-  }, [filtered]);
+  const avgDuration = useMemo(() => openDisputeAvgAgeDays(filtered), [filtered]);
 
   const resolutionTrend = useMemo(() => {
     const map = new Map<string, { total: number; resolved: number }>();
@@ -60,7 +52,7 @@ export const DisputesBlock: React.FC<Props> = memo(({ data }) => {
       if (!map.has(key)) map.set(key, { total: 0, resolved: 0 });
       const e = map.get(key)!;
       e.total++;
-      if (['resolved', 'closed', 'resolu', 'leve'].includes(d.current_status)) e.resolved++;
+      if (isDisputeResolved(d.current_status)) e.resolved++;
     });
     return Array.from(map.entries()).sort(([a], [b]) => a.localeCompare(b)).map(([key, d]) => {
       const [y, m] = key.split('-');
@@ -121,7 +113,7 @@ export const DisputesBlock: React.FC<Props> = memo(({ data }) => {
     { key: 'kpi-en-cours', label: ct('kpi-en-cours', 'En cours'), value: enCours.length, cls: 'text-amber-600', tooltip: pct(enCours.length, filtered.length) },
     { key: 'kpi-resolus', label: ct('kpi-resolus', 'Résolus'), value: resolus.length, cls: 'text-emerald-600', tooltip: pct(resolus.length, filtered.length) },
     { key: 'kpi-rate', label: ct('kpi-rate', 'Taux résolution'), value: pct(resolus.length, filtered.length), cls: 'text-purple-600' },
-    { key: 'kpi-duration', label: ct('kpi-duration', 'Durée moy.'), value: avgDuration > 0 ? `${avgDuration}j` : 'N/A', cls: 'text-blue-600', tooltip: 'Durée moyenne des litiges (jours)' },
+    { key: 'kpi-duration', label: ct('kpi-duration', 'Durée moy.'), value: avgDuration > 0 ? `${avgDuration}j` : 'N/A', cls: 'text-blue-600', tooltip: 'Ancienneté moyenne des litiges en cours (jours)' },
     { key: 'kpi-lifting-total', label: ct('kpi-lifting-total', 'Demandes levée'), value: liftingDisputes.length, cls: 'text-sky-600' },
     { key: 'kpi-lifting-approved', label: ct('kpi-lifting-approved', 'Levées approuvées'), value: liftingStats.approved, cls: 'text-emerald-600', tooltip: pct(liftingStats.approved, liftingDisputes.length) },
     { key: 'kpi-lifting-pending', label: ct('kpi-lifting-pending', 'Levées en attente'), value: liftingStats.pending, cls: 'text-amber-600', tooltip: pct(liftingStats.pending, liftingDisputes.length) },

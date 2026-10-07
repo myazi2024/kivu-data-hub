@@ -9,6 +9,7 @@ import { BlockUnscopedRecordsProvider } from '../shared/BlockUnscopedRecordsCont
 import { GeoCharts } from '../shared/GeoCharts';
 import { generateInsight } from '@/utils/chartInsights';
 import { trendByMonth } from '@/utils/analyticsHelpers';
+import { boundaryEntryDate, isFilledBoundaryEntry } from '@/utils/analyticsTabRules';
 import { useBlockFilter } from '@/hooks/useBlockFilter';
 
 interface Props { data: LandAnalyticsData; }
@@ -18,11 +19,11 @@ const TAB_KEY = 'boundary';
 function extractBoundaries(row: any): any[] {
   const bh = row.boundary_history;
   if (!bh) return [];
-  if (Array.isArray(bh)) return bh;
-  if (Array.isArray(bh.entries)) return bh.entries;
-  if (Array.isArray(bh.history)) return bh.history;
-  if (typeof bh === 'object') return [bh];
-  return [];
+  const list = Array.isArray(bh) ? bh
+    : Array.isArray(bh.entries) ? bh.entries
+    : Array.isArray(bh.history) ? bh.history
+    : typeof bh === 'object' ? [bh] : [];
+  return list.filter(isFilledBoundaryEntry);
 }
 
 export const BoundaryBlock: React.FC<Props> = memo(({ data }) => {
@@ -52,7 +53,7 @@ export const BoundaryBlock: React.FC<Props> = memo(({ data }) => {
     const now = Date.now();
     filtered.forEach(r => {
       extractBoundaries(r).forEach((b: any) => {
-        const d = b?.survey_date || b?.date || b?.bornage_date;
+        const d = boundaryEntryDate(b);
         if (!d) return;
         const t = new Date(d).getTime();
         if (isNaN(t)) return;
@@ -70,7 +71,7 @@ export const BoundaryBlock: React.FC<Props> = memo(({ data }) => {
     const map = new Map<string, number>();
     filtered.forEach(r => {
       extractBoundaries(r).forEach((b: any) => {
-        const p = b?.boundary_purpose || b?.purpose || b?.motif;
+        const p = b?.boundary_purpose || b?.boundaryPurpose || b?.purpose || b?.motif;
         if (p) map.set(String(p), (map.get(String(p)) || 0) + 1);
       });
     });
@@ -81,7 +82,7 @@ export const BoundaryBlock: React.FC<Props> = memo(({ data }) => {
     const map = new Map<string, number>();
     filtered.forEach(r => {
       extractBoundaries(r).forEach((b: any) => {
-        const s = b?.surveyor_name || b?.surveyor || b?.geometre;
+        const s = b?.surveyor_name || b?.surveyorName || b?.surveyor || b?.geometre;
         if (s) map.set(String(s), (map.get(String(s)) || 0) + 1);
       });
     });
@@ -92,7 +93,7 @@ export const BoundaryBlock: React.FC<Props> = memo(({ data }) => {
     const records: any[] = [];
     filtered.forEach(r => {
       extractBoundaries(r).forEach((b: any) => {
-        const d = b?.survey_date || b?.date;
+        const d = boundaryEntryDate(b);
         if (d) records.push({ created_at: d });
       });
     });
