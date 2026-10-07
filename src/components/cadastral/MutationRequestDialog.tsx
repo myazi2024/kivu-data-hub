@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { createLongLivedSignedUrl } from '@/utils/storageSignedUrl';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import WhatsAppFloatingButton from './WhatsAppFloatingButton';
-import { FileEdit, Upload } from 'lucide-react';
+import { FileEdit } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useMutationRequest } from '@/hooks/useMutationRequest';
 import type { MutationRequest } from '@/types/mutation';
@@ -17,9 +17,6 @@ import RealEstateExpertiseRequestDialog from './RealEstateExpertiseRequestDialog
 import FormIntroDialog, { FORM_INTRO_CONFIGS } from './FormIntroDialog';
 import {
   MUTATION_TYPES,
-  LEGAL_STATUS_OPTIONS,
-  REQUESTER_TYPES,
-  PROVIDER_LABELS,
   isTransferMutation as checkIsTransfer,
   requiresExpertiseCertificate,
   computeMutationDuties,
