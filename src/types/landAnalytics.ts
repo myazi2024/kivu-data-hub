@@ -34,6 +34,7 @@ export interface CccMarketFields {
   market_listings?: any;
   sale_listing?: any;
   building_height?: number | null;
+  construction_status?: string | null;
   apartment_length?: number | null;
   apartment_width?: number | null;
   apartment_height?: number | null;
@@ -125,6 +126,10 @@ export interface ContributionRecord extends GeoFields, CccMarketFields {
   boundary_history?: any;
   tax_history?: any;
   mortgage_history?: any;
+  actual_usage?: string | null;
+  actual_usage_other?: string | null;
+  operational_capacity?: number | null;
+  operational_capacity_unit?: string | null;
 }
 
 
