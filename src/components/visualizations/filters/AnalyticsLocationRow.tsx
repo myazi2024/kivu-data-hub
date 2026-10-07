@@ -123,6 +123,16 @@ export const AnalyticsLocationRow: React.FC<Props> = ({
         </SelectContent>
       </Select>
 
+      {filter.landDistrict && districtZone && (
+        <>
+          {sep}
+          <Badge variant="secondary" className="text-[10px] px-1.5 py-0 font-medium" aria-label="Zone auto-détectée depuis la circonscription">
+            {districtZone === 'urbaine' ? 'SU - Urbaine' : 'SR - Rurale'}
+          </Badge>
+          <span className="text-[9px] text-muted-foreground italic">auto-détecté</span>
+        </>
+      )}
+
       {needsManualZone && (
         <>
           {sep}
@@ -148,7 +158,7 @@ export const AnalyticsLocationRow: React.FC<Props> = ({
 
       {showUrbanSub && (
         <>
-          {villes.length > 0 && (
+          {(
             <>
               {sep}
               <Select
@@ -161,7 +171,7 @@ export const AnalyticsLocationRow: React.FC<Props> = ({
                   onQuartierChange(undefined);
                 }}
               >
-                <SelectTrigger className={selectCls}><SelectValue placeholder="Ville" /></SelectTrigger>
+                <SelectTrigger className={selectCls} disabled={villes.length === 0}><SelectValue placeholder={villes.length ? 'Ville' : 'Aucune ville'} /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="__all__">Toutes les villes</SelectItem>
                   {villes.map((v) => (<SelectItem key={v} value={v}>{v}</SelectItem>))}
@@ -246,7 +256,7 @@ export const AnalyticsLocationRow: React.FC<Props> = ({
               onTerritoireChange(newTerritoire);
             }}
           >
-            <SelectTrigger className={selectCls}><SelectValue placeholder="Territoire" /></SelectTrigger>
+            <SelectTrigger className={selectCls} disabled={territoiresFinal.length === 0}><SelectValue placeholder={territoiresFinal.length ? 'Territoire' : 'Aucun territoire'} /></SelectTrigger>
             <SelectContent>
               <SelectItem value="__all__">Tous les territoires</SelectItem>
               {territoiresFinal.map((v) => (<SelectItem key={v} value={v}>{v}</SelectItem>))}

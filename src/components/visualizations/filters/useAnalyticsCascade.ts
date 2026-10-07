@@ -52,11 +52,19 @@ export const useAnalyticsCascade = ({ data, filter }: CascadeOptions) => {
     [provinceScoped],
   );
 
-  // Urban
-  const villes = useMemo(
-    () => (filter.province ? getVillesForProvince(filter.province) : []),
-    [filter.province],
+  // Données restreintes à la circonscription choisie (repli des listes)
+  const districtScoped = useMemo(
+    () => (filter.landDistrict ? provinceScoped.filter((r) => sameGeo(r.land_district, filter.landDistrict)) : provinceScoped),
+    [provinceScoped, filter.landDistrict],
   );
+
+  // Urban
+  const villes = useMemo(() => {
+    const fromCcc = filter.province ? getVillesForProvince(filter.province) : [];
+    if (fromCcc.length > 0) return fromCcc;
+    if (!filter.province) return [];
+    return extractUnique(districtScoped.filter((r) => getSectionType(r) !== 'rurale'), 'ville');
+  }, [filter.province, districtScoped]);
 
   const communes = useMemo(() => {
     if (filter.province && filter.ville) return getCommunesForVille(filter.province, filter.ville);
@@ -113,9 +121,10 @@ export const useAnalyticsCascade = ({ data, filter }: CascadeOptions) => {
 
   const territoiresFinal = useMemo(() => {
     if (territoires.length > 0) return territoires;
-    const scoped = provinceScoped.filter((r) => getSectionType(r) === 'rurale');
+    if (!filter.province) return [];
+    const scoped = districtScoped.filter((r) => getSectionType(r) !== 'urbaine');
     return extractUnique(scoped, 'territoire');
-  }, [territoires, provinceScoped]);
+  }, [territoires, districtScoped, filter.province]);
 
   const collectivites = useMemo(
     () =>
