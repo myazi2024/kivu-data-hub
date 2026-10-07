@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { trackEvent } from '@/lib/analytics';
+import { openExpertiseCertificate } from '@/utils/expertiseCertificateUrl';
 
 const POLL_INTERVAL_MS = 2000;
 const POLL_MAX_ATTEMPTS = 15;
@@ -14,6 +16,7 @@ const POLL_MAX_ATTEMPTS = 15;
  */
 export const useStripeReturnHandler = () => {
   const [searchParams, setSearchParams] = useSearchParams();
+  const queryClient = useQueryClient();
   const [polling, setPolling] = useState(false);
   const [pollProgress, setPollProgress] = useState(0);
 
