@@ -321,44 +321,6 @@ export const ANALYTICS_TABS_REGISTRY: Record<string, { label: string; charts: Ch
       { tab_key: 'boundary', item_key: 'kpi-surveyors', item_type: 'kpi', is_visible: true, display_order: 3, custom_title: 'Géomètres' },
     ],
   },
-  'geometry': {
-    label: 'Géométrie',
-    charts: [
-      { tab_key: 'geometry', item_key: 'area-distribution', item_type: 'chart', is_visible: true, display_order: 0, custom_title: 'Distribution surface', chart_type: 'bar-v' },
-      { tab_key: 'geometry', item_key: 'side-length', item_type: 'chart', is_visible: true, display_order: 1, custom_title: 'Longueur des côtés', chart_type: 'bar-v' },
-      { tab_key: 'geometry', item_key: 'perimeter', item_type: 'chart', is_visible: true, display_order: 2, custom_title: 'Périmètre des parcelles', chart_type: 'bar-v' },
-      { tab_key: 'geometry', item_key: 'sides-count', item_type: 'chart', is_visible: true, display_order: 3, custom_title: 'Forme (nb de côtés)', chart_type: 'bar-v' },
-      { tab_key: 'geometry', item_key: 'road-access', item_type: 'chart', is_visible: true, display_order: 4, custom_title: 'Accès routier', chart_type: 'pie' },
-      { tab_key: 'geometry', item_key: 'road-sides-count', item_type: 'chart', is_visible: true, display_order: 5, custom_title: 'Nb côtés sur voie', chart_type: 'bar-v' },
-      { tab_key: 'geometry', item_key: 'gps-coverage', item_type: 'chart', is_visible: true, display_order: 6, custom_title: 'Couverture GPS', chart_type: 'donut' },
-      { tab_key: 'geometry', item_key: 'geo', item_type: 'chart', is_visible: true, display_order: 7, custom_title: 'Géographie' },
-    ],
-    kpis: [
-      { tab_key: 'geometry', item_key: 'kpi-total', item_type: 'kpi', is_visible: true, display_order: 0, custom_title: 'Parcelles analysées' },
-      { tab_key: 'geometry', item_key: 'kpi-with-sides', item_type: 'kpi', is_visible: true, display_order: 1, custom_title: 'Avec dimensions' },
-      { tab_key: 'geometry', item_key: 'kpi-with-gps', item_type: 'kpi', is_visible: true, display_order: 2, custom_title: 'Avec GPS' },
-    ],
-  },
-  'consistency': {
-    label: 'Cohérence & Anti-fraude',
-    charts: [
-      { tab_key: 'consistency', item_key: 'tax-comparison', item_type: 'chart', is_visible: true, display_order: 0, custom_title: 'Cohérence taxes (déclaré vs officiel)', chart_type: 'pie' },
-      { tab_key: 'consistency', item_key: 'mortgage-comparison', item_type: 'chart', is_visible: true, display_order: 1, custom_title: 'Cohérence hypothèques', chart_type: 'pie' },
-      { tab_key: 'consistency', item_key: 'dispute-comparison', item_type: 'chart', is_visible: true, display_order: 2, custom_title: 'Cohérence litiges', chart_type: 'pie' },
-      { tab_key: 'consistency', item_key: 'corrective', item_type: 'chart', is_visible: true, display_order: 3, custom_title: 'Initiales vs Correctives', chart_type: 'donut' },
-      { tab_key: 'consistency', item_key: 'ownership-declared', item_type: 'chart', is_visible: true, display_order: 4, custom_title: 'Historique propriété déclaré', chart_type: 'donut' },
-      { tab_key: 'consistency', item_key: 'geo', item_type: 'chart', is_visible: true, display_order: 5, custom_title: 'Géographie incohérences' },
-    ],
-    kpis: [
-      { tab_key: 'consistency', item_key: 'kpi-total', item_type: 'kpi', is_visible: true, display_order: 0, custom_title: 'Contributions analysées' },
-      { tab_key: 'consistency', item_key: 'kpi-incoherence-rate', item_type: 'kpi', is_visible: true, display_order: 1, custom_title: 'Taux incohérence' },
-      { tab_key: 'consistency', item_key: 'kpi-tax-mismatch', item_type: 'kpi', is_visible: true, display_order: 2, custom_title: 'Écarts taxes' },
-      { tab_key: 'consistency', item_key: 'kpi-mortgage-mismatch', item_type: 'kpi', is_visible: true, display_order: 3, custom_title: 'Écarts hypothèques' },
-      { tab_key: 'consistency', item_key: 'kpi-dispute-mismatch', item_type: 'kpi', is_visible: true, display_order: 4, custom_title: 'Écarts litiges' },
-      { tab_key: 'consistency', item_key: 'kpi-corrective', item_type: 'kpi', is_visible: true, display_order: 5, custom_title: 'Contributions correctives' },
-      { tab_key: 'consistency', item_key: 'kpi-ownership-declared', item_type: 'kpi', is_visible: true, display_order: 6, custom_title: 'Avec historique propriété' },
-    ],
-  },
   'rental-market': {
     label: 'Location & Valeur',
     charts: [
