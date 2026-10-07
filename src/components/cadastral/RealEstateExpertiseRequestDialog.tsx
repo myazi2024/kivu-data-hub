@@ -76,7 +76,15 @@ interface RealEstateExpertiseRequestDialogProps {
   onSuccess?: () => void;
 }
 
-import type { ExpertiseFee, ExpertiseBuildingDetail } from '@/types/expertise';
+import type { ExpertiseBuildingDetail } from '@/types/expertise';
+import ExistingCertificateBlock from './real-estate-expertise/ExistingCertificateBlock';
+import { useParcelExpertiseCertificate } from '@/hooks/useExpertiseCertificateAccess';
+import {
+  createExpertisePayment,
+  isValidDrcMobileNumber,
+  processExpertiseMobileMoneyPayment,
+  processExpertiseStripePayment,
+} from '@/utils/expertisePaymentHelper';
 import {
   PROPERTY_CONDITION_OPTIONS,
   ROAD_ACCESS_OPTIONS,
@@ -119,7 +127,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
   
   const isMobile = useIsMobile();
   const { user, profile } = useAuth();
-  const { createExpertiseRequest, loading, checkExistingValidCertificate, checkCertificateValidity } = useRealEstateExpertise();
+  const { createExpertiseRequest, loading } = useRealEstateExpertise();
   const parcelDocsInputRef = useRef<HTMLInputElement>(null);
   const constructionImagesInputRef = useRef<HTMLInputElement>(null);
   const constructionGalleryInputRef = useRef<HTMLInputElement>(null);
@@ -137,22 +145,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
   };
   const [createdRequest, setCreatedRequest] = useState<any>(null);
 
-  // Existing valid certificate state
-  const [checkingCertificate, setCheckingCertificate] = useState(false);
-  const [existingCertificate, setExistingCertificate] = useState<any>(null);
-  const [certificateChecked, setCertificateChecked] = useState(false);
-  const [showCertificatePayment, setShowCertificatePayment] = useState(false);
-  const [certPaymentMethod, setCertPaymentMethod] = useState<'mobile_money' | 'bank_card'>('mobile_money');
-  const [certPaymentProvider, setCertPaymentProvider] = useState('');
-  const [certPaymentPhone, setCertPaymentPhone] = useState('');
-  const [processingCertPayment, setProcessingCertPayment] = useState(false);
-  const [certificateAccessFee, setCertificateAccessFee] = useState<number>(0);
-  const [hasCertificateAccess, setHasCertificateAccess] = useState(false);
-  const [checkingCertificateAccess, setCheckingCertificateAccess] = useState(false);
-
   // Payment state
-  const [fees, setFees] = useState<ExpertiseFee[]>([]);
-  const [loadingFees, setLoadingFees] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<'mobile_money' | 'bank_card'>('mobile_money');
   const [paymentProvider, setPaymentProvider] = useState('');
   const [paymentPhone, setPaymentPhone] = useState('');
@@ -461,7 +454,14 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
   }, [selectionMode, drawnArea, selectedBuildingRefs, knownBuildings, valuationTargets]);
 
   // Devis serveur des frais (jamais calculé côté client)
-  const { data: feeQuote } = useExpertiseFeeQuote(expertiseScope, valuationTargets, open);
+  const { data: feeQuote, isLoading: loadingFees } = useExpertiseFeeQuote(expertiseScope, valuationTargets, open);
+
+  // Certificat valide déjà émis pour la parcelle (calculé par le serveur)
+  const certificateQuery = useParcelExpertiseCertificate(parcelNumber, open && !showIntro);
+  const checkingCertificate = certificateQuery.isLoading;
+  const certificateChecked = certificateQuery.isFetched || certificateQuery.isError;
+  const existingCertificate = certificateQuery.data ?? null;
+
 
 
 
@@ -803,125 +803,12 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     if (standing && !standings.includes(standing)) setStanding('');
   }, [constructionNature, getDependentOptions]);
 
-  // Fetch expertise fees on mount
-  useEffect(() => {
-    const fetchFees = async () => {
-      setLoadingFees(true);
-      try {
-        const { data, error } = await supabase
-          .from('expertise_fees_config')
-          .select('*')
-          .eq('is_active', true)
-          .order('display_order');
+  // Le total et le détail proviennent uniquement du devis serveur (RPC).
+  const quotedFees = useMemo(() => feeQuote?.fee_items ?? [], [feeQuote]);
 
-        if (error) throw error;
-        setFees(data || []);
+  const getTotalAmount = () => Math.max(feeQuote?.total_amount_usd ?? 0, 0);
 
-        // Also fetch certificate access fee
-        const accessFee = (data || []).find((f: any) => f.fee_name?.toLowerCase().includes('accès') || f.fee_name?.toLowerCase().includes('certificat'));
-        if (accessFee) {
-          setCertificateAccessFee(accessFee.amount_usd);
-        } else {
-          // Default: use 20% of total fees as access price, or fallback to $5
-          const total = (data || []).reduce((s: number, f: any) => s + f.amount_usd, 0);
-          setCertificateAccessFee(total > 0 ? Math.round(total * 0.2 * 100) / 100 : 5);
-        }
-      } catch (error) {
-        console.error('Error fetching expertise fees:', error);
-      } finally {
-        setLoadingFees(false);
-      }
-    };
-
-    if (open) {
-      fetchFees();
-    }
-  }, [open]);
-
-  // Check for existing valid certificate when dialog opens (after intro)
-  useEffect(() => {
-    if (!open || showIntro || !parcelNumber || certificateChecked) return;
-
-    const checkCertificate = async () => {
-      setCheckingCertificate(true);
-      try {
-        const existing = await checkExistingValidCertificate(parcelNumber);
-        setExistingCertificate(existing);
-      } catch (e) {
-        console.error('Certificate check error:', e);
-      } finally {
-        setCheckingCertificate(false);
-        setCertificateChecked(true);
-      }
-    };
-
-    checkCertificate();
-  }, [open, showIntro, parcelNumber, certificateChecked, checkExistingValidCertificate]);
-
-  // Check whether current user already has paid access to the certificate
-  useEffect(() => {
-    if (!open || showIntro || !user || !existingCertificate?.id) {
-      return;
-    }
-
-    let cancelled = false;
-    setCheckingCertificateAccess(true);
-
-    const checkAccess = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('expertise_payments')
-          .select('id')
-          .eq('expertise_request_id', existingCertificate.id)
-          .eq('user_id', user.id)
-          .eq('status', 'completed')
-          .limit(1)
-          .maybeSingle();
-
-        if (error && error.code !== 'PGRST116') throw error;
-        if (cancelled) return;
-
-        const hasAccess = Boolean(data);
-        setHasCertificateAccess(hasAccess);
-        if (hasAccess) {
-          setShowCertificatePayment(false);
-        }
-      } catch (error) {
-        console.error('Certificate access check error:', error);
-        if (!cancelled) setHasCertificateAccess(false);
-      } finally {
-        if (!cancelled) setCheckingCertificateAccess(false);
-      }
-    };
-
-    checkAccess();
-    return () => { cancelled = true; };
-  }, [open, showIntro, user?.id, existingCertificate?.id]);
-
-   // Le total provient du devis serveur (RPC). Repli local uniquement si la RPC
-   // n'a pas encore répondu.
-   const quotedFees = useMemo(
-     () =>
-       feeQuote?.fee_items?.length
-         ? feeQuote.fee_items
-         : fees.filter((fee) => fee.is_mandatory).map((fee) => ({
-             fee_name: fee.fee_name,
-             amount_usd: fee.amount_usd,
-             description: fee.description,
-             is_mandatory: fee.is_mandatory,
-           })),
-     [feeQuote, fees],
-   );
-
-   const getTotalAmount = () => {
-     if (feeQuote) return Math.max(feeQuote.total_amount_usd, 0);
-     const total = quotedFees.reduce((sum, fee) => sum + Number(fee.amount_usd || 0), 0);
-     return Math.max(total, 0);
-   };
-
-   const isPaymentValid = () => {
-     return quotedFees.length > 0 && getTotalAmount() > 0;
-   };
+  const isPaymentValid = () => quotedFees.length > 0 && getTotalAmount() > 0;
 
 
   // Sound measurement functions removed — now in CCC LocationTab
