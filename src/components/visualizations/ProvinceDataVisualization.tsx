@@ -1,6 +1,6 @@
 import React, { useState, useEffect, memo, useMemo, Suspense } from 'react';
 import { useAppAppearance } from '@/hooks/useAppAppearance';
-import { FileText, Building, Search, Scissors, AlertTriangle, Loader2, Database, History, Award, Receipt, Landmark, DollarSign, Ruler, Hexagon, ShieldCheck, KeyRound } from 'lucide-react';
+import { FileText, Building, Search, Scissors, AlertTriangle, Loader2, Database, History, Award, Receipt, Landmark, DollarSign, Ruler, KeyRound } from 'lucide-react';
 import { useLandDataAnalytics, LandAnalyticsData } from '@/hooks/useLandDataAnalytics';
 import { ProvinceData } from '@/types/province';
 import { useAnalyticsTabsConfig, useTabChartsConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
@@ -21,8 +21,6 @@ const OwnershipHistoryBlock = React.lazy(() => import('./blocks/OwnershipHistory
 const CertificatesBlock = React.lazy(() => import('./blocks/CertificatesBlock').then(m => ({ default: m.CertificatesBlock })));
 const InvoicesBlock = React.lazy(() => import('./blocks/InvoicesBlock').then(m => ({ default: m.InvoicesBlock })));
 const BoundaryBlock = React.lazy(() => import('./blocks/BoundaryBlock').then(m => ({ default: m.BoundaryBlock })));
-const GeometryBlock = React.lazy(() => import('./blocks/GeometryBlock').then(m => ({ default: m.GeometryBlock })));
-const ConsistencyBlock = React.lazy(() => import('./blocks/ConsistencyBlock').then(m => ({ default: m.ConsistencyBlock })));
 const RentalMarketBlock = React.lazy(() => import('./blocks/RentalMarketBlock').then(m => ({ default: m.RentalMarketBlock })));
 
 const BlockFallback = () => (
@@ -45,8 +43,6 @@ const ICON_MAP: Record<string, React.ComponentType<any>> = {
   'certificates': Award,
   'invoices': Receipt,
   'boundary': Ruler,
-  'geometry': Hexagon,
-  'consistency': ShieldCheck,
   'rental-market': KeyRound,
 };
 
@@ -63,8 +59,6 @@ const BLOCK_MAP: Record<string, React.ComponentType<{ data: any }>> = {
   'certificates': CertificatesBlock,
   'invoices': InvoicesBlock,
   'boundary': BoundaryBlock,
-  'geometry': GeometryBlock,
-  'consistency': ConsistencyBlock,
   'rental-market': RentalMarketBlock,
 };
 
