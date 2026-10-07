@@ -395,7 +395,7 @@ const CadastralMap = () => {
           height: 'calc(100dvh - 4rem)',
           // CSS var consumed by the inline rule below — no JS viewport math.
           ['--map-zoom-offset' as any]: selectedParcel
-            ? (isMobile ? (actionsExpanded ? '84dvh' : '32dvh') : (actionsExpanded ? '36rem' : '10rem'))
+            ? (isMobile ? (actionsExpanded ? '27dvh' : '32dvh') : (actionsExpanded ? '36rem' : '10rem'))
             : (isMobile ? '1rem' : '1rem'),
         }}
       >
@@ -775,7 +775,7 @@ const CadastralMap = () => {
             className={`absolute z-[1000] ${isMobile ? 'inset-x-0 bottom-0' : 'bottom-4 right-4 w-80'}`}
             style={isMobile ? { paddingBottom: 'env(safe-area-inset-bottom)' } : undefined}
           >
-            <div className={`bg-background/98 backdrop-blur-xl ${isMobile ? 'rounded-t-lg border-t' : 'rounded-lg border'} shadow-lg border-border/40 overflow-hidden max-h-[min(82dvh,700px)] flex flex-col`}>
+            <div className={`bg-background/98 backdrop-blur-xl ${isMobile ? 'rounded-t-lg border-t' : 'rounded-lg border'} shadow-lg border-border/40 overflow-hidden flex flex-col ${isMobile && actionsExpanded ? 'max-h-[25dvh]' : 'max-h-[min(82dvh,700px)]'}`}>
               <ParcelActionsDropdown
                 parcelNumber={selectedParcel.parcel_number}
                 parcelId={selectedParcel.id}
@@ -785,7 +785,7 @@ const CadastralMap = () => {
                 onRequestLandTitle={() => setShowLandTitleTermsDialog(true)}
               />
 
-              <div className="relative px-3.5 py-3 flex items-center justify-between">
+              <div className={`relative px-3.5 flex items-center justify-between ${isMobile && actionsExpanded ? 'hidden' : 'py-3'}`}>
                 <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
                 <div className="flex items-center gap-2.5">
                   <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-primary/15 to-primary/5 flex items-center justify-center border border-primary/10">
@@ -818,7 +818,7 @@ const CadastralMap = () => {
                 </div>
               </div>
 
-               <div className="px-3.5 pb-3.5 overflow-y-auto min-h-0 overscroll-contain">
+              <div className={`px-3.5 overflow-y-auto min-h-0 overscroll-contain ${isMobile && actionsExpanded ? 'pb-1.5' : 'pb-3.5'}`}>
                 {/*
                   Données détaillées masquées quand le menu Actions est ouvert :
                   libère l'espace de la feuille pour les services, seul le rang
