@@ -5,7 +5,8 @@ import { normalizeTitleType } from '@/utils/titleTypeNormalizer';
 import { pct } from '@/utils/analyticsConstants';
 import { LandAnalyticsData } from '@/hooks/useLandDataAnalytics';
 import { mutationTypeParcelData } from '@/utils/mutationAnalytics';
-import { FileText, Users, Globe, Clock, KeyRound, UserCheck, Scale, ArrowRightLeft, AlertTriangle, ShieldCheck } from 'lucide-react';
+import { encumberedDistribution } from '@/utils/servitudeAnalytics';
+import { FileText, Users, Globe, Clock, KeyRound, UserCheck, Scale, ArrowRightLeft, AlertTriangle, ShieldCheck, ShieldAlert } from 'lucide-react';
 import { KpiGrid } from '../shared/KpiGrid';
 import { ChartCard, ColorMappedPieCard, FilterLabelContext } from '../shared/ChartCard';
 import { BlockUnscopedRecordsProvider } from '../shared/BlockUnscopedRecordsContext';
@@ -261,6 +262,9 @@ export const TitleRequestsBlock: React.FC<Props> = memo(({ data }) => {
     return all.filter(k => v(k.key));
   }, [filtered, stats, owners, linkedOwnership, discordants, v, ct]);
 
+  const encumbered = useMemo(() => encumberedDistribution(filtered), [filtered]);
+  const encumberedCount = encumbered.find(d => d.name === 'Grevées')?.value ?? 0;
+
   // ── Chart definitions ──
   const chartDefs = useMemo(() => [
     // Title type block
@@ -307,10 +311,14 @@ export const TitleRequestsBlock: React.FC<Props> = memo(({ data }) => {
     { key: 'mismatch-by-title-type', el: () => <ChartCard title={ct('mismatch-by-title-type', 'Discordants par type de titre')} icon={FileText} data={mismatchByTitleType} type={ty('mismatch-by-title-type', 'bar-v')} colorIndex={15} hidden={mismatchByTitleType.length === 0}
       insight={generateInsight(mismatchByTitleType, 'bar-v', 'les discordants par type de titre')} crossVariables={cx('mismatch-by-title-type')} rawRecords={filtered} groupField="property_title_type" /> },
 
+    // Servitudes
+    { key: 'encumbered-distribution', el: () => <ChartCard title={ct('encumbered-distribution', 'Parcelles grevées vs libres')} icon={ShieldAlert} data={encumbered} type={ty('encumbered-distribution', 'pie')} colorIndex={4} hidden={encumbered.length === 0}
+      insight={encumberedCount > 0 ? `${pct(encumberedCount, filtered.length)} des parcelles déclarent au moins une servitude.` : 'Aucune servitude déclarée.'} /> },
+
     // Geo
     { key: 'geo', el: () => <GeoCharts records={filtered} /> },
   ].filter(d => v(d.key)).sort((a, b) => ord(a.key) - ord(b.key)),
-  [filtered, byTitleType, byLeaseType, byLeaseDuration, byIssueYear, issueTrend, byLegalStatus, genderData, byNationality, byEntityType, byRightType, ownerDuration, byMutationType, byHistLegalStatus, histDuration, transfersPerParcel, titleOwnerMatch, mutationUrgency, mismatchByTitleType, discordants, v, ct, cx, ty, ord]);
+  [filtered, byTitleType, byLeaseType, byLeaseDuration, byIssueYear, issueTrend, byLegalStatus, genderData, byNationality, byEntityType, byRightType, ownerDuration, byMutationType, byHistLegalStatus, histDuration, transfersPerParcel, titleOwnerMatch, mutationUrgency, mismatchByTitleType, discordants, encumbered, encumberedCount, v, ct, cx, ty, ord]);
 
   return (
     <FilterLabelContext.Provider value={filterLabel}>
