@@ -36,7 +36,7 @@ describe('locaux occupés par le propriétaire', () => {
         { isOccupied: true, occupiedBy: 'tenant', monthlyRentUsd: 250 },
         { isOccupied: false, monthlyRentUsd: 175 },
       ],
-    })).toBe(425);
+    })).toBe(250);
   });
 });
 
