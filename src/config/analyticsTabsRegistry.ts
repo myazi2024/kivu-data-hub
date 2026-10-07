@@ -162,30 +162,6 @@ export const ANALYTICS_TABS_REGISTRY: Record<string, { label: string; charts: Ch
       { tab_key: 'expertise', item_key: 'kpi-avg-value', item_type: 'kpi', is_visible: true, display_order: 5, custom_title: 'Valeur moy.' },
     ],
   },
-  'mutations': {
-    label: 'Mutations',
-    charts: [
-      { tab_key: 'mutations', item_key: 'status', item_type: 'chart', is_visible: true, display_order: 0, custom_title: 'Statut', chart_type: 'pie' },
-      { tab_key: 'mutations', item_key: 'mutation-type', item_type: 'chart', is_visible: true, display_order: 1, custom_title: 'Type mutation', chart_type: 'bar-h' },
-      { tab_key: 'mutations', item_key: 'requester-type', item_type: 'chart', is_visible: true, display_order: 2, custom_title: 'Type demandeur', chart_type: 'donut' },
-      { tab_key: 'mutations', item_key: 'payment', item_type: 'chart', is_visible: true, display_order: 3, custom_title: 'Paiement', chart_type: 'donut' },
-      { tab_key: 'mutations', item_key: 'type-status', item_type: 'chart', is_visible: true, display_order: 4, custom_title: 'Type × Statut' },
-      { tab_key: 'mutations', item_key: 'market-value', item_type: 'chart', is_visible: true, display_order: 5, custom_title: 'Valeur vénale', chart_type: 'bar-v' },
-      { tab_key: 'mutations', item_key: 'title-age', item_type: 'chart', is_visible: true, display_order: 6, custom_title: 'Ancienneté titre', chart_type: 'pie' },
-      { tab_key: 'mutations', item_key: 'late-fees', item_type: 'chart', is_visible: true, display_order: 7, custom_title: 'Retard mutation', chart_type: 'pie' },
-      { tab_key: 'mutations', item_key: 'revenue-trend', item_type: 'chart', is_visible: true, display_order: 8, custom_title: 'Revenus/mois', chart_type: 'area' },
-      { tab_key: 'mutations', item_key: 'geo', item_type: 'chart', is_visible: true, display_order: 9, custom_title: 'Géographie' },
-      { tab_key: 'mutations', item_key: 'evolution', item_type: 'chart', is_visible: true, display_order: 10, custom_title: 'Évolution', chart_type: 'area', col_span: 2 },
-    ],
-    kpis: [
-      { tab_key: 'mutations', item_key: 'kpi-total', item_type: 'kpi', is_visible: true, display_order: 0, custom_title: 'Total' },
-      { tab_key: 'mutations', item_key: 'kpi-approved', item_type: 'kpi', is_visible: true, display_order: 1, custom_title: 'Approuvées' },
-      { tab_key: 'mutations', item_key: 'kpi-pending', item_type: 'kpi', is_visible: true, display_order: 2, custom_title: 'En attente' },
-      { tab_key: 'mutations', item_key: 'kpi-rejected', item_type: 'kpi', is_visible: true, display_order: 3, custom_title: 'Rejetées' },
-      { tab_key: 'mutations', item_key: 'kpi-delay', item_type: 'kpi', is_visible: true, display_order: 4, custom_title: 'Délai moy.' },
-      { tab_key: 'mutations', item_key: 'kpi-revenue', item_type: 'kpi', is_visible: true, display_order: 5, custom_title: 'Revenus' },
-    ],
-  },
   'mortgages': {
     label: 'Hypothèques',
     charts: [

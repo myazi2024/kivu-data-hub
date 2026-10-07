@@ -264,32 +264,6 @@ const expertiseProfile: MapTabProfile = {
   },
 };
 
-const mutationsProfile: MapTabProfile = {
-  tabKey: 'mutations',
-  label: 'Mutations',
-  legendTitle: 'Mutations en cours',
-  tiers: makeTiers([5, 20, 80], PALETTES.amber),
-  palette: PALETTES.amber,
-  dataSource: 'mutation_requests',
-  hasData: ({ analytics, provinceName }) => filterProv(analytics.mutationRequests, provinceName).length > 0,
-  metric: ({ analytics, provinceName }) => {
-    const m = filterProv(analytics.mutationRequests, provinceName);
-    return m.filter(x => x.status === 'pending' || x.status === 'en_cours').length;
-  },
-  tooltipLines: ({ analytics, provinceName }) => {
-    const m = filterProv(analytics.mutationRequests, provinceName);
-    const pending = m.filter(x => x.status === 'pending' || x.status === 'en_cours').length;
-    const done = m.filter(x => x.status === 'approved' || x.status === 'completed').length;
-    const main = topValue(m, x => x.mutation_type);
-    return [
-      { label: 'Total',       value: fmtN(m.length), color: 'text-primary' },
-      { label: 'En cours',    value: fmtN(pending),  color: 'text-amber-600' },
-      { label: 'Finalisées',  value: fmtN(done),     color: 'text-emerald-600' },
-      { label: 'Type princ.', value: main,           color: 'text-blue-600' },
-    ];
-  },
-};
-
 const mortgagesProfile: MapTabProfile = {
   tabKey: 'mortgages',
   label: 'Hypothèques',
@@ -508,7 +482,6 @@ export const MAP_TAB_PROFILES: Record<string, MapTabProfile> = {
   'parcels-titled': parcelsTitledProfile,
   'contributions': contributionsProfile,
   'expertise': expertiseProfile,
-  'mutations': mutationsProfile,
   'mortgages': mortgagesProfile,
   'subdivision': subdivisionProfile,
   'disputes': disputesProfile,

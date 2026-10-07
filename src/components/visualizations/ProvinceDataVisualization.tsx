@@ -1,6 +1,6 @@
 import React, { useState, useEffect, memo, useMemo, Suspense } from 'react';
 import { useAppAppearance } from '@/hooks/useAppAppearance';
-import { FileText, Building, Search, ArrowRightLeft, Scissors, AlertTriangle, Loader2, Database, History, Award, Receipt, Landmark, DollarSign, ShieldAlert, Ruler, Hexagon, ShieldCheck, KeyRound } from 'lucide-react';
+import { FileText, Building, Search, Scissors, AlertTriangle, Loader2, Database, History, Award, Receipt, Landmark, DollarSign, ShieldAlert, Ruler, Hexagon, ShieldCheck, KeyRound } from 'lucide-react';
 import { useLandDataAnalytics, LandAnalyticsData } from '@/hooks/useLandDataAnalytics';
 import { ProvinceData } from '@/types/province';
 import { useAnalyticsTabsConfig, useTabChartsConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
@@ -39,7 +39,6 @@ const ICON_MAP: Record<string, React.ComponentType<any>> = {
   'parcels-titled': Building,
   'contributions': Database,
   'expertise': Search,
-  'mutations': ArrowRightLeft,
   'subdivision': Scissors,
   'disputes': AlertTriangle,
   'mortgages': Landmark,
@@ -59,7 +58,6 @@ const BLOCK_MAP: Record<string, React.ComponentType<{ data: any }>> = {
   'parcels-titled': ParcelsWithTitleBlock,
   'contributions': ContributionsBlock,
   'expertise': ExpertiseBlock,
-  'mutations': MutationBlock,
   'subdivision': SubdivisionBlock,
   'disputes': DisputesBlock,
   'mortgages': MortgagesBlock,
