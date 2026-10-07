@@ -52,13 +52,6 @@ export const AnalyticsLocationRow: React.FC<Props> = ({
   void hasUrbanData; void hasRuralData;
   const districtZone = filter.landDistrict ? getSectionTypeForLandDistrict(filter.landDistrict) : '';
   const anchor = getLandDistrictAnchor(filter.province, filter.landDistrict);
-  const anchorLabel = anchor.level === 'commune'
-    ? `Commune de ${anchor.commune} (ville de ${anchor.ville})`
-    : anchor.level === 'ville'
-      ? `${anchor.partial ? 'Partie de la ville' : 'Ville'} de ${anchor.ville}`
-      : anchor.level === 'territoire'
-        ? `${anchor.partial ? 'Partie du territoire' : 'Territoire'} de ${anchor.territoire}`
-        : '';
   const lockVille = !!anchor.ville;
   const lockCommune = !!anchor.commune;
   const lockTerritoire = !!anchor.territoire;
@@ -140,18 +133,8 @@ export const AnalyticsLocationRow: React.FC<Props> = ({
       {filter.landDistrict && districtZone && (
         <>
           {sep}
-          <Badge variant="secondary" className="text-[10px] px-1.5 py-0 font-medium" aria-label="Zone auto-détectée depuis la circonscription">
+          <Badge variant="secondary" className="text-[10px] px-1.5 py-0 font-medium" aria-label="Zone">
             {districtZone === 'urbaine' ? 'SU - Urbaine' : 'SR - Rurale'}
-          </Badge>
-          <span className="text-[9px] text-muted-foreground italic">auto-détecté</span>
-        </>
-      )}
-
-      {anchorLabel && (
-        <>
-          {sep}
-          <Badge variant="outline" className="text-[10px] px-1.5 py-0 font-normal" aria-label="Découpage sur lequel est calquée la circonscription">
-            Calquée sur : {anchorLabel}
           </Badge>
         </>
       )}
