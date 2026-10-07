@@ -40,7 +40,7 @@ export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
     byConstructionNature: countBy(builtParcels, 'construction_nature'),
     byConstructionMaterials: countBy(builtParcels, 'construction_materials'),
     byStanding: countBy(builtParcels, 'standing'),
-    byPropertyCategory: countBy(filteredParcels, 'property_category').filter(d => d.name !== 'Terrain nu'),
+    byPropertyCategory: CA.propertyCategoryData(filteredParcels),
     byDeclaredUsage: countBy(normalizedParcels, 'declared_usage'),
     byDecade: yearDecadeDistribution(builtParcels, 'construction_year'),
   }), [filteredParcels, builtParcels, normalizedParcels]);
@@ -250,6 +250,7 @@ export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
 
   // Indicateurs du bloc Construction du CCC (principale + supplémentaires)
   const flatConstr = useMemo(() => CA.flattenConstructions(builtParcels), [builtParcels]);
+  const categoryRecords = useMemo(() => CA.flattenPropertyCategoryRecords(filteredParcels), [filteredParcels]);
   const flatContribConstr = useMemo(() => CA.flattenConstructions(filteredContribs), [filteredContribs]);
   const cccData = useMemo(() => ({
     status: CA.constructionStatusData(flatConstr),
@@ -264,7 +265,6 @@ export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
     surface: CA.roadSurfaceData(filteredParcels),
     entrances: CA.entrancesData(filteredParcels),
   }), [flatConstr, flatContribConstr, filteredParcels]);
-  const maisonBasseCount = useMemo(() => flatConstr.filter(c => c.category === 'Maison basse').length, [flatConstr]);
   const inProgressCount = useMemo(() => flatConstr.filter(c => c.status === 'in_progress').length, [flatConstr]);
   const rentedCount = useMemo(() => flatConstr.filter(c => c.isRented === true).length, [flatConstr]);
   const vacantUnits = useMemo(() => CA.vacantUnitsCount(flatConstr), [flatConstr]);
@@ -275,11 +275,10 @@ export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
     { key: 'kpi-hosting', label: ct('kpi-hosting', 'Cap. accueil'), value: totalHostingCapacity > 0 ? totalHostingCapacity.toLocaleString() : 'N/A', cls: 'text-indigo-600', tooltip: 'Capacité d\'accueil totale' },
     { key: 'kpi-avg-capacity', label: ct('kpi-avg-capacity', 'Cap. moy.'), value: avgHostingCapacity > 0 ? avgHostingCapacity.toLocaleString() : 'N/A', cls: 'text-cyan-600', tooltip: 'Capacité moyenne par construction' },
     { key: 'kpi-multi-constr', label: ct('kpi-multi-constr', 'Multi-constr.'), value: multiConstructionCount, cls: 'text-orange-600', tooltip: pct(multiConstructionCount, builtParcels.length) },
-    { key: 'kpi-maison-basse', label: ct('kpi-maison-basse', 'Maisons basses'), value: maisonBasseCount, cls: 'text-amber-600', tooltip: pct(maisonBasseCount, flatConstr.length) },
     { key: 'kpi-in-progress', label: ct('kpi-in-progress', 'En cours'), value: inProgressCount, cls: 'text-yellow-600', tooltip: pct(inProgressCount, flatConstr.length) },
     { key: 'kpi-rented', label: ct('kpi-rented', 'Mises en location'), value: rentedCount, cls: 'text-emerald-600', tooltip: pct(rentedCount, flatConstr.length) },
     { key: 'kpi-vacant-units', label: ct('kpi-vacant-units', 'Locaux vacants'), value: vacantUnits, cls: 'text-rose-600' },
-  ].filter(k => v(k.key)), [flatConstr, maisonBasseCount, inProgressCount, rentedCount, vacantUnits, builtParcels, occupiedCount, totalHostingCapacity, avgHostingCapacity, multiConstructionCount, v, ct]);
+  ].filter(k => v(k.key)), [flatConstr, inProgressCount, rentedCount, vacantUnits, builtParcels, occupiedCount, totalHostingCapacity, avgHostingCapacity, multiConstructionCount, v, ct]);
 
   const chartDefs = useMemo(() => [
     { key: 'construction-type', el: () => <ChartCard title={ct('construction-type', 'Construction')} icon={Building} data={charts.byConstructionType} type={ty('construction-type', 'bar-h')} colorIndex={3}
@@ -287,7 +286,7 @@ export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
     { key: 'construction-nature', el: () => <ChartCard title={ct('construction-nature', 'Nature construction')} data={charts.byConstructionNature} type={ty('construction-nature', 'bar-h')} colorIndex={7}
       insight="Répartition des matériaux et natures de construction par localisation." crossVariables={cx('construction-nature')} rawRecords={builtParcels} groupField="construction_nature" /> },
     { key: 'property-category', el: () => <ChartCard title={ct('property-category', 'Catégorie de bien')} data={charts.byPropertyCategory} type={ty('property-category', 'bar-h')} colorIndex={2} hidden={charts.byPropertyCategory.length === 0}
-      insight={generateInsight(charts.byPropertyCategory, 'bar-h', 'les catégories de bien')} crossVariables={cx('property-category')} rawRecords={filteredParcels} groupField="property_category" /> },
+      insight={generateInsight(charts.byPropertyCategory, 'bar-h', 'les catégories de bien')} crossVariables={cx('property-category')} rawRecords={categoryRecords} groupField="property_category" /> },
     { key: 'built-vs-unbuilt', el: () => <ChartCard title={ct('built-vs-unbuilt', 'Construites vs Non construites')} data={builtVsUnbuiltData} type={ty('built-vs-unbuilt', 'pie')} colorIndex={11} hidden={builtVsUnbuiltData.length === 0}
       insight={generateInsight(builtVsUnbuiltData, 'pie', 'la construction des parcelles')} crossVariables={cx('built-vs-unbuilt')} rawRecords={filteredParcels} groupField="property_category" /> },
     { key: 'construction-materials', el: () => <ChartCard title={ct('construction-materials', 'Matériaux')} data={charts.byConstructionMaterials} type={ty('construction-materials', 'bar-h')} colorIndex={8} hidden={charts.byConstructionMaterials.length === 0}
@@ -334,7 +333,7 @@ export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
     { key: 'construction-geo', el: () => <GeoCharts records={builtParcels} /> },
     { key: 'construction-evolution', el: () => <ChartCard title={ct('construction-evolution', 'Évolution constructions')} icon={TrendingUp} data={constructionTrend} type={ty('construction-evolution', 'area')} colorIndex={0} colSpan={2}
       insight={generateInsight(constructionTrend, 'area', 'les constructions')} /> },
-  ].filter(d => v(d.key)).sort((a, b) => ord(a.key) - ord(b.key)), [filteredParcels, builtParcels, filteredContribs, normalizedParcels, parcelsWithCapacity, charts, permitTypeData, buildingSizeData, buildingHeightData, apartmentSizeData, apartmentOrientationData, soundEnvData, noiseSourcesData, occupationData, floorDistData, hostingCapacityData, occupancyPressureData, builtVsUnbuiltData, constructionTrend, cccData, v, ct, cx, ty, ord]);
+  ].filter(d => v(d.key)).sort((a, b) => ord(a.key) - ord(b.key)), [filteredParcels, builtParcels, filteredContribs, normalizedParcels, categoryRecords, parcelsWithCapacity, charts, permitTypeData, buildingSizeData, buildingHeightData, apartmentSizeData, apartmentOrientationData, soundEnvData, noiseSourcesData, occupationData, floorDistData, hostingCapacityData, occupancyPressureData, builtVsUnbuiltData, constructionTrend, cccData, v, ct, cx, ty, ord]);
 
   return (
     <FilterLabelContext.Provider value={filterLabel}>
