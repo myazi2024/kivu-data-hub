@@ -675,7 +675,6 @@ function formatDateTimeForFilename(): string {
  */
 export async function generateCadastralReport(
   cadastralResult: any,
-  paidServices: string[],
   servicesCatalog: CadastralService[],
   filename?: string
 ) {
@@ -686,28 +685,22 @@ export async function generateCadastralReport(
   let currentY = margin;
   let totalPages = 0;
 
-  // --- Load contribution data ---
-  let contributionData: any = null;
+  // Seules les données renvoyées par le serveur (get_cadastral_parcel_data) sont utilisées :
+  // jamais de lecture directe des contributions ou des tables, pour respecter l'accès payé.
+  const access = normalizeAccess(cadastralResult.access);
+  const paidServices = access.free_access
+    ? servicesCatalog.map((s) => s.id)
+    : activeServices(access);
+  const open = (k: CadastralSectionKey) => isSectionOpen(access, k);
   let logoBase64: string | null = null;
   try {
     const { supabase } = await import('@/integrations/supabase/client');
-    const [contribResult, configResult] = await Promise.all([
-      supabase
-        .from('cadastral_contributions')
-        .select('*')
-        .eq('parcel_number', cadastralResult.parcel.parcel_number)
-        .eq('status', 'approved')
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single(),
-      supabase
-        .from('app_appearance_config')
-        .select('config_value')
-        .eq('config_key', 'logo_url')
-        .maybeSingle(),
-    ]);
-    if (contribResult.data) contributionData = contribResult.data;
-    const logoUrl = configResult.data?.config_value as string | null;
+    const { data: configRow } = await supabase
+      .from('app_appearance_config')
+      .select('config_value')
+      .eq('config_key', 'logo_url')
+      .maybeSingle();
+    const logoUrl = configRow?.config_value as string | null;
     if (logoUrl) {
       try {
         const resp = await fetch(logoUrl);
@@ -717,26 +710,26 @@ export async function generateCadastralReport(
           reader.onloadend = () => resolve(reader.result as string);
           reader.readAsDataURL(blob);
         });
-      } catch { /* fallback: no logo */ }
+      } catch { /* pas de logo */ }
     }
-  } catch { /* use standard data */ }
+  } catch { /* pas de logo */ }
 
-  const parcel = contributionData || cadastralResult.parcel;
-  const ownership_history = contributionData?.ownership_history || cadastralResult.ownership_history || [];
-  const tax_history = contributionData?.tax_history || cadastralResult.tax_history || [];
-  const mortgage_history = contributionData?.mortgage_history || cadastralResult.mortgage_history || [];
-  const boundary_history = contributionData?.boundary_history || cadastralResult.boundary_history || [];
-  const building_permits = contributionData?.building_permits || cadastralResult.building_permits || [];
+  const parcel = cadastralResult.parcel || {};
+  const ownership_history = cadastralResult.ownership_history || [];
+  const tax_history = cadastralResult.tax_history || [];
+  const mortgage_history = cadastralResult.mortgage_history || [];
+  const boundary_history = cadastralResult.boundary_history || [];
+  const building_permits = cadastralResult.building_permits || [];
   const land_disputes = cadastralResult.land_disputes || [];
 
   // --- Verification & QR ---
   let reportId = generateReportId();
   let verifyUrl = `https://bic.cd/verify-report/${reportId}`;
-  try {
+  if (hasAnyOpenSection(access)) try {
     const verification = await createDocumentVerification({
       documentType: 'report',
       parcelNumber: parcel.parcel_number,
-      clientName: parcel.current_owner_name || null,
+      clientName: null,
       metadata: {
         paidServices,
         serviceNames: paidServices.map(id => servicesCatalog.find(s => s.id === id)?.name).filter(Boolean),
@@ -768,10 +761,7 @@ export async function generateCadastralReport(
     return `${sqm.toLocaleString('fr-FR')} m²`;
   };
 
-  const ownerName = parcel.current_owner_name ||
-    (Array.isArray(parcel.current_owners_details) && parcel.current_owners_details.length > 0
-      ? parcel.current_owners_details.map((o: any) => `${o.lastName || ''} ${o.firstName || ''}`.trim()).join(', ')
-      : 'Non renseigné');
+  const ownerName = parcel.current_owner_name || 'Non renseigné';
 
   const addPageHeader = () => {
     if (logoBase64) {
@@ -846,7 +836,6 @@ export async function generateCadastralReport(
     currentY += 6;
   };
 
-  const isServicePaid = (serviceId: string) => paidServices.includes(serviceId);
 
   // ===== PAGE 1: COVER =====
   totalPages = 1;

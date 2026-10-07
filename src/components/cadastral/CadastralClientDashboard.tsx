@@ -25,6 +25,7 @@ import {
   TableRow 
 } from '@/components/ui/table';
 import { supabase } from '@/integrations/supabase/client';
+import { normalizeAccess } from '@/lib/cadastralResultAccess';
 import { useAuth } from '@/hooks/useAuth';
 import { useCadastralServices } from '@/hooks/useCadastralServices';
 import CadastralInvoiceDetailsDialog from './CadastralInvoiceDetailsDialog';
@@ -132,54 +133,23 @@ const CadastralClientDashboard: React.FC = () => {
     if (!user) return;
     setGeneratingReport(invoice.id);
     try {
-      // 1. Fetch parcel
-      const { data: parcel, error: parcelError } = await supabase
-        .from('cadastral_parcels')
-        .select('*')
-        .eq('parcel_number', invoice.parcel_number)
-        .maybeSingle();
-
-      if (parcelError || !parcel) {
-        throw new Error('Parcelle introuvable');
-      }
-
-      // 2. Fetch related data in parallel
-      const [paidHistory, mortgage, boundary, permits, disputes] = await Promise.all([
-        (supabase.rpc as any)('get_parcel_paid_history', { p_parcel_id: parcel.id }),
-        supabase.from('cadastral_mortgages').select('*, cadastral_mortgage_payments(*)').eq('parcel_id', parcel.id),
-        supabase.from('cadastral_boundary_history').select('*').eq('parcel_id', parcel.id),
-        supabase.from('cadastral_building_permits').select('*').eq('parcel_id', parcel.id),
-        supabase.from('cadastral_land_disputes').select('*').eq('parcel_number', invoice.parcel_number),
-      ]);
-
-      // 3. Fetch paid services for this user + parcel
-      const { data: accessData } = await supabase
-        .from('cadastral_service_access')
-        .select('service_type')
-        .eq('user_id', user.id)
-        .eq('parcel_number', invoice.parcel_number);
-
-      const paidServices = (accessData || []).map(a => a.service_type);
-
-      const formattedMortgages = (mortgage.data || []).map((m: any) => ({
-        ...m,
-        payments: m.cadastral_mortgage_payments || []
-      }));
-
+      // Données servies par le serveur selon les services achetés (aucune lecture directe des tables).
+      const { data, error } = await supabase.rpc('get_cadastral_parcel_data', { p_parcel_number: invoice.parcel_number });
+      const r = data as any;
+      if (error || !r || r.error) throw new Error('Parcelle introuvable');
       const cadastralResult = {
-        parcel,
-        ownership_history: paidHistory.data?.ownership_history || [],
-        tax_history: paidHistory.data?.tax_history || [],
-        mortgage_history: formattedMortgages,
-        boundary_history: boundary.data || [],
-        building_permits: permits.data || [],
-        land_disputes: disputes.data || [],
-        legal_verification: null,
+        parcel: r.parcel,
+        ownership_history: r.ownership_history || [],
+        tax_history: r.tax_history || [],
+        mortgage_history: (r.mortgage_history || []).map((m: any) => ({ ...m, payments: m.cadastral_mortgage_payments || [] })),
+        boundary_history: r.boundary_history || [],
+        building_permits: r.building_permits || [],
+        land_disputes: r.land_disputes || [],
+        legal_verification: r.legal_verification || null,
+        access: normalizeAccess(r.access),
       };
-
-      // 4. Generate PDF
       const { generateCadastralReport } = await import('@/lib/pdf');
-      await generateCadastralReport(cadastralResult, paidServices, catalogServices);
+      await generateCadastralReport(cadastralResult, catalogServices);
     } catch (err) {
       console.error('Erreur génération fiche cadastrale:', err);
     } finally {
