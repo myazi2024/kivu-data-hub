@@ -25,6 +25,8 @@ interface ExpertiseFee {
   applies_to_market_value?: boolean;
   applies_to_rental_value?: boolean;
   partial_multiplier?: number;
+  /** 'request' = frais de demande ; 'certificate_access' = accès à un certificat existant. */
+  fee_kind?: 'request' | 'certificate_access';
 }
 
 export const AdminExpertiseFeesConfig: React.FC = () => {
@@ -136,8 +138,9 @@ export const AdminExpertiseFeesConfig: React.FC = () => {
             applies_to_market_value: appliesMarket,
             applies_to_rental_value: appliesRental,
             partial_multiplier: multiplier,
-            display_order: fees.length + 1
-          });
+            display_order: fees.length + 1,
+            fee_kind: 'request',
+          } as any);
 
 
         if (error) throw error;
@@ -173,7 +176,10 @@ export const AdminExpertiseFeesConfig: React.FC = () => {
     }
   };
 
-  const activeFees = fees.filter(f => f.is_active);
+  const requestFees = fees.filter(f => (f.fee_kind ?? 'request') === 'request');
+  const accessFees = fees.filter(f => f.fee_kind === 'certificate_access');
+  const activeFees = requestFees.filter(f => f.is_active);
+  const isEditingAccessFee = editingFee?.fee_kind === 'certificate_access';
   const totalMandatory = activeFees.filter(f => f.is_mandatory).reduce((sum, f) => sum + f.amount_usd, 0);
 
   return (
@@ -237,14 +243,14 @@ export const AdminExpertiseFeesConfig: React.FC = () => {
             <div className="flex items-center justify-center py-8">
               <Loader2 className="h-5 w-5 animate-spin text-primary" />
             </div>
-          ) : fees.length === 0 ? (
+          ) : requestFees.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <DollarSign className="h-8 w-8 mx-auto mb-2 opacity-50" />
               <p className="text-xs">Aucun frais configuré</p>
             </div>
           ) : (
             <div className="space-y-2">
-              {fees.map((fee) => (
+              {requestFees.map((fee) => (
                 <div
                   key={fee.id}
                   className={`flex items-center justify-between p-3 rounded-xl border ${
@@ -294,6 +300,39 @@ export const AdminExpertiseFeesConfig: React.FC = () => {
               ))}
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      {/* Accès à un certificat existant (hors devis de demande) */}
+      <Card className="rounded-2xl shadow-sm">
+        <CardHeader className="p-3 md:p-4 pb-2">
+          <CardTitle className="text-sm flex items-center gap-2">
+            <DollarSign className="h-4 w-4 text-primary" />
+            Accès au certificat
+          </CardTitle>
+          <p className="text-[10px] md:text-xs text-muted-foreground">
+            Prix payé par un autre utilisateur pour consulter un certificat valide déjà émis. Non inclus dans le devis d'une demande.
+          </p>
+        </CardHeader>
+        <CardContent className="p-3 md:p-4 pt-0 space-y-2">
+          {accessFees.length === 0 ? (
+            <p className="text-xs text-muted-foreground text-center py-4">Aucun prix configuré : l'achat de l'accès est indisponible.</p>
+          ) : accessFees.map((fee) => (
+            <div key={fee.id} className={`flex items-center justify-between p-3 rounded-xl border ${fee.is_active ? 'bg-background' : 'bg-muted/50 opacity-60'}`}>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-medium truncate">{fee.fee_name}</p>
+                  {!fee.is_active && <Badge variant="outline" className="text-[9px] h-4 px-1">Inactif</Badge>}
+                </div>
+              </div>
+              <div className="flex items-center gap-2 ml-2">
+                <span className="text-sm font-bold text-primary">${fee.amount_usd}</span>
+                <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => openEditDialog(fee)} aria-label="Modifier le prix d'accès">
+                  <Edit2 className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            </div>
+          ))}
         </CardContent>
       </Card>
 
