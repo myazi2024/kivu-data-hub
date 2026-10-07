@@ -63,16 +63,14 @@ export const useStripeReturnHandler = () => {
             toast.message('Paiement confirmé, synchronisation en cours. Réessayez dans quelques secondes.');
             return;
           }
-          const { data: req } = await supabase
-            .from('real_estate_expertise_requests')
-            .select('certificate_url')
-            .eq('id', completed.expertise_request_id)
-            .maybeSingle();
-          if (req?.certificate_url) {
-            window.open(req.certificate_url, '_blank', 'noopener,noreferrer');
+          // L'acheteur n'est pas propriétaire de la demande : le certificat
+          // s'ouvre uniquement via le lien signé délivré par le serveur.
+          queryClient.invalidateQueries({ queryKey: ['parcel-expertise-certificate'] });
+          try {
+            await openExpertiseCertificate(completed.expertise_request_id, null);
             toast.success('Paiement réussi ! Le certificat a été ouvert.');
-          } else {
-            toast.success('Paiement réussi ! Le certificat sera disponible dès sa publication.');
+          } catch {
+            toast.success('Paiement réussi ! Le certificat est accessible depuis la fiche d\u2019expertise.');
           }
         } else if (paymentType === 'expertise_fee') {
           let isCompleted = false;

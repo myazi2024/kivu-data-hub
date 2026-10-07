@@ -1,20 +1,18 @@
 import { supabase } from '@/integrations/supabase/client';
 
 /**
- * Resolve an expertise certificate reference (legacy public URL OR new relative
- * storage path) into a short-lived URL the browser can open.
+ * Resolve an expertise certificate into a short-lived signed URL.
  *
  * Backend: RPC `get_signed_expertise_certificate(p_request_id, p_ttl_seconds)` -> TEXT
- * Returns a signed URL (private bucket `expertise-certificates`) when the caller
- * is authorized (owner or staff). Throws otherwise.
+ * The server checks access (owner, staff, or confirmed certificate_access buyer).
+ * The stored value is never opened directly, so access rules cannot be bypassed.
  */
 export async function resolveExpertiseCertificateUrl(
   requestId: string,
-  rawValue: string | null | undefined,
+  _rawValue?: string | null,
   ttlSeconds = 600
 ): Promise<string> {
-  // Legacy: fully-qualified http(s) URL — open as-is (will be migrated by the backfill).
-  if (rawValue && /^https?:\/\//i.test(rawValue)) return rawValue;
+
 
   const { data, error } = await (supabase as any).rpc('get_signed_expertise_certificate', {
     p_request_id: requestId,
