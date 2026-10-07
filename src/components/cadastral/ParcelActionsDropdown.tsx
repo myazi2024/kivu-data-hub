@@ -1,7 +1,6 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
 import { Sparkles, Clock, Beaker, Tag, FileText, ArrowRightLeft, Landmark, ShieldCheck, Calculator, LayoutGrid, AlertTriangle, Award, ScrollText, ChevronDown } from 'lucide-react';
 import { useParcelActionsConfig, ParcelAction } from '@/hooks/useParcelActionsConfig';
 import { supabase } from '@/integrations/supabase/client';
@@ -208,7 +207,7 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
                     disabled={disabled}
                     title={blockedReason ?? action.description}
                     aria-label={`${action.label}${blockedReason ? `. ${blockedReason}` : ''}`}
-                    className="h-16 w-[7.25rem] shrink-0 justify-start gap-2 px-2 py-1.5 rounded-lg border-border/70 bg-background text-left shadow-none disabled:opacity-45"
+                    className="h-14 w-[7.25rem] shrink-0 justify-start gap-2 px-2 py-1 rounded-lg border-border/70 bg-background text-left shadow-none disabled:opacity-45"
                   >
                     <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-md ${disabled ? 'bg-muted text-muted-foreground/50' : 'bg-primary/10 text-primary'}`}>
                       <ActionIcon iconName={action.iconName} actionKey={action.key} className="h-4 w-4" />
