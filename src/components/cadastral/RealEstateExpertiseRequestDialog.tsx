@@ -12,14 +12,12 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Separator } from '@/components/ui/separator';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Loader2, FileSearch, MapPin, Building, Droplets, Zap, Wifi, 
   Shield, Car, Trees, AlertTriangle, Upload, X, FileText, Image, CheckCircle2,
-  CreditCard, Smartphone, ArrowLeft, Receipt, DollarSign, Phone, Home,
+  Receipt, Home,
   Volume2, Layers, Building2, Camera, Info, Mic, MicOff, Fence, Warehouse, DoorOpen, FileCheck
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
@@ -30,7 +28,6 @@ import { supabase } from '@/integrations/supabase/client';
 import FormIntroDialog, { FORM_INTRO_CONFIGS } from './FormIntroDialog';
 import SuggestivePicklist from './SuggestivePicklist';
 import SectionHelpPopover from './SectionHelpPopover';
-import { openExpertiseCertificate } from '@/utils/expertiseCertificateUrl';
 import { useCCCFormPicklists } from '@/hooks/useCCCFormPicklists';
 import { resolveAvailableUsages } from '@/utils/constructionUsageResolver';
 import { BuildingPermitIssuingServiceSelect } from './BuildingPermitIssuingServiceSelect';
@@ -76,7 +73,15 @@ interface RealEstateExpertiseRequestDialogProps {
   onSuccess?: () => void;
 }
 
-import type { ExpertiseFee, ExpertiseBuildingDetail } from '@/types/expertise';
+import type { ExpertiseBuildingDetail } from '@/types/expertise';
+import ExistingCertificateBlock from './real-estate-expertise/ExistingCertificateBlock';
+import { useParcelExpertiseCertificate } from '@/hooks/useExpertiseCertificateAccess';
+import {
+  createExpertisePayment,
+  isValidDrcMobileNumber,
+  processExpertiseMobileMoneyPayment,
+  processExpertiseStripePayment,
+} from '@/utils/expertisePaymentHelper';
 import {
   PROPERTY_CONDITION_OPTIONS,
   ROAD_ACCESS_OPTIONS,
@@ -119,7 +124,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
   
   const isMobile = useIsMobile();
   const { user, profile } = useAuth();
-  const { createExpertiseRequest, loading, checkExistingValidCertificate, checkCertificateValidity } = useRealEstateExpertise();
+  const { createExpertiseRequest, loading } = useRealEstateExpertise();
   const parcelDocsInputRef = useRef<HTMLInputElement>(null);
   const constructionImagesInputRef = useRef<HTMLInputElement>(null);
   const constructionGalleryInputRef = useRef<HTMLInputElement>(null);
@@ -137,27 +142,14 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
   };
   const [createdRequest, setCreatedRequest] = useState<any>(null);
 
-  // Existing valid certificate state
-  const [checkingCertificate, setCheckingCertificate] = useState(false);
-  const [existingCertificate, setExistingCertificate] = useState<any>(null);
-  const [certificateChecked, setCertificateChecked] = useState(false);
-  const [showCertificatePayment, setShowCertificatePayment] = useState(false);
-  const [certPaymentMethod, setCertPaymentMethod] = useState<'mobile_money' | 'bank_card'>('mobile_money');
-  const [certPaymentProvider, setCertPaymentProvider] = useState('');
-  const [certPaymentPhone, setCertPaymentPhone] = useState('');
-  const [processingCertPayment, setProcessingCertPayment] = useState(false);
-  const [certificateAccessFee, setCertificateAccessFee] = useState<number>(0);
-  const [hasCertificateAccess, setHasCertificateAccess] = useState(false);
-  const [checkingCertificateAccess, setCheckingCertificateAccess] = useState(false);
-
   // Payment state
-  const [fees, setFees] = useState<ExpertiseFee[]>([]);
-  const [loadingFees, setLoadingFees] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<'mobile_money' | 'bank_card'>('mobile_money');
   const [paymentProvider, setPaymentProvider] = useState('');
   const [paymentPhone, setPaymentPhone] = useState('');
   const [processingPayment, setProcessingPayment] = useState(false);
   const [formData, setFormData] = useState<any>(null);
+  /** Demande créée lors d'une tentative de paiement échouée (réutilisée au nouvel essai). */
+  const pendingRequestRef = useRef<Awaited<ReturnType<typeof createExpertiseRequest>>>(null);
 
   // === CCC PICKLISTS ===
   const { getOptions, getDependentOptions, loading: picklistsLoading } = useCCCFormPicklists();
@@ -461,7 +453,14 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
   }, [selectionMode, drawnArea, selectedBuildingRefs, knownBuildings, valuationTargets]);
 
   // Devis serveur des frais (jamais calculé côté client)
-  const { data: feeQuote } = useExpertiseFeeQuote(expertiseScope, valuationTargets, open);
+  const { data: feeQuote, isLoading: loadingFees } = useExpertiseFeeQuote(expertiseScope, valuationTargets, open);
+
+  // Certificat valide déjà émis pour la parcelle (calculé par le serveur)
+  const certificateQuery = useParcelExpertiseCertificate(parcelNumber, open && !showIntro);
+  const checkingCertificate = certificateQuery.isLoading;
+  const certificateChecked = certificateQuery.isFetched || certificateQuery.isError;
+  const existingCertificate = certificateQuery.data ?? null;
+
 
 
 
@@ -803,125 +802,12 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     if (standing && !standings.includes(standing)) setStanding('');
   }, [constructionNature, getDependentOptions]);
 
-  // Fetch expertise fees on mount
-  useEffect(() => {
-    const fetchFees = async () => {
-      setLoadingFees(true);
-      try {
-        const { data, error } = await supabase
-          .from('expertise_fees_config')
-          .select('*')
-          .eq('is_active', true)
-          .order('display_order');
+  // Le total et le détail proviennent uniquement du devis serveur (RPC).
+  const quotedFees = useMemo(() => feeQuote?.fee_items ?? [], [feeQuote]);
 
-        if (error) throw error;
-        setFees(data || []);
+  const getTotalAmount = () => Math.max(feeQuote?.total_amount_usd ?? 0, 0);
 
-        // Also fetch certificate access fee
-        const accessFee = (data || []).find((f: any) => f.fee_name?.toLowerCase().includes('accès') || f.fee_name?.toLowerCase().includes('certificat'));
-        if (accessFee) {
-          setCertificateAccessFee(accessFee.amount_usd);
-        } else {
-          // Default: use 20% of total fees as access price, or fallback to $5
-          const total = (data || []).reduce((s: number, f: any) => s + f.amount_usd, 0);
-          setCertificateAccessFee(total > 0 ? Math.round(total * 0.2 * 100) / 100 : 5);
-        }
-      } catch (error) {
-        console.error('Error fetching expertise fees:', error);
-      } finally {
-        setLoadingFees(false);
-      }
-    };
-
-    if (open) {
-      fetchFees();
-    }
-  }, [open]);
-
-  // Check for existing valid certificate when dialog opens (after intro)
-  useEffect(() => {
-    if (!open || showIntro || !parcelNumber || certificateChecked) return;
-
-    const checkCertificate = async () => {
-      setCheckingCertificate(true);
-      try {
-        const existing = await checkExistingValidCertificate(parcelNumber);
-        setExistingCertificate(existing);
-      } catch (e) {
-        console.error('Certificate check error:', e);
-      } finally {
-        setCheckingCertificate(false);
-        setCertificateChecked(true);
-      }
-    };
-
-    checkCertificate();
-  }, [open, showIntro, parcelNumber, certificateChecked, checkExistingValidCertificate]);
-
-  // Check whether current user already has paid access to the certificate
-  useEffect(() => {
-    if (!open || showIntro || !user || !existingCertificate?.id) {
-      return;
-    }
-
-    let cancelled = false;
-    setCheckingCertificateAccess(true);
-
-    const checkAccess = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('expertise_payments')
-          .select('id')
-          .eq('expertise_request_id', existingCertificate.id)
-          .eq('user_id', user.id)
-          .eq('status', 'completed')
-          .limit(1)
-          .maybeSingle();
-
-        if (error && error.code !== 'PGRST116') throw error;
-        if (cancelled) return;
-
-        const hasAccess = Boolean(data);
-        setHasCertificateAccess(hasAccess);
-        if (hasAccess) {
-          setShowCertificatePayment(false);
-        }
-      } catch (error) {
-        console.error('Certificate access check error:', error);
-        if (!cancelled) setHasCertificateAccess(false);
-      } finally {
-        if (!cancelled) setCheckingCertificateAccess(false);
-      }
-    };
-
-    checkAccess();
-    return () => { cancelled = true; };
-  }, [open, showIntro, user?.id, existingCertificate?.id]);
-
-   // Le total provient du devis serveur (RPC). Repli local uniquement si la RPC
-   // n'a pas encore répondu.
-   const quotedFees = useMemo(
-     () =>
-       feeQuote?.fee_items?.length
-         ? feeQuote.fee_items
-         : fees.filter((fee) => fee.is_mandatory).map((fee) => ({
-             fee_name: fee.fee_name,
-             amount_usd: fee.amount_usd,
-             description: fee.description,
-             is_mandatory: fee.is_mandatory,
-           })),
-     [feeQuote, fees],
-   );
-
-   const getTotalAmount = () => {
-     if (feeQuote) return Math.max(feeQuote.total_amount_usd, 0);
-     const total = quotedFees.reduce((sum, fee) => sum + Number(fee.amount_usd || 0), 0);
-     return Math.max(total, 0);
-   };
-
-   const isPaymentValid = () => {
-     return quotedFees.length > 0 && getTotalAmount() > 0;
-   };
+  const isPaymentValid = () => quotedFees.length > 0 && getTotalAmount() > 0;
 
 
   // Sound measurement functions removed — now in CCC LocationTab
@@ -1244,6 +1130,8 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
       parcel_sound_environment: cadastralPrefill?.sound_environment ?? undefined,
     });
 
+    // Données modifiées depuis la dernière tentative : nouvelle demande
+    pendingRequestRef.current = null;
     setStep('payment');
   };
 
@@ -1255,8 +1143,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
         toast.error('Veuillez sélectionner un opérateur et entrer votre numéro');
         return;
       }
-      const phoneRegex = /^(\+?243|0)(8[1-9]|9[0-9])\d{7}$/;
-      if (!phoneRegex.test(paymentPhone.replace(/\s/g, ''))) {
+      if (!isValidDrcMobileNumber(paymentPhone)) {
         toast.error('Numéro de téléphone invalide. Format attendu: +243XXXXXXXXX ou 0XXXXXXXXX');
         return;
       }
@@ -1265,67 +1152,45 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     setProcessingPayment(true);
 
     try {
-      // Upload files first
-      const uploadedFiles = await uploadFiles();
-      const allDocUrls = [...uploadedFiles.parcelDocs, ...uploadedFiles.constructionImages];
-
-      // Create the expertise request
-      const request = await createExpertiseRequest({
-        ...formData,
-        supporting_documents: allDocUrls,
-        building_permit_document_url: uploadedFiles.permitDocUrl || undefined,
-      });
-
+      // Après un paiement échoué, on réutilise la demande déjà créée au lieu
+      // d'en créer une seconde (et de renvoyer les fichiers).
+      let request = pendingRequestRef.current;
       if (!request) {
-        throw new Error('Erreur lors de la création de la demande');
+        const uploadedFiles = await uploadFiles();
+        const allDocUrls = [...uploadedFiles.parcelDocs, ...uploadedFiles.constructionImages];
+
+        // Montant calculé par le serveur à l'insertion
+        request = await createExpertiseRequest({
+          ...formData,
+          supporting_documents: allDocUrls,
+          building_permit_document_url: uploadedFiles.permitDocUrl || undefined,
+        });
+
+        if (!request) {
+          throw new Error('Erreur lors de la création de la demande');
+        }
+        pendingRequestRef.current = request;
       }
 
-      // Frais et montant : issus du calcul serveur enregistré sur la demande
-      const serverTotal = Number((request as any).total_amount_usd) || getTotalAmount();
-      const feeItems = Array.isArray((request as any).computed_fee_items)
-        ? (request as any).computed_fee_items
-        : quotedFees.map((fee) => ({ fee_name: fee.fee_name, amount_usd: fee.amount_usd }));
+      // Ligne de paiement créée par le serveur avec le montant de la demande
+      const payment = await createExpertisePayment({
+        requestId: request.id,
+        kind: 'expertise_fee',
+        method: paymentMethod,
+        provider: paymentProvider,
+        phone: paymentPhone,
+      });
 
-
-      const { data: paymentRecord, error: paymentError } = await supabase
-        .from('expertise_payments')
-        .insert({
-          expertise_request_id: request.id,
-          user_id: user.id,
-          fee_items: feeItems,
-          total_amount_usd: serverTotal,
-          payment_method: paymentMethod,
-          payment_provider: paymentMethod === 'mobile_money' ? paymentProvider : 'stripe',
-          phone_number: paymentMethod === 'mobile_money' ? paymentPhone : null,
-          status: 'pending'
-        })
-        .select()
-        .single();
-
-      if (paymentError) throw paymentError;
-
-      // Process payment
+      // Le statut est confirmé côté serveur (Edge Functions) ; le client ne l'écrit jamais.
       if (paymentMethod === 'mobile_money') {
-        const { processExpertiseMobileMoneyPayment } = await import('@/utils/expertisePaymentHelper');
         await processExpertiseMobileMoneyPayment({
           provider: paymentProvider,
           phone: paymentPhone,
-          amountUsd: serverTotal,
+          payment,
           paymentType: 'expertise_fee',
-          paymentRecordId: paymentRecord.id,
         });
-
-        // Le statut de paiement est confirmé côté serveur (edge function
-        // `process-mobile-money-payment`, service role). Le client ne l'écrit jamais.
-
-
-      } else if (paymentMethod === 'bank_card') {
-        const { processExpertiseStripePayment } = await import('@/utils/expertisePaymentHelper');
-        const redirected = await processExpertiseStripePayment({
-          paymentRecordId: paymentRecord.id,
-          paymentType: 'expertise_fee',
-          amountUsd: serverTotal,
-        });
+      } else {
+        const redirected = await processExpertiseStripePayment({ payment, paymentType: 'expertise_fee' });
         if (redirected) return;
       }
 
@@ -1338,6 +1203,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
         action_url: '/user-dashboard'
       });
 
+      pendingRequestRef.current = null;
       setCreatedRequest(request);
       setStep('confirmation');
       toast.success('Paiement réussi ! Votre demande a été enregistrée.');
@@ -1351,82 +1217,6 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     }
   };
 
-  const handleCertificateAccessPayment = async () => {
-    if (!user || !existingCertificate || processingCertPayment) return;
-
-    if (certPaymentMethod === 'mobile_money') {
-      if (!certPaymentProvider || !certPaymentPhone) {
-        toast.error('Veuillez sélectionner un opérateur et entrer votre numéro');
-        return;
-      }
-      const phoneRegex = /^(\+?243|0)(8[1-9]|9[0-9])\d{7}$/;
-      if (!phoneRegex.test(certPaymentPhone.replace(/\s/g, ''))) {
-        toast.error('Numéro de téléphone invalide. Format attendu: +243XXXXXXXXX ou 0XXXXXXXXX');
-        return;
-      }
-    }
-
-    setProcessingCertPayment(true);
-    try {
-      // Create payment record for certificate access
-      const { data: paymentRecord, error: paymentError } = await supabase
-        .from('expertise_payments')
-        .insert({
-          expertise_request_id: existingCertificate.id,
-          user_id: user.id,
-          fee_items: [{ fee_name: 'Accès au certificat d\'expertise immobilière', amount_usd: certificateAccessFee }],
-          total_amount_usd: certificateAccessFee,
-          payment_method: certPaymentMethod,
-          payment_provider: certPaymentMethod === 'mobile_money' ? certPaymentProvider : 'stripe',
-          phone_number: certPaymentMethod === 'mobile_money' ? certPaymentPhone : null,
-          status: 'pending'
-        })
-        .select()
-        .single();
-
-      if (paymentError) throw paymentError;
-
-      if (certPaymentMethod === 'mobile_money') {
-        const { processExpertiseMobileMoneyPayment } = await import('@/utils/expertisePaymentHelper');
-        await processExpertiseMobileMoneyPayment({
-          provider: certPaymentProvider,
-          phone: certPaymentPhone,
-          amountUsd: certificateAccessFee,
-          paymentType: 'certificate_access',
-          paymentRecordId: paymentRecord.id,
-        });
-      } else {
-        const { processExpertiseStripePayment } = await import('@/utils/expertisePaymentHelper');
-        const redirected = await processExpertiseStripePayment({
-          paymentRecordId: paymentRecord.id,
-          paymentType: 'certificate_access',
-          amountUsd: certificateAccessFee,
-        });
-        if (redirected) return;
-      }
-
-      setHasCertificateAccess(true);
-
-      // Open the certificate URL
-      if (existingCertificate.certificate_url) {
-        try {
-          await openExpertiseCertificate(existingCertificate.id, existingCertificate.certificate_url);
-          toast.success('Paiement réussi ! Vous pouvez accéder au certificat.');
-        } catch (e: any) {
-          toast.error(e?.message || 'Certificat indisponible');
-        }
-      } else {
-        toast.success('Paiement réussi ! Le certificat sera disponible dès sa publication.');
-      }
-
-      handleClose();
-    } catch (error: any) {
-      console.error('Certificate access payment error:', error);
-      toast.error(error.message || 'Erreur lors du paiement');
-    } finally {
-      setProcessingCertPayment(false);
-    }
-  };
 
   const handleClose = () => {
     // Navigation & flow
@@ -1436,6 +1226,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     setActiveTab('general');
     setShowIntro(true);
     setCreatedRequest(null);
+    pendingRequestRef.current = null;
     setFormData(null);
 
     // General (CCC-aligned)
@@ -1532,16 +1323,6 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     setPaymentProvider('');
     setPaymentPhone('');
 
-    // Certificate
-    setExistingCertificate(null);
-    setCertificateChecked(false);
-    setShowCertificatePayment(false);
-    setCertPaymentMethod('mobile_money');
-    setCertPaymentProvider('');
-    setCertPaymentPhone('');
-    setHasCertificateAccess(false);
-    setCheckingCertificateAccess(false);
-    setCertificateAccessFee(0);
 
     defaultRefDoneRef.current = false;
     setSelectedBuildingRef('main');
@@ -1904,184 +1685,6 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     );
   }
 
-  const renderExistingCertificateBlock = () => {
-    if (checkingCertificate) {
-      return (
-        <div className="flex items-center justify-center py-8">
-          <Loader2 className="h-6 w-6 animate-spin text-primary" />
-          <span className="ml-2 text-sm text-muted-foreground">Vérification en cours...</span>
-        </div>
-      );
-    }
-
-    if (!certificateChecked) return null;
-
-    if (existingCertificate) {
-      const validity = checkCertificateValidity(existingCertificate.certificate_issue_date, existingCertificate.certificate_expiry_date);
-      const issueDate = existingCertificate.certificate_issue_date
-        ? new Date(existingCertificate.certificate_issue_date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
-        : 'N/A';
-
-      if (!showCertificatePayment) {
-        return (
-          <div className="space-y-4">
-            <Alert className="rounded-xl border-2 border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20">
-              <CheckCircle2 className="h-5 w-5 text-green-600" />
-              <AlertDescription className="text-sm space-y-2">
-                <p className="font-semibold text-green-800 dark:text-green-300">
-                  Certificat d'expertise immobilière valide
-                </p>
-                <p className="text-green-700 dark:text-green-400">
-                  Un certificat d'expertise immobilière est en cours de validité pour cette parcelle, 
-                  délivré le <strong>{issueDate}</strong>.
-                </p>
-                <p className="text-xs text-green-600 dark:text-green-500">
-                  Référence : <span className="font-mono">{existingCertificate.reference_number}</span> 
-                  — Expire dans {validity.daysRemaining} jour{validity.daysRemaining > 1 ? 's' : ''}
-                </p>
-              </AlertDescription>
-            </Alert>
-
-            {existingCertificate.market_value_usd && (
-              <Card className="rounded-xl border-primary/20">
-                <CardContent className="p-3 flex items-center gap-3">
-                  <DollarSign className="h-5 w-5 text-primary flex-shrink-0" />
-                  <div>
-                    <p className="text-xs text-muted-foreground">Valeur vénale estimée</p>
-                    <p className="font-bold text-lg">${existingCertificate.market_value_usd.toLocaleString()}</p>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {checkingCertificateAccess ? (
-              <div className="flex items-center justify-center py-3 text-xs text-muted-foreground">
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                Vérification de vos droits d'accès...
-              </div>
-            ) : hasCertificateAccess ? (
-              <>
-                <Button
-                  variant="seloger"
-                  onClick={async () => {
-                    if (existingCertificate.certificate_url) {
-                      try {
-                        await openExpertiseCertificate(existingCertificate.id, existingCertificate.certificate_url);
-                        toast.success('Certificat ouvert avec succès.');
-                      } catch (e: any) {
-                        toast.error(e?.message || 'Certificat indisponible');
-                      }
-                    } else {
-                      toast.info('Le certificat sera disponible dès sa publication.');
-                    }
-                  }}
-                  className="w-full h-11 rounded-2xl text-sm font-semibold"
-                >
-                  <FileText className="h-4 w-4 mr-2" />
-                  Ouvrir le certificat
-                </Button>
-                <p className="text-[11px] text-muted-foreground text-center">
-                  Accès déjà autorisé pour votre compte.
-                </p>
-              </>
-            ) : (
-              <>
-                <Button
-                  variant="seloger"
-                  onClick={() => setShowCertificatePayment(true)}
-                  className="w-full h-11 rounded-2xl text-sm font-semibold"
-                >
-                  <FileText className="h-4 w-4 mr-2" />
-                  Accéder au certificat — ${certificateAccessFee}
-                </Button>
-
-                <p className="text-[11px] text-muted-foreground text-center">
-                  Un paiement est requis pour consulter le certificat complet.
-                </p>
-              </>
-            )}
-          </div>
-        );
-      }
-
-      // Certificate access payment form
-      return (
-        <div className="space-y-3">
-          <Button variant="ghost" size="sm" onClick={() => setShowCertificatePayment(false)} className="h-8 gap-1 text-xs rounded-xl">
-            <ArrowLeft className="h-3.5 w-3.5" /> Retour
-          </Button>
-
-          <Card className="rounded-xl border-primary/20">
-            <CardContent className="p-3 space-y-1">
-              <p className="text-sm font-semibold">Accès au certificat d'expertise immobilière</p>
-              <p className="text-xs text-muted-foreground">Parcelle {parcelNumber}</p>
-              <Separator className="my-2" />
-              <div className="flex justify-between text-sm">
-                <span>Accès au certificat</span>
-                <span className="font-bold">${certificateAccessFee}</span>
-              </div>
-            </CardContent>
-          </Card>
-
-          <div className="space-y-2">
-            <Label className="text-xs font-medium">Mode de paiement</Label>
-            <RadioGroup value={certPaymentMethod} onValueChange={(v) => setCertPaymentMethod(v as any)} className="flex gap-3">
-              <div className="flex items-center gap-1.5">
-                <RadioGroupItem value="mobile_money" id="cert-mm" />
-                <Label htmlFor="cert-mm" className="text-xs cursor-pointer flex items-center gap-1">
-                  <Smartphone className="h-3.5 w-3.5" /> Mobile Money
-                </Label>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <RadioGroupItem value="bank_card" id="cert-bc" />
-                <Label htmlFor="cert-bc" className="text-xs cursor-pointer flex items-center gap-1">
-                  <CreditCard className="h-3.5 w-3.5" /> Carte bancaire
-                </Label>
-              </div>
-            </RadioGroup>
-          </div>
-
-          {certPaymentMethod === 'mobile_money' && (
-            <div className="space-y-2">
-              <Select value={certPaymentProvider} onValueChange={setCertPaymentProvider}>
-                <SelectTrigger className="h-9 rounded-xl text-sm"><SelectValue placeholder="Opérateur" /></SelectTrigger>
-                 <SelectContent>
-                  <SelectItem value="airtel_money">Airtel Money</SelectItem>
-                  <SelectItem value="orange_money">Orange Money</SelectItem>
-                  <SelectItem value="mpesa">M-Pesa</SelectItem>
-                </SelectContent>
-              </Select>
-              <Input value={certPaymentPhone} onChange={(e) => setCertPaymentPhone(e.target.value)} placeholder="+243 ..." className="h-9 rounded-xl text-sm" />
-            </div>
-          )}
-
-          {certPaymentMethod === 'bank_card' && (
-            <div className="flex items-center gap-2 p-2.5 bg-muted/50 rounded-2xl border">
-              <CreditCard className="h-4 w-4 text-primary flex-shrink-0" />
-              <p className="text-xs text-muted-foreground">Redirection vers Stripe pour un paiement sécurisé.</p>
-            </div>
-          )}
-
-          <Button
-            variant="seloger"
-            onClick={handleCertificateAccessPayment}
-            disabled={processingCertPayment || (certPaymentMethod === 'mobile_money' && (!certPaymentProvider || !certPaymentPhone))}
-            className="w-full h-10 rounded-2xl text-sm font-semibold"
-          >
-            {processingCertPayment ? (
-              <><Loader2 className="h-4 w-4 animate-spin mr-1.5" /> Traitement...</>
-            ) : (
-              <><CheckCircle2 className="h-4 w-4 mr-1.5" /> Payer ${certificateAccessFee}</>
-            )}
-          </Button>
-        </div>
-      );
-    }
-
-    // No valid certificate exists
-    return null;
-  };
-
   // Insert a "no certificate" info block at top of the form
   const renderNoCertificateInfo = () => {
     if (!certificateChecked || existingCertificate || checkingCertificate) return null;
@@ -2120,7 +1723,9 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
         </DialogHeader>
 
         <ScrollArea className="h-[calc(90vh-120px)]" ref={scrollAreaRef}>
-          {step === 'form' && existingCertificate ? renderExistingCertificateBlock() : (
+          {step === 'form' && existingCertificate ? (
+            <ExistingCertificateBlock parcelNumber={parcelNumber} certificate={existingCertificate} onDone={handleClose} />
+          ) : (
             <>
               {step === 'form' && (
                 <div className="space-y-3">

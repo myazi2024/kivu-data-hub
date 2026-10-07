@@ -90,73 +90,6 @@ export const useRealEstateExpertise = () => {
     }
   };
 
-  const getRequestByParcel = useCallback(async (parcelNumber: string): Promise<ExpertiseRequest | null> => {
-    if (!user) return null;
-
-    try {
-      const { data, error } = await supabase
-        .from('real_estate_expertise_requests')
-        .select('*')
-        .eq('parcel_number', parcelNumber)
-        .eq('status', 'completed')
-        .order('certificate_issue_date', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (error) throw error;
-      return data as ExpertiseRequest | null;
-    } catch (error: any) {
-      console.error('Error fetching expertise by parcel:', error);
-      return null;
-    }
-  }, [user]);
-
-  const checkCertificateValidity = useCallback((certificateIssueDate?: string, certificateExpiryDate?: string): { isValid: boolean; daysRemaining: number } => {
-    if (!certificateIssueDate) return { isValid: false, daysRemaining: 0 };
-
-    let expiryDate: Date;
-    if (certificateExpiryDate) {
-      // Prefer DB-stored expiry date for consistency
-      expiryDate = new Date(certificateExpiryDate);
-    } else {
-      // Fallback: calculate from issue date
-      expiryDate = new Date(certificateIssueDate);
-      expiryDate.setMonth(expiryDate.getMonth() + 6);
-    }
-    
-    const today = new Date();
-    const daysRemaining = Math.ceil((expiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-    
-    return {
-      isValid: daysRemaining > 0,
-      daysRemaining: Math.max(0, daysRemaining)
-    };
-  }, []);
-
-  const checkExistingValidCertificate = useCallback(async (parcelNumber: string): Promise<ExpertiseRequest | null> => {
-    try {
-      const { data, error } = await supabase
-        .from('real_estate_expertise_requests')
-        .select('*')
-        .eq('parcel_number', parcelNumber)
-        .eq('status', 'completed')
-        .not('certificate_issue_date', 'is', null)
-        .not('certificate_url', 'is', null)
-        .order('certificate_issue_date', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (error) throw error;
-      if (!data || !data.certificate_url?.trim()) return null;
-
-      const validity = checkCertificateValidity(data.certificate_issue_date, data.certificate_expiry_date);
-      return validity.isValid ? (data as ExpertiseRequest) : null;
-    } catch (error: any) {
-      console.error('Error checking existing certificate:', error);
-      return null;
-    }
-  }, [checkCertificateValidity]);
-
   useEffect(() => {
     if (user) {
       fetchUserRequests();
@@ -168,8 +101,5 @@ export const useRealEstateExpertise = () => {
     requests,
     createExpertiseRequest,
     fetchUserRequests,
-    getRequestByParcel,
-    checkExistingValidCertificate,
-    checkCertificateValidity,
   };
 };

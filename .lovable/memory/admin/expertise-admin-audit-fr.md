@@ -25,8 +25,9 @@ type: feature
 - `crypto.randomUUID()` partout pour références/fichiers (jamais `Math.random`/`Date.now`).
 
 ## Accès certificat (règle critique)
-`certificate_url` peut être :
-- legacy `https://...` (ouvert tel quel)
-- nouveau **chemin storage relatif** (ex. `certificates/REF_uuid.pdf`) → JAMAIS `window.open` direct.
+Le certificat s'ouvre TOUJOURS via `openExpertiseCertificate(requestId)` → RPC `get_signed_expertise_certificate` (propriétaire, staff ou acheteur `certificate_access` confirmé). Aucune URL stockée n'est ouverte directement.
 
-**Toujours** passer par `openExpertiseCertificate(requestId, certificate_url)` (`src/utils/expertiseCertificateUrl.ts`) qui appelle la RPC `get_signed_expertise_certificate`. Consommateurs : `UserExpertiseRequests`, `RealEstateExpertiseRequestDialog`, `ExpertiseDetailsDialog`.
+## Accès au certificat d'un autre utilisateur
+- Prix = frais `fee_kind='certificate_access'` dans `expertise_fees_config` (28 USD initial), modifiable dans l'admin (carte « Accès au certificat »), exclu du devis de demande.
+- Lecture du certificat existant via `get_parcel_valid_expertise_certificate` (valeur vénale seulement si accès).
+- Paiements créés uniquement par `create_expertise_payment` ; relance après échec réutilise la demande déjà créée.

@@ -2850,6 +2850,7 @@ export type Database = {
           created_at: string
           description: string | null
           display_order: number
+          fee_kind: string
           fee_name: string
           id: string
           is_active: boolean
@@ -2864,6 +2865,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           display_order?: number
+          fee_kind?: string
           fee_name: string
           id?: string
           is_active?: boolean
@@ -2878,6 +2880,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           display_order?: number
+          fee_kind?: string
           fee_name?: string
           id?: string
           is_active?: boolean
@@ -2900,6 +2903,7 @@ export type Database = {
           fee_items: Json
           id: string
           paid_at: string | null
+          payment_kind: string
           payment_method: string | null
           payment_provider: string | null
           phone_number: string | null
@@ -2922,6 +2926,7 @@ export type Database = {
           fee_items?: Json
           id?: string
           paid_at?: string | null
+          payment_kind?: string
           payment_method?: string | null
           payment_provider?: string | null
           phone_number?: string | null
@@ -2944,6 +2949,7 @@ export type Database = {
           fee_items?: Json
           id?: string
           paid_at?: string | null
+          payment_kind?: string
           payment_method?: string | null
           payment_provider?: string | null
           phone_number?: string | null
@@ -8442,6 +8448,16 @@ export type Database = {
           total_amount_usd: number
         }[]
       }
+      create_expertise_payment: {
+        Args: {
+          p_kind: string
+          p_method: string
+          p_phone?: string
+          p_provider?: string
+          p_request_id: string
+        }
+        Returns: Json
+      }
       detect_suspicious_contribution: {
         Args: { p_parcel_number: string; p_user_id: string }
         Returns: {
@@ -8778,6 +8794,20 @@ export type Database = {
           source_table: string
           status: string
           title: string
+        }[]
+      }
+      get_parcel_valid_expertise_certificate: {
+        Args: { p_parcel_number: string }
+        Returns: {
+          access_fee_usd: number
+          certificate_expiry_date: string
+          certificate_issue_date: string
+          has_access: boolean
+          has_certificate_file: boolean
+          id: string
+          is_owner: boolean
+          market_value_usd: number
+          reference_number: string
         }[]
       }
       get_parcel_with_pii: { Args: { p_parcel_number: string }; Returns: Json }
@@ -9152,18 +9182,6 @@ export type Database = {
         Returns: Json
       }
       verify_document_by_code: { Args: { p_code: string }; Returns: Json }
-      verify_expertise_certificate: {
-        Args: { p_reference: string }
-        Returns: {
-          certificate_expiry_date: string
-          certificate_issue_date: string
-          certificate_url: string
-          market_value_usd: number
-          parcel_number: string
-          reference_number: string
-          status: string
-        }[]
-      }
       verify_subdivision_plan: {
         Args: { _ref: string }
         Returns: {

@@ -132,6 +132,13 @@ Deno.serve(async (req) => {
       if (epError || !expertisePayment) {
         throw new Error("Invalid expertise payment record");
       }
+      // La nature du paiement est fixée par le serveur à la création de la ligne.
+      if (expertisePayment.payment_kind && expertisePayment.payment_kind !== payment_type) {
+        throw new Error("Type de paiement incohérent");
+      }
+      if (expertisePayment.status !== 'pending') {
+        throw new Error("Ce paiement n'est plus payable.");
+      }
 
       const label = payment_type === 'certificate_access'
         ? "Accès au certificat d'expertise immobilière"

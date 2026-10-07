@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { trackEvent } from '@/lib/analytics';
+import { openExpertiseCertificate } from '@/utils/expertiseCertificateUrl';
 
 const POLL_INTERVAL_MS = 2000;
 const POLL_MAX_ATTEMPTS = 15;
@@ -14,6 +16,7 @@ const POLL_MAX_ATTEMPTS = 15;
  */
 export const useStripeReturnHandler = () => {
   const [searchParams, setSearchParams] = useSearchParams();
+  const queryClient = useQueryClient();
   const [polling, setPolling] = useState(false);
   const [pollProgress, setPollProgress] = useState(0);
 
@@ -63,16 +66,14 @@ export const useStripeReturnHandler = () => {
             toast.message('Paiement confirmé, synchronisation en cours. Réessayez dans quelques secondes.');
             return;
           }
-          const { data: req } = await supabase
-            .from('real_estate_expertise_requests')
-            .select('certificate_url')
-            .eq('id', completed.expertise_request_id)
-            .maybeSingle();
-          if (req?.certificate_url) {
-            window.open(req.certificate_url, '_blank', 'noopener,noreferrer');
+          // L'acheteur n'est pas propriétaire de la demande : le certificat
+          // s'ouvre uniquement via le lien signé délivré par le serveur.
+          queryClient.invalidateQueries({ queryKey: ['parcel-valid-expertise-certificate'] });
+          try {
+            await openExpertiseCertificate(completed.expertise_request_id, null);
             toast.success('Paiement réussi ! Le certificat a été ouvert.');
-          } else {
-            toast.success('Paiement réussi ! Le certificat sera disponible dès sa publication.');
+          } catch {
+            toast.success('Paiement réussi ! Le certificat est accessible depuis la fiche d\u2019expertise.');
           }
         } else if (paymentType === 'expertise_fee') {
           let isCompleted = false;
