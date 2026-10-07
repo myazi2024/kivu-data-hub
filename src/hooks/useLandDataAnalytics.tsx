@@ -127,10 +127,10 @@ export const useLandDataAnalytics = (isTestRoute = false) => {
           'id, parcel_id, legal_status, mutation_type, ownership_start_date, ownership_end_date, created_at',
           isTestRoute),
         fetchAll('generated_certificates',
-          'id, certificate_type, parcel_number, recipient_name, reference_number, status, generated_at',
+          'id, certificate_type, parcel_number, reference_number, status, generated_at',
           isTestRoute),
         fetchAll('cadastral_invoices',
-          'id, invoice_number, parcel_number, client_email, total_amount_usd, status, payment_method, geographical_zone, discount_amount_usd, created_at',
+          'id, invoice_number, parcel_number, total_amount_usd, status, payment_method, geographical_zone, discount_amount_usd, created_at',
           isTestRoute),
       ]);
 

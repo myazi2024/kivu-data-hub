@@ -9,6 +9,7 @@ import { ChartCard, FilterLabelContext } from '../shared/ChartCard';
 import { BlockUnscopedRecordsProvider } from '../shared/BlockUnscopedRecordsContext';
 import { GeoCharts } from '../shared/GeoCharts';
 import { generateInsight } from '@/utils/chartInsights';
+import { taxStatusGroup, meanPositive, bucketHalfOpen } from '@/utils/analyticsTabRules';
 import { useBlockFilter } from '@/hooks/useBlockFilter';
 
 interface Props { data: LandAnalyticsData; }
@@ -16,7 +17,7 @@ interface Props { data: LandAnalyticsData; }
 const TAB_KEY = 'taxes';
 
 export const TaxesBlock: React.FC<Props> = memo(({ data }) => {
-  const { filter, setFilter, filterLabel, filtered, filteredUnscoped, filterConfig, v, ct, cx, ty, ord, exportCSV  } = useBlockFilter(TAB_KEY, data.taxHistory);
+  const { filter, setFilter, filterLabel, filtered, filteredUnscoped, filterConfig, v, ct, cx, ty, ord } = useBlockFilter(TAB_KEY, data.taxHistory);
 
   const byStatus = useMemo(() => countBy(filtered, 'payment_status'), [filtered]);
   const byYear = useMemo(() => {
@@ -33,29 +34,20 @@ export const TaxesBlock: React.FC<Props> = memo(({ data }) => {
       { name: '200 – 500 $', min: 200, max: 500 },
       { name: '> 500 $', min: 500, max: Infinity },
     ];
-    return brackets.map(b => ({
-      name: b.name,
-      value: filtered.filter((t: any) => (t.amount_usd || 0) >= b.min && (t.amount_usd || 0) < b.max).length,
-    })).filter(b => b.value > 0);
+    return bucketHalfOpen(filtered.map((t: any) => Number(t.amount_usd || 0)), brackets);
   }, [filtered]);
 
-  const statusNorm = (s: string) => {
-    const val = (s || '').trim().toLowerCase();
-    if (['paid', 'payé', 'payée'].includes(val)) return 'paid';
-    if (['pending', 'en_attente', 'unpaid', 'en attente', 'impayé'].includes(val)) return 'pending';
-    return val;
-  };
   const totalAmount = filtered.reduce((s: number, t: any) => s + (t.amount_usd || 0), 0);
-  const paid = filtered.filter((t: any) => statusNorm(t.payment_status) === 'paid').length;
-  const paidAmount = filtered.filter((t: any) => statusNorm(t.payment_status) === 'paid').reduce((s: number, t: any) => s + (t.amount_usd || 0), 0);
-  const pendingCount = filtered.filter((t: any) => statusNorm(t.payment_status) === 'pending').length;
-  const avgAmount = filtered.length > 0 ? Math.round(totalAmount / filtered.length) : 0;
+  const paid = filtered.filter((t: any) => taxStatusGroup(t.payment_status) === 'paid').length;
+  const paidAmount = filtered.filter((t: any) => taxStatusGroup(t.payment_status) === 'paid').reduce((s: number, t: any) => s + (t.amount_usd || 0), 0);
+  const pendingCount = filtered.filter((t: any) => taxStatusGroup(t.payment_status) === 'unpaid').length;
+  const avgAmount = meanPositive(filtered.map((t: any) => t.amount_usd));
   const recoveryRate = totalAmount > 0 ? `${Math.round((paidAmount / totalAmount) * 100)}%` : 'N/A';
 
   const kpiItems = useMemo(() => [
     { key: 'kpi-total', label: ct('kpi-total', 'Total déclarations'), value: filtered.length, cls: 'text-purple-600' },
     { key: 'kpi-revenue', label: ct('kpi-revenue', 'Montant total'), value: `$${totalAmount.toLocaleString()}`, cls: 'text-emerald-600' },
-    { key: 'kpi-pending', label: ct('kpi-pending', 'En attente'), value: pendingCount, cls: 'text-amber-600', tooltip: pct(pendingCount, filtered.length) },
+    { key: 'kpi-pending', label: ct('kpi-pending', 'Impayées'), value: pendingCount, cls: 'text-amber-600', tooltip: pct(pendingCount, filtered.length) },
     { key: 'kpi-approved', label: ct('kpi-approved', 'Payées'), value: paid, cls: 'text-blue-600', tooltip: pct(paid, filtered.length) },
     { key: 'kpi-recovery', label: ct('kpi-recovery', 'Recouvrement'), value: recoveryRate, cls: 'text-rose-600', tooltip: `Payé: $${paidAmount.toLocaleString()}` },
     { key: 'kpi-avg', label: ct('kpi-avg', 'Montant moy.'), value: `$${avgAmount.toLocaleString()}`, cls: 'text-violet-600' },

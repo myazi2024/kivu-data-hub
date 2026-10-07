@@ -7,6 +7,7 @@
 
 import type { LandAnalyticsData } from '@/hooks/useLandDataAnalytics';
 import { normalizeTitleType } from '@/utils/titleTypeNormalizer';
+import { isDisputeResolved, isSubdivisionInProgress, mortgageStatusGroup, taxStatusGroup } from '@/utils/analyticsTabRules';
 
 export interface MapTier {
   label: string;
@@ -274,11 +275,11 @@ const mortgagesProfile: MapTabProfile = {
   hasData: ({ analytics, provinceName }) => filterProv(analytics.mortgages || [], provinceName).length > 0,
   metric: ({ analytics, provinceName }) => {
     const m = filterProv(analytics.mortgages || [], provinceName);
-    return m.filter(x => x.mortgage_status === 'active').length;
+    return m.filter(x => mortgageStatusGroup(x.mortgage_status) === 'active').length;
   },
   tooltipLines: ({ analytics, provinceName }) => {
     const m = filterProv(analytics.mortgages || [], provinceName);
-    const active = m.filter(x => x.mortgage_status === 'active').length;
+    const active = m.filter(x => mortgageStatusGroup(x.mortgage_status) === 'active').length;
     const banks = m.filter(x => norm(x.creditor_type).includes('banque') || norm(x.creditor_type).includes('bank')).length;
     const pctBank = m.length ? (banks / m.length) * 100 : 0;
     const avgAmount = m.length ? m.reduce((s, x: any) => s + (x.mortgage_amount_usd || 0), 0) / m.length : 0;
@@ -306,7 +307,7 @@ const subdivisionProfile: MapTabProfile = {
   },
   tooltipLines: ({ analytics, provinceName }) => {
     const s = filterProv(analytics.subdivisionRequests, provinceName);
-    const inProgress = s.filter(x => x.status === 'pending' || x.status === 'en_cours').length;
+    const inProgress = s.filter(x => isSubdivisionInProgress(x.status)).length;
     const approved = s.filter(x => x.status === 'approved').length;
     const lots = s.reduce((acc, x: any) => acc + (x.number_of_lots || 0), 0);
     return [
@@ -329,8 +330,8 @@ const disputesProfile: MapTabProfile = {
   metric: ({ analytics, provinceName }) => filterProv(analytics.disputes, provinceName).length,
   tooltipLines: ({ analytics, provinceName }) => {
     const d = filterProv(analytics.disputes, provinceName);
-    const open = d.filter(x => x.current_status !== 'resolved' && x.current_status !== 'closed').length;
-    const resolved = d.filter(x => x.current_status === 'resolved' || x.current_status === 'closed').length;
+    const resolved = d.filter(x => isDisputeResolved(x.current_status)).length;
+    const open = d.length - resolved;
     const main = topValue(d, x => x.dispute_nature);
     return [
       { label: 'Total',       value: fmtN(d.length), color: 'text-red-600' },
@@ -417,13 +418,13 @@ const taxesProfile: MapTabProfile = {
   metric: ({ analytics, provinceName }) => filterProv(analytics.taxHistory, provinceName).length,
   tooltipLines: ({ analytics, provinceName }) => {
     const t = filterProv(analytics.taxHistory, provinceName);
-    const paid = t.filter(x => x.payment_status === 'paid').length;
-    const unpaid = t.length - paid;
+    const paid = t.filter(x => taxStatusGroup(x.payment_status) === 'paid').length;
+    const unpaid = t.filter(x => taxStatusGroup(x.payment_status) === 'unpaid').length;
     const avg = t.length ? t.reduce((s, x) => s + (x.amount_usd || 0), 0) / t.length : 0;
     return [
       { label: 'Total',     value: fmtN(t.length), color: 'text-primary' },
       { label: 'Payées',    value: fmtN(paid),     color: 'text-emerald-600' },
-      { label: 'En retard', value: fmtN(unpaid),   color: 'text-red-600' },
+      { label: 'Impayées', value: fmtN(unpaid),   color: 'text-red-600' },
       { label: 'Montant moy.', value: t.length ? fmtUsd(avg) : '—', color: 'text-blue-600' },
     ];
   },

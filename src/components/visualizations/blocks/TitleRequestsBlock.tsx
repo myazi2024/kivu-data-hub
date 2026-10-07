@@ -12,6 +12,7 @@ import { ChartCard, ColorMappedPieCard, FilterLabelContext } from '../shared/Cha
 import { BlockUnscopedRecordsProvider } from '../shared/BlockUnscopedRecordsContext';
 import { GeoCharts } from '../shared/GeoCharts';
 import { generateInsight } from '@/utils/chartInsights';
+import { latestApprovedContributionByParcel, orderByLabels } from '@/utils/analyticsTabRules';
 import { useBlockFilter } from '@/hooks/useBlockFilter';
 
 interface Props { data: LandAnalyticsData; }
@@ -47,6 +48,9 @@ function extractOwners(contributions: any[]): any[] {
   return owners;
 }
 
+const DURATION_ORDER = ['< 1 an', '1-2 ans', '3-5 ans', '6-10 ans', '11-20 ans', '20+ ans'];
+const LEASE_ORDER = ['1-5 ans', '6-10 ans', '11-25 ans', '25+ ans', '(Non renseigné)'];
+
 function durationBucket(years: number): string {
   if (years < 1) return '< 1 an';
   if (years < 3) return '1-2 ans';
@@ -66,17 +70,18 @@ function leaseBucket(years: number | null | undefined): string {
 
 export const TitleRequestsBlock: React.FC<Props> = memo(({ data }) => {
   // Primary filter on parcels
-  const { filter, setFilter, filterLabel, filtered, filteredUnscoped, filterConfig, v, ct, cx, ty, ord, exportCSV  } = useBlockFilter(TAB_KEY, data.parcels);
+  const { filter, setFilter, filterLabel, filtered, filteredUnscoped, filterConfig, v, ct, cx, ty, ord } = useBlockFilter(TAB_KEY, data.parcels);
 
   // Extract parcel IDs from filtered set for joining
   const filteredParcelIds = useMemo(() => new Set(filtered.map(p => p.id)), [filtered]);
   const filteredParcelNums = useMemo(() => new Set(filtered.map(p => p.parcel_number)), [filtered]);
 
   // Filtered contributions linked to filtered parcels
+  // Une seule contribution par parcelle (la plus récente approuvée) pour ne pas compter deux fois les propriétaires
+  const approvedByParcel = useMemo(() => latestApprovedContributionByParcel(data.contributions), [data.contributions]);
   const linkedContribs = useMemo(() =>
-    data.contributions.filter(c =>
-      filteredParcelNums.has(c.parcel_number)
-    ), [data.contributions, filteredParcelNums]);
+    Array.from(approvedByParcel.values()).filter(c => filteredParcelNums.has(c.parcel_number)),
+    [approvedByParcel, filteredParcelNums]);
 
   // Filtered ownership history
   const linkedOwnership = useMemo(() =>
@@ -104,13 +109,13 @@ export const TitleRequestsBlock: React.FC<Props> = memo(({ data }) => {
       const bucket = leaseBucket(p.lease_years);
       map.set(bucket, (map.get(bucket) || 0) + 1);
     });
-    return Array.from(map.entries()).map(([name, value]) => ({ name, value }));
+    return orderByLabels(Array.from(map.entries()).map(([name, value]) => ({ name, value })), LEASE_ORDER);
   }, [filtered]);
 
   const byIssueYear = useMemo(() => {
     const map = new Map<string, number>();
     filtered.forEach(p => {
-      const d = p.title_issue_date || p.created_at;
+      const d = p.title_issue_date;
       if (!d) return;
       const y = new Date(d).getFullYear().toString();
       map.set(y, (map.get(y) || 0) + 1);
@@ -121,13 +126,16 @@ export const TitleRequestsBlock: React.FC<Props> = memo(({ data }) => {
   const issueTrend = useMemo(() => {
     const map = new Map<string, number>();
     filtered.forEach(p => {
-      const d = p.title_issue_date || p.created_at;
+      const d = p.title_issue_date;
       if (!d) return;
       const dt = new Date(d);
       const key = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}`;
       map.set(key, (map.get(key) || 0) + 1);
     });
-    return Array.from(map.entries()).map(([name, value]) => ({ name, value })).sort((a, b) => a.name.localeCompare(b.name));
+    return Array.from(map.entries()).sort(([a], [b]) => a.localeCompare(b)).map(([key, value]) => {
+      const [y, m] = key.split('-');
+      return { name: new Date(parseInt(y), parseInt(m) - 1).toLocaleDateString('fr-FR', { year: '2-digit', month: 'short' }), value };
+    });
   }, [filtered]);
 
   // ── Owner charts (from contributions JSONB) ──
@@ -164,7 +172,7 @@ export const TitleRequestsBlock: React.FC<Props> = memo(({ data }) => {
       const bucket = durationBucket(years);
       map.set(bucket, (map.get(bucket) || 0) + 1);
     });
-    return Array.from(map.entries()).map(([name, value]) => ({ name, value }));
+    return orderByLabels(Array.from(map.entries()).map(([name, value]) => ({ name, value })), DURATION_ORDER);
   }, [owners]);
 
   // ── Title/owner concordance charts ──
@@ -185,7 +193,7 @@ export const TitleRequestsBlock: React.FC<Props> = memo(({ data }) => {
     const map = new Map<string, number>();
     discordants.forEach(p => {
       // Find owner.since from linked contribution
-      const contrib = linkedContribs.find(c => c.parcel_number === p.parcel_number);
+      const contrib = approvedByParcel.get(p.parcel_number);
       const details = contrib?.current_owners_details;
       const ownerList = Array.isArray(details) ? details : details ? [details] : [];
       const since = ownerList[0]?.since;
@@ -198,7 +206,7 @@ export const TitleRequestsBlock: React.FC<Props> = memo(({ data }) => {
       map.set(label, (map.get(label) || 0) + 1);
     });
     return Array.from(map.entries()).map(([name, value]) => ({ name, value }));
-  }, [discordants, linkedContribs]);
+  }, [discordants, approvedByParcel]);
 
   const mismatchByTitleType = useMemo(() => {
     const map = new Map<string, number>();
@@ -221,7 +229,7 @@ export const TitleRequestsBlock: React.FC<Props> = memo(({ data }) => {
       const bucket = durationBucket(Math.max(0, years));
       map.set(bucket, (map.get(bucket) || 0) + 1);
     });
-    return Array.from(map.entries()).map(([name, value]) => ({ name, value }));
+    return orderByLabels(Array.from(map.entries()).map(([name, value]) => ({ name, value })), DURATION_ORDER);
   }, [linkedOwnership]);
 
   const transfersPerParcel = useMemo(() => {

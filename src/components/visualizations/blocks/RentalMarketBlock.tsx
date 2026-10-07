@@ -9,6 +9,7 @@ import { BlockUnscopedRecordsProvider } from '../shared/BlockUnscopedRecordsCont
 import { GeoCharts } from '../shared/GeoCharts';
 import { generateInsight } from '@/utils/chartInsights';
 import { trendByMonth, averageBy, recordBuildingHeightM } from '@/utils/analyticsHelpers';
+import { unitRentUsd } from '@/utils/analyticsTabRules';
 import { useBlockFilter } from '@/hooks/useBlockFilter';
 
 interface Props { data: LandAnalyticsData; }
@@ -67,7 +68,7 @@ export const RentalMarketBlock: React.FC<Props> = memo(({ data }) => {
       const units = toArray(r.rental_units);
       if (units.length > 0) {
         units.forEach((u: any) => {
-          const amount = Number(u?.monthly_rent_usd ?? u?.rent_usd ?? u?.monthly_rent ?? 0);
+          const amount = unitRentUsd(u);
           if (amount > 0) out.push(amount);
         });
         return;
@@ -108,10 +109,7 @@ export const RentalMarketBlock: React.FC<Props> = memo(({ data }) => {
     if (r?.is_rented !== true) return null;
     const units = toArray(r.rental_units);
     if (units.length > 0) {
-      const sum = units.reduce((acc: number, u: any) => {
-        const amount = Number(u?.monthly_rent_usd ?? u?.rent_usd ?? u?.monthly_rent ?? 0);
-        return acc + (amount > 0 ? amount : 0);
-      }, 0);
+      const sum = units.reduce((acc: number, u: any) => acc + unitRentUsd(u), 0);
       return sum > 0 ? sum : null;
     }
     const amount = Number(r.monthly_rent_usd || 0);
@@ -133,7 +131,7 @@ export const RentalMarketBlock: React.FC<Props> = memo(({ data }) => {
       const cat = r.property_category || 'Non précisé';
       const units = toArray(r.rental_units);
       const amounts = units.length
-        ? units.map((u: any) => Number(u?.monthly_rent_usd ?? u?.rent_usd ?? 0)).filter((n: number) => n > 0)
+        ? units.map(unitRentUsd).filter((n: number) => n > 0)
         : [Number(r.monthly_rent_usd || 0)].filter(n => n > 0);
       amounts.forEach(a => {
         const cur = sums.get(cat) || { total: 0, n: 0 };

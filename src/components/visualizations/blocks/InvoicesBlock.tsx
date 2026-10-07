@@ -16,7 +16,7 @@ interface Props { data: LandAnalyticsData; }
 const TAB_KEY = 'invoices';
 
 export const InvoicesBlock: React.FC<Props> = memo(({ data }) => {
-  const { filter, setFilter, filterLabel, filtered, filteredUnscoped, filterConfig, v, ct, cx, ty, ord, exportCSV  } = useBlockFilter(TAB_KEY, data.invoices);
+  const { filter, setFilter, filterLabel, filtered, filteredUnscoped, filterConfig, v, ct, cx, ty, ord } = useBlockFilter(TAB_KEY, data.invoices);
 
   const byStatus = useMemo(() => countBy(filtered, 'status'), [filtered]);
   const byPaymentMethod = useMemo(() => countBy(filtered, 'payment_method'), [filtered]);

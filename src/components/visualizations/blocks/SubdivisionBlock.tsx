@@ -9,6 +9,7 @@ import { ChartCard, FilterLabelContext } from '../shared/ChartCard';
 import { BlockUnscopedRecordsProvider } from '../shared/BlockUnscopedRecordsContext';
 import { GeoCharts } from '../shared/GeoCharts';
 import { generateInsight } from '@/utils/chartInsights';
+import { bucketHalfOpen } from '@/utils/analyticsTabRules';
 import { useBlockFilter } from '@/hooks/useBlockFilter';
 
 interface Props { data: LandAnalyticsData; }
@@ -16,52 +17,30 @@ interface Props { data: LandAnalyticsData; }
 const TAB_KEY = 'subdivision';
 
 export const SubdivisionBlock: React.FC<Props> = memo(({ data }) => {
-  const { filter, setFilter, filterLabel, filtered, filteredUnscoped, filterConfig, v, ct, cx, ty, ord, exportCSV  } = useBlockFilter(TAB_KEY, data.subdivisionRequests);
+  const { filter, setFilter, filterLabel, filtered, filteredUnscoped, filterConfig, v, ct, cx, ty, ord } = useBlockFilter(TAB_KEY, data.subdivisionRequests);
 
   const byStatus = useMemo(() => countBy(filtered, 'status'), [filtered]);
   const byPurpose = useMemo(() => countBy(filtered, 'purpose_of_subdivision'), [filtered]);
   const byRequesterType = useMemo(() => countBy(filtered, 'requester_type'), [filtered]);
   const byPaymentStatus = useMemo(() => countBy(filtered, 'submission_payment_status'), [filtered]);
   const trend = useMemo(() => trendByMonth(filtered), [filtered]);
-  const revenueTrend = useMemo(() => sumByMonth(filtered), [filtered]);
+  const revenueTrend = useMemo(() => sumByMonth(filtered.filter(r => r.submission_payment_status === 'paid')), [filtered]);
 
-  const lotsDistribution = useMemo(() => {
-    const buckets = [
-      { name: '2 lots', min: 0, max: 2 },
-      { name: '3-5 lots', min: 3, max: 5 },
-      { name: '6-10 lots', min: 6, max: 10 },
-      { name: '11-20 lots', min: 11, max: 20 },
-      { name: '> 20 lots', min: 21, max: Infinity },
-    ];
-    const counts = new Array(buckets.length).fill(0);
-    filtered.forEach(r => {
-      const n = r.number_of_lots || 0;
-      if (n <= 0) return;
-      for (let i = 0; i < buckets.length; i++) {
-        if (n >= buckets[i].min && n <= buckets[i].max) { counts[i]++; break; }
-      }
-    });
-    return buckets.map((b, i) => ({ name: b.name, value: counts[i] })).filter(b => b.value > 0);
-  }, [filtered]);
+  const lotsDistribution = useMemo(() => bucketHalfOpen(filtered.map(r => Number(r.number_of_lots || 0)), [
+    { name: '2 lots', min: 1, max: 3 },
+    { name: '3-5 lots', min: 3, max: 6 },
+    { name: '6-10 lots', min: 6, max: 11 },
+    { name: '11-20 lots', min: 11, max: 21 },
+    { name: '> 20 lots', min: 21, max: Infinity },
+  ]), [filtered]);
 
-  const surfaceDist = useMemo(() => {
-    const buckets = [
-      { name: '< 500 m²', min: 0, max: 500 },
-      { name: '500-1000', min: 501, max: 1000 },
-      { name: '1K-5K', min: 1001, max: 5000 },
-      { name: '5K-10K', min: 5001, max: 10000 },
-      { name: '> 10K m²', min: 10001, max: Infinity },
-    ];
-    const counts = new Array(buckets.length).fill(0);
-    filtered.forEach(r => {
-      const a = r.parent_parcel_area_sqm || 0;
-      if (a <= 0) return;
-      for (let i = 0; i < buckets.length; i++) {
-        if (a >= buckets[i].min && a <= buckets[i].max) { counts[i]++; break; }
-      }
-    });
-    return buckets.map((b, i) => ({ name: b.name, value: counts[i] })).filter(b => b.value > 0);
-  }, [filtered]);
+  const surfaceDist = useMemo(() => bucketHalfOpen(filtered.map(r => Number(r.parent_parcel_area_sqm || 0)), [
+    { name: '< 500 m²', min: 0, max: 500 },
+    { name: '500-1000', min: 500, max: 1000 },
+    { name: '1K-5K', min: 1000, max: 5000 },
+    { name: '5K-10K', min: 5000, max: 10000 },
+    { name: '> 10K m²', min: 10000, max: Infinity },
+  ]), [filtered]);
 
   const stats = useMemo(() => {
     const totalLots = filtered.reduce((s, r) => s + (r.number_of_lots || 0), 0);
@@ -69,8 +48,7 @@ export const SubdivisionBlock: React.FC<Props> = memo(({ data }) => {
     const avgLots = filtered.length > 0 ? Math.round(totalLots / filtered.length * 10) / 10 : 0;
     const avgDays = avgProcessingDays(filtered, 'created_at', 'reviewed_at');
     const totalSurface = filtered.reduce((s, r) => s + (r.parent_parcel_area_sqm || 0), 0);
-    const totalRevenue = filtered.reduce((s, r) => s + (r.total_amount_usd || 0), 0);
-    return { totalLots, approved, avgLots, avgDays, totalSurface, totalRevenue };
+    return { totalLots, approved, avgLots, avgDays, totalSurface };
   }, [filtered]);
 
   const kpiItems = useMemo(() => [
