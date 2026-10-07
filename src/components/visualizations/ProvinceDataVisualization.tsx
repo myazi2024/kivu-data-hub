@@ -13,7 +13,6 @@ const TitleRequestsBlock = React.lazy(() => import('./blocks/TitleRequestsBlock'
 const ParcelsWithTitleBlock = React.lazy(() => import('./blocks/ParcelsWithTitleBlock').then(m => ({ default: m.ParcelsWithTitleBlock })));
 const ContributionsBlock = React.lazy(() => import('./blocks/ContributionsBlock').then(m => ({ default: m.ContributionsBlock })));
 const ExpertiseBlock = React.lazy(() => import('./blocks/ExpertiseBlock').then(m => ({ default: m.ExpertiseBlock })));
-const MutationBlock = React.lazy(() => import('./blocks/MutationBlock').then(m => ({ default: m.MutationBlock })));
 const SubdivisionBlock = React.lazy(() => import('./blocks/SubdivisionBlock').then(m => ({ default: m.SubdivisionBlock })));
 const DisputesBlock = React.lazy(() => import('./blocks/DisputesBlock').then(m => ({ default: m.DisputesBlock })));
 const MortgagesBlock = React.lazy(() => import('./blocks/MortgagesBlock').then(m => ({ default: m.MortgagesBlock })));
