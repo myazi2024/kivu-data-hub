@@ -2,36 +2,19 @@ import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { createLongLivedSignedUrl } from '@/utils/storageSignedUrl';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import WhatsAppFloatingButton from './WhatsAppFloatingButton';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Card, CardContent } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Separator } from '@/components/ui/separator';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Textarea } from '@/components/ui/textarea';
-import { Loader2, FileEdit, CreditCard, CheckCircle2, AlertTriangle, MapPin, Clock, Hash, Upload, X, FileText, Image, Eye, ArrowLeft, AlertCircle, FileSearch, ExternalLink, Calendar, DollarSign, Award, HelpCircle } from 'lucide-react';
+import { FileEdit, Upload } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useMutationRequest } from '@/hooks/useMutationRequest';
-import type { MutationFee, MutationRequest } from '@/types/mutation';
-import { MutationRequestWithProfile } from '@/types/mutation';
-import { LATE_FEE_CAP_USD, DAILY_LATE_FEE_USD, LEGAL_GRACE_PERIOD_DAYS } from '@/types/mutation';
+import type { MutationRequest } from '@/types/mutation';
 import { pollTransactionStatus } from '@/utils/pollTransactionStatus';
 import { isValidDrcMobileNumber } from '@/utils/expertisePaymentHelper';
 import { usePaymentConfig } from '@/hooks/usePaymentConfig';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { toast } from 'sonner';
-import { format, differenceInDays, addMonths } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import { differenceInDays, addMonths } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import RealEstateExpertiseRequestDialog from './RealEstateExpertiseRequestDialog';
 import FormIntroDialog, { FORM_INTRO_CONFIGS } from './FormIntroDialog';
-import SectionHelpPopover from './SectionHelpPopover';
-import MutationLateFeeSection from './mutation/MutationLateFeeSection';
 import {
   MUTATION_TYPES,
   LEGAL_STATUS_OPTIONS,
