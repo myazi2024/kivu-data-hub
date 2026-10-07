@@ -78,16 +78,6 @@ export const CROSS_VARIABLE_REGISTRY: Record<string, Record<string, CrossVariabl
     'equipment': [{ label: 'Province', field: 'province' }, { label: 'Qualité', field: 'construction_quality' }, { label: 'Condition', field: 'property_condition' }],
     'proximity': [{ label: 'Province', field: 'province' }, { label: 'Qualité', field: 'construction_quality' }],
   },
-  'mutations': {
-    'status': [{ label: 'Type mutation', field: 'mutation_type' }, { label: 'Province', field: 'province' }, { label: 'Paiement', field: 'payment_status' }],
-    'mutation-type': [{ label: 'Statut', field: 'status' }, { label: 'Province', field: 'province' }, { label: 'Paiement', field: 'payment_status' }],
-    'requester-type': [{ label: 'Statut', field: 'status' }, { label: 'Province', field: 'province' }],
-    'payment': [{ label: 'Statut', field: 'status' }, { label: 'Type mutation', field: 'mutation_type' }, { label: 'Province', field: 'province' }],
-    'market-value': [{ label: 'Type mutation', field: 'mutation_type' }, { label: 'Province', field: 'province' }],
-    'title-age': [{ label: 'Type mutation', field: 'mutation_type' }, { label: 'Province', field: 'province' }],
-    'late-fees': [{ label: 'Type mutation', field: 'mutation_type' }, { label: 'Province', field: 'province' }],
-    'revenue-trend': [{ label: 'Type mutation', field: 'mutation_type' }, { label: 'Province', field: 'province' }],
-  },
   'subdivision': {
     'status': [{ label: 'Objet', field: 'purpose_of_subdivision' }, { label: 'Province', field: 'province' }, { label: 'Demandeur', field: 'requester_type' }],
     'lots-distribution': [{ label: 'Province', field: 'province' }, { label: 'Objet', field: 'purpose_of_subdivision' }],

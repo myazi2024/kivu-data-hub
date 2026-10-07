@@ -43,7 +43,6 @@ const TAB_FILTER_DEFAULTS: Record<string, TabFilterConfig> = {
   'parcels-titled': { hideStatus: false, hideTime: false, hideLocation: false, dateField: 'created_at' },
   'contributions': { hideStatus: false, hideTime: false, hideLocation: false, dateField: 'created_at' },
   'expertise': { hideStatus: false, hideTime: false, hideLocation: false, dateField: 'created_at' },
-  'mutations': { hideStatus: false, hideTime: false, hideLocation: false, dateField: 'created_at' },
   'mortgages': { hideStatus: false, hideTime: false, hideLocation: false, dateField: 'created_at' },
   'subdivision': { hideStatus: false, hideTime: false, hideLocation: false, dateField: 'created_at' },
   'disputes': { hideStatus: false, hideTime: false, hideLocation: false, dateField: 'created_at', statusField: 'current_status' },
