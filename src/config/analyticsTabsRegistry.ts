@@ -309,25 +309,6 @@ export const ANALYTICS_TABS_REGISTRY: Record<string, { label: string; charts: Ch
       { tab_key: 'invoices', item_key: 'kpi-discounts', item_type: 'kpi', is_visible: true, display_order: 4, custom_title: 'Remises' },
     ],
   },
-  'building-permits': {
-    label: 'Autorisations',
-    charts: [
-      { tab_key: 'building-permits', item_key: 'status', item_type: 'chart', is_visible: true, display_order: 0, custom_title: 'Statut administratif', chart_type: 'bar-v' },
-      { tab_key: 'building-permits', item_key: 'current-status', item_type: 'chart', is_visible: true, display_order: 1, custom_title: 'En cours vs Expiré', chart_type: 'pie' },
-      { tab_key: 'building-permits', item_key: 'issuing-service', item_type: 'chart', is_visible: true, display_order: 2, custom_title: 'Service émetteur', chart_type: 'bar-h' },
-      { tab_key: 'building-permits', item_key: 'validity-period', item_type: 'chart', is_visible: true, display_order: 3, custom_title: 'Période de validité', chart_type: 'bar-v' },
-      { tab_key: 'building-permits', item_key: 'permit-type', item_type: 'chart', is_visible: true, display_order: 4, custom_title: 'Type de permis', chart_type: 'pie' },
-      { tab_key: 'building-permits', item_key: 'geo', item_type: 'chart', is_visible: true, display_order: 5, custom_title: 'Géographie' },
-      { tab_key: 'building-permits', item_key: 'evolution', item_type: 'chart', is_visible: true, display_order: 6, custom_title: 'Évolution', chart_type: 'area', col_span: 2 },
-    ],
-    kpis: [
-      { tab_key: 'building-permits', item_key: 'kpi-total', item_type: 'kpi', is_visible: true, display_order: 0, custom_title: 'Total' },
-      { tab_key: 'building-permits', item_key: 'kpi-approved', item_type: 'kpi', is_visible: true, display_order: 1, custom_title: 'Approuvées' },
-      { tab_key: 'building-permits', item_key: 'kpi-pending', item_type: 'kpi', is_visible: true, display_order: 2, custom_title: 'En attente' },
-      { tab_key: 'building-permits', item_key: 'kpi-rejected', item_type: 'kpi', is_visible: true, display_order: 3, custom_title: 'Rejetées' },
-      { tab_key: 'building-permits', item_key: 'kpi-approval-rate', item_type: 'kpi', is_visible: true, display_order: 4, custom_title: 'Taux approbation' },
-    ],
-  },
   'taxes': {
     label: 'Taxes foncières',
     charts: [

@@ -432,29 +432,6 @@ const invoicesProfile: MapTabProfile = {
   },
 };
 
-const buildingPermitsProfile: MapTabProfile = {
-  tabKey: 'building-permits',
-  label: 'Autorisations',
-  legendTitle: 'Autorisations délivrées',
-  tiers: makeTiers([5, 25, 100], PALETTES.orange),
-  palette: PALETTES.orange,
-  dataSource: 'cadastral_building_permits',
-  hasData: ({ analytics, provinceName }) => filterProv(analytics.buildingPermits, provinceName).length > 0,
-  metric: ({ analytics, provinceName }) => filterProv(analytics.buildingPermits, provinceName).length,
-  tooltipLines: ({ analytics, provinceName }) => {
-    const p = filterProv(analytics.buildingPermits, provinceName);
-    const approved = p.filter(x => x.administrative_status === 'approved' || x.administrative_status === 'valid').length;
-    const rejected = p.filter(x => x.administrative_status === 'rejected').length;
-    const pending = p.filter(x => x.administrative_status === 'pending').length;
-    return [
-      { label: 'Total',     value: fmtN(p.length),  color: 'text-primary' },
-      { label: 'Approuvées',value: fmtN(approved),  color: 'text-emerald-600' },
-      { label: 'Rejetées',  value: fmtN(rejected),  color: 'text-red-600' },
-      { label: 'En cours',  value: fmtN(pending),   color: 'text-amber-600' },
-    ];
-  },
-};
-
 const taxesProfile: MapTabProfile = {
   tabKey: 'taxes',
   label: 'Taxes foncières',
@@ -538,7 +515,6 @@ export const MAP_TAB_PROFILES: Record<string, MapTabProfile> = {
   'ownership': ownershipProfile,
   'certificates': certificatesProfile,
   'invoices': invoicesProfile,
-  'building-permits': buildingPermitsProfile,
   'taxes': taxesProfile,
   'rental-market': rentalMarketProfile,
 };

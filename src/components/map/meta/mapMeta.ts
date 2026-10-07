@@ -126,7 +126,6 @@ export function sliceAnalyticsByPredicate(
     ownershipHistory: slice(analytics.ownershipHistory),
     certificates: slice(analytics.certificates),
     invoices: slice(analytics.invoices),
-    buildingPermits: slice(analytics.buildingPermits),
     taxHistory: slice(analytics.taxHistory),
   };
 }

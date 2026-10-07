@@ -115,13 +115,6 @@ export const CROSS_VARIABLE_REGISTRY: Record<string, Record<string, CrossVariabl
     'status': [{ label: 'Créancier', field: 'creditor_type' }, { label: 'Province', field: 'province' }],
     'duration': [{ label: 'Province', field: 'province' }, { label: 'Créancier', field: 'creditor_type' }, { label: 'Statut', field: 'mortgage_status' }],
   },
-  'building-permits': {
-    'status': [{ label: 'Service', field: 'issuing_service' }, { label: 'Province', field: 'province' }],
-    'current-status': [{ label: 'Province', field: 'province' }, { label: 'Service', field: 'issuing_service' }, { label: 'Type permis', field: 'permit_type' }],
-    'issuing-service': [{ label: 'Statut', field: 'administrative_status' }, { label: 'Province', field: 'province' }],
-    'permit-type': [{ label: 'Statut', field: 'administrative_status' }, { label: 'Province', field: 'province' }],
-    'validity-period': [{ label: 'Province', field: 'province' }, { label: 'Statut', field: 'administrative_status' }, { label: 'Type permis', field: 'permit_type' }],
-  },
   'taxes': {
     'status': [{ label: 'Exercice', field: 'tax_year' }, { label: 'Province', field: 'province' }],
     'fiscal-year': [{ label: 'Statut', field: 'payment_status' }, { label: 'Province', field: 'province' }],

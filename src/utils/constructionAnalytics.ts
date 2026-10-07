@@ -196,3 +196,20 @@ export function entrancesData(records: any[]): NamedValue[] {
   });
   return order.filter(k => m.get(k)).map(k => ({ name: k, value: m.get(k)! }));
 }
+
+/**
+ * Autorisation de la construction principale déclarée (hors terrain nu) :
+ * toujours les trois valeurs, dans l'ordre. Une construction ayant les deux
+ * types compte dans « autorisation de bâtir ».
+ */
+export function permitStatusData(records: any[]): NamedValue[] {
+  const labels = ['Avec autorisation de bâtir', 'Avec autorisation de régularisation', 'Sans autorisation de bâtir'];
+  const counts = [0, 0, 0];
+  for (const r of records || []) {
+    if (!r?.property_category || r.property_category === 'Terrain nu') continue;
+    const permits = Array.isArray(r.building_permits) ? r.building_permits : [];
+    const types = new Set(permits.map((p: any) => p?.permitType ?? p?.permit_type));
+    counts[types.has('construction') ? 0 : types.has('regularization') ? 1 : 2]++;
+  }
+  return labels.map((name, i) => ({ name, value: counts[i] }));
+}
