@@ -14,6 +14,7 @@ import { normalizeConstructionType } from '@/utils/constructionTypeNormalizer';
 import { normalizeDeclaredUsage } from '@/utils/declaredUsageNormalizer';
 import { useBlockFilter } from '@/hooks/useBlockFilter';
 import { applyFilters } from '@/utils/analyticsHelpers';
+import * as CA from '@/utils/constructionAnalytics';
 
 interface Props { data: LandAnalyticsData; }
 
@@ -247,13 +248,38 @@ export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
   // Construction evolution trend (based on built parcels)
   const constructionTrend = useMemo(() => trendByMonth(builtParcels), [builtParcels]);
 
+  // Indicateurs du bloc Construction du CCC (principale + supplémentaires)
+  const flatConstr = useMemo(() => CA.flattenConstructions(builtParcels), [builtParcels]);
+  const flatContribConstr = useMemo(() => CA.flattenConstructions(filteredContribs), [filteredContribs]);
+  const cccData = useMemo(() => ({
+    status: CA.constructionStatusData(flatConstr),
+    rented: CA.rentedData(flatConstr),
+    config: CA.rentalConfigurationData(flatConstr),
+    unitsCount: CA.rentalUnitsCountData(flatConstr),
+    unitsOcc: CA.rentalUnitsOccupancyData(flatConstr),
+    actual: CA.actualVsDeclaredData(flatContribConstr),
+    opCap: CA.operationalCapacityData(flatContribConstr),
+    boundary: CA.boundaryKindData(filteredParcels),
+    road: CA.roadAccessData(filteredParcels),
+    surface: CA.roadSurfaceData(filteredParcels),
+    entrances: CA.entrancesData(filteredParcels),
+  }), [flatConstr, flatContribConstr, filteredParcels]);
+  const maisonBasseCount = useMemo(() => flatConstr.filter(c => c.category === 'Maison basse').length, [flatConstr]);
+  const inProgressCount = useMemo(() => flatConstr.filter(c => c.status === 'in_progress').length, [flatConstr]);
+  const rentedCount = useMemo(() => flatConstr.filter(c => c.isRented === true).length, [flatConstr]);
+  const vacantUnits = useMemo(() => CA.vacantUnitsCount(flatConstr), [flatConstr]);
+
   const kpiItems = useMemo(() => [
     { key: 'kpi-constructions', label: ct('kpi-constructions', 'Constructions'), value: builtParcels.length, cls: 'text-primary' },
     { key: 'kpi-occupied', label: ct('kpi-occupied', 'Habitées'), value: occupiedCount, cls: 'text-teal-600', tooltip: pct(occupiedCount, builtParcels.length) },
     { key: 'kpi-hosting', label: ct('kpi-hosting', 'Cap. accueil'), value: totalHostingCapacity > 0 ? totalHostingCapacity.toLocaleString() : 'N/A', cls: 'text-indigo-600', tooltip: 'Capacité d\'accueil totale' },
     { key: 'kpi-avg-capacity', label: ct('kpi-avg-capacity', 'Cap. moy.'), value: avgHostingCapacity > 0 ? avgHostingCapacity.toLocaleString() : 'N/A', cls: 'text-cyan-600', tooltip: 'Capacité moyenne par construction' },
     { key: 'kpi-multi-constr', label: ct('kpi-multi-constr', 'Multi-constr.'), value: multiConstructionCount, cls: 'text-orange-600', tooltip: pct(multiConstructionCount, builtParcels.length) },
-  ].filter(k => v(k.key)), [builtParcels, occupiedCount, totalHostingCapacity, avgHostingCapacity, multiConstructionCount, v, ct]);
+    { key: 'kpi-maison-basse', label: ct('kpi-maison-basse', 'Maisons basses'), value: maisonBasseCount, cls: 'text-amber-600', tooltip: pct(maisonBasseCount, flatConstr.length) },
+    { key: 'kpi-in-progress', label: ct('kpi-in-progress', 'En cours'), value: inProgressCount, cls: 'text-yellow-600', tooltip: pct(inProgressCount, flatConstr.length) },
+    { key: 'kpi-rented', label: ct('kpi-rented', 'Mises en location'), value: rentedCount, cls: 'text-emerald-600', tooltip: pct(rentedCount, flatConstr.length) },
+    { key: 'kpi-vacant-units', label: ct('kpi-vacant-units', 'Locaux vacants'), value: vacantUnits, cls: 'text-rose-600' },
+  ].filter(k => v(k.key)), [flatConstr, maisonBasseCount, inProgressCount, rentedCount, vacantUnits, builtParcels, occupiedCount, totalHostingCapacity, avgHostingCapacity, multiConstructionCount, v, ct]);
 
   const chartDefs = useMemo(() => [
     { key: 'construction-type', el: () => <ChartCard title={ct('construction-type', 'Construction')} icon={Building} data={charts.byConstructionType} type={ty('construction-type', 'bar-h')} colorIndex={3}
@@ -294,10 +320,21 @@ export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
       insight={generateInsight(soundEnvData, 'donut', "l'environnement sonore")} crossVariables={cx('sound-env')} rawRecords={filteredContribs} groupField="sound_environment" /> },
     { key: 'noise-sources', el: () => <ChartCard title={ct('noise-sources', 'Sources de bruit')} icon={Ear} data={noiseSourcesData} type={ty('noise-sources', 'bar-v')} colorIndex={11} hidden={noiseSourcesData.length === 0}
       insight={generateInsight(noiseSourcesData, 'bar-v', 'les sources de bruit')} crossVariables={cx('noise-sources')} rawRecords={filteredContribs} groupField="nearby_noise_sources" /> },
+    { key: 'construction-status', el: () => <ChartCard title={ct('construction-status', "État de la construction")} data={cccData.status} type={ty('construction-status', 'pie')} colorIndex={0} hidden={cccData.status.length === 0} insight={generateInsight(cccData.status, 'pie', "l'état des constructions")} crossVariables={cx('construction-status')} /> },
+    { key: 'rented', el: () => <ChartCard title={ct('rented', "Mise en location")} data={cccData.rented} type={ty('rented', 'pie')} colorIndex={1} hidden={cccData.rented.length === 0} insight={generateInsight(cccData.rented, 'pie', "la mise en location")} crossVariables={cx('rented')} /> },
+    { key: 'rental-config', el: () => <ChartCard title={ct('rental-config', "Mode de location")} data={cccData.config} type={ty('rental-config', 'donut')} colorIndex={2} hidden={cccData.config.length === 0} insight={generateInsight(cccData.config, 'donut', "le mode de location")} crossVariables={cx('rental-config')} /> },
+    { key: 'rental-units-count', el: () => <ChartCard title={ct('rental-units-count', "Nombre de locaux")} data={cccData.unitsCount} type={ty('rental-units-count', 'bar-v')} colorIndex={3} hidden={cccData.unitsCount.length === 0} insight={generateInsight(cccData.unitsCount, 'bar-v', "le nombre de locaux")} crossVariables={cx('rental-units-count')} /> },
+    { key: 'rental-units-occupancy', el: () => <ChartCard title={ct('rental-units-occupancy', "Occupation des locaux")} data={cccData.unitsOcc} type={ty('rental-units-occupancy', 'donut')} colorIndex={4} hidden={cccData.unitsOcc.length === 0} insight={generateInsight(cccData.unitsOcc, 'donut', "l'occupation des locaux")} crossVariables={cx('rental-units-occupancy')} /> },
+    { key: 'actual-usage', el: () => <ChartCard title={ct('actual-usage', "Usage réel vs déclaré")} data={cccData.actual} type={ty('actual-usage', 'bar-h')} colorIndex={5} hidden={cccData.actual.length === 0} insight={generateInsight(cccData.actual, 'bar-h', "l'usage réel")} crossVariables={cx('actual-usage')} /> },
+    { key: 'operational-capacity', el: () => <ChartCard title={ct('operational-capacity', "Capacité d'exploitation")} data={cccData.opCap} type={ty('operational-capacity', 'bar-h')} colorIndex={6} hidden={cccData.opCap.length === 0} insight={generateInsight(cccData.opCap, 'bar-h', "la capacité d'exploitation")} crossVariables={cx('operational-capacity')} /> },
+    { key: 'boundary-kind', el: () => <ChartCard title={ct('boundary-kind', "Limites de la parcelle")} data={cccData.boundary} type={ty('boundary-kind', 'donut')} colorIndex={7} hidden={cccData.boundary.length === 0} insight={generateInsight(cccData.boundary, 'donut', "les limites des parcelles")} crossVariables={cx('boundary-kind')} /> },
+    { key: 'road-access', el: () => <ChartCard title={ct('road-access', "Accès routier")} data={cccData.road} type={ty('road-access', 'bar-v')} colorIndex={8} hidden={cccData.road.length === 0} insight={generateInsight(cccData.road, 'bar-v', "l'accès routier")} crossVariables={cx('road-access')} /> },
+    { key: 'road-surface', el: () => <ChartCard title={ct('road-surface', "Revêtement des routes")} data={cccData.surface} type={ty('road-surface', 'bar-h')} colorIndex={9} hidden={cccData.surface.length === 0} insight={generateInsight(cccData.surface, 'bar-h', "le revêtement des routes")} crossVariables={cx('road-surface')} /> },
+    { key: 'entrances', el: () => <ChartCard title={ct('entrances', "Entrées")} data={cccData.entrances} type={ty('entrances', 'bar-v')} colorIndex={10} hidden={cccData.entrances.length === 0} insight={generateInsight(cccData.entrances, 'bar-v', "les entrées")} crossVariables={cx('entrances')} /> },
     { key: 'construction-geo', el: () => <GeoCharts records={builtParcels} /> },
     { key: 'construction-evolution', el: () => <ChartCard title={ct('construction-evolution', 'Évolution constructions')} icon={TrendingUp} data={constructionTrend} type={ty('construction-evolution', 'area')} colorIndex={0} colSpan={2}
       insight={generateInsight(constructionTrend, 'area', 'les constructions')} /> },
-  ].filter(d => v(d.key)).sort((a, b) => ord(a.key) - ord(b.key)), [filteredParcels, builtParcels, filteredContribs, normalizedParcels, parcelsWithCapacity, charts, permitTypeData, buildingSizeData, buildingHeightData, apartmentSizeData, apartmentOrientationData, soundEnvData, noiseSourcesData, occupationData, floorDistData, hostingCapacityData, occupancyPressureData, builtVsUnbuiltData, constructionTrend, v, ct, cx, ty, ord]);
+  ].filter(d => v(d.key)).sort((a, b) => ord(a.key) - ord(b.key)), [filteredParcels, builtParcels, filteredContribs, normalizedParcels, parcelsWithCapacity, charts, permitTypeData, buildingSizeData, buildingHeightData, apartmentSizeData, apartmentOrientationData, soundEnvData, noiseSourcesData, occupationData, floorDistData, hostingCapacityData, occupancyPressureData, builtVsUnbuiltData, constructionTrend, cccData, v, ct, cx, ty, ord]);
 
   return (
     <FilterLabelContext.Provider value={filterLabel}>
