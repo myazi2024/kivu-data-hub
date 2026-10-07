@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Sparkles, Clock, Beaker, Tag, FileText, ArrowRightLeft, Landmark, ShieldCheck, Calculator, LayoutGrid, AlertTriangle, Award, ScrollText, ChevronDown } from 'lucide-react';
@@ -20,6 +20,7 @@ interface ParcelActionsDropdownProps {
   parcelData?: any;
   expanded: boolean;
   onCollapse: () => void;
+  onDetailExpandedChange?: (expanded: boolean) => void;
   onRequestLandTitle?: () => void;
 }
 
@@ -86,7 +87,7 @@ const ActionIcon: React.FC<{ iconName?: string; actionKey: string; className?: s
 };
 
 const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
-  parcelNumber, parcelId, parcelData, expanded, onCollapse, onRequestLandTitle
+  parcelNumber, parcelId, parcelData, expanded, onCollapse, onDetailExpandedChange, onRequestLandTitle
 }) => {
   const { actions } = useParcelActionsConfig();
   const [showMutationDialog, setShowMutationDialog] = useState(false);
@@ -101,8 +102,24 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
   // autre réduit automatiquement la précédente)
   const [expandedDetailId, setExpandedDetailId] = useState<string | null>(null);
   const toggleDetails = useCallback((actionId: string) => {
-    setExpandedDetailId(prev => (prev === actionId ? null : actionId));
-  }, []);
+    setExpandedDetailId(prev => {
+      const next = prev === actionId ? null : actionId;
+      onDetailExpandedChange?.(next !== null);
+      return next;
+    });
+  }, [onDetailExpandedChange]);
+
+  useEffect(() => {
+    if (expanded) return;
+    setExpandedDetailId(null);
+    onDetailExpandedChange?.(false);
+  }, [expanded, onDetailExpandedChange]);
+
+  const collapseMobileDetails = useCallback(() => {
+    if (!expandedDetailId) return;
+    setExpandedDetailId(null);
+    onDetailExpandedChange?.(false);
+  }, [expandedDetailId, onDetailExpandedChange]);
 
   const lastFocusedIndexRef = useRef<number | null>(null);
   const handleMenuItemFocus = useCallback((index: number) => {
@@ -190,36 +207,87 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
                 <span className="hidden sm:inline">Services disponibles</span>
               </p>
             </div>
-            <span className="text-[9px] text-muted-foreground font-medium bg-muted/50 px-1.5 py-0.5 rounded-full">{visibleActions.length}</span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[9px] text-muted-foreground font-medium bg-muted/50 px-1.5 py-0.5 rounded-full">{visibleActions.length}</span>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={onCollapse}
+                className="h-8 w-8 sm:hidden"
+                aria-label="Fermer le menu Actions"
+              >
+                <ChevronDown className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
-          <div className="sm:hidden overflow-x-auto overscroll-x-contain scrollbar-thin px-2.5 pb-2" aria-label="Services disponibles">
-            <div className="flex w-max gap-1.5">
+          <div
+            className="sm:hidden min-h-0 flex-1 overflow-x-auto overscroll-x-contain scrollbar-thin px-2.5 pb-2 snap-x snap-mandatory touch-pan-x"
+            aria-label="Services disponibles"
+            onScroll={collapseMobileDetails}
+          >
+            <div className="flex h-full w-max gap-2">
               {visibleActions.map((action, index) => {
                 const blockedReason = action.isActive ? getBlockedReason(action.key) : null;
                 const disabled = !action.isActive || !!blockedReason;
+                const detailExpanded = expandedDetailId === action.id;
                 return (
-                  <Button
+                  <article
                     key={action.id}
-                    type="button"
-                    variant="outline"
-                    onClick={() => handleActionClick(action)}
                     onFocus={() => handleMenuItemFocus(index)}
-                    disabled={disabled}
-                    title={blockedReason ?? action.description}
+                    className={`flex h-full w-[15rem] max-w-[calc(100vw-3.5rem)] shrink-0 snap-start flex-col rounded-lg border bg-background px-3 py-2 text-left shadow-sm transition-[border-color,box-shadow] motion-reduce:transition-none ${disabled ? 'border-border/50 opacity-55' : 'border-border/80'}`}
                     aria-label={`${action.label}${blockedReason ? `. ${blockedReason}` : ''}`}
-                    className="h-14 w-[7.25rem] shrink-0 justify-start gap-2 px-2 py-1 rounded-lg border-border/70 bg-background text-left shadow-none disabled:opacity-45"
                   >
-                    <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-md ${disabled ? 'bg-muted text-muted-foreground/50' : 'bg-primary/10 text-primary'}`}>
-                      <ActionIcon iconName={action.iconName} actionKey={action.key} className="h-4 w-4" />
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="line-clamp-2 whitespace-normal text-[11px] font-medium leading-tight text-foreground">{action.label}</span>
-                      <span className="mt-0.5 block">
-                        <ActionBadge badge={action.badge} />
+                    <div className="flex min-w-0 items-center gap-2">
+                      <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-md ${disabled ? 'bg-muted text-muted-foreground/50' : 'bg-primary/10 text-primary'}`}>
+                        <ActionIcon iconName={action.iconName} actionKey={action.key} className="h-4 w-4" />
                       </span>
-                      {disabled && <span className="sr-only">Indisponible</span>}
-                    </span>
-                  </Button>
+                      <div className="min-w-0 flex-1">
+                        <h4 className="line-clamp-1 text-xs font-semibold leading-tight text-foreground">{action.label}</h4>
+                        <ActionBadge badge={action.badge} />
+                      </div>
+                    </div>
+
+                    <p className={`mt-1.5 text-[11px] leading-snug text-muted-foreground ${detailExpanded ? 'line-clamp-1' : 'line-clamp-2'}`}>
+                      {blockedReason ?? action.description}
+                    </p>
+
+                    {detailExpanded && action.detailedDescription && (
+                      <div
+                        className="mt-1.5 min-h-0 flex-1 overflow-y-auto overscroll-contain rounded-md border border-border/60 bg-muted/25 px-2.5 py-2 text-[11px] leading-relaxed text-muted-foreground scrollbar-thin touch-pan-y"
+                        tabIndex={0}
+                        aria-label={`Explication de ${action.label}`}
+                      >
+                        {action.detailedDescription}
+                      </div>
+                    )}
+
+                    <div className="mt-auto flex items-center gap-2 pt-2">
+                      {action.detailedDescription && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          aria-expanded={detailExpanded}
+                          onClick={() => toggleDetails(action.id)}
+                          className="h-11 flex-1 justify-center gap-1 px-2 text-[11px]"
+                        >
+                          {detailExpanded ? 'Réduire' : 'En savoir plus'}
+                          <ChevronDown className={`h-3.5 w-3.5 transition-transform motion-reduce:transition-none ${detailExpanded ? 'rotate-180' : ''}`} />
+                        </Button>
+                      )}
+                      <Button
+                        type="button"
+                        size="sm"
+                        disabled={disabled}
+                        onClick={() => handleActionClick(action)}
+                        className="h-11 flex-1 px-3 text-xs"
+                      >
+                        Ouvrir
+                      </Button>
+                    </div>
+                    {disabled && <span className="sr-only">Indisponible</span>}
+                  </article>
                 );
               })}
             </div>
