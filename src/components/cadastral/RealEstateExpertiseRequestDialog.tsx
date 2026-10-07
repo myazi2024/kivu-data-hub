@@ -151,6 +151,8 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
   const [paymentPhone, setPaymentPhone] = useState('');
   const [processingPayment, setProcessingPayment] = useState(false);
   const [formData, setFormData] = useState<any>(null);
+  /** Demande créée lors d'une tentative de paiement échouée (réutilisée au nouvel essai). */
+  const pendingRequestRef = useRef<Awaited<ReturnType<typeof createExpertiseRequest>>>(null);
 
   // === CCC PICKLISTS ===
   const { getOptions, getDependentOptions, loading: picklistsLoading } = useCCCFormPicklists();
@@ -1135,8 +1137,6 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     pendingRequestRef.current = null;
     setStep('payment');
   };
-
-  const pendingRequestRef = useRef<Awaited<ReturnType<typeof createExpertiseRequest>>>(null);
 
   const handlePayment = async () => {
     if (!user || !formData || processingPayment) return;
