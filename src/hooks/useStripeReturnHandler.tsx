@@ -68,7 +68,7 @@ export const useStripeReturnHandler = () => {
           }
           // L'acheteur n'est pas propriétaire de la demande : le certificat
           // s'ouvre uniquement via le lien signé délivré par le serveur.
-          queryClient.invalidateQueries({ queryKey: ['parcel-expertise-certificate'] });
+          queryClient.invalidateQueries({ queryKey: ['parcel-valid-expertise-certificate'] });
           try {
             await openExpertiseCertificate(completed.expertise_request_id, null);
             toast.success('Paiement réussi ! Le certificat a été ouvert.');
