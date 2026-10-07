@@ -171,12 +171,14 @@ Deno.serve(async (req) => {
       if (!invoice_id) throw new Error('Identifiant du paiement manquant.');
       const { data: ep, error: epError } = await supabase
         .from('expertise_payments')
-        .select('id, user_id, status, total_amount_usd')
+        .select('id, user_id, status, total_amount_usd, payment_kind')
         .eq('id', invoice_id)
         .eq('user_id', user.id)
         .single();
       if (epError || !ep) throw new Error('Paiement introuvable.');
       if (ep.status !== 'pending') throw new Error("Ce paiement n'est plus payable.");
+      // La nature du paiement est fixée par le serveur à la création de la ligne.
+      if (ep.payment_kind && ep.payment_kind !== payment_type) throw new Error('Type de paiement incohérent.');
       if (Math.round(Number(ep.total_amount_usd) * 100) !== Math.round(Number(amount_usd) * 100)) {
         throw new Error('Le montant du paiement ne correspond pas au montant enregistré.');
       }
