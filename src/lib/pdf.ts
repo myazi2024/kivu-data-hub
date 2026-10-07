@@ -828,15 +828,6 @@ export async function generateCadastralReport(
     currentY += 4.5;
   };
 
-  const lockedSection = (title: string) => {
-    ensureSpace(12);
-    doc.setTextColor(...LIGHT_GRAY);
-    doc.setFont('helvetica', 'italic');
-    doc.setFontSize(8);
-    doc.text(`[${title} — Section non incluse dans votre achat]`, margin, currentY);
-    currentY += 6;
-  };
-
 
   // ===== PAGE 1: COVER =====
   totalPages = 1;
