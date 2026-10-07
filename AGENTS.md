@@ -1,7 +1,7 @@
 - Keep loading-image settings in `app_appearance_config`, applying them once at the root and styling existing loading indicators through shared CSS; this avoids per-indicator network calls across lazy-loaded screens.
 - Land-district maps and Analytics share `getLandDistrictAnchor`: only exact, non-partial same-province territory/ville/commune anchors receive bundled GeoJSON boundaries; no boundary is approximated.
-- Home BIC figures are public aggregates from a service-only database function exposed through a counts-only Edge Function; this keeps personal records private while switching each configured display figure after 10,000 real records.
-- District-level home activity totals join paid delivered service access and registered disputes to existing parcel numbers in a service-only function; this avoids exposing individual records or guessing districts for unmatched parcels.- Home counts (map + footer) come from one shared react-query hook `useHomeBicCounts`; avoids duplicate calls to home-bic-counts.
+- Home BIC figures: public aggregates via a service-only DB function behind a counts-only Edge Function; each configured display figure switches after 10,000 real records.
+- District home activity totals join paid service access and disputes to existing parcels in a service-only function; no individual records, no guessed districts.- Home counts (map + footer) come from one shared react-query hook `useHomeBicCounts`; avoids duplicate calls to home-bic-counts.
 - CCC admin approve/reject go through approve_ccc_contribution / reject_ccc_contribution RPCs (admin check + status guard + rejection notification server-side); never direct table updates.
 - payment_transactions : insertion réservée au serveur (record-test-payment pour le mode test) ; le navigateur ne crée jamais de transaction.
 - Recours et retrait de contribution CCC passent par process_ccc_appeal / withdraw_ccc_contribution (contrôle admin + statut serveur) ; jamais de mise à jour directe.
@@ -10,8 +10,8 @@
 - Fonctions internes (tâches planifiées, remboursements, relances, test prestataire) : accès via `_shared/internalAuth.ts` (secret cron en base `internal_cron_secrets` ou admin/super_admin) ; jamais publiques.
 - Exports CSV : toute cellule passe par `sanitizeCsvCell` (neutralise les formules tableur).
 - Cadastral map road details read the public `road_sides` and annotate only the selected parcel's declared boundary segments; this preserves free access without inventing road geometry.
-- Cadastral map building overlays read only the sanitized public `building_outlines` projection of approved parcel shapes; this exposes requested measurements without leaking raw building JSON or inventing footprints.
-- Cadastral map parcels use the primary boundary treatment while declared building footprints use the semantic map-building token; this keeps land boundaries and structures visually distinct in both themes.
+- Cadastral map building overlays read only the sanitized public `building_outlines` projection; no raw building JSON, no invented footprints.
+- Map parcels use the primary boundary style, buildings the map-building token, to stay distinct in both themes.
 - CCC fraud fields (is_suspicious, fraud_score, fraud_reason) are recomputed by the `enforce_contribution_fraud_score` trigger and suspicious rows logged to fraud_attempts by `log_suspicious_contribution`; the browser never sends them, since client values could be forged.
 - Browser-callable SECURITY DEFINER RPCs must check the caller's role or ownership inside the function; legacy unguarded ones are wrapped (`<name>` guard → `<name>__impl`, service_role only) so cron/service calls still work. Server-only helpers have no anon/authenticated EXECUTE.
 - Catalogue service availability rules read the server data_availability existence flags, never the gated history arrays; histories stay empty until payment.
