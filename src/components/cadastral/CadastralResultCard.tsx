@@ -1,7 +1,7 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useMemo } from 'react';
 import { CadastralSearchResult } from '@/hooks/useCadastralSearch';
 import { useCadastralServices } from '@/hooks/useCadastralServices';
-import { checkMultipleServiceAccess } from '@/utils/checkServiceAccess';
+import { activeServices, EMPTY_ACCESS } from '@/lib/cadastralResultAccess';
 import { useAuth } from '@/hooks/useAuth';
 import CadastralBillingPanel from './CadastralBillingPanel';
 import CadastralInvoice from './CadastralInvoice';
@@ -13,77 +13,42 @@ import { useInvoiceTemplateConfig } from '@/hooks/useInvoiceTemplateConfig';
 interface CadastralResultCardProps {
   result: CadastralSearchResult;
   onClose: () => void;
-  selectedServices?: string[];
   onPaymentSuccess?: (services: string[]) => void;
 }
 
-const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClose, selectedServices = [], onPaymentSuccess }) => {
+const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClose, onPaymentSuccess }) => {
   const [isDownloadingInvoice, setIsDownloadingInvoice] = useState(false);
   const [showBillingPanel, setShowBillingPanel] = useState(true);
-  const [paidServices, setPaidServices] = useState<string[]>([]);
   const [showInvoice, setShowInvoice] = useState(false);
-  const [preselectServiceId, setPreselectServiceId] = useState<string | undefined>(undefined);
   const [invoiceFormat, setInvoiceFormat] = useState<'mini' | 'a4'>('a4');
   const [showContributionDialog, setShowContributionDialog] = useState(false);
-  const { parcel, ownership_history, tax_history, mortgage_history, boundary_history, building_permits } = result;
+  const { parcel } = result;
   const { services: catalogServices } = useCadastralServices();
   const { user } = useAuth();
   const { config: invoiceTplConfig } = useInvoiceTemplateConfig();
 
-  // Sync default format from admin config
+  // Services achetés : uniquement la liste calculée par le serveur (rechargée après paiement).
+  const paidServices = useMemo(() => activeServices(result.access ?? EMPTY_ACCESS), [result.access]);
+
   React.useEffect(() => {
     if (invoiceTplConfig?.default_format) {
       setInvoiceFormat(invoiceTplConfig.default_format);
     }
   }, [invoiceTplConfig?.default_format]);
 
-  const catalogServiceIdsRef = useRef<string[]>([]);
+  // Tout le catalogue déjà acquis pour cette parcelle : afficher directement la fiche.
+  const catalogIdsKey = catalogServices.map((s) => s.id).join(',');
   React.useEffect(() => {
-    if (catalogServices.length > 0) {
-      catalogServiceIdsRef.current = catalogServices.map(s => s.id);
+    if (catalogServices.length > 0 && catalogServices.every((s) => paidServices.includes(s.id))) {
+      setShowBillingPanel(false);
     }
-  }, [catalogServices]);
-
-  const checkAllServices = React.useCallback(async () => {
-    if (!user || catalogServiceIdsRef.current.length === 0) return;
-    
-    const paidServicesList = await checkMultipleServiceAccess(
-      user.id,
-      parcel.parcel_number,
-      catalogServiceIdsRef.current
-    );
-    
-    if (paidServicesList.length > 0) {
-      setPaidServices(paidServicesList);
-      if (paidServicesList.length >= catalogServiceIdsRef.current.length) {
-        setShowBillingPanel(false);
-      }
-    }
-  }, [user?.id, parcel.parcel_number]);
-
-  React.useEffect(() => {
-    checkAllServices();
-  }, [checkAllServices]);
-
-  React.useEffect(() => {
-    const handlePaymentCompleted = () => {
-      checkAllServices();
-    };
-    window.addEventListener('cadastralPaymentCompleted', handlePaymentCompleted);
-    return () => {
-      window.removeEventListener('cadastralPaymentCompleted', handlePaymentCompleted);
-    };
-  }, [checkAllServices]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [catalogIdsKey, paidServices]);
 
   const handlePaymentSuccess = (services: string[]) => {
-    const updatedServices = [...new Set([...paidServices, ...services])];
-    setPaidServices(updatedServices);
     setShowBillingPanel(false);
     setShowInvoice(true);
-    
-    if (onPaymentSuccess) {
-      onPaymentSuccess(updatedServices);
-    }
+    onPaymentSuccess?.([...new Set([...paidServices, ...services])]);
   };
 
   const handleDownloadPDF = async () => {
@@ -160,7 +125,7 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
 
   const handleDownloadReport = () => {
     import('@/lib/pdf').then(({ generateCadastralReport }) => {
-      generateCadastralReport(result, paidServices, catalogServices);
+      generateCadastralReport(result, catalogServices);
     });
   };
 
@@ -170,7 +135,6 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
         <CadastralBillingPanel 
           searchResult={result} 
           onPaymentSuccess={(services) => handlePaymentSuccess(services)} 
-          preselectServiceId={preselectServiceId}
           onClose={onClose}
           onRequestContribution={() => setShowContributionDialog(true)}
           alreadyPaidServices={paidServices}
