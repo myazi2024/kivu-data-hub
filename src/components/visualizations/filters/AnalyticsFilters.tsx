@@ -8,7 +8,7 @@
  * Refactored from a 542-line monolith into 4 focused modules. Behaviour
  * preserved 1:1 — same context bindings, same reset logic, same UX.
  */
-import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useMemo, useRef } from 'react';
 import {
   AnalyticsFilter, defaultFilter, extractUnique, getAvailableYears,
 } from '@/utils/analyticsHelpers';
