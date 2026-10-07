@@ -313,7 +313,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
   /** Generic per-entity color factory: re-uses the active profile's metric on a slice
    *  filtered by the chosen geographic level (commune | quartier | territoire). */
   const buildEntityColorFn = useCallback(
-    (level: 'commune' | 'quartier' | 'territoire' | 'land_district') => {
+    (level: 'commune' | 'quartier' | 'territoire') => {
       if (!activeProfile || !analytics) return undefined;
 
       const matchPredicate = (name: string): ((r: GeoScopedRecord) => boolean) => {
@@ -321,7 +321,6 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
         return (r) => {
           if (level === 'commune') return norm(r.commune) === n && (!selectedVille || norm(r.ville) === norm(selectedVille));
           if (level === 'quartier') return norm(r.quartier) === n && (!selectedCommune || norm(r.commune) === norm(selectedCommune));
-          if (level === 'land_district') return norm(r.land_district) === n;
           return norm(r.territoire) === n && (!selectedProvince || norm(r.province) === norm(selectedProvince.name));
         };
       };
@@ -341,7 +340,6 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
   const getCommuneColor = useMemo(() => buildEntityColorFn('commune'), [buildEntityColorFn]);
   const getQuartierColor = useMemo(() => buildEntityColorFn('quartier'), [buildEntityColorFn]);
   const getTerritoireColor = useMemo(() => buildEntityColorFn('territoire'), [buildEntityColorFn]);
-  const getLandDistrictColor = useMemo(() => buildEntityColorFn('land_district'), [buildEntityColorFn]);
 
   /** Nombre de parcelles par circonscription (données déjà chargées, sans appel réseau). */
   const parcelsByDistrict = useMemo(() => {
@@ -521,7 +519,6 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                           province={selectedProvince?.name}
                           selected={selectedLandDistrict}
                           onSelect={handleLandDistrictFromMap}
-                          getDistrictColor={getLandDistrictColor}
                           renderDetails={(district, provinceName, color) => (
                             <div className="flex items-start gap-1.5">
                               <span className="mt-0.5 h-2.5 w-2.5 shrink-0 rounded-sm border border-border" style={{ background: color }} aria-hidden="true" />
@@ -652,7 +649,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                   </div>
 
                   {/* Mini-légende choroplèthe — projection prioritaire, sinon profil */}
-                  {projection && projectionTiers ? (
+                  {mapView !== 'districts' && projection && projectionTiers ? (
                     <MapLegend
                       activeProfile={{
                         tabKey: 'projection',
@@ -666,7 +663,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                       adaptiveTiers={projectionTiers}
                       hasAnyMetricData={Object.values(projectionData || projection.byProvince).some(v => v > 0)}
                     />
-                  ) : activeProfile && (
+                  ) : mapView !== 'districts' && activeProfile && (
                     <MapLegend
                       activeProfile={activeProfile}
                       adaptiveTiers={adaptiveTiers}
