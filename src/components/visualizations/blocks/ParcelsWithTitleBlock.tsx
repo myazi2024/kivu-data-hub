@@ -45,21 +45,7 @@ export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
     byDecade: yearDecadeDistribution(builtParcels, 'construction_year'),
   }), [filteredParcels, builtParcels, normalizedParcels]);
 
-  const permitTypeData = useMemo(() => {
-    const map = new Map<string, number>();
-    filteredContribs.forEach(c => {
-      const permits = c.building_permits;
-      if (Array.isArray(permits) && permits.length > 0) {
-        permits.forEach((p: any) => {
-          const t = p?.permitType === 'regularization' ? 'Régularisation' : p?.permitType === 'construction' ? 'Construction' : null;
-          if (t) map.set(t, (map.get(t) || 0) + 1);
-        });
-      } else {
-        map.set('Sans autorisation', (map.get('Sans autorisation') || 0) + 1);
-      }
-    });
-    return Array.from(map.entries()).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
-  }, [filteredContribs]);
+  const permitTypeData = useMemo(() => CA.permitStatusData(filteredContribs), [filteredContribs]);
 
   const buildingSizeData = useMemo(() => {
     const buckets = [
@@ -305,7 +291,7 @@ export const ParcelsWithTitleBlock: React.FC<Props> = memo(({ data }) => {
       insight={generateInsight(hostingCapacityData, 'bar-v', "la capacité d'accueil des constructions")} crossVariables={cx('hosting-capacity')} rawRecords={parcelsWithCapacity} groupField="hosting_capacity" /> },
     { key: 'occupancy-pressure', el: () => <ChartCard title={ct('occupancy-pressure', 'Pression d\'occupation')} icon={Gauge} data={occupancyPressureData} type={ty('occupancy-pressure', 'donut')} colorIndex={13} hidden={occupancyPressureData.length === 0}
       insight={generateInsight(occupancyPressureData, 'donut', "la pression d'occupation (occupants vs capacité)")} crossVariables={cx('occupancy-pressure')} rawRecords={builtParcels} groupField="hosting_capacity" /> },
-    { key: 'permit-type', el: () => <ChartCard title={ct('permit-type', 'Autorisation de bâtir')} icon={ShieldCheck} data={permitTypeData} type={ty('permit-type', 'donut')} colorIndex={4} hidden={permitTypeData.length === 0}
+    { key: 'permit-type', el: () => <ChartCard title={ct('permit-type', 'Autorisation de bâtir')} icon={ShieldCheck} data={permitTypeData} type={ty('permit-type', 'donut')} colorIndex={4} hidden={permitTypeData.every(d => d.value === 0)}
       insight={generateInsight(permitTypeData, 'donut', 'les autorisations de bâtir')} crossVariables={cx('permit-type')} rawRecords={filteredContribs} groupField="building_permits" /> },
     { key: 'building-size', el: () => <ChartCard title={ct('building-size', 'Taille construction')} icon={Maximize} data={buildingSizeData} type={ty('building-size', 'bar-v')} colorIndex={2} hidden={buildingSizeData.length === 0}
       insight={generateInsight(buildingSizeData, 'bar-v', 'les tailles de construction')} crossVariables={cx('building-size')} rawRecords={filteredContribs} groupField="building_shapes" /> },

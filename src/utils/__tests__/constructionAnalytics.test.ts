@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   flattenConstructions, constructionStatusData, rentalUnitsOccupancyData,
   boundaryKindData, roadAccessData, entrancesData, operationalCapacityData,
-  flattenPropertyCategoryRecords, propertyCategoryData,
+  flattenPropertyCategoryRecords, propertyCategoryData, permitStatusData,
 } from '../constructionAnalytics';
 
 describe('constructionAnalytics', () => {
@@ -54,5 +54,16 @@ describe('constructionAnalytics', () => {
       { name: 'Terrain nu', value: 1 },
     ]);
     expect(flattenPropertyCategoryRecords(records)).toHaveLength(5);
+  });
+  it('autorisations : par construction, terrain nu exclu, zéros conservés', () => {
+    expect(permitStatusData([
+      { property_category: 'Villa', building_permits: [{ permitType: 'regularization' }, { permitType: 'construction' }] },
+      { property_category: 'Maison', building_permits: [{ permitType: 'regularization' }] },
+      { property_category: 'Terrain nu' },
+    ])).toEqual([
+      { name: 'Avec autorisation de bâtir', value: 1 },
+      { name: 'Avec autorisation de régularisation', value: 1 },
+      { name: 'Sans autorisation de bâtir', value: 0 },
+    ]);
   });
 });

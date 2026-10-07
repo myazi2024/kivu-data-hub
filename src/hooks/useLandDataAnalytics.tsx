@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import type {
   ParcelRecord, ContributionRecord, TitleRequestRecord,
-  BuildingPermitRecord, TaxHistoryRecord, MortgageRecord,
+  TaxHistoryRecord, MortgageRecord,
   ExpertiseRequestRecord, MutationRequestRecord, SubdivisionRequestRecord,
   DisputeRecord, OwnershipHistoryRecord, CertificateRecord, InvoiceRecord,
 } from '@/types/landAnalytics';
@@ -11,7 +11,6 @@ export interface LandAnalyticsData {
   titleRequests: TitleRequestRecord[];
   parcels: ParcelRecord[];
   contributions: ContributionRecord[];
-  buildingPermits: BuildingPermitRecord[];
   taxHistory: TaxHistoryRecord[];
   mortgages: MortgageRecord[];
   expertiseRequests: ExpertiseRequestRecord[];
@@ -84,7 +83,7 @@ export const useLandDataAnalytics = (isTestRoute = false) => {
     queryKey: ['land-analytics-v11', isTestRoute],
     queryFn: async (): Promise<LandAnalyticsData> => {
       const [
-        parcels, contribs, titleReqs, permits,
+        parcels, contribs, titleReqs,
         taxes, mortgages, expertise, mutations,
         subdivisions, disputes,
         ownershipHistory, certificates, invoices,
@@ -101,10 +100,6 @@ export const useLandDataAnalytics = (isTestRoute = false) => {
         // Title requests
         fetchAll('land_title_requests',
           'id, request_type, requester_type, requester_gender, owner_gender, nationality, section_type, province, ville, commune, quartier, avenue, territoire, collectivite, groupement, village, declared_usage, construction_type, construction_nature, construction_materials, standing, construction_year, floor_number, owner_legal_status, status, payment_status, total_amount_usd, area_sqm, deduced_title_type, estimated_processing_days, is_owner_same_as_requester, created_at, reviewed_at',
-          isTestRoute),
-        // Building permits
-        fetchAll('cadastral_building_permits',
-          'id, parcel_id, permit_number, administrative_status, issue_date, validity_period_months, is_current, issuing_service, created_at',
           isTestRoute),
         // Tax history
         fetchAll('cadastral_tax_history',
@@ -210,7 +205,6 @@ export const useLandDataAnalytics = (isTestRoute = false) => {
         titleRequests: titleReqs,
         parcels,
         contributions: contribs,
-        buildingPermits: enrich(filterByTestFK(permits)),
         taxHistory: enrich(filterByTestFK(taxes)),
         mortgages: enrich(filterByTestFK(mortgages)),
         expertiseRequests: enrich(expertise),

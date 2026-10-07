@@ -1,6 +1,6 @@
 import React, { useState, useEffect, memo, useMemo, Suspense } from 'react';
 import { useAppAppearance } from '@/hooks/useAppAppearance';
-import { FileText, Building, Search, ArrowRightLeft, Scissors, AlertTriangle, Loader2, Database, History, Award, Receipt, Landmark, FileCheck, DollarSign, ShieldAlert, Ruler, Hexagon, ShieldCheck, KeyRound } from 'lucide-react';
+import { FileText, Building, Search, ArrowRightLeft, Scissors, AlertTriangle, Loader2, Database, History, Award, Receipt, Landmark, DollarSign, ShieldAlert, Ruler, Hexagon, ShieldCheck, KeyRound } from 'lucide-react';
 import { useLandDataAnalytics, LandAnalyticsData } from '@/hooks/useLandDataAnalytics';
 import { ProvinceData } from '@/types/province';
 import { useAnalyticsTabsConfig, useTabChartsConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
@@ -17,7 +17,6 @@ const MutationBlock = React.lazy(() => import('./blocks/MutationBlock').then(m =
 const SubdivisionBlock = React.lazy(() => import('./blocks/SubdivisionBlock').then(m => ({ default: m.SubdivisionBlock })));
 const DisputesBlock = React.lazy(() => import('./blocks/DisputesBlock').then(m => ({ default: m.DisputesBlock })));
 const MortgagesBlock = React.lazy(() => import('./blocks/MortgagesBlock').then(m => ({ default: m.MortgagesBlock })));
-const BuildingPermitsBlock = React.lazy(() => import('./blocks/BuildingPermitsBlock').then(m => ({ default: m.BuildingPermitsBlock })));
 const TaxesBlock = React.lazy(() => import('./blocks/TaxesBlock').then(m => ({ default: m.TaxesBlock })));
 const OwnershipHistoryBlock = React.lazy(() => import('./blocks/OwnershipHistoryBlock').then(m => ({ default: m.OwnershipHistoryBlock })));
 const CertificatesBlock = React.lazy(() => import('./blocks/CertificatesBlock').then(m => ({ default: m.CertificatesBlock })));
@@ -44,7 +43,6 @@ const ICON_MAP: Record<string, React.ComponentType<any>> = {
   'subdivision': Scissors,
   'disputes': AlertTriangle,
   'mortgages': Landmark,
-  'building-permits': FileCheck,
   'taxes': DollarSign,
   'ownership': History,
   'certificates': Award,
@@ -65,7 +63,6 @@ const BLOCK_MAP: Record<string, React.ComponentType<{ data: any }>> = {
   'subdivision': SubdivisionBlock,
   'disputes': DisputesBlock,
   'mortgages': MortgagesBlock,
-  'building-permits': BuildingPermitsBlock,
   'taxes': TaxesBlock,
   'ownership': OwnershipHistoryBlock,
   'certificates': CertificatesBlock,
