@@ -20,7 +20,7 @@ import {
   LandDistrictFilterContext, LandDistrictChangeContext,
 } from './analyticsFilterContexts';
 import { useAnalyticsCascade } from './useAnalyticsCascade';
-import { getSectionTypeForLandDistrict } from '@/lib/geographicData';
+import { getLandDistrictAnchor, getSectionTypeForLandDistrict } from '@/lib/geographicData';
 import { AnalyticsTimeRow } from './AnalyticsTimeRow';
 import { AnalyticsLocationRow } from './AnalyticsLocationRow';
 
@@ -101,16 +101,24 @@ export const AnalyticsFilters: React.FC<Props> = ({
     if (mapLandDistrict === prev) return;
     if (mapLandDistrict && mapLandDistrict !== filter.landDistrict) {
       const zone = getSectionTypeForLandDistrict(mapLandDistrict);
+      const province = mapProvince || filter.province;
+      const anchor = getLandDistrictAnchor(province, mapLandDistrict);
       onChange({
         ...filter,
-        province: mapProvince || filter.province,
+        province,
         landDistrict: mapLandDistrict,
-        sectionType: (zone || 'all') as AnalyticsFilter['sectionType'],
+        sectionType: (zone || (anchor.territoire ? 'rurale' : anchor.ville ? 'urbaine' : 'all')) as AnalyticsFilter['sectionType'],
+        ville: anchor.ville, commune: anchor.commune, quartier: undefined, avenue: undefined,
+        territoire: anchor.territoire, collectivite: undefined, groupement: undefined, villageFilter: undefined,
+      });
+    } else if (!mapLandDistrict && prev && filter.landDistrict === prev) {
+      onChange({
+        ...filter,
+        landDistrict: undefined,
+        sectionType: 'all',
         ville: undefined, commune: undefined, quartier: undefined, avenue: undefined,
         territoire: undefined, collectivite: undefined, groupement: undefined, villageFilter: undefined,
       });
-    } else if (!mapLandDistrict && prev && filter.landDistrict === prev) {
-      onChange({ ...filter, landDistrict: undefined, sectionType: 'all' });
     }
   }, [mapLandDistrict, mapProvince]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -204,8 +212,6 @@ export const AnalyticsFilters: React.FC<Props> = ({
           collectivitesFinal={cascade.collectivitesFinal}
           groupements={cascade.groupements}
           villages={cascade.villages}
-          hasUrbanData={cascade.hasUrbanData}
-          hasRuralData={cascade.hasRuralData}
           onProvinceFilter={handleProvinceFilter}
           onVilleChange={handleVilleChange}
           onCommuneChange={handleCommuneChange}

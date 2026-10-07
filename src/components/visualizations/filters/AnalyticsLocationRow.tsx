@@ -27,8 +27,6 @@ interface Props {
   collectivitesFinal: string[];
   groupements: string[];
   villages: string[];
-  hasUrbanData: boolean;
-  hasRuralData: boolean;
   // Side-effect handlers shared with the map
   onProvinceFilter: (province: string | undefined) => void;
   onVilleChange: (ville: string | undefined) => void;
@@ -43,13 +41,11 @@ export const AnalyticsLocationRow: React.FC<Props> = ({
   filter, onChange,
   provinces, landDistricts, villes, communesFinal, quartiersFinal, avenuesFinal,
   territoiresFinal, collectivitesFinal, groupements, villages,
-  hasUrbanData, hasRuralData,
   onProvinceFilter, onVilleChange, onCommuneChange, onQuartierChange, onTerritoireChange,
   onSectionTypeChange, onLandDistrictChange,
 }) => {
   // Même logique que l'onglet Localisation du CCC :
   // Province → Circonscription → zone (déduite, sinon choisie) → niveaux urbains OU ruraux.
-  void hasUrbanData; void hasRuralData;
   const districtZone = filter.landDistrict ? getSectionTypeForLandDistrict(filter.landDistrict) : '';
   const anchor = getLandDistrictAnchor(filter.province, filter.landDistrict);
   const lockVille = !!anchor.ville;

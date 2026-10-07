@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import {
-  LAND_DISTRICT_SUGGESTIONS,
   buildDistrictColors,
   matchAreaToDistrict,
   matchCommuneToDistrict,
@@ -12,9 +11,10 @@ describe('landDistrictMapping', () => {
     expect(normalizeGeoName('Masi-Manimba')).toBe(normalizeGeoName('Masimanimba'));
     expect(normalizeGeoName('Équateur')).toBe('equateur');
   });
-  it('associe un territoire égal à une circonscription', () => {
+  it('associe une limite à l’ancre exacte de la circonscription', () => {
     expect(matchAreaToDistrict('Aru').district).toBe('Aru');
     expect(matchAreaToDistrict('Beni Ville').district).toBe('Beni-Ville');
+    expect(matchCommuneToDistrict('Goma', 'Goma').district).toBe('Goma');
   });
   it('laisse figées les villes et territoires découpés', () => {
     expect(matchAreaToDistrict('Kinshasa').district).toBeNull();
@@ -30,11 +30,10 @@ describe('landDistrictMapping', () => {
     expect(matchCommuneToDistrict("N'djili", 'Kinshasa').district).toBe("N'Djili");
     expect(matchCommuneToDistrict('Karisimbi', 'Goma').district).toBe('Karisimbi');
   });
-  it('ne transforme pas une suggestion non validée en limite', () => {
-    expect(LAND_DISTRICT_SUGGESTIONS.some((item) => !item.validated)).toBe(true);
-    const match = matchCommuneToDistrict('Ruashi', 'Lubumbashi');
-    expect(match.district).toBeNull();
-    expect(match.isSuggested).toBe(true);
+  it('ne dessine pas les ancrages partiels comme des limites complètes', () => {
+    expect(matchAreaToDistrict('Kalehe').district).toBeNull();
+    expect(matchAreaToDistrict('Butembo').district).toBeNull();
+    expect(matchCommuneToDistrict('Kimeni', 'Butembo').district).toBeNull();
   });
   it('ne confond pas une commune avec une circonscription d’une autre province', () => {
     expect(matchCommuneToDistrict('Gombe', 'Lubumbashi').district).toBeNull();

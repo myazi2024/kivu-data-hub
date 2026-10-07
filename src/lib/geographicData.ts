@@ -472,7 +472,7 @@ const RURAL_LAND_DISTRICTS: string[] = [
 ];
 
 /** Normalisation tolérante (accents, casse, séparateurs) pour comparer deux noms. */
-const normalizeDistrictName = (value: string): string =>
+export const normalizeDistrictName = (value: string): string =>
   value
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
