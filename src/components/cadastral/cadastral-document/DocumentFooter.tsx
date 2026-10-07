@@ -1,7 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import QRCode from 'qrcode';
 import { ShieldCheck } from 'lucide-react';
-import { Skeleton } from '@/components/ui/skeleton';
 
 interface DocumentFooterProps {
   parcelNumber: string;
@@ -34,15 +33,13 @@ const DocumentFooter: React.FC<DocumentFooterProps> = ({ parcelNumber, verificat
               role="img"
               aria-label="QR code de vérification du document"
             />
-          ) : (
-            <Skeleton className="h-[100px] w-[100px] rounded-md" />
-          )}
+          ) : null}
         </div>
 
         <div className="flex-1 space-y-1.5">
           <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
             <ShieldCheck className="h-4 w-4 text-primary" />
-            Document authentifié
+            {verificationCode ? 'Document authentifié' : 'Authentification du document'}
           </div>
 
           {verificationCode ? (
@@ -66,7 +63,9 @@ const DocumentFooter: React.FC<DocumentFooterProps> = ({ parcelNumber, verificat
               </p>
             </>
           ) : (
-            <Skeleton className="h-4 w-48" />
+            <p className="text-xs text-muted-foreground">
+              Le code de vérification et le QR code sont générés à l'impression ou au téléchargement du PDF.
+            </p>
           )}
         </div>
       </div>
