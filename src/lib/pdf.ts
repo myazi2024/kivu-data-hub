@@ -7,6 +7,7 @@ import { fetchAppLogo } from '@/utils/pdfLogoHelper';
 import { fetchCompanyLegalInfo, TAX_REGIME_LABELS, type CompanyLegalInfo } from '@/hooks/useCompanyLegalInfo';
 import { TVA_RATE } from '@/constants/billing';
 import { fetchInvoiceTemplateConfig, DEFAULT_INVOICE_TEMPLATE_CONFIG } from '@/hooks/useInvoiceTemplateConfig';
+import { activeServices, hasAnyOpenSection, isSectionOpen, normalizeAccess, sectionNumber, type CadastralSectionKey } from '@/lib/cadastralResultAccess';
 
 // Type minimal pour les factures dans le PDF
 interface CadastralInvoice {
