@@ -12,14 +12,12 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Separator } from '@/components/ui/separator';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Loader2, FileSearch, MapPin, Building, Droplets, Zap, Wifi, 
   Shield, Car, Trees, AlertTriangle, Upload, X, FileText, Image, CheckCircle2,
-  CreditCard, Smartphone, ArrowLeft, Receipt, DollarSign, Phone, Home,
+  Receipt, Home,
   Volume2, Layers, Building2, Camera, Info, Mic, MicOff, Fence, Warehouse, DoorOpen, FileCheck
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
@@ -30,7 +28,6 @@ import { supabase } from '@/integrations/supabase/client';
 import FormIntroDialog, { FORM_INTRO_CONFIGS } from './FormIntroDialog';
 import SuggestivePicklist from './SuggestivePicklist';
 import SectionHelpPopover from './SectionHelpPopover';
-import { openExpertiseCertificate } from '@/utils/expertiseCertificateUrl';
 import { useCCCFormPicklists } from '@/hooks/useCCCFormPicklists';
 import { resolveAvailableUsages } from '@/utils/constructionUsageResolver';
 import { BuildingPermitIssuingServiceSelect } from './BuildingPermitIssuingServiceSelect';
