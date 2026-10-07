@@ -61,11 +61,24 @@ export function matchCommuneToDistrict(commune: string, city: string): CommuneDi
 
 export function matchAreaToDistrict(area: string): DistrictMatch {
   const key = normalizeGeoName(area);
-  const province = provinceByArea.get(key);
+  const directDistrictProvinces = Object.entries(landDistrictsData)
+    .filter(([, districts]) => districts.some((district) => normalizeGeoName(district) === key))
+    .map(([provinceName]) => provinceName);
+  const province = provinceByArea.get(key)
+    ?? (directDistrictProvinces.length === 1 ? directDistrictProvinces[0] : undefined);
   const candidates = province ? landDistrictsData[province] ?? [] : [];
   const hits = candidates.filter((district) => {
     const anchor = getLandDistrictAnchor(province, district);
     if (anchor.partial) return false;
+    if (anchor.level === 'commune') return false;
+    if (anchor.level === 'ville') {
+      const communeDistricts = candidates.filter((candidate) => {
+        const candidateAnchor = getLandDistrictAnchor(province, candidate);
+        return candidateAnchor.level === 'commune'
+          && normalizeGeoName(candidateAnchor.ville ?? '') === normalizeGeoName(anchor.ville ?? '');
+      });
+      if (communeDistricts.length >= 2) return false;
+    }
     // Certains fonds nomment explicitement la limite « <ville> Ville ».
     if (normalizeGeoName(district) === key) return true;
     if (anchor.level === 'territoire') return normalizeGeoName(anchor.territoire ?? '') === key;
