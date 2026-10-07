@@ -23,7 +23,8 @@ export const ANALYTICS_TABS_REGISTRY: Record<string, { label: string; charts: Ch
       { tab_key: 'title-requests', item_key: 'title-owner-match', item_type: 'chart', is_visible: true, display_order: 15, custom_title: 'Concordance titre / propriétaire', chart_type: 'donut' },
       { tab_key: 'title-requests', item_key: 'mutation-urgency', item_type: 'chart', is_visible: true, display_order: 16, custom_title: 'Urgence de mutation', chart_type: 'bar-h' },
       { tab_key: 'title-requests', item_key: 'mismatch-by-title-type', item_type: 'chart', is_visible: true, display_order: 17, custom_title: 'Discordants par type de titre', chart_type: 'bar-v' },
-      { tab_key: 'title-requests', item_key: 'geo', item_type: 'chart', is_visible: true, display_order: 18, custom_title: 'Géographie' },
+      { tab_key: 'title-requests', item_key: 'encumbered-distribution', item_type: 'chart', is_visible: true, display_order: 18, custom_title: 'Parcelles grevées vs libres', chart_type: 'pie' },
+      { tab_key: 'title-requests', item_key: 'geo', item_type: 'chart', is_visible: true, display_order: 19, custom_title: 'Géographie' },
     ],
     kpis: [
       { tab_key: 'title-requests', item_key: 'kpi-total', item_type: 'kpi', is_visible: true, display_order: 0, custom_title: 'Parcelles titrées' },
@@ -301,23 +302,6 @@ export const ANALYTICS_TABS_REGISTRY: Record<string, { label: string; charts: Ch
       { tab_key: 'taxes', item_key: 'kpi-approved', item_type: 'kpi', is_visible: true, display_order: 3, custom_title: 'Payées' },
       { tab_key: 'taxes', item_key: 'kpi-recovery', item_type: 'kpi', is_visible: true, display_order: 4, custom_title: 'Recouvrement' },
       { tab_key: 'taxes', item_key: 'kpi-avg', item_type: 'kpi', is_visible: true, display_order: 5, custom_title: 'Montant moy.' },
-    ],
-  },
-  'servitudes': {
-    label: 'Servitudes',
-    charts: [
-      { tab_key: 'servitudes', item_key: 'encumbered-distribution', item_type: 'chart', is_visible: true, display_order: 0, custom_title: 'Parcelles grevées vs libres', chart_type: 'pie' },
-      { tab_key: 'servitudes', item_key: 'servitude-type', item_type: 'chart', is_visible: true, display_order: 1, custom_title: 'Types de servitude', chart_type: 'bar-h' },
-      { tab_key: 'servitudes', item_key: 'beneficiary', item_type: 'chart', is_visible: true, display_order: 2, custom_title: 'Bénéficiaires', chart_type: 'bar-h' },
-      { tab_key: 'servitudes', item_key: 'duration', item_type: 'chart', is_visible: true, display_order: 3, custom_title: 'Durée des servitudes', chart_type: 'bar-v' },
-      { tab_key: 'servitudes', item_key: 'servitudes-per-parcel', item_type: 'chart', is_visible: true, display_order: 4, custom_title: 'Servitudes par parcelle', chart_type: 'bar-v' },
-      { tab_key: 'servitudes', item_key: 'geo', item_type: 'chart', is_visible: true, display_order: 5, custom_title: 'Géographie' },
-    ],
-    kpis: [
-      { tab_key: 'servitudes', item_key: 'kpi-total', item_type: 'kpi', is_visible: true, display_order: 0, custom_title: 'Parcelles analysées' },
-      { tab_key: 'servitudes', item_key: 'kpi-encumbered', item_type: 'kpi', is_visible: true, display_order: 1, custom_title: 'Grevées' },
-      { tab_key: 'servitudes', item_key: 'kpi-servitudes', item_type: 'kpi', is_visible: true, display_order: 2, custom_title: 'Servitudes' },
-      { tab_key: 'servitudes', item_key: 'kpi-types', item_type: 'kpi', is_visible: true, display_order: 3, custom_title: 'Types distincts' },
     ],
   },
   'boundary': {

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, memo, useMemo, Suspense } from 'react';
 import { useAppAppearance } from '@/hooks/useAppAppearance';
-import { FileText, Building, Search, Scissors, AlertTriangle, Loader2, Database, History, Award, Receipt, Landmark, DollarSign, ShieldAlert, Ruler, Hexagon, ShieldCheck, KeyRound } from 'lucide-react';
+import { FileText, Building, Search, Scissors, AlertTriangle, Loader2, Database, History, Award, Receipt, Landmark, DollarSign, Ruler, Hexagon, ShieldCheck, KeyRound } from 'lucide-react';
 import { useLandDataAnalytics, LandAnalyticsData } from '@/hooks/useLandDataAnalytics';
 import { ProvinceData } from '@/types/province';
 import { useAnalyticsTabsConfig, useTabChartsConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
@@ -20,7 +20,6 @@ const TaxesBlock = React.lazy(() => import('./blocks/TaxesBlock').then(m => ({ d
 const OwnershipHistoryBlock = React.lazy(() => import('./blocks/OwnershipHistoryBlock').then(m => ({ default: m.OwnershipHistoryBlock })));
 const CertificatesBlock = React.lazy(() => import('./blocks/CertificatesBlock').then(m => ({ default: m.CertificatesBlock })));
 const InvoicesBlock = React.lazy(() => import('./blocks/InvoicesBlock').then(m => ({ default: m.InvoicesBlock })));
-const ServitudesBlock = React.lazy(() => import('./blocks/ServitudesBlock').then(m => ({ default: m.ServitudesBlock })));
 const BoundaryBlock = React.lazy(() => import('./blocks/BoundaryBlock').then(m => ({ default: m.BoundaryBlock })));
 const GeometryBlock = React.lazy(() => import('./blocks/GeometryBlock').then(m => ({ default: m.GeometryBlock })));
 const ConsistencyBlock = React.lazy(() => import('./blocks/ConsistencyBlock').then(m => ({ default: m.ConsistencyBlock })));
@@ -45,7 +44,6 @@ const ICON_MAP: Record<string, React.ComponentType<any>> = {
   'ownership': History,
   'certificates': Award,
   'invoices': Receipt,
-  'servitudes': ShieldAlert,
   'boundary': Ruler,
   'geometry': Hexagon,
   'consistency': ShieldCheck,
@@ -64,7 +62,6 @@ const BLOCK_MAP: Record<string, React.ComponentType<{ data: any }>> = {
   'ownership': OwnershipHistoryBlock,
   'certificates': CertificatesBlock,
   'invoices': InvoicesBlock,
-  'servitudes': ServitudesBlock,
   'boundary': BoundaryBlock,
   'geometry': GeometryBlock,
   'consistency': ConsistencyBlock,
