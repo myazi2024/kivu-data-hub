@@ -19,7 +19,6 @@ interface DRCMapWithTooltipProps {
   onProvinceHover: (provinceId: string | null) => void;
   hoveredProvince: string | null;
   getProvinceColor: (province: ProvinceData) => string;
-  onMapReady?: (map: any) => void;
   tooltipLineConfigs?: TooltipLineConfig[];
   onZoomChange?: (isZoomed: boolean) => void;
   onProvinceDeselect?: () => void;
@@ -43,7 +42,6 @@ const DRCMapWithTooltip: React.FC<DRCMapWithTooltipProps> = ({
   onProvinceHover,
   hoveredProvince,
   getProvinceColor,
-  onMapReady,
   tooltipLineConfigs,
   onZoomChange,
   onProvinceDeselect

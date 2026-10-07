@@ -43,15 +43,6 @@ export const useAnalyticsCascade = ({ data, filter }: CascadeOptions) => {
     [data, filter.province],
   );
 
-  const hasUrbanData = useMemo(
-    () => provinceScoped.some((r) => getSectionType(r) === 'urbaine'),
-    [provinceScoped],
-  );
-  const hasRuralData = useMemo(
-    () => provinceScoped.some((r) => getSectionType(r) === 'rurale'),
-    [provinceScoped],
-  );
-
   // Données restreintes à la circonscription choisie (repli des listes)
   const districtScoped = useMemo(
     () => (filter.landDistrict ? provinceScoped.filter((r) => sameGeo(r.land_district, filter.landDistrict)) : provinceScoped),
@@ -171,8 +162,6 @@ export const useAnalyticsCascade = ({ data, filter }: CascadeOptions) => {
   return {
     provinces,
     landDistricts,
-    hasUrbanData,
-    hasRuralData,
     villes,
     communesFinal,
     quartiersFinal,

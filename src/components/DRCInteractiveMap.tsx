@@ -21,7 +21,7 @@ import ProvinceDataVisualization from './visualizations/ProvinceDataVisualizatio
 import { useLandDataAnalytics } from '@/hooks/useLandDataAnalytics';
 import { useTestEnvironment } from '@/hooks/useTestEnvironment';
 import { useTabChartsConfig, useAnalyticsTabsConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
-import { getTerritoiresForProvince, getProvinceForTerritoire } from '@/lib/geographicData';
+import { getLandDistrictAnchor, getSectionTypeForLandDistrict, getTerritoiresForProvince, getProvinceForTerritoire } from '@/lib/geographicData';
 import { MAP_TAB_PROFILES, computeAdaptiveTiers, NO_DATA_COLOR, type MapTabProfile, type MapTier } from '@/config/mapTabProfiles';
 import { norm, buildScopePredicate, sliceAnalyticsByPredicate, type GeoScopedRecord } from './map/meta/mapMeta';
 import { useMapDrilldown } from './map/hooks/useMapDrilldown';
@@ -70,13 +70,10 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
     setSelectedSectionType,
     setActiveAnalyticsTab,
     handleProvinceFilter,
-    clearGeoSelection,
   } = drilldown;
 
   const [hoveredProvince, setHoveredProvince] = useState<string | null>(null);
-  const [mapInstance, setMapInstance] = useState<unknown>(null);
   const [activeMobilePanel, setActiveMobilePanel] = useState<'map' | 'analytics'>('map');
-  const [isMapZoomed, setIsMapZoomed] = useState(false);
 
   const [forcedTab, setForcedTab] = useState<string | null>(null);
   const mapCardRef = React.useRef<HTMLDivElement>(null);
@@ -366,10 +363,25 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
   /** Carte → filtre : sélection d'une circonscription (province déduite si besoin). */
   const handleLandDistrictFromMap = useCallback((district: string | undefined, provinceName?: string) => {
     setSelectedLandDistrict(district);
-    if (district && provinceName && !selectedProvince) {
+    if (!district) {
+      setSelectedVille(undefined);
+      setSelectedCommune(undefined);
+      setSelectedQuartier(undefined);
+      setSelectedTerritoire(undefined);
+      setSelectedSectionType('all');
+      return;
+    }
+    const effectiveProvinceName = provinceName || selectedProvince?.name;
+    if (provinceName && normalizeProvinceName(provinceName) !== normalizeProvinceName(selectedProvince?.name ?? '')) {
       const province = provincesData.find(p => normalizeProvinceName(p.name) === normalizeProvinceName(provinceName));
       if (province) { setSelectedProvince(province); setExternalProvinceId(province.id); }
     }
+    const anchor = getLandDistrictAnchor(effectiveProvinceName, district);
+    setSelectedVille(anchor.ville);
+    setSelectedCommune(anchor.commune);
+    setSelectedQuartier(undefined);
+    setSelectedTerritoire(anchor.territoire);
+    setSelectedSectionType(getSectionTypeForLandDistrict(district) || (anchor.territoire ? 'rurale' : anchor.ville ? 'urbaine' : 'all'));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedProvince, provincesData]);
 
@@ -436,7 +448,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                           key={v}
                           type="button"
                           aria-pressed={mapView === v}
-                          onClick={() => { setMapView(v); if (v === 'provinces') setSelectedLandDistrict(undefined); }}
+                          onClick={() => { setMapView(v); if (v === 'provinces') handleLandDistrictFromMap(undefined); }}
                           className={`min-h-9 px-2 py-1 text-xs rounded border transition-colors ${mapView === v ? 'bg-primary text-primary-foreground border-primary' : 'border-border text-muted-foreground hover:bg-muted'}`}
                         >
                           {label}
@@ -514,7 +526,14 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                             <div className="flex items-start gap-1.5">
                               <span className="mt-0.5 h-2.5 w-2.5 shrink-0 rounded-sm border border-border" style={{ background: color }} aria-hidden="true" />
                               <div className="min-w-0">
-                                <strong className="text-foreground">{district}</strong>
+                                <div className="flex flex-wrap items-center gap-1">
+                                  <strong className="text-foreground">{district}</strong>
+                                  {getSectionTypeForLandDistrict(district) && (
+                                    <Badge variant="secondary" className="px-1.5 py-0 text-[9px]">
+                                      {getSectionTypeForLandDistrict(district) === 'urbaine' ? 'SU - Urbaine' : 'SR - Rurale'}
+                                    </Badge>
+                                  )}
+                                </div>
                                 {provinceName && <span className="text-muted-foreground"> — {provinceName}</span>}
                                 <div className="text-muted-foreground">
                                   Parcelles enregistrées : {analytics ? (parcelsByDistrict.get(norm(district)) ?? 0).toLocaleString('fr-FR') : 'indisponible'}
@@ -595,9 +614,8 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                           onProvinceHover={setHoveredProvince}
                           hoveredProvince={hoveredProvince}
                           getProvinceColor={getProvinceColor}
-                          onMapReady={setMapInstance}
                           tooltipLineConfigs={tooltipLineConfigs}
-                          onZoomChange={(zoomed) => { setIsMapZoomed(zoomed); if (!zoomed) setExternalProvinceId(null); }}
+                          onZoomChange={(zoomed) => { if (!zoomed) setExternalProvinceId(null); }}
                           onProvinceDeselect={() => setSelectedProvince(null)}
                         />
                       </div>

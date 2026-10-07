@@ -83,14 +83,6 @@ export function useMapDrilldown(getProvincesData: () => ProvinceData[]) {
     }
   }, []);
 
-  /** Reset all geographic selections (used by mobile "close" button) */
-  const clearGeoSelection = useCallback(() => {
-    setSelectedProvince(null);
-    setSelectedVille(undefined);
-    setSelectedCommune(undefined);
-    setSelectedQuartier(undefined);
-  }, []);
-
   return {
     selectedProvince,
     externalProvinceId,
@@ -113,6 +105,5 @@ export function useMapDrilldown(getProvincesData: () => ProvinceData[]) {
     setSelectedSectionType,
     setActiveAnalyticsTab,
     handleProvinceFilter,
-    clearGeoSelection,
   };
 }
