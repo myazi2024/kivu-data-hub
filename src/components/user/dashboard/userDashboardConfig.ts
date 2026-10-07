@@ -83,6 +83,8 @@ export const USER_TAB_ALIASES: Record<string, string> = {
   settings: 'preferences',
   'building-permits': 'permits',
   'land-titles': 'titles',
+  'ccc-codes': 'invoices',
+  codes: 'invoices',
 };
 
 export const USER_TAB_VALUES = new Set(userMenuSections.flatMap(section => section.items.map(item => item.value)));
