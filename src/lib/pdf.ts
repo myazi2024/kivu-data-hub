@@ -7,6 +7,7 @@ import { fetchAppLogo } from '@/utils/pdfLogoHelper';
 import { fetchCompanyLegalInfo, TAX_REGIME_LABELS, type CompanyLegalInfo } from '@/hooks/useCompanyLegalInfo';
 import { TVA_RATE } from '@/constants/billing';
 import { fetchInvoiceTemplateConfig, DEFAULT_INVOICE_TEMPLATE_CONFIG } from '@/hooks/useInvoiceTemplateConfig';
+import { activeServices, hasAnyOpenSection, isSectionOpen, normalizeAccess, sectionNumber, type CadastralSectionKey } from '@/lib/cadastralResultAccess';
 
 // Type minimal pour les factures dans le PDF
 interface CadastralInvoice {
@@ -675,7 +676,6 @@ function formatDateTimeForFilename(): string {
  */
 export async function generateCadastralReport(
   cadastralResult: any,
-  paidServices: string[],
   servicesCatalog: CadastralService[],
   filename?: string
 ) {
@@ -686,28 +686,22 @@ export async function generateCadastralReport(
   let currentY = margin;
   let totalPages = 0;
 
-  // --- Load contribution data ---
-  let contributionData: any = null;
+  // Seules les données renvoyées par le serveur (get_cadastral_parcel_data) sont utilisées :
+  // jamais de lecture directe des contributions ou des tables, pour respecter l'accès payé.
+  const access = normalizeAccess(cadastralResult.access);
+  const paidServices = access.free_access
+    ? servicesCatalog.map((s) => s.id)
+    : activeServices(access);
+  const open = (k: CadastralSectionKey) => isSectionOpen(access, k);
   let logoBase64: string | null = null;
   try {
     const { supabase } = await import('@/integrations/supabase/client');
-    const [contribResult, configResult] = await Promise.all([
-      supabase
-        .from('cadastral_contributions')
-        .select('*')
-        .eq('parcel_number', cadastralResult.parcel.parcel_number)
-        .eq('status', 'approved')
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single(),
-      supabase
-        .from('app_appearance_config')
-        .select('config_value')
-        .eq('config_key', 'logo_url')
-        .maybeSingle(),
-    ]);
-    if (contribResult.data) contributionData = contribResult.data;
-    const logoUrl = configResult.data?.config_value as string | null;
+    const { data: configRow } = await supabase
+      .from('app_appearance_config')
+      .select('config_value')
+      .eq('config_key', 'logo_url')
+      .maybeSingle();
+    const logoUrl = configRow?.config_value as string | null;
     if (logoUrl) {
       try {
         const resp = await fetch(logoUrl);
@@ -717,26 +711,26 @@ export async function generateCadastralReport(
           reader.onloadend = () => resolve(reader.result as string);
           reader.readAsDataURL(blob);
         });
-      } catch { /* fallback: no logo */ }
+      } catch { /* pas de logo */ }
     }
-  } catch { /* use standard data */ }
+  } catch { /* pas de logo */ }
 
-  const parcel = contributionData || cadastralResult.parcel;
-  const ownership_history = contributionData?.ownership_history || cadastralResult.ownership_history || [];
-  const tax_history = contributionData?.tax_history || cadastralResult.tax_history || [];
-  const mortgage_history = contributionData?.mortgage_history || cadastralResult.mortgage_history || [];
-  const boundary_history = contributionData?.boundary_history || cadastralResult.boundary_history || [];
-  const building_permits = contributionData?.building_permits || cadastralResult.building_permits || [];
+  const parcel = cadastralResult.parcel || {};
+  const ownership_history = cadastralResult.ownership_history || [];
+  const tax_history = cadastralResult.tax_history || [];
+  const mortgage_history = cadastralResult.mortgage_history || [];
+  const boundary_history = cadastralResult.boundary_history || [];
+  const building_permits = cadastralResult.building_permits || [];
   const land_disputes = cadastralResult.land_disputes || [];
 
   // --- Verification & QR ---
   let reportId = generateReportId();
   let verifyUrl = `https://bic.cd/verify-report/${reportId}`;
-  try {
+  if (hasAnyOpenSection(access)) try {
     const verification = await createDocumentVerification({
       documentType: 'report',
       parcelNumber: parcel.parcel_number,
-      clientName: parcel.current_owner_name || null,
+      clientName: null,
       metadata: {
         paidServices,
         serviceNames: paidServices.map(id => servicesCatalog.find(s => s.id === id)?.name).filter(Boolean),
@@ -768,10 +762,7 @@ export async function generateCadastralReport(
     return `${sqm.toLocaleString('fr-FR')} m²`;
   };
 
-  const ownerName = parcel.current_owner_name ||
-    (Array.isArray(parcel.current_owners_details) && parcel.current_owners_details.length > 0
-      ? parcel.current_owners_details.map((o: any) => `${o.lastName || ''} ${o.firstName || ''}`.trim()).join(', ')
-      : 'Non renseigné');
+  const ownerName = parcel.current_owner_name || 'Non renseigné';
 
   const addPageHeader = () => {
     if (logoBase64) {
@@ -837,16 +828,6 @@ export async function generateCadastralReport(
     currentY += 4.5;
   };
 
-  const lockedSection = (title: string) => {
-    ensureSpace(12);
-    doc.setTextColor(...LIGHT_GRAY);
-    doc.setFont('helvetica', 'italic');
-    doc.setFontSize(8);
-    doc.text(`[${title} — Section non incluse dans votre achat]`, margin, currentY);
-    currentY += 6;
-  };
-
-  const isServicePaid = (serviceId: string) => paidServices.includes(serviceId);
 
   // ===== PAGE 1: COVER =====
   totalPages = 1;
@@ -898,8 +879,19 @@ export async function generateCadastralReport(
     } catch { currentY += 4; }
   }
 
+  // Rubrique non achetée : titre + mention verrouillée (aucune donnée).
+  const lockedSection = (k: CadastralSectionKey, title: string, serviceName: string) => {
+    sectionTitle(sectionNumber(k), title);
+    doc.setTextColor(150, 150, 150);
+    doc.setFont('helvetica', 'italic');
+    doc.setFontSize(8);
+    doc.text(`Rubrique non incluse — service « ${serviceName} » non acheté.`, margin, currentY);
+    currentY += 6;
+  };
+
   // ===== SECTION 1: IDENTIFICATION =====
-  sectionTitle(1, "IDENTIFICATION DE LA PARCELLE");
+  if (open('identification')) {
+  sectionTitle(sectionNumber('identification'), "IDENTIFICATION DE LA PARCELLE");
   fieldRow("Type de titre", parcel.property_title_type || 'Non spécifié');
   if (parcel.title_reference_number) fieldRow("Référence du titre", parcel.title_reference_number);
   if (parcel.title_issue_date) fieldRow("Date d'émission", formatDate(parcel.title_issue_date));
@@ -918,19 +910,27 @@ export async function generateCadastralReport(
   if (parcel.standing) fieldRow("Standing", parcel.standing);
   if (parcel.is_subdivided != null) fieldRow("Parcelle subdivisée", parcel.is_subdivided ? 'Oui — Lotie' : 'Non');
   currentY += 3;
+  } else {
+    lockedSection('identification', "IDENTIFICATION DE LA PARCELLE", "Informations générales");
+  }
 
   // ===== SECTION 2: PROPRIÉTAIRE =====
-  sectionTitle(2, "PROPRIÉTAIRE ACTUEL");
+  if (open('owner')) {
+  sectionTitle(sectionNumber('owner'), "PROPRIÉTAIRE ACTUEL");
   fieldRow("Nom complet", ownerName, true);
   if (parcel.current_owner_legal_status) fieldRow("Statut juridique", parcel.current_owner_legal_status);
   fieldRow("Propriétaire depuis", formatDate(parcel.current_owner_since));
   if (parcel.whatsapp_number) fieldRow("WhatsApp", parcel.whatsapp_number);
   currentY += 3;
+  } else {
+    lockedSection('owner', "PROPRIÉTAIRE ACTUEL", "Informations générales");
+  }
 
   // ===== SECTION 3: CONSTRUCTION & AUTORISATIONS =====
+  if (open('construction')) {
   const hasConstruction = parcel.construction_type || parcel.construction_nature || parcel.construction_materials || parcel.construction_year;
   if (hasConstruction || building_permits.length > 0) {
-    sectionTitle(3, "CONSTRUCTION & AUTORISATIONS");
+    sectionTitle(sectionNumber('construction'), "CONSTRUCTION & AUTORISATIONS");
     if (hasConstruction) {
       if (parcel.construction_type) fieldRow("Type de construction", parcel.construction_type);
       if (parcel.construction_nature) fieldRow("Nature", parcel.construction_nature);
@@ -969,9 +969,13 @@ export async function generateCadastralReport(
       currentY = (doc as any).lastAutoTable?.finalY + 5 || currentY + 20;
     }
   }
+  } else {
+    lockedSection('construction', "CONSTRUCTION & AUTORISATIONS", "Informations générales");
+  }
 
   // ===== SECTION 4: LOCALISATION =====
-  sectionTitle(4, "LOCALISATION");
+  if (open('location')) {
+  sectionTitle(sectionNumber('location'), "LOCALISATION");
   fieldRow("Province", parcel.province || '—');
   if (parcel.parcel_type === 'SU') {
     if (parcel.ville) fieldRow("Ville", parcel.ville);
@@ -1066,9 +1070,13 @@ export async function generateCadastralReport(
     });
     currentY = (doc as any).lastAutoTable?.finalY + 5 || currentY + 15;
   }
+  } else {
+    lockedSection('location', "LOCALISATION", "Localisation & historique de bornage");
+  }
 
   // ===== SECTION 5: HISTORIQUE DE PROPRIÉTÉ =====
-  sectionTitle(5, "HISTORIQUE DE PROPRIÉTÉ");
+  if (open('history')) {
+  sectionTitle(sectionNumber('history'), "HISTORIQUE DE PROPRIÉTÉ");
   if (ownership_history.length > 0) {
     ensureSpace(15);
     const historyRows = [
@@ -1105,9 +1113,13 @@ export async function generateCadastralReport(
     doc.text("Aucun ancien propriétaire enregistré", margin, currentY);
     currentY += 6;
   }
+  } else {
+    lockedSection('history', "HISTORIQUE DE PROPRIÉTÉ", "Historique des propriétaires");
+  }
 
   // ===== SECTION 6: OBLIGATIONS FINANCIÈRES =====
-  sectionTitle(6, "OBLIGATIONS FINANCIÈRES");
+  if (open('obligations')) {
+  sectionTitle(sectionNumber('obligations'), "OBLIGATIONS FINANCIÈRES");
 
   // 6.1 Taxes
   doc.setTextColor(...GRAY);
@@ -1187,10 +1199,14 @@ export async function generateCadastralReport(
     doc.text("Aucune hypothèque enregistrée", margin, currentY);
     currentY += 6;
   }
+  } else {
+    lockedSection('obligations', "OBLIGATIONS FINANCIÈRES", "Obligations fiscales et hypothécaires");
+  }
 
   // ===== SECTION 7: LITIGES FONCIERS =====
-  sectionTitle(7, "LITIGES FONCIERS");
-  if (parcel.has_dispute && land_disputes.length > 0) {
+  if (open('disputes')) {
+  sectionTitle(sectionNumber('disputes'), "LITIGES FONCIERS");
+  if (land_disputes.length > 0) {
     ensureSpace(15);
     autoTable(doc, {
       startY: currentY,
@@ -1220,6 +1236,9 @@ export async function generateCadastralReport(
     doc.setFontSize(8);
     doc.text("Aucun litige signalé sur cette parcelle.", margin, currentY);
     currentY += 6;
+  }
+  } else {
+    lockedSection('disputes', "LITIGES FONCIERS", "Litiges fonciers");
   }
 
   // ===== SERVICES INCLUS =====
@@ -1296,14 +1315,6 @@ export async function generateCadastralReport(
   const disclaimer2Lines = doc.splitTextToSize(disclaimer2, pageWidth - 2 * margin);
   doc.text(disclaimer2Lines, margin, currentY);
   currentY += disclaimer2Lines.length * 3 + 2;
-
-  if (contributionData) {
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(7);
-    doc.setTextColor(0, 100, 0);
-    doc.text("✓ Données issues de contribution cadastrale validée", margin, currentY);
-    currentY += 5;
-  }
 
   // Add footer to all pages
   const numPages = doc.getNumberOfPages();

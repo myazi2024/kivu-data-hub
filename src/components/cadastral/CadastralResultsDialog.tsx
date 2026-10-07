@@ -110,7 +110,6 @@ const CadastralResultsDialog: React.FC<CadastralResultsDialogProps> = ({
           <CadastralResultCard 
             result={result}
             onClose={handleClose}
-            selectedServices={paidServices}
             onPaymentSuccess={handlePaymentSuccess}
           />
         </div>

@@ -107,7 +107,6 @@ const mockCadastralResult = {
   ]
 };
 
-const mockPaidServices = ['service-1', 'service-2'];
 
 /**
  * Charge les services depuis la DB pour les tests
@@ -147,8 +146,7 @@ export async function testCadastralReportGeneration() {
     
     // Générer le rapport
     await generateCadastralReport(
-      mockCadastralResult,
-      mockPaidServices,
+      { ...mockCadastralResult, access: { free_access: true, services: {} } },
       services,
       'TEST_Rapport_Cadastral.pdf'
     );

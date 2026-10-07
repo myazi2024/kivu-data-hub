@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
+import { normalizeAccess, type CadastralResultAccess } from '@/lib/cadastralResultAccess';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useCatalogConfig } from './useCatalogConfig';
@@ -102,6 +103,8 @@ export interface CadastralSearchResult {
   building_permits: BuildingPermit[];
   land_disputes: LandDispute[];
   legal_verification: LegalVerification | null;
+  /** Services accessibles, calculés par le serveur (seule source pour ouvrir les rubriques). */
+  access: CadastralResultAccess;
   /** Indicateurs d'existence fournis par le serveur avant paiement (aucune donnée personnelle). */
   data_availability?: Partial<Record<
     'ownership_history' | 'tax_history' | 'mortgage_history' | 'boundary_history' | 'gps_coordinates' | 'building_permits',
@@ -130,7 +133,8 @@ export const useCadastralSearch = () => {
     return query.trim().length > 0;
   };
 
-  const searchParcel = async (parcelNumber: string) => {
+  const searchParcel = async (parcelNumber: string, opts: { silent?: boolean } = {}) => {
+    const silent = !!opts.silent;
     if (!validateParcelNumber(parcelNumber)) {
       setError('Veuillez saisir un numéro de parcelle');
       return;
@@ -148,8 +152,10 @@ export const useCadastralSearch = () => {
       return;
     }
 
-    setLoading(true);
-    setError(null);
+    if (!silent) {
+      setLoading(true);
+      setError(null);
+    }
 
     try {
       // Correction 3: Utiliser la RPC sécurisée qui gate les données premium
@@ -190,10 +196,12 @@ export const useCadastralSearch = () => {
         land_disputes: result.land_disputes || [],
         legal_verification: result.legal_verification || null,
         data_availability: result.data_availability || {},
+        access: normalizeAccess(result.access),
       });
 
     } catch (err) {
       console.error('Erreur lors de la recherche cadastrale:', err);
+      if (silent) return;
       setError('Erreur lors de la recherche. Veuillez réessayer.');
       toast({
         title: "Erreur",
@@ -201,9 +209,23 @@ export const useCadastralSearch = () => {
         variant: "destructive",
       });
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
+
+  // Après un paiement, recharge les données autorisées par le serveur (sans fermer la fiche).
+  const currentParcelRef = useRef<string | null>(null);
+  currentParcelRef.current = searchResult?.parcel?.parcel_number ?? null;
+  const searchRef = useRef(searchParcel);
+  searchRef.current = searchParcel;
+  useEffect(() => {
+    const handler = () => {
+      const n = currentParcelRef.current;
+      if (n) void searchRef.current(n, { silent: true });
+    };
+    window.addEventListener('cadastralPaymentCompleted', handler);
+    return () => window.removeEventListener('cadastralPaymentCompleted', handler);
+  }, []);
 
   const clearSearch = () => {
     setSearchQuery('');
