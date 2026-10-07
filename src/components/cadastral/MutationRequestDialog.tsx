@@ -1,43 +1,26 @@
-import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { createLongLivedSignedUrl } from '@/utils/storageSignedUrl';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import WhatsAppFloatingButton from './WhatsAppFloatingButton';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Card, CardContent } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Separator } from '@/components/ui/separator';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Textarea } from '@/components/ui/textarea';
-import { Loader2, FileEdit, CreditCard, CheckCircle2, AlertTriangle, MapPin, Clock, Hash, Upload, X, FileText, Image, Eye, ArrowLeft, AlertCircle, FileSearch, ExternalLink, Calendar, DollarSign, Award, HelpCircle } from 'lucide-react';
+import { FileEdit } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useMutationRequest } from '@/hooks/useMutationRequest';
-import type { MutationFee, MutationRequest } from '@/types/mutation';
-import { MutationRequestWithProfile } from '@/types/mutation';
-import { LATE_FEE_CAP_USD, DAILY_LATE_FEE_USD, LEGAL_GRACE_PERIOD_DAYS } from '@/types/mutation';
+import type { MutationRequest } from '@/types/mutation';
 import { pollTransactionStatus } from '@/utils/pollTransactionStatus';
+import { isValidDrcMobileNumber } from '@/utils/expertisePaymentHelper';
 import { usePaymentConfig } from '@/hooks/usePaymentConfig';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { toast } from 'sonner';
-import { format, differenceInDays, addMonths } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import { differenceInDays, addMonths } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import RealEstateExpertiseRequestDialog from './RealEstateExpertiseRequestDialog';
 import FormIntroDialog, { FORM_INTRO_CONFIGS } from './FormIntroDialog';
-import SectionHelpPopover from './SectionHelpPopover';
-import MutationLateFeeSection from './mutation/MutationLateFeeSection';
 import {
   MUTATION_TYPES,
-  LEGAL_STATUS_OPTIONS,
-  REQUESTER_TYPES,
-  PROVIDER_LABELS,
-  BANK_FEE_PERCENTAGE,
   isTransferMutation as checkIsTransfer,
+  requiresExpertiseCertificate,
+  computeMutationDuties,
+  computeLateFees,
   hasLateFees as checkHasLateFees,
 } from './mutation/MutationConstants';
 import FormStep from './mutation-request/FormStep';
@@ -140,6 +123,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
   // Derived booleans — memoized
   const isTransferMutation = useMemo(() => checkIsTransfer(mutationType), [mutationType]);
   const showLateFees = useMemo(() => checkHasLateFees(mutationType), [mutationType]);
+  const requiresCertificate = useMemo(() => requiresExpertiseCertificate(mutationType), [mutationType]);
 
   const mutationTypeDetails = useMemo(() => MUTATION_TYPES.find(t => t.value === mutationType), [mutationType]);
 
@@ -187,25 +171,10 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
     setTitleAgeAutoDetected(true);
   };
 
-  // Memoized: late fee calculation
+  // Pénalités de retard (estimation ; le serveur recalcule depuis la parcelle)
   const lateFeesCalculation = useMemo(() => {
     if (!showLateFees) return { days: 0, fee: 0, applicable: false, capped: false };
-    const dateToUse = ownerAcquisitionDate || manualAcquisitionDate;
-    if (!dateToUse) return { days: 0, fee: 0, applicable: false, capped: false };
-    
-    const acquisitionDate = new Date(dateToUse);
-    const today = new Date();
-    const totalDaysElapsed = differenceInDays(today, acquisitionDate);
-    const daysAfterGracePeriod = Math.max(0, totalDaysElapsed - LEGAL_GRACE_PERIOD_DAYS);
-    const rawFee = daysAfterGracePeriod * DAILY_LATE_FEE_USD;
-    const cappedFee = Math.min(rawFee, LATE_FEE_CAP_USD);
-    
-    return {
-      days: daysAfterGracePeriod,
-      fee: Math.round(cappedFee * 100) / 100,
-      applicable: daysAfterGracePeriod > 0,
-      capped: rawFee > LATE_FEE_CAP_USD
-    };
+    return computeLateFees(ownerAcquisitionDate || manualAcquisitionDate || null);
   }, [showLateFees, ownerAcquisitionDate, manualAcquisitionDate]);
 
   const certificateValidity = useMemo(() => {
@@ -217,27 +186,11 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
     return { isValid: daysRemaining > 0, daysRemaining: Math.max(0, daysRemaining), isExpired: daysRemaining <= 0 };
   }, [hasExpertiseCertificate, expertiseCertificateDate]);
 
-  // Memoized: mutation fees calculation (uses BANK_FEE_PERCENTAGE from constants)
+  // Droits de mutation (estimation ; le serveur recalcule)
   const mutationFeesCalculation = useMemo(() => {
-    const value = parseFloat(marketValueUsd) || 0;
-    
-    if (value < 10000) {
-      return { mutationFee: 0, bankFee: 0, total: 0, applicable: false, percentage: 0 };
-    }
-    
-    const percentage = titleAge === '10_or_more' ? 0.015 : 0.03;
-    const mutationFee = value * percentage;
-    // Titres de 10+ ans : frais bancaires exemptés (circulaire n°0076/2023)
-    const bankFee = titleAge === '10_or_more' ? 0 : value * BANK_FEE_PERCENTAGE;
-    
-    return {
-      mutationFee: Math.round(mutationFee * 100) / 100,
-      bankFee: Math.round(bankFee * 100) / 100,
-      total: Math.round((mutationFee + bankFee) * 100) / 100,
-      applicable: true,
-      percentage: percentage * 100
-    };
-  }, [marketValueUsd, titleAge]);
+    if (!requiresCertificate) return computeMutationDuties(0, null);
+    return computeMutationDuties(parseFloat(marketValueUsd) || 0, titleAge);
+  }, [requiresCertificate, marketValueUsd, titleAge]);
 
   // Initialize mandatory fees
   useEffect(() => {
@@ -272,10 +225,10 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
 
   const totalAmount = useMemo(() => {
     const baseFees = selectedFeesDetails.reduce((sum, fee) => sum + fee.amount_usd, 0);
-    const mutationFees = isTransferMutation && mutationFeesCalculation.applicable ? mutationFeesCalculation.total : 0;
+    const mutationFees = mutationFeesCalculation.applicable ? mutationFeesCalculation.total : 0;
     const lateFees = showLateFees && lateFeesCalculation.applicable ? lateFeesCalculation.fee : 0;
     return baseFees + mutationFees + lateFees;
-  }, [selectedFeesDetails, isTransferMutation, mutationFeesCalculation, showLateFees, lateFeesCalculation]);
+  }, [selectedFeesDetails, mutationFeesCalculation, showLateFees, lateFeesCalculation]);
 
   // File handlers
   const handleExpertiseCertificateSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -313,25 +266,30 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
     setAttachedFiles(prev => prev.filter((_, i) => i !== index));
   };
 
+  /** Envoie les pièces ; en cas d'échec, supprime celles déjà envoyées et nomme le fichier en cause. */
   const uploadFiles = async (): Promise<string[]> => {
     if (attachedFiles.length === 0) return [];
     setUploadingFiles(true);
     const urls: string[] = [];
+    const uploadedPaths: string[] = [];
+    let current = '';
     try {
       for (const file of attachedFiles) {
+        current = file.name;
         const fileExt = file.name.split('.').pop();
-        const fileName = `mutation_${Date.now()}_${crypto.randomUUID()}.${fileExt}`;
-        const filePath = `mutation-documents/${user?.id}/${fileName}`;
+        const filePath = `mutation-documents/${user?.id}/mutation_${crypto.randomUUID()}.${fileExt}`;
         const { error: uploadError } = await supabase.storage.from('cadastral-documents').upload(filePath, file);
         if (uploadError) throw uploadError;
+        uploadedPaths.push(filePath);
         const signed = await createLongLivedSignedUrl(filePath);
-        if (!signed) throw new Error("Lien du document indisponible");
+        if (!signed) throw new Error('Lien du document indisponible');
         urls.push(signed);
       }
       return urls;
-    } catch (error: any) {
+    } catch (error) {
       console.error('Upload error:', error);
-      toast.error('Erreur lors du téléchargement des fichiers');
+      if (uploadedPaths.length) await supabase.storage.from('cadastral-documents').remove(uploadedPaths);
+      toast.error(`Échec de l'envoi de « ${current} ». Aucun document n'a été conservé, réessayez.`);
       return [];
     } finally {
       setUploadingFiles(false);
@@ -382,7 +340,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
       return false;
     }
     
-    if (isTransferMutation) {
+    if (requiresCertificate) {
       if (!hasExpertiseCertificate) {
         toast.error('Veuillez indiquer si vous avez un certificat d\'expertise immobilière');
         return false;
@@ -390,6 +348,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
       if (hasExpertiseCertificate === 'yes') {
         if (!expertiseCertificateFile) { toast.error('Veuillez joindre votre certificat d\'expertise immobilière'); return false; }
         if (!expertiseCertificateDate) { toast.error('Veuillez renseigner la date de délivrance du certificat'); return false; }
+        if (new Date(expertiseCertificateDate) > new Date()) { toast.error('La date du certificat ne peut pas être dans le futur.'); return false; }
         if (certificateValidity.isExpired) { toast.error('Le certificat d\'expertise est expiré (valide 6 mois). Veuillez en demander un nouveau.'); return false; }
         if (!marketValueUsd || parseFloat(marketValueUsd) <= 0) { toast.error('Veuillez renseigner la valeur vénale du bien'); return false; }
         if (parseFloat(marketValueUsd) >= 10000 && !titleAge) { toast.error('Veuillez indiquer l\'ancienneté du titre foncier'); return false; }
@@ -421,7 +380,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
     if (!expertiseCertificateFile || !user) return null;
     try {
       const fileExt = expertiseCertificateFile.name.split('.').pop();
-      const fileName = `expertise_cert_${Date.now()}_${crypto.randomUUID()}.${fileExt}`;
+      const fileName = `expertise_cert_${crypto.randomUUID()}.${fileExt}`;
       const filePath = `mutation-documents/${user.id}/certificates/${fileName}`;
       const { error: uploadError } = await supabase.storage.from('cadastral-documents').upload(filePath, expertiseCertificateFile);
       if (uploadError) throw uploadError;
@@ -463,7 +422,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
     }
 
     let expertiseCertificateUrl: string | null = null;
-    if (isTransferMutation && expertiseCertificateFile) {
+    if (requiresCertificate && expertiseCertificateFile) {
       expertiseCertificateUrl = await uploadExpertiseCertificate();
       if (!expertiseCertificateUrl) { setIsSubmitting(false); return; }
     }
@@ -489,6 +448,8 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
       proposed_changes: { 
         description: autoDescription,
         beneficiary_legal_status: isTransferMutation ? beneficiaryLegalStatus : undefined,
+        // Date déclarée : utilisée par le serveur seulement si la parcelle n'en a pas
+        declared_acquisition_date: showLateFees && !ownerAcquisitionDate && manualAcquisitionDate ? manualAcquisitionDate : undefined,
       },
       justification: justification.trim() || undefined,
       selected_fees: selectedFeesDetails,
@@ -496,11 +457,11 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
       // Dedicated columns
       supporting_documents: documentUrls.length > 0 ? documentUrls : undefined,
       expertise_certificate_url: expertiseCertificateUrl || undefined,
-      expertise_certificate_date: expertiseCertificateDate || undefined,
-      market_value_usd: marketValueUsd ? parseFloat(marketValueUsd) : undefined,
-      title_age: titleAge || undefined,
-      mutation_fee_amount: isTransferMutation && mutationFeesCalculation.applicable ? mutationFeesCalculation.mutationFee : undefined,
-      bank_fee_amount: isTransferMutation && mutationFeesCalculation.applicable ? mutationFeesCalculation.bankFee : undefined,
+      expertise_certificate_date: requiresCertificate ? expertiseCertificateDate || undefined : undefined,
+      market_value_usd: requiresCertificate && marketValueUsd ? parseFloat(marketValueUsd) : undefined,
+      title_age: requiresCertificate ? titleAge || undefined : undefined,
+      mutation_fee_amount: mutationFeesCalculation.applicable ? mutationFeesCalculation.mutationFee : undefined,
+      bank_fee_amount: mutationFeesCalculation.applicable ? mutationFeesCalculation.bankFee : undefined,
       late_fee_amount: showLateFees && lateFeesCalculation.applicable ? lateFeesCalculation.fee : undefined,
       late_fee_days: showLateFees && lateFeesCalculation.applicable ? lateFeesCalculation.days : undefined,
     });
@@ -508,19 +469,13 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
     setIsSubmitting(false);
 
     if (request) {
+      // Le montant enregistré est celui calculé par le serveur
+      if (Math.abs(Number(request.total_amount_usd) - totalAmount) > 0.01) {
+        toast.warning(`Montant ajusté par le serveur : ${Number(request.total_amount_usd).toFixed(2)} $ (estimation : ${totalAmount.toFixed(2)} $).`);
+      }
       setCreatedRequest(request);
       setStep('payment');
     }
-  };
-
-  // Phone validation — accepts international formats with country code
-  const validatePhoneNumber = (phone: string): boolean => {
-    const cleaned = phone.replace(/[\s\-()]/g, '');
-    // Must start with + and country code (1-3 digits), followed by 7-12 digits
-    // Or start with 0 for local DRC numbers (9 digits after 0)
-    const internationalRegex = /^\+[1-9]\d{0,2}\d{7,12}$/;
-    const localRegex = /^0\d{9}$/;
-    return internationalRegex.test(cleaned) || localRegex.test(cleaned);
   };
 
   const handlePayment = async () => {
@@ -537,7 +492,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
         if (!enabledMobileProviders.length) throw new Error('Aucun opérateur Mobile Money actif n\'est configuré.');
         if (!paymentProvider) { toast.error('Veuillez sélectionner un opérateur'); setProcessingPayment(false); return; }
         if (!paymentPhone) { toast.error('Veuillez entrer votre numéro de téléphone'); setProcessingPayment(false); return; }
-        if (!validatePhoneNumber(paymentPhone)) { toast.error('Numéro invalide. Entrez un numéro valide avec indicatif pays.'); setProcessingPayment(false); return; }
+        if (!isValidDrcMobileNumber(paymentPhone)) { toast.error('Numéro Mobile Money RDC invalide (ex. +243 81 234 5678).'); setProcessingPayment(false); return; }
 
         const { data: paymentResult, error: paymentError } = await supabase.functions.invoke('process-mobile-money-payment', {
           body: { payment_provider: paymentProvider, phone_number: paymentPhone.replace(/\s/g, ''), amount_usd: createdRequest.total_amount_usd, payment_type: 'mutation_request', invoice_id: createdRequest.id },
@@ -647,6 +602,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
       requesterType={requesterType}
       setRequesterType={setRequesterType}
       isTransferMutation={isTransferMutation}
+      requiresCertificate={requiresCertificate}
       beneficiaryLegalStatus={beneficiaryLegalStatus}
       setBeneficiaryLegalStatus={setBeneficiaryLegalStatus}
       beneficiaryLastName={beneficiaryLastName}

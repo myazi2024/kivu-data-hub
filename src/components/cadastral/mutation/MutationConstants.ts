@@ -43,6 +43,10 @@ export const TRANSFER_MUTATION_TYPES = ['vente', 'donation', 'succession', 'expr
 export const NO_LATE_FEE_TYPES = ['correction', 'mise_a_jour', 'expropriation'];
 
 export const isTransferMutation = (type: string) => TRANSFER_MUTATION_TYPES.includes(type);
+
+/** Transferts exigeant un certificat d'expertise (l'expropriation en est exclue). */
+export const CERTIFICATE_MUTATION_TYPES = ['vente', 'donation', 'succession', 'echange'];
+export const requiresExpertiseCertificate = (type: string) => CERTIFICATE_MUTATION_TYPES.includes(type);
 export const hasLateFees = (type: string) => !NO_LATE_FEE_TYPES.includes(type);
 
 /**
@@ -65,3 +69,35 @@ export const MUTATION_STATUS_LABELS: Record<string, string> = {
   on_hold: 'Suspendue',
   cancelled: 'Annulée',
 };
+
+/**
+ * Droits de mutation + commission bancaire (estimation affichée).
+ * Miroir exact de `enforce_mutation_request_insert` côté serveur, qui fait foi.
+ */
+export function computeMutationDuties(value: number, titleAge: 'less_than_10' | '10_or_more' | null) {
+  if (!Number.isFinite(value) || value < 10000) {
+    return { mutationFee: 0, bankFee: 0, total: 0, applicable: false, percentage: 0 };
+  }
+  const isOld = titleAge === '10_or_more';
+  const percentage = isOld ? 0.015 : 0.03;
+  const mutationFee = Math.round(value * percentage * 100) / 100;
+  const bankFee = isOld ? 0 : Math.round(value * BANK_FEE_PERCENTAGE * 100) / 100;
+  return {
+    mutationFee,
+    bankFee,
+    total: Math.round((mutationFee + bankFee) * 100) / 100,
+    applicable: true,
+    percentage: percentage * 100,
+  };
+}
+
+/** Pénalités de retard : 0,45 $/jour après 20 jours, plafonnées à 500 $ (miroir serveur). */
+export function computeLateFees(acquisitionDate: string | null, today: Date = new Date()) {
+  if (!acquisitionDate) return { days: 0, fee: 0, applicable: false, capped: false };
+  const acq = new Date(acquisitionDate);
+  if (Number.isNaN(acq.getTime())) return { days: 0, fee: 0, applicable: false, capped: false };
+  const elapsed = Math.floor((Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()) - Date.UTC(acq.getFullYear(), acq.getMonth(), acq.getDate())) / 86_400_000);
+  const days = Math.max(0, elapsed - 20);
+  const raw = days * 0.45;
+  return { days, fee: Math.round(Math.min(raw, 500) * 100) / 100, applicable: days > 0, capped: raw > 500 };
+}

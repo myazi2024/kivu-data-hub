@@ -95,6 +95,8 @@ export interface FormStepProps {
   beneficiaryPhone: string;
   setBeneficiaryPhone: (value: string) => void;
 
+  /** Le type de mutation exige un certificat d'expertise. */
+  requiresCertificate: boolean;
   hasExpertiseCertificate: 'yes' | 'no' | null;
   setHasExpertiseCertificate: (value: 'yes' | 'no') => void;
 
@@ -165,6 +167,7 @@ const FormStep: React.FC<FormStepProps> = ({
   setBeneficiaryFirstName,
   beneficiaryPhone,
   setBeneficiaryPhone,
+  requiresCertificate,
   hasExpertiseCertificate,
   setHasExpertiseCertificate,
   expertiseCertificateInputRef,
@@ -413,8 +416,8 @@ const FormStep: React.FC<FormStepProps> = ({
           </Card>
         )}
 
-        {/* Certificat d'expertise immobilière (transfert uniquement) */}
-        {isTransferMutation && (
+        {/* Certificat d'expertise immobilière (types qui l'exigent) */}
+        {requiresCertificate && (
           <Card className="border-2 border-amber-200 dark:border-amber-800 rounded-xl bg-amber-50/50 dark:bg-amber-950/20">
             <CardContent className="p-3 space-y-3">
               <div className="flex items-center gap-2">
@@ -560,7 +563,7 @@ const FormStep: React.FC<FormStepProps> = ({
         {renderAdminFeesSection()}
 
         {/* Mutation fees (transfer types only) */}
-        {isTransferMutation && mutationFeesCalculation.applicable && (
+        {mutationFeesCalculation.applicable && (
           <Card className="border-2 border-primary/20 rounded-xl">
             <CardContent className="p-3 space-y-3">
               <h4 className="text-sm font-semibold text-primary flex items-center gap-2">
