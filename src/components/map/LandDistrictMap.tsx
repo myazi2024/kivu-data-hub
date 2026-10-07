@@ -131,7 +131,14 @@ export default function LandDistrictMap({ province, selected, onSelect, getDistr
         ) : (
           <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-muted-foreground">
             <span>Survolez ou sélectionnez une circonscription.</span>
-            <span className="flex items-center gap-1"><span className="h-2.5 w-2.5 rounded-sm bg-primary" aria-hidden="true" />Identifiées ({new Set(visibleDistricts.map((f) => f.district)).size})</span>
+            <span className="flex items-center gap-1">
+              <span
+                className="h-2.5 w-4 rounded-sm"
+                style={{ background: `linear-gradient(90deg, ${[...colors.values()].slice(0, 5).join(', ') || 'transparent'})` }}
+                aria-hidden="true"
+              />
+              Circonscriptions identifiées ({new Set(visibleDistricts.map((f) => f.district)).size})
+            </span>
             <span className="flex items-center gap-1"><span className="h-2.5 w-2.5 rounded-sm bg-muted border border-border" aria-hidden="true" />Découpage en cours</span>
           </div>
         )}
