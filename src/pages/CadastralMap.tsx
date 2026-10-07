@@ -93,7 +93,6 @@ const CadastralMap = () => {
   const [showIntroDialog, setShowIntroDialog] = useState(false);
   const [showContributionDialog, setShowContributionDialog] = useState(false);
   const [actionsExpanded, setActionsExpanded] = useState(false);
-  const [actionDetailExpanded, setActionDetailExpanded] = useState(false);
   const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
   const [showManualSearchNotification, setShowManualSearchNotification] = useState(false);
   const [isSearchBarActive, setIsSearchBarActive] = useState(false);
@@ -396,7 +395,7 @@ const CadastralMap = () => {
           height: 'calc(100dvh - 4rem)',
           // CSS var consumed by the inline rule below — no JS viewport math.
           ['--map-zoom-offset' as any]: selectedParcel
-            ? (isMobile ? (actionsExpanded ? (actionDetailExpanded ? '52dvh' : '30dvh') : '32dvh') : (actionsExpanded ? '36rem' : '10rem'))
+            ? (isMobile ? (actionsExpanded ? '84dvh' : '32dvh') : (actionsExpanded ? '36rem' : '10rem'))
             : (isMobile ? '1rem' : '1rem'),
         }}
       >
@@ -776,18 +775,17 @@ const CadastralMap = () => {
             className={`absolute z-[1000] ${isMobile ? 'inset-x-0 bottom-0' : 'bottom-4 right-4 w-80'}`}
             style={isMobile ? { paddingBottom: 'env(safe-area-inset-bottom)' } : undefined}
           >
-            <div className={`bg-background/98 backdrop-blur-xl ${isMobile ? 'rounded-t-lg border-t' : 'rounded-lg border'} shadow-lg border-border/40 overflow-hidden flex flex-col transition-[max-height] duration-300 motion-reduce:transition-none ${isMobile && actionsExpanded ? (actionDetailExpanded ? 'h-[50dvh] max-h-[50dvh]' : 'h-[28dvh] max-h-[28dvh]') : 'max-h-[min(82dvh,700px)]'}`}>
+            <div className={`bg-background/98 backdrop-blur-xl ${isMobile ? 'rounded-t-lg border-t' : 'rounded-lg border'} shadow-lg border-border/40 overflow-hidden max-h-[min(82dvh,700px)] flex flex-col`}>
               <ParcelActionsDropdown
                 parcelNumber={selectedParcel.parcel_number}
                 parcelId={selectedParcel.id}
                 parcelData={selectedParcel}
                 expanded={actionsExpanded}
-                onCollapse={() => { setActionsExpanded(false); setActionDetailExpanded(false); }}
-                onDetailExpandedChange={setActionDetailExpanded}
+                onCollapse={() => setActionsExpanded(false)}
                 onRequestLandTitle={() => setShowLandTitleTermsDialog(true)}
               />
 
-              <div className={`relative px-3.5 flex items-center justify-between ${isMobile && actionsExpanded ? 'hidden' : 'py-3'}`}>
+              <div className="relative px-3.5 py-3 flex items-center justify-between">
                 <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
                 <div className="flex items-center gap-2.5">
                   <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-primary/15 to-primary/5 flex items-center justify-center border border-primary/10">
@@ -820,7 +818,7 @@ const CadastralMap = () => {
                 </div>
               </div>
 
-              <div className={`px-3.5 overflow-y-auto min-h-0 overscroll-contain ${isMobile && actionsExpanded ? 'hidden' : 'pb-3.5'}`}>
+               <div className="px-3.5 pb-3.5 overflow-y-auto min-h-0 overscroll-contain">
                 {/*
                   Données détaillées masquées quand le menu Actions est ouvert :
                   libère l'espace de la feuille pour les services, seul le rang
@@ -876,10 +874,7 @@ const CadastralMap = () => {
                     variant={actionsExpanded ? 'default' : 'secondary'}
                     size="sm"
                     className={`flex-1 h-10 text-xs rounded-xl font-medium gap-1 transition-all ${actionsExpanded ? 'shadow-sm' : ''}`}
-                    onClick={() => setActionsExpanded(prev => {
-                      if (prev) setActionDetailExpanded(false);
-                      return !prev;
-                    })}
+                    onClick={() => setActionsExpanded(prev => !prev)}
                   >
                     {actionsExpanded ? 'Fermer' : 'Actions'}
                     {actionsExpanded ? <X className="h-3.5 w-3.5" /> : <Settings2 className="h-3.5 w-3.5" />}

@@ -1,6 +1,6 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
 import { Sparkles, Clock, Beaker, Tag, FileText, ArrowRightLeft, Landmark, ShieldCheck, Calculator, LayoutGrid, AlertTriangle, Award, ScrollText, ChevronDown } from 'lucide-react';
 import { useParcelActionsConfig, ParcelAction } from '@/hooks/useParcelActionsConfig';
 import { supabase } from '@/integrations/supabase/client';
@@ -20,7 +20,6 @@ interface ParcelActionsDropdownProps {
   parcelData?: any;
   expanded: boolean;
   onCollapse: () => void;
-  onDetailExpandedChange?: (expanded: boolean) => void;
   onRequestLandTitle?: () => void;
 }
 
@@ -87,7 +86,7 @@ const ActionIcon: React.FC<{ iconName?: string; actionKey: string; className?: s
 };
 
 const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
-  parcelNumber, parcelId, parcelData, expanded, onCollapse, onDetailExpandedChange, onRequestLandTitle
+  parcelNumber, parcelId, parcelData, expanded, onCollapse, onRequestLandTitle
 }) => {
   const { actions } = useParcelActionsConfig();
   const [showMutationDialog, setShowMutationDialog] = useState(false);
@@ -102,24 +101,8 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
   // autre réduit automatiquement la précédente)
   const [expandedDetailId, setExpandedDetailId] = useState<string | null>(null);
   const toggleDetails = useCallback((actionId: string) => {
-    setExpandedDetailId(prev => {
-      const next = prev === actionId ? null : actionId;
-      onDetailExpandedChange?.(next !== null);
-      return next;
-    });
-  }, [onDetailExpandedChange]);
-
-  useEffect(() => {
-    if (expanded) return;
-    setExpandedDetailId(null);
-    onDetailExpandedChange?.(false);
-  }, [expanded, onDetailExpandedChange]);
-
-  const collapseMobileDetails = useCallback(() => {
-    if (!expandedDetailId) return;
-    setExpandedDetailId(null);
-    onDetailExpandedChange?.(false);
-  }, [expandedDetailId, onDetailExpandedChange]);
+    setExpandedDetailId(prev => (prev === actionId ? null : actionId));
+  }, []);
 
   const lastFocusedIndexRef = useRef<number | null>(null);
   const handleMenuItemFocus = useCallback((index: number) => {
@@ -199,102 +182,16 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
       {/* Expandable services panel */}
       {expanded && (
         <div className="bg-gradient-to-b from-muted/30 to-muted/10">
-          <div className="px-3 py-1.5 sm:px-3.5 sm:py-2.5 flex items-center justify-between">
+          <div className="px-3.5 py-2.5 flex items-center justify-between">
             <div className="flex items-center gap-1.5">
               <div className="h-1.5 w-1.5 rounded-full bg-primary/60 animate-pulse" />
-              <p className="text-[10px] font-semibold text-foreground/70 uppercase tracking-wider">
-                <span className="sm:hidden">Actions · {parcelNumber}</span>
-                <span className="hidden sm:inline">Services disponibles</span>
-              </p>
+              <p className="text-[10px] font-semibold text-foreground/70 uppercase tracking-wider">Services disponibles</p>
             </div>
-            <div className="flex items-center gap-1.5">
-              <span className="text-[9px] text-muted-foreground font-medium bg-muted/50 px-1.5 py-0.5 rounded-full">{visibleActions.length}</span>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                onClick={onCollapse}
-                className="h-8 w-8 sm:hidden"
-                aria-label="Fermer le menu Actions"
-              >
-                <ChevronDown className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-          <div
-            className="sm:hidden min-h-0 flex-1 overflow-x-auto overscroll-x-contain scrollbar-thin px-2.5 pb-2 snap-x snap-mandatory touch-pan-x"
-            aria-label="Services disponibles"
-            onScroll={collapseMobileDetails}
-          >
-            <div className="flex h-full w-max gap-2">
-              {visibleActions.map((action, index) => {
-                const blockedReason = action.isActive ? getBlockedReason(action.key) : null;
-                const disabled = !action.isActive || !!blockedReason;
-                const detailExpanded = expandedDetailId === action.id;
-                return (
-                  <article
-                    key={action.id}
-                    onFocus={() => handleMenuItemFocus(index)}
-                    className={`flex h-full w-[15rem] max-w-[calc(100vw-3.5rem)] shrink-0 snap-start flex-col rounded-lg border bg-background px-3 py-2 text-left shadow-sm transition-[border-color,box-shadow] motion-reduce:transition-none ${disabled ? 'border-border/50 opacity-55' : 'border-border/80'}`}
-                    aria-label={`${action.label}${blockedReason ? `. ${blockedReason}` : ''}`}
-                  >
-                    <div className="flex min-w-0 items-center gap-2">
-                      <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-md ${disabled ? 'bg-muted text-muted-foreground/50' : 'bg-primary/10 text-primary'}`}>
-                        <ActionIcon iconName={action.iconName} actionKey={action.key} className="h-4 w-4" />
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <h4 className="line-clamp-1 text-xs font-semibold leading-tight text-foreground">{action.label}</h4>
-                        <ActionBadge badge={action.badge} />
-                      </div>
-                    </div>
-
-                    <p className={`mt-1.5 text-[11px] leading-snug text-muted-foreground ${detailExpanded ? 'line-clamp-1' : 'line-clamp-2'}`}>
-                      {blockedReason ?? action.description}
-                    </p>
-
-                    {detailExpanded && action.detailedDescription && (
-                      <div
-                        className="mt-1.5 min-h-0 flex-1 overflow-y-auto overscroll-contain rounded-md border border-border/60 bg-muted/25 px-2.5 py-2 text-[11px] leading-relaxed text-muted-foreground scrollbar-thin touch-pan-y"
-                        tabIndex={0}
-                        aria-label={`Explication de ${action.label}`}
-                      >
-                        {action.detailedDescription}
-                      </div>
-                    )}
-
-                    <div className="mt-auto flex items-center gap-2 pt-2">
-                      {action.detailedDescription && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          aria-expanded={detailExpanded}
-                          onClick={() => toggleDetails(action.id)}
-                          className="h-11 flex-1 justify-center gap-1 px-2 text-[11px]"
-                        >
-                          {detailExpanded ? 'Réduire' : 'En savoir plus'}
-                          <ChevronDown className={`h-3.5 w-3.5 transition-transform motion-reduce:transition-none ${detailExpanded ? 'rotate-180' : ''}`} />
-                        </Button>
-                      )}
-                      <Button
-                        type="button"
-                        size="sm"
-                        disabled={disabled}
-                        onClick={() => handleActionClick(action)}
-                        className="h-11 flex-1 px-3 text-xs"
-                      >
-                        Ouvrir
-                      </Button>
-                    </div>
-                    {disabled && <span className="sr-only">Indisponible</span>}
-                  </article>
-                );
-              })}
-            </div>
+            <span className="text-[9px] text-muted-foreground font-medium bg-muted/50 px-1.5 py-0.5 rounded-full">{visibleActions.length}</span>
           </div>
           {/* Hauteur liée au panneau (max 82dvh) moins l'en-tête + rang de boutons
               (~11rem) : les boutons restent toujours visibles sous la liste. */}
-          <div className="hidden sm:block overflow-y-auto overscroll-contain sm:max-h-[420px] scrollbar-thin">
+          <div className="overflow-y-auto overscroll-contain max-h-[calc(82dvh-11rem)] sm:max-h-[420px] scrollbar-thin">
             <div className="px-2.5 pb-2 space-y-2">
               {groupedActions.map((item, index) => {
                 if (item === 'separator') return null;

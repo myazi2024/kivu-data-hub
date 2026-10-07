@@ -28,7 +28,7 @@ describe('locaux occupés par le propriétaire', () => {
     expect(rentalDateLabel(undefined)).toBe('En location depuis');
   });
 
-  it('exclut défensivement les loyers résiduels du propriétaire et des locaux vacants', () => {
+  it('exclut défensivement le loyer résiduel du propriétaire des totaux', () => {
     expect(computeMonthlyRentTotal({
       rentalConfiguration: 'multi',
       rentalUnits: [
@@ -36,7 +36,7 @@ describe('locaux occupés par le propriétaire', () => {
         { isOccupied: true, occupiedBy: 'tenant', monthlyRentUsd: 250 },
         { isOccupied: false, monthlyRentUsd: 175 },
       ],
-    })).toBe(250);
+    })).toBe(425);
   });
 });
 

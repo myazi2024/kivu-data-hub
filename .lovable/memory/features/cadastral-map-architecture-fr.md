@@ -50,5 +50,5 @@ La page `/cadastral-map` (anciennement 1615 LOC monolithe) est décomposée :
 - Geolocate : top-droite sous la barre de recherche (`top-[4.5rem]`) au lieu de 40 % du viewport.
 - Légende mobile : top-droite (`top-[8rem]`), popover side="left" — plus de position dynamique calculée en bas.
 - Panneau parcelle sélectionnée : **bottom-sheet plein largeur** (`inset-x-0 bottom-0 rounded-t-3xl`) avec `pb-[env(safe-area-inset-bottom)]` ; supprimé `max-w-[340px] mx-auto` qui créait une bande étroite. Boutons d'action `h-10` (Données / Actions / WhatsApp), favori et fermeture `h-9 w-9`.
-- ParcelActionsDropdown : sur mobile, bande horizontale de fiches larges (environ deux anciennes vignettes) avec résumé, « En savoir plus » et « Ouvrir » ; panneau à `28dvh` au repos et `50dvh` quand une explication défilable est ouverte. Sur ordinateur, la liste détaillée verticale reste inchangée.
+- ParcelActionsDropdown : `max-h-[55dvh]` mobile + `overscroll-contain` ; chaque bouton `min-h-11` pour cible tactile.
 - CadastralCartButton : ancré en `bottom-[calc(env(safe-area-inset-bottom)+5rem)] sm:bottom-3` ; SheetContent reçoit `pb-[env(safe-area-inset-bottom)]`.
