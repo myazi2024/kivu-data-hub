@@ -28,3 +28,10 @@ Lecture libre supprimée ; carte et tableau client passent par `get_parcel_paid_
 
 ### Points ouverts
 - Parcours connectés (ajout au panier, paiement) non cliqués dans le navigateur de contrôle.
+
+## Résultat cadastral acheté (2026-10-07)
+- Serveur : `get_cadastral_parcel_data` renvoie `access` (services actifs + fin d'accès) ; « Localisation & bornage » seul ouvre la localisation sans le propriétaire ; `legal_verification` lit la parcelle complète.
+- Fiche, PDF et téléchargement depuis l'espace client : rubriques ouvertes uniquement selon `access`, cadenas sinon, numérotation fixe ; plus de lecture directe des tables côté navigateur.
+- Fiche rechargée automatiquement après paiement.
+- Code de vérification créé seulement à l'impression/au téléchargement d'un document contenant un service acheté.
+- Supprimé : contrôle d'accès en double (`checkServiceAccess`), reconstruction du nom du propriétaire depuis les détails bruts.
