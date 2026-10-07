@@ -705,6 +705,9 @@ const LAND_DISTRICT_ANCHOR_OVERRIDES: Record<string, Record<string, Omit<LandDis
     'Butembo I': { level: 'ville', ville: 'Butembo', partial: true },
     'Butembo II': { level: 'ville', ville: 'Butembo', partial: true },
   },
+  'Haut-Katanga': {
+    'Likasi': { level: 'ville', ville: 'Likasi' },
+  },
   'Sud-Kivu': {
     'Bukavu I': { level: 'ville', ville: 'Bukavu', partial: true },
     'Bukavu II': { level: 'ville', ville: 'Bukavu', partial: true },

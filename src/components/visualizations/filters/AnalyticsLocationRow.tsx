@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { MapPin } from 'lucide-react';
 import { AnalyticsFilter } from '@/utils/analyticsHelpers';
-import { getSectionTypeForLandDistrict } from '@/lib/geographicData';
+import { getSectionTypeForLandDistrict, getLandDistrictAnchor } from '@/lib/geographicData';
 
 const selectCls = 'h-6 text-[10px] w-auto min-w-[70px]';
 const sep = <span className="text-[10px] text-muted-foreground">›</span>;
@@ -51,6 +51,17 @@ export const AnalyticsLocationRow: React.FC<Props> = ({
   // Province → Circonscription → zone (déduite, sinon choisie) → niveaux urbains OU ruraux.
   void hasUrbanData; void hasRuralData;
   const districtZone = filter.landDistrict ? getSectionTypeForLandDistrict(filter.landDistrict) : '';
+  const anchor = getLandDistrictAnchor(filter.province, filter.landDistrict);
+  const anchorLabel = anchor.level === 'commune'
+    ? `Commune de ${anchor.commune} (ville de ${anchor.ville})`
+    : anchor.level === 'ville'
+      ? `${anchor.partial ? 'Partie de la ville' : 'Ville'} de ${anchor.ville}`
+      : anchor.level === 'territoire'
+        ? `${anchor.partial ? 'Partie du territoire' : 'Territoire'} de ${anchor.territoire}`
+        : '';
+  const lockVille = !!anchor.ville;
+  const lockCommune = !!anchor.commune;
+  const lockTerritoire = !!anchor.territoire;
   const needsManualZone = !!filter.landDistrict && !districtZone;
   const showUrbanSub = filter.sectionType === 'urbaine' && (!!filter.landDistrict || !!filter.ville);
   const showRuralSub = filter.sectionType === 'rurale' && (!!filter.landDistrict || !!filter.territoire);
@@ -100,16 +111,19 @@ export const AnalyticsLocationRow: React.FC<Props> = ({
         onValueChange={(v) => {
           const district = v === '__all__' ? undefined : v;
           const zone = district ? getSectionTypeForLandDistrict(district) : '';
-          const sectionType = (zone || 'all') as AnalyticsFilter['sectionType'];
+          const a = getLandDistrictAnchor(filter.province, district);
+          const sectionType = (zone || (a.territoire ? 'rurale' : a.ville ? 'urbaine' : 'all')) as AnalyticsFilter['sectionType'];
           onChange({
             ...filter,
             landDistrict: district,
             sectionType,
-            ville: undefined, commune: undefined, quartier: undefined, avenue: undefined,
-            territoire: undefined, collectivite: undefined, groupement: undefined, villageFilter: undefined,
+            ville: a.ville, commune: a.commune, quartier: undefined, avenue: undefined,
+            territoire: a.territoire, collectivite: undefined, groupement: undefined, villageFilter: undefined,
           });
-          onVilleChange(undefined);
-          onCommuneChange(undefined);
+          onVilleChange(a.ville);
+          onCommuneChange(a.commune);
+          onQuartierChange(undefined);
+          onTerritoireChange(a.territoire);
           onSectionTypeChange?.(sectionType);
           onLandDistrictChange?.(district);
         }}
@@ -130,6 +144,15 @@ export const AnalyticsLocationRow: React.FC<Props> = ({
             {districtZone === 'urbaine' ? 'SU - Urbaine' : 'SR - Rurale'}
           </Badge>
           <span className="text-[9px] text-muted-foreground italic">auto-détecté</span>
+        </>
+      )}
+
+      {anchorLabel && (
+        <>
+          {sep}
+          <Badge variant="outline" className="text-[10px] px-1.5 py-0 font-normal" aria-label="Découpage sur lequel est calquée la circonscription">
+            Calquée sur : {anchorLabel}
+          </Badge>
         </>
       )}
 
@@ -158,7 +181,7 @@ export const AnalyticsLocationRow: React.FC<Props> = ({
 
       {showUrbanSub && (
         <>
-          {(
+          {!lockVille && (
             <>
               {sep}
               <Select
@@ -180,7 +203,7 @@ export const AnalyticsLocationRow: React.FC<Props> = ({
             </>
           )}
 
-          {filter.ville && communesFinal.length > 0 && (
+          {filter.ville && !lockCommune && communesFinal.length > 0 && (
             <>
               {sep}
               <Select
@@ -243,8 +266,8 @@ export const AnalyticsLocationRow: React.FC<Props> = ({
 
       {showRuralSub && (
         <>
-          {sep}
-          <Select
+          {!lockTerritoire && sep}
+          {!lockTerritoire && <Select
             value={filter.territoire || '__all__'}
             onValueChange={(v) => {
               const newTerritoire = v === '__all__' ? undefined : v;
@@ -261,7 +284,7 @@ export const AnalyticsLocationRow: React.FC<Props> = ({
               <SelectItem value="__all__">Tous les territoires</SelectItem>
               {territoiresFinal.map((v) => (<SelectItem key={v} value={v}>{v}</SelectItem>))}
             </SelectContent>
-          </Select>
+          </Select>}
 
           {filter.territoire && collectivitesFinal.length > 0 && (
             <>
