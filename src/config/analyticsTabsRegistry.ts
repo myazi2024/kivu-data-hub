@@ -77,10 +77,9 @@ export const ANALYTICS_TABS_REGISTRY: Record<string, { label: string; charts: Ch
       { tab_key: 'parcels-titled', item_key: 'kpi-hosting', item_type: 'kpi', is_visible: true, display_order: 2, custom_title: 'Capacité accueil' },
       { tab_key: 'parcels-titled', item_key: 'kpi-avg-capacity', item_type: 'kpi', is_visible: true, display_order: 3, custom_title: 'Cap. moyenne' },
       { tab_key: 'parcels-titled', item_key: 'kpi-multi-constr', item_type: 'kpi', is_visible: true, display_order: 4, custom_title: 'Multi-constructions' },
-      { tab_key: 'parcels-titled', item_key: 'kpi-maison-basse', item_type: 'kpi', is_visible: true, display_order: 5, custom_title: 'Maisons basses' },
-      { tab_key: 'parcels-titled', item_key: 'kpi-in-progress', item_type: 'kpi', is_visible: true, display_order: 6, custom_title: 'En cours' },
-      { tab_key: 'parcels-titled', item_key: 'kpi-rented', item_type: 'kpi', is_visible: true, display_order: 7, custom_title: 'Mises en location' },
-      { tab_key: 'parcels-titled', item_key: 'kpi-vacant-units', item_type: 'kpi', is_visible: true, display_order: 8, custom_title: 'Locaux vacants' },
+      { tab_key: 'parcels-titled', item_key: 'kpi-in-progress', item_type: 'kpi', is_visible: true, display_order: 5, custom_title: 'En cours' },
+      { tab_key: 'parcels-titled', item_key: 'kpi-rented', item_type: 'kpi', is_visible: true, display_order: 6, custom_title: 'Mises en location' },
+      { tab_key: 'parcels-titled', item_key: 'kpi-vacant-units', item_type: 'kpi', is_visible: true, display_order: 7, custom_title: 'Locaux vacants' },
     ],
   },
   'contributions': {

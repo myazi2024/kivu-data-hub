@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   flattenConstructions, constructionStatusData, rentalUnitsOccupancyData,
   boundaryKindData, roadAccessData, entrancesData, operationalCapacityData,
+  flattenPropertyCategoryRecords, propertyCategoryData,
 } from '../constructionAnalytics';
 
 describe('constructionAnalytics', () => {
@@ -35,5 +36,23 @@ describe('constructionAnalytics', () => {
   });
   it('capacité par unité', () => {
     expect(operationalCapacityData(flattenConstructions([parcel]))).toEqual([{ name: 'lits', value: 10 }]);
+  });
+  it('catégories : ordre CCC, principale, supplémentaires et terrain nu', () => {
+    const records = [
+      parcel,
+      { property_category: 'Terrain nu' },
+      { property_category: 'Appartement', additional_constructions: [{ propertyCategory: 'Local commercial' }] },
+    ];
+    expect(propertyCategoryData(records)).toEqual([
+      { name: 'Appartement', value: 1 },
+      { name: 'Villa', value: 1 },
+      { name: 'Maison', value: 0 },
+      { name: 'Maison basse', value: 1 },
+      { name: 'Local commercial', value: 1 },
+      { name: 'Immeuble/Bâtiment', value: 0 },
+      { name: 'Entrepôt/Hangar', value: 0 },
+      { name: 'Terrain nu', value: 1 },
+    ]);
+    expect(flattenPropertyCategoryRecords(records)).toHaveLength(5);
   });
 });

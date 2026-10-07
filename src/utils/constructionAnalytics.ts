@@ -6,6 +6,7 @@
 import { normalizeDeclaredUsage } from '@/utils/declaredUsageNormalizer';
 import { isOwnerOccupiedUnit, isVacantUnit } from '@/utils/rentalStatus';
 import { sideBoundaryKind, sideHasRoad, boundaryKindLabel } from '@/components/cadastral/ParcelSidesDimensionsPanel';
+import { PROPERTY_CATEGORY_OPTIONS } from '@/lib/ccc/propertyCategories';
 
 export interface FlatConstruction {
   category: string | null;
@@ -21,6 +22,38 @@ export interface FlatConstruction {
 }
 
 export interface NamedValue { name: string; value: number }
+
+/**
+ * Une ligne par catégorie déclarée, en conservant les champs de la parcelle
+ * parente pour les filtres et variables croisées Analytics.
+ */
+export function flattenPropertyCategoryRecords(records: any[]): any[] {
+  const allowed = new Set<string>(PROPERTY_CATEGORY_OPTIONS);
+  const out: any[] = [];
+  for (const record of records || []) {
+    const mainCategory = record?.property_category;
+    if (allowed.has(mainCategory)) out.push(record);
+
+    const extra = Array.isArray(record?.additional_constructions) ? record.additional_constructions : [];
+    for (const construction of extra) {
+      const category = pick(construction, 'propertyCategory', 'property_category');
+      if (allowed.has(category) && category !== 'Terrain nu') {
+        out.push({ ...record, ...construction, property_category: category });
+      }
+    }
+  }
+  return out;
+}
+
+/** Toutes les catégories du CCC, dans l'ordre du formulaire, y compris les valeurs à zéro. */
+export function propertyCategoryData(records: any[]): NamedValue[] {
+  const counts = new Map<string, number>(PROPERTY_CATEGORY_OPTIONS.map(category => [category, 0]));
+  flattenPropertyCategoryRecords(records).forEach(record => {
+    const category = String(record.property_category);
+    counts.set(category, (counts.get(category) || 0) + 1);
+  });
+  return PROPERTY_CATEGORY_OPTIONS.map(name => ({ name, value: counts.get(name) || 0 }));
+}
 
 const pick = (o: any, camel: string, snake: string) => (o?.[camel] ?? o?.[snake] ?? null);
 const toNum = (x: any): number | null => { const n = Number(x); return Number.isFinite(n) && n > 0 ? n : null; };
