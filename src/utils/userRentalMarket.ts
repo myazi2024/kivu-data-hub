@@ -5,7 +5,7 @@
  * les parsers de `cccConsistency` sont réutilisés pour éviter toute divergence
  * de logique entre les trois surfaces.
  */
-import { isConstructionRented } from '@/utils/rentalStatus';
+import { isConstructionRented, isRentExemptUnit } from '@/utils/rentalStatus';
 import {
   parseRentalUnits,
   parseMarketListings,
@@ -115,7 +115,7 @@ const buildRentalAsset = (
   const monthlyRentUsd =
     configuration === 'multi'
       ? units.reduce(
-          (sum, u) => sum + (u.isOccupied === true && u.occupiedBy === 'owner' ? 0 : (u.monthlyRentUsd ?? 0)),
+          (sum, u) => sum + (isRentExemptUnit(u) ? 0 : (u.monthlyRentUsd ?? 0)),
           0,
         )
       : declaredMonthlyRentUsd ?? 0;
@@ -147,7 +147,9 @@ const buildRentalAsset = (
     occupiedCount,
     totalCapacity,
     unitsCountMismatch: configuration === 'multi' && units.length !== unitsCount,
-    missingRent: monthlyRentUsd <= 0,
+    missingRent:
+      monthlyRentUsd <= 0 &&
+      (configuration !== 'multi' || units.some((u) => !isRentExemptUnit(u))),
   };
 };
 

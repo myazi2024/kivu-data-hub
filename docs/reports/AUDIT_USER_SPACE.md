@@ -25,3 +25,12 @@
 
 ## Passe 3 — paiements
 - Point ouvert résolu : les paiements test (cadastre, autorisation de bâtir) passent par la fonction serveur `record-test-payment` (utilisateur vérifié, mode test vérifié côté serveur, facture appartenant à l'utilisateur). Règle d'insertion navigateur sur `payment_transactions` supprimée.
+
+## Passe 4 — alignement CCC (2026-10-07)
+| Rubrique | Problème | Gravité | Correction |
+|---|---|---|---|
+| Locations | Le loyer des locaux inoccupés était compté dans le total ; « loyer manquant » affiché quand aucun local n'est loué à un tiers | Moyenne (données fausses) | Même règle que le CCC et le serveur (`isRentExemptUnit`) + tests |
+| Notifications | Liens `?tab=ccc-codes` (codes CCC) ouvraient le tableau de bord | Moyenne | Redirigés vers Factures |
+| Tests | Ancien test attendait encore le loyer des locaux vacants dans le total | Faible | Mis à jour |
+- Vérifié : aucun écran utilisateur orphelin, aucun reste « Disponibilité »/« Prix négociable », liste « Modifier mes données » sans champ supprimé.
+- Non vérifié à l'écran : l'espace demande une connexion indisponible ici.
