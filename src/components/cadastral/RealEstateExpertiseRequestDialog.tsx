@@ -1131,6 +1131,8 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
       parcel_sound_environment: cadastralPrefill?.sound_environment ?? undefined,
     });
 
+    // Données modifiées depuis la dernière tentative : nouvelle demande
+    pendingRequestRef.current = null;
     setStep('payment');
   };
 
@@ -1204,6 +1206,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
         action_url: '/user-dashboard'
       });
 
+      pendingRequestRef.current = null;
       setCreatedRequest(request);
       setStep('confirmation');
       toast.success('Paiement réussi ! Votre demande a été enregistrée.');
@@ -1226,6 +1229,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     setActiveTab('general');
     setShowIntro(true);
     setCreatedRequest(null);
+    pendingRequestRef.current = null;
     setFormData(null);
 
     // General (CCC-aligned)
