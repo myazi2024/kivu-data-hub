@@ -1,6 +1,6 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
+import { Button } from '@/components/ui/button';
 import { Sparkles, Clock, Beaker, Tag, FileText, ArrowRightLeft, Landmark, ShieldCheck, Calculator, LayoutGrid, AlertTriangle, Award, ScrollText, ChevronDown } from 'lucide-react';
 import { useParcelActionsConfig, ParcelAction } from '@/hooks/useParcelActionsConfig';
 import { supabase } from '@/integrations/supabase/client';
@@ -182,16 +182,51 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
       {/* Expandable services panel */}
       {expanded && (
         <div className="bg-gradient-to-b from-muted/30 to-muted/10">
-          <div className="px-3.5 py-2.5 flex items-center justify-between">
+          <div className="px-3 py-1.5 sm:px-3.5 sm:py-2.5 flex items-center justify-between">
             <div className="flex items-center gap-1.5">
               <div className="h-1.5 w-1.5 rounded-full bg-primary/60 animate-pulse" />
-              <p className="text-[10px] font-semibold text-foreground/70 uppercase tracking-wider">Services disponibles</p>
+              <p className="text-[10px] font-semibold text-foreground/70 uppercase tracking-wider">
+                <span className="sm:hidden">Actions · {parcelNumber}</span>
+                <span className="hidden sm:inline">Services disponibles</span>
+              </p>
             </div>
             <span className="text-[9px] text-muted-foreground font-medium bg-muted/50 px-1.5 py-0.5 rounded-full">{visibleActions.length}</span>
           </div>
+          <div className="sm:hidden overflow-x-auto overscroll-x-contain scrollbar-thin px-2.5 pb-2" aria-label="Services disponibles">
+            <div className="flex w-max gap-1.5">
+              {visibleActions.map((action, index) => {
+                const blockedReason = action.isActive ? getBlockedReason(action.key) : null;
+                const disabled = !action.isActive || !!blockedReason;
+                return (
+                  <Button
+                    key={action.id}
+                    type="button"
+                    variant="outline"
+                    onClick={() => handleActionClick(action)}
+                    onFocus={() => handleMenuItemFocus(index)}
+                    disabled={disabled}
+                    title={blockedReason ?? action.description}
+                    aria-label={`${action.label}${blockedReason ? `. ${blockedReason}` : ''}`}
+                    className="h-14 w-[7.25rem] shrink-0 justify-start gap-2 px-2 py-1 rounded-lg border-border/70 bg-background text-left shadow-none disabled:opacity-45"
+                  >
+                    <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-md ${disabled ? 'bg-muted text-muted-foreground/50' : 'bg-primary/10 text-primary'}`}>
+                      <ActionIcon iconName={action.iconName} actionKey={action.key} className="h-4 w-4" />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="line-clamp-2 whitespace-normal text-[11px] font-medium leading-tight text-foreground">{action.label}</span>
+                      <span className="mt-0.5 block">
+                        <ActionBadge badge={action.badge} />
+                      </span>
+                      {disabled && <span className="sr-only">Indisponible</span>}
+                    </span>
+                  </Button>
+                );
+              })}
+            </div>
+          </div>
           {/* Hauteur liée au panneau (max 82dvh) moins l'en-tête + rang de boutons
               (~11rem) : les boutons restent toujours visibles sous la liste. */}
-          <div className="overflow-y-auto overscroll-contain max-h-[calc(82dvh-11rem)] sm:max-h-[420px] scrollbar-thin">
+          <div className="hidden sm:block overflow-y-auto overscroll-contain sm:max-h-[420px] scrollbar-thin">
             <div className="px-2.5 pb-2 space-y-2">
               {groupedActions.map((item, index) => {
                 if (item === 'separator') return null;
