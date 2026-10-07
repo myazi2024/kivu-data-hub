@@ -1,0 +1,1 @@
+DELETE FROM public.analytics_charts_config WHERE tab_key = 'building-permits';
