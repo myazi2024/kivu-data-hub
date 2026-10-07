@@ -152,8 +152,6 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
     <>
       <CadastralDocumentView
         result={result}
-        paidServices={paidServices}
-        catalogServices={catalogServices}
         onDownloadReport={handleDownloadReport}
         onBackToCatalog={() => setShowBillingPanel(true)}
       />
