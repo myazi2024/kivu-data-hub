@@ -9,6 +9,7 @@ import { ChartCard, FilterLabelContext } from '../shared/ChartCard';
 import { BlockUnscopedRecordsProvider } from '../shared/BlockUnscopedRecordsContext';
 import { GeoCharts } from '../shared/GeoCharts';
 import { generateInsight } from '@/utils/chartInsights';
+import { mortgageStatusGroup, meanPositive, bucketHalfOpen } from '@/utils/analyticsTabRules';
 import { useBlockFilter } from '@/hooks/useBlockFilter';
 
 interface Props { data: LandAnalyticsData; }
@@ -16,7 +17,7 @@ interface Props { data: LandAnalyticsData; }
 const TAB_KEY = 'mortgages';
 
 export const MortgagesBlock: React.FC<Props> = memo(({ data }) => {
-  const { filter, setFilter, filterLabel, filtered, filteredUnscoped, filterConfig, v, ct, cx, ty, ord, exportCSV  } = useBlockFilter(TAB_KEY, data.mortgages);
+  const { filter, setFilter, filterLabel, filtered, filteredUnscoped, filterConfig, v, ct, cx, ty, ord } = useBlockFilter(TAB_KEY, data.mortgages);
 
   const byCreditorType = useMemo(() => countBy(filtered, 'creditor_type'), [filtered]);
   const byStatus = useMemo(() => countBy(filtered, 'mortgage_status'), [filtered]);
@@ -30,10 +31,7 @@ export const MortgagesBlock: React.FC<Props> = memo(({ data }) => {
       { name: '50k – 100k $', min: 50000, max: 100000 },
       { name: '> 100k $', min: 100000, max: Infinity },
     ];
-    return brackets.map(b => ({
-      name: b.name,
-      value: filtered.filter(m => (m.mortgage_amount_usd || 0) >= b.min && (m.mortgage_amount_usd || 0) < b.max).length,
-    })).filter(b => b.value > 0);
+    return bucketHalfOpen(filtered.map(m => Number(m.mortgage_amount_usd || 0)), brackets);
   }, [filtered]);
 
   const durationBrackets = useMemo(() => {
@@ -43,23 +41,14 @@ export const MortgagesBlock: React.FC<Props> = memo(({ data }) => {
       { name: '37–60 mois', min: 37, max: 61 },
       { name: '> 60 mois', min: 61, max: Infinity },
     ];
-    return brackets.map(b => ({
-      name: b.name,
-      value: filtered.filter(m => (m.duration_months || 0) >= b.min && (m.duration_months || 0) < b.max).length,
-    })).filter(b => b.value > 0);
+    return bucketHalfOpen(filtered.map(m => Number(m.duration_months || 0)), brackets);
   }, [filtered]);
 
-  const statusNorm = (s: string) => {
-    const val = (s || '').trim().toLowerCase();
-    if (['active', 'actif', 'en_cours'].includes(val)) return 'active';
-    if (['paid', 'soldée', 'soldee', 'closed'].includes(val)) return 'paid';
-    return val;
-  };
-  const active = filtered.filter(m => statusNorm(m.mortgage_status) === 'active').length;
-  const paid = filtered.filter(m => statusNorm(m.mortgage_status) === 'paid').length;
+  const active = filtered.filter(m => mortgageStatusGroup(m.mortgage_status) === 'active').length;
+  const paid = filtered.filter(m => mortgageStatusGroup(m.mortgage_status) === 'paid').length;
   const totalAmount = filtered.reduce((s: number, m: any) => s + (m.mortgage_amount_usd || 0), 0);
-  const avgAmount = filtered.length > 0 ? Math.round(totalAmount / filtered.length) : 0;
-  const avgDuration = filtered.length > 0 ? Math.round(filtered.reduce((s: number, m: any) => s + (m.duration_months || 0), 0) / filtered.length) : 0;
+  const avgAmount = meanPositive(filtered.map((m: any) => m.mortgage_amount_usd));
+  const avgDuration = meanPositive(filtered.map((m: any) => m.duration_months));
 
   const kpiItems = useMemo(() => [
     { key: 'kpi-total', label: ct('kpi-total', 'Total'), value: filtered.length, cls: 'text-indigo-600' },

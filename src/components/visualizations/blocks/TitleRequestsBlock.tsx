@@ -66,7 +66,7 @@ function leaseBucket(years: number | null | undefined): string {
 
 export const TitleRequestsBlock: React.FC<Props> = memo(({ data }) => {
   // Primary filter on parcels
-  const { filter, setFilter, filterLabel, filtered, filteredUnscoped, filterConfig, v, ct, cx, ty, ord, exportCSV  } = useBlockFilter(TAB_KEY, data.parcels);
+  const { filter, setFilter, filterLabel, filtered, filteredUnscoped, filterConfig, v, ct, cx, ty, ord } = useBlockFilter(TAB_KEY, data.parcels);
 
   // Extract parcel IDs from filtered set for joining
   const filteredParcelIds = useMemo(() => new Set(filtered.map(p => p.id)), [filtered]);

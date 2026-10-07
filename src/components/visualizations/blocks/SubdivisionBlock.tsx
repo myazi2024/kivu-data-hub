@@ -16,7 +16,7 @@ interface Props { data: LandAnalyticsData; }
 const TAB_KEY = 'subdivision';
 
 export const SubdivisionBlock: React.FC<Props> = memo(({ data }) => {
-  const { filter, setFilter, filterLabel, filtered, filteredUnscoped, filterConfig, v, ct, cx, ty, ord, exportCSV  } = useBlockFilter(TAB_KEY, data.subdivisionRequests);
+  const { filter, setFilter, filterLabel, filtered, filteredUnscoped, filterConfig, v, ct, cx, ty, ord } = useBlockFilter(TAB_KEY, data.subdivisionRequests);
 
   const byStatus = useMemo(() => countBy(filtered, 'status'), [filtered]);
   const byPurpose = useMemo(() => countBy(filtered, 'purpose_of_subdivision'), [filtered]);

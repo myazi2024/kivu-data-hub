@@ -16,7 +16,7 @@ interface Props { data: LandAnalyticsData; }
 const TAB_KEY = 'ownership';
 
 export const OwnershipHistoryBlock: React.FC<Props> = memo(({ data }) => {
-  const { filter, setFilter, filterLabel, filtered, filteredUnscoped, filterConfig, v, ct, cx, ty, ord, exportCSV  } = useBlockFilter(TAB_KEY, data.ownershipHistory);
+  const { filter, setFilter, filterLabel, filtered, filteredUnscoped, filterConfig, v, ct, cx, ty, ord } = useBlockFilter(TAB_KEY, data.ownershipHistory);
 
   const byLegalStatus = useMemo(() => countBy(filtered, 'legal_status'), [filtered]);
   const byMutationType = useMemo(() => countBy(filtered, 'mutation_type'), [filtered]);

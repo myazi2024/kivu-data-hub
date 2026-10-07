@@ -39,7 +39,7 @@ export function taxStatusGroup(status: string | null | undefined): 'paid' | 'unp
 
 export function mortgageStatusGroup(status: string | null | undefined): 'active' | 'paid' | null {
   const v = (status || '').trim().toLowerCase();
-  if (['active', 'actif', 'active ', 'en_cours', 'en cours', 'renegotiated', 'renégociée', 'renegociee'].includes(v)) return 'active';
+  if (['active', 'actif', 'en_cours', 'en cours', 'renegotiated', 'renégociée', 'renegociee'].includes(v)) return 'active';
   if (['paid', 'soldée', 'soldee', 'closed', 'remboursée', 'remboursee'].includes(v)) return 'paid';
   return null;
 }

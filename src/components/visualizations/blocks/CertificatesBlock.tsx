@@ -16,7 +16,7 @@ interface Props { data: LandAnalyticsData; }
 const TAB_KEY = 'certificates';
 
 export const CertificatesBlock: React.FC<Props> = memo(({ data }) => {
-  const { filter, setFilter, filterLabel, filtered, filteredUnscoped, filterConfig, v, ct, cx, ty, ord, exportCSV  } = useBlockFilter(TAB_KEY, data.certificates);
+  const { filter, setFilter, filterLabel, filtered, filteredUnscoped, filterConfig, v, ct, cx, ty, ord } = useBlockFilter(TAB_KEY, data.certificates);
 
   const byType = useMemo(() => countBy(filtered, 'certificate_type'), [filtered]);
   const byStatus = useMemo(() => countBy(filtered, 'status'), [filtered]);
