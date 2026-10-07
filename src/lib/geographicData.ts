@@ -680,3 +680,72 @@ export const getProvinceForTerritoire = (territoire: string): string | undefined
   }
   return undefined;
 };
+
+// ---------------------------------------------------------------------------
+// Découpage administratif sur lequel est calquée une circonscription foncière.
+// Aucune frontière devinée : table explicite, puis correspondance exacte de nom
+// dans la même province ; un nom suffixé (« -Nord », « I »…) ne fixe que le parent.
+// ---------------------------------------------------------------------------
+export interface LandDistrictAnchor {
+  level: 'ville' | 'commune' | 'territoire' | null;
+  ville?: string;
+  commune?: string;
+  territoire?: string;
+  /** true : la circonscription ne couvre qu'une partie du niveau fixé. */
+  partial: boolean;
+}
+
+/** Cas connus dont le nom seul serait ambigu (ex. Goma = commune, pas la ville). */
+const LAND_DISTRICT_ANCHOR_OVERRIDES: Record<string, Record<string, Omit<LandDistrictAnchor, 'partial'> & { partial?: boolean }>> = {
+  'Nord-Kivu': {
+    'Goma': { level: 'commune', ville: 'Goma', commune: 'Goma' },
+    'Karisimbi': { level: 'commune', ville: 'Goma', commune: 'Karisimbi' },
+    'Beni-Ville': { level: 'ville', ville: 'Beni' },
+    'Beni-Territoire': { level: 'territoire', territoire: 'Beni' },
+    'Butembo I': { level: 'ville', ville: 'Butembo', partial: true },
+    'Butembo II': { level: 'ville', ville: 'Butembo', partial: true },
+  },
+  'Haut-Katanga': {
+    'Likasi': { level: 'ville', ville: 'Likasi' },
+  },
+  'Sud-Kivu': {
+    'Bukavu I': { level: 'ville', ville: 'Bukavu', partial: true },
+    'Bukavu II': { level: 'ville', ville: 'Bukavu', partial: true },
+    'Uvira-Ville': { level: 'ville', ville: 'Uvira' },
+    'Uvira-Territoire': { level: 'territoire', territoire: 'Uvira' },
+  },
+};
+
+const PARTIAL_SUFFIX = /(\s*[-/ ]\s*(nord|sud|est|ouest|centre|plateau|ville|territoire|i{1,3}|iv|[0-9]+)(\/.*)?)$/i;
+
+export const getLandDistrictAnchor = (province?: string, district?: string): LandDistrictAnchor => {
+  const none: LandDistrictAnchor = { level: null, partial: false };
+  if (!province || !district) return none;
+  const provKey = Object.keys(geographicData).find((p) => normalizeProvinceName(p) === normalizeProvinceName(province));
+  const overrideProv = Object.keys(LAND_DISTRICT_ANCHOR_OVERRIDES).find((p) => normalizeProvinceName(p) === normalizeProvinceName(province));
+  if (overrideProv) {
+    const o = LAND_DISTRICT_ANCHOR_OVERRIDES[overrideProv];
+    const k = Object.keys(o).find((d) => normalizeDistrictName(d) === normalizeDistrictName(district));
+    if (k) return { partial: false, ...o[k] };
+  }
+  if (!provKey) return none;
+  const { villes, territoires } = geographicData[provKey];
+  const eq = (a: string, b: string) => normalizeDistrictName(a) === normalizeDistrictName(b);
+  for (const [ville, communes] of Object.entries(villes)) {
+    const c = communes.find((x) => eq(x, district));
+    if (c) return { level: 'commune', ville, commune: c, partial: false };
+  }
+  const t = Object.keys(territoires).find((x) => eq(x, district));
+  if (t) return { level: 'territoire', territoire: t, partial: false };
+  const v = Object.keys(villes).find((x) => eq(x, district));
+  if (v) return { level: 'ville', ville: v, partial: false };
+  const base = district.replace(PARTIAL_SUFFIX, '').trim();
+  if (base && base !== district) {
+    const zone = getSectionTypeForLandDistrict(district);
+    const pv = Object.keys(villes).find((x) => eq(x, base));
+    const pt = Object.keys(territoires).find((x) => eq(x, base));
+    if (pt && (zone === 'rurale' || !pv)) return { level: 'territoire', territoire: pt, partial: true };
+    if (pv) return { level: 'ville', ville: pv, partial: true };
+  }
+  return none;
+};

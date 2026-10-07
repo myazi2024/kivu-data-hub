@@ -16,3 +16,4 @@
 - Browser-callable SECURITY DEFINER RPCs must check the caller's role or ownership inside the function; legacy unguarded ones are wrapped (`<name>` guard → `<name>__impl`, service_role only) so cron/service calls still work. Server-only helpers have no anon/authenticated EXECUTE.
 - Catalogue service availability rules read the server data_availability existence flags, never the gated history arrays; histories stay empty until payment.
 - Cadastral cart: invoices keep only active, not-yet-owned services (create_cadastral_invoice_safe) and the cart removes only the services the server invoiced; cart suggestions use per-parcel availability computed by the billing panel with catalogue rules, never guessed context.
+- Analytics land-district filters derive the administrative anchor (ville / commune / territoire) via `getLandDistrictAnchor`: explicit override table, then exact same-province name match, suffixed names fix only the parent; never guess beyond that.
