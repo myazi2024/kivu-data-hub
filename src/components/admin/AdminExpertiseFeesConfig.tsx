@@ -375,37 +375,44 @@ export const AdminExpertiseFeesConfig: React.FC = () => {
                 className="text-sm rounded-xl min-h-[60px]"
               />
             </div>
-            <div className="flex items-center justify-between">
-              <Label className="text-xs">Frais obligatoire</Label>
-              <Switch checked={feeMandatory} onCheckedChange={setFeeMandatory} />
-            </div>
+            {!isEditingAccessFee && (
+              <div className="flex items-center justify-between">
+                <Label className="text-xs">Frais obligatoire</Label>
+                <Switch checked={feeMandatory} onCheckedChange={setFeeMandatory} />
+              </div>
+            )}
             <div className="flex items-center justify-between">
               <Label className="text-xs">Actif</Label>
               <Switch checked={feeActive} onCheckedChange={setFeeActive} />
             </div>
-            <div className="flex items-center justify-between">
-              <Label className="text-xs">S'applique à la valeur marchande</Label>
-              <Switch checked={appliesMarket} onCheckedChange={setAppliesMarket} />
-            </div>
-            <div className="flex items-center justify-between">
-              <Label className="text-xs">S'applique à la valeur locative</Label>
-              <Switch checked={appliesRental} onCheckedChange={setAppliesRental} />
-            </div>
-            <div>
-              <Label className="text-xs">Coefficient expertise partielle</Label>
-              <Input
-                type="number"
-                step="0.05"
-                min="0.05"
-                max="5"
-                value={partialMultiplier}
-                onChange={(e) => setPartialMultiplier(e.target.value)}
-                className="h-9 text-sm rounded-xl"
-              />
-              <p className="text-[10px] text-muted-foreground mt-1">
-                1 = tarif plein. Ex. 0,7 réduit ce frais de 30 % pour une expertise partielle.
-              </p>
-            </div>
+            {!isEditingAccessFee && (
+              <>
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs">S'applique à la valeur marchande</Label>
+                  <Switch checked={appliesMarket} onCheckedChange={setAppliesMarket} />
+                </div>
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs">S'applique à la valeur locative</Label>
+                  <Switch checked={appliesRental} onCheckedChange={setAppliesRental} />
+                </div>
+                <div>
+                  <Label className="text-xs">Coefficient expertise partielle</Label>
+                  <Input
+                    type="number"
+                    step="0.05"
+                    min="0.05"
+                    max="5"
+                    value={partialMultiplier}
+                    onChange={(e) => setPartialMultiplier(e.target.value)}
+                    className="h-9 text-sm rounded-xl"
+                  />
+                  <p className="text-[10px] text-muted-foreground mt-1">
+                    1 = tarif plein. Ex. 0,7 réduit ce frais de 30 % pour une expertise partielle.
+                  </p>
+                </div>
+              </>
+            )}
+
 
           </div>
 
