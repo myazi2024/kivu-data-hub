@@ -526,7 +526,14 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                             <div className="flex items-start gap-1.5">
                               <span className="mt-0.5 h-2.5 w-2.5 shrink-0 rounded-sm border border-border" style={{ background: color }} aria-hidden="true" />
                               <div className="min-w-0">
-                                <strong className="text-foreground">{district}</strong>
+                                <div className="flex flex-wrap items-center gap-1">
+                                  <strong className="text-foreground">{district}</strong>
+                                  {getSectionTypeForLandDistrict(district) && (
+                                    <Badge variant="secondary" className="px-1.5 py-0 text-[9px]">
+                                      {getSectionTypeForLandDistrict(district) === 'urbaine' ? 'SU - Urbaine' : 'SR - Rurale'}
+                                    </Badge>
+                                  )}
+                                </div>
                                 {provinceName && <span className="text-muted-foreground"> — {provinceName}</span>}
                                 <div className="text-muted-foreground">
                                   Parcelles enregistrées : {analytics ? (parcelsByDistrict.get(norm(district)) ?? 0).toLocaleString('fr-FR') : 'indisponible'}

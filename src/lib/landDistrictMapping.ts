@@ -66,6 +66,8 @@ export function matchAreaToDistrict(area: string): DistrictMatch {
   const hits = candidates.filter((district) => {
     const anchor = getLandDistrictAnchor(province, district);
     if (anchor.partial) return false;
+    // Certains fonds nomment explicitement la limite « <ville> Ville ».
+    if (normalizeGeoName(district) === key) return true;
     if (anchor.level === 'territoire') return normalizeGeoName(anchor.territoire ?? '') === key;
     if (anchor.level === 'ville') return normalizeGeoName(anchor.ville ?? '') === key;
     return false;
