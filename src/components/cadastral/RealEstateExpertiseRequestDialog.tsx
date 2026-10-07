@@ -1255,8 +1255,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
         toast.error('Veuillez sélectionner un opérateur et entrer votre numéro');
         return;
       }
-      const phoneRegex = /^(\+?243|0)(8[1-9]|9[0-9])\d{7}$/;
-      if (!phoneRegex.test(paymentPhone.replace(/\s/g, ''))) {
+      if (!isValidDrcMobileNumber(paymentPhone)) {
         toast.error('Numéro de téléphone invalide. Format attendu: +243XXXXXXXXX ou 0XXXXXXXXX');
         return;
       }
@@ -1269,7 +1268,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
       const uploadedFiles = await uploadFiles();
       const allDocUrls = [...uploadedFiles.parcelDocs, ...uploadedFiles.constructionImages];
 
-      // Create the expertise request
+      // Create the expertise request (montant calculé par le serveur à l'insertion)
       const request = await createExpertiseRequest({
         ...formData,
         supporting_documents: allDocUrls,
@@ -1280,52 +1279,25 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
         throw new Error('Erreur lors de la création de la demande');
       }
 
-      // Frais et montant : issus du calcul serveur enregistré sur la demande
-      const serverTotal = Number((request as any).total_amount_usd) || getTotalAmount();
-      const feeItems = Array.isArray((request as any).computed_fee_items)
-        ? (request as any).computed_fee_items
-        : quotedFees.map((fee) => ({ fee_name: fee.fee_name, amount_usd: fee.amount_usd }));
+      // Ligne de paiement créée par le serveur avec le montant de la demande
+      const payment = await createExpertisePayment({
+        requestId: request.id,
+        kind: 'expertise_fee',
+        method: paymentMethod,
+        provider: paymentProvider,
+        phone: paymentPhone,
+      });
 
-
-      const { data: paymentRecord, error: paymentError } = await supabase
-        .from('expertise_payments')
-        .insert({
-          expertise_request_id: request.id,
-          user_id: user.id,
-          fee_items: feeItems,
-          total_amount_usd: serverTotal,
-          payment_method: paymentMethod,
-          payment_provider: paymentMethod === 'mobile_money' ? paymentProvider : 'stripe',
-          phone_number: paymentMethod === 'mobile_money' ? paymentPhone : null,
-          status: 'pending'
-        })
-        .select()
-        .single();
-
-      if (paymentError) throw paymentError;
-
-      // Process payment
+      // Le statut est confirmé côté serveur (Edge Functions) ; le client ne l'écrit jamais.
       if (paymentMethod === 'mobile_money') {
-        const { processExpertiseMobileMoneyPayment } = await import('@/utils/expertisePaymentHelper');
         await processExpertiseMobileMoneyPayment({
           provider: paymentProvider,
           phone: paymentPhone,
-          amountUsd: serverTotal,
+          payment,
           paymentType: 'expertise_fee',
-          paymentRecordId: paymentRecord.id,
         });
-
-        // Le statut de paiement est confirmé côté serveur (edge function
-        // `process-mobile-money-payment`, service role). Le client ne l'écrit jamais.
-
-
-      } else if (paymentMethod === 'bank_card') {
-        const { processExpertiseStripePayment } = await import('@/utils/expertisePaymentHelper');
-        const redirected = await processExpertiseStripePayment({
-          paymentRecordId: paymentRecord.id,
-          paymentType: 'expertise_fee',
-          amountUsd: serverTotal,
-        });
+      } else {
+        const redirected = await processExpertiseStripePayment({ payment, paymentType: 'expertise_fee' });
         if (redirected) return;
       }
 
@@ -1351,82 +1323,6 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     }
   };
 
-  const handleCertificateAccessPayment = async () => {
-    if (!user || !existingCertificate || processingCertPayment) return;
-
-    if (certPaymentMethod === 'mobile_money') {
-      if (!certPaymentProvider || !certPaymentPhone) {
-        toast.error('Veuillez sélectionner un opérateur et entrer votre numéro');
-        return;
-      }
-      const phoneRegex = /^(\+?243|0)(8[1-9]|9[0-9])\d{7}$/;
-      if (!phoneRegex.test(certPaymentPhone.replace(/\s/g, ''))) {
-        toast.error('Numéro de téléphone invalide. Format attendu: +243XXXXXXXXX ou 0XXXXXXXXX');
-        return;
-      }
-    }
-
-    setProcessingCertPayment(true);
-    try {
-      // Create payment record for certificate access
-      const { data: paymentRecord, error: paymentError } = await supabase
-        .from('expertise_payments')
-        .insert({
-          expertise_request_id: existingCertificate.id,
-          user_id: user.id,
-          fee_items: [{ fee_name: 'Accès au certificat d\'expertise immobilière', amount_usd: certificateAccessFee }],
-          total_amount_usd: certificateAccessFee,
-          payment_method: certPaymentMethod,
-          payment_provider: certPaymentMethod === 'mobile_money' ? certPaymentProvider : 'stripe',
-          phone_number: certPaymentMethod === 'mobile_money' ? certPaymentPhone : null,
-          status: 'pending'
-        })
-        .select()
-        .single();
-
-      if (paymentError) throw paymentError;
-
-      if (certPaymentMethod === 'mobile_money') {
-        const { processExpertiseMobileMoneyPayment } = await import('@/utils/expertisePaymentHelper');
-        await processExpertiseMobileMoneyPayment({
-          provider: certPaymentProvider,
-          phone: certPaymentPhone,
-          amountUsd: certificateAccessFee,
-          paymentType: 'certificate_access',
-          paymentRecordId: paymentRecord.id,
-        });
-      } else {
-        const { processExpertiseStripePayment } = await import('@/utils/expertisePaymentHelper');
-        const redirected = await processExpertiseStripePayment({
-          paymentRecordId: paymentRecord.id,
-          paymentType: 'certificate_access',
-          amountUsd: certificateAccessFee,
-        });
-        if (redirected) return;
-      }
-
-      setHasCertificateAccess(true);
-
-      // Open the certificate URL
-      if (existingCertificate.certificate_url) {
-        try {
-          await openExpertiseCertificate(existingCertificate.id, existingCertificate.certificate_url);
-          toast.success('Paiement réussi ! Vous pouvez accéder au certificat.');
-        } catch (e: any) {
-          toast.error(e?.message || 'Certificat indisponible');
-        }
-      } else {
-        toast.success('Paiement réussi ! Le certificat sera disponible dès sa publication.');
-      }
-
-      handleClose();
-    } catch (error: any) {
-      console.error('Certificate access payment error:', error);
-      toast.error(error.message || 'Erreur lors du paiement');
-    } finally {
-      setProcessingCertPayment(false);
-    }
-  };
 
   const handleClose = () => {
     // Navigation & flow
@@ -1532,16 +1428,6 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     setPaymentProvider('');
     setPaymentPhone('');
 
-    // Certificate
-    setExistingCertificate(null);
-    setCertificateChecked(false);
-    setShowCertificatePayment(false);
-    setCertPaymentMethod('mobile_money');
-    setCertPaymentProvider('');
-    setCertPaymentPhone('');
-    setHasCertificateAccess(false);
-    setCheckingCertificateAccess(false);
-    setCertificateAccessFee(0);
 
     defaultRefDoneRef.current = false;
     setSelectedBuildingRef('main');
@@ -1942,7 +1828,9 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
         </DialogHeader>
 
         <ScrollArea className="h-[calc(90vh-120px)]" ref={scrollAreaRef}>
-          {step === 'form' && existingCertificate ? renderExistingCertificateBlock() : (
+          {step === 'form' && existingCertificate ? (
+            <ExistingCertificateBlock parcelNumber={parcelNumber} certificate={existingCertificate} onDone={handleClose} />
+          ) : (
             <>
               {step === 'form' && (
                 <div className="space-y-3">
