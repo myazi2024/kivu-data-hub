@@ -8761,6 +8761,10 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_land_title_parcel_prefill: {
+        Args: { p_parcel_number: string }
+        Returns: Json
+      }
       get_orphan_reseller_invoices_count: { Args: never; Returns: number }
       get_orphan_reseller_invoices_count__impl: { Args: never; Returns: number }
       get_ownership_history_stats: {
