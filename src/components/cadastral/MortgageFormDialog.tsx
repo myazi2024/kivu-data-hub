@@ -1,4 +1,4 @@
-import React, { useState, useRef, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Save, Download } from 'lucide-react';
 import { useMortgageDraft } from '@/hooks/useMortgageDraft';
@@ -479,7 +479,7 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div>
             <div className="space-y-1.5">
               <Label className="text-sm font-medium">Date contrat *</Label>
               <Input
