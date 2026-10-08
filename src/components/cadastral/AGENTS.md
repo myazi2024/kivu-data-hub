@@ -1,0 +1,3 @@
+- Cadastral map road details read the public `road_sides` and annotate only the selected parcel's declared boundary segments; this preserves free access without inventing road geometry.
+- Cadastral map building overlays read only the sanitized public `building_outlines` projection; no raw building JSON, no invented footprints.
+- Map parcels use the primary boundary style, buildings the map-building token, to stay distinct in both themes.
