@@ -195,11 +195,6 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
       toast.error('Identifiant de parcelle manquant. Veuillez relancer la recherche.');
       return false;
     }
-    // Fix #10: Only allow 'active' status for new registrations
-    if (!['active', 'en_defaut', 'renegociee'].includes(mortgageRecord.mortgageStatus)) {
-      toast.error('Statut d\'hypothèque invalide');
-      return false;
-    }
     return true;
   };
 
@@ -314,7 +309,7 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
             creditor_name: mortgageRecord.creditorName.trim(),
             creditor_type: mortgageRecord.creditorType,
             contract_date: mortgageRecord.contractDate,
-            mortgage_status: mortgageRecord.mortgageStatus,
+            mortgage_status: 'active',
             document_url: documentUrl
           }]
         });
