@@ -8256,6 +8256,14 @@ export type Database = {
         Args: { p_limit: number; p_step: string }
         Returns: number
       }
+      _mortgage_cancellation_due: {
+        Args: { _selected: string[] }
+        Returns: number
+      }
+      _mortgage_is_active: {
+        Args: { _lifecycle: string; _status: string }
+        Returns: boolean
+      }
       _purge_stale_test_generation_jobs: { Args: never; Returns: number }
       _purge_stale_test_generation_jobs__impl: { Args: never; Returns: number }
       apply_ccc_correction_request: {
@@ -8330,6 +8338,10 @@ export type Database = {
         Args: { p_request_id: string }
         Returns: boolean
       }
+      cancel_mortgage_cancellation_request: {
+        Args: { _id: string }
+        Returns: undefined
+      }
       cancel_mutation_request: {
         Args: { p_request_id: string }
         Returns: undefined
@@ -8354,6 +8366,10 @@ export type Database = {
           reason: string
           recent_count: number
         }[]
+      }
+      check_parcel_active_mortgage: {
+        Args: { _parcel_id: string; _reference?: string }
+        Returns: Json
       }
       check_service_usage: { Args: { service_id_param: string }; Returns: Json }
       cleanup_all_test_data: { Args: never; Returns: Json }
@@ -9125,6 +9141,17 @@ export type Database = {
           title_reference_number: string
           ville: string
         }[]
+      }
+      submit_mortgage_cancellation_request: {
+        Args: {
+          _comments?: string
+          _details: Json
+          _mortgage_reference: string
+          _parcel_id: string
+          _request_reference: string
+          _selected_fee_ids: string[]
+        }
+        Returns: Json
       }
       swap_theme_order: {
         Args: { _theme_a: string; _theme_b: string }
