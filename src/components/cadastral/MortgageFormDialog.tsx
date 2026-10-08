@@ -347,7 +347,6 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
       creditorName: '',
       creditorType: 'Banque',
       contractDate: '',
-      mortgageStatus: 'active',
       receiptFile: null
     });
     setSubmissionReference('');
@@ -358,9 +357,6 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
     onOpenChange(false);
   };
 
-  const statusLabel = useMemo(() => {
-    return STATUS_LABELS[mortgageRecord.mortgageStatus] || mortgageRecord.mortgageStatus;
-  }, [mortgageRecord.mortgageStatus]);
 
   // Fix #16: PDF receipt with clear "gratuit" indication for registration
   const handleDownloadRegistrationReceipt = async () => {
@@ -494,22 +490,6 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
                 className="h-10 text-sm rounded-xl"
               />
             </div>
-            <div className="space-y-1.5">
-              <Label className="text-sm font-medium">Statut</Label>
-              <Select
-                value={mortgageRecord.mortgageStatus}
-                onValueChange={(value) => updateMortgage('mortgageStatus', value)}
-              >
-                <SelectTrigger className="h-10 text-sm rounded-xl">
-                  <SelectValue placeholder="Statut" />
-                </SelectTrigger>
-                <SelectContent className="rounded-xl bg-popover">
-                  <SelectItem value="active">En cours</SelectItem>
-                  <SelectItem value="en_defaut">En défaut de paiement</SelectItem>
-                  <SelectItem value="renegociee">Renégociée</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
           </div>
 
           {/* Pièce jointe - Fix #12: Add preview capability */}
@@ -628,10 +608,6 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
             <div className="flex justify-between py-2 border-b">
               <span className="text-muted-foreground">Date contrat</span>
               <span>{mortgageRecord.contractDate}</span>
-            </div>
-            <div className="flex justify-between py-2">
-              <span className="text-muted-foreground">Statut</span>
-              <span>{statusLabel}</span>
             </div>
             {mortgageRecord.receiptFile && (
               <div className="flex justify-between py-2 border-t">
