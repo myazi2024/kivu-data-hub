@@ -1,4 +1,4 @@
-import React, { useState, useRef, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Save, Download } from 'lucide-react';
 import { useMortgageDraft } from '@/hooks/useMortgageDraft';
@@ -54,16 +54,8 @@ interface MortgageRecord {
   creditorName: string;
   creditorType: string;
   contractDate: string;
-  mortgageStatus: string;
   receiptFile: File | null;
 }
-
-// Mapping statut interne → label affiché
-const STATUS_LABELS: Record<string, string> = {
-  'active': 'En cours',
-  'en_defaut': 'En défaut de paiement',
-  'renegociee': 'Renégociée',
-};
 
 const MAX_MORTGAGE_AMOUNT_USD = 1_000_000_000;
 
@@ -97,7 +89,6 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
     creditorName: '',
     creditorType: 'Banque',
     contractDate: '',
-    mortgageStatus: 'active',
     receiptFile: null
   });
 
@@ -202,11 +193,6 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
     // Fix #8: Validate parcel existence
     if (!parcelId) {
       toast.error('Identifiant de parcelle manquant. Veuillez relancer la recherche.');
-      return false;
-    }
-    // Fix #10: Only allow 'active' status for new registrations
-    if (!['active', 'en_defaut', 'renegociee'].includes(mortgageRecord.mortgageStatus)) {
-      toast.error('Statut d\'hypothèque invalide');
       return false;
     }
     return true;
@@ -323,7 +309,7 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
             creditor_name: mortgageRecord.creditorName.trim(),
             creditor_type: mortgageRecord.creditorType,
             contract_date: mortgageRecord.contractDate,
-            mortgage_status: mortgageRecord.mortgageStatus,
+            mortgage_status: 'active',
             document_url: documentUrl
           }]
         });
@@ -361,7 +347,6 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
       creditorName: '',
       creditorType: 'Banque',
       contractDate: '',
-      mortgageStatus: 'active',
       receiptFile: null
     });
     setSubmissionReference('');
@@ -372,9 +357,6 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
     onOpenChange(false);
   };
 
-  const statusLabel = useMemo(() => {
-    return STATUS_LABELS[mortgageRecord.mortgageStatus] || mortgageRecord.mortgageStatus;
-  }, [mortgageRecord.mortgageStatus]);
 
   // Fix #16: PDF receipt with clear "gratuit" indication for registration
   const handleDownloadRegistrationReceipt = async () => {
@@ -497,7 +479,7 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div>
             <div className="space-y-1.5">
               <Label className="text-sm font-medium">Date contrat *</Label>
               <Input
@@ -507,22 +489,6 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
                 onChange={(e) => updateMortgage('contractDate', e.target.value)}
                 className="h-10 text-sm rounded-xl"
               />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-sm font-medium">Statut</Label>
-              <Select
-                value={mortgageRecord.mortgageStatus}
-                onValueChange={(value) => updateMortgage('mortgageStatus', value)}
-              >
-                <SelectTrigger className="h-10 text-sm rounded-xl">
-                  <SelectValue placeholder="Statut" />
-                </SelectTrigger>
-                <SelectContent className="rounded-xl bg-popover">
-                  <SelectItem value="active">En cours</SelectItem>
-                  <SelectItem value="en_defaut">En défaut de paiement</SelectItem>
-                  <SelectItem value="renegociee">Renégociée</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
           </div>
 
@@ -642,10 +608,6 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
             <div className="flex justify-between py-2 border-b">
               <span className="text-muted-foreground">Date contrat</span>
               <span>{mortgageRecord.contractDate}</span>
-            </div>
-            <div className="flex justify-between py-2">
-              <span className="text-muted-foreground">Statut</span>
-              <span>{statusLabel}</span>
             </div>
             {mortgageRecord.receiptFile && (
               <div className="flex justify-between py-2 border-t">
