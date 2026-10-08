@@ -54,16 +54,8 @@ interface MortgageRecord {
   creditorName: string;
   creditorType: string;
   contractDate: string;
-  mortgageStatus: string;
   receiptFile: File | null;
 }
-
-// Mapping statut interne → label affiché
-const STATUS_LABELS: Record<string, string> = {
-  'active': 'En cours',
-  'en_defaut': 'En défaut de paiement',
-  'renegociee': 'Renégociée',
-};
 
 const MAX_MORTGAGE_AMOUNT_USD = 1_000_000_000;
 
@@ -97,7 +89,6 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
     creditorName: '',
     creditorType: 'Banque',
     contractDate: '',
-    mortgageStatus: 'active',
     receiptFile: null
   });
 
