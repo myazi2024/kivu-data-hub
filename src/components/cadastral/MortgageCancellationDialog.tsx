@@ -21,7 +21,8 @@ import {
   CancellationConfirmationStep,
 } from './mortgage-cancellation';
 import type { Step, CancellationRequest, ParcelData, MortgageData } from './mortgage-cancellation/types';
-import { CANCELLATION_REASONS, EMAIL_REGEX, PHONE_REGEX_DRC, ACTIVE_MORTGAGE_STATUSES } from './mortgage-cancellation/types';
+import { CANCELLATION_REASONS, EMAIL_REGEX, PHONE_REGEX_DRC } from './mortgage-cancellation/types';
+import { calculateMortgageFees } from '@/lib/mortgageFees';
 
 interface MortgageCancellationDialogProps {
   parcelNumber: string;
@@ -236,8 +237,8 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
     [selectedFees, fees],
   );
   const totalAmount = useMemo(
-    () => selectedFeesDetails.reduce((sum, fee) => sum + Number(fee.amount_usd || 0), 0),
-    [selectedFeesDetails],
+    () => calculateMortgageFees(fees, selectedFees),
+    [fees, selectedFees],
   );
 
   const validateForm = (): boolean => {
