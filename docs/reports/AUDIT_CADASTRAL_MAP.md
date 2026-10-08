@@ -35,3 +35,26 @@ Lecture libre supprimée ; carte et tableau client passent par `get_parcel_paid_
 - Fiche rechargée automatiquement après paiement.
 - Code de vérification créé seulement à l'impression/au téléchargement d'un document contenant un service acheté.
 - Supprimé : contrôle d'accès en double (`checkServiceAccess`), reconstruction du nom du propriétaire depuis les détails bruts.
+
+## Gestion Hypothèque (menu Actions) — 2026-10-08
+
+### Problèmes trouvés
+- Aucune demande de radiation ne pouvait aboutir : deux règles serveur contradictoires refusaient chaque envoi.
+- La vérification d'hypothèque active lisait directement la table des hypothèques, invisible aux notaires, héritiers et mandataires : radiation bloquée à tort et contrôle « une seule hypothèque active » contournable.
+- Le navigateur fixait statut, statut de paiement, montant et frais à l'enregistrement ; notifications et journal d'audit écrits par le navigateur (falsifiables).
+- Une demande en attente de paiement ne pouvait être ni relancée ni annulée ; toute nouvelle tentative créait un doublon.
+- Le formulaire d'enregistrement affichait un choix de statut sans effet (le serveur force « active ») et annonçait « Hypothèque enregistrée » pour une demande en attente.
+- Barème des frais de radiation en double (navigateur et serveur) et total recalculé hors de `calculateMortgageFees`.
+
+### Corrections appliquées
+- Vérification d'hypothèque active via la fonction serveur `check_parcel_active_mortgage` : ouverte à tout utilisateur connecté, elle ne révèle les détails que pour une référence exacte.
+- Radiation créée uniquement par `submit_mortgage_cancellation_request` : montant recalculé depuis le barème configuré, anti-doublon, réutilisation d'une demande en attente de paiement, notification et audit créés côté serveur.
+- Annulation possible via `cancel_mortgage_cancellation_request` (demandeur, statut en attente de paiement) et bloc « Reprendre le paiement » dans l'espace utilisateur.
+- Enregistrement : choix de statut retiré du formulaire, statut forcé « active » par le serveur, message corrigé en « Demande d'enregistrement soumise ».
+- Paiements (Mobile Money et carte) vérifient la demande, son statut et le montant dû côté serveur.
+- Code mort retiré : liste de statuts en dur, calcul de total dupliqué, écritures notification/audit navigateur.
+
+### Points ouverts
+- La table des hypothèques est vide : vérifier les valeurs réelles avant toute normalisation supplémentaire des statuts.
+- Trois alertes du scan de sécurité sur les nouvelles fonctions sont intentionnelles (contrôle de l'appelant interne, fermées aux visiteurs).
+- Parcours connectés non testés à l'écran (connexion requise).
