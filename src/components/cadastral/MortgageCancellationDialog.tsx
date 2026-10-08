@@ -292,28 +292,7 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
     return paths;
   };
 
-  // Fix #2: Include 'returned' status in check to prevent duplicate submissions
-  const checkExistingCancellationRequest = async (): Promise<boolean> => {
-    if (!user || !formData.mortgageReferenceNumber) return false;
-    const { data } = await supabase
-      .from('cadastral_contributions')
-      .select('id, mortgage_history')
-      .eq('parcel_number', parcelNumber)
-      .eq('user_id', user.id)
-      .eq('contribution_type', 'mortgage_cancellation')
-      .in('status', ['pending', 'returned']);
-    return data?.some(c => {
-      const history = c.mortgage_history as any[];
-      return history?.some(h => h.mortgage_reference_number?.toUpperCase() === formData.mortgageReferenceNumber.toUpperCase());
-    }) ?? false;
-  };
-
-  /**
-   * Le paiement est toujours rattaché à une demande déjà enregistrée (contributionId),
-   * afin qu'aucun paiement ne puisse rester orphelin et que le serveur puisse
-   * recalculer lui-même le montant dû.
-   */
-  const processPayment = async (contributionId: string): Promise<{ success: boolean; transactionId?: string }> => {
+  const processPayment = async (contributionId: string, amountDue: number): Promise<{ success: boolean; transactionId?: string }> => {
     setProcessingPayment(true);
     try {
       if (!paymentProvider) { toast.error('Veuillez sélectionner un opérateur Mobile Money'); return { success: false }; }
@@ -325,7 +304,7 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
         body: {
           payment_provider: paymentProvider,
           phone_number: cleanPhone,
-          amount_usd: totalAmount,
+          amount_usd: amountDue,
           payment_type: 'mortgage_cancellation',
           invoice_id: contributionId,
         }
@@ -352,99 +331,54 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
     if (!user) { setShowAuthDialog(true); return; }
     if (isSubmittingRef.current) return;
     isSubmittingRef.current = true;
-    const hasPending = await checkExistingCancellationRequest();
-    if (hasPending) { toast.error('Une demande de radiation est déjà en cours pour cette hypothèque.'); isSubmittingRef.current = false; return; }
     setLoading(true);
     try {
       const documentPaths = await uploadDocuments();
       if (documentPaths.length === 0 && formData.supportingDocuments.length > 0) {
         toast.error('Échec du téléversement des documents.');
-        isSubmittingRef.current = false;
-        setLoading(false);
         return;
       }
-
       const reasonLabel = CANCELLATION_REASONS.find(r => r.value === formData.reason)?.label || formData.reason;
 
-      // 1) La demande est enregistrée AVANT le paiement (statut « en attente de paiement »).
-      let contributionId: string;
-      try {
-        const { data: created, error } = await supabase
-          .from('cadastral_contributions')
-          .insert({
-            parcel_number: parcelNumber,
-            original_parcel_id: parcelId || null,
-            user_id: user.id,
-            contribution_type: 'mortgage_cancellation',
-            status: 'awaiting_payment',
-            payment_status: 'pending',
-            change_justification: formData.comments || null,
-            mortgage_history: [{
-              type: 'cancellation_request',
-              request_reference_number: requestReferenceNumber,
-              mortgage_reference_number: formData.mortgageReferenceNumber.toUpperCase(),
-              mortgage_data: mortgageData,
-              parcel_data: parcelData,
-              cancellation_reason: formData.reason,
-              cancellation_reason_label: reasonLabel,
-              cancellation_date: formData.cancellationDate,
-              settlement_amount: formData.settlementAmount ? parseFloat(formData.settlementAmount) : null,
-              requester_name: formData.requesterName,
-              requester_phone: formData.requesterPhone || null,
-              requester_email: formData.requesterEmail || null,
-              requester_id_number: formData.requesterIdNumber || null,
-              requester_quality: formData.requesterQuality,
-              creditor_accord: formData.creditorAccord,
-              supporting_documents: documentPaths,
-              fees_selected: selectedFeesDetails,
-              total_amount_due: totalAmount,
-              payment_method: 'mobile_money',
-              payment_provider: paymentProvider,
-              submitted_at: new Date().toISOString()
-            }] as any
-          })
-          .select('id')
-          .single();
-        if (error || !created) throw error;
-        contributionId = created.id;
-      } catch (insertErr) {
-        console.error('Cancellation request insert failed:', insertErr);
-        toast.error("Impossible d'enregistrer la demande. Aucun paiement n'a été effectué.");
-        setLoading(false);
-        isSubmittingRef.current = false;
+      // 1) Demande créée par le serveur (montant, données d'hypothèque, anti-doublon).
+      //    Une demande déjà en attente de paiement pour cette hypothèque est réutilisée.
+      const { data: created, error: rpcError } = await (supabase.rpc as any)('submit_mortgage_cancellation_request', {
+        _parcel_id: parcelId,
+        _mortgage_reference: formData.mortgageReferenceNumber.toUpperCase(),
+        _request_reference: requestReferenceNumber,
+        _selected_fee_ids: selectedFees,
+        _comments: formData.comments || null,
+        _details: {
+          parcel_data: parcelData,
+          cancellation_reason: formData.reason,
+          cancellation_reason_label: reasonLabel,
+          cancellation_date: formData.cancellationDate,
+          settlement_amount: formData.settlementAmount ? parseFloat(formData.settlementAmount) : null,
+          requester_name: formData.requesterName,
+          requester_phone: formData.requesterPhone || null,
+          requester_email: formData.requesterEmail || null,
+          requester_id_number: formData.requesterIdNumber || null,
+          requester_quality: formData.requesterQuality,
+          creditor_accord: formData.creditorAccord,
+          supporting_documents: documentPaths,
+          payment_method: 'mobile_money',
+          payment_provider: paymentProvider,
+        },
+      });
+      if (rpcError || !created?.id) {
+        toast.error(rpcError?.message || "Impossible d'enregistrer la demande. Aucun paiement n'a été effectué.");
         return;
       }
+      if (created.reused) toast.info('Votre demande en attente de paiement a été reprise.');
+      if (created.request_reference_number) setRequestReferenceNumber(created.request_reference_number);
 
-      // 2) Paiement rattaché à la demande. Le serveur valide le montant et confirme le statut.
+      // 2) Paiement au montant fixé par le serveur.
       setLoading(false);
-      const paymentResult = await processPayment(contributionId);
+      const paymentResult = await processPayment(created.id, Number(created.total_amount_due));
       if (!paymentResult.success) {
-        toast.info('Votre demande est conservée en attente de paiement. Vous pouvez réessayer le paiement depuis votre espace.');
-        isSubmittingRef.current = false;
+        toast.info('Votre demande reste en attente de paiement : vous pourrez reprendre le paiement depuis votre espace.');
         return;
       }
-      setLoading(true);
-
-      // Post-payment actions (non-blocking)
-      try {
-        await supabase.from('notifications').insert({
-          user_id: user.id,
-          title: 'Demande de radiation soumise',
-          message: `Votre demande de radiation d'hypothèque (Réf: ${requestReferenceNumber}) pour la parcelle ${parcelNumber} a été soumise avec succès.`,
-          type: 'mortgage',
-          action_url: '/user-dashboard',
-        });
-      } catch { /* Non-blocking */ }
-
-      try {
-        await supabase.from('audit_logs').insert({
-          action: 'mortgage_cancellation_submitted',
-          user_id: user.id,
-          record_id: contributionId,
-          table_name: 'cadastral_contributions',
-          new_values: { request_reference: requestReferenceNumber, parcel_number: parcelNumber } as any,
-        });
-      } catch { /* Non-blocking audit */ }
 
       clearDraft();
       setStep('confirmation');
