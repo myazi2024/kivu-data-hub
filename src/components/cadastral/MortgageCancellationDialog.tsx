@@ -187,14 +187,13 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
     setValidatingReference(true);
     setReferenceError(null);
     try {
-      const { data, error } = await supabase
-        .from('cadastral_mortgages')
-        .select('*')
-        .eq('parcel_id', parcelId)
-        .eq('reference_number', refNumber.trim().toUpperCase())
-        .in('mortgage_status', ACTIVE_MORTGAGE_STATUSES)
-        .maybeSingle();
+      // Vérification serveur : fonctionne aussi pour un notaire, héritier ou mandataire.
+      const { data: check, error } = await (supabase.rpc as any)('check_parcel_active_mortgage', {
+        _parcel_id: parcelId,
+        _reference: refNumber.trim().toUpperCase(),
+      });
       if (error) throw error;
+      const data = check?.reference_valid ? check.mortgage : null;
       if (data) {
         setReferenceValid(true);
         setReferenceError(null);
