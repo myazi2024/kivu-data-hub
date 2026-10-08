@@ -238,14 +238,9 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
   /** Une parcelle ne peut pas porter deux hypothèques actives simultanées. */
   const checkExistingActiveMortgage = async (): Promise<boolean> => {
     if (!parcelId) return false;
-    const { data, error } = await supabase
-      .from('cadastral_mortgages')
-      .select('id')
-      .eq('parcel_id', parcelId)
-      .in('mortgage_status', ['active', 'en_defaut', 'renegociee'])
-      .limit(1);
+    const { data, error } = await (supabase.rpc as any)('check_parcel_active_mortgage', { _parcel_id: parcelId });
     if (error) return false;
-    return (data?.length ?? 0) > 0;
+    return !!data?.has_active;
   };
 
 
@@ -333,32 +328,12 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
           }]
         });
 
-      if (error) throw error;
-
-      try {
-        await supabase.from('audit_logs').insert({
-          action: 'mortgage_registration_submitted',
-          user_id: user.id,
-          table_name: 'cadastral_contributions',
-          new_values: { parcel_number: parcelNumber, reference: regReference } as any,
-        });
-      } catch { /* Non-blocking */ }
-
-      // Fix #11: Create notification for registration
-      try {
-        await supabase.from('notifications').insert({
-          user_id: user.id,
-          title: 'Demande d\'enregistrement soumise',
-          message: `Votre demande d'enregistrement d'hypothèque (Réf: ${regReference}) pour la parcelle ${parcelNumber} a été soumise avec succès.`,
-          type: 'mortgage',
-          action_url: '/user-dashboard',
-        });
-      } catch { /* Non-blocking */ }
+      if (error) { toast.error(error.message || 'Erreur lors de l\'enregistrement'); setShowSubmitConfirm(false); return; }
 
       clearDraft();
       setSubmissionReference(regReference);
       setStep('confirmation');
-      toast.success('Hypothèque enregistrée avec succès');
+      toast.success('Demande d\'enregistrement soumise');
     } catch (error: any) {
       console.error('Error:', error);
       toast.error('Erreur lors de l\'enregistrement');

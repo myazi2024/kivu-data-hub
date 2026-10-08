@@ -48,15 +48,9 @@ const MortgageManagementDialog: React.FC<MortgageManagementDialogProps> = ({
       }
       setCheckingMortgage(true);
       try {
-        const { data, error } = await supabase
-          .from('cadastral_mortgages')
-          .select('id')
-          .eq('parcel_id', parcelId)
-          .in('mortgage_status', ['active', 'en_defaut', 'renegociee'])
-          .limit(1);
-        if (!error) {
-          setHasActiveMortgage((data?.length ?? 0) > 0);
-        }
+        // Vérification serveur (accessible à tout demandeur connecté, sans divulguer les données).
+        const { data, error } = await (supabase.rpc as any)('check_parcel_active_mortgage', { _parcel_id: parcelId });
+        setHasActiveMortgage(error ? null : !!data?.has_active);
       } catch {
         setHasActiveMortgage(null);
       } finally {

@@ -1,7 +1,8 @@
 - Keep loading-image settings in `app_appearance_config`, applying them once at the root and styling existing loading indicators through shared CSS; this avoids per-indicator network calls across lazy-loaded screens.
 - Land-district maps and Analytics share `getLandDistrictAnchor`: only exact, non-partial same-province territory/ville/commune anchors receive bundled GeoJSON boundaries; no boundary is approximated.
 - Home BIC figures: public aggregates via a service-only DB function behind a counts-only Edge Function; each configured display figure switches after 10,000 real records.
-- District home activity totals join paid service access and disputes to existing parcels in a service-only function; no individual records, no guessed districts.- Home counts (map + footer) come from one shared react-query hook `useHomeBicCounts`; avoids duplicate calls to home-bic-counts.
+- District home activity totals join paid service access and disputes to existing parcels in a service-only function; no individual records, no guessed districts.
+- Home counts (map + footer) come from one shared react-query hook `useHomeBicCounts`; avoids duplicate calls to home-bic-counts.
 - CCC admin approve/reject go through approve_ccc_contribution / reject_ccc_contribution RPCs (admin check + status guard + rejection notification server-side); never direct table updates.
 - payment_transactions : insertion réservée au serveur (record-test-payment pour le mode test) ; le navigateur ne crée jamais de transaction.
 - Recours et retrait de contribution CCC passent par process_ccc_appeal / withdraw_ccc_contribution (contrôle admin + statut serveur) ; jamais de mise à jour directe.
@@ -9,9 +10,6 @@
 - Paiements : une transaction ne passe à « completed » qu'après confirmation du prestataire, ou par simulation si le mode test est activé côté serveur ; chaque type de paiement vérifie la propriété et le montant enregistré (barème serveur pour les autorisations via `_shared/permitFees.ts`).
 - Fonctions internes (tâches planifiées, remboursements, relances, test prestataire) : accès via `_shared/internalAuth.ts` (secret cron en base `internal_cron_secrets` ou admin/super_admin) ; jamais publiques.
 - Exports CSV : toute cellule passe par `sanitizeCsvCell` (neutralise les formules tableur).
-- Cadastral map road details read the public `road_sides` and annotate only the selected parcel's declared boundary segments; this preserves free access without inventing road geometry.
-- Cadastral map building overlays read only the sanitized public `building_outlines` projection; no raw building JSON, no invented footprints.
-- Map parcels use the primary boundary style, buildings the map-building token, to stay distinct in both themes.
 - CCC fraud fields (is_suspicious, fraud_score, fraud_reason) are recomputed by the `enforce_contribution_fraud_score` trigger and suspicious rows logged to fraud_attempts by `log_suspicious_contribution`; the browser never sends them, since client values could be forged.
 - Browser-callable SECURITY DEFINER RPCs must check the caller's role or ownership inside the function; legacy unguarded ones are wrapped (`<name>` guard → `<name>__impl`, service_role only) so cron/service calls still work. Server-only helpers have no anon/authenticated EXECUTE.
 - Catalogue service availability rules read the server data_availability existence flags, never the gated history arrays; histories stay empty until payment.
@@ -20,3 +18,4 @@
 - Purchased cadastral result (card, document view, PDF, client dashboard) opens sections only from the server-computed `access` returned by `get_cadastral_parcel_data` (via `src/lib/cadastralResultAccess.ts`), and verification codes are created only when printing/downloading a document with a purchased section; this keeps one source of truth for paid access.
 - Expertise payments: rows are created only by `create_expertise_payment` (amount from server fees, `payment_kind` = expertise_fee | certificate_access) and Edge Functions reject a mismatched kind or non-pending row; certificates open only via the signed-URL RPC, and other users see an existing certificate through `get_parcel_valid_expertise_certificate`; this keeps price and access server-side.
 - Mutation requests: the `enforce_mutation_request_insert` trigger recomputes fixed fees, mutation duties, bank fee, late fees and total, and forces pending statuses on every browser insert; the form's `computeMutationDuties` / `computeLateFees` are display-only mirrors, so a forged amount can never be paid.
+- Gestion Hypothèque : radiation créée uniquement par `submit_mortgage_cancellation_request` (montant du barème, anti-doublon, reprise de la demande en attente), vérification d'hypothèque active via `check_parcel_active_mortgage`, enregistrement contrôlé par trigger ; le navigateur ne lit pas cadastral_mortgages pour ces contrôles, car seuls admins/propriétaires y ont accès.

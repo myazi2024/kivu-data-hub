@@ -12,6 +12,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { MortgageResumePayment } from './MortgageResumePayment';
 
 interface MortgageContribution {
   id: string;
@@ -31,6 +32,8 @@ const STATUS_CONFIG: Record<string, { label: string; variant: 'default' | 'secon
   approved: { label: 'Approuvée', variant: 'default', icon: <CheckCircle2 className="h-3 w-3" /> },
   rejected: { label: 'Rejetée', variant: 'destructive', icon: <XCircle className="h-3 w-3" /> },
   on_hold: { label: 'En suspens', variant: 'outline', icon: <AlertTriangle className="h-3 w-3" /> },
+  awaiting_payment: { label: 'En attente de paiement', variant: 'outline', icon: <Clock className="h-3 w-3" /> },
+  cancelled: { label: 'Annulée', variant: 'secondary', icon: <XCircle className="h-3 w-3" /> },
 };
 
 // Fix #11: User dashboard component for mortgage requests
@@ -183,6 +186,14 @@ export const UserMortgageRequests: React.FC = () => {
                     </div>
                   )}
                 </div>
+              )}
+
+              {request.status === 'awaiting_payment' && request.contribution_type === 'mortgage_cancellation' && (
+                <MortgageResumePayment
+                  requestId={request.id}
+                  amountDue={Number(details?.total_amount_due || 0)}
+                  onDone={fetchRequests}
+                />
               )}
 
               {/* Rejection reason */}
