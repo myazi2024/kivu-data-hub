@@ -25,6 +25,7 @@ import {
   Plus
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { MortgageResumePayment } from './MortgageResumePayment';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 

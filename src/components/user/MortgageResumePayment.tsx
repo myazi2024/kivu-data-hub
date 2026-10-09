@@ -14,10 +14,12 @@ interface Props {
   /** Montant fixé par le serveur à la création de la demande. */
   amountDue: number;
   onDone: () => void;
+  /** Type de paiement (radiation par défaut). */
+  paymentType?: 'mortgage_cancellation' | 'land_title_request';
 }
 
-/** Reprise du paiement (ou annulation) d'une radiation restée en attente de paiement. */
-export const MortgageResumePayment: React.FC<Props> = ({ requestId, amountDue, onDone }) => {
+/** Reprise du paiement (ou annulation) d'une demande restée en attente de paiement (radiation ou titre foncier). */
+export const MortgageResumePayment: React.FC<Props> = ({ requestId, amountDue, onDone, paymentType = 'mortgage_cancellation' }) => {
   const { providers } = usePaymentProviders();
   const [provider, setProvider] = useState('');
   const [phone, setPhone] = useState('');
@@ -30,7 +32,7 @@ export const MortgageResumePayment: React.FC<Props> = ({ requestId, amountDue, o
     setBusy('pay');
     try {
       const { data, error } = await supabase.functions.invoke('process-mobile-money-payment', {
-        body: { payment_provider: provider, phone_number: cleanPhone, amount_usd: amountDue, payment_type: 'mortgage_cancellation', invoice_id: requestId },
+        body: { payment_provider: provider, phone_number: cleanPhone, amount_usd: amountDue, payment_type: paymentType, invoice_id: requestId },
       });
       if (error || !data?.success) { toast.error(data?.error || error?.message || 'Erreur lors du paiement'); return; }
       toast.info('Confirmez le paiement sur votre téléphone...');
@@ -42,7 +44,10 @@ export const MortgageResumePayment: React.FC<Props> = ({ requestId, amountDue, o
 
   const cancel = async () => {
     setBusy('cancel');
-    const { error } = await (supabase.rpc as any)('cancel_mortgage_cancellation_request', { _id: requestId });
+    const { data: ok, error } = paymentType === 'land_title_request'
+      ? await (supabase.rpc as any)('cancel_land_title_request', { p_request_id: requestId })
+      : await (supabase.rpc as any)('cancel_mortgage_cancellation_request', { _id: requestId });
+    if (!error && paymentType === 'land_title_request' && ok === false) { setBusy(null); toast.error("Cette demande n'est plus annulable"); return; }
     setBusy(null);
     if (error) { toast.error(error.message); return; }
     toast.success('Demande annulée');
