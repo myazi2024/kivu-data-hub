@@ -69,7 +69,6 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
   const { 
     loading, 
     createPendingRequest,
-    cancelPendingRequest
   } = useLandTitleRequest();
   
   // Frais dynamiques
@@ -89,6 +88,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [savedReferenceNumber, setSavedReferenceNumber] = useState<string>('');
   const [savedRequestId, setSavedRequestId] = useState<string>('');
+  const [serverAmountDue, setServerAmountDue] = useState<number>(0);
   const [showCloseConfirmation, setShowCloseConfirmation] = useState(false);
   
   // Request type state
@@ -166,7 +166,6 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     isOwnerSameAsRequester: true,
     sectionType: '',
     province: '',
-    selectedFees: []
   });
   
   // Files
@@ -756,14 +755,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
 
     setIsSubmitting(true);
 
-    // SECURE FLOW: Create DB record FIRST, then show payment
-    const feeItems = calculatedFeesResult.fees.map(fee => ({
-      id: fee.id,
-      name: fee.fee_name,
-      amount: fee.final_amount,
-      is_mandatory: fee.is_mandatory
-    }));
-
+    // Le serveur crée la demande et fixe le montant dû avant le paiement.
     const result = await createPendingRequest({
       ...formData,
       requestType,
@@ -785,20 +777,27 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
       gpsCoordinates: gpsCoordinates,
       parcelSides: parcelSides,
       roadBorderingSides: roadSides,
-      totalAmountOverride: totalAmount,
       // Proposed building permit data
       proposedPermitType: showValorisationUpdate && hasPermitUpdate === 'yes' ? (permitUpdateType === 'construction' ? 'Autorisation de bâtir' : 'Régularisation') : undefined,
       proposedPermitNumber: showValorisationUpdate && hasPermitUpdate === 'yes' ? permitUpdateNumber : undefined,
       proposedPermitDate: showValorisationUpdate && hasPermitUpdate === 'yes' ? permitUpdateDate : undefined,
       proposedPermitService: showValorisationUpdate && hasPermitUpdate === 'yes' ? permitUpdateService : undefined,
       proposedPermitDocumentFile: showValorisationUpdate && hasPermitUpdate === 'yes' ? permitUpdateFile : undefined,
-    }, feeItems);
+    });
 
     setIsSubmitting(false);
 
     if (result.success && result.requestId) {
       setSavedRequestId(result.requestId);
       setSavedReferenceNumber(result.referenceNumber || '');
+      const serverTotal = result.totalAmountUsd ?? 0;
+      setServerAmountDue(serverTotal);
+      if (Math.round(serverTotal * 100) !== Math.round(totalAmount * 100)) {
+        toast({
+          title: 'Montant mis à jour',
+          description: `Le montant fixé par le serveur est de ${serverTotal} USD (estimation affichée : ${totalAmount} USD).`,
+        });
+      }
       setShowPayment(true);
       // Clear draft on successful creation
       clearDraft();
@@ -813,14 +812,14 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
   };
 
   const handlePaymentCancel = useCallback(() => {
-    // Cancel orphaned pending record when user cancels payment
+    // La demande reste « en attente de paiement » : reprise ou annulation depuis l'espace utilisateur.
     if (savedRequestId) {
-      cancelPendingRequest(savedRequestId);
+      toast({ title: 'Demande en attente de paiement', description: 'Vous pourrez la payer ou l\'annuler depuis votre espace utilisateur.' });
     }
     setShowPayment(false);
     setSavedRequestId('');
     setSavedReferenceNumber('');
-  }, [savedRequestId, cancelPendingRequest]);
+  }, [savedRequestId, toast]);
 
   const handleCloseRequest = () => {
     // Comprehensive check for any user-entered data
@@ -847,13 +846,10 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
 
   const handleConfirmClose = () => {
     setShowCloseConfirmation(false);
-    // Cancel orphaned pending record if payment was in progress
-    if (savedRequestId && !showSuccess) {
-      cancelPendingRequest(savedRequestId);
-    }
     // Clear draft
     clearDraft();
     // Reset ALL form state
+    setServerAmountDue(0);
     setFormData({
       requesterType: 'owner',
       requesterLastName: '',
@@ -864,8 +860,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
       isOwnerSameAsRequester: true,
       sectionType: '',
       province: '',
-      selectedFees: []
-    });
+      });
     setRequesterIdFile(null);
     setOwnerIdFile(null);
     setProofOfOwnershipFile(null);
@@ -939,7 +934,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     const cartItem: CartItem = {
       id: `land-title-${Date.now()}`,
       title: 'Demande de titre foncier',
-      price: totalAmount,
+      price: serverAmountDue,
       description: `Demande de titre foncier - ${formData.province}`
     };
 
@@ -954,7 +949,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                 Paiement - Titre foncier
               </DialogTitle>
               <DialogDescription className="text-sm text-muted-foreground">
-                Montant total : {totalAmount} USD
+                Montant total : {serverAmountDue} USD
               </DialogDescription>
             </DialogHeader>
             
