@@ -1,4 +1,7 @@
-import { PROPERTY_CATEGORY_OPTIONS as SHARED_PROPERTY_CATEGORY_OPTIONS, CATEGORY_TO_CONSTRUCTION_TYPES as SHARED_CATEGORY_TO_CONSTRUCTION_TYPES } from '@/lib/ccc/propertyCategories';
+import { PROPERTY_CATEGORY_OPTIONS as SHARED_PROPERTY_CATEGORY_OPTIONS } from '@/lib/ccc/propertyCategories';
+import { useLandTitleConstruction } from './land-title-request/useLandTitleConstruction';
+import { LandTitlePaymentView, LandTitleSuccessView } from './land-title-request/LandTitleResultViews';
+import type { ParcelOwnerData, ParcelLocationData, ParcelValorisationData, ParcelBuildingPermit } from './land-title-request/types';
 import DocumentsTab from './land-title-request/DocumentsTab';
 import ApplicantTab from './land-title-request/ApplicantTab';
 import LocationTab from './land-title-request/LocationTab';
@@ -40,8 +43,6 @@ import {
   validateDeductionInput
 } from '@/utils/landTitleDeduction';
 import { QuickAuthDialog } from './QuickAuthDialog';
-import MobileMoneyPayment from '@/components/payment/MobileMoneyPayment';
-import { CartItem } from '@/hooks/useCart';
 import { ParcelMapPreview } from './ParcelMapPreview';
 import { useMapConfig } from '@/hooks/useMapConfig';
 import LandTitleReviewTab from './LandTitleReviewTab';
@@ -50,7 +51,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { validateLandTitleFile } from '@/types/landTitleRequest';
 import { saveDraft, loadDraft, clearDraft, hasDraft } from '@/utils/landTitleDraftStorage';
 import { BuildingPermitIssuingServiceSelect } from './BuildingPermitIssuingServiceSelect';
-import { useCCCFormPicklists } from '@/hooks/useCCCFormPicklists';
 import { fetchLandTitleParcelPrefill } from './land-title-request/parcelPrefill';
 
 interface LandTitleRequestDialogProps {
@@ -83,7 +83,6 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
   const [showPayment, setShowPayment] = useState(false);
   const [valorisationChoice, setValorisationChoice] = useState<null | 'exact' | 'update'>(null);
   const showValorisationUpdate = valorisationChoice === 'update';
-  const skipCascadeRef = useRef(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [savedReferenceNumber, setSavedReferenceNumber] = useState<string>('');
@@ -101,51 +100,11 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
   const [parcelValidated, setParcelValidated] = useState(false);
   const [parcelSearchLoading, setParcelSearchLoading] = useState(false);
   const [showParcelDropdown, setShowParcelDropdown] = useState(false);
-  // Owner data loaded from parcel for renewal mode
-  const [parcelOwnerData, setParcelOwnerData] = useState<{
-    legalStatus?: string;
-    gender?: string;
-    lastName?: string;
-    firstName?: string;
-    middleName?: string;
-    phone?: string;
-    email?: string;
-  } | null>(null);
-  // Location data loaded from parcel for renewal mode (masked display)
-  const [parcelLocationData, setParcelLocationData] = useState<{
-    province?: string;
-    sectionType?: string;
-    ville?: string;
-    commune?: string;
-    quartier?: string;
-    avenue?: string;
-    territoire?: string;
-    collectivite?: string;
-    groupement?: string;
-    village?: string;
-    parcelSides?: any[];
-    gpsCoordinates?: any[];
-  } | null>(null);
-  // Valorisation data loaded from parcel for renewal mode (auto-display)
-  const [parcelValorisationData, setParcelValorisationData] = useState<{
-    propertyCategory?: string;
-    constructionType?: string;
-    constructionNature?: string;
-    constructionMaterials?: string;
-    declaredUsage?: string;
-    standing?: string;
-    constructionYear?: number;
-    floorNumber?: string;
-  } | null>(null);
-  // Building permits loaded from parcel (read-only display)
-  const [parcelBuildingPermits, setParcelBuildingPermits] = useState<Array<{
-    permit_number: string;
-    administrative_status: string;
-    issue_date: string;
-    issuing_service: string;
-    validity_period_months: number;
-    is_current: boolean;
-  }>>([]);
+  // Données de parcelle préremplies par le serveur (l'identité du propriétaire n'est jamais préremplie)
+  const [parcelOwnerData, setParcelOwnerData] = useState<ParcelOwnerData | null>(null);
+  const [parcelLocationData, setParcelLocationData] = useState<ParcelLocationData | null>(null);
+  const [parcelValorisationData, setParcelValorisationData] = useState<ParcelValorisationData | null>(null);
+  const [parcelBuildingPermits, setParcelBuildingPermits] = useState<ParcelBuildingPermit[]>([]);
   // Building permit update form states
   const [hasPermitUpdate, setHasPermitUpdate] = useState<'yes' | 'no' | ''>('');
   const [permitUpdateType, setPermitUpdateType] = useState<'construction' | 'regularization'>('construction');
@@ -200,23 +159,14 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
   // Road sides for dimensions panel
   const [roadSides, setRoadSides] = useState<Array<any>>([]);
 
-// Construction type state
-  const [propertyCategory, setPropertyCategory] = useState<string>('');
-  const { getDependentOptions } = useCCCFormPicklists();
-  const [constructionType, setConstructionType] = useState<string>('');
-  const [constructionNature, setConstructionNature] = useState<string>('');
-  const [constructionMaterials, setConstructionMaterials] = useState<string>('');
-  const [declaredUsage, setDeclaredUsage] = useState<string>('');
-  const [standing, setStanding] = useState<string>('');
-  const [constructionYear, setConstructionYear] = useState<string>('');
-  const [floorNumber, setFloorNumber] = useState<string>('');
-  const [availableConstructionTypes, setAvailableConstructionTypes] = useState<string[]>([]);
-  const [availableConstructionNatures, setAvailableConstructionNatures] = useState<string[]>([]);
-  const [availableDeclaredUsages, setAvailableDeclaredUsages] = useState<string[]>([]);
-
+  const {
+    skipCascadeRef,
+    propertyCategory, setPropertyCategory, constructionType, setConstructionType,
+    constructionNature, setConstructionNature, constructionMaterials, setConstructionMaterials,
+    declaredUsage, setDeclaredUsage, standing, setStanding, constructionYear, setConstructionYear,
+    floorNumber, setFloorNumber, availableConstructionTypes, availableConstructionNatures, availableDeclaredUsages,
+  } = useLandTitleConstruction();
   const PROPERTY_CATEGORY_OPTIONS = SHARED_PROPERTY_CATEGORY_OPTIONS as unknown as string[];
-
-  const CATEGORY_TO_CONSTRUCTION_TYPES = SHARED_CATEGORY_TO_CONSTRUCTION_TYPES;
   
   // New fields for land title deduction
   const [nationality, setNationality] = useState<'congolais' | 'etranger' | ''>('');
@@ -367,81 +317,6 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
       setTimeout(() => { skipCascadeRef.current = false; }, 0);
     }
   }, [valorisationChoice, parcelValorisationData]);
-
-  // Property category -> Construction type cascade
-  useEffect(() => {
-    if (skipCascadeRef.current) return;
-    if (!propertyCategory) {
-      setAvailableConstructionTypes([]);
-      setConstructionType('');
-      return;
-    }
-    const allowedTypes = CATEGORY_TO_CONSTRUCTION_TYPES[propertyCategory] || [];
-    setAvailableConstructionTypes(allowedTypes);
-    if (allowedTypes.length === 1) {
-      if (constructionType !== allowedTypes[0]) setConstructionType(allowedTypes[0]);
-    } else if (constructionType && !allowedTypes.includes(constructionType)) {
-      setConstructionType('');
-    }
-  }, [propertyCategory]);
-
-  // Construction type -> Nature logic
-  useEffect(() => {
-    if (skipCascadeRef.current) return;
-    if (!constructionType) {
-      setAvailableConstructionNatures([]);
-      setConstructionNature('');
-      setAvailableDeclaredUsages([]);
-      setDeclaredUsage('');
-      return;
-    }
-
-    // Listes du formulaire CCC (configurables dans l'admin), sans copie locale.
-    const natures: string[] = getDependentOptions('picklist_construction_nature')[constructionType] ?? [];
-    
-    setAvailableConstructionNatures(natures);
-    
-    if (constructionNature && !natures.includes(constructionNature)) {
-      setConstructionNature('');
-    }
-  }, [constructionType, getDependentOptions]);
-
-  // Materials -> Nature auto-determination (aligned with CCC)
-  const MATERIAL_TO_NATURE: Record<string, string> = useMemo(() => ({
-    'Béton armé': 'Durable', 'Briques cuites': 'Durable', 'Parpaings': 'Durable', 'Pierre naturelle': 'Durable',
-    'Semi-dur': 'Semi-durable', 'Briques adobes': 'Semi-durable', 'Bois': 'Semi-durable', 'Mixte': 'Semi-durable',
-    'Tôles': 'Précaire', 'Paille': 'Précaire',
-  }), []);
-
-  useEffect(() => {
-    if (constructionMaterials && MATERIAL_TO_NATURE[constructionMaterials]) {
-      const determinedNature = MATERIAL_TO_NATURE[constructionMaterials];
-      if (availableConstructionNatures.includes(determinedNature) && constructionNature !== determinedNature) {
-        setConstructionNature(determinedNature);
-      }
-    }
-  }, [constructionMaterials, availableConstructionNatures]);
-
-  // Construction type + Nature -> Usage logic
-  useEffect(() => {
-    if (skipCascadeRef.current) return;
-    if (!constructionType || !constructionNature) {
-      setAvailableDeclaredUsages([]);
-      setDeclaredUsage('');
-      return;
-    }
-
-    // Usages du formulaire CCC : clé « type_nature », puis repli sur la nature.
-    const usageMap = getDependentOptions('picklist_declared_usage');
-    const usages: string[] = [...(usageMap[`${constructionType}_${constructionNature}`]
-      ?? usageMap[constructionNature] ?? [])];
-    
-    setAvailableDeclaredUsages(usages);
-    
-    if (declaredUsage && !usages.includes(declaredUsage)) {
-      setDeclaredUsage('');
-    }
-  }, [constructionType, constructionNature, getDependentOptions]);
 
   // Pre-fill with user info — only on mount (when dialog opens), not on every profile change
   const hasPrefilledRef = useRef(false);
@@ -929,83 +804,17 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
   const totalAmount = calculatedFeesResult.totalAmount;
 
 
-  // Payment view
   if (showPayment) {
-    const cartItem: CartItem = {
-      id: `land-title-${Date.now()}`,
-      title: 'Demande de titre foncier',
-      price: serverAmountDue,
-      description: `Demande de titre foncier - ${formData.province}`
-    };
-
     return (
-      <Dialog open={open} onOpenChange={handleConfirmClose}>
-          <DialogContent className={`${isMobile ? 'w-[92vw] max-w-[360px] max-h-[88vh] rounded-2xl' : 'max-w-md rounded-2xl'} p-4 overflow-hidden`}>
-            <DialogHeader className="pb-2">
-              <DialogTitle className="flex items-center gap-2 text-base font-bold">
-                <div className="p-1.5 bg-primary/10 rounded-lg">
-                  <CreditCard className="h-4 w-4 text-primary" />
-                </div>
-                Paiement - Titre foncier
-              </DialogTitle>
-              <DialogDescription className="text-sm text-muted-foreground">
-                Montant total : {serverAmountDue} USD
-              </DialogDescription>
-            </DialogHeader>
-            
-            <MobileMoneyPayment
-              item={cartItem}
-              currency="USD"
-              paymentType="land_title_request"
-              invoiceId={savedRequestId}
-              successMessage="Votre demande de titre foncier est enregistrée et en cours d'examen"
-              onPaymentSuccess={handlePaymentSuccess}
-            />
-            <Button 
-              variant="outline" 
-              onClick={handlePaymentCancel} 
-              className="w-full h-8 text-xs rounded-xl mt-2"
-            >
-              Annuler
-            </Button>
-          </DialogContent>
-      </Dialog>
+      <LandTitlePaymentView open={open} isMobile={isMobile} province={formData.province}
+        amountDue={serverAmountDue} requestId={savedRequestId}
+        onClose={handleConfirmClose} onSuccess={handlePaymentSuccess} onCancel={handlePaymentCancel} />
     );
   }
 
-  // Success view
   if (showSuccess) {
     return (
-      <Dialog open={open} onOpenChange={handleConfirmClose}>
-          <DialogContent className={`${isMobile ? 'w-[92vw] max-w-[360px] max-h-[88vh] rounded-2xl' : 'max-w-md rounded-2xl'} p-4 overflow-hidden`}>
-            <div className="space-y-3 text-center py-2">
-              <div className="mx-auto w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
-                <CheckCircle2 className="h-6 w-6 text-green-600" />
-              </div>
-              
-              <div>
-                <h3 className="font-semibold text-sm">Demande soumise avec succès</h3>
-                <p className="text-[10px] text-muted-foreground mt-1">
-                  Votre demande de titre foncier a été enregistrée
-                </p>
-              </div>
-
-              <Card className="bg-muted/50 border-0 text-left rounded-lg">
-                <CardContent className="p-3 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground">Référence</span>
-                    <span className="font-mono font-bold text-xs text-primary">{savedReferenceNumber}</span>
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <p className="text-[10px] text-muted-foreground">
-                Vous recevrez une notification dès que votre demande sera traitée.
-              </p>
-              <Button onClick={handleConfirmClose} className="w-full h-8 text-xs rounded-xl">Fermer</Button>
-            </div>
-          </DialogContent>
-      </Dialog>
+      <LandTitleSuccessView open={open} isMobile={isMobile} referenceNumber={savedReferenceNumber} onClose={handleConfirmClose} />
     );
   }
 
