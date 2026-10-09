@@ -231,6 +231,16 @@ export const UserLandTitleRequests: React.FC = () => {
                 </div>
               </div>
 
+              {selectedRequest.status === 'pending' && selectedRequest.payment_status === 'pending' && (
+                <MortgageResumePayment
+                  requestId={selectedRequest.id}
+                  amountDue={Number(selectedRequest.total_amount_usd)}
+                  paymentType="land_title_request"
+                  onDone={() => { setIsDetailsOpen(false); fetchRequests(); }}
+                />
+              )}
+
+
               {/* Infos principales */}
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div className="p-3 bg-muted/30 rounded-xl">
