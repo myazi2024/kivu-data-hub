@@ -79,12 +79,6 @@ export interface LandTitleRequestData {
   proofOfOwnershipFile?: File | null;
   procurationDocumentFile?: File | null;
   additionalDocuments?: File[];
-  
-  // Frais sélectionnés
-  selectedFees: string[];
-  
-  // Total calculé dynamiquement
-  totalAmountOverride?: number;
 }
 
 // Phone number validation for DRC numbers
@@ -101,21 +95,21 @@ export const validatePhone = (phone: string): boolean => {
  * On stocke le chemin (et non une URL publique) : la lecture se fait via une URL signée.
  */
 const uploadDocument = async (file: File, folder: string, userId: string): Promise<string | null> => {
-  try {
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${userId}/${folder}/${Date.now()}_${crypto.randomUUID()}.${fileExt}`;
-
-    const { error: uploadError } = await supabase.storage
-      .from('land-title-documents')
-      .upload(fileName, file);
-
-    if (uploadError) throw uploadError;
-
-    return fileName;
-  } catch (error) {
+  const fileExt = file.name.split('.').pop();
+  const fileName = `${userId}/${folder}/${Date.now()}_${crypto.randomUUID()}.${fileExt}`;
+  const { error } = await supabase.storage.from('land-title-documents').upload(fileName, file);
+  if (error) {
     console.error('Error uploading document:', error);
     return null;
   }
+  return fileName;
+};
+
+/** Supprime les fichiers déjà envoyés quand la demande ne peut pas être créée. */
+const removeUploaded = async (paths: string[]) => {
+  if (paths.length === 0) return;
+  const { error } = await supabase.storage.from('land-title-documents').remove(paths);
+  if (error) console.error('Cleanup of uploaded documents failed:', error);
 };
 
 /** URL signée (1h) pour consulter un document de demande de titre foncier. */
@@ -136,14 +130,14 @@ export const useLandTitleRequest = () => {
   const [loading, setLoading] = useState(false);
 
   /**
-   * Step 1: Create the DB record with status pending_payment (BEFORE payment).
-   * Returns the request ID and reference number for use in the payment step.
+   * Crée la demande (avant paiement). Le serveur recalcule frais et montant et
+   * renvoie le montant dû, utilisé tel quel pour le paiement.
    */
   const createPendingRequest = useCallback(async (
     data: LandTitleRequestData,
-    feeItems: Array<{ id: string; name: string; amount: number; is_mandatory: boolean }> = []
-  ): Promise<{ success: boolean; requestId?: string; referenceNumber?: string }> => {
+  ): Promise<{ success: boolean; requestId?: string; referenceNumber?: string; totalAmountUsd?: number }> => {
     setLoading(true);
+    let uploaded: string[] = [];
     try {
       // 1. Utilisateur courant (obligatoire : le chemin de stockage lui est rattaché)
       const { data: { user } } = await supabase.auth.getUser();
@@ -152,52 +146,34 @@ export const useLandTitleRequest = () => {
         return { success: false };
       }
 
-      // 2. Upload des documents
-      let requesterIdDocUrl: string | null = null;
-      let ownerIdDocUrl: string | null = null;
-      let proofOfOwnershipUrl: string | null = null;
-      let procurationDocUrl: string | null = null;
-      let proposedPermitDocUrl: string | null = null;
-
-      if (data.requesterIdDocumentFile) {
-        requesterIdDocUrl = await uploadDocument(data.requesterIdDocumentFile, 'requester-id', user.id);
-        if (!requesterIdDocUrl) {
-          toast.error("Échec de l'upload de la pièce d'identité du demandeur");
+      // 2. Upload des documents (en cas d'échec, les fichiers déjà envoyés sont supprimés)
+      const uploads: Array<{ key: string; file: File | null | undefined; folder: string; label: string }> = [
+        { key: 'requester', file: data.requesterIdDocumentFile, folder: 'requester-id', label: "la pièce d'identité du demandeur" },
+        { key: 'owner', file: data.isOwnerSameAsRequester ? null : data.ownerIdDocumentFile, folder: 'owner-id', label: "la pièce d'identité du propriétaire" },
+        { key: 'proof', file: data.proofOfOwnershipFile, folder: 'proof-of-ownership', label: 'la preuve de propriété' },
+        { key: 'procuration', file: data.requesterType === 'representative' ? data.procurationDocumentFile : null, folder: 'procuration', label: 'la procuration' },
+        { key: 'permit', file: data.proposedPermitDocumentFile, folder: 'proposed-permit', label: "le document d'autorisation" },
+      ];
+      const paths: Record<string, string | null> = {};
+      uploaded = [];
+      for (const u of uploads) {
+        paths[u.key] = null;
+        if (!u.file) continue;
+        const path = await uploadDocument(u.file, u.folder, user.id);
+        if (!path) {
+          await removeUploaded(uploaded);
+          uploaded = [];
+          toast.error(`Échec de l'envoi de ${u.label}. Aucune demande n'a été créée.`);
           return { success: false };
         }
+        paths[u.key] = path;
+        uploaded.push(path);
       }
-
-      if (data.ownerIdDocumentFile && !data.isOwnerSameAsRequester) {
-        ownerIdDocUrl = await uploadDocument(data.ownerIdDocumentFile, 'owner-id', user.id);
-        if (!ownerIdDocUrl) {
-          toast.error("Échec de l'upload de la pièce d'identité du propriétaire");
-          return { success: false };
-        }
-      }
-
-      if (data.proofOfOwnershipFile) {
-        proofOfOwnershipUrl = await uploadDocument(data.proofOfOwnershipFile, 'proof-of-ownership', user.id);
-        if (!proofOfOwnershipUrl) {
-          toast.error("Échec de l'upload de la preuve de propriété");
-          return { success: false };
-        }
-      }
-
-      if (data.procurationDocumentFile && data.requesterType === 'representative') {
-        procurationDocUrl = await uploadDocument(data.procurationDocumentFile, 'procuration', user.id);
-        if (!procurationDocUrl) {
-          toast.error("Échec de l'upload de la procuration");
-          return { success: false };
-        }
-      }
-
-      if (data.proposedPermitDocumentFile) {
-        proposedPermitDocUrl = await uploadDocument(data.proposedPermitDocumentFile, 'proposed-permit', user.id);
-        if (!proposedPermitDocUrl) {
-          toast.error("Échec de l'upload du document d'autorisation");
-          return { success: false };
-        }
-      }
+      const requesterIdDocUrl = paths.requester;
+      const ownerIdDocUrl = paths.owner;
+      const proofOfOwnershipUrl = paths.proof;
+      const procurationDocUrl = paths.procuration;
+      const proposedPermitDocUrl = paths.permit;
 
       // 3. Insertion : les frais, le montant et les statuts sont recalculés/forcés côté serveur.
       const { data: insertedData, error } = await supabase
@@ -264,10 +240,8 @@ export const useLandTitleRequest = () => {
             owner_entity_sub_type_other: data.ownerEntitySubTypeOther || null,
             owner_right_type: data.ownerRightType || null,
           },
-          fee_items: feeItems,
-          payment_status: 'pending'
         } as any])
-        .select('id, reference_number')
+        .select('id, reference_number, total_amount_usd')
         .single();
 
       if (error) throw error;
@@ -275,10 +249,12 @@ export const useLandTitleRequest = () => {
       return { 
         success: true, 
         requestId: insertedData.id, 
-        referenceNumber: insertedData.reference_number 
+        referenceNumber: insertedData.reference_number,
+        totalAmountUsd: Number((insertedData as any).total_amount_usd ?? 0),
       };
     } catch (error: any) {
       console.error('Error creating land title request:', error);
+      await removeUploaded(uploaded);
       toast.error(error.message || 'Erreur lors de la création de la demande');
       return { success: false };
     } finally {
