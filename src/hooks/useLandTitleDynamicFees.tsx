@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { withSupabaseRetry } from '@/lib/supabaseRetry';
 import { toast } from 'sonner';
 import { DeducedLandTitle } from '@/utils/landTitleDeduction';
+import { mapLandTitleTypeKey } from '@/lib/landTitleTypeKey';
 
 export interface LandTitleFeeByType {
   id: string;
@@ -45,40 +46,6 @@ export interface FeeCalculationResult {
     total: number;
   };
 }
-
-// Mapping des types de titres déduits vers les clés de la base
-const TITLE_TYPE_MAPPING: Record<string, string> = {
-  // Certificat d'enregistrement
-  "Certificat d'enregistrement": 'certificat_enregistrement',
-  
-  // Concession perpétuelle
-  "Concession perpétuelle": 'concession_perpetuelle',
-  
-  // Bail emphytéotique (toutes les variantes)
-  "Bail emphytéotique": 'bail_emphyteotique',
-  "Bail emphytéotique court (20-25 ans)": 'bail_emphyteotique',
-  "Bail emphytéotique agricole (18-99 ans)": 'bail_emphyteotique',
-  "Bail emphytéotique industriel (18-99 ans)": 'bail_emphyteotique',
-  
-  // Bail foncier -> concession ordinaire comme fallback
-  "Bail foncier": 'concession_ordinaire',
-  
-  // Concession ordinaire
-  "Concession ordinaire": 'concession_ordinaire',
-  
-  // Permis d'occupation
-  "Permis d'occupation urbain": 'permis_occupation',
-  "Permis d'occupation rural": 'permis_occupation',
-  "Permis d'occupation provisoire": 'permis_occupation',
-  
-  // Autorisation d'occupation
-  "Autorisation d'occupation provisoire": 'autorisation_occupation',
-  "Autorisation d'occupation": 'autorisation_occupation',
-  
-  // Location
-  "Location": 'location',
-  "Bail location": 'location',
-};
 
 export const useLandTitleDynamicFees = () => {
   const [allFees, setAllFees] = useState<LandTitleFeeByType[]>([]);
@@ -134,7 +101,7 @@ export const useLandTitleDynamicFees = () => {
     const isRural = sectionType === 'rurale';
     
     // Trouver le type de titre correspondant dans la base
-    const titleTypeKey = TITLE_TYPE_MAPPING[deducedTitle.type] || 'concession_ordinaire';
+    const titleTypeKey = mapLandTitleTypeKey(deducedTitle.type);
     
     // Filtrer les frais pour ce type de titre
     const feesToCalculate = allFees.filter(fee => {

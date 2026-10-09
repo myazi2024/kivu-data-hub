@@ -1,4 +1,7 @@
-import { PROPERTY_CATEGORY_OPTIONS as SHARED_PROPERTY_CATEGORY_OPTIONS, CATEGORY_TO_CONSTRUCTION_TYPES as SHARED_CATEGORY_TO_CONSTRUCTION_TYPES } from '@/lib/ccc/propertyCategories';
+import { PROPERTY_CATEGORY_OPTIONS as SHARED_PROPERTY_CATEGORY_OPTIONS } from '@/lib/ccc/propertyCategories';
+import { useLandTitleConstruction } from './land-title-request/useLandTitleConstruction';
+import { LandTitlePaymentView, LandTitleSuccessView } from './land-title-request/LandTitleResultViews';
+import type { ParcelOwnerData, ParcelLocationData, ParcelValorisationData, ParcelBuildingPermit } from './land-title-request/types';
 import DocumentsTab from './land-title-request/DocumentsTab';
 import ApplicantTab from './land-title-request/ApplicantTab';
 import LocationTab from './land-title-request/LocationTab';
@@ -40,8 +43,6 @@ import {
   validateDeductionInput
 } from '@/utils/landTitleDeduction';
 import { QuickAuthDialog } from './QuickAuthDialog';
-import MobileMoneyPayment from '@/components/payment/MobileMoneyPayment';
-import { CartItem } from '@/hooks/useCart';
 import { ParcelMapPreview } from './ParcelMapPreview';
 import { useMapConfig } from '@/hooks/useMapConfig';
 import LandTitleReviewTab from './LandTitleReviewTab';
@@ -50,7 +51,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { validateLandTitleFile } from '@/types/landTitleRequest';
 import { saveDraft, loadDraft, clearDraft, hasDraft } from '@/utils/landTitleDraftStorage';
 import { BuildingPermitIssuingServiceSelect } from './BuildingPermitIssuingServiceSelect';
-import { useCCCFormPicklists } from '@/hooks/useCCCFormPicklists';
+import { fetchLandTitleParcelPrefill } from './land-title-request/parcelPrefill';
 
 interface LandTitleRequestDialogProps {
   open: boolean;
@@ -68,7 +69,6 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
   const { 
     loading, 
     createPendingRequest,
-    cancelPendingRequest
   } = useLandTitleRequest();
   
   // Frais dynamiques
@@ -83,11 +83,11 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
   const [showPayment, setShowPayment] = useState(false);
   const [valorisationChoice, setValorisationChoice] = useState<null | 'exact' | 'update'>(null);
   const showValorisationUpdate = valorisationChoice === 'update';
-  const skipCascadeRef = useRef(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [savedReferenceNumber, setSavedReferenceNumber] = useState<string>('');
   const [savedRequestId, setSavedRequestId] = useState<string>('');
+  const [serverAmountDue, setServerAmountDue] = useState<number>(0);
   const [showCloseConfirmation, setShowCloseConfirmation] = useState(false);
   
   // Request type state
@@ -100,51 +100,11 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
   const [parcelValidated, setParcelValidated] = useState(false);
   const [parcelSearchLoading, setParcelSearchLoading] = useState(false);
   const [showParcelDropdown, setShowParcelDropdown] = useState(false);
-  // Owner data loaded from parcel for renewal mode
-  const [parcelOwnerData, setParcelOwnerData] = useState<{
-    legalStatus?: string;
-    gender?: string;
-    lastName?: string;
-    firstName?: string;
-    middleName?: string;
-    phone?: string;
-    email?: string;
-  } | null>(null);
-  // Location data loaded from parcel for renewal mode (masked display)
-  const [parcelLocationData, setParcelLocationData] = useState<{
-    province?: string;
-    sectionType?: string;
-    ville?: string;
-    commune?: string;
-    quartier?: string;
-    avenue?: string;
-    territoire?: string;
-    collectivite?: string;
-    groupement?: string;
-    village?: string;
-    parcelSides?: any[];
-    gpsCoordinates?: any[];
-  } | null>(null);
-  // Valorisation data loaded from parcel for renewal mode (auto-display)
-  const [parcelValorisationData, setParcelValorisationData] = useState<{
-    propertyCategory?: string;
-    constructionType?: string;
-    constructionNature?: string;
-    constructionMaterials?: string;
-    declaredUsage?: string;
-    standing?: string;
-    constructionYear?: number;
-    floorNumber?: string;
-  } | null>(null);
-  // Building permits loaded from parcel (read-only display)
-  const [parcelBuildingPermits, setParcelBuildingPermits] = useState<Array<{
-    permit_number: string;
-    administrative_status: string;
-    issue_date: string;
-    issuing_service: string;
-    validity_period_months: number;
-    is_current: boolean;
-  }>>([]);
+  // Données de parcelle préremplies par le serveur (l'identité du propriétaire n'est jamais préremplie)
+  const [parcelOwnerData, setParcelOwnerData] = useState<ParcelOwnerData | null>(null);
+  const [parcelLocationData, setParcelLocationData] = useState<ParcelLocationData | null>(null);
+  const [parcelValorisationData, setParcelValorisationData] = useState<ParcelValorisationData | null>(null);
+  const [parcelBuildingPermits, setParcelBuildingPermits] = useState<ParcelBuildingPermit[]>([]);
   // Building permit update form states
   const [hasPermitUpdate, setHasPermitUpdate] = useState<'yes' | 'no' | ''>('');
   const [permitUpdateType, setPermitUpdateType] = useState<'construction' | 'regularization'>('construction');
@@ -165,7 +125,6 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     isOwnerSameAsRequester: true,
     sectionType: '',
     province: '',
-    selectedFees: []
   });
   
   // Files
@@ -200,23 +159,14 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
   // Road sides for dimensions panel
   const [roadSides, setRoadSides] = useState<Array<any>>([]);
 
-// Construction type state
-  const [propertyCategory, setPropertyCategory] = useState<string>('');
-  const { getDependentOptions } = useCCCFormPicklists();
-  const [constructionType, setConstructionType] = useState<string>('');
-  const [constructionNature, setConstructionNature] = useState<string>('');
-  const [constructionMaterials, setConstructionMaterials] = useState<string>('');
-  const [declaredUsage, setDeclaredUsage] = useState<string>('');
-  const [standing, setStanding] = useState<string>('');
-  const [constructionYear, setConstructionYear] = useState<string>('');
-  const [floorNumber, setFloorNumber] = useState<string>('');
-  const [availableConstructionTypes, setAvailableConstructionTypes] = useState<string[]>([]);
-  const [availableConstructionNatures, setAvailableConstructionNatures] = useState<string[]>([]);
-  const [availableDeclaredUsages, setAvailableDeclaredUsages] = useState<string[]>([]);
-
+  const {
+    skipCascadeRef,
+    propertyCategory, setPropertyCategory, constructionType, setConstructionType,
+    constructionNature, setConstructionNature, constructionMaterials, setConstructionMaterials,
+    declaredUsage, setDeclaredUsage, standing, setStanding, constructionYear, setConstructionYear,
+    floorNumber, setFloorNumber, availableConstructionTypes, availableConstructionNatures, availableDeclaredUsages,
+  } = useLandTitleConstruction();
   const PROPERTY_CATEGORY_OPTIONS = SHARED_PROPERTY_CATEGORY_OPTIONS as unknown as string[];
-
-  const CATEGORY_TO_CONSTRUCTION_TYPES = SHARED_CATEGORY_TO_CONSTRUCTION_TYPES;
   
   // New fields for land title deduction
   const [nationality, setNationality] = useState<'congolais' | 'etranger' | ''>('');
@@ -367,81 +317,6 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
       setTimeout(() => { skipCascadeRef.current = false; }, 0);
     }
   }, [valorisationChoice, parcelValorisationData]);
-
-  // Property category -> Construction type cascade
-  useEffect(() => {
-    if (skipCascadeRef.current) return;
-    if (!propertyCategory) {
-      setAvailableConstructionTypes([]);
-      setConstructionType('');
-      return;
-    }
-    const allowedTypes = CATEGORY_TO_CONSTRUCTION_TYPES[propertyCategory] || [];
-    setAvailableConstructionTypes(allowedTypes);
-    if (allowedTypes.length === 1) {
-      if (constructionType !== allowedTypes[0]) setConstructionType(allowedTypes[0]);
-    } else if (constructionType && !allowedTypes.includes(constructionType)) {
-      setConstructionType('');
-    }
-  }, [propertyCategory]);
-
-  // Construction type -> Nature logic
-  useEffect(() => {
-    if (skipCascadeRef.current) return;
-    if (!constructionType) {
-      setAvailableConstructionNatures([]);
-      setConstructionNature('');
-      setAvailableDeclaredUsages([]);
-      setDeclaredUsage('');
-      return;
-    }
-
-    // Listes du formulaire CCC (configurables dans l'admin), sans copie locale.
-    const natures: string[] = getDependentOptions('picklist_construction_nature')[constructionType] ?? [];
-    
-    setAvailableConstructionNatures(natures);
-    
-    if (constructionNature && !natures.includes(constructionNature)) {
-      setConstructionNature('');
-    }
-  }, [constructionType, getDependentOptions]);
-
-  // Materials -> Nature auto-determination (aligned with CCC)
-  const MATERIAL_TO_NATURE: Record<string, string> = useMemo(() => ({
-    'Béton armé': 'Durable', 'Briques cuites': 'Durable', 'Parpaings': 'Durable', 'Pierre naturelle': 'Durable',
-    'Semi-dur': 'Semi-durable', 'Briques adobes': 'Semi-durable', 'Bois': 'Semi-durable', 'Mixte': 'Semi-durable',
-    'Tôles': 'Précaire', 'Paille': 'Précaire',
-  }), []);
-
-  useEffect(() => {
-    if (constructionMaterials && MATERIAL_TO_NATURE[constructionMaterials]) {
-      const determinedNature = MATERIAL_TO_NATURE[constructionMaterials];
-      if (availableConstructionNatures.includes(determinedNature) && constructionNature !== determinedNature) {
-        setConstructionNature(determinedNature);
-      }
-    }
-  }, [constructionMaterials, availableConstructionNatures]);
-
-  // Construction type + Nature -> Usage logic
-  useEffect(() => {
-    if (skipCascadeRef.current) return;
-    if (!constructionType || !constructionNature) {
-      setAvailableDeclaredUsages([]);
-      setDeclaredUsage('');
-      return;
-    }
-
-    // Usages du formulaire CCC : clé « type_nature », puis repli sur la nature.
-    const usageMap = getDependentOptions('picklist_declared_usage');
-    const usages: string[] = [...(usageMap[`${constructionType}_${constructionNature}`]
-      ?? usageMap[constructionNature] ?? [])];
-    
-    setAvailableDeclaredUsages(usages);
-    
-    if (declaredUsage && !usages.includes(declaredUsage)) {
-      setDeclaredUsage('');
-    }
-  }, [constructionType, constructionNature, getDependentOptions]);
 
   // Pre-fill with user info — only on mount (when dialog opens), not on every profile change
   const hasPrefilledRef = useRef(false);
@@ -604,169 +479,47 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
   };
 
   const handleSelectParcel = async (parcel: { parcel_number: string; id: string }) => {
-  setSelectedParcelNumber(parcel.parcel_number);
-  setParcelNumberSearch(parcel.parcel_number);
-  setParcelValidated(true);
-  setShowParcelDropdown(false);
-
-  // Fetch owner data from parcel/contributions
-  setLoadingOwnerData(true);
-  try {
-    // First try contributions for richer owner + location details
-    const { data: contribData } = await supabase
-      .from('cadastral_contributions')
-      .select('current_owners_details, current_owner_name, current_owner_legal_status, province, parcel_type, ville, commune, quartier, avenue, territoire, collectivite, groupement, village, construction_type, construction_nature, construction_materials, declared_usage, area_sqm, standing, construction_year, floor_number, property_category')
-      .eq('parcel_number', parcel.parcel_number)
-      .eq('status', 'approved')
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    if (contribData?.current_owners_details) {
-      const details = Array.isArray(contribData.current_owners_details) 
-        ? contribData.current_owners_details 
-        : [];
-      const firstOwner = details[0] as any;
-      if (firstOwner) {
-        const ownerInfo = {
-          legalStatus: firstOwner.legalStatus || '',
-          gender: firstOwner.gender || '',
-          lastName: firstOwner.lastName || '',
-          firstName: firstOwner.firstName || '',
-          middleName: firstOwner.middleName || '',
-          phone: firstOwner.phone || '',
-          email: firstOwner.email || '',
-        };
-        setParcelOwnerData(ownerInfo);
-        // Don't force requesterType — let user choose owner vs representative
-        setFormData(prev => ({
-          ...prev,
-          ownerLastName: ownerInfo.lastName,
-          ownerFirstName: ownerInfo.firstName,
-          ownerMiddleName: ownerInfo.middleName,
-          ownerLegalStatus: ownerInfo.legalStatus || 'Personne physique',
-          ownerGender: ownerInfo.gender,
-          ownerPhone: ownerInfo.phone,
-        }));
-      }
-    } else {
-      // Fallback to parcel table
-      const { data: parcelDetail } = await supabase
-        .from('cadastral_parcels')
-        .select('current_owner_name, current_owner_legal_status')
-        .eq('id', parcel.id)
-        .single();
-      if (parcelDetail) {
-        const nameParts = (parcelDetail.current_owner_name || '').split(/\s+/);
-        const ownerInfo = {
-          legalStatus: parcelDetail.current_owner_legal_status || 'Personne physique',
-          lastName: nameParts[0] || '',
-          firstName: nameParts.slice(1).join(' ') || '',
-        };
-        setParcelOwnerData(ownerInfo);
-        setFormData(prev => ({
-          ...prev,
-          ownerLastName: ownerInfo.lastName,
-          ownerFirstName: ownerInfo.firstName,
-          ownerLegalStatus: ownerInfo.legalStatus || 'Personne physique',
-        }));
-      }
-    }
-
-    // Fetch location data: prioritize parcel table (source of truth)
-    const { data: parcelLocData } = await supabase
-      .from('cadastral_parcels')
-      .select('province, parcel_type, ville, commune, quartier, avenue, territoire, collectivite, groupement, village, parcel_sides, gps_coordinates, construction_type, construction_nature, construction_materials, declared_usage, area_sqm, standing, construction_year')
-      .eq('id', parcel.id)
-      .single();
-
-    // Use parcel data as base, then enrich with contribution data if available
-    const locSource = parcelLocData || contribData;
-    if (locSource) {
-      const pType = locSource.parcel_type || '';
-      const sType = pType === 'Urbain' || pType === 'urbaine' || pType === 'SU' ? 'urbaine' : 'rurale';
-      const locationInfo = {
-        province: parcelLocData?.province || contribData?.province || '',
-        sectionType: sType,
-        ville: parcelLocData?.ville || contribData?.ville || '',
-        commune: parcelLocData?.commune || contribData?.commune || '',
-        quartier: parcelLocData?.quartier || contribData?.quartier || '',
-        avenue: parcelLocData?.avenue || contribData?.avenue || '',
-        territoire: parcelLocData?.territoire || contribData?.territoire || '',
-        collectivite: parcelLocData?.collectivite || contribData?.collectivite || '',
-        groupement: parcelLocData?.groupement || contribData?.groupement || '',
-        village: parcelLocData?.village || contribData?.village || '',
-        parcelSides: parcelLocData?.parcel_sides && Array.isArray(parcelLocData.parcel_sides) ? parcelLocData.parcel_sides : (contribData as any)?.parcel_sides && Array.isArray((contribData as any).parcel_sides) ? (contribData as any).parcel_sides : [],
-        gpsCoordinates: parcelLocData?.gps_coordinates && Array.isArray(parcelLocData.gps_coordinates) ? parcelLocData.gps_coordinates : (contribData as any)?.gps_coordinates && Array.isArray((contribData as any).gps_coordinates) ? (contribData as any).gps_coordinates : [],
-      };
-      setParcelLocationData(locationInfo);
-      // Extract areaSqm
-      const fetchedAreaSqm = parcelLocData?.area_sqm || (contribData as any)?.area_sqm || null;
+    setSelectedParcelNumber(parcel.parcel_number);
+    setParcelNumberSearch(parcel.parcel_number);
+    setParcelValidated(true);
+    setShowParcelDropdown(false);
+    // L'identité du propriétaire n'est jamais préremplie (donnée réservée après paiement).
+    setParcelOwnerData(null);
+    setLoadingOwnerData(true);
+    try {
+      const prefill = await fetchLandTitleParcelPrefill(parcel.parcel_number);
+      if (!prefill) return;
+      const loc = prefill.location;
+      setParcelLocationData(loc);
       setFormData(prev => ({
         ...prev,
-        sectionType: sType as 'urbaine' | 'rurale',
-        province: locationInfo.province,
-        ville: locationInfo.ville,
-        commune: locationInfo.commune,
-        quartier: locationInfo.quartier,
-        avenue: locationInfo.avenue,
-        territoire: locationInfo.territoire,
-        collectivite: locationInfo.collectivite,
-        groupement: locationInfo.groupement,
-        village: locationInfo.village,
-        areaSqm: fetchedAreaSqm ?? prev.areaSqm,
+        sectionType: loc.sectionType as 'urbaine' | 'rurale',
+        province: loc.province || '',
+        ville: loc.ville, commune: loc.commune, quartier: loc.quartier, avenue: loc.avenue,
+        territoire: loc.territoire, collectivite: loc.collectivite, groupement: loc.groupement, village: loc.village,
+        areaSqm: prefill.areaSqm ?? prev.areaSqm,
       }));
+      const v = prefill.valorisation;
+      if (v) {
+        setParcelValorisationData(v);
+        if (v.propertyCategory) setPropertyCategory(v.propertyCategory);
+        if (v.constructionType) setConstructionType(v.constructionType);
+        if (v.constructionNature) setConstructionNature(v.constructionNature);
+        if (v.constructionMaterials) setConstructionMaterials(v.constructionMaterials);
+        if (v.declaredUsage) setDeclaredUsage(v.declaredUsage);
+        if (v.standing) setStanding(v.standing);
+        if (v.constructionYear) setConstructionYear(String(v.constructionYear));
+        if (v.floorNumber) setFloorNumber(v.floorNumber);
+      }
+      setParcelBuildingPermits(prefill.permits);
+    } catch (err) {
+      console.error('Error fetching parcel prefill:', err);
+      toast({ title: 'Préremplissage indisponible', description: 'Complétez les informations manuellement.', variant: 'destructive' });
+    } finally {
+      setLoadingOwnerData(false);
     }
-
-    // Fetch valorisation data (construction info) from parcel/contribution
-    const valoPropertyCategory = contribData?.property_category || '';
-    const valoConstructionType = parcelLocData?.construction_type || contribData?.construction_type || '';
-    const valoConstructionNature = parcelLocData?.construction_nature || contribData?.construction_nature || '';
-    const valoConstructionMaterials = parcelLocData?.construction_materials || (contribData as any)?.construction_materials || '';
-    const valoDeclaredUsage = parcelLocData?.declared_usage || contribData?.declared_usage || '';
-    const valoStanding = (parcelLocData as any)?.standing || (contribData as any)?.standing || '';
-    const valoConstructionYear = (parcelLocData as any)?.construction_year || (contribData as any)?.construction_year || null;
-    const valoFloorNumber = (contribData as any)?.floor_number || '';
-
-    if (valoConstructionType || valoConstructionNature || valoDeclaredUsage || valoPropertyCategory) {
-      const valoData = {
-        propertyCategory: valoPropertyCategory,
-        constructionType: valoConstructionType,
-        constructionNature: valoConstructionNature,
-        constructionMaterials: valoConstructionMaterials,
-        declaredUsage: valoDeclaredUsage,
-        standing: valoStanding,
-        constructionYear: valoConstructionYear,
-        floorNumber: valoFloorNumber,
-      };
-      setParcelValorisationData(valoData);
-      // Auto-fill construction states
-      if (valoPropertyCategory) setPropertyCategory(valoPropertyCategory);
-      if (valoConstructionType) setConstructionType(valoConstructionType);
-      if (valoConstructionNature) setConstructionNature(valoConstructionNature);
-      if (valoConstructionMaterials) setConstructionMaterials(valoConstructionMaterials);
-      if (valoDeclaredUsage) setDeclaredUsage(valoDeclaredUsage);
-      if (valoStanding) setStanding(valoStanding);
-      if (valoConstructionYear) setConstructionYear(String(valoConstructionYear));
-      if (valoFloorNumber) setFloorNumber(valoFloorNumber);
-    }
-
-    // Fetch building permits for this parcel
-    const { data: permitsData } = await supabase
-      .from('cadastral_building_permits')
-      .select('permit_number, administrative_status, issue_date, issuing_service, validity_period_months, is_current')
-      .eq('parcel_id', parcel.id)
-      .order('issue_date', { ascending: false });
-    setParcelBuildingPermits(permitsData || []);
-  } catch (err) {
-    console.error('Error fetching owner data:', err);
-  } finally {
-    setLoadingOwnerData(false);
-  }
   };
 
-
-  // toggleFee removed — fees are now fully dynamic and non-toggleable
 
   const isFormValid = (): boolean => {
     // Check request type
@@ -877,14 +630,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
 
     setIsSubmitting(true);
 
-    // SECURE FLOW: Create DB record FIRST, then show payment
-    const feeItems = calculatedFeesResult.fees.map(fee => ({
-      id: fee.id,
-      name: fee.fee_name,
-      amount: fee.final_amount,
-      is_mandatory: fee.is_mandatory
-    }));
-
+    // Le serveur crée la demande et fixe le montant dû avant le paiement.
     const result = await createPendingRequest({
       ...formData,
       requestType,
@@ -906,20 +652,27 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
       gpsCoordinates: gpsCoordinates,
       parcelSides: parcelSides,
       roadBorderingSides: roadSides,
-      totalAmountOverride: totalAmount,
       // Proposed building permit data
       proposedPermitType: showValorisationUpdate && hasPermitUpdate === 'yes' ? (permitUpdateType === 'construction' ? 'Autorisation de bâtir' : 'Régularisation') : undefined,
       proposedPermitNumber: showValorisationUpdate && hasPermitUpdate === 'yes' ? permitUpdateNumber : undefined,
       proposedPermitDate: showValorisationUpdate && hasPermitUpdate === 'yes' ? permitUpdateDate : undefined,
       proposedPermitService: showValorisationUpdate && hasPermitUpdate === 'yes' ? permitUpdateService : undefined,
       proposedPermitDocumentFile: showValorisationUpdate && hasPermitUpdate === 'yes' ? permitUpdateFile : undefined,
-    }, feeItems);
+    });
 
     setIsSubmitting(false);
 
     if (result.success && result.requestId) {
       setSavedRequestId(result.requestId);
       setSavedReferenceNumber(result.referenceNumber || '');
+      const serverTotal = result.totalAmountUsd ?? 0;
+      setServerAmountDue(serverTotal);
+      if (Math.round(serverTotal * 100) !== Math.round(totalAmount * 100)) {
+        toast({
+          title: 'Montant mis à jour',
+          description: `Le montant fixé par le serveur est de ${serverTotal} USD (estimation affichée : ${totalAmount} USD).`,
+        });
+      }
       setShowPayment(true);
       // Clear draft on successful creation
       clearDraft();
@@ -934,14 +687,14 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
   };
 
   const handlePaymentCancel = useCallback(() => {
-    // Cancel orphaned pending record when user cancels payment
+    // La demande reste « en attente de paiement » : reprise ou annulation depuis l'espace utilisateur.
     if (savedRequestId) {
-      cancelPendingRequest(savedRequestId);
+      toast({ title: 'Demande en attente de paiement', description: 'Vous pourrez la payer ou l\'annuler depuis votre espace utilisateur.' });
     }
     setShowPayment(false);
     setSavedRequestId('');
     setSavedReferenceNumber('');
-  }, [savedRequestId, cancelPendingRequest]);
+  }, [savedRequestId, toast]);
 
   const handleCloseRequest = () => {
     // Comprehensive check for any user-entered data
@@ -968,13 +721,10 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
 
   const handleConfirmClose = () => {
     setShowCloseConfirmation(false);
-    // Cancel orphaned pending record if payment was in progress
-    if (savedRequestId && !showSuccess) {
-      cancelPendingRequest(savedRequestId);
-    }
     // Clear draft
     clearDraft();
     // Reset ALL form state
+    setServerAmountDue(0);
     setFormData({
       requesterType: 'owner',
       requesterLastName: '',
@@ -985,8 +735,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
       isOwnerSameAsRequester: true,
       sectionType: '',
       province: '',
-      selectedFees: []
-    });
+      });
     setRequesterIdFile(null);
     setOwnerIdFile(null);
     setProofOfOwnershipFile(null);
@@ -1055,83 +804,17 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
   const totalAmount = calculatedFeesResult.totalAmount;
 
 
-  // Payment view
   if (showPayment) {
-    const cartItem: CartItem = {
-      id: `land-title-${Date.now()}`,
-      title: 'Demande de titre foncier',
-      price: totalAmount,
-      description: `Demande de titre foncier - ${formData.province}`
-    };
-
     return (
-      <Dialog open={open} onOpenChange={handleConfirmClose}>
-          <DialogContent className={`${isMobile ? 'w-[92vw] max-w-[360px] max-h-[88vh] rounded-2xl' : 'max-w-md rounded-2xl'} p-4 overflow-hidden`}>
-            <DialogHeader className="pb-2">
-              <DialogTitle className="flex items-center gap-2 text-base font-bold">
-                <div className="p-1.5 bg-primary/10 rounded-lg">
-                  <CreditCard className="h-4 w-4 text-primary" />
-                </div>
-                Paiement - Titre foncier
-              </DialogTitle>
-              <DialogDescription className="text-sm text-muted-foreground">
-                Montant total : {totalAmount} USD
-              </DialogDescription>
-            </DialogHeader>
-            
-            <MobileMoneyPayment
-              item={cartItem}
-              currency="USD"
-              paymentType="land_title_request"
-              invoiceId={savedRequestId}
-              successMessage="Votre demande de titre foncier est enregistrée et en cours d'examen"
-              onPaymentSuccess={handlePaymentSuccess}
-            />
-            <Button 
-              variant="outline" 
-              onClick={handlePaymentCancel} 
-              className="w-full h-8 text-xs rounded-xl mt-2"
-            >
-              Annuler
-            </Button>
-          </DialogContent>
-      </Dialog>
+      <LandTitlePaymentView open={open} isMobile={isMobile} province={formData.province}
+        amountDue={serverAmountDue} requestId={savedRequestId}
+        onClose={handleConfirmClose} onSuccess={handlePaymentSuccess} onCancel={handlePaymentCancel} />
     );
   }
 
-  // Success view
   if (showSuccess) {
     return (
-      <Dialog open={open} onOpenChange={handleConfirmClose}>
-          <DialogContent className={`${isMobile ? 'w-[92vw] max-w-[360px] max-h-[88vh] rounded-2xl' : 'max-w-md rounded-2xl'} p-4 overflow-hidden`}>
-            <div className="space-y-3 text-center py-2">
-              <div className="mx-auto w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
-                <CheckCircle2 className="h-6 w-6 text-green-600" />
-              </div>
-              
-              <div>
-                <h3 className="font-semibold text-sm">Demande soumise avec succès</h3>
-                <p className="text-[10px] text-muted-foreground mt-1">
-                  Votre demande de titre foncier a été enregistrée
-                </p>
-              </div>
-
-              <Card className="bg-muted/50 border-0 text-left rounded-lg">
-                <CardContent className="p-3 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground">Référence</span>
-                    <span className="font-mono font-bold text-xs text-primary">{savedReferenceNumber}</span>
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <p className="text-[10px] text-muted-foreground">
-                Vous recevrez une notification dès que votre demande sera traitée.
-              </p>
-              <Button onClick={handleConfirmClose} className="w-full h-8 text-xs rounded-xl">Fermer</Button>
-            </div>
-          </DialogContent>
-      </Dialog>
+      <LandTitleSuccessView open={open} isMobile={isMobile} referenceNumber={savedReferenceNumber} onClose={handleConfirmClose} />
     );
   }
 

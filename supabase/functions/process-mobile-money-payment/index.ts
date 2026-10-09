@@ -106,12 +106,13 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Titre foncier : le montant dû est recalculé côté serveur à partir du barème officiel.
+    // Titre foncier : le montant dû est celui fixé par le serveur à la création
+    // (même règle que le paiement par carte), jamais accepté depuis le client.
     if (payment_type === 'land_title_request') {
       if (!invoice_id) throw new Error('Identifiant de la demande de titre foncier manquant.');
       const { data: titleRequest, error: titleError } = await supabase
         .from('land_title_requests')
-        .select('id, user_id, payment_status, status, deduced_title_type, section_type, area_sqm')
+        .select('id, user_id, payment_status, status, total_amount_usd')
         .eq('id', invoice_id)
         .eq('user_id', user.id)
         .single();
@@ -121,16 +122,10 @@ Deno.serve(async (req) => {
         throw new Error("Cette demande de titre foncier n'est plus payable.");
       }
 
-      const { data: calc, error: calcError } = await supabase.rpc('calculate_land_title_fees', {
-        p_title_label: titleRequest.deduced_title_type,
-        p_section_type: titleRequest.section_type,
-        p_area_sqm: titleRequest.area_sqm,
-      });
-      if (calcError) throw new Error('Impossible de calculer les frais du titre foncier.');
-      const dueAmount = Number((calc as any)?.total_amount_usd ?? 0);
+      const dueAmount = Number(titleRequest.total_amount_usd ?? 0);
       if (dueAmount <= 0) throw new Error('Aucun frais applicable à cette demande.');
       if (Math.round(dueAmount * 100) !== Math.round(Number(amount_usd) * 100)) {
-        throw new Error('Le montant du paiement ne correspond pas au barème en vigueur.');
+        throw new Error('Le montant du paiement ne correspond pas au montant enregistré.');
       }
     }
 

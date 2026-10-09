@@ -25,6 +25,7 @@ import {
   Plus
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { MortgageResumePayment } from './MortgageResumePayment';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -229,6 +230,16 @@ export const UserLandTitleRequests: React.FC = () => {
                   {getPaymentBadge(selectedRequest.payment_status)}
                 </div>
               </div>
+
+              {selectedRequest.status === 'pending' && selectedRequest.payment_status === 'pending' && (
+                <MortgageResumePayment
+                  requestId={selectedRequest.id}
+                  amountDue={Number(selectedRequest.total_amount_usd)}
+                  paymentType="land_title_request"
+                  onDone={() => { setIsDetailsOpen(false); fetchRequests(); }}
+                />
+              )}
+
 
               {/* Infos principales */}
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
