@@ -84,3 +84,14 @@ export const getDisputeReportDraftKey = (parcelNumber: string) =>
 
 export const getDisputeLiftingDraftKey = (parcelNumber: string) =>
   `dispute_lifting_draft_${parcelNumber}`;
+
+/** Notification envoyée par l'admin au déclarant lors d'un changement de statut. */
+export const sendDisputeNotification = async (
+  userId: string,
+  title: string,
+  message: string,
+  actionUrl: string
+): Promise<void> => {
+  const { createNotification } = await import('@/utils/notificationHelper');
+  await createNotification({ userId, title, message, type: 'success', actionUrl });
+};

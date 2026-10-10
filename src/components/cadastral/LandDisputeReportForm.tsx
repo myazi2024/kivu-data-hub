@@ -17,15 +17,11 @@ import SectionHelpPopover from './SectionHelpPopover';
 import {
   uploadDisputeFiles,
   cleanupUploadedFiles,
-  checkDuplicateDispute,
-  sendDisputeNotification,
-  notifyAdminsAboutDispute,
   validateEmail,
   validatePhone,
   validateFileCount,
   validateFile,
   getDisputeReportDraftKey,
-  generateDisputeReference,
 } from '@/utils/disputeUploadUtils';
 import {
   MAX_PARTIES,
@@ -147,7 +143,7 @@ const LandDisputeReportForm: React.FC<LandDisputeReportFormProps> = ({
   // Generate reference ONCE per session and restore draft
   useEffect(() => {
     if (open && !referenceGenerated.current) {
-      setReferenceNumber(generateDisputeReference('LIT'));
+      setReferenceNumber('');
       referenceGenerated.current = true;
 
       try {
@@ -241,82 +237,31 @@ const LandDisputeReportForm: React.FC<LandDisputeReportFormProps> = ({
     let uploadedPaths: string[] = [];
     
     try {
-      const isDuplicate = await checkDuplicateDispute(parcelNumber, disputeNature, user.id);
-      if (isDuplicate) {
-        toast.error('Un litige de même nature est déjà en cours sur cette parcelle.');
-        setLoading(false);
-        return;
-      }
-
-      let documentUrls: string[] = [];
       if (documents.length > 0) {
-        const uploadResult = await uploadDisputeFiles(documents, user.id, 'dispute');
-        documentUrls = uploadResult.urls;
-        uploadedPaths = uploadResult.paths;
+        uploadedPaths = await uploadDisputeFiles(documents, user.id, 'dispute');
       }
 
-      // Lier le litige à la parcelle existante si elle est connue (sinon, lien par numéro).
-      let resolvedParcelId = parcelId ?? null;
-      if (!resolvedParcelId && parcelNumber) {
-        const { data: parcelRow } = await supabase
-          .from('cadastral_parcels_public')
-          .select('id')
-          .eq('parcel_number', parcelNumber)
-          .maybeSingle();
-        resolvedParcelId = parcelRow?.id ?? null;
-      }
-
-      // Always persist as 'en_cours'; resolution_level is stored separately
-      const { error } = await supabase
-        .from('cadastral_land_disputes' as any)
-        .insert({
-          parcel_id: resolvedParcelId,
-          parcel_number: parcelNumber,
-          reference_number: referenceNumber,
-          dispute_type: 'report',
-          dispute_nature: disputeNature,
-          dispute_description: disputeDescription,
-          parties_involved: parties.filter(p => p.name.trim()),
-          current_status: 'en_cours',
-          resolution_level: resolutionLevel || null,
-          resolution_details: resolutionDetails || null,
-          declarant_name: declarantName,
-          declarant_phone: declarantPhone || null,
-          declarant_email: declarantEmail || null,
-          declarant_quality: declarantQuality,
-          supporting_documents: documentUrls,
-          dispute_start_date: disputeStartDate,
-          reported_by: user.id,
-        } as any);
+      // Le serveur valide, refuse les doublons, génère la référence, met à jour la parcelle et notifie.
+      const { data, error } = await supabase.rpc('submit_land_dispute_report' as any, {
+        _parcel_number: parcelNumber,
+        _dispute_nature: disputeNature,
+        _dispute_description: disputeDescription,
+        _dispute_start_date: disputeStartDate,
+        _resolution_level: hasResolutionStarted ? resolutionLevel : null,
+        _resolution_details: hasResolutionStarted ? resolutionDetails : null,
+        _declarant_name: declarantName,
+        _declarant_phone: declarantPhone,
+        _declarant_email: declarantEmail,
+        _declarant_quality: declarantQuality,
+        _parties: parties.filter(p => p.name.trim()),
+        _documents: uploadedPaths,
+      } as any);
 
       if (error) {
         await cleanupUploadedFiles(uploadedPaths);
         throw error;
       }
-
-      // Marquer la parcelle comme ayant un litige actif
-      try {
-        await supabase
-          .from('cadastral_parcels')
-          .update({ has_dispute: true } as any)
-          .eq('parcel_number', parcelNumber);
-      } catch (flagError) {
-        console.warn('Erreur mise à jour has_dispute:', flagError);
-      }
-
-      // Notification to submitter
-      await sendDisputeNotification(
-        user.id,
-        'Litige foncier signalé',
-        `Votre signalement de litige foncier (${referenceNumber}) pour la parcelle ${parcelNumber} a été enregistré avec succès.`,
-        '/user-dashboard?tab=disputes'
-      );
-
-      // Notify admins
-      await notifyAdminsAboutDispute(
-        'Nouveau signalement de litige',
-        `Un nouveau litige foncier (${referenceNumber}) a été signalé sur la parcelle ${parcelNumber} par ${declarantName}.`
-      );
+      setReferenceNumber((data as any)?.reference_number || '');
 
       localStorage.removeItem(draftKey);
       setStep('confirmation');
