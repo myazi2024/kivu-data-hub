@@ -1,5 +1,5 @@
 - Keep loading-image settings in `app_appearance_config`, applying them once at the root and styling existing loading indicators through shared CSS; this avoids per-indicator network calls across lazy-loaded screens.
-- Land-district maps and Analytics share `getLandDistrictAnchor`: only exact, non-partial same-province territory/ville/commune anchors receive bundled GeoJSON boundaries; no boundary is approximated.
+- Land-district maps share `getLandDistrictAnchor` (exact same-province anchors only, no approximated boundary); the analytics map's layer is derived by `resolveMapView` from filters, never a manual selector.
 - Home BIC figures: public aggregates via a service-only DB function behind a counts-only Edge Function; each configured display figure switches after 10,000 real records.
 - District home activity totals join paid service access and disputes to existing parcels in a service-only function; no individual records, no guessed districts.
 - Home counts (map + footer) come from one shared react-query hook `useHomeBicCounts`; avoids duplicate calls to home-bic-counts.
