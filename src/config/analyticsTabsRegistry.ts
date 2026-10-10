@@ -368,7 +368,6 @@ export const ANALYTICS_TABS_REGISTRY: Record<string, { label: string; charts: Ch
     label: 'Carte RDC',
     charts: [
       { tab_key: 'rdc-map', item_key: 'map-legend-title', item_type: 'chart', is_visible: true, display_order: 0, custom_title: 'Densité parcelles cadastrées' },
-      { tab_key: 'rdc-map', item_key: 'map-header-note', item_type: 'chart', is_visible: true, display_order: 1, custom_title: 'Répartition géographique des données foncières cadastrales' },
       { tab_key: 'rdc-map', item_key: 'map-watermark', item_type: 'chart', is_visible: true, display_order: 2, custom_title: 'BIC - Tous droits réservés' },
       { tab_key: 'rdc-map', item_key: 'map-copy-button', item_type: 'chart', is_visible: true, display_order: 3, custom_title: 'Bouton copier image' },
       { tab_key: 'rdc-map', item_key: 'map-tier-1', item_type: 'chart', is_visible: true, display_order: 4, custom_title: 'Faible (0–30)', custom_color: '#bec8d1' },

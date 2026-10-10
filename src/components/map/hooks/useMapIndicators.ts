@@ -125,10 +125,5 @@ export function useMapIndicators({
     );
   }, [analytics, selectedProvince, selectedVille, selectedCommune, selectedQuartier, selectedTerritoire]);
 
-  const totalParcels = useMemo(
-    () => provincesData.reduce((s, p) => s + p.parcelsCount, 0),
-    [provincesData],
-  );
-
-  return { provincesData, scopedStats, totalParcels };
+  return { provincesData, scopedStats };
 }

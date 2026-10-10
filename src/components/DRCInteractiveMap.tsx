@@ -24,6 +24,7 @@ import { useTabChartsConfig, useAnalyticsTabsConfig, ANALYTICS_TABS_REGISTRY } f
 import { getLandDistrictAnchor, getSectionTypeForLandDistrict, getTerritoiresForProvince, getProvinceForTerritoire } from '@/lib/geographicData';
 import { MAP_TAB_PROFILES, computeAdaptiveTiers, NO_DATA_COLOR, type MapTabProfile, type MapTier } from '@/config/mapTabProfiles';
 import { norm, buildScopePredicate, sliceAnalyticsByPredicate, type GeoScopedRecord } from './map/meta/mapMeta';
+import { resolveMapView } from './map/meta/mapView';
 import { useMapDrilldown } from './map/hooks/useMapDrilldown';
 import LandDistrictMap from './map/LandDistrictMap';
 import { LandDistrictFilterContext, LandDistrictChangeContext } from './visualizations/filters/analyticsFilterContexts';
@@ -57,8 +58,6 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
     selectedTerritoire,
     selectedSectionType,
     activeAnalyticsTab,
-    mapView,
-    setMapView,
     selectedLandDistrict,
     setSelectedLandDistrict,
     setSelectedProvince,
@@ -79,7 +78,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
   const mapCardRef = React.useRef<HTMLDivElement>(null);
   const analyticsColRef = React.useRef<HTMLDivElement>(null);
   const analyticsTitleRef = React.useRef<HTMLSpanElement>(null);
-  const mapTitleRef = React.useRef<HTMLHeadingElement>(null);
+  const mapAreaRef = React.useRef<HTMLDivElement>(null);
   const trackRef = React.useRef<HTMLDivElement>(null);
 
   const isMobile = useIsMobile();
@@ -103,7 +102,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
     trackRef,
     analyticsColRef,
     analyticsTitleRef,
-    mapTitleRef,
+    mapFocusRef: mapAreaRef,
     activeMobilePanel,
   });
 
@@ -151,7 +150,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
     [activeAnalyticsTab],
   );
 
-  const { provincesData, scopedStats, totalParcels } = useMapIndicators({
+  const { provincesData, scopedStats } = useMapIndicators({
     analytics,
     activeProfile,
     selectedProvince,
@@ -178,6 +177,20 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
       clearProjection();
     }
   }, [activeAnalyticsTab, projection, clearProjection]);
+
+  /** Vue affichée : dérivée des filtres et du mode visuel, jamais sélectionnée à la main. */
+  const mapView = useMemo(
+    () => resolveMapView({
+      projectionActive: !!projection,
+      landDistrictSelected: !!selectedLandDistrict,
+      provinceSelected: !!selectedProvince,
+      ville: selectedVille,
+      commune: selectedCommune,
+      territoire: selectedTerritoire,
+      sectionType: selectedSectionType,
+    }),
+    [projection, selectedLandDistrict, selectedProvince, selectedVille, selectedCommune, selectedTerritoire, selectedSectionType],
+  );
 
   /** Palette par défaut pour les tiers de projection (HSL semantic-aware) */
   const PROJECTION_PALETTE: [string, string, string, string] = useMemo(
@@ -352,11 +365,10 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
     return map;
   }, [analytics]);
 
-  /** Filtre Analytics → carte : ouvre la vue circonscriptions et zoome. */
+  /** Filtre Analytics → carte : sélectionne la circonscription (la carte zoome dessus). */
   const handleLandDistrictFromFilter = useCallback((district: string | undefined) => {
     setSelectedLandDistrict(district);
-    if (district) setMapView('districts');
-  }, [setSelectedLandDistrict, setMapView]);
+  }, [setSelectedLandDistrict]);
 
   /** Carte → filtre : sélection d'une circonscription (province déduite si besoin). */
   const handleLandDistrictFromMap = useCallback((district: string | undefined, provinceName?: string) => {
@@ -431,47 +443,6 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
             <div className={`flex flex-col min-h-0 transition-all duration-300 w-full ${selectedProvince ? 'h-1/2 lg:h-auto' : 'h-full lg:h-auto'} lg:flex-[3]`}>
               <Card ref={mapCardRef} className="analytics-panel border-0 flex-1 overflow-hidden flex flex-col">
                 <CardContent className="p-0 flex-1 flex flex-col relative min-h-0">
-                  <div className="bg-muted/20 px-2 py-0.5 border-b border-border/30 flex-shrink-0">
-                    <h2
-                      ref={mapTitleRef}
-                      tabIndex={-1}
-                      className="text-[10px] sm:text-xs font-medium text-foreground flex items-center gap-1 outline-none"
-                    >
-                      <MapPin className="h-3 w-3 text-primary" />
-                      <span>{mapView === 'districts' ? (selectedLandDistrict ? `Circonscription foncière de ${selectedLandDistrict}` : `Circonscriptions foncières — ${selectedProvince?.name || 'RDC'}`) : selectedTerritoire ? `${selectedTerritoire} — ${selectedProvince?.name || ''}` : selectedSectionType === 'rurale' && selectedProvince ? `Territoires — ${selectedProvince.name}` : selectedSectionType === 'rurale' ? 'Territoires — RDC' : selectedVille ? `${selectedVille}${selectedCommune ? ` — ${selectedCommune}` : ''}${selectedQuartier ? ` — ${selectedQuartier}` : ''}` : selectedProvince ? `${activeProfile ? `${activeProfile.label} — ` : ''}${selectedProvince.name}` : activeProfile ? `${activeProfile.label} — République Démocratique du Congo` : 'République Démocratique du Congo'}</span>
-                    </h2>
-                    <div className="flex gap-1 py-0.5" role="group" aria-label="Type de carte">
-                      {([['provinces', 'Provinces'], ['districts', 'Circonscriptions foncières']] as const).map(([v, label]) => (
-                        <button
-                          key={v}
-                          type="button"
-                          aria-pressed={mapView === v}
-                          onClick={() => { setMapView(v); if (v === 'provinces') handleLandDistrictFromMap(undefined); }}
-                          className={`min-h-9 px-2 py-1 text-xs rounded border transition-colors ${mapView === v ? 'bg-primary text-primary-foreground border-primary' : 'border-border text-muted-foreground hover:bg-muted'}`}
-                        >
-                          {label}
-                        </button>
-                      ))}
-                    </div>
-                    <p className="text-[10px] text-muted-foreground leading-tight">
-                      {mapView === 'districts'
-                        ? 'Territoires et communes correspondant exactement à une circonscription ; zones grises : découpage en cours'
-                        : selectedTerritoire
-                        ? `Découpe du territoire de ${selectedTerritoire} — ${selectedProvince?.name || ''}`
-                        : selectedSectionType === 'rurale' && selectedProvince
-                        ? `Territoires de la province de ${selectedProvince.name}`
-                        : selectedSectionType === 'rurale'
-                        ? 'Carte des 164 territoires de la RDC'
-                        : selectedVille && selectedCommune
-                        ? `Découpage des quartiers de la commune de ${selectedCommune} — ${selectedVille}${selectedVille.toLowerCase() !== 'goma' ? ' (source OSM/HDX)' : ''}`
-                        : selectedVille
-                        ? `Découpage communal de la ville de ${selectedVille}`
-                        : selectedProvince
-                        ? `Données foncières cadastrales de ${selectedProvince.name} — Total : ${formatNumber(selectedProvince.parcelsCount)} parcelles enregistrées`
-                        : `${getChartConfig('map-header-note')?.custom_title || 'Répartition géographique des données foncières cadastrales'} — Total : ${formatNumber(totalParcels)} parcelles enregistrées`
-                      }
-                    </p>
-                  </div>
 
                   {/* Bandeau « Mode visuel » — affiché quand un graphique projette ses données */}
                   {projection && (
@@ -512,7 +483,15 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                     </div>
                   )}
 
-                   <div data-swipe-ignore className="flex-1 min-h-0 overflow-hidden flex items-center justify-center p-1" style={{ touchAction: isMobile ? 'auto' : undefined }}>
+                   <div
+                     ref={mapAreaRef}
+                     tabIndex={-1}
+                     role="region"
+                     aria-label="Carte des circonscriptions foncières"
+                     data-swipe-ignore
+                     className="flex-1 min-h-0 overflow-hidden flex items-center justify-center p-1 outline-none"
+                     style={{ touchAction: isMobile ? 'auto' : undefined }}
+                   >
                     {mapView === 'districts' ? (
                       <div key="districts" className="w-full h-full animate-fade-in">
                         <LandDistrictMap
@@ -543,7 +522,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                           )}
                         />
                       </div>
-                    ) : selectedSectionType === 'rurale' || (selectedTerritoire && selectedProvince) ? (
+                    ) : mapView === 'territoires' ? (
                       <div key="territoires" className="w-full h-full animate-scale-in">
                         <DRCTerritoiresMap
                           province={selectedProvince?.name}
@@ -573,7 +552,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                           }}
                         />
                       </div>
-                    ) : selectedVille && selectedCommune ? (
+                    ) : mapView === 'quartiers' ? (
                       <div key={`quartiers-${selectedVille}`} className="w-full h-full animate-scale-in">
                         <DRCQuartiersMap
                           ville={selectedVille}
@@ -588,7 +567,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                           profileLabel={activeProfile?.legendTitle}
                         />
                       </div>
-                    ) : selectedVille ? (
+                    ) : mapView === 'communes' ? (
                       <div key="communes" className="w-full h-full animate-scale-in">
                         <DRCCommunesMap
                           ville={selectedVille}
@@ -751,7 +730,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                     />
                   ) : (
                     <div className="flex items-center justify-center h-full p-4">
-                      <p className="text-[10px] text-muted-foreground text-center">Cliquez sur une province</p>
+                      <p className="text-[10px] text-muted-foreground text-center">Survolez ou sélectionnez une circonscription</p>
                     </div>
                   )}
                 </ScrollArea>
