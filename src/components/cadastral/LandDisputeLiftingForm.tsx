@@ -17,15 +17,11 @@ import SectionHelpPopover from './SectionHelpPopover';
 import {
   uploadDisputeFiles,
   cleanupUploadedFiles,
-  checkDisputeAlreadyResolved,
-  sendDisputeNotification,
-  notifyAdminsAboutDispute,
   validateEmail,
   validatePhone,
   validateFileCount,
   validateFile,
   getDisputeLiftingDraftKey,
-  generateDisputeReference,
 } from '@/utils/disputeUploadUtils';
 import {
   MAX_DESCRIPTION_LENGTH,
@@ -110,7 +106,7 @@ const LandDisputeLiftingForm: React.FC<LandDisputeLiftingFormProps> = ({
   // Generate reference ONCE and restore draft
   useEffect(() => {
     if (open && !referenceGenerated.current) {
-      setRequestReference(generateDisputeReference('LEV'));
+      setRequestReference('');
       referenceGenerated.current = true;
 
       try {
@@ -160,23 +156,21 @@ const LandDisputeLiftingForm: React.FC<LandDisputeLiftingFormProps> = ({
     setValidatingReference(true);
     setReferenceError(null);
     try {
-      const { data, error } = await supabase
-        .from('cadastral_land_disputes' as any)
-        .select('*')
-        .eq('parcel_number', parcelNumber)
-        .eq('reference_number', ref.trim().toUpperCase())
-        .eq('dispute_type', 'report')
-        .maybeSingle();
-
+      // Vérification serveur : toute partie peut vérifier une référence, sans donnée personnelle.
+      const { data, error } = await supabase.rpc('check_land_dispute_reference' as any, {
+        _parcel_number: parcelNumber,
+        _reference: ref,
+      } as any);
       if (error) throw error;
-      if (data) {
-        if (checkDisputeAlreadyResolved(data)) {
+      const result = data as any;
+      if (result?.found) {
+        if (!result.can_lift) {
           setReferenceValid(false);
           setReferenceError('Ce litige a déjà été résolu, levé, ou fait déjà l\'objet d\'une demande de levée.');
           setDisputeData(null);
         } else {
           setReferenceValid(true);
-          setDisputeData(data);
+          setDisputeData(result);
         }
       } else {
         setReferenceValid(false);
@@ -238,63 +232,26 @@ const LandDisputeLiftingForm: React.FC<LandDisputeLiftingFormProps> = ({
     let uploadedPaths: string[] = [];
 
     try {
-      // Upload files first
-      const uploadResult = await uploadDisputeFiles(documents, user.id, 'lifting');
-      const documentUrls = uploadResult.urls;
-      uploadedPaths = uploadResult.paths;
+      uploadedPaths = await uploadDisputeFiles(documents, user.id, 'lifting');
 
-      // Insert lifting request
-      const { error } = await supabase
-        .from('cadastral_land_disputes' as any)
-        .insert({
-          parcel_id: parcelId,
-          parcel_number: parcelNumber,
-          reference_number: requestReference,
-          dispute_type: 'lifting',
-          dispute_nature: disputeData?.dispute_nature || 'unknown',
-          dispute_description: liftingDetails,
-          current_status: 'demande_levee',
-          declarant_name: requesterName,
-          declarant_phone: requesterPhone || null,
-          declarant_email: requesterEmail || null,
-          declarant_quality: requesterQuality,
-          lifting_request_reference: disputeReference.toUpperCase(),
-          lifting_reason: liftingReason,
-          lifting_documents: documentUrls,
-          reported_by: user.id,
-        } as any);
+      // Le serveur crée la demande, passe le litige d'origine en « Demande de levée » et notifie.
+      const { data, error } = await supabase.rpc('submit_land_dispute_lifting' as any, {
+        _parcel_number: parcelNumber,
+        _dispute_reference: disputeReference,
+        _lifting_reason: liftingReason,
+        _lifting_details: liftingDetails,
+        _requester_name: requesterName,
+        _requester_phone: requesterPhone,
+        _requester_email: requesterEmail,
+        _requester_quality: requesterQuality,
+        _documents: uploadedPaths,
+      } as any);
 
       if (error) {
         await cleanupUploadedFiles(uploadedPaths);
         throw error;
       }
-
-      // AFTER successful insert, update original dispute status (blocking - must succeed)
-      if (disputeData?.id) {
-        const { error: updateError } = await supabase
-          .from('cadastral_land_disputes' as any)
-          .update({ current_status: 'demande_levee', updated_at: new Date().toISOString() } as any)
-          .eq('id', disputeData.id);
-        
-        if (updateError) {
-          console.error('Erreur mise à jour statut litige original:', updateError);
-          toast.error('Le litige original n\'a pas pu être mis à jour. Contactez le support.');
-        }
-      }
-
-      // Notify submitter
-      await sendDisputeNotification(
-        user.id,
-        'Demande de levée de litige soumise',
-        `Votre demande de levée de litige (${requestReference}) pour la parcelle ${parcelNumber} a été enregistrée.`,
-        '/user-dashboard?tab=disputes'
-      );
-
-      // Notify admins
-      await notifyAdminsAboutDispute(
-        'Nouvelle demande de levée de litige',
-        `Une demande de levée (${requestReference}) a été soumise pour la parcelle ${parcelNumber} par ${requesterName}.`
-      );
+      setRequestReference((data as any)?.reference_number || '');
 
       localStorage.removeItem(draftKey);
       setStep('confirmation');
@@ -383,7 +340,6 @@ const LandDisputeLiftingForm: React.FC<LandDisputeLiftingFormProps> = ({
           <CardContent className="p-3 space-y-2">
             <div className="flex items-center gap-2 text-sm font-semibold text-primary"><Scale className="h-4 w-4" /> Informations</div>
             <div className="space-y-1.5 text-sm">
-              <div className="flex justify-between"><span className="text-muted-foreground">Réf. demande :</span><span className="font-mono font-bold">{requestReference}</span></div>
               <div className="flex justify-between"><span className="text-muted-foreground">Litige :</span><span className="font-mono">{disputeReference}</span></div>
               <div className="flex justify-between"><span className="text-muted-foreground">Motif :</span><span>{LIFTING_REASONS.find(r => r.value === liftingReason)?.label}</span></div>
               {liftingDetails && <div className="pt-1"><span className="text-muted-foreground">Détails :</span><p className="mt-0.5">{liftingDetails}</p></div>}
@@ -439,19 +395,6 @@ const LandDisputeLiftingForm: React.FC<LandDisputeLiftingFormProps> = ({
         </AlertDescription>
       </Alert>
 
-      <Card className="bg-primary/5 border-primary/20 rounded-xl shadow-sm">
-        <CardContent className="p-3">
-          <div className="flex items-center gap-2">
-            <div className="p-1.5 bg-primary/10 rounded-lg">
-              <Shield className="h-4 w-4 text-primary" />
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Référence de la demande</p>
-              <p className="font-mono font-bold text-sm text-primary">{requestReference}</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
 
       <div className="space-y-2">
         <Label className="text-sm font-semibold flex items-center gap-2">
@@ -502,7 +445,7 @@ const LandDisputeLiftingForm: React.FC<LandDisputeLiftingFormProps> = ({
             <div className="text-xs text-green-700 space-y-0.5">
               <div>Nature : {DISPUTE_NATURES_MAP[disputeData.dispute_nature] || disputeData.dispute_nature}</div>
               <div>Statut : {getStatusLabel(disputeData.current_status)}</div>
-              <div>Déclarant : {disputeData.declarant_name}</div>
+              {disputeData.dispute_start_date && <div>Début : {disputeData.dispute_start_date}</div>}
             </div>
           </CardContent>
         </Card>

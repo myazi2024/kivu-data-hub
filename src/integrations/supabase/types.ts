@@ -8260,6 +8260,15 @@ export type Database = {
         Args: { _e: Json; _province: string; _ville: string }
         Returns: Json
       }
+      _dispute_make_reference: { Args: { _prefix: string }; Returns: string }
+      _dispute_notify_admins: {
+        Args: { _message: string; _title: string }
+        Returns: undefined
+      }
+      _dispute_valid_docs: {
+        Args: { _docs: Json; _uid: string }
+        Returns: boolean
+      }
       _mortgage_cancellation_due: {
         Args: { _selected: string[] }
         Returns: number
@@ -8391,6 +8400,10 @@ export type Database = {
           reason: string
           recent_count: number
         }[]
+      }
+      check_land_dispute_reference: {
+        Args: { _parcel_number: string; _reference: string }
+        Returns: Json
       }
       check_parcel_active_mortgage: {
         Args: { _parcel_id: string; _reference?: string }
@@ -9182,6 +9195,37 @@ export type Database = {
           p_validity_months: number
         }
         Returns: string
+      }
+      submit_land_dispute_lifting: {
+        Args: {
+          _dispute_reference: string
+          _documents: Json
+          _lifting_details: string
+          _lifting_reason: string
+          _parcel_number: string
+          _requester_email: string
+          _requester_name: string
+          _requester_phone: string
+          _requester_quality: string
+        }
+        Returns: Json
+      }
+      submit_land_dispute_report: {
+        Args: {
+          _declarant_email: string
+          _declarant_name: string
+          _declarant_phone: string
+          _declarant_quality: string
+          _dispute_description: string
+          _dispute_nature: string
+          _dispute_start_date: string
+          _documents: Json
+          _parcel_number: string
+          _parties: Json
+          _resolution_details: string
+          _resolution_level: string
+        }
+        Returns: Json
       }
       submit_mortgage_cancellation_request: {
         Args: {

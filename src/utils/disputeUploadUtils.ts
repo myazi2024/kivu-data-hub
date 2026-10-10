@@ -2,7 +2,6 @@
  * Utilitaires partagés pour les uploads de fichiers du service Litige foncier
  */
 import { supabase } from '@/integrations/supabase/client';
-import { createLongLivedSignedUrl } from '@/utils/storageSignedUrl';
 import { toast } from 'sonner';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -43,41 +42,26 @@ export const validateFile = (file: File): boolean => {
 };
 
 /**
- * Upload files to storage and return URLs. Throws on any failure.
+ * Upload files to `<uid>/land-disputes/` (seul dossier autorisé par le stockage)
+ * et renvoie les chemins enregistrés par le serveur. Lève une erreur en cas d'échec.
  */
 export const uploadDisputeFiles = async (
   files: File[],
   userId: string,
   prefix: string
-): Promise<{ urls: string[]; paths: string[] }> => {
-  const urls: string[] = [];
+): Promise<string[]> => {
   const paths: string[] = [];
-
   for (const file of files) {
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${prefix}_${Date.now()}_${crypto.randomUUID()}.${fileExt}`;
-    const filePath = `land-disputes/${userId}/${fileName}`;
-
-    const { error } = await supabase.storage
-      .from('cadastral-documents')
-      .upload(filePath, file);
-
+    const fileExt = (file.name.split('.').pop() || 'bin').toLowerCase().replace(/[^a-z0-9]/g, '');
+    const filePath = `${userId}/land-disputes/${prefix}_${crypto.randomUUID()}.${fileExt}`;
+    const { error } = await supabase.storage.from('cadastral-documents').upload(filePath, file);
     if (error) {
-      // Cleanup already uploaded files
       await cleanupUploadedFiles(paths);
-      throw new Error(`Échec de l'upload du fichier "${file.name}": ${error.message}`);
+      throw new Error(`Échec de l'envoi du fichier "${file.name}" : ${error.message}`);
     }
-
     paths.push(filePath);
-    const signed = await createLongLivedSignedUrl(filePath);
-    if (!signed) {
-      await cleanupUploadedFiles(paths);
-      throw new Error(`Lien du fichier "${file.name}" indisponible`);
-    }
-    urls.push(signed);
   }
-
-  return { urls, paths };
+  return paths;
 };
 
 /**
@@ -93,39 +77,15 @@ export const cleanupUploadedFiles = async (filePaths: string[]): Promise<void> =
 };
 
 /**
- * Check for existing active disputes on a parcel to prevent duplicates.
- * Scoped to the reporting user to avoid blocking other users.
+ * Draft key generators
  */
-export const checkDuplicateDispute = async (
-  parcelNumber: string,
-  disputeNature: string,
-  userId: string
-): Promise<boolean> => {
-  const { data } = await supabase
-    .from('cadastral_land_disputes' as any)
-    .select('id, reference_number')
-    .eq('parcel_number', parcelNumber)
-    .eq('dispute_nature', disputeNature)
-    .eq('dispute_type', 'report')
-    .eq('reported_by', userId)
-    .in('current_status', ['en_cours', 'demande_levee', 'familial', 'conciliation_amiable', 'autorite_locale', 'arbitrage', 'tribunal', 'appel'])
-    .limit(1) as any;
+export const getDisputeReportDraftKey = (parcelNumber: string) =>
+  `dispute_report_draft_${parcelNumber}`;
 
-  return data && data.length > 0;
-};
+export const getDisputeLiftingDraftKey = (parcelNumber: string) =>
+  `dispute_lifting_draft_${parcelNumber}`;
 
-/**
- * Check if a dispute is already resolved before allowing lifting.
- * Also blocks if a lifting request is already pending.
- */
-export const checkDisputeAlreadyResolved = (disputeData: any): boolean => {
-  const terminalStatuses = ['resolu', 'resolved', 'leve', 'lifted', 'clos', 'closed', 'demande_levee'];
-  return terminalStatuses.includes(disputeData?.current_status?.toLowerCase());
-};
-
-/**
- * Send a non-blocking notification to a specific user
- */
+/** Notification envoyée par l'admin au déclarant lors d'un changement de statut. */
 export const sendDisputeNotification = async (
   userId: string,
   title: string,
@@ -135,50 +95,3 @@ export const sendDisputeNotification = async (
   const { createNotification } = await import('@/utils/notificationHelper');
   await createNotification({ userId, title, message, type: 'success', actionUrl });
 };
-
-/**
- * Notify all admins about a dispute event (non-blocking).
- * Fetches admin user_ids from user_roles table.
- */
-export const notifyAdminsAboutDispute = async (
-  title: string,
-  message: string,
-  actionUrl: string = '/admin?tab=land-disputes'
-): Promise<void> => {
-  try {
-    const { data: adminRoles } = await supabase
-      .from('user_roles')
-      .select('user_id')
-      .in('role', ['admin', 'super_admin'] as any);
-
-    if (!adminRoles || adminRoles.length === 0) return;
-
-    const { createBulkNotifications } = await import('@/utils/notificationHelper');
-    await createBulkNotifications(
-      adminRoles.map((r) => ({
-        userId: r.user_id,
-        title,
-        message,
-        type: 'info' as const,
-        actionUrl,
-      }))
-    );
-  } catch (e) {
-    console.warn('Notifications admin non envoyées:', e);
-  }
-};
-
-/**
- * Draft key generators
- */
-export const getDisputeReportDraftKey = (parcelNumber: string) =>
-  `dispute_report_draft_${parcelNumber}`;
-
-export const getDisputeLiftingDraftKey = (parcelNumber: string) =>
-  `dispute_lifting_draft_${parcelNumber}`;
-
-/**
- * Generate a stable dispute reference (called once per form session)
- */
-export const generateDisputeReference = (prefix: string): string =>
-  `${prefix}-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
