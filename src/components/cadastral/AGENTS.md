@@ -2,3 +2,4 @@
 - Cadastral map building overlays read only the sanitized public `building_outlines` projection; no raw building JSON, no invented footprints.
 - Map parcels use the primary boundary style, buildings the map-building token, to stay distinct in both themes.
 - Land title requests: the server (insert/update triggers) fixes fees, amount and billed data; parcel prefill only via `get_land_title_parcel_prefill` (no owner identity); both payment paths charge the stored `total_amount_usd`, so a forged or stale amount can never be paid.
+- Building permit additions go only through `submit_building_permit_contribution` (server validation, duplicate check across all users, server status, snake_case keys read by approval sync, notification); documents are stored as paths under the user's folder and opened via signed URLs.

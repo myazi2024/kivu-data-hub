@@ -1,3 +1,5 @@
+import { openSignedStorageFile } from '@/utils/storageSignedUrl';
+import { toast } from 'sonner';
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -253,16 +255,18 @@ export function PermitCard({ permit, onAppealClick }: PermitCardProps) {
                       </div>
                     </div>
                     {/* Document link */}
-                    {(bp.documentUrl || bp.document_url) && (
-                      <a
-                        href={bp.documentUrl || bp.document_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-[10px] md:text-xs text-primary underline hover:no-underline flex items-center gap-1"
+                    {(bp.permit_document_url || bp.documentUrl || bp.document_url) && (
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          const ok = await openSignedStorageFile(bp.permit_document_url || bp.documentUrl || bp.document_url);
+                          if (!ok) toast.error("Document indisponible");
+                        }}
+                        className="min-h-[44px] text-[10px] md:text-xs text-primary underline hover:no-underline flex items-center gap-1"
                       >
                         <FileText className="h-3 w-3" />
                         Voir le document
-                      </a>
+                      </button>
                     )}
                     <PermitDownloadButton permit={permit} className="w-full" />
                   </div>

@@ -9146,6 +9146,18 @@ export type Database = {
           ville: string
         }[]
       }
+      submit_building_permit_contribution: {
+        Args: {
+          p_document_path?: string
+          p_issue_date: string
+          p_issuing_service: string
+          p_parcel_number: string
+          p_permit_number: string
+          p_permit_type: string
+          p_validity_months: number
+        }
+        Returns: string
+      }
       submit_mortgage_cancellation_request: {
         Args: {
           _comments?: string
