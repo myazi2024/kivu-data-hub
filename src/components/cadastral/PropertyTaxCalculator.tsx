@@ -9,7 +9,7 @@ import TaxConfirmationStep from './tax-calculator/TaxConfirmationStep';
 import TaxHistorySection from './tax-calculator/TaxHistorySection';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { detectZoneType, isZoneAutoDetected, detectUsageType, detectConstructionType, checkDuplicateTaxSubmission } from './tax-calculator/taxSharedUtils';
+import { detectZoneType, isZoneAutoDetected, detectUsageType, detectConstructionType, insertTaxContribution, IRL_TAX_TYPE } from './tax-calculator/taxSharedUtils';
 import { validateNIF, NIF_FORMAT_ERROR } from './tax-calculator/taxFormConstants'; // #18 fix: use centralized validateNIF
 import type { TaxKnownBuilding } from './tax-calculator/taxBuildings';
 import { toCccConstructionNature, toLegacyConstructionType, toCccDeclaredUsage } from './tax-calculator/taxBuildings';
@@ -43,7 +43,7 @@ const PropertyTaxCalculator: React.FC<PropertyTaxCalculatorProps> = ({
 
   // Local fallback state when no shared taxpayer is provided
   const [localNif, setLocalNif] = useState('');
-  const [localOwnerName, setLocalOwnerName] = useState(parcelData?.current_owner_name || '');
+  const [localOwnerName, setLocalOwnerName] = useState('');
   const [localIdDocumentFile, setLocalIdDocumentFile] = useState<File | null>(null);
   const [localHasNif, setLocalHasNif] = useState<boolean | null>(null);
 
@@ -58,6 +58,7 @@ const PropertyTaxCalculator: React.FC<PropertyTaxCalculatorProps> = ({
 
   const [exemptionCertificateFile, setExemptionCertificateFile] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [serverAmount, setServerAmount] = useState<number | null>(null);
 
   const defaultZone = detectZoneType(parcelNumber, parcelData);
   const zoneAutoDetected = isZoneAutoDetected(parcelNumber);
@@ -99,12 +100,6 @@ const PropertyTaxCalculator: React.FC<PropertyTaxCalculatorProps> = ({
       setInput(prev => ({ ...prev, areaSqm: area }));
     }
   }, [parcelData?.area_sqm]);
-
-  useEffect(() => {
-    if (parcelData?.current_owner_name && !ownerName) {
-      setOwnerName(parcelData.current_owner_name);
-    }
-  }, [parcelData?.current_owner_name]);
 
   const handleCalculate = () => {
     if (hasNif === true && !nif.trim()) {
@@ -158,13 +153,6 @@ const PropertyTaxCalculator: React.FC<PropertyTaxCalculatorProps> = ({
     setSubmitting(true);
     try {
       // Duplicate check (scoped by constructionRef so multi-building parcels work)
-      const isDuplicate = await checkDuplicateTaxSubmission(
-        supabase, parcelNumber, user.id, 'Impôt foncier annuel', input.fiscalYear, constructionRef
-      );
-      if (isDuplicate) {
-        toast.error(`Une déclaration "Impôt foncier annuel" pour l'exercice ${input.fiscalYear} existe déjà pour cette parcelle/bâtiment.`);
-        return;
-      }
 
       // Upload ID document if present
       let idDocUrl: string | null = null;
@@ -197,7 +185,7 @@ const PropertyTaxCalculator: React.FC<PropertyTaxCalculatorProps> = ({
       const cccConstructionNature = toCccConstructionNature(input.constructionType);
       const legacyConstructionType = toLegacyConstructionType(input.constructionType);
 
-      const { error } = await supabase.from('cadastral_contributions').insert({
+      const { entry, error } = await insertTaxContribution(supabase, {
         parcel_number: parcelNumber,
         original_parcel_id: parcelId || null,
         user_id: user.id,
@@ -213,7 +201,12 @@ const PropertyTaxCalculator: React.FC<PropertyTaxCalculatorProps> = ({
         current_owner_name: ownerName || null,
         owner_document_url: idDocUrl,
         tax_history: [{
+          declaration_kind: 'property_tax',
           tax_type: 'Impôt foncier annuel',
+          zone_type: input.zoneType,
+          area_sqm: input.areaSqm,
+          construction_year: input.constructionYear,
+          exemption_codes: input.selectedExemptions,
           tax_year: input.fiscalYear,
           amount_usd: result.grandTotal,
           base_tax_usd: result.totalPropertyTax,
@@ -224,8 +217,7 @@ const PropertyTaxCalculator: React.FC<PropertyTaxCalculatorProps> = ({
           exemptions: result.appliedExemptions,
           exemption_certificate_url: exemptionDocUrl,
           nif: hasNif ? nif : null,
-          payment_status: 'En attente',
-          // Multi-construction linkage
+                    // Multi-construction linkage
           construction_ref: constructionRef,
           // Calculation metadata (out of CCC core schema, kept here only)
           construction_type: input.constructionType,
@@ -243,15 +235,6 @@ const PropertyTaxCalculator: React.FC<PropertyTaxCalculatorProps> = ({
         }
         throw error;
       }
-
-      // Fire-and-forget notification with error logging
-      supabase.from('notifications').insert({
-        user_id: user.id,
-        title: 'Déclaration impôt foncier',
-        message: `Déclaration impôt foncier pour ${parcelNumber} (exercice ${input.fiscalYear}). Montant: ${result.grandTotal.toFixed(2)} USD.`,
-        type: 'info',
-        action_url: '/mon-compte',
-      }).then(({ error: e }) => { if (e) console.warn('Notification failed:', e.message); });
 
       toast.success('Déclaration soumise avec succès');
       // #3 fix: Show confirmation step instead of going back to questions
@@ -279,7 +262,7 @@ const PropertyTaxCalculator: React.FC<PropertyTaxCalculatorProps> = ({
         parcelNumber={parcelNumber}
         fiscalYear={input.fiscalYear}
         taxType="Impôt foncier annuel"
-        totalAmount={result.grandTotal}
+        totalAmount={serverAmount ?? result.grandTotal}
         accentClass="bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300"
         onClose={() => {
           resetForm();
