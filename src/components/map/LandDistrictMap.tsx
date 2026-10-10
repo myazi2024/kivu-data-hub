@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import MapZoomBackButton from '@/components/map/ui/MapZoomBackButton';
-import { computeBBox, projectFeature, useAnimatedBbox } from '@/lib/mapProjection';
+import { centroid, computeBBox, projectFeature, useAnimatedBbox } from '@/lib/mapProjection';
 import { normalizeGeoName } from '@/lib/landDistrictMapping';
 import { useLandDistrictFeatures } from '@/hooks/useLandDistrictFeatures';
 
@@ -15,6 +15,25 @@ interface Props {
 }
 
 const PADDING = 6;
+
+type PolygonGeometry = { type: 'Polygon'; coordinates: number[][][] };
+
+const ringArea = (ring: number[][]) => Math.abs(ring.reduce((area, point, index) => {
+  const next = ring[(index + 1) % ring.length];
+  return next ? area + point[0] * next[1] - next[0] * point[1] : area;
+}, 0) / 2);
+
+const primaryPolygon = (geometry: { type: string; coordinates: any[] }): PolygonGeometry | undefined => {
+  if (geometry.type === 'Polygon') return geometry as PolygonGeometry;
+  if (geometry.type !== 'MultiPolygon') return undefined;
+
+  const polygons = geometry.coordinates as number[][][][];
+  const coordinates = polygons.reduce<number[][][] | undefined>((largest, polygon) => {
+    if (!largest) return polygon;
+    return ringArea(polygon[0] ?? []) > ringArea(largest[0] ?? []) ? polygon : largest;
+  }, undefined);
+  return coordinates ? { type: 'Polygon', coordinates } : undefined;
+};
 
 /** Carte des circonscriptions foncières (territoires + communes), partagée avec l'Accueil. */
 export default function LandDistrictMap({ province, selected, onSelect, getDistrictColor, renderDetails }: Props) {
@@ -58,6 +77,16 @@ export default function LandDistrictMap({ province, selected, onSelect, getDistr
     [baseBbox, selectedKey, visibleDistricts],
   );
   const bbox = useAnimatedBbox(targetBbox, 500);
+  const selectedLabelGeometry = useMemo(() => selectedFeatures
+    .map(({ feature }) => primaryPolygon(feature.geometry))
+    .filter((geometry): geometry is PolygonGeometry => Boolean(geometry))
+    .reduce<PolygonGeometry | undefined>((largest, geometry) => {
+      if (!largest) return geometry;
+      return ringArea(geometry.coordinates[0] ?? []) > ringArea(largest.coordinates[0] ?? []) ? geometry : largest;
+    }, undefined), [selectedFeatures]);
+  const selectedLabelPosition = selectedLabelGeometry
+    ? centroid(selectedLabelGeometry, bbox, dims.w, dims.h, PADDING)
+    : undefined;
 
   const displayed = selectedFeatures[0]?.district ?? active;
   const displayedFeature = displayed ? visibleDistricts.find((f) => f.district === displayed) : undefined;
@@ -108,20 +137,26 @@ export default function LandDistrictMap({ province, selected, onSelect, getDistr
                 />
               );
             })}
+            {selectedLabelPosition && selectedFeatures[0] && (
+              <text
+                x={selectedLabelPosition[0]}
+                y={selectedLabelPosition[1]}
+                textAnchor="middle"
+                dominantBaseline="central"
+                className="pointer-events-none select-none fill-foreground stroke-background font-semibold [paint-order:stroke]"
+                strokeWidth={4}
+                strokeLinejoin="round"
+                fontSize={Math.max(10, Math.min(15, 180 / selectedFeatures[0].district.length))}
+                aria-hidden="true"
+              >
+                {selectedFeatures[0].district}
+              </text>
+            )}
           </svg>
         ) : (
           <div className="flex h-full items-center justify-center text-xs text-muted-foreground">Chargement de la carte…</div>
         )}
-        {selected && (
-          <>
-            <MapZoomBackButton onBack={() => onSelect(undefined)} label="Retour aux circonscriptions" />
-            <div className="pointer-events-none absolute inset-x-0 bottom-2 flex justify-center px-3" aria-live="polite">
-              <span className="max-w-full break-words rounded-sm bg-primary px-2 py-1 text-center text-[11px] font-semibold text-primary-foreground shadow-sm">
-                Circonscription foncière de {selectedFeatures[0]?.district ?? selected}
-              </span>
-            </div>
-          </>
-        )}
+        {selected && <MapZoomBackButton onBack={() => onSelect(undefined)} label="Retour aux circonscriptions" />}
       </div>
       <div className="min-h-[40px] shrink-0 border-t border-border/40 px-2 py-1 text-[11px]" aria-live="polite">
         {displayedFeature ? (
