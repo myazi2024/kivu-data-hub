@@ -261,14 +261,20 @@ const BuildingTaxCalculator: React.FC<BuildingTaxCalculatorProps> = ({
         if (uploadedIdPath) {
           await supabase.storage.from('cadastral-documents').remove([uploadedIdPath]);
         }
-        throw error;
+        throw new Error(error);
+      }
+
+      const stored = Number(entry?.amount_usd);
+      if (Number.isFinite(stored)) {
+        setServerAmount(stored);
+        if (Math.abs(stored - calculation.totalTaxUSD) > 0.01) toast.info(`Montant retenu par le serveur : ${stored.toFixed(2)} USD`);
       }
 
       toast.success('Déclaration soumise avec succès');
       setCalcStep('confirmation');
     } catch (error: any) {
       console.error('Error:', error);
-      toast.error('Erreur lors de la soumission');
+      toast.error(error?.message || 'Erreur lors de la soumission de la déclaration');
     } finally {
       setLoading(false);
     }

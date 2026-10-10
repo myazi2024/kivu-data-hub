@@ -233,7 +233,13 @@ const PropertyTaxCalculator: React.FC<PropertyTaxCalculatorProps> = ({
         if (toRemove.length > 0) {
           await supabase.storage.from('cadastral-documents').remove(toRemove);
         }
-        throw error;
+        throw new Error(error);
+      }
+
+      const stored = Number(entry?.amount_usd);
+      if (Number.isFinite(stored)) {
+        setServerAmount(stored);
+        if (Math.abs(stored - result.grandTotal) > 0.01) toast.info(`Montant retenu par le serveur : ${stored.toFixed(2)} USD`);
       }
 
       toast.success('Déclaration soumise avec succès');
@@ -241,7 +247,7 @@ const PropertyTaxCalculator: React.FC<PropertyTaxCalculatorProps> = ({
       setCalcStep('confirmation');
     } catch (error: any) {
       console.error('PropertyTax submit error:', error);
-      toast.error('Erreur lors de la soumission de la déclaration');
+      toast.error(error?.message || 'Erreur lors de la soumission de la déclaration');
     } finally {
       setSubmitting(false);
     }
