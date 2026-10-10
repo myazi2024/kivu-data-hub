@@ -58,3 +58,9 @@ Lecture libre supprimée ; carte et tableau client passent par `get_parcel_paid_
 - La table des hypothèques est vide : vérifier les valeurs réelles avant toute normalisation supplémentaire des statuts.
 - Trois alertes du scan de sécurité sur les nouvelles fonctions sont intentionnelles (contrôle de l'appelant interne, fermées aux visiteurs).
 - Parcours connectés non testés à l'écran (connexion requise).
+
+## Demander un titre foncier (menu Actions) — 2026-10-08
+
+**Problèmes** : identité du propriétaire lue directement par le navigateur (et préremplissage en échec pour les utilisateurs ordinaires) ; montant Mobile Money recalculé au barème du jour alors que la carte utilisait le montant enregistré ; type de titre, superficie, zone et localisation modifiables après création ; paiement basé sur l'estimation du navigateur ; demande annulée d'office en fermant le paiement, sans reprise possible ; fichiers orphelins après un échec d'envoi ; champs obligatoires non vérifiés par le serveur ; champs envoyés mais ignorés (fee_items, payment_status, selectedFees, totalAmountOverride) ; correspondance des types de titre dupliquée ; formulaire de 1377 lignes.
+
+**Corrections** : RPC `get_land_title_parcel_prefill` (localisation, superficie, construction, autorisations ; jamais l'identité) ; `enforce_land_title_request_insert` valide noms, téléphone RDC, province, zone, type de titre et refuse 0 $ ; `enforce_land_title_request_update` fige les données facturées ; Mobile Money compare au `total_amount_usd` enregistré ; paiement au montant serveur avec avertissement en cas d'écart ; « Payer plus tard » conserve la demande, reprise/annulation dans l'espace utilisateur ; nettoyage des fichiers envoyés en cas d'échec ; `mapLandTitleTypeKey` miroir unique de la règle serveur ; formulaire découpé (1000 lignes) ; 11 tests ajoutés.

@@ -1,4 +1,5 @@
 import { PROPERTY_CATEGORY_OPTIONS as SHARED_PROPERTY_CATEGORY_OPTIONS } from '@/lib/ccc/propertyCategories';
+import { useParcelNumberSearch } from './land-title-request/useParcelNumberSearch';
 import { useLandTitleConstruction } from './land-title-request/useLandTitleConstruction';
 import { LandTitlePaymentView, LandTitleSuccessView } from './land-title-request/LandTitleResultViews';
 import type { ParcelOwnerData, ParcelLocationData, ParcelValorisationData, ParcelBuildingPermit } from './land-title-request/types';
@@ -10,47 +11,23 @@ import PaymentTab from './land-title-request/PaymentTab';
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Loader2, CheckCircle2, Upload, X, Info, ChevronRight, User, MapPin, FileText, CreditCard, Building, Home, Award, AlertCircle, Check, ClipboardCheck, TrendingUp, Search, Plus, AlertTriangle, RefreshCw } from 'lucide-react';
-import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { User, MapPin, FileText, CreditCard, Building, Home, Check, ClipboardCheck } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useTestEnvironment, applyTestFilter } from '@/hooks/useTestEnvironment';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { 
-  getAllProvinces, 
-  getVillesForProvince, 
-  getCommunesForVille,
-  getTerritoiresForProvince,
-  getCollectivitesForTerritoire,
-  getQuartiersForCommune
-} from '@/lib/geographicData';
+import { getVillesForProvince, getCommunesForVille, getTerritoiresForProvince, getCollectivitesForTerritoire, getQuartiersForCommune } from '@/lib/geographicData';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useLandTitleRequest, LandTitleRequestData, validatePhone } from '@/hooks/useLandTitleRequest';
 import { useLandTitleDynamicFees } from '@/hooks/useLandTitleDynamicFees';
-import { 
-  deduceLandTitleType as deduceLandTitle, 
-  DeducedLandTitle,
-  NATIONALITY_OPTIONS,
-  validateDeductionInput
-} from '@/utils/landTitleDeduction';
+import { deduceLandTitleType as deduceLandTitle, DeducedLandTitle, validateDeductionInput } from '@/utils/landTitleDeduction';
 import { QuickAuthDialog } from './QuickAuthDialog';
-import { ParcelMapPreview } from './ParcelMapPreview';
 import { useMapConfig } from '@/hooks/useMapConfig';
 import LandTitleReviewTab from './LandTitleReviewTab';
-import SectionHelpPopover from './SectionHelpPopover';
 import { supabase } from '@/integrations/supabase/client';
-import { validateLandTitleFile } from '@/types/landTitleRequest';
 import { saveDraft, loadDraft, clearDraft, hasDraft } from '@/utils/landTitleDraftStorage';
-import { BuildingPermitIssuingServiceSelect } from './BuildingPermitIssuingServiceSelect';
 import { fetchLandTitleParcelPrefill } from './land-title-request/parcelPrefill';
 
 interface LandTitleRequestDialogProps {
@@ -95,10 +72,8 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
   const [hasFicheParcellaire, setHasFicheParcellaire] = useState<'yes' | 'no' | ''>('');
   const [knowsParcelNumber, setKnowsParcelNumber] = useState<'yes' | 'no' | ''>('');
   const [parcelNumberSearch, setParcelNumberSearch] = useState('');
-  const [parcelSearchResults, setParcelSearchResults] = useState<Array<{ parcel_number: string; id: string }>>([]);
   const [selectedParcelNumber, setSelectedParcelNumber] = useState('');
   const [parcelValidated, setParcelValidated] = useState(false);
-  const [parcelSearchLoading, setParcelSearchLoading] = useState(false);
   const [showParcelDropdown, setShowParcelDropdown] = useState(false);
   // Données de parcelle préremplies par le serveur (l'identité du propriétaire n'est jamais préremplie)
   const [parcelOwnerData, setParcelOwnerData] = useState<ParcelOwnerData | null>(null);
@@ -224,46 +199,14 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     }
   };
 
-  // Parcel number search for renewal/definitive requests
-  const searchParcels = useCallback(async (query: string) => {
-    if (!query || query.length < 2) {
-      setParcelSearchResults([]);
-      return;
-    }
-    setParcelSearchLoading(true);
-    try {
-      let parcelQuery = supabase
-        .from('cadastral_parcels')
-        .select('parcel_number, id')
-        .ilike('parcel_number', `%${query}%`)
-        .is('deleted_at', null)
-        .limit(10);
-      parcelQuery = applyTestFilter(parcelQuery, 'parcel_number', isTestRoute);
-      const { data, error } = await parcelQuery;
-      if (error) throw error;
-      setParcelSearchResults(data || []);
-    } catch (err) {
-      console.error('Error searching parcels:', err);
-      setParcelSearchResults([]);
-    } finally {
-      setParcelSearchLoading(false);
-    }
-  }, []);
-
   // Computed: parcel-linked mode is always active once a request type is selected
   const isParcelLinkedMode = !!requestType;
 
   // Computed: form is blocked until a valid parcel is selected
   const isFormBlocked = !requestType || !parcelValidated;
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (parcelNumberSearch && isParcelLinkedMode) {
-        searchParcels(parcelNumberSearch);
-      }
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [parcelNumberSearch, isParcelLinkedMode, searchParcels]);
+  const { results: parcelSearchResults, setResults: setParcelSearchResults, loading: parcelSearchLoading } =
+    useParcelNumberSearch(parcelNumberSearch, isParcelLinkedMode, isTestRoute);
 
   // Reset parcel validation when request type or fiche parcellaire changes
   useEffect(() => {
@@ -519,7 +462,6 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
       setLoadingOwnerData(false);
     }
   };
-
 
   const isFormValid = (): boolean => {
     // Check request type
@@ -803,7 +745,6 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
 
   const totalAmount = calculatedFeesResult.totalAmount;
 
-
   if (showPayment) {
     return (
       <LandTitlePaymentView open={open} isMobile={isMobile} province={formData.province}
@@ -894,7 +835,6 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                       <span className="hidden sm:inline">Envoi</span>
                     </TabsTrigger>
                   </TabsList>
-
 
                 {/* Tab: Requester */}
                 <ApplicantTab

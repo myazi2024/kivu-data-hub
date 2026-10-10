@@ -13,3 +13,4 @@ type: feature
 - Documents : bucket privé `land-title-documents`, chemin `${user.id}/<dossier>/...`, plus de repli sur un bucket public. Lecture via `getLandTitleDocumentUrl()` (URL signée 1h) côté admin.
 - `MobileMoneyPayment`/`usePayment.createPayment` acceptent `paymentType` / `invoiceId` / `successMessage` (plus de `payment_type: 'publication'` codé en dur).
 - Admin : l'action « Traiter » est accessible même si la demande n'est pas payée (rejet/mise en examen), l'approbation restant bloquée sans paiement.
+- 2026-10-08 : préremplissage via `get_land_title_parcel_prefill` (sans identité du propriétaire) ; validation serveur des champs obligatoires ; données facturées figées après création ; Mobile Money et carte paient le `total_amount_usd` enregistré ; « Payer plus tard » conserve la demande, reprise/annulation dans l'espace utilisateur.
