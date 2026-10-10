@@ -498,26 +498,19 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                           province={selectedProvince?.name}
                           selected={selectedLandDistrict}
                           onSelect={handleLandDistrictFromMap}
-                          renderDetails={(district, provinceName, color) => (
-                            <div className="flex items-start gap-1.5">
-                              <span className="mt-0.5 h-2.5 w-2.5 shrink-0 rounded-sm border border-border" style={{ background: color }} aria-hidden="true" />
-                              <div className="min-w-0">
-                                <div className="flex flex-wrap items-center gap-1">
-                                  <strong className="text-foreground">{district}</strong>
-                                  {getSectionTypeForLandDistrict(district) && (
-                                    <Badge variant="secondary" className="px-1.5 py-0 text-[9px]">
-                                      {getSectionTypeForLandDistrict(district) === 'urbaine' ? 'SU - Urbaine' : 'SR - Rurale'}
-                                    </Badge>
-                                  )}
-                                </div>
-                                {provinceName && <span className="text-muted-foreground"> — {provinceName}</span>}
-                                <div className="text-muted-foreground">
-                                  Parcelles enregistrées : {analytics ? (parcelsByDistrict.get(norm(district)) ?? 0).toLocaleString('fr-FR') : 'indisponible'}
-                                  {activeProfile && analytics && (
-                                    <> · {activeProfile.legendTitle} : {activeProfile.metric({ analytics: sliceAnalyticsByPredicate(analytics, (r) => norm(r.land_district) === norm(district), '__entity__'), provinceName: '__entity__' }).toLocaleString('fr-FR')}</>
-                                  )}
-                                </div>
-                              </div>
+                          renderDetails={(district) => (
+                            <div className="flex flex-wrap items-center gap-1.5 text-muted-foreground">
+                              {getSectionTypeForLandDistrict(district) && (
+                                <Badge variant="secondary" className="px-1.5 py-0 text-[9px]">
+                                  {getSectionTypeForLandDistrict(district) === 'urbaine' ? 'SU - Urbaine' : 'SR - Rurale'}
+                                </Badge>
+                              )}
+                              <span>
+                                Parcelles enregistrées : {analytics ? (parcelsByDistrict.get(norm(district)) ?? 0).toLocaleString('fr-FR') : 'indisponible'}
+                                {activeProfile && analytics && (
+                                  <> · {activeProfile.legendTitle} : {activeProfile.metric({ analytics: sliceAnalyticsByPredicate(analytics, (r) => norm(r.land_district) === norm(district), '__entity__'), provinceName: '__entity__' }).toLocaleString('fr-FR')}</>
+                                )}
+                              </span>
                             </div>
                           )}
                         />
@@ -598,7 +591,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                     )}
                   </div>
                   {/* Légende contextuelle — scope dynamique (profil ou défaut) */}
-                  {selectedProvince && (activeProfile || scopedStats) && (() => {
+                  {mapView !== 'districts' && selectedProvince && (activeProfile || scopedStats) && (() => {
                     let profileLines: { label: string; value: string; color?: string }[] | undefined;
                     if (activeProfile && analytics) {
                       const predicate = buildScopePredicate(selectedProvince.name, selectedVille, selectedCommune, selectedQuartier, selectedTerritoire);
@@ -622,7 +615,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                   })()}
 
                   {/* Pied de carte : date + copyright */}
-                  <div className="absolute bottom-0 left-0 right-0 z-10 text-center py-0.5 flex items-center justify-center gap-0.5">
+                  <div className="pointer-events-none absolute top-1 left-2 z-10 flex items-center gap-0.5 opacity-70">
                     <span className="text-[10px] text-muted-foreground">{todayStr} — {watermarkText}</span>
                     {brandingConfig?.logo_url && <img src={String(brandingConfig.logo_url)} alt="" className="h-3 w-3 inline-block object-contain" />}
                   </div>
