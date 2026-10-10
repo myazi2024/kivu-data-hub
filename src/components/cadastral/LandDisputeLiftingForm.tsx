@@ -340,7 +340,6 @@ const LandDisputeLiftingForm: React.FC<LandDisputeLiftingFormProps> = ({
           <CardContent className="p-3 space-y-2">
             <div className="flex items-center gap-2 text-sm font-semibold text-primary"><Scale className="h-4 w-4" /> Informations</div>
             <div className="space-y-1.5 text-sm">
-              <div className="flex justify-between"><span className="text-muted-foreground">Réf. demande :</span><span className="font-mono font-bold">{requestReference}</span></div>
               <div className="flex justify-between"><span className="text-muted-foreground">Litige :</span><span className="font-mono">{disputeReference}</span></div>
               <div className="flex justify-between"><span className="text-muted-foreground">Motif :</span><span>{LIFTING_REASONS.find(r => r.value === liftingReason)?.label}</span></div>
               {liftingDetails && <div className="pt-1"><span className="text-muted-foreground">Détails :</span><p className="mt-0.5">{liftingDetails}</p></div>}
@@ -459,7 +458,7 @@ const LandDisputeLiftingForm: React.FC<LandDisputeLiftingFormProps> = ({
             <div className="text-xs text-green-700 space-y-0.5">
               <div>Nature : {DISPUTE_NATURES_MAP[disputeData.dispute_nature] || disputeData.dispute_nature}</div>
               <div>Statut : {getStatusLabel(disputeData.current_status)}</div>
-              <div>Déclarant : {disputeData.declarant_name}</div>
+              {disputeData.dispute_start_date && <div>Début : {disputeData.dispute_start_date}</div>}
             </div>
           </CardContent>
         </Card>
