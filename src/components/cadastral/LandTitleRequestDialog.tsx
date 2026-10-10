@@ -11,47 +11,23 @@ import PaymentTab from './land-title-request/PaymentTab';
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Loader2, CheckCircle2, Upload, X, Info, ChevronRight, User, MapPin, FileText, CreditCard, Building, Home, Award, AlertCircle, Check, ClipboardCheck, TrendingUp, Search, Plus, AlertTriangle, RefreshCw } from 'lucide-react';
-import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { User, MapPin, FileText, CreditCard, Building, Home, Check, ClipboardCheck } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useTestEnvironment, applyTestFilter } from '@/hooks/useTestEnvironment';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { 
-  getAllProvinces, 
-  getVillesForProvince, 
-  getCommunesForVille,
-  getTerritoiresForProvince,
-  getCollectivitesForTerritoire,
-  getQuartiersForCommune
-} from '@/lib/geographicData';
+import { getVillesForProvince, getCommunesForVille, getTerritoiresForProvince, getCollectivitesForTerritoire, getQuartiersForCommune } from '@/lib/geographicData';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useLandTitleRequest, LandTitleRequestData, validatePhone } from '@/hooks/useLandTitleRequest';
 import { useLandTitleDynamicFees } from '@/hooks/useLandTitleDynamicFees';
-import { 
-  deduceLandTitleType as deduceLandTitle, 
-  DeducedLandTitle,
-  NATIONALITY_OPTIONS,
-  validateDeductionInput
-} from '@/utils/landTitleDeduction';
+import { deduceLandTitleType as deduceLandTitle, DeducedLandTitle, validateDeductionInput } from '@/utils/landTitleDeduction';
 import { QuickAuthDialog } from './QuickAuthDialog';
-import { ParcelMapPreview } from './ParcelMapPreview';
 import { useMapConfig } from '@/hooks/useMapConfig';
 import LandTitleReviewTab from './LandTitleReviewTab';
-import SectionHelpPopover from './SectionHelpPopover';
 import { supabase } from '@/integrations/supabase/client';
-import { validateLandTitleFile } from '@/types/landTitleRequest';
 import { saveDraft, loadDraft, clearDraft, hasDraft } from '@/utils/landTitleDraftStorage';
-import { BuildingPermitIssuingServiceSelect } from './BuildingPermitIssuingServiceSelect';
 import { fetchLandTitleParcelPrefill } from './land-title-request/parcelPrefill';
 
 interface LandTitleRequestDialogProps {
