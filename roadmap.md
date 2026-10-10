@@ -10,6 +10,7 @@
 - [x] Afficher la voirie publique par côté sur la parcelle sélectionnée, avec repères limités aux segments déclarés.
 - [x] Afficher chaque construction enregistrée sur la parcelle avec les longueurs des côtés et sa hauteur, sans exposer d'autres champs privés.
 - [x] Retirer le bandeau de titre et les boutons de type de carte de la carte Données foncières ; circonscriptions par défaut, vue dérivée des filtres.
+- [x] Compacter les indicateurs sous la carte des circonscriptions et porter la carte à 75 % de la colonne après sélection.
 
 ## Adaptation mobile complète
 - [x] Socle mobile et pages publiques

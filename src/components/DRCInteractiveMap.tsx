@@ -440,7 +440,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
           >
             
             {/* Carte RDC */}
-            <div className={`flex flex-col min-h-0 transition-all duration-300 w-full ${selectedProvince ? 'h-1/2 lg:h-auto' : 'h-full lg:h-auto'} lg:flex-[3]`}>
+            <div className={`flex flex-col min-h-0 transition-all duration-300 w-full ${selectedProvince ? 'h-3/4 lg:h-auto' : 'h-full lg:h-auto'} lg:flex-[3]`}>
               <Card ref={mapCardRef} className="analytics-panel border-0 flex-1 overflow-hidden flex flex-col">
                 <CardContent className="p-0 flex-1 flex flex-col relative min-h-0">
 
@@ -716,7 +716,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
             </div>
 
             {/* Données géographiques — scoped stats */}
-            <div className={`${activeMobilePanel === 'analytics' ? 'hidden lg:block' : selectedProvince ? 'h-1/2' : 'hidden lg:block'} lg:h-auto lg:flex-[2] min-h-0 overflow-hidden transition-all duration-300 w-full`}>
+            <div className={`${activeMobilePanel === 'analytics' ? 'hidden lg:block' : selectedProvince ? 'h-1/4' : 'hidden lg:block'} lg:h-auto lg:flex-[1] min-h-0 overflow-hidden transition-all duration-300 w-full`}>
               <Card className="analytics-panel border-0 h-full flex flex-col overflow-hidden">
                 <ScrollArea className="flex-1">
                   {selectedProvince && scopedStats ? (

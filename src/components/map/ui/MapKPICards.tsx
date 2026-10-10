@@ -1,6 +1,6 @@
 import React from 'react';
-import { Card } from '@/components/ui/card';
-import { Database, MapPin } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { MapPin, X } from 'lucide-react';
 
 interface ScopedStats {
   certEnregCount: number;
@@ -34,96 +34,91 @@ export const MapKPICards: React.FC<MapKPICardsProps> = ({
   formatNumber,
   onClose,
 }) => {
+  const indicators = [
+    {
+      key: 'detail-cert-enreg',
+      label: 'Certif. enregistrement',
+      value: formatNumber(scopedStats.certEnregCount),
+    },
+    {
+      key: 'detail-contrat-loc',
+      label: 'Contrat location',
+      value: formatNumber(scopedStats.contratLocCount),
+    },
+    {
+      key: 'detail-fiche-parc',
+      label: 'Fiche parcellaire',
+      value: formatNumber(scopedStats.ficheParcCount),
+    },
+    {
+      key: 'detail-title-req',
+      label: 'Titres demandés',
+      value: formatNumber(scopedStats.titleRequestsCount),
+    },
+    {
+      key: 'detail-disputes',
+      label: 'Litiges fonciers',
+      value: formatNumber(scopedStats.disputesCount),
+    },
+    {
+      key: 'detail-mortgages',
+      label: 'Hypothèques actives',
+      value: formatNumber(scopedStats.activeMortgagesCount),
+    },
+    {
+      key: 'detail-mutations',
+      label: 'Mutations en cours',
+      value: formatNumber(scopedStats.pendingMutationsCount),
+    },
+    {
+      key: 'detail-expertises',
+      label: 'Expertises en cours',
+      value: formatNumber(scopedStats.pendingExpertisesCount),
+    },
+    {
+      key: 'detail-avg-surface',
+      label: 'Sup. moy. parcelle',
+      value: scopedStats.avgParcelSurfaceSqm > 0 ? `${formatNumber(scopedStats.avgParcelSurfaceSqm)} m²` : '—',
+    },
+    {
+      key: 'detail-avg-building',
+      label: 'Sup. moy. construction',
+      value: scopedStats.avgBuildingSurfaceSqm > 0 ? `${formatNumber(scopedStats.avgBuildingSurfaceSqm)} m²` : '—',
+    },
+    {
+      key: 'detail-avg-height',
+      label: 'Haut. moy. construction',
+      value: scopedStats.avgBuildingHeightM > 0 ? `${formatNumber(scopedStats.avgBuildingHeightM)} m` : '—',
+    },
+  ].filter(({ key }) => isChartVisible(key));
+
   return (
-    <div className="p-2 space-y-2">
-      <div className="flex items-center justify-between gap-1 mb-1">
+    <div className="px-2 py-1.5">
+      <div className="sticky top-0 z-10 flex min-h-11 items-center justify-between gap-2 border-b border-border bg-card lg:min-h-8">
         <div className="flex items-center gap-1 min-w-0">
           <MapPin className="h-3 w-3 text-primary flex-shrink-0" />
           <span className="text-[11px] sm:text-xs font-medium text-foreground truncate">{scopeLabel}</span>
         </div>
-        <button
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
           onClick={onClose}
-          className="lg:hidden flex-shrink-0 h-5 w-5 flex items-center justify-center rounded-full bg-muted hover:bg-destructive hover:text-destructive-foreground transition-colors text-muted-foreground"
+          className="h-11 w-11 shrink-0 text-muted-foreground lg:hidden"
           aria-label="Fermer"
         >
-          <span className="text-xs font-medium leading-none">✕</span>
-        </button>
+          <X className="h-4 w-4" />
+        </Button>
       </div>
 
-      <div className="space-y-1">
-        <h5 className="text-[10px] font-medium text-foreground flex items-center gap-1">
-          <Database className="h-3 w-3 text-primary" />
-          Indicateurs fonciers
-        </h5>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-1">
-          {isChartVisible('detail-cert-enreg') && (
-            <Card className="analytics-card border-0 p-1">
-              <div className="text-[10px] text-muted-foreground truncate">{dt('detail-cert-enreg', 'Certif. enregistrement')}</div>
-              <div className="text-[11px] font-bold text-primary">{formatNumber(scopedStats.certEnregCount)}</div>
-            </Card>
-          )}
-          {isChartVisible('detail-contrat-loc') && (
-            <Card className="analytics-card border-0 p-1">
-              <div className="text-[10px] text-muted-foreground truncate">{dt('detail-contrat-loc', 'Contrat location')}</div>
-              <div className="text-[11px] font-bold text-blue-600">{formatNumber(scopedStats.contratLocCount)}</div>
-            </Card>
-          )}
-          {isChartVisible('detail-fiche-parc') && (
-            <Card className="analytics-card border-0 p-1">
-              <div className="text-[10px] text-muted-foreground truncate">{dt('detail-fiche-parc', 'Fiche parcellaire')}</div>
-              <div className="text-[11px] font-bold text-emerald-600">{formatNumber(scopedStats.ficheParcCount)}</div>
-            </Card>
-          )}
-          {isChartVisible('detail-title-req') && (
-            <Card className="analytics-card border-0 p-1">
-              <div className="text-[10px] text-muted-foreground truncate">{dt('detail-title-req', 'Titres demandés')}</div>
-              <div className="text-[11px] font-bold text-violet-600">{formatNumber(scopedStats.titleRequestsCount)}</div>
-            </Card>
-          )}
-          {isChartVisible('detail-disputes') && (
-            <Card className="analytics-card border-0 p-1">
-              <div className="text-[10px] text-muted-foreground truncate">{dt('detail-disputes', 'Litiges fonciers')}</div>
-              <div className="text-[11px] font-bold text-orange-500">{formatNumber(scopedStats.disputesCount)}</div>
-            </Card>
-          )}
-          {isChartVisible('detail-mortgages') && (
-            <Card className="analytics-card border-0 p-1">
-              <div className="text-[10px] text-muted-foreground truncate">{dt('detail-mortgages', 'Hypothèques actives')}</div>
-              <div className="text-[11px] font-bold text-red-600">{formatNumber(scopedStats.activeMortgagesCount)}</div>
-            </Card>
-          )}
-          {isChartVisible('detail-mutations') && (
-            <Card className="analytics-card border-0 p-1">
-              <div className="text-[10px] text-muted-foreground truncate">{dt('detail-mutations', 'Mutations en cours')}</div>
-              <div className="text-[11px] font-bold text-violet-600">{formatNumber(scopedStats.pendingMutationsCount)}</div>
-            </Card>
-          )}
-          {isChartVisible('detail-expertises') && (
-            <Card className="analytics-card border-0 p-1">
-              <div className="text-[10px] text-muted-foreground truncate">{dt('detail-expertises', 'Expertises en cours')}</div>
-              <div className="text-[11px] font-bold text-blue-600">{formatNumber(scopedStats.pendingExpertisesCount)}</div>
-            </Card>
-          )}
-          {isChartVisible('detail-avg-surface') && (
-            <Card className="analytics-card border-0 p-1">
-              <div className="text-[10px] text-muted-foreground truncate">{dt('detail-avg-surface', 'Sup. moy. parcelle')}</div>
-              <div className="text-[11px] font-bold text-emerald-700">{scopedStats.avgParcelSurfaceSqm > 0 ? `${formatNumber(scopedStats.avgParcelSurfaceSqm)} m²` : '—'}</div>
-            </Card>
-          )}
-          {isChartVisible('detail-avg-building') && (
-            <Card className="analytics-card border-0 p-1">
-              <div className="text-[10px] text-muted-foreground truncate">{dt('detail-avg-building', 'Sup. moy. construction')}</div>
-              <div className="text-[11px] font-bold text-emerald-600">{scopedStats.avgBuildingSurfaceSqm > 0 ? `${formatNumber(scopedStats.avgBuildingSurfaceSqm)} m²` : '—'}</div>
-            </Card>
-          )}
-          {isChartVisible('detail-avg-height') && (
-            <Card className="analytics-card border-0 p-1">
-              <div className="text-[10px] text-muted-foreground truncate">{dt('detail-avg-height', 'Haut. moy. construction')}</div>
-              <div className="text-[11px] font-bold text-blue-600">{scopedStats.avgBuildingHeightM > 0 ? `${scopedStats.avgBuildingHeightM} m` : '—'}</div>
-            </Card>
-          )}
-        </div>
-      </div>
+      <dl className="divide-y divide-border/60">
+        {indicators.map(({ key, label, value }) => (
+          <div key={key} className="grid min-h-7 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 py-1 text-[10px] sm:text-[11px]">
+            <dt className="truncate text-muted-foreground">{dt(key, label)}</dt>
+            <dd className="font-semibold tabular-nums text-foreground">{value}</dd>
+          </div>
+        ))}
+      </dl>
     </div>
   );
 };
