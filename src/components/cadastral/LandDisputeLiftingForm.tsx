@@ -395,19 +395,6 @@ const LandDisputeLiftingForm: React.FC<LandDisputeLiftingFormProps> = ({
         </AlertDescription>
       </Alert>
 
-      <Card className="bg-primary/5 border-primary/20 rounded-xl shadow-sm">
-        <CardContent className="p-3">
-          <div className="flex items-center gap-2">
-            <div className="p-1.5 bg-primary/10 rounded-lg">
-              <Shield className="h-4 w-4 text-primary" />
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Référence de la demande</p>
-              <p className="font-mono font-bold text-sm text-primary">{requestReference}</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
 
       <div className="space-y-2">
         <Label className="text-sm font-semibold flex items-center gap-2">
