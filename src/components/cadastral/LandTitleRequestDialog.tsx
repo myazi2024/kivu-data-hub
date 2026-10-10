@@ -1,4 +1,5 @@
 import { PROPERTY_CATEGORY_OPTIONS as SHARED_PROPERTY_CATEGORY_OPTIONS } from '@/lib/ccc/propertyCategories';
+import { useParcelNumberSearch } from './land-title-request/useParcelNumberSearch';
 import { useLandTitleConstruction } from './land-title-request/useLandTitleConstruction';
 import { LandTitlePaymentView, LandTitleSuccessView } from './land-title-request/LandTitleResultViews';
 import type { ParcelOwnerData, ParcelLocationData, ParcelValorisationData, ParcelBuildingPermit } from './land-title-request/types';
@@ -95,10 +96,8 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
   const [hasFicheParcellaire, setHasFicheParcellaire] = useState<'yes' | 'no' | ''>('');
   const [knowsParcelNumber, setKnowsParcelNumber] = useState<'yes' | 'no' | ''>('');
   const [parcelNumberSearch, setParcelNumberSearch] = useState('');
-  const [parcelSearchResults, setParcelSearchResults] = useState<Array<{ parcel_number: string; id: string }>>([]);
   const [selectedParcelNumber, setSelectedParcelNumber] = useState('');
   const [parcelValidated, setParcelValidated] = useState(false);
-  const [parcelSearchLoading, setParcelSearchLoading] = useState(false);
   const [showParcelDropdown, setShowParcelDropdown] = useState(false);
   // Données de parcelle préremplies par le serveur (l'identité du propriétaire n'est jamais préremplie)
   const [parcelOwnerData, setParcelOwnerData] = useState<ParcelOwnerData | null>(null);
@@ -224,46 +223,14 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     }
   };
 
-  // Parcel number search for renewal/definitive requests
-  const searchParcels = useCallback(async (query: string) => {
-    if (!query || query.length < 2) {
-      setParcelSearchResults([]);
-      return;
-    }
-    setParcelSearchLoading(true);
-    try {
-      let parcelQuery = supabase
-        .from('cadastral_parcels')
-        .select('parcel_number, id')
-        .ilike('parcel_number', `%${query}%`)
-        .is('deleted_at', null)
-        .limit(10);
-      parcelQuery = applyTestFilter(parcelQuery, 'parcel_number', isTestRoute);
-      const { data, error } = await parcelQuery;
-      if (error) throw error;
-      setParcelSearchResults(data || []);
-    } catch (err) {
-      console.error('Error searching parcels:', err);
-      setParcelSearchResults([]);
-    } finally {
-      setParcelSearchLoading(false);
-    }
-  }, []);
-
   // Computed: parcel-linked mode is always active once a request type is selected
   const isParcelLinkedMode = !!requestType;
 
   // Computed: form is blocked until a valid parcel is selected
   const isFormBlocked = !requestType || !parcelValidated;
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (parcelNumberSearch && isParcelLinkedMode) {
-        searchParcels(parcelNumberSearch);
-      }
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [parcelNumberSearch, isParcelLinkedMode, searchParcels]);
+  const { results: parcelSearchResults, setResults: setParcelSearchResults, loading: parcelSearchLoading } =
+    useParcelNumberSearch(parcelNumberSearch, isParcelLinkedMode, isTestRoute);
 
   // Reset parcel validation when request type or fiche parcellaire changes
   useEffect(() => {
