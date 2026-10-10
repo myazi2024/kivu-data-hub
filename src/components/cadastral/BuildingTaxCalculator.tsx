@@ -183,6 +183,7 @@ const BuildingTaxCalculator: React.FC<BuildingTaxCalculatorProps> = ({
   };
 
   const resetForm = () => {
+    setServerAmount(null);
     setNif('');
     setHasNif(null);
     setIdDocumentFile(null);

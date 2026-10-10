@@ -128,6 +128,7 @@ const PropertyTaxCalculator: React.FC<PropertyTaxCalculatorProps> = ({
 
   // #15 fix: Reset form after successful submission
   const resetForm = () => {
+    setServerAmount(null);
     setNif('');
     setHasNif(null);
     setIdDocumentFile(null);

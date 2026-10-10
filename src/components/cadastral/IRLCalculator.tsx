@@ -91,6 +91,7 @@ const IRLCalculator: React.FC<IRLCalculatorProps> = ({
   }, [parcelData?.area_sqm]);
 
   const resetForm = () => {
+    setServerAmount(null);
     setNif('');
     setHasNif(null);
     setIdDocumentFile(null);
