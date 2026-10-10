@@ -350,7 +350,6 @@ const LandDisputeReportForm: React.FC<LandDisputeReportFormProps> = ({
           <CardContent className="p-3 space-y-2">
             <div className="flex items-center gap-2 text-sm font-semibold text-primary"><Scale className="h-4 w-4" /> Détails du litige</div>
             <div className="space-y-1.5 text-sm">
-              <div className="flex justify-between"><span className="text-muted-foreground">Référence :</span><span className="font-mono font-bold">{referenceNumber}</span></div>
               <div className="flex justify-between"><span className="text-muted-foreground">Nature :</span><span>{DISPUTE_NATURES.find(n => n.value === disputeNature)?.label}</span></div>
               <div className="flex justify-between"><span className="text-muted-foreground">Début :</span><span>{disputeStartDate}</span></div>
               <div className="flex justify-between"><span className="text-muted-foreground">Statut :</span><span>{hasResolutionStarted ? RESOLUTION_LEVELS.find(r => r.value === resolutionLevel)?.label : 'En cours'}</span></div>
@@ -425,21 +424,6 @@ const LandDisputeReportForm: React.FC<LandDisputeReportFormProps> = ({
           </AlertDescription>
         </Alert>
       )}
-
-      {/* Référence */}
-      <Card className="bg-primary/5 border-primary/20 rounded-xl shadow-sm">
-        <CardContent className="p-3">
-          <div className="flex items-center gap-2">
-            <div className="p-1.5 bg-primary/10 rounded-lg">
-              <Shield className="h-4 w-4 text-primary" />
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Référence du signalement</p>
-              <p className="font-mono font-bold text-sm text-primary">{referenceNumber}</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Nature du litige */}
       <div className="space-y-2">
