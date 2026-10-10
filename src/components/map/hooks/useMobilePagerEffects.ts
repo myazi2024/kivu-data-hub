@@ -7,7 +7,7 @@ interface Params {
   trackRef: RefObject<HTMLDivElement>;
   analyticsColRef: RefObject<HTMLDivElement>;
   analyticsTitleRef: RefObject<HTMLSpanElement>;
-  mapTitleRef: RefObject<HTMLHeadingElement>;
+  mapFocusRef: RefObject<HTMLElement>;
   activeMobilePanel: 'map' | 'analytics';
 }
 
@@ -24,7 +24,7 @@ export const useMobilePagerEffects = ({
   trackRef,
   analyticsColRef,
   analyticsTitleRef,
-  mapTitleRef,
+  mapFocusRef,
   activeMobilePanel,
 }: Params) => {
   const teaserTimersRef = useRef<number[]>([]);
@@ -40,11 +40,11 @@ export const useMobilePagerEffects = ({
         if (scrollEl) scrollEl.scrollTop = 0;
         analyticsTitleRef.current?.focus({ preventScroll: true });
       } else {
-        mapTitleRef.current?.focus({ preventScroll: true });
+        mapFocusRef.current?.focus({ preventScroll: true });
       }
     }, 320);
     return () => window.clearTimeout(id);
-  }, [activeMobilePanel, isMobile, onAnalyticsPanel, analyticsColRef, analyticsTitleRef, mapTitleRef]);
+  }, [activeMobilePanel, isMobile, onAnalyticsPanel, analyticsColRef, analyticsTitleRef, mapFocusRef]);
 
   // One-shot teaser animation
   useEffect(() => {
