@@ -8256,6 +8256,10 @@ export type Database = {
         Args: { p_limit: number; p_step: string }
         Returns: number
       }
+      _compute_tax_declaration: {
+        Args: { _e: Json; _province: string; _ville: string }
+        Returns: Json
+      }
       _mortgage_cancellation_due: {
         Args: { _selected: string[] }
         Returns: number
@@ -8266,6 +8270,27 @@ export type Database = {
       }
       _purge_stale_test_generation_jobs: { Args: never; Returns: number }
       _purge_stale_test_generation_jobs__impl: { Args: never; Returns: number }
+      _tax_fees: { Args: { _tax: number }; Returns: number }
+      _tax_months_late: {
+        Args: { _deadline_day: number; _deadline_month: number; _year: number }
+        Returns: number
+      }
+      _tax_penalties: {
+        Args: { _base: number; _months: number }
+        Returns: number
+      }
+      _tax_rate: {
+        Args: { _cat: string; _ctype: string; _usage: string; _zone: string }
+        Returns: {
+          base: number
+          mult: number
+          pct: number
+        }[]
+      }
+      _tax_zone_multiplier: {
+        Args: { _province: string; _ville: string; _zone: string }
+        Returns: number
+      }
       apply_ccc_correction_request: {
         Args: {
           p_decision: string

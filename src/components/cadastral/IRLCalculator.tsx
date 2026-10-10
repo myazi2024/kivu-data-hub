@@ -10,7 +10,7 @@ import TaxHistorySection from './tax-calculator/TaxHistorySection';
 import { TenantEntry, createEmptyTenant, calculateTotalRentalIncome } from './tax-calculator/IRLTenantsList';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { detectZoneType, isZoneAutoDetected, detectUsageType, checkDuplicateTaxSubmission } from './tax-calculator/taxSharedUtils';
+import { detectZoneType, isZoneAutoDetected, detectUsageType, insertTaxContribution, IRL_TAX_TYPE } from './tax-calculator/taxSharedUtils';
 import { validateNIF, NIF_FORMAT_ERROR } from './tax-calculator/taxFormConstants';
 
 interface IRLCalculatorProps {
@@ -38,7 +38,7 @@ const IRLCalculator: React.FC<IRLCalculatorProps> = ({
 
   // Local fallbacks when no shared taxpayer is provided (standalone usage).
   const [localNif, setLocalNif] = useState('');
-  const [localOwnerName, setLocalOwnerName] = useState(parcelData?.current_owner_name || '');
+  const [localOwnerName, setLocalOwnerName] = useState('');
   const [localIdDocumentFile, setLocalIdDocumentFile] = useState<File | null>(null);
   const [localHasNif, setLocalHasNif] = useState<boolean | null>(null);
 
@@ -54,6 +54,7 @@ const IRLCalculator: React.FC<IRLCalculatorProps> = ({
 
   const [tenants, setTenants] = useState<TenantEntry[]>([createEmptyTenant()]);
   const [submitting, setSubmitting] = useState(false);
+  const [serverAmount, setServerAmount] = useState<number | null>(null);
 
   const defaultZone = detectZoneType(parcelNumber, parcelData);
   const zoneAutoDetected = isZoneAutoDetected(parcelNumber);
@@ -89,13 +90,8 @@ const IRLCalculator: React.FC<IRLCalculatorProps> = ({
     }
   }, [parcelData?.area_sqm]);
 
-  useEffect(() => {
-    if (parcelData?.current_owner_name && !ownerName) {
-      setOwnerName(parcelData.current_owner_name);
-    }
-  }, [parcelData?.current_owner_name]);
-
   const resetForm = () => {
+    setServerAmount(null);
     setNif('');
     setHasNif(null);
     setIdDocumentFile(null);
@@ -143,6 +139,7 @@ const IRLCalculator: React.FC<IRLCalculatorProps> = ({
       monthlyRentUsd: 0, // not used when override is set
       occupancyMonths: 12,
       annualRentalIncomeOverride: totalIncome,
+      scope: 'irl',
     };
 
     const res = calculate(adjustedInput);
@@ -159,13 +156,6 @@ const IRLCalculator: React.FC<IRLCalculatorProps> = ({
 
     setSubmitting(true);
     try {
-      const isDuplicate = await checkDuplicateTaxSubmission(
-        supabase, parcelNumber, user.id, 'Impôt sur le revenu locatif', input.fiscalYear, constructionRef
-      );
-      if (isDuplicate) {
-        toast.error(`Une déclaration IRL pour l'exercice ${input.fiscalYear} existe déjà pour cette parcelle.`);
-        return;
-      }
 
       // Upload ID document if present
       let idDocUrl: string | null = null;
@@ -190,7 +180,7 @@ const IRLCalculator: React.FC<IRLCalculatorProps> = ({
         }));
 
       const isMain = constructionRef === 'main';
-      const { error } = await supabase.from('cadastral_contributions').insert({
+      const { entry, error } = await insertTaxContribution(supabase, {
         parcel_number: parcelNumber,
         original_parcel_id: parcelId || null,
         user_id: user.id,
@@ -203,7 +193,10 @@ const IRLCalculator: React.FC<IRLCalculatorProps> = ({
         current_owner_name: ownerName || null,
         owner_document_url: idDocUrl,
         tax_history: [{
-          tax_type: 'Impôt sur le revenu locatif',
+          declaration_kind: 'irl',
+          tax_type: IRL_TAX_TYPE,
+          zone_type: input.zoneType,
+          usage_type: input.usageType,
           tax_year: input.fiscalYear,
           amount_usd: result.grandTotal,
           irl_amount_usd: result.irlAmount,
@@ -214,8 +207,7 @@ const IRLCalculator: React.FC<IRLCalculatorProps> = ({
           fees_usd: result.totalFees,
           tenants: tenantData,
           nif: hasNif ? nif : null,
-          payment_status: 'En attente',
-          construction_ref: constructionRef,
+                    construction_ref: constructionRef,
         }],
       });
 
@@ -223,22 +215,20 @@ const IRLCalculator: React.FC<IRLCalculatorProps> = ({
         if (uploadedIdPath) {
           await supabase.storage.from('cadastral-documents').remove([uploadedIdPath]);
         }
-        throw error;
+        throw new Error(error);
       }
 
-      supabase.from('notifications').insert({
-        user_id: user.id,
-        title: 'Déclaration IRL',
-        message: `Déclaration IRL pour ${parcelNumber} (exercice ${input.fiscalYear}). Montant: ${result.grandTotal.toFixed(2)} USD.`,
-        type: 'info',
-        action_url: '/mon-compte',
-      }).then(({ error: e }) => { if (e) console.warn('Notification failed:', e.message); });
+      const stored = Number(entry?.amount_usd);
+      if (Number.isFinite(stored)) {
+        setServerAmount(stored);
+        if (Math.abs(stored - result.grandTotal) > 0.01) toast.info(`Montant retenu par le serveur : ${stored.toFixed(2)} USD`);
+      }
 
       toast.success('Déclaration IRL soumise avec succès');
       setCalcStep('confirmation');
     } catch (error: any) {
       console.error('IRL submit error:', error);
-      toast.error('Erreur lors de la soumission de la déclaration');
+      toast.error(error?.message || 'Erreur lors de la soumission de la déclaration');
     } finally {
       setSubmitting(false);
     }
@@ -257,8 +247,8 @@ const IRLCalculator: React.FC<IRLCalculatorProps> = ({
       <TaxConfirmationStep
         parcelNumber={parcelNumber}
         fiscalYear={input.fiscalYear}
-        taxType="Impôt sur le revenu locatif"
-        totalAmount={result.grandTotal}
+        taxType={IRL_TAX_TYPE}
+        totalAmount={serverAmount ?? result.grandTotal}
         accentClass="bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300"
         onClose={() => {
           resetForm();
@@ -285,7 +275,7 @@ const IRLCalculator: React.FC<IRLCalculatorProps> = ({
   return (
     <div>
       <div className="px-4 pt-3">
-        <TaxHistorySection parcelNumber={parcelNumber} taxTypeFilter="Impôt sur le revenu locatif" />
+        <TaxHistorySection parcelNumber={parcelNumber} taxTypeFilter={IRL_TAX_TYPE} />
       </div>
       <IRLQuestionsStep
         parcelNumber={parcelNumber}

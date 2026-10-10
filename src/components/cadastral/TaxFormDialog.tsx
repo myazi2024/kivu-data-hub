@@ -13,6 +13,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { insertTaxContribution } from './tax-calculator/taxSharedUtils';
 import FormIntroDialog, { FORM_INTRO_CONFIGS } from './FormIntroDialog';
 import SectionHelpPopover from './SectionHelpPopover';
 import { validateNIF, NIF_FORMAT_ERROR } from './tax-calculator/taxFormConstants';
@@ -149,33 +150,6 @@ const TaxFormDialog: React.FC<TaxFormDialogProps> = ({
     let uploadedFilePath: string | null = null;
 
     try {
-      // Check for duplicate: single optimized query with contribution_type filter (#6 fix)
-      const { data: existingContribs } = await supabase
-        .from('cadastral_contributions')
-        .select('id, tax_history')
-        .eq('parcel_number', parcelNumber)
-        .eq('user_id', user.id)
-        .eq('contribution_type', 'update')
-        .neq('status', 'rejected');
-
-      if (existingContribs && existingContribs.length > 0) {
-        const isDuplicate = existingContribs.some(c => {
-          const history = c.tax_history as any[];
-          return history?.some((h: any) =>
-            h.tax_type === taxRecord.taxType &&
-            String(h.tax_year) === taxRecord.taxYear &&
-            // P0 alignment: scope duplicates per construction (multi-building parcels).
-            (h.construction_ref ?? 'main') === constructionRef
-          );
-        });
-
-        if (isDuplicate) {
-          toast.error(`Une déclaration "${taxRecord.taxType}" pour l'année ${taxRecord.taxYear} existe déjà pour ce bâtiment.`);
-          setLoading(false);
-          return;
-        }
-      }
-
       // Upload file if present (memory rule: crypto.randomUUID, never Math.random for uploads).
       let documentUrl = null;
       if (taxRecord.receiptFile) {
@@ -198,15 +172,14 @@ const TaxFormDialog: React.FC<TaxFormDialogProps> = ({
         : Math.max(0, parseFloat(taxRecord.remainingAmount) || 0);
 
       // Insert contribution
-      const { error } = await supabase
-        .from('cadastral_contributions')
-        .insert({
+      const { error } = await insertTaxContribution(supabase, {
           parcel_number: parcelNumber,
           original_parcel_id: parcelId,
           user_id: user.id,
           contribution_type: 'update',
           status: 'pending',
           tax_history: [{
+            declaration_kind: 'declared_payment',
             tax_type: taxRecord.taxType,
             tax_year: parseInt(taxRecord.taxYear),
             amount_usd: parseFloat(taxRecord.taxAmount),
@@ -226,22 +199,14 @@ const TaxFormDialog: React.FC<TaxFormDialogProps> = ({
         if (uploadedFilePath) {
           await supabase.storage.from('cadastral-documents').remove([uploadedFilePath]);
         }
-        throw error;
+        throw new Error(error);
       }
-
-      // Fire-and-forget notification
-      supabase.from('notifications').insert({
-        user_id: user.id,
-        title: 'Taxe enregistrée',
-        message: `Votre déclaration de taxe pour la parcelle ${parcelNumber} (${taxRecord.taxYear}) a été soumise avec succès.`,
-        type: 'info'
-      }).then(() => {});
 
       setStep('confirmation');
       toast.success('Taxe enregistrée avec succès');
     } catch (error: any) {
       console.error('Error:', error);
-      toast.error('Erreur lors de l\'enregistrement');
+      toast.error(error?.message || 'Erreur lors de l\'enregistrement');
     } finally {
       setLoading(false);
     }

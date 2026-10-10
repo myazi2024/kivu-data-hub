@@ -25,7 +25,7 @@ import {
   FISCAL_ZONE_LABELS,
   calculateBuildingTaxMonthsLate,
 } from '@/hooks/usePropertyTaxCalculator';
-import { detectZoneType, detectConstructionType, checkDuplicateTaxSubmission } from './tax-calculator/taxSharedUtils';
+import { detectZoneType, detectConstructionType, insertTaxContribution, IRL_TAX_TYPE } from './tax-calculator/taxSharedUtils';
 
 interface BuildingTaxCalculatorProps {
   parcelNumber: string;
@@ -59,12 +59,13 @@ const BuildingTaxCalculator: React.FC<BuildingTaxCalculatorProps> = ({
   const currentYear = new Date().getFullYear();
   const [calcStep, setCalcStep] = useState<CalcStep>('questions');
   const [loading, setLoading] = useState(false);
+  const [serverAmount, setServerAmount] = useState<number | null>(null);
   const [exchangeRate, setExchangeRate] = useState(2800);
   const [dbBuildingRates, setDbBuildingRates] = useState<Record<string, Record<string, number>> | null>(null);
 
   const [localNif, setLocalNif] = useState('');
   const [localHasNif, setLocalHasNif] = useState<boolean | null>(null);
-  const [localOwnerName, setLocalOwnerName] = useState(parcelData?.current_owner_name || '');
+  const [localOwnerName, setLocalOwnerName] = useState('');
   const [localIdDocumentFile, setLocalIdDocumentFile] = useState<File | null>(null);
 
   const nif = taxpayer?.nif ?? localNif;
@@ -76,10 +77,6 @@ const BuildingTaxCalculator: React.FC<BuildingTaxCalculatorProps> = ({
   const idDocumentFile = taxpayer?.idDocumentFile ?? localIdDocumentFile;
   const setIdDocumentFile = taxpayer?.setIdDocumentFile ?? setLocalIdDocumentFile;
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (parcelData?.current_owner_name && !ownerName) setOwnerName(parcelData.current_owner_name);
-  }, [parcelData?.current_owner_name]);
 
   // Fetch exchange rate and building tax rates from config
   useEffect(() => {
@@ -186,6 +183,7 @@ const BuildingTaxCalculator: React.FC<BuildingTaxCalculatorProps> = ({
   };
 
   const resetForm = () => {
+    setServerAmount(null);
     setNif('');
     setHasNif(null);
     setIdDocumentFile(null);
@@ -198,14 +196,6 @@ const BuildingTaxCalculator: React.FC<BuildingTaxCalculatorProps> = ({
     if (!user) { toast.error('Vous devez être connecté'); return; }
     setLoading(true);
     try {
-      const isDuplicate = await checkDuplicateTaxSubmission(
-        supabase, parcelNumber, user.id, 'Taxe de bâtisse', fiscalYear, constructionRef
-      );
-      if (isDuplicate) {
-        toast.error(`Une déclaration "Taxe de bâtisse" pour l'exercice ${fiscalYear} existe déjà pour cette parcelle/bâtiment.`);
-        setLoading(false);
-        return;
-      }
 
       // #7 fix: Upload ID document if present
       let idDocUrl: string | null = null;
@@ -225,7 +215,7 @@ const BuildingTaxCalculator: React.FC<BuildingTaxCalculatorProps> = ({
       const legacyConstructionType = constructionType === 'en_dur' ? 'En dur'
         : constructionType === 'semi_dur' ? 'Semi-dur' : 'En paille';
 
-      const { error } = await supabase.from('cadastral_contributions').insert({
+      const { entry, error } = await insertTaxContribution(supabase, {
         parcel_number: parcelNumber,
         original_parcel_id: parcelId || null,
         user_id: user.id,
@@ -240,7 +230,9 @@ const BuildingTaxCalculator: React.FC<BuildingTaxCalculatorProps> = ({
         current_owner_name: ownerName || null,
         owner_document_url: idDocUrl,
         tax_history: [{
+          declaration_kind: 'building_tax',
           tax_type: 'Taxe de bâtisse',
+          area_sqm: areaSqm,
           tax_year: fiscalYear,
           amount_usd: calculation.totalTaxUSD,
           base_amount_cdf: calculation.baseTaxCDF,
@@ -260,8 +252,7 @@ const BuildingTaxCalculator: React.FC<BuildingTaxCalculatorProps> = ({
           // ─────────────────────────────────────────────────────────────────────
           penalty_amount_usd: calculation.totalPenaltiesUSD,
           fiscal_zone: fiscalZoneCategory,
-          payment_status: 'En attente',
-          nif: hasNif ? nif : null,
+                    nif: hasNif ? nif : null,
           construction_ref: constructionRef,
         }],
       });
@@ -271,23 +262,20 @@ const BuildingTaxCalculator: React.FC<BuildingTaxCalculatorProps> = ({
         if (uploadedIdPath) {
           await supabase.storage.from('cadastral-documents').remove([uploadedIdPath]);
         }
-        throw error;
+        throw new Error(error);
       }
 
-      // Fire-and-forget notification with error logging
-      supabase.from('notifications').insert({
-        user_id: user.id,
-        title: 'Déclaration taxe de bâtisse',
-        message: `Déclaration taxe de bâtisse pour ${parcelNumber} (exercice ${fiscalYear}). Montant: ${calculation.totalTaxUSD.toFixed(2)} USD.`,
-        type: 'info',
-        action_url: '/mon-compte',
-      }).then(({ error: e }) => { if (e) console.warn('Notification failed:', e.message); });
+      const stored = Number(entry?.amount_usd);
+      if (Number.isFinite(stored)) {
+        setServerAmount(stored);
+        if (Math.abs(stored - calculation.totalTaxUSD) > 0.01) toast.info(`Montant retenu par le serveur : ${stored.toFixed(2)} USD`);
+      }
 
       toast.success('Déclaration soumise avec succès');
       setCalcStep('confirmation');
     } catch (error: any) {
       console.error('Error:', error);
-      toast.error('Erreur lors de la soumission');
+      toast.error(error?.message || 'Erreur lors de la soumission de la déclaration');
     } finally {
       setLoading(false);
     }
@@ -299,7 +287,7 @@ const BuildingTaxCalculator: React.FC<BuildingTaxCalculatorProps> = ({
         parcelNumber={parcelNumber}
         fiscalYear={fiscalYear}
         taxType="Taxe de bâtisse"
-        totalAmount={calculation.totalTaxUSD}
+        totalAmount={serverAmount ?? calculation.totalTaxUSD}
         accentClass="bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300"
         onClose={() => {
           resetForm();

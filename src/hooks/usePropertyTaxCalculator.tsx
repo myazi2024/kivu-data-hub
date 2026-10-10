@@ -218,6 +218,8 @@ export interface TaxCalculationInput {
   annualRentalIncomeOverride?: number;
   // Late payment
   monthsLate: number; // auto-calculated, kept for backward compat
+  /** Limit the computation to one tax: an IRL declaration must not include the property tax. */
+  scope?: 'property' | 'irl' | 'both';
 }
 
 export interface TaxCalculationResult {
@@ -406,7 +408,7 @@ export const usePropertyTaxCalculator = () => {
     const areaComponent = (matchedRate?.area_multiplier || 0) * input.areaSqm;
     const rawPropertyTax = baseTax + areaComponent;
     const zoneAdjustedTax = round(rawPropertyTax * fiscalZoneMultiplier);
-    const totalPropertyTax = isExempt ? 0 : zoneAdjustedTax;
+    const totalPropertyTax = isExempt || input.scope === 'irl' ? 0 : zoneAdjustedTax;
 
     // --- Impôt sur le Revenu Locatif (IRL) ---
     let annualRentalIncome = 0;
@@ -416,7 +418,7 @@ export const usePropertyTaxCalculator = () => {
     let irlAmount = 0;
     let matchedIrlRate: TaxRate | null = null;
 
-    if (input.isRented && (input.monthlyRentUsd > 0 || (input.annualRentalIncomeOverride && input.annualRentalIncomeOverride > 0))) {
+    if (input.scope !== 'property' && input.isRented && (input.monthlyRentUsd > 0 || (input.annualRentalIncomeOverride && input.annualRentalIncomeOverride > 0))) {
       // #9 fix: Use annualRentalIncomeOverride if provided, otherwise compute from monthly
       annualRentalIncome = input.annualRentalIncomeOverride && input.annualRentalIncomeOverride > 0
         ? input.annualRentalIncomeOverride

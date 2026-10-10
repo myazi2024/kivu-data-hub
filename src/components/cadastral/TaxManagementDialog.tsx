@@ -45,7 +45,7 @@ const TaxManagementDialog: React.FC<TaxManagementDialogProps> = ({
   );
 
   // Shared taxpayer state across the four sub-flows
-  const taxpayer = useSharedTaxpayer(parcelData?.current_owner_name);
+  const taxpayer = useSharedTaxpayer();
 
   useEffect(() => {
     if (open) {

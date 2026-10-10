@@ -70,3 +70,11 @@ Lecture libre supprimée ; carte et tableau client passent par `get_parcel_paid_
 **Problèmes** : pièce jointe envoyée dans un dossier interdit (envoi toujours en échec) ; clés camelCase ignorées par la synchronisation d'approbation (autorisation approuvée jamais ajoutée à la parcelle) ; doublons vérifiés dans le navigateur sur les seules propositions de l'utilisateur ; aucune validation serveur ; statut et notification produits par le navigateur ; lien signé stocké au lieu du chemin ; expiration du récapitulatif à 12 mois au lieu de la durée choisie ; mode fenêtre autonome, WhatsApp et donnée de parcelle inutilisés ; `window.confirm` ; service émetteur absent des autorisations CCC.
 
 **Corrections** : RPC `submit_building_permit_contribution` (parcelle, numéro, date, validité 6/12/24/36, type, service, doublons parcelle + toutes propositions, statut serveur, clés snake_case, chemin du document dans le dossier de l'utilisateur, notification serveur) ; formulaire : envoi dans `<uid>/permit-documents/`, suppression du fichier si refus, message serveur affiché, estimation partagée `src/lib/buildingPermitRules.ts`, AlertDialog ; carte utilisateur : document ouvert par lien signé ; CCC : `issuing_service` transmis ; 7 tests ajoutés.
+
+## Taxe foncière (menu Actions) — 2026-10-10
+
+**Problèmes** : montants (foncier, bâtisse, IRL) fixés par le navigateur ; anti-doublon et notifications côté navigateur ; nom du propriétaire pré-rempli depuis la parcelle ; IRL enregistré sous « Impôt sur le revenu locatif » (libellé différent du CCC/admin) et montant IRL incluant l'impôt foncier de la parcelle.
+
+**Corrections** : déclencheur `enforce_tax_declaration_insert` (entrées avec `declaration_kind`) qui recalcule base, pénalités et frais depuis `property_tax_rates_config` / `cadastral_contribution_config`, unifie les libellés, refuse les doublons (parcelle + taxe + exercice + bâtiment) ; `notify_tax_declaration_insert` crée la notification. « Ajouter un paiement » reste déclaratif (`declared_payment`, montant > 0, type valide). L'écran affiche le montant retenu par le serveur. Calcul IRL limité à l'IRL (`scope: 'irl'`). Pré-remplissage du nom supprimé.
+
+**Points ouverts** : statuts de paiement de l'historique fiscal laissés en français (« Payé »/« En attente ») pour rester compatibles avec le CCC et l'admin.
