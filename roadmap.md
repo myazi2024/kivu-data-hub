@@ -11,6 +11,7 @@
 - [x] Afficher chaque construction enregistrée sur la parcelle avec les longueurs des côtés et sa hauteur, sans exposer d'autres champs privés.
 - [x] Retirer le bandeau de titre et les boutons de type de carte de la carte Données foncières ; circonscriptions par défaut, vue dérivée des filtres.
 - [x] Compacter les indicateurs sous la carte des circonscriptions et porter la carte à 75 % de la colonne après sélection.
+- [x] Placer le nom de la circonscription sélectionnée directement dans sa forme sur la carte.
 
 ## Adaptation mobile complète
 - [x] Socle mobile et pages publiques
