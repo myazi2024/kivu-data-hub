@@ -463,7 +463,6 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     }
   };
 
-
   const isFormValid = (): boolean => {
     // Check request type
     if (!requestType) return false;
@@ -746,7 +745,6 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
 
   const totalAmount = calculatedFeesResult.totalAmount;
 
-
   if (showPayment) {
     return (
       <LandTitlePaymentView open={open} isMobile={isMobile} province={formData.province}
@@ -837,7 +835,6 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                       <span className="hidden sm:inline">Envoi</span>
                     </TabsTrigger>
                   </TabsList>
-
 
                 {/* Tab: Requester */}
                 <ApplicantTab
