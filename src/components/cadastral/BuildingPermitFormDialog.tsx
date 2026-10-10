@@ -1,28 +1,23 @@
 import React, { useState, useRef, useMemo } from 'react';
-import { createLongLivedSignedUrl } from '@/utils/storageSignedUrl';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import WhatsAppFloatingButton from './WhatsAppFloatingButton';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Loader2, Building2, FileCheck, CheckCircle2, Plus, X, ArrowLeft, FileText } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { BuildingPermitIssuingServiceSelect } from './BuildingPermitIssuingServiceSelect';
 import SectionHelpPopover from './SectionHelpPopover';
+import { normalizePermitNumber, isValidPermitNumber, estimatePermitStatus, permitExpiryDate, PERMIT_VALIDITY_OPTIONS } from '@/lib/buildingPermitRules';
 
 interface BuildingPermitFormDialogProps {
   parcelNumber: string;
-  parcelId?: string;
   permitType: 'construction' | 'regularisation';
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  embedded?: boolean;
-  /** Données de la parcelle transmises par la carte (lecture seule). */
-  parcelData?: any;
+  /** Appelé à la fermeture (après confirmation si des données sont saisies). */
+  onClose: () => void;
 }
 
 type Step = 'form' | 'preview' | 'confirmation';
@@ -35,21 +30,15 @@ interface PermitRecord {
   permitFile: File | null;
 }
 
-// Permit number format validation: flexible for DRC formats
-// Supports: PC-2024-001, AB/2024/00123, PC.2024.001, URB-2024-001234, etc.
-const PERMIT_NUMBER_REGEX = /^[A-Z]{2,6}[-/.]\d{4}[-/.]\d{2,6}$/i;
-
 const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
   parcelNumber,
-  parcelId,
   permitType,
-  open,
-  onOpenChange,
-  embedded = false
+  onClose,
 }) => {
   const { user } = useAuth();
   const [step, setStep] = useState<Step>('form');
   const [loading, setLoading] = useState(false);
+  const [confirmClose, setConfirmClose] = useState(false);
   
   const [permitRecord, setPermitRecord] = useState<PermitRecord>({
     permitNumber: '',
@@ -69,22 +58,17 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
   const gradientTo = isConstruction ? 'to-blue-600' : 'to-green-600';
   const IconComponent = isConstruction ? Building2 : FileCheck;
 
-  // Normalize permit number: trim + uppercase
-  const normalizePermitNumber = (value: string): string => value.trim().toUpperCase();
-
   const updatePermit = (field: keyof PermitRecord, value: string | File | null) => {
     setPermitRecord(prev => ({ ...prev, [field]: value }));
   };
 
-  // Calculate administrative status automatically from issue date + validity (memoized)
-  const calculatedStatus = useMemo((): string => {
-    if (!permitRecord.issueDate || !permitRecord.validityPeriod) return 'En cours';
-    const issueDate = new Date(permitRecord.issueDate);
-    const validityMonths = parseInt(permitRecord.validityPeriod) || 36;
-    const expiryDate = new Date(issueDate);
-    expiryDate.setMonth(expiryDate.getMonth() + validityMonths);
-    return expiryDate > new Date() ? 'Valide' : 'Expiré';
-  }, [permitRecord.issueDate, permitRecord.validityPeriod]);
+  const validityMonths = parseInt(permitRecord.validityPeriod, 10) || 36;
+  // Estimation affichée ; le statut enregistré est calculé par le serveur.
+  const calculatedStatus = useMemo(
+    () => estimatePermitStatus(permitRecord.issueDate, validityMonths),
+    [permitRecord.issueDate, validityMonths],
+  );
+  const expiryLabel = permitExpiryDate(permitRecord.issueDate, validityMonths)?.toLocaleDateString('fr-FR') ?? 'N/A';
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -116,17 +100,13 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
       return false;
     }
 
-    const normalized = normalizePermitNumber(permitRecord.permitNumber);
-
-    // Validate permit number format
-    if (!PERMIT_NUMBER_REGEX.test(normalized)) {
+    if (!isValidPermitNumber(permitRecord.permitNumber)) {
       toast.error('Format du N° autorisation invalide. Utilisez un format tel que PC-2024-001, AB/2024/00123 ou URB.2024.0001');
       return false;
     }
 
     // Validate date is not in the future
-    const issueDate = new Date(permitRecord.issueDate);
-    if (issueDate > new Date()) {
+    if (permitRecord.issueDate > new Date().toISOString().slice(0, 10)) {
       toast.error('La date de délivrance ne peut pas être dans le futur');
       return false;
     }
@@ -144,105 +124,38 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
       toast.error('Vous devez être connecté');
       return;
     }
-
     setLoading(true);
     let uploadedFilePath: string | null = null;
-    let documentUrl: string | null = null;
-
-    const normalizedPermitNumber = normalizePermitNumber(permitRecord.permitNumber);
-
     try {
-      // Step 1: Check for duplicate permit number BEFORE upload (server-side filtered)
-      const { data: existingContributions, error: dupError } = await supabase
-        .from('cadastral_contributions')
-        .select('id, building_permits')
-        .eq('parcel_number', parcelNumber)
-        .in('status', ['pending', 'approved', 'verified'])
-        .not('building_permits', 'is', null);
-
-      if (dupError) {
-        console.error('Duplicate check error:', dupError);
-        // Non-blocking: continue if duplicate check fails
-      } else if (existingContributions) {
-        const isDuplicate = existingContributions.some((contrib) => {
-          const permits = contrib.building_permits;
-          if (!Array.isArray(permits)) return false;
-          return permits.some((bp: any) => {
-            const existing = (bp.permitNumber || bp.permit_number || '').trim().toUpperCase();
-            return existing === normalizedPermitNumber;
-          });
-        });
-
-        if (isDuplicate) {
-          toast.error(`Le numéro d'autorisation ${normalizedPermitNumber} existe déjà pour cette parcelle`);
-          setLoading(false);
-          return;
-        }
-      }
-
-      // Step 2: Upload file if present (AFTER duplicate check)
+      // Document dans le dossier de l'utilisateur (seul dossier autorisé en écriture).
       if (permitRecord.permitFile) {
         const fileExt = permitRecord.permitFile.name.split('.').pop();
-        const fileName = `permit_${Date.now()}_${crypto.randomUUID()}.${fileExt}`;
-        uploadedFilePath = `permit-documents/${user.id}/${fileName}`;
-        
-        const { error: uploadError } = await supabase.storage
-          .from('cadastral-documents')
-          .upload(uploadedFilePath, permitRecord.permitFile);
-        
-        if (uploadError) throw uploadError;
-        
-        documentUrl = await createLongLivedSignedUrl(uploadedFilePath);
-      }
-
-      // Use memoized calculatedStatus (already in scope)
-
-      // Standardize permit_type: always use 'construction' or 'regularization' (EN)
-      const standardizedPermitType = permitType === 'regularisation' ? 'regularization' : 'construction';
-
-      // Step 3: Insert contribution with camelCase JSON keys (matching PermitCard expectations)
-      const { error } = await supabase
-        .from('cadastral_contributions')
-        .insert({
-          parcel_number: parcelNumber,
-          original_parcel_id: parcelId,
-          user_id: user.id,
-          contribution_type: 'update',
-          status: 'pending',
-          building_permits: [{
-            permitNumber: normalizedPermitNumber,
-            issueDate: permitRecord.issueDate,
-            issuingService: permitRecord.issuingService,
-            validityMonths: parseInt(permitRecord.validityPeriod) || 36,
-            administrativeStatus: calculatedStatus,
-            permitType: standardizedPermitType,
-            documentUrl: documentUrl,
-            isCurrent: true
-          }]
-        });
-
-      if (error) {
-        // Cleanup orphaned file if DB insert failed
-        if (uploadedFilePath) {
-          await supabase.storage.from('cadastral-documents').remove([uploadedFilePath]).catch(() => {});
+        const path = `${user.id}/permit-documents/permit_${Date.now()}_${crypto.randomUUID()}.${fileExt}`;
+        const { error: uploadError } = await supabase.storage.from('cadastral-documents').upload(path, permitRecord.permitFile);
+        if (uploadError) {
+          toast.error("Échec de l'envoi du document. Aucune autorisation n'a été soumise.");
+          return;
         }
-        throw error;
+        uploadedFilePath = path;
       }
 
-      // Step 4: Send notification (non-blocking, fire-and-forget)
-      supabase.from('notifications').insert({
-        user_id: user.id,
-        title: `${title} soumise`,
-        message: `Votre ${title.toLowerCase()} pour la parcelle ${parcelNumber} a été soumise avec succès.`,
-      }).then(({ error: notifErr }) => {
-        if (notifErr) console.warn('Notification insert failed (non-blocking):', notifErr);
+      // Le serveur valide, contrôle les doublons, calcule le statut et notifie.
+      const { error } = await (supabase.rpc as any)('submit_building_permit_contribution', {
+        p_parcel_number: parcelNumber,
+        p_permit_type: permitType === 'regularisation' ? 'regularization' : 'construction',
+        p_permit_number: normalizePermitNumber(permitRecord.permitNumber),
+        p_issue_date: permitRecord.issueDate,
+        p_validity_months: validityMonths,
+        p_issuing_service: permitRecord.issuingService,
+        p_document_path: uploadedFilePath,
       });
-
+      if (error) {
+        if (uploadedFilePath) await supabase.storage.from('cadastral-documents').remove([uploadedFilePath]);
+        toast.error(error.message || "Erreur lors de l'enregistrement");
+        return;
+      }
       setStep('confirmation');
-      toast.success(`${title} enregistrée avec succès`);
-    } catch (error: any) {
-      console.error('Error:', error);
-      toast.error('Erreur lors de l\'enregistrement');
+      toast.success(`${title} soumise pour validation`);
     } finally {
       setLoading(false);
     }
@@ -269,13 +182,13 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
       validityPeriod: '36',
       permitFile: null
     });
-    onOpenChange(false);
+    onClose();
   };
 
   const handleClose = () => {
     if (hasUnsavedChanges()) {
-      const confirmed = window.confirm('Vous avez des modifications non enregistrées. Voulez-vous vraiment fermer ?');
-      if (!confirmed) return;
+      setConfirmClose(true);
+      return;
     }
     resetAndClose();
   };
@@ -283,8 +196,7 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
   // Inline validation hint for permit number
   const permitNumberHint = useMemo(() => {
     if (!permitRecord.permitNumber) return null;
-    const normalized = normalizePermitNumber(permitRecord.permitNumber);
-    if (PERMIT_NUMBER_REGEX.test(normalized)) return null;
+    if (isValidPermitNumber(permitRecord.permitNumber)) return null;
     return 'Format attendu: XX-YYYY-NNN (ex: PC-2024-001)';
   }, [permitRecord.permitNumber]);
 
@@ -335,15 +247,14 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
               <SelectValue placeholder="Durée" />
             </SelectTrigger>
             <SelectContent className="rounded-xl bg-popover">
-              <SelectItem value="6">6 mois</SelectItem>
-              <SelectItem value="12">12 mois</SelectItem>
-              <SelectItem value="24">24 mois</SelectItem>
-              <SelectItem value="36">36 mois</SelectItem>
+              {PERMIT_VALIDITY_OPTIONS.map((m) => (
+                <SelectItem key={m} value={String(m)}>{m} mois</SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
         <div className="space-y-1">
-          <Label className="text-xs font-medium">Statut (auto)</Label>
+          <Label className="text-xs font-medium">Statut (estimé)</Label>
           <div className={`h-9 flex items-center px-3 rounded-xl border text-sm font-medium ${
             calculatedStatus === 'Valide' ? 'bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800' :
             calculatedStatus === 'Expiré' ? 'bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800' :
@@ -438,13 +349,8 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
               ['Date délivrance', permitRecord.issueDate],
               ['Service émetteur', permitRecord.issuingService],
               ['Validité', `${permitRecord.validityPeriod} mois`],
-              ['Statut', calculatedStatus],
-              ['Date d\'expiration', (() => {
-                if (!permitRecord.issueDate || !permitRecord.validityPeriod) return 'N/A';
-                const d = new Date(permitRecord.issueDate);
-                d.setMonth(d.getMonth() + (parseInt(permitRecord.validityPeriod) || 12));
-                return d.toLocaleDateString('fr-FR');
-              })()],
+              ['Statut (estimé)', calculatedStatus],
+              ['Date d\'expiration', expiryLabel],
               ...(permitRecord.permitFile ? [['Document joint', permitRecord.permitFile.name]] : []),
             ].map(([label, value], i, arr) => (
               <div key={label as string} className={`flex justify-between py-1.5 ${i < arr.length - 1 ? 'border-b border-border/30' : ''}`}>
@@ -488,9 +394,9 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
         <CheckCircle2 className="h-7 w-7 text-green-600" />
       </div>
       <div>
-        <h3 className="text-base font-semibold">{title} enregistrée</h3>
+        <h3 className="text-base font-semibold">{title} soumise</h3>
         <p className="text-xs text-muted-foreground mt-1">
-          Votre {title.toLowerCase()} pour la parcelle {parcelNumber} a été soumise avec succès.
+          Votre {title.toLowerCase()} pour la parcelle {parcelNumber} a été soumise. Elle sera ajoutée à la parcelle après validation par l'administration.
         </p>
         <div className={`mt-2 p-2.5 rounded-xl border ${isConstruction ? 'bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800' : 'bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800'}`}>
           <p className={`text-[10px] ${isConstruction ? 'text-blue-700 dark:text-blue-300' : 'text-green-700 dark:text-green-300'}`}>
@@ -512,37 +418,22 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
     </>
   );
 
-  // Embedded mode: render directly without Dialog wrapper
-  if (embedded) {
-    return (
-      <div className="px-4 pb-4">
-        {formContent}
-      </div>
-    );
-  }
-
-  // Standalone mode with Dialog
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-[380px] rounded-2xl p-0 gap-0 max-h-[85vh] overflow-hidden flex flex-col">
-        <DialogHeader className="p-4 pb-2 border-b flex-shrink-0">
-          <DialogTitle className="flex items-center gap-2 text-base">
-            <IconComponent className={`h-4 w-4 ${iconColor}`} />
-            {title}
-          </DialogTitle>
-          <DialogDescription className="text-xs">
-            {isConstruction 
-              ? 'Enregistrez une nouvelle autorisation de bâtir'
-              : 'Régularisez une construction existante'}
-          </DialogDescription>
-        </DialogHeader>
-        
-        <div className="overflow-y-auto flex-1 min-h-0 p-4">
-          {formContent}
-        </div>
-      </DialogContent>
-      {open && <WhatsAppFloatingButton message="Bonjour, j'ai besoin d'aide avec le formulaire d'autorisation." />}
-    </Dialog>
+    <div className="px-4 pb-4">
+      {formContent}
+      <AlertDialog open={confirmClose} onOpenChange={setConfirmClose}>
+        <AlertDialogContent className="rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Fermer le formulaire ?</AlertDialogTitle>
+            <AlertDialogDescription>Les informations saisies seront perdues.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="rounded-xl">Continuer la saisie</AlertDialogCancel>
+            <AlertDialogAction className="rounded-xl" onClick={() => { setConfirmClose(false); resetAndClose(); }}>Fermer</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
   );
 };
 

@@ -369,6 +369,7 @@ export const useCadastralContribution = () => {
       permit_type: p.permitType,
       permit_number: p.permitNumber,
       issue_date: p.issueDate,
+      issuing_service: (p as { issuingService?: string }).issuingService || null,
       validity_period_months: p.validityMonths,
       administrative_status: p.administrativeStatus,
       permit_document_url: p.attachmentUrl || null,
