@@ -6,8 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { MapPin, BarChart3, Info, Database, Loader2, Maximize, Minimize, Clock, RotateCcw } from 'lucide-react';
+import { BarChart3, Loader2, Maximize, Minimize, Clock } from 'lucide-react';
+
 import ShareButton from '@/components/shared/ShareButton';
 import { toast } from 'sonner';
 import { normalizeTitleType } from '@/utils/titleTypeNormalizer';
@@ -73,8 +73,6 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
 
   const [hoveredProvince, setHoveredProvince] = useState<string | null>(null);
   const [activeMobilePanel, setActiveMobilePanel] = useState<'map' | 'analytics'>('map');
-
-  const [forcedTab, setForcedTab] = useState<string | null>(null);
   const mapCardRef = React.useRef<HTMLDivElement>(null);
   const analyticsColRef = React.useRef<HTMLDivElement>(null);
   const analyticsTitleRef = React.useRef<HTMLSpanElement>(null);
@@ -312,16 +310,6 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
     }
   }, [projection, projectionData, provincesData]);
 
-  /** Reset to default RDC map view */
-  const resetToDefaultMap = useCallback(() => {
-    setForcedTab('rdc-map');
-    setActiveAnalyticsTab('rdc-map');
-  }, []);
-
-  /** Callback once the forced tab has been applied — clears it to avoid re-trigger loops */
-  const handleForcedTabApplied = useCallback(() => {
-    setForcedTab(null);
-  }, []);
 
   /** Generic per-entity color factory: re-uses the active profile's metric on a slice
    *  filtered by the chosen geographic level (commune | quartier | territoire). */
@@ -644,19 +632,6 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                   )}
 
                   <div className="absolute bottom-5 right-2 z-10 flex gap-1">
-                    {/* Bouton réinitialiser à la vue par défaut — visible uniquement si profil métier actif */}
-                    {activeProfile && (
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="h-11 w-11 lg:h-8 lg:w-8 rounded-full bg-background/80 backdrop-blur-sm border-border/50 shadow-sm"
-                        onClick={resetToDefaultMap}
-                        title="Revenir à la vue cartographique par défaut"
-                        aria-label="Revenir à la vue cartographique par défaut"
-                      >
-                        <RotateCcw className="h-3 w-3 text-muted-foreground" />
-                      </Button>
-                    )}
                     {/* Bouton partager (image carte) — configurable */}
                     {isChartVisible('map-copy-button') && (
                       <ShareButton
@@ -674,35 +649,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                     >
                       {isFullscreen ? <Minimize className="h-3 w-3 text-muted-foreground" /> : <Maximize className="h-3 w-3 text-muted-foreground" />}
                     </Button>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button variant="outline" size="icon" className="h-11 w-11 lg:h-8 lg:w-8 rounded-full bg-background/80 backdrop-blur-sm border-border/50 shadow-sm">
-                          <Info className="h-3 w-3 text-muted-foreground" />
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent side="top" align="end" className="w-64 p-2 text-[10px]">
-                        <div className="space-y-1.5">
-                          <div className="flex items-center gap-1">
-                            <Info className="h-3 w-3 text-blue-600 dark:text-blue-400 flex-shrink-0" />
-                            <span className="text-blue-700 dark:text-blue-300">
-                              Données calculées depuis Supabase{activeProfile?.dataSource ? ` — table ${activeProfile.dataSource}` : ''}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <MapPin className="h-3 w-3 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
-                            <span className="text-emerald-700 dark:text-emerald-300">
-                              Couleur = {activeProfile ? activeProfile.legendTitle.toLowerCase() : 'densité de parcelles'}
-                            </span>
-                          </div>
-                          {activeProfile && adaptiveTiers && (
-                            <div className="flex items-center gap-1">
-                              <BarChart3 className="h-3 w-3 text-violet-600 dark:text-violet-400 flex-shrink-0" />
-                              <span className="text-violet-700 dark:text-violet-300">Paliers calculés par quartiles (Q1/Q2/Q3)</span>
-                            </div>
-                          )}
-                        </div>
-                      </PopoverContent>
-                    </Popover>
+
                   </div>
                 </CardContent>
               </Card>
@@ -773,8 +720,6 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                     selectedTerritoire={selectedTerritoire}
                     selectedSectionType={selectedSectionType}
                     initialTab={activeAnalyticsTab}
-                    forcedTab={forcedTab}
-                    onForcedTabApplied={handleForcedTabApplied}
                   />
                 </LandDistrictChangeContext.Provider>
                 </LandDistrictFilterContext.Provider>
