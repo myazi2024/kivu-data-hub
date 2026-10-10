@@ -78,44 +78,28 @@ export const detectConstructionType = (parcelData?: any): 'en_dur' | 'semi_dur' 
   }
 };
 
+export const IRL_TAX_TYPE = 'Impôt sur les revenus locatifs';
+
 /**
- * Check for duplicate tax submissions in cadastral_contributions.
- * #6 fix: Filters by contribution_type = 'update' to avoid false positives
- *         from 'new' contributions that happen to contain tax_history.
- * Multi-construction fix: Optionally scope by `constructionRef` so that the
- *         same taxType/year can be declared for two different buildings on
- *         the same parcel. When `constructionRef` is undefined, falls back to
- *         legacy behaviour (parcel-wide uniqueness).
+ * Insert a tax declaration contribution. The server trigger
+ * `enforce_tax_declaration_insert` recomputes amounts, rejects duplicates
+ * (parcel + tax type + year + construction) and creates the notification.
+ * Returns the server-stored tax entry so the UI shows the authoritative amount.
  */
-export const checkDuplicateTaxSubmission = async (
+export const insertTaxContribution = async (
   supabase: any,
-  parcelNumber: string,
-  userId: string,
-  taxType: string,
-  taxYear: number,
-  constructionRef?: string,
-): Promise<boolean> => {
-  const { data } = await supabase
+  row: Record<string, unknown>,
+): Promise<{ entry: any | null; error: string | null }> => {
+  const { data, error } = await supabase
     .from('cadastral_contributions')
-    .select('id, tax_history')
-    .eq('parcel_number', parcelNumber)
-    .eq('user_id', userId)
-    .eq('contribution_type', 'update') // #6: Only check 'update' type contributions
-    .neq('status', 'rejected')
-    .neq('status', 'returned');
-
-  if (!data || data.length === 0) return false;
-
-  return data.some((c: any) => {
-    const history = c.tax_history as any[];
-    return history?.some((h: any) => {
-      if (h.tax_type !== taxType) return false;
-      if (Number(h.tax_year) !== taxYear) return false;
-      if (constructionRef !== undefined) {
-        const existingRef = h.construction_ref ?? h.constructionRef ?? 'main';
-        return existingRef === constructionRef;
-      }
-      return true;
-    });
-  });
+    .insert(row)
+    .select('tax_history')
+    .single();
+  if (error) {
+    const msg = String(error.message || '');
+    if (error.code === '23505' || msg.includes('existe déjà')) return { entry: null, error: msg };
+    return { entry: null, error: 'Erreur lors de la soumission de la déclaration' };
+  }
+  const history = (data?.tax_history as any[]) || [];
+  return { entry: history[0] ?? null, error: null };
 };
