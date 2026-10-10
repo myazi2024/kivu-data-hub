@@ -716,7 +716,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
             </div>
 
             {/* Données géographiques — scoped stats */}
-            <div className={`${activeMobilePanel === 'analytics' ? 'hidden lg:block' : selectedProvince ? 'h-1/4' : 'hidden lg:block'} lg:h-auto lg:flex-[1] min-h-0 overflow-hidden transition-all duration-300 w-full`}>
+            <div className={`${selectedProvince ? (activeMobilePanel === 'analytics' ? 'hidden lg:block' : 'h-1/4') : 'hidden'} lg:h-auto lg:flex-[1] min-h-0 overflow-hidden transition-all duration-300 w-full`}>
               <Card className="analytics-panel border-0 h-full flex flex-col overflow-hidden">
                 <ScrollArea className="flex-1">
                   {selectedProvince && scopedStats ? (
