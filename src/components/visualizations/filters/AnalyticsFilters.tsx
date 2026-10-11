@@ -10,7 +10,7 @@
  */
 import React, { useCallback, useContext, useEffect, useMemo, useRef } from 'react';
 import {
-  AnalyticsFilter, defaultFilter, extractUnique, getAvailableYears,
+  AnalyticsFilter, defaultFilter, getAvailableYears,
 } from '@/utils/analyticsHelpers';
 import {
   ProvinceFilterContext, MapProvinceContext,
@@ -50,8 +50,8 @@ interface Props {
 
 export const AnalyticsFilters: React.FC<Props> = ({
   data, filter, onChange, onVilleChange, onCommuneChange,
-  dateField = 'created_at', statusField,
-  hideStatus = false, hideTime = false, hideLocation = false,
+  dateField = 'created_at',
+  hideTime = false, hideLocation = false,
 }) => {
   // Map ↔ filters bidirectional bridges
   const provinceFilterCallback = useContext(ProvinceFilterContext);
@@ -131,19 +131,12 @@ export const AnalyticsFilters: React.FC<Props> = ({
 
   const cascade = useAnalyticsCascade({ data, filter });
 
-  const detectedStatusField = statusField || (data.length > 0 && data[0]?.current_status !== undefined ? 'current_status' : 'status');
-  const statusOptions = useMemo(
-    () => (hideStatus ? [] : extractUnique(data, detectedStatusField)),
-    [data, detectedStatusField, hideStatus],
-  );
-
   const hasActiveFilters =
     filter.year !== defaultFilter.year ||
     !!filter.semester || !!filter.quarter || !!filter.month || !!filter.week ||
     filter.sectionType !== 'all' || !!filter.landDistrict ||
     !!filter.province || !!filter.ville || !!filter.commune || !!filter.quartier || !!filter.avenue ||
-    !!filter.territoire || !!filter.collectivite || !!filter.groupement || !!filter.villageFilter ||
-    !!filter.status;
+    !!filter.territoire || !!filter.collectivite || !!filter.groupement || !!filter.villageFilter;
 
   const reset = useCallback(() => {
     onChange({ ...defaultFilter });
@@ -161,8 +154,6 @@ export const AnalyticsFilters: React.FC<Props> = ({
           filter={filter}
           onChange={onChange}
           years={years}
-          hideStatus={hideStatus}
-          statusOptions={statusOptions}
           hasActiveFilters={hasActiveFilters}
           onReset={reset}
         />

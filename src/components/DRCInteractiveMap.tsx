@@ -407,6 +407,11 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
           isDragging={isDragging}
           isMobile={isMobile}
           dragProgress={dragProgress}
+          canShare={isChartVisible('map-copy-button')}
+          getMapBlob={getMapBlob}
+          shareTitle={`Carte RDC — ${activeProfile?.tabKey || 'vue par défaut'}`}
+          isFullscreen={isFullscreen}
+          onToggleFullscreen={toggleFullscreen}
         />
 
         {/* Desktop: grille 2 colonnes | Mobile: track horizontal 200% piloté par CSS var pour 60fps */}
@@ -631,7 +636,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
                     />
                   )}
 
-                  <div className="absolute bottom-5 right-2 z-10 flex gap-1">
+                  <div className="hidden lg:flex absolute bottom-5 right-2 z-10 gap-1">
                     {/* Bouton partager (image carte) — configurable */}
                     {isChartVisible('map-copy-button') && (
                       <ShareButton
