@@ -1,279 +1,131 @@
 import React, { useMemo, memo } from 'react';
 import { AnalyticsFilters } from '../filters/AnalyticsFilters';
 import { LandAnalyticsData } from '@/hooks/useLandDataAnalytics';
-import { Home, Coins, TrendingUp, Tag, Building2, Calendar, Megaphone, Scale, MapPin, ArrowUpFromLine } from 'lucide-react';
+import { MapPin, Coins, Scale, Building2, ShieldCheck, Calendar, TrendingUp, Tag } from 'lucide-react';
 import { pct } from '@/utils/analyticsConstants';
 import { KpiGrid } from '../shared/KpiGrid';
 import { ChartCard, FilterLabelContext } from '../shared/ChartCard';
+import { ScatterCard, ComboBarCard, RankingTableCard } from '../shared/MarketChartCards';
 import { BlockUnscopedRecordsProvider } from '../shared/BlockUnscopedRecordsContext';
-import { GeoCharts } from '../shared/GeoCharts';
 import { generateInsight } from '@/utils/chartInsights';
-import { trendByMonth, averageBy, recordBuildingHeightM } from '@/utils/analyticsHelpers';
-import { unitRentUsd } from '@/utils/analyticsTabRules';
 import { useBlockFilter } from '@/hooks/useBlockFilter';
+import {
+  salePrice, monthlyRent, rentalYield, parcelArea, builtArea, hasBuildingPermit, isBuilt, locationOf,
+  mean, median, avgByGroup, priceAndYieldByLocation, marketValueByCategory, countByCategory,
+  saleRentByKey, saleRentByClass, scatterPoints, avgByYear, countByClass, topInvestments, topProperties,
+  valuationStatus, permitSplit, AREA_CLASSES, areaClass, HEIGHT_CLASSES, heightClass,
+  CAPACITY_CLASSES, capacityClass, AGE_CLASSES, ageClass, CONSTRUCTION_STATUS_LABEL, RES_COM_LABEL,
+} from '@/utils/rentalMarketAnalytics';
 
 interface Props { data: LandAnalyticsData; }
 
 const TAB_KEY = 'rental-market';
-
-const toArray = (v: any): any[] => {
-  if (!v) return [];
-  if (Array.isArray(v)) return v;
-  if (Array.isArray(v.units)) return v.units;
-  if (typeof v === 'object') return [v];
-  return [];
-};
-
-/** Bucket a numeric value into labelled ranges */
-function bucketize(values: number[], buckets: { name: string; min: number; max: number }[]) {
-  const counts = new Array(buckets.length).fill(0);
-  values.forEach(v => {
-    for (let i = 0; i < buckets.length; i++) {
-      if (v >= buckets[i].min && v < buckets[i].max) { counts[i]++; break; }
-    }
-  });
-  return buckets.map((b, i) => ({ name: b.name, value: counts[i] })).filter(b => b.value > 0);
-}
-
-const RENT_BUCKETS = [
-  { name: '< 100 $', min: 0, max: 100 },
-  { name: '100–299 $', min: 100, max: 300 },
-  { name: '300–599 $', min: 300, max: 600 },
-  { name: '600–999 $', min: 600, max: 1000 },
-  { name: '1 000–2 499 $', min: 1000, max: 2500 },
-  { name: '≥ 2 500 $', min: 2500, max: Infinity },
-];
-
-const PRICE_BUCKETS = [
-  { name: '< 25 k$', min: 0, max: 25000 },
-  { name: '25–49 k$', min: 25000, max: 50000 },
-  { name: '50–99 k$', min: 50000, max: 100000 },
-  { name: '100–249 k$', min: 100000, max: 250000 },
-  { name: '250–499 k$', min: 250000, max: 500000 },
-  { name: '≥ 500 k$', min: 500000, max: Infinity },
-];
+const usd = (n: number) => (n ? `${Math.round(n).toLocaleString('fr-FR')} $` : '—');
+const kusd = (n: number) => (n ? (n >= 1000 ? `${Math.round(n / 1000).toLocaleString('fr-FR')} k$` : `${Math.round(n)} $`) : '—');
+const SALE_RENT = [{ dataKey: 'vente', name: 'Vente moy. ($)', colorIndex: 0 }, { dataKey: 'location', name: 'Loyer moy. ($/mois)', colorIndex: 3 }];
+const SALE_ONLY = [{ dataKey: 'vente', name: 'Vente moy. ($)', colorIndex: 0 }];
 
 export const RentalMarketBlock: React.FC<Props> = memo(({ data }) => {
-  const { filter, setFilter, filterLabel, filtered, filteredUnscoped, filterConfig, v, ct, cx, ty, ord } =
+  const { filter, setFilter, filterLabel, filtered, filteredUnscoped, filterConfig, v, ct, ty, ord } =
     useBlockFilter(TAB_KEY, data.contributions);
 
-  const rented = useMemo(() => filtered.filter((r: any) => r.is_rented === true), [filtered]);
-  const notRented = useMemo(() => filtered.filter((r: any) => r.is_rented === false), [filtered]);
-
-  /** Monthly rents in USD: global value for single-unit, per-unit values for multi-unit */
-  const rentValues = useMemo(() => {
-    const out: number[] = [];
-    filtered.forEach((r: any) => {
-      if (r.is_rented !== true) return;
-      const units = toArray(r.rental_units);
-      if (units.length > 0) {
-        units.forEach((u: any) => {
-          const amount = unitRentUsd(u);
-          if (amount > 0) out.push(amount);
-        });
-        return;
-      }
-      const amount = Number(r.monthly_rent_usd || 0);
-      if (amount > 0) out.push(amount);
-    });
-    return out;
+  const m = useMemo(() => {
+    const sales = filtered.map(salePrice).filter(Boolean) as number[];
+    const rents = filtered.map(monthlyRent).filter(Boolean) as number[];
+    const yields = filtered.map(rentalYield).filter(Boolean) as number[];
+    const built = filtered.filter(isBuilt);
+    const withPermit = built.filter(hasBuildingPermit).length;
+    return {
+      sales, rents, yields, built, withPermit,
+      avgArea: mean(filtered.map(parcelArea).filter(Boolean) as number[]),
+      avgBuilt: mean(filtered.map(builtArea).filter(Boolean) as number[]),
+      saleByLoc: avgByGroup(filtered, locationOf, salePrice),
+      rentByLoc: avgByGroup(filtered, locationOf, monthlyRent),
+      combo: priceAndYieldByLocation(filtered),
+      byCategory: saleRentByKey(filtered, r => r.property_category || null),
+      valueByCat: marketValueByCategory(filtered),
+      shareByCat: countByCategory(filtered),
+      resCom: saleRentByKey(filtered, r => RES_COM_LABEL[r.construction_type] || null),
+      scAreaSale: scatterPoints(filtered, parcelArea, salePrice),
+      scAreaRent: scatterPoints(filtered, parcelArea, monthlyRent),
+      scBuiltSale: scatterPoints(filtered, builtArea, salePrice),
+      scBuiltRent: scatterPoints(filtered, builtArea, monthlyRent),
+      scBuiltCap: scatterPoints(filtered, builtArea, salePrice, r => Number(r.hosting_capacity) || null),
+      byAreaClass: saleRentByClass(filtered, AREA_CLASSES, areaClass),
+      byHeight: saleRentByClass(filtered, HEIGHT_CLASSES, heightClass),
+      byCapacity: saleRentByClass(filtered, CAPACITY_CLASSES, capacityClass),
+      saleByYear: avgByYear(filtered, salePrice),
+      rentByYear: avgByYear(filtered, monthlyRent),
+      byStatus: saleRentByKey(filtered, r => CONSTRUCTION_STATUS_LABEL[r.construction_status] || null),
+      byAge: countByClass(filtered, AGE_CLASSES, r => ageClass(r)),
+      byPermit: saleRentByKey(built, r => (hasBuildingPermit(r) ? 'Avec autorisation' : 'Sans autorisation')),
+      permitSplit: permitSplit(filtered),
+      yieldByCat: avgByGroup(filtered, r => r.property_category || '', rentalYield),
+      investments: topInvestments(filtered),
+      topSale: topProperties(filtered, salePrice),
+      topRent: topProperties(filtered, monthlyRent),
+      valuation: valuationStatus(filtered),
+    };
   }, [filtered]);
-
-  const avgRent = useMemo(
-    () => (rentValues.length ? rentValues.reduce((s, n) => s + n, 0) / rentValues.length : 0),
-    [rentValues],
-  );
-
-  const rentalStatusData = useMemo(() => ([
-    ...(rented.length ? [{ name: 'En location', value: rented.length }] : []),
-    ...(notRented.length ? [{ name: 'Pas en location', value: notRented.length }] : []),
-  ]), [rented, notRented]);
-
-  const rentalModeData = useMemo(() => {
-    const map = new Map<string, number>();
-    rented.forEach((r: any) => {
-      const mode = r.rental_configuration === 'multi'
-        ? 'Divisé en plusieurs locaux'
-        : r.rental_configuration === 'single'
-          ? 'Un seul local'
-          : 'Non précisé';
-      map.set(mode, (map.get(mode) || 0) + 1);
-    });
-    return Array.from(map.entries()).map(([name, value]) => ({ name, value }));
-  }, [rented]);
-
-  const rentDistribution = useMemo(() => bucketize(rentValues, RENT_BUCKETS), [rentValues]);
-
-  /** Total monthly rent declared for one record (global amount or sum of units) */
-  const recordRentUsd = (r: any): number | null => {
-    if (r?.is_rented !== true) return null;
-    const units = toArray(r.rental_units);
-    if (units.length > 0) {
-      const sum = units.reduce((acc: number, u: any) => acc + unitRentUsd(u), 0);
-      return sum > 0 ? sum : null;
-    }
-    const amount = Number(r.monthly_rent_usd || 0);
-    return amount > 0 ? amount : null;
-  };
-
-  const avgRentByCommune = useMemo(() => averageBy(rented, 'commune', recordRentUsd), [rented]);
-  const avgRentByQuartier = useMemo(() => averageBy(rented, 'quartier', recordRentUsd), [rented]);
-  const avgHeightByCommune = useMemo(() => averageBy(filtered, 'commune', recordBuildingHeightM), [filtered]);
-  const avgHeightByQuartier = useMemo(() => averageBy(filtered, 'quartier', recordBuildingHeightM), [filtered]);
-
-  const coverage = (rows: { count: number }[]) =>
-    `${rows.reduce((s, r) => s + r.count, 0)} bien(s) pris en compte.`;
-
-  const rentByCategory = useMemo(() => {
-    const sums = new Map<string, { total: number; n: number }>();
-    filtered.forEach((r: any) => {
-      if (r.is_rented !== true) return;
-      const cat = r.property_category || 'Non précisé';
-      const units = toArray(r.rental_units);
-      const amounts = units.length
-        ? units.map(unitRentUsd).filter((n: number) => n > 0)
-        : [Number(r.monthly_rent_usd || 0)].filter(n => n > 0);
-      amounts.forEach(a => {
-        const cur = sums.get(cat) || { total: 0, n: 0 };
-        sums.set(cat, { total: cur.total + a, n: cur.n + 1 });
-      });
-    });
-    return Array.from(sums.entries())
-      .map(([name, s]) => ({ name, value: Math.round(s.total / s.n) }))
-      .sort((a, b) => b.value - a.value);
-  }, [filtered]);
-
-  const rentalSeniority = useMemo(() => {
-    const buckets = [
-      { name: '< 1 an', min: 0, max: 1 },
-      { name: '1-3 ans', min: 1, max: 3 },
-      { name: '3-5 ans', min: 3, max: 5 },
-      { name: '5-10 ans', min: 5, max: 10 },
-      { name: '> 10 ans', min: 10, max: Infinity },
-    ];
-    const now = Date.now();
-    const years: number[] = [];
-    filtered.forEach((r: any) => {
-      if (!r.rental_start_date) return;
-      const t = new Date(r.rental_start_date).getTime();
-      if (isNaN(t)) return;
-      const y = (now - t) / (1000 * 60 * 60 * 24 * 365.25);
-      if (y >= 0) years.push(y);
-    });
-    return bucketize(years, buckets);
-  }, [filtered]);
-
-  const unitsCount = useMemo(
-    () => filtered.reduce((s: number, r: any) => s + (toArray(r.rental_units).length || (r.rental_units_count || 0)), 0),
-    [filtered],
-  );
-
-  const wouldSell = useMemo(() => filtered.filter((r: any) => r.would_sell_if_offered === true), [filtered]);
-
-  const sellIntentData = useMemo(() => {
-    const yes = wouldSell.length;
-    const no = filtered.filter((r: any) => r.would_sell_if_offered === false).length;
-    return [
-      ...(yes ? [{ name: 'Disposé à vendre', value: yes }] : []),
-      ...(no ? [{ name: 'Non vendeur', value: no }] : []),
-    ];
-  }, [filtered, wouldSell]);
-
-  const resaleValues = useMemo(
-    () => filtered.map((r: any) => Number(r.resale_price_usd || 0)).filter((n: number) => n > 0),
-    [filtered],
-  );
-  const avgResale = useMemo(
-    () => (resaleValues.length ? resaleValues.reduce((s, n) => s + n, 0) / resaleValues.length : 0),
-    [resaleValues],
-  );
-  const resaleDistribution = useMemo(() => bucketize(resaleValues, PRICE_BUCKETS), [resaleValues]);
-
-  const currencyData = useMemo(() => {
-    const map = new Map<string, number>();
-    filtered.forEach((r: any) => {
-      if (!r.resale_price_currency) return;
-      const c = String(r.resale_price_currency).toUpperCase();
-      map.set(c, (map.get(c) || 0) + 1);
-    });
-    return Array.from(map.entries()).map(([name, value]) => ({ name, value }));
-  }, [filtered]);
-
-  const appraised = useMemo(() => filtered.filter((r: any) => r.has_recent_appraisal === true), [filtered]);
-  const appraisalData = useMemo(() => {
-    const no = filtered.filter((r: any) => r.has_recent_appraisal === false).length;
-    return [
-      ...(appraised.length ? [{ name: 'Expertise récente', value: appraised.length }] : []),
-      ...(no ? [{ name: 'Aucune expertise', value: no }] : []),
-    ];
-  }, [filtered, appraised]);
-
-  const appraisedDistribution = useMemo(
-    () => bucketize(filtered.map((r: any) => Number(r.appraised_value_usd || 0)).filter((n: number) => n > 0), PRICE_BUCKETS),
-    [filtered],
-  );
-
-  const listingsData = useMemo(() => {
-    const rentalAds = filtered.reduce((s: number, r: any) => s + toArray(r.market_listings).length, 0);
-    const saleAds = filtered.filter((r: any) => toArray(r.sale_listing).length > 0).length;
-    return [
-      ...(rentalAds ? [{ name: 'Annonces locatives', value: rentalAds }] : []),
-      ...(saleAds ? [{ name: 'Annonces de vente', value: saleAds }] : []),
-    ];
-  }, [filtered]);
-
-  const trend = useMemo(
-    () => trendByMonth(filtered.filter((r: any) => r.is_rented === true || r.would_sell_if_offered === true)),
-    [filtered],
-  );
 
   const kpiItems = useMemo(() => [
-    { key: 'kpi-total', label: ct('kpi-total', 'Biens analysés'), value: filtered.length, cls: 'text-primary' },
-    { key: 'kpi-rented', label: ct('kpi-rented', 'En location'), value: rented.length, cls: 'text-emerald-600', tooltip: pct(rented.length, filtered.length) },
-    { key: 'kpi-rental-rate', label: ct('kpi-rental-rate', 'Taux de mise en location'), value: pct(rented.length, filtered.length), cls: 'text-blue-600' },
-    { key: 'kpi-avg-rent', label: ct('kpi-avg-rent', 'Loyer moyen'), value: avgRent ? `${Math.round(avgRent)} $` : '—', cls: 'text-violet-600', tooltip: 'Loyer mensuel moyen déclaré (USD)' },
-    { key: 'kpi-units', label: ct('kpi-units', 'Locaux déclarés'), value: unitsCount, cls: 'text-cyan-600' },
-    { key: 'kpi-sellers', label: ct('kpi-sellers', 'Disposés à vendre'), value: wouldSell.length, cls: 'text-amber-600', tooltip: pct(wouldSell.length, filtered.length) },
-    { key: 'kpi-avg-resale', label: ct('kpi-avg-resale', 'Prix de revente moyen'), value: avgResale ? `${Math.round(avgResale / 1000)} k$` : '—', cls: 'text-rose-600' },
-    { key: 'kpi-appraised', label: ct('kpi-appraised', 'Expertises récentes'), value: appraised.length, cls: 'text-teal-600', tooltip: pct(appraised.length, filtered.length) },
-  ].filter(k => v(k.key)), [filtered, rented, avgRent, unitsCount, wouldSell, avgResale, appraised, v, ct]);
+    { key: 'kpi-avg-sale', label: ct('kpi-avg-sale', 'Prix de vente moyen'), value: kusd(mean(m.sales)), cls: 'text-primary', tooltip: `${m.sales.length} bien(s) avec prix déclaré` },
+    { key: 'kpi-median-sale', label: ct('kpi-median-sale', 'Prix de vente médian'), value: kusd(median(m.sales)), cls: 'text-blue-600' },
+    { key: 'kpi-avg-rent', label: ct('kpi-avg-rent', 'Loyer moyen'), value: usd(mean(m.rents)), cls: 'text-violet-600', tooltip: `Loyer mensuel, ${m.rents.length} bien(s) loué(s)` },
+    { key: 'kpi-median-rent', label: ct('kpi-median-rent', 'Loyer médian'), value: usd(median(m.rents)), cls: 'text-fuchsia-600' },
+    { key: 'kpi-total', label: ct('kpi-total', 'Biens recensés'), value: filtered.length, cls: 'text-emerald-600' },
+    { key: 'kpi-avg-area', label: ct('kpi-avg-area', 'Surface moy. parcelle'), value: m.avgArea ? `${Math.round(m.avgArea).toLocaleString('fr-FR')} m²` : '—', cls: 'text-cyan-600' },
+    { key: 'kpi-avg-built', label: ct('kpi-avg-built', 'Surface moy. bâtie'), value: m.avgBuilt ? `${Math.round(m.avgBuilt).toLocaleString('fr-FR')} m²` : '—', cls: 'text-teal-600' },
+    { key: 'kpi-avg-yield', label: ct('kpi-avg-yield', 'Rendement locatif moyen'), value: m.yields.length ? `${mean(m.yields).toFixed(1)} %` : '—', cls: 'text-amber-600', tooltip: 'Loyer annuel / prix de vente' },
+    { key: 'kpi-permit', label: ct('kpi-permit', 'Avec autorisation de bâtir'), value: pct(m.withPermit, m.built.length), cls: 'text-rose-600', tooltip: `Sans autorisation : ${pct(m.built.length - m.withPermit, m.built.length)}` },
+  ].filter(k => v(k.key)), [m, filtered.length, v, ct]);
 
-  const chartDefs = useMemo(() => [
-    { key: 'rental-status', el: () => <ChartCard title={ct('rental-status', 'Mise en location')} icon={Home} data={rentalStatusData} type={ty('rental-status', 'pie')} colorIndex={2} hidden={rentalStatusData.length === 0}
-      insight={rented.length > 0 ? `${pct(rented.length, filtered.length)} des biens déclarés sont mis en location.` : 'Aucun bien en location déclaré.'} crossVariables={cx('rental-status')} rawRecords={filtered} groupField="is_rented" /> },
-    { key: 'rental-mode', el: () => <ChartCard title={ct('rental-mode', 'Mode locatif')} icon={Building2} data={rentalModeData} type={ty('rental-mode', 'donut')} colorIndex={3} hidden={rentalModeData.length === 0}
-      insight={generateInsight(rentalModeData, 'donut', 'les modes de mise en location')} crossVariables={cx('rental-mode')} rawRecords={rented} groupField="rental_configuration" /> },
-    { key: 'rent-distribution', el: () => <ChartCard title={ct('rent-distribution', 'Tranches de loyer mensuel')} icon={Coins} data={rentDistribution} type={ty('rent-distribution', 'bar-v')} colorIndex={4} hidden={rentDistribution.length === 0}
-      insight={generateInsight(rentDistribution, 'bar-v', 'les niveaux de loyer')} /> },
-    { key: 'rent-by-category', el: () => <ChartCard title={ct('rent-by-category', 'Loyer moyen par catégorie')} icon={Scale} data={rentByCategory} type={ty('rent-by-category', 'bar-h')} colorIndex={5} hidden={rentByCategory.length === 0}
-      insight={generateInsight(rentByCategory, 'bar-h', 'les loyers moyens par catégorie de bien')} /> },
-    { key: 'rental-seniority', el: () => <ChartCard title={ct('rental-seniority', 'Ancienneté de mise en location')} icon={Calendar} data={rentalSeniority} type={ty('rental-seniority', 'bar-v')} colorIndex={6} hidden={rentalSeniority.length === 0}
-      insight={generateInsight(rentalSeniority, 'bar-v', "l'ancienneté des mises en location")} /> },
-    { key: 'sell-intent', el: () => <ChartCard title={ct('sell-intent', 'Disposition à vendre')} icon={Tag} data={sellIntentData} type={ty('sell-intent', 'pie')} colorIndex={7} hidden={sellIntentData.length === 0}
-      insight={generateInsight(sellIntentData, 'pie', 'la disposition à vendre')} crossVariables={cx('sell-intent')} rawRecords={filtered} groupField="would_sell_if_offered" /> },
-    { key: 'resale-distribution', el: () => <ChartCard title={ct('resale-distribution', 'Tranches de prix de revente')} icon={Coins} data={resaleDistribution} type={ty('resale-distribution', 'bar-v')} colorIndex={8} hidden={resaleDistribution.length === 0}
-      insight={generateInsight(resaleDistribution, 'bar-v', 'les prix de revente souhaités')} /> },
-    { key: 'currency', el: () => <ChartCard title={ct('currency', 'Devise déclarée')} data={currencyData} type={ty('currency', 'donut')} colorIndex={1} hidden={currencyData.length === 0}
-      insight={generateInsight(currencyData, 'donut', 'les devises de valorisation')} crossVariables={cx('currency')} rawRecords={filtered} groupField="resale_price_currency" /> },
-    { key: 'appraisal', el: () => <ChartCard title={ct('appraisal', 'Expertise récente')} data={appraisalData} type={ty('appraisal', 'pie')} colorIndex={9} hidden={appraisalData.length === 0}
-      insight={generateInsight(appraisalData, 'pie', 'les expertises immobilières récentes')} crossVariables={cx('appraisal')} rawRecords={filtered} groupField="has_recent_appraisal" /> },
-    { key: 'appraised-value', el: () => <ChartCard title={ct('appraised-value', 'Tranches de valeur expertisée')} data={appraisedDistribution} type={ty('appraised-value', 'bar-v')} colorIndex={10} hidden={appraisedDistribution.length === 0}
-      insight={generateInsight(appraisedDistribution, 'bar-v', 'les valeurs expertisées')} /> },
-    { key: 'listings', el: () => <ChartCard title={ct('listings', 'Annonces publiées')} icon={Megaphone} data={listingsData} type={ty('listings', 'bar-h')} colorIndex={11} hidden={listingsData.length === 0}
-      insight={generateInsight(listingsData, 'bar-h', 'les annonces publiées')} /> },
-    { key: 'rent-by-commune', el: () => <ChartCard title={ct('rent-by-commune', 'Loyer moyen par commune')} icon={MapPin} data={avgRentByCommune} type={ty('rent-by-commune', 'bar-h')} colorIndex={4} labelWidth={110} hidden={avgRentByCommune.length === 0}
-      insight={`${generateInsight(avgRentByCommune, 'bar-h', 'le loyer mensuel moyen par commune (USD)')} ${coverage(avgRentByCommune)}`} /> },
-    { key: 'rent-by-quartier', el: () => <ChartCard title={ct('rent-by-quartier', 'Loyer moyen par quartier')} icon={MapPin} data={avgRentByQuartier} type={ty('rent-by-quartier', 'bar-h')} colorIndex={5} labelWidth={110} hidden={avgRentByQuartier.length === 0}
-      insight={`${generateInsight(avgRentByQuartier, 'bar-h', 'le loyer mensuel moyen par quartier (USD)')} ${coverage(avgRentByQuartier)}`} /> },
-    { key: 'height-by-commune', el: () => <ChartCard title={ct('height-by-commune', 'Hauteur moyenne par commune')} icon={ArrowUpFromLine} data={avgHeightByCommune} type={ty('height-by-commune', 'bar-h')} colorIndex={6} labelWidth={110} hidden={avgHeightByCommune.length === 0}
-      insight={`${generateInsight(avgHeightByCommune, 'bar-h', 'la hauteur moyenne des constructions par commune (m)')} ${coverage(avgHeightByCommune)}`} /> },
-    { key: 'height-by-quartier', el: () => <ChartCard title={ct('height-by-quartier', 'Hauteur moyenne par quartier')} icon={ArrowUpFromLine} data={avgHeightByQuartier} type={ty('height-by-quartier', 'bar-h')} colorIndex={7} labelWidth={110} hidden={avgHeightByQuartier.length === 0}
-      insight={`${generateInsight(avgHeightByQuartier, 'bar-h', 'la hauteur moyenne des constructions par quartier (m)')} ${coverage(avgHeightByQuartier)}`} /> },
-    { key: 'geo', el: () => <GeoCharts records={rented} /> },
-    { key: 'evolution', el: () => <ChartCard title={ct('evolution', 'Évolution des déclarations marchandes')} icon={TrendingUp} data={trend} type={ty('evolution', 'area')} colorIndex={0} colSpan={2} hidden={trend.length === 0}
-      insight={generateInsight(trend, 'area', 'les déclarations locatives et de vente')} /> },
-  ].filter(d => v(d.key)).sort((a, b) => ord(a.key) - ord(b.key)),
-  [filtered, rented, rentalStatusData, rentalModeData, rentDistribution, rentByCategory, rentalSeniority, sellIntentData, resaleDistribution, currencyData, appraisalData, appraisedDistribution, listingsData, avgRentByCommune, avgRentByQuartier, avgHeightByCommune, avgHeightByQuartier, trend, v, ct, cx, ty, ord]);
+  const chartDefs = useMemo(() => {
+    const bar = (key: string, title: string, d: { name: string; value: number }[], type: any, ci: number, what: string, icon?: any) =>
+      <ChartCard title={ct(key, title)} icon={icon} data={d} type={ty(key, type)} colorIndex={ci} labelWidth={110} hidden={d.length === 0}
+        insight={generateInsight(d, ty(key, type) as any, what)} />;
+    const combo = (key: string, title: string, d: any[], bars = SALE_RENT, what = '') =>
+      <ComboBarCard title={ct(key, title)} data={d} bars={bars} hidden={d.length === 0}
+        insight={what || `${d.length} groupe(s) comparé(s) ; prix de vente à gauche, loyer à droite.`} />;
+    const sc = (key: string, title: string, d: any[], x: string, y: string, ci: number, z?: string) =>
+      <ScatterCard title={ct(key, title)} data={d} xLabel={x} yLabel={y} zLabel={z} colorIndex={ci} hidden={d.length === 0}
+        insight={`${d.length} bien(s) représenté(s).`} />;
+    return [
+      { key: 'sale-by-location', el: () => bar('sale-by-location', 'Prix de vente moyen par localité (top 10)', m.saleByLoc, 'bar-h', 0, 'les prix de vente moyens par localité (USD)', MapPin) },
+      { key: 'rent-by-location', el: () => bar('rent-by-location', 'Loyer moyen par localité (top 10)', m.rentByLoc, 'bar-h', 3, 'les loyers mensuels moyens par localité (USD)', MapPin) },
+      { key: 'price-yield-location', el: () => <ComboBarCard title={ct('price-yield-location', 'Prix de vente et rendement par localité')} data={m.combo} bars={SALE_ONLY}
+          line={{ dataKey: 'rendement', name: 'Rendement (%)', colorIndex: 5 }} hidden={m.combo.length === 0} colSpan={2}
+          insight="Barres : prix de vente moyen ; courbe : rendement locatif moyen (%)." /> },
+      { key: 'sale-rent-by-category', el: () => combo('sale-rent-by-category', 'Vente vs location par catégorie', m.byCategory) },
+      { key: 'value-by-category', el: () => bar('value-by-category', 'Valeur du marché par catégorie', m.valueByCat, 'donut', 1, 'la valeur déclarée du marché par catégorie', Coins) },
+      { key: 'share-by-category', el: () => bar('share-by-category', 'Part de marché par catégorie', m.shareByCat, 'pie', 2, 'la part de chaque catégorie de construction', Building2) },
+      { key: 'sale-rent-by-type', el: () => combo('sale-rent-by-type', 'Vente vs location : résidentiel / commercial', m.resCom) },
+      { key: 'area-x-sale', el: () => sc('area-x-sale', 'Surface parcelle × prix de vente', m.scAreaSale, 'Surface (m²)', 'Prix ($)', 0) },
+      { key: 'area-x-rent', el: () => sc('area-x-rent', 'Surface parcelle × loyer', m.scAreaRent, 'Surface (m²)', 'Loyer ($/mois)', 3) },
+      { key: 'built-x-sale', el: () => sc('built-x-sale', 'Surface bâtie × prix de vente', m.scBuiltSale, 'Surface bâtie (m²)', 'Prix ($)', 1) },
+      { key: 'built-x-rent', el: () => sc('built-x-rent', 'Surface bâtie × loyer', m.scBuiltRent, 'Surface bâtie (m²)', 'Loyer ($/mois)', 4) },
+      { key: 'value-by-area-class', el: () => combo('value-by-area-class', 'Valeur selon la superficie', m.byAreaClass) },
+      { key: 'price-by-height', el: () => combo('price-by-height', 'Prix selon la hauteur de construction', m.byHeight) },
+      { key: 'price-by-capacity', el: () => combo('price-by-capacity', "Prix selon la capacité d'accueil", m.byCapacity) },
+      { key: 'built-capacity-price', el: () => sc('built-capacity-price', "Surface bâtie × capacité d'accueil × prix", m.scBuiltCap, 'Surface bâtie (m²)', 'Prix ($)', 6, 'capacité') },
+      { key: 'sale-by-year', el: () => bar('sale-by-year', 'Prix moyen selon l\'année de construction', m.saleByYear, 'area', 0, 'les prix de vente selon l\'année de construction', Calendar) },
+      { key: 'rent-by-year', el: () => bar('rent-by-year', 'Loyer moyen selon l\'année de construction', m.rentByYear, 'area', 3, 'les loyers selon l\'année de construction', Calendar) },
+      { key: 'sale-rent-by-status', el: () => combo('sale-rent-by-status', 'Vente vs location : achevée / en cours', m.byStatus) },
+      { key: 'age-distribution', el: () => bar('age-distribution', 'Biens par tranche d\'âge', m.byAge, 'bar-v', 7, 'l\'âge des constructions', Calendar) },
+      { key: 'value-by-permit', el: () => combo('value-by-permit', 'Valeur avec / sans autorisation de bâtir', m.byPermit) },
+      { key: 'permit-split', el: () => bar('permit-split', 'Constructions avec / sans autorisation', m.permitSplit, 'donut', 8, 'les autorisations de bâtir', ShieldCheck) },
+      { key: 'yield-by-category', el: () => bar('yield-by-category', 'Rendement locatif moyen par catégorie (%)', m.yieldByCat, 'bar-h', 5, 'le rendement locatif par catégorie (%)', TrendingUp) },
+      { key: 'top-investments', el: () => <RankingTableCard title={ct('top-investments', 'Top 10 investissements les plus rentables')} rows={m.investments} hidden={m.investments.length === 0} colSpan={2}
+          columns={[
+            { key: 'localisation', label: 'Localisation' }, { key: 'categorie', label: 'Catégorie' },
+            { key: 'prix', label: 'Prix moy.', align: 'right', format: usd }, { key: 'loyer', label: 'Loyer moy.', align: 'right', format: usd },
+            { key: 'rendement', label: 'Rendement', align: 'right', format: (n: number) => `${n} %` },
+          ]} insight="Moyennes par localité et catégorie ; rendement = loyer annuel / prix de vente." /> },
+      { key: 'top-sale', el: () => bar('top-sale', 'Top 10 biens les plus chers à la vente', m.topSale, 'bar-h', 0, 'les prix de vente les plus élevés (USD)', Tag) },
+      { key: 'top-rent', el: () => bar('top-rent', 'Top 10 biens les plus chers à la location', m.topRent, 'bar-h', 3, 'les loyers les plus élevés (USD/mois)', Tag) },
+      { key: 'valuation', el: () => bar('valuation', 'Biens surévalués / sous-évalués', m.valuation, 'donut', 9, 'le prix au m² comparé à la médiane locale de la même catégorie (±30 %, au moins 3 biens)', Scale) },
+    ].filter(d => v(d.key)).sort((a, b) => ord(a.key) - ord(b.key));
+  }, [m, v, ct, ty, ord]);
 
   return (
     <FilterLabelContext.Provider value={filterLabel}>
