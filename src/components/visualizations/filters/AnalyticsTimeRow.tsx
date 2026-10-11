@@ -8,7 +8,7 @@ import React, { useMemo } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Calendar, CheckCircle, X } from 'lucide-react';
+import { Calendar, X } from 'lucide-react';
 import { AnalyticsFilter } from '@/utils/analyticsHelpers';
 
 const MONTHS = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'];
@@ -17,8 +17,6 @@ interface Props {
   filter: AnalyticsFilter;
   onChange: (f: AnalyticsFilter) => void;
   years: number[];
-  hideStatus: boolean;
-  statusOptions: string[];
   hasActiveFilters: boolean;
   onReset: () => void;
 }
@@ -27,7 +25,7 @@ const selectCls = 'h-6 text-[10px] w-auto min-w-[70px]';
 const sep = <span className="text-[10px] text-muted-foreground">›</span>;
 
 export const AnalyticsTimeRow: React.FC<Props> = ({
-  filter, onChange, years, hideStatus, statusOptions, hasActiveFilters, onReset,
+  filter, onChange, years, hasActiveFilters, onReset,
 }) => {
   const semesterOptions = [1, 2];
   const quarterOptions = useMemo(() => {
@@ -155,25 +153,6 @@ export const AnalyticsTimeRow: React.FC<Props> = ({
               </Select>
             </>
           )}
-        </>
-      )}
-
-      {!hideStatus && statusOptions.length > 0 && (
-        <>
-          <div className="w-px h-4 bg-border/50" />
-          <Select
-            value={filter.status || '__all__'}
-            onValueChange={(v) => onChange({ ...filter, status: v === '__all__' ? undefined : v })}
-          >
-            <SelectTrigger className={selectCls}>
-              <CheckCircle className="h-2.5 w-2.5 mr-0.5" />
-              <SelectValue placeholder="Statut" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="__all__">Tous statuts</SelectItem>
-              {statusOptions.map((s) => (<SelectItem key={s} value={s}>{s}</SelectItem>))}
-            </SelectContent>
-          </Select>
         </>
       )}
 

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, memo, useMemo, Suspense } from 'react';
 import { useAppAppearance } from '@/hooks/useAppAppearance';
-import { FileText, Building, Search, Scissors, AlertTriangle, Loader2, Database, History, Award, Receipt, Landmark, DollarSign, Ruler, KeyRound } from 'lucide-react';
+import { FileText, Building, Search, Scissors, AlertTriangle, Loader2, Database, History, Award, Receipt, Landmark, DollarSign, Ruler, KeyRound, ChevronDown, ChevronUp } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { useLandDataAnalytics, LandAnalyticsData } from '@/hooks/useLandDataAnalytics';
 import { ProvinceData } from '@/types/province';
 import { useAnalyticsTabsConfig, useTabChartsConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
@@ -88,6 +89,7 @@ const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = ({
 }) => {
   const { visibleTabs, isLoading: tabsLoading } = useAnalyticsTabsConfig();
   const [activeTab, setActiveTab] = useState(initialTab || '');
+  const [mobileTabsCollapsed, setMobileTabsCollapsed] = useState(false);
 
   // Notify parent when active tab changes (used by DRC map to swap profile)
   useEffect(() => {
@@ -125,20 +127,65 @@ const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = ({
   }
 
   const BlockComponent = BLOCK_MAP[activeTab];
+  const activeTabConfig = visibleTabs.find((tab) => tab.key === activeTab);
+  const ActiveTabIcon = activeTabConfig ? ICON_MAP[activeTabConfig.key] : undefined;
 
   return (
-    <div className="flex flex-row lg:flex-col h-full w-full min-h-0 overflow-hidden">
+    <div className="flex flex-col h-full w-full min-h-0 overflow-hidden">
       {/* Tabs */}
-      <div className="w-20 sm:w-24 lg:w-full shrink-0 border-r lg:border-r-0 lg:border-b border-border/40 bg-background overflow-y-auto overflow-x-hidden lg:overflow-y-hidden lg:overflow-x-auto scrollbar-hide transition-all duration-300">
-        <div className="flex flex-col lg:flex-row lg:items-center gap-0.5 p-0.5 lg:w-max">
+      <div className="lg:hidden shrink-0 border-b border-border/40 bg-background">
+        <div className="flex h-11 items-center justify-between gap-2 px-2">
+          <div className="flex min-w-0 items-center gap-1.5 text-xs font-medium text-foreground">
+            {ActiveTabIcon && <ActiveTabIcon className="h-3.5 w-3.5 shrink-0 text-primary" />}
+            <span className="truncate">{activeTabConfig?.label || 'Analytics'}</span>
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-11 w-11 shrink-0"
+            onClick={() => setMobileTabsCollapsed((value) => !value)}
+            aria-expanded={!mobileTabsCollapsed}
+            aria-label={mobileTabsCollapsed ? 'Afficher les onglets Analytics' : 'Masquer les onglets Analytics'}
+          >
+            {mobileTabsCollapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+          </Button>
+        </div>
+        {!mobileTabsCollapsed && (
+          <div className="flex items-center gap-0.5 overflow-x-auto p-0.5 scrollbar-hide">
+            {visibleTabs.map((tab) => {
+              const isActive = activeTab === tab.key;
+              const IconComp = ICON_MAP[tab.key];
+              return (
+                <Button
+                  key={tab.key}
+                  type="button"
+                  variant={isActive ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setActiveTab(tab.key)}
+                  className="h-11 shrink-0 gap-1 px-2 text-xs"
+                  title={tab.label}
+                >
+                  {IconComp && <IconComp className="h-3 w-3 shrink-0" />}
+                  <span>{tab.label}</span>
+                </Button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+      <div className="hidden lg:block w-full shrink-0 border-b border-border/40 bg-background overflow-y-hidden overflow-x-auto scrollbar-hide">
+        <div className="flex flex-row items-center gap-0.5 p-0.5 w-max">
           {visibleTabs.map((tab) => {
             const isActive = activeTab === tab.key;
             const IconComp = ICON_MAP[tab.key];
             return (
-              <button
+              <Button
                 key={tab.key}
+                type="button"
+                variant="ghost"
+                size="sm"
                 onClick={() => setActiveTab(tab.key)}
-                className={`flex items-center justify-center lg:justify-start gap-1 px-1.5 py-1.5 lg:px-2 lg:py-1.5 text-[12px] sm:text-[13px] lg:text-[10px] whitespace-nowrap rounded-md transition-all ${
+                className={`h-auto gap-1 px-2 py-1.5 text-[10px] whitespace-nowrap ${
                   isActive
                     ? 'bg-primary text-primary-foreground shadow-sm'
                     : 'text-muted-foreground hover:text-foreground hover:bg-muted/80'
@@ -147,7 +194,7 @@ const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = ({
               >
                 {IconComp && <IconComp className="h-3 w-3 shrink-0" />}
                 <span>{tab.label}</span>
-              </button>
+              </Button>
             );
           })}
         </div>
