@@ -14,6 +14,7 @@
 - [x] Placer le nom de la circonscription sélectionnée directement dans sa forme sur la carte.
 - [x] Retirer les boutons « Réinitialiser » et « Info » du bloc carte ; garder partager et plein écran.
 - [x] Regrouper et rendre rétractables les commandes mobiles Carte/Analytics, rendre les onglets Analytics rétractables et retirer le filtre de statut.
+- [x] Rétablir les onglets Analytics sur le côté sur mobile avec rétraction latérale, sans déplacer la liste en haut.
 
 
 ## Adaptation mobile complète
