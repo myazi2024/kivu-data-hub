@@ -10,13 +10,12 @@ import { Separator } from '@/components/ui/separator';
 import { Filter, Save, Loader2 } from 'lucide-react';
 import {
   ChartConfigItem, TabConfig,
-  DATE_FIELD_OPTIONS, STATUS_FIELD_OPTIONS,
+  DATE_FIELD_OPTIONS,
 } from '@/hooks/useAnalyticsChartsConfig';
 import { ANALYTICS_TABS_REGISTRY } from '@/config/analyticsTabsRegistry';
 import { isUserTab } from '@/hooks/useInitializedConfig';
 
 const FILTER_LABELS: Record<string, { label: string; description: string }> = {
-  'filter-status': { label: 'Filtre statut', description: 'Afficher le sélecteur de statut (approuvé, en attente, etc.)' },
   'filter-time': { label: 'Filtre temporel', description: 'Afficher les sélecteurs Année / Semestre / Trimestre / Mois' },
   'filter-location': { label: 'Filtre géographique', description: 'Afficher la cascade Province / Section / Ville / Commune / Quartier' },
 };
@@ -42,9 +41,8 @@ export const FilterManager: React.FC<FilterManagerProps> = ({ localFilters, onUp
   }, [externalTab, analyticsTabKeys]);
 
   const currentFilters = localFilters[selectedTab] || [];
-  const toggleFilters = currentFilters.filter(f => ['filter-status', 'filter-time', 'filter-location'].includes(f.item_key));
+  const toggleFilters = currentFilters.filter(f => ['filter-time', 'filter-location'].includes(f.item_key));
   const dateFieldItem = currentFilters.find(f => f.item_key === 'filter-date-field');
-  const statusFieldItem = currentFilters.find(f => f.item_key === 'filter-status-field');
 
   const toggleFilter = (itemKey: string) => {
     onUpdateFilters({
@@ -82,7 +80,7 @@ export const FilterManager: React.FC<FilterManagerProps> = ({ localFilters, onUp
                 const tabConf = localTabs.find(t => t.key === key);
                 const label = tabConf?.label || reg?.label || key;
                 const filters = localFilters[key] || [];
-                const hiddenCount = filters.filter(f => ['filter-status', 'filter-time', 'filter-location'].includes(f.item_key) && !f.is_visible).length;
+                const hiddenCount = filters.filter(f => ['filter-time', 'filter-location'].includes(f.item_key) && !f.is_visible).length;
                 return (
                   <button key={key} onClick={() => setSelectedTab(key)}
                     className={`w-full text-left px-3 py-2 rounded-lg text-xs transition-colors flex items-center justify-between ${
@@ -136,16 +134,6 @@ export const FilterManager: React.FC<FilterManagerProps> = ({ localFilters, onUp
                 </SelectContent>
               </Select>
               <p className="text-[10px] text-muted-foreground">Le champ utilisé pour le filtrage temporel</p>
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs font-medium">Champ statut source</Label>
-              <Select value={statusFieldItem?.custom_title || 'status'} onValueChange={(v) => updateFieldValue('filter-status-field', v)}>
-                <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {STATUS_FIELD_OPTIONS.map(opt => <SelectItem key={opt.value} value={opt.value} className="text-xs">{opt.label}</SelectItem>)}
-                </SelectContent>
-              </Select>
-              <p className="text-[10px] text-muted-foreground">Le champ utilisé pour le filtrage par statut</p>
             </div>
             {toggleFilters.length === 0 && (
               <div className="text-sm text-muted-foreground text-center py-8">Aucun filtre configurable pour cet onglet.</div>

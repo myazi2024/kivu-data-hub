@@ -166,8 +166,8 @@ export const DisputesBlock: React.FC<Props> = memo(({ data }) => {
     <BlockUnscopedRecordsProvider records={filteredUnscoped}>
     <div className="space-y-2">
       <AnalyticsFilters data={data.disputes} filter={filter} onChange={setFilter}
-        hideStatus={filterConfig.hideStatus} hideTime={filterConfig.hideTime} hideLocation={filterConfig.hideLocation}
-        dateField={filterConfig.dateField} statusField={filterConfig.statusField}
+        hideTime={filterConfig.hideTime} hideLocation={filterConfig.hideLocation}
+        dateField={filterConfig.dateField}
        
       />
       <KpiGrid items={kpiItems} />

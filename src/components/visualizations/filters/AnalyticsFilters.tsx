@@ -41,8 +41,6 @@ interface Props {
   onVilleChange?: (ville: string | undefined) => void;
   onCommuneChange?: (commune: string | undefined) => void;
   dateField?: string;
-  statusField?: string;
-  hideStatus?: boolean;
   hideTime?: boolean;
   hideLocation?: boolean;
   onExport?: () => void;

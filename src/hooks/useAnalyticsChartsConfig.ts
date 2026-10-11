@@ -30,26 +30,24 @@ export interface TabConfig {
 }
 
 export interface TabFilterConfig {
-  hideStatus: boolean;
   hideTime: boolean;
   hideLocation: boolean;
   dateField: string;
-  statusField?: string;
 }
 
 /** Default filter settings per tab (matches current hardcoded behavior) */
 const TAB_FILTER_DEFAULTS: Record<string, TabFilterConfig> = {
-  'title-requests': { hideStatus: true, hideTime: false, hideLocation: false, dateField: 'title_issue_date' },
-  'parcels-titled': { hideStatus: false, hideTime: false, hideLocation: false, dateField: 'created_at' },
-  'contributions': { hideStatus: false, hideTime: false, hideLocation: false, dateField: 'created_at' },
-  'expertise': { hideStatus: false, hideTime: false, hideLocation: false, dateField: 'created_at' },
-  'mortgages': { hideStatus: false, hideTime: false, hideLocation: false, dateField: 'created_at' },
-  'subdivision': { hideStatus: false, hideTime: false, hideLocation: false, dateField: 'created_at' },
-  'disputes': { hideStatus: false, hideTime: false, hideLocation: false, dateField: 'created_at', statusField: 'current_status' },
-  'ownership': { hideStatus: true, hideTime: false, hideLocation: false, dateField: 'ownership_start_date' },
-  'certificates': { hideStatus: false, hideTime: false, hideLocation: false, dateField: 'generated_at' },
-  'invoices': { hideStatus: false, hideTime: false, hideLocation: false, dateField: 'created_at' },
-  'taxes': { hideStatus: false, hideTime: false, hideLocation: false, dateField: 'created_at' },
+  'title-requests': { hideTime: false, hideLocation: false, dateField: 'title_issue_date' },
+  'parcels-titled': { hideTime: false, hideLocation: false, dateField: 'created_at' },
+  'contributions': { hideTime: false, hideLocation: false, dateField: 'created_at' },
+  'expertise': { hideTime: false, hideLocation: false, dateField: 'created_at' },
+  'mortgages': { hideTime: false, hideLocation: false, dateField: 'created_at' },
+  'subdivision': { hideTime: false, hideLocation: false, dateField: 'created_at' },
+  'disputes': { hideTime: false, hideLocation: false, dateField: 'created_at' },
+  'ownership': { hideTime: false, hideLocation: false, dateField: 'ownership_start_date' },
+  'certificates': { hideTime: false, hideLocation: false, dateField: 'generated_at' },
+  'invoices': { hideTime: false, hideLocation: false, dateField: 'created_at' },
+  'taxes': { hideTime: false, hideLocation: false, dateField: 'created_at' },
 };
 
 /** Available date fields for admin selection */
@@ -65,24 +63,13 @@ export const DATE_FIELD_OPTIONS = [
   { value: 'title_issue_date', label: 'Date de délivrance (title_issue_date)' },
 ];
 
-/** Available status fields for admin selection */
-export const STATUS_FIELD_OPTIONS = [
-  { value: 'status', label: 'Statut (status)' },
-  { value: 'current_status', label: 'Statut actuel (current_status)' },
-  { value: 'payment_status', label: 'Statut paiement (payment_status)' },
-  { value: 'mortgage_status', label: 'Statut hypothèque (mortgage_status)' },
-  { value: 'administrative_status', label: 'Statut administratif (administrative_status)' },
-];
-
 /** Build default filter config items for a given tab */
 export function buildFilterDefaults(tabKey: string): ChartConfigItem[] {
-  const defaults = TAB_FILTER_DEFAULTS[tabKey] || { hideStatus: false, hideTime: false, hideLocation: false, dateField: 'created_at' };
+  const defaults = TAB_FILTER_DEFAULTS[tabKey] || { hideTime: false, hideLocation: false, dateField: 'created_at' };
   return [
-    { tab_key: tabKey, item_key: 'filter-status', item_type: 'filter', is_visible: !defaults.hideStatus, display_order: 0, custom_title: 'Filtre statut' },
     { tab_key: tabKey, item_key: 'filter-time', item_type: 'filter', is_visible: !defaults.hideTime, display_order: 1, custom_title: 'Filtre temps' },
     { tab_key: tabKey, item_key: 'filter-location', item_type: 'filter', is_visible: !defaults.hideLocation, display_order: 2, custom_title: 'Filtre lieu' },
     { tab_key: tabKey, item_key: 'filter-date-field', item_type: 'filter', is_visible: true, display_order: 3, custom_title: defaults.dateField },
-    { tab_key: tabKey, item_key: 'filter-status-field', item_type: 'filter', is_visible: true, display_order: 4, custom_title: defaults.statusField || 'status' },
   ];
 }
 
@@ -176,7 +163,7 @@ export function useTabFilterConfig(tabKey: string): TabFilterConfig {
   const { configs } = useAnalyticsChartsConfig();
 
   return useMemo(() => {
-    const defaults = TAB_FILTER_DEFAULTS[tabKey] || { hideStatus: false, hideTime: false, hideLocation: false, dateField: 'created_at' };
+    const defaults = TAB_FILTER_DEFAULTS[tabKey] || { hideTime: false, hideLocation: false, dateField: 'created_at' };
     const filterItems = configs.filter(c => c.tab_key === tabKey && c.item_type === 'filter');
 
     if (filterItems.length === 0) return defaults;
@@ -184,18 +171,14 @@ export function useTabFilterConfig(tabKey: string): TabFilterConfig {
     const filterMap = new Map<string, ChartConfigItem>();
     filterItems.forEach(c => filterMap.set(c.item_key, c));
 
-    const statusCfg = filterMap.get('filter-status');
     const timeCfg = filterMap.get('filter-time');
     const locationCfg = filterMap.get('filter-location');
     const dateFieldCfg = filterMap.get('filter-date-field');
-    const statusFieldCfg = filterMap.get('filter-status-field');
 
     return {
-      hideStatus: statusCfg ? !statusCfg.is_visible : defaults.hideStatus,
       hideTime: timeCfg ? !timeCfg.is_visible : defaults.hideTime,
       hideLocation: locationCfg ? !locationCfg.is_visible : defaults.hideLocation,
       dateField: dateFieldCfg?.custom_title || defaults.dateField,
-      statusField: statusFieldCfg?.custom_title || defaults.statusField,
     };
   }, [configs, tabKey]);
 }

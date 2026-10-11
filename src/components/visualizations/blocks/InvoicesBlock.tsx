@@ -59,7 +59,7 @@ export const InvoicesBlock: React.FC<Props> = memo(({ data }) => {
     <FilterLabelContext.Provider value={filterLabel}>
     <BlockUnscopedRecordsProvider records={filteredUnscoped}>
     <div className="space-y-2">
-      <AnalyticsFilters data={data.invoices} filter={filter} onChange={setFilter} hideStatus={filterConfig.hideStatus} hideTime={filterConfig.hideTime} hideLocation={filterConfig.hideLocation} dateField={filterConfig.dateField} statusField={filterConfig.statusField} />
+      <AnalyticsFilters data={data.invoices} filter={filter} onChange={setFilter} hideTime={filterConfig.hideTime} hideLocation={filterConfig.hideLocation} dateField={filterConfig.dateField} />
       <KpiGrid items={kpiItems} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
         {chartDefs.map(d => <React.Fragment key={d.key}>{d.el()}</React.Fragment>)}
