@@ -57,7 +57,6 @@ export const isBuilt = (r: any) => !!r?.property_category && r.property_category
 export const locationOf = (r: any): string =>
   (r?.commune || r?.ville || r?.territoire || r?.province || '').toString().trim();
 
-const BUCKET = <T,>(labels: string[], fn: (r: any) => number | null) => ({ labels, fn });
 
 export const AREA_CLASSES = ['< 100 m²', '100-250 m²', '250-500 m²', '500-1 000 m²', '≥ 1 000 m²'];
 export function areaClass(r: any): number | null {
@@ -85,7 +84,6 @@ export function ageClass(r: any, year = new Date().getFullYear()): number | null
   const age = year - y;
   return age <= 5 ? 0 : age <= 10 ? 1 : age <= 20 ? 2 : 3;
 }
-void BUCKET;
 
 /** Prix de vente et loyer moyens par classe (toutes les classes, dans l'ordre). */
 export function saleRentByClass(records: any[], labels: string[], cls: (r: any) => number | null) {
