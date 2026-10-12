@@ -20,3 +20,4 @@
 - Gestion Hypothèque : radiation créée uniquement par `submit_mortgage_cancellation_request` (montant du barème, anti-doublon, reprise de la demande en attente), vérification d'hypothèque active via `check_parcel_active_mortgage`, enregistrement contrôlé par trigger ; le navigateur ne lit pas cadastral_mortgages pour ces contrôles, car seuls admins/propriétaires y ont accès.
 - Notifications: browser creates them only via `notify_user` RPC (`insertNotification`) and reads through the shared `useNotifications` hook with server unread count; prevents forgery, duplicates and out-of-sync badges.
 
+- Admin decisions on requests (mortgage, tax declaration, land title, permit) go through one `process_*_decision` RPC that applies effects, audit and the requester notification (`_notify`, dedupe key) in the same transaction; a failed notification can never leave a silent decision.

@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { insertNotification } from '@/utils/notificationHelper';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
