@@ -101,81 +101,14 @@ const AdminTaxDeclarations = () => {
     try {
       const info = getTaxInfo(selectedDeclaration);
 
-      if (actionType === 'approve') {
-        const targetParcelId = selectedDeclaration.original_parcel_id;
-        if (targetParcelId) {
-          for (const entry of selectedDeclaration.tax_history) {
-            const { error: thError } = await supabase.from('cadastral_tax_history').insert({
-              parcel_id: targetParcelId,
-              tax_year: Number(resolveTaxKey(entry, 'tax_year', 'taxYear')),
-              amount_usd: Number(resolveTaxKey(entry, 'amount_usd', 'amountUsd', 'grand_total')) || 0,
-              payment_status: resolveTaxKey(entry, 'payment_status', 'paymentStatus') || 'En attente',
-              payment_date: resolveTaxKey(entry, 'payment_date', 'paymentDate'),
-              receipt_document_url: resolveTaxKey(entry, 'receipt_document_url', 'receiptDocumentUrl'),
-            });
-            if (thError) console.error('Erreur insertion tax_history:', thError);
-          }
-        }
-
-        const { error } = await supabase
-          .from('cadastral_contributions')
-          .update({ status: 'approved', reviewed_by: user.id, reviewed_at: new Date().toISOString() })
-          .eq('id', selectedDeclaration.id);
-        if (error) throw error;
-
-        if (selectedDeclaration.user_id) {
-          await insertNotification({
-            user_id: selectedDeclaration.user_id,
-            title: 'Déclaration fiscale approuvée',
-            message: `Votre déclaration "${info.taxType}" pour ${selectedDeclaration.parcel_number} (exercice ${info.taxYear}) a été approuvée.`,
-            type: 'success',
-            action_url: '/user-dashboard',
-          });
-        }
-        toast.success('Déclaration approuvée');
-
-      } else if (actionType === 'reject') {
-        if (!rejectionReason.trim()) { toast.error('Veuillez indiquer un motif de rejet'); setProcessing(false); return; }
-        const { error } = await supabase
-          .from('cadastral_contributions')
-          .update({
-            status: 'rejected', rejection_reason: rejectionReason, rejected_by: user.id,
-            rejection_date: new Date().toISOString(), reviewed_by: user.id, reviewed_at: new Date().toISOString(),
-          })
-          .eq('id', selectedDeclaration.id);
-        if (error) throw error;
-
-        if (selectedDeclaration.user_id) {
-          await insertNotification({
-            user_id: selectedDeclaration.user_id,
-            title: 'Déclaration fiscale rejetée',
-            message: `Votre déclaration "${info.taxType}" pour ${selectedDeclaration.parcel_number} a été rejetée. Motif : ${rejectionReason}`,
-            type: 'error', action_url: '/user-dashboard',
-          });
-        }
-        toast.success('Déclaration rejetée');
-
-      } else if (actionType === 'return') {
-        if (!returnReason.trim()) { toast.error('Veuillez indiquer un motif de renvoi'); setProcessing(false); return; }
-        const { error } = await supabase
-          .from('cadastral_contributions')
-          .update({
-            status: 'returned', rejection_reason: returnReason,
-            reviewed_by: user.id, reviewed_at: new Date().toISOString(),
-          })
-          .eq('id', selectedDeclaration.id);
-        if (error) throw error;
-
-        if (selectedDeclaration.user_id) {
-          await insertNotification({
-            user_id: selectedDeclaration.user_id,
-            title: 'Déclaration fiscale à corriger',
-            message: `Votre déclaration "${info.taxType}" pour ${selectedDeclaration.parcel_number} nécessite des corrections. Motif : ${returnReason}`,
-            type: 'warning', action_url: '/user-dashboard',
-          });
-        }
-        toast.success('Déclaration renvoyée pour correction');
-      }
+      const reason = actionType === 'reject' ? rejectionReason.trim() : actionType === 'return' ? returnReason.trim() : null;
+      if (actionType !== 'approve' && !reason) { toast.error('Veuillez indiquer un motif'); setProcessing(false); return; }
+      // Décision, historique fiscal, audit et notification en un seul bloc serveur
+      const { error } = await (supabase.rpc as any)('process_tax_declaration_decision', {
+        p_id: selectedDeclaration.id, p_action: actionType, p_reason: reason,
+      });
+      if (error) throw new Error(error.message);
+      toast.success(actionType === 'approve' ? 'Déclaration approuvée' : actionType === 'reject' ? 'Déclaration rejetée' : 'Déclaration renvoyée pour correction');
 
       trackAdminAction({
         module: 'tax',
@@ -191,7 +124,7 @@ const AdminTaxDeclarations = () => {
       fetchDeclarations();
     } catch (error: any) {
       console.error('Erreur traitement:', error);
-      toast.error('Erreur lors du traitement');
+      toast.error(error?.message || 'Erreur lors du traitement');
     } finally {
       setProcessing(false);
     }

@@ -111,64 +111,12 @@ export const PermitRequestDialog: React.FC<PermitRequestDialogProps> = ({
 
     setProcessing(true);
     try {
-      const newStatus = action === 'approve' ? 'approved' : action === 'reject' ? 'rejected' : 'returned';
-      const updatedPermitData = {
-        ...permitRequestData,
-        status: newStatus,
-        adminResponse: response,
-        processedAt: new Date().toISOString()
-      };
-
-      // Si approuvé, générer un numéro de permis et créer l'enregistrement
-      if (action === 'approve') {
-        const { data: contribution } = await supabase
-          .from('cadastral_contributions')
-          .select('province, parcel_number')
-          .eq('id', contributionId)
-          .single();
-
-        if (!contribution) throw new Error('Contribution non trouvée');
-
-        const { data: parcel } = await supabase
-          .from('cadastral_parcels')
-          .select('id')
-          .eq('parcel_number', contribution.parcel_number)
-          .single();
-
-        if (!parcel) throw new Error('Parcelle non trouvée. Assurez-vous que la contribution a été approuvée.');
-
-        const { data: permitNumber } = await supabase.rpc('generate_permit_number', {
-          permit_type: requestType,
-          province: contribution?.province || 'RDC'
-        });
-
-        const { error: permitError } = await supabase
-          .from('cadastral_building_permits')
-          .insert({
-            parcel_id: parcel.id,
-            permit_number: permitNumber,
-            issuing_service: 'Service de l\'Urbanisme',
-            issue_date: new Date().toISOString().split('T')[0],
-            validity_period_months: 36,
-            administrative_status: 'Délivré',
-            is_current: true
-          });
-
-        if (permitError) throw permitError;
-
-        updatedPermitData.permitNumber = permitNumber;
-        updatedPermitData.parcelId = parcel.id;
-      }
-
-      const { error } = await supabase
-        .from('cadastral_contributions')
-        .update({
-          permit_request_data: updatedPermitData,
-          status: newStatus
-        })
-        .eq('id', contributionId);
-
-      if (error) throw error;
+      // Décision, autorisation, journal et notification en un seul bloc serveur
+      const { data: decision, error } = await (supabase.rpc as any)('process_permit_decision', {
+        p_id: contributionId, p_action: action, p_response: response, p_permit_type: requestType,
+      });
+      if (error) throw new Error(error.message);
+      const updatedPermitData = { permitNumber: decision?.permit_number as string | undefined };
 
       // Auto-generate certificate on approval
       if (action === 'approve') {
@@ -197,29 +145,6 @@ export const PermitRequestDialog: React.FC<PermitRequestDialogProps> = ({
           toast.success('Certificat d\'autorisation de bâtir généré');
         }
       }
-
-      // Enregistrer l'action admin
-      await supabase.from('permit_admin_actions').insert({
-        contribution_id: contributionId,
-        admin_user_id: user.id,
-        action_type: action === 'approve' ? 'approved' : action === 'reject' ? 'rejected' : 'returned',
-        comment: response
-      });
-
-      // Créer notification
-      const notifMap = {
-        approve: { type: 'success', title: 'Autorisation délivrée !', message: `Votre autorisation ${updatedPermitData.permitNumber} a été délivrée pour la parcelle ${parcelNumber}. Le certificat est disponible dans votre espace.` },
-        reject: { type: 'error', title: 'Demande rejetée', message: `Votre demande d'autorisation pour la parcelle ${parcelNumber} a été rejetée. ${response}` },
-        return: { type: 'warning', title: 'Demande renvoyée pour correction', message: `Votre demande d'autorisation pour la parcelle ${parcelNumber} a été renvoyée pour correction. ${response}` },
-      };
-      const notif = notifMap[action];
-      await insertNotification({
-        user_id: userId,
-        type: notif.type,
-        title: notif.title,
-        message: notif.message,
-        action_url: '/user-dashboard?tab=building-permits'
-      });
 
       toast.success(action === 'approve' ? 'Autorisation délivrée avec succès' : action === 'reject' ? 'Demande rejetée' : 'Demande renvoyée pour correction');
       trackAdminAction({

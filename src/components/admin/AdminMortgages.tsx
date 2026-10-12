@@ -143,88 +143,9 @@ const AdminMortgages = () => {
     const request = pendingApproveRequest;
     setProcessingAction(true);
     try {
-      // Server-side guard: admin role + status check (no re-approval)
-      const { error: updateError } = await supabase.rpc('approve_ccc_contribution', { p_id: request.id });
-
-      if (updateError) {
-        throw new Error(updateError.message.includes('déjà traitée')
-          ? 'Cette demande a déjà été traitée.'
-          : updateError.message);
-      }
-
-      const mortgage = request.mortgage_history[0];
-
-      if (request.contribution_type === 'mortgage_registration' && request.original_parcel_id) {
-        // Fix #3: Reuse the reference from the user's submission instead of generating a new one
-        const refNumber = mortgage.request_reference_number || `HYP-${Date.now().toString(36).toUpperCase()}`;
-        // Fix #10: Validate declared status is a known value
-        const declaredStatus = ['active', 'en_defaut', 'renegociee'].includes(mortgage.mortgage_status)
-          ? mortgage.mortgage_status
-          : 'active';
-
-        // Fix #4: Check for reference collision before insert
-        const { data: existingRef } = await supabase
-          .from('cadastral_mortgages')
-          .select('id')
-          .eq('reference_number', refNumber)
-          .maybeSingle();
-
-        const finalRef = existingRef ? `${refNumber}-${Date.now().toString(36).slice(-4).toUpperCase()}` : refNumber;
-
-        // Fix #9: Use null for duration instead of 0 so DB default kicks in
-        // Fix #1: Omit duration_months when null to let DB default (12) apply
-        const durationValue = mortgage.duration_months ?? mortgage.durationMonths;
-        const mortgageInsertData: Record<string, any> = {
-          parcel_id: request.original_parcel_id,
-          creditor_name: mortgage.creditor_name || mortgage.creditorName || '',
-          creditor_type: mortgage.creditor_type || mortgage.creditorType || 'Banque',
-          mortgage_amount_usd: mortgage.mortgage_amount_usd || mortgage.mortgageAmountUsd || 0,
-          contract_date: mortgage.contract_date || mortgage.contractDate || new Date().toISOString().split('T')[0],
-          mortgage_status: declaredStatus,
-          reference_number: finalRef,
-        };
-        if (durationValue != null && durationValue > 0) {
-          mortgageInsertData.duration_months = durationValue;
-        }
-        // Cast: payload dynamique (champs conditionnels), validé runtime par Supabase
-        const { error: insertError } = await supabase
-          .from('cadastral_mortgages')
-          .insert(mortgageInsertData as never);
-
-        if (insertError) {
-          console.error('Error inserting mortgage:', insertError);
-          toast.warning('Contribution approuvée, mais erreur lors de la création de l\'hypothèque.');
-        }
-      }
-
-      if (request.contribution_type === 'mortgage_cancellation' && mortgage.mortgage_reference_number) {
-        await supabase
-          .from('cadastral_mortgages')
-          .update({ mortgage_status: 'paid' })
-          .eq('reference_number', mortgage.mortgage_reference_number.toUpperCase());
-      }
-
-      // Fix #11: Create notification for the user
-      try {
-        const actionLabel = request.contribution_type === 'mortgage_cancellation' ? 'radiation' : 'enregistrement';
-        await insertNotification({
-          user_id: request.user_id,
-          title: `Demande d'hypothèque approuvée`,
-          message: `Votre demande de ${actionLabel} d'hypothèque pour la parcelle ${request.parcel_number} a été approuvée.`,
-          type: 'mortgage',
-          action_url: '/user-dashboard',
-        });
-      } catch { /* Non-blocking */ }
-
-      try {
-        await supabase.from('audit_logs').insert({
-          action: `mortgage_${request.contribution_type === 'mortgage_cancellation' ? 'cancellation' : 'registration'}_approved`,
-          user_id: user?.id || null,
-          record_id: request.id,
-          table_name: 'cadastral_contributions',
-          new_values: { parcel_number: request.parcel_number, status: 'approved' },
-        });
-      } catch { /* Non-blocking */ }
+      // Décision, effets (hypothèque), audit et notification en un seul bloc serveur
+      const { error: updateError } = await (supabase.rpc as any)('process_mortgage_decision', { p_id: request.id, p_action: 'approve' });
+      if (updateError) throw new Error(updateError.message);
 
       toast.success('Demande approuvée avec succès');
       trackAdminAction({
@@ -239,7 +160,7 @@ const AdminMortgages = () => {
       fetchData();
     } catch (error) {
       console.error('Approve error:', error);
-      toast.error('Erreur lors de l\'approbation');
+      toast.error(error instanceof Error ? error.message : 'Erreur lors de l\'approbation');
     } finally {
       setProcessingAction(false);
     }
@@ -252,44 +173,8 @@ const AdminMortgages = () => {
     }
     setProcessingAction(true);
     try {
-      const { data: rejected, error } = await supabase
-        .from('cadastral_contributions')
-        .update({
-          status: 'rejected',
-          rejection_reason: rejectionReason.trim(),
-          reviewed_at: new Date().toISOString(),
-          reviewed_by: user?.id || null,
-          rejected_by: user?.id || null,
-          rejection_date: new Date().toISOString(),
-        })
-        .eq('id', selectedRequest.id)
-        .in('status', ['pending', 'returned', 'in_review'])
-        .select('id');
-
-      if (error) throw error;
-      if (!rejected?.length) throw new Error('Cette demande a déjà été traitée.');
-
-      // Fix #11: Notify user of rejection
-      try {
-        const actionLabel = selectedRequest.contribution_type === 'mortgage_cancellation' ? 'radiation' : 'enregistrement';
-        await insertNotification({
-          user_id: selectedRequest.user_id,
-          title: `Demande d'hypothèque rejetée`,
-          message: `Votre demande de ${actionLabel} pour la parcelle ${selectedRequest.parcel_number} a été rejetée. Motif: ${rejectionReason.trim()}`,
-          type: 'mortgage',
-          action_url: '/user-dashboard',
-        });
-      } catch { /* Non-blocking */ }
-
-      try {
-        await supabase.from('audit_logs').insert({
-          action: 'mortgage_request_rejected',
-          user_id: user?.id || null,
-          record_id: selectedRequest.id,
-          table_name: 'cadastral_contributions',
-          new_values: { parcel_number: selectedRequest.parcel_number, status: 'rejected', reason: rejectionReason.trim() },
-        });
-      } catch { /* Non-blocking */ }
+      const { error } = await (supabase.rpc as any)('process_mortgage_decision', { p_id: selectedRequest.id, p_action: 'reject', p_reason: rejectionReason.trim() });
+      if (error) throw new Error(error.message);
 
       toast.success('Demande rejetée');
       trackAdminAction({
@@ -304,7 +189,7 @@ const AdminMortgages = () => {
       fetchData();
     } catch (error) {
       console.error('Reject error:', error);
-      toast.error('Erreur lors du rejet');
+      toast.error(error instanceof Error ? error.message : 'Erreur lors du rejet');
     } finally {
       setProcessingAction(false);
     }
@@ -318,38 +203,8 @@ const AdminMortgages = () => {
     }
     setProcessingAction(true);
     try {
-      const { error } = await supabase
-        .from('cadastral_contributions')
-        .update({
-          status: 'returned',
-          change_justification: returnReason.trim(),
-          reviewed_at: new Date().toISOString(),
-          reviewed_by: user?.id || null,
-        })
-        .eq('id', selectedRequest.id);
-
-      if (error) throw error;
-
-      // Fix #11: Notify user of return
-      try {
-        await insertNotification({
-          user_id: selectedRequest.user_id,
-          title: 'Demande renvoyée pour correction',
-          message: `Votre demande pour la parcelle ${selectedRequest.parcel_number} nécessite des corrections: ${returnReason.trim()}`,
-          type: 'mortgage',
-          action_url: '/user-dashboard',
-        });
-      } catch { /* Non-blocking */ }
-
-      try {
-        await supabase.from('audit_logs').insert({
-          action: 'mortgage_request_returned',
-          user_id: user?.id || null,
-          record_id: selectedRequest.id,
-          table_name: 'cadastral_contributions',
-          new_values: { parcel_number: selectedRequest.parcel_number, status: 'returned', corrections: returnReason.trim() },
-        });
-      } catch { /* Non-blocking */ }
+      const { error } = await (supabase.rpc as any)('process_mortgage_decision', { p_id: selectedRequest.id, p_action: 'return', p_reason: returnReason.trim() });
+      if (error) throw new Error(error.message);
 
       toast.success('Demande renvoyée pour correction');
       trackAdminAction({
@@ -363,7 +218,7 @@ const AdminMortgages = () => {
       fetchData();
     } catch (error) {
       console.error('Return error:', error);
-      toast.error('Erreur lors du renvoi');
+      toast.error(error instanceof Error ? error.message : 'Erreur lors du renvoi');
     } finally {
       setProcessingAction(false);
     }
