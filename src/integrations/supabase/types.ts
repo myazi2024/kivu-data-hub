@@ -4286,9 +4286,10 @@ export type Database = {
       notifications: {
         Row: {
           action_url: string | null
-          created_at: string | null
+          created_at: string
+          dedupe_key: string | null
           id: string
-          is_read: boolean | null
+          is_read: boolean
           message: string
           read_at: string | null
           title: string
@@ -4297,9 +4298,10 @@ export type Database = {
         }
         Insert: {
           action_url?: string | null
-          created_at?: string | null
+          created_at?: string
+          dedupe_key?: string | null
           id?: string
-          is_read?: boolean | null
+          is_read?: boolean
           message: string
           read_at?: string | null
           title: string
@@ -4308,9 +4310,10 @@ export type Database = {
         }
         Update: {
           action_url?: string | null
-          created_at?: string | null
+          created_at?: string
+          dedupe_key?: string | null
           id?: string
-          is_read?: boolean | null
+          is_read?: boolean
           message?: string
           read_at?: string | null
           title?: string
@@ -8956,6 +8959,7 @@ export type Database = {
         Args: { p_month: number; p_year: number }
         Returns: Json
       }
+      get_unread_notification_count: { Args: never; Returns: number }
       get_user_activity_stats: {
         Args: { _end_date?: string; _start_date?: string; _user_id: string }
         Returns: {
@@ -9081,6 +9085,7 @@ export type Database = {
         Returns: undefined
       }
       map_land_title_type_key: { Args: { p_label: string }; Returns: string }
+      mark_all_notifications_read: { Args: never; Returns: number }
       mark_cadastral_invoice_paid_safe: {
         Args: { p_invoice_id: string; p_payment_method: string }
         Returns: {
@@ -9088,6 +9093,7 @@ export type Database = {
           ok: boolean
         }[]
       }
+      mark_notification_read: { Args: { _id: string }; Returns: boolean }
       migrate_approved_contribution: {
         Args: { contribution_id: string }
         Returns: string
@@ -9098,6 +9104,17 @@ export type Database = {
       }
       normalize_declared_usage: {
         Args: { p_construction_type: string; p_usage: string }
+        Returns: string
+      }
+      notify_user: {
+        Args: {
+          _action_url?: string
+          _dedupe_key?: string
+          _message: string
+          _title: string
+          _type?: string
+          _user_id: string
+        }
         Returns: string
       }
       process_ccc_appeal: {
@@ -9116,6 +9133,7 @@ export type Database = {
       }
       publish_scheduled_articles: { Args: never; Returns: number }
       purge_old_audit_logs: { Args: { _days?: number }; Returns: Json }
+      purge_old_notifications: { Args: never; Returns: number }
       purge_test_billing_data: { Args: { p_reason?: string }; Returns: Json }
       reconcile_tax_records: {
         Args: never
