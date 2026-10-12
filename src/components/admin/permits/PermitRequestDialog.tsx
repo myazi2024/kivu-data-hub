@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { insertNotification } from '@/utils/notificationHelper';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -212,7 +213,7 @@ export const PermitRequestDialog: React.FC<PermitRequestDialogProps> = ({
         return: { type: 'warning', title: 'Demande renvoyée pour correction', message: `Votre demande d'autorisation pour la parcelle ${parcelNumber} a été renvoyée pour correction. ${response}` },
       };
       const notif = notifMap[action];
-      await supabase.from('notifications').insert({
+      await insertNotification({
         user_id: userId,
         type: notif.type,
         title: notif.title,

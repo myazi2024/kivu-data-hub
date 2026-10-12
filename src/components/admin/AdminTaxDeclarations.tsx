@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { insertNotification } from '@/utils/notificationHelper';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -123,7 +124,7 @@ const AdminTaxDeclarations = () => {
         if (error) throw error;
 
         if (selectedDeclaration.user_id) {
-          await supabase.from('notifications').insert({
+          await insertNotification({
             user_id: selectedDeclaration.user_id,
             title: 'Déclaration fiscale approuvée',
             message: `Votre déclaration "${info.taxType}" pour ${selectedDeclaration.parcel_number} (exercice ${info.taxYear}) a été approuvée.`,
@@ -145,7 +146,7 @@ const AdminTaxDeclarations = () => {
         if (error) throw error;
 
         if (selectedDeclaration.user_id) {
-          await supabase.from('notifications').insert({
+          await insertNotification({
             user_id: selectedDeclaration.user_id,
             title: 'Déclaration fiscale rejetée',
             message: `Votre déclaration "${info.taxType}" pour ${selectedDeclaration.parcel_number} a été rejetée. Motif : ${rejectionReason}`,
@@ -166,7 +167,7 @@ const AdminTaxDeclarations = () => {
         if (error) throw error;
 
         if (selectedDeclaration.user_id) {
-          await supabase.from('notifications').insert({
+          await insertNotification({
             user_id: selectedDeclaration.user_id,
             title: 'Déclaration fiscale à corriger',
             message: `Votre déclaration "${info.taxType}" pour ${selectedDeclaration.parcel_number} nécessite des corrections. Motif : ${returnReason}`,

@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { insertNotification } from '@/utils/notificationHelper';
 
 interface LeaseContractCheckData {
   isRented?: boolean;
@@ -31,7 +32,7 @@ export async function notifyMissingLeaseContract(data: LeaseContractCheckData): 
     if (!userId) return;
 
     const parcel = data.parcelNumber ? ` (parcelle ${data.parcelNumber})` : '';
-    await supabase.from('notifications').insert({
+    await insertNotification({
       user_id: userId,
       type: 'info',
       title: 'Contrat de location à ajouter',

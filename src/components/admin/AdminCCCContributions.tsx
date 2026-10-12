@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { insertNotification } from '@/utils/notificationHelper';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -356,7 +357,7 @@ const AdminCCCContributions: React.FC = () => {
       }
 
       // Créer notification pour l'utilisateur
-      const { error: notifError } = await supabase.from('notifications').insert({
+      const { error: notifError } = await insertNotification({
         user_id: contribution.user_id,
         type: 'warning',
         title: 'Contribution renvoyée pour correction',

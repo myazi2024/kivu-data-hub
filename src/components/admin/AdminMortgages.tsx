@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { insertNotification } from '@/utils/notificationHelper';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -206,7 +207,7 @@ const AdminMortgages = () => {
       // Fix #11: Create notification for the user
       try {
         const actionLabel = request.contribution_type === 'mortgage_cancellation' ? 'radiation' : 'enregistrement';
-        await supabase.from('notifications').insert({
+        await insertNotification({
           user_id: request.user_id,
           title: `Demande d'hypothèque approuvée`,
           message: `Votre demande de ${actionLabel} d'hypothèque pour la parcelle ${request.parcel_number} a été approuvée.`,
@@ -271,7 +272,7 @@ const AdminMortgages = () => {
       // Fix #11: Notify user of rejection
       try {
         const actionLabel = selectedRequest.contribution_type === 'mortgage_cancellation' ? 'radiation' : 'enregistrement';
-        await supabase.from('notifications').insert({
+        await insertNotification({
           user_id: selectedRequest.user_id,
           title: `Demande d'hypothèque rejetée`,
           message: `Votre demande de ${actionLabel} pour la parcelle ${selectedRequest.parcel_number} a été rejetée. Motif: ${rejectionReason.trim()}`,
@@ -331,7 +332,7 @@ const AdminMortgages = () => {
 
       // Fix #11: Notify user of return
       try {
-        await supabase.from('notifications').insert({
+        await insertNotification({
           user_id: selectedRequest.user_id,
           title: 'Demande renvoyée pour correction',
           message: `Votre demande pour la parcelle ${selectedRequest.parcel_number} nécessite des corrections: ${returnReason.trim()}`,

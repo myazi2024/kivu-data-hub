@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { insertNotification } from '@/utils/notificationHelper';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -53,7 +54,7 @@ export const BlockUserDialog: React.FC<BlockUserDialogProps> = ({
     if (success) {
       // Send notification to the user
       try {
-        await supabase.from('notifications').insert({
+        await insertNotification({
           user_id: userId,
           type: 'account',
           title: 'Compte bloqué',
