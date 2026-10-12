@@ -12,3 +12,6 @@ Règles partagées : `src/utils/analyticsTabRules.ts` (onglets + Carte RDC), tes
 - Bornage : entrées vides ignorées ; clés camelCase et date de bornage harmonisées.
 - Code mort : `exportCSV` récupéré sans usage dans tous les onglets ; données personnelles inutiles (nom du destinataire de certificat, e-mail client) retirées du chargement.
 - Onglets masqués (Contributions, Expertise, Historique, Certificats, Factures) conservés : réactivables depuis l'admin.
+
+## 2026-10-11 — Location et valeur refondu
+9 indicateurs + 26 visuels (liste utilisateur, sans doublon) ; calculs dans `src/utils/rentalMarketAnalytics.ts` ; cartes nuage de points, combiné et classement dans `shared/MarketChartCards.tsx` ; anciens réglages purgés.
