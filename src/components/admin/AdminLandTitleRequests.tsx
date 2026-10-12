@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { insertNotification } from '@/utils/notificationHelper';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -131,27 +130,12 @@ const AdminLandTitleRequests: React.FC = () => {
 
     setProcessing(true);
     try {
-      let newStatus: string;
-      switch (processAction) {
-        case 'approve': newStatus = 'approved'; break;
-        case 'reject': newStatus = 'rejected'; break;
-        case 'in_review': newStatus = 'in_review'; break;
-        default: newStatus = 'pending';
-      }
-
-      const { error } = await supabase
-        .from('land_title_requests')
-        .update({
-          status: newStatus,
-          processing_notes: processingNotes || null,
-          rejection_reason: processAction === 'reject' ? rejectionReason : null,
-          reviewed_by: user.id,
-          reviewed_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', selectedRequest.id);
-
-      if (error) throw error;
+      // Décision, audit et notification en un seul bloc serveur
+      const { error } = await (supabase.rpc as any)('process_land_title_decision', {
+        p_id: selectedRequest.id, p_action: processAction,
+        p_notes: processingNotes || null, p_reason: processAction === 'reject' ? rejectionReason : null,
+      });
+      if (error) throw new Error(error.message);
 
       // Auto-generate certificate on approval
       if (processAction === 'approve') {
@@ -182,17 +166,6 @@ const AdminLandTitleRequests: React.FC = () => {
         }
       }
 
-      // Create notification for user
-      await insertNotification({
-        user_id: selectedRequest.user_id,
-        type: processAction === 'approve' ? 'success' : processAction === 'reject' ? 'error' : 'info',
-        title: `Demande de titre foncier ${processAction === 'approve' ? 'approuvée' : processAction === 'reject' ? 'rejetée' : 'en cours d\'examen'}`,
-        message: processAction === 'approve' 
-          ? `Votre demande ${selectedRequest.reference_number} a été approuvée. Le certificat est disponible dans votre espace.`
-          : `Votre demande ${selectedRequest.reference_number} a été ${processAction === 'reject' ? 'rejetée' : 'mise en cours d\'examen'}.`,
-        action_url: '/user-dashboard?tab=land-titles'
-      });
-
       toast.success('Demande traitée avec succès');
 
       trackAdminAction({
@@ -207,7 +180,7 @@ const AdminLandTitleRequests: React.FC = () => {
       fetchRequests();
     } catch (error) {
       console.error('Error processing request:', error);
-      toast.error('Erreur lors du traitement');
+      toast.error(error instanceof Error ? error.message : 'Erreur lors du traitement');
     } finally {
       setProcessing(false);
     }
