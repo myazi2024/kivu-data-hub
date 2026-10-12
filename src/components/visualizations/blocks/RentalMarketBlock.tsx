@@ -1,8 +1,7 @@
 import React, { useMemo, memo } from 'react';
 import { AnalyticsFilters } from '../filters/AnalyticsFilters';
 import { LandAnalyticsData } from '@/hooks/useLandDataAnalytics';
-import { MapPin, Coins, Scale, Building2, ShieldCheck, Calendar, TrendingUp, Tag } from 'lucide-react';
-import { pct } from '@/utils/analyticsConstants';
+import { Coins, Scale, Building2, ShieldCheck, Calendar, TrendingUp } from 'lucide-react';
 import { KpiGrid } from '../shared/KpiGrid';
 import { ChartCard, FilterLabelContext } from '../shared/ChartCard';
 import { ScatterCard, ComboBarCard, RankingTableCard } from '../shared/MarketChartCards';
@@ -12,7 +11,7 @@ import { useBlockFilter } from '@/hooks/useBlockFilter';
 import {
   salePrice, monthlyRent, rentalYield, parcelArea, builtArea, hasBuildingPermit, isBuilt, locationOf,
   mean, median, avgByGroup, priceAndYieldByLocation, marketValueByCategory, countByCategory,
-  saleRentByKey, saleRentByClass, scatterPoints, avgByYear, countByClass, topInvestments, topProperties,
+  saleRentByKey, saleRentByClass, scatterPoints, avgByYear, countByClass, topInvestments,
   valuationStatus, permitSplit, AREA_CLASSES, areaClass, HEIGHT_CLASSES, heightClass,
   CAPACITY_CLASSES, capacityClass, AGE_CLASSES, ageClass, CONSTRUCTION_STATUS_LABEL, RES_COM_LABEL,
 } from '@/utils/rentalMarketAnalytics';
@@ -34,13 +33,10 @@ export const RentalMarketBlock: React.FC<Props> = memo(({ data }) => {
     const rents = filtered.map(monthlyRent).filter(Boolean) as number[];
     const yields = filtered.map(rentalYield).filter(Boolean) as number[];
     const built = filtered.filter(isBuilt);
-    const withPermit = built.filter(hasBuildingPermit).length;
     return {
-      sales, rents, yields, built, withPermit,
+      sales, rents, yields, built,
       avgArea: mean(filtered.map(parcelArea).filter(Boolean) as number[]),
       avgBuilt: mean(filtered.map(builtArea).filter(Boolean) as number[]),
-      saleByLoc: avgByGroup(filtered, locationOf, salePrice),
-      rentByLoc: avgByGroup(filtered, locationOf, monthlyRent),
       combo: priceAndYieldByLocation(filtered),
       byCategory: saleRentByKey(filtered, r => r.property_category || null),
       valueByCat: marketValueByCategory(filtered),
@@ -62,8 +58,6 @@ export const RentalMarketBlock: React.FC<Props> = memo(({ data }) => {
       permitSplit: permitSplit(filtered),
       yieldByCat: avgByGroup(filtered, r => r.property_category || '', rentalYield),
       investments: topInvestments(filtered),
-      topSale: topProperties(filtered, salePrice),
-      topRent: topProperties(filtered, monthlyRent),
       valuation: valuationStatus(filtered),
     };
   }, [filtered]);
@@ -73,12 +67,10 @@ export const RentalMarketBlock: React.FC<Props> = memo(({ data }) => {
     { key: 'kpi-median-sale', label: ct('kpi-median-sale', 'Prix de vente médian'), value: kusd(median(m.sales)), cls: 'text-blue-600' },
     { key: 'kpi-avg-rent', label: ct('kpi-avg-rent', 'Loyer moyen'), value: usd(mean(m.rents)), cls: 'text-violet-600', tooltip: `Loyer mensuel, ${m.rents.length} bien(s) loué(s)` },
     { key: 'kpi-median-rent', label: ct('kpi-median-rent', 'Loyer médian'), value: usd(median(m.rents)), cls: 'text-fuchsia-600' },
-    { key: 'kpi-total', label: ct('kpi-total', 'Biens recensés'), value: filtered.length, cls: 'text-emerald-600' },
     { key: 'kpi-avg-area', label: ct('kpi-avg-area', 'Surface moy. parcelle'), value: m.avgArea ? `${Math.round(m.avgArea).toLocaleString('fr-FR')} m²` : '—', cls: 'text-cyan-600' },
     { key: 'kpi-avg-built', label: ct('kpi-avg-built', 'Surface moy. bâtie'), value: m.avgBuilt ? `${Math.round(m.avgBuilt).toLocaleString('fr-FR')} m²` : '—', cls: 'text-teal-600' },
     { key: 'kpi-avg-yield', label: ct('kpi-avg-yield', 'Rendement locatif moyen'), value: m.yields.length ? `${mean(m.yields).toFixed(1)} %` : '—', cls: 'text-amber-600', tooltip: 'Loyer annuel / prix de vente' },
-    { key: 'kpi-permit', label: ct('kpi-permit', 'Avec autorisation de bâtir'), value: pct(m.withPermit, m.built.length), cls: 'text-rose-600', tooltip: `Sans autorisation : ${pct(m.built.length - m.withPermit, m.built.length)}` },
-  ].filter(k => v(k.key)), [m, filtered.length, v, ct]);
+  ].filter(k => v(k.key)), [m, v, ct]);
 
   const chartDefs = useMemo(() => {
     const bar = (key: string, title: string, d: { name: string; value: number }[], type: any, ci: number, what: string, icon?: any) =>
@@ -91,8 +83,6 @@ export const RentalMarketBlock: React.FC<Props> = memo(({ data }) => {
       <ScatterCard title={ct(key, title)} data={d} xLabel={x} yLabel={y} zLabel={z} colorIndex={ci} hidden={d.length === 0}
         insight={`${d.length} bien(s) représenté(s).`} />;
     return [
-      { key: 'sale-by-location', el: () => bar('sale-by-location', 'Prix de vente moyen par localité (top 10)', m.saleByLoc, 'bar-h', 0, 'les prix de vente moyens par localité (USD)', MapPin) },
-      { key: 'rent-by-location', el: () => bar('rent-by-location', 'Loyer moyen par localité (top 10)', m.rentByLoc, 'bar-h', 3, 'les loyers mensuels moyens par localité (USD)', MapPin) },
       { key: 'price-yield-location', el: () => <ComboBarCard title={ct('price-yield-location', 'Prix de vente et rendement par localité')} data={m.combo} bars={SALE_ONLY}
           line={{ dataKey: 'rendement', name: 'Rendement (%)', colorIndex: 5 }} hidden={m.combo.length === 0} colSpan={2}
           insight="Barres : prix de vente moyen ; courbe : rendement locatif moyen (%)." /> },
@@ -121,8 +111,6 @@ export const RentalMarketBlock: React.FC<Props> = memo(({ data }) => {
             { key: 'prix', label: 'Prix moy.', align: 'right', format: usd }, { key: 'loyer', label: 'Loyer moy.', align: 'right', format: usd },
             { key: 'rendement', label: 'Rendement', align: 'right', format: (n: number) => `${n} %` },
           ]} insight="Moyennes par localité et catégorie ; rendement = loyer annuel / prix de vente." /> },
-      { key: 'top-sale', el: () => bar('top-sale', 'Top 10 biens les plus chers à la vente', m.topSale, 'bar-h', 0, 'les prix de vente les plus élevés (USD)', Tag) },
-      { key: 'top-rent', el: () => bar('top-rent', 'Top 10 biens les plus chers à la location', m.topRent, 'bar-h', 3, 'les loyers les plus élevés (USD/mois)', Tag) },
       { key: 'valuation', el: () => bar('valuation', 'Biens surévalués / sous-évalués', m.valuation, 'donut', 9, 'le prix au m² comparé à la médiane locale de la même catégorie (±30 %, au moins 3 biens)', Scale) },
     ].filter(d => v(d.key)).sort((a, b) => ord(a.key) - ord(b.key));
   }, [m, v, ct, ty, ord]);

@@ -27,3 +27,4 @@
 - [x] Vérifications multi-écrans et rapport
 
 - [x] Aligner le back-end Analytics sur le front-end : purge DB des réglages filter-status / filter-status-field / map-header-note, code mort retiré (useAnalyticsChartsConfig, FilterManager, AnalyticsFilters, blocks).
+- [x] Alléger « Location et valeur » : retirer quatre classements par localité/prix et les KPI « Biens recensés » / « Avec autorisation de bâtir ».
