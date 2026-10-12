@@ -8280,8 +8280,20 @@ export type Database = {
         Args: { _lifecycle: string; _status: string }
         Returns: boolean
       }
+      _notify: {
+        Args: {
+          _action_url: string
+          _dedupe_key: string
+          _message: string
+          _title: string
+          _type: string
+          _user_id: string
+        }
+        Returns: undefined
+      }
       _purge_stale_test_generation_jobs: { Args: never; Returns: number }
       _purge_stale_test_generation_jobs__impl: { Args: never; Returns: number }
+      _require_admin: { Args: never; Returns: string }
       _tax_fees: { Args: { _tax: number }; Returns: number }
       _tax_months_late: {
         Args: { _deadline_day: number; _deadline_month: number; _year: number }
@@ -9121,6 +9133,19 @@ export type Database = {
         Args: { p_accept: boolean; p_id: string; p_response: string }
         Returns: undefined
       }
+      process_land_title_decision: {
+        Args: {
+          p_action: string
+          p_id: string
+          p_notes?: string
+          p_reason?: string
+        }
+        Returns: Json
+      }
+      process_mortgage_decision: {
+        Args: { p_action: string; p_id: string; p_reason?: string }
+        Returns: Json
+      }
       process_mutation_decision: {
         Args: {
           p_action: string
@@ -9130,6 +9155,19 @@ export type Database = {
           p_request_id: string
         }
         Returns: undefined
+      }
+      process_permit_decision: {
+        Args: {
+          p_action: string
+          p_id: string
+          p_permit_type?: string
+          p_response: string
+        }
+        Returns: Json
+      }
+      process_tax_declaration_decision: {
+        Args: { p_action: string; p_id: string; p_reason?: string }
+        Returns: Json
       }
       publish_scheduled_articles: { Args: never; Returns: number }
       purge_old_audit_logs: { Args: { _days?: number }; Returns: Json }
