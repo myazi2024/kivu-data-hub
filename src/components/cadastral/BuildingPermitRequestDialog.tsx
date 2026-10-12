@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { insertNotification } from '@/utils/notificationHelper';
 import { createLongLivedSignedUrl } from '@/utils/storageSignedUrl';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
@@ -185,7 +186,7 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
 
     // Non-blocking notification
     try {
-      await supabase.from('notifications').insert({
+      await insertNotification({
         user_id: user.id, type: 'success',
         title: 'Demande d\'autorisation soumise',
         message: `Votre demande d'${form.requestType === 'new' ? 'autorisation de bâtir' : 'autorisation de régularisation'} pour la parcelle ${parcelNumber} a été soumise. Référence: ${data.id.slice(0, 8).toUpperCase()}. Délai de traitement: 15-30 jours.`,

@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
+import { insertNotification } from '@/utils/notificationHelper';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
@@ -217,7 +218,7 @@ export const usePermitPayment = () => {
 
       // Create notification
       try {
-        await supabase.from('notifications').insert({
+        await insertNotification({
           user_id: user.id,
           type: 'success',
           title: 'Paiement reçu',

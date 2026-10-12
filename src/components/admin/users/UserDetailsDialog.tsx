@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { insertNotification } from '@/utils/notificationHelper';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -123,7 +124,7 @@ export const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
     if (success) {
       // Send notification to the user
       try {
-        await supabase.from('notifications').insert({
+        await insertNotification({
           user_id: user.user_id,
           type: 'account',
           title: 'Compte débloqué',

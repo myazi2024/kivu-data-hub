@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { insertNotification } from '@/utils/notificationHelper';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -47,7 +48,7 @@ export const useBulkUserActions = () => {
           if (error) throw error;
           
           // Send notification
-          await supabase.from('notifications').insert({
+          await insertNotification({
             user_id: safeUserIds[i],
             type: 'account',
             title: 'Compte bloqué',
@@ -100,7 +101,7 @@ export const useBulkUserActions = () => {
           if (error) throw error;
           
           // Send notification
-          await supabase.from('notifications').insert({
+          await insertNotification({
             user_id: userIds[i],
             type: 'account',
             title: 'Compte débloqué',

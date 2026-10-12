@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { insertNotification } from '@/utils/notificationHelper';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -108,7 +109,7 @@ export const UserDataControls: React.FC = () => {
     if (!user) return;
     setRequesting(true);
     try {
-      const { error } = await supabase.from('notifications').insert({
+      const { error } = await insertNotification({
         user_id: user.id,
         title: 'Demande de suppression de données',
         message:

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { insertNotification } from '@/utils/notificationHelper';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -182,7 +183,7 @@ const AdminLandTitleRequests: React.FC = () => {
       }
 
       // Create notification for user
-      await supabase.from('notifications').insert({
+      await insertNotification({
         user_id: selectedRequest.user_id,
         type: processAction === 'approve' ? 'success' : processAction === 'reject' ? 'error' : 'info',
         title: `Demande de titre foncier ${processAction === 'approve' ? 'approuvée' : processAction === 'reject' ? 'rejetée' : 'en cours d\'examen'}`,

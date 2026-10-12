@@ -1,3 +1,4 @@
+import { insertNotification } from '@/utils/notificationHelper';
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -203,11 +204,12 @@ export const AdminNotifications: React.FC = () => {
           action_url: newNotification.action_url || null,
         }));
 
-        const { error } = await supabase
-          .from('notifications')
-          .insert(notificationsToInsert);
-
-        if (error) throw error;
+        const batchKey = `broadcast:${crypto.randomUUID()}`;
+        const results = await Promise.all(
+          notificationsToInsert.map((row) => insertNotification({ ...row, dedupe_key: batchKey })),
+        );
+        const failed = results.filter((r) => r.error).length;
+        if (failed === results.length && results.length > 0) throw new Error('Envoi impossible');
 
         toast({
           title: 'Notifications envoyées',
@@ -215,16 +217,13 @@ export const AdminNotifications: React.FC = () => {
         });
       } else {
         // Envoyer à un utilisateur spécifique
-        const { error } = await supabase
-          .from('notifications')
-          .insert({
-            user_id: selectedUserId,
-            title: newNotification.title,
-            message: newNotification.message,
-            type: newNotification.type,
-            action_url: newNotification.action_url || null,
-          });
-
+        const { error } = await insertNotification({
+          user_id: selectedUserId,
+          title: newNotification.title,
+          message: newNotification.message,
+          type: newNotification.type,
+          action_url: newNotification.action_url || null,
+        });
         if (error) throw error;
 
         toast({

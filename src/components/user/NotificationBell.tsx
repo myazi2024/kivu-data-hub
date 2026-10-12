@@ -16,7 +16,7 @@ import { resolveActionUrl } from '@/utils/userDashboardLinks';
 export const NotificationBell: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { notifications, unreadCount, loadFailed, fetchNotifications, markAsRead, markAllAsRead, deleteNotification } = useNotifications();
+  const { notifications, unreadCount, loadFailed, fetchNotifications, markAsRead, markAllAsRead, deleteNotification, hasMore, loadingMore, loadMore } = useNotifications();
   const [open, setOpen] = useState(false);
 
   const handleNotificationClick = async (notification: typeof notifications[0]) => {
@@ -36,10 +36,10 @@ export const NotificationBell: React.FC = () => {
 
   const getNotificationColor = (type: string) => {
     switch (type) {
-      case 'success': return 'bg-green-500';
-      case 'warning': return 'bg-yellow-500';
+      case 'success': return 'bg-primary';
+      case 'warning': return 'bg-accent-foreground';
       case 'error': return 'bg-destructive';
-      case 'account': return 'bg-orange-500';
+      case 'account': return 'bg-secondary-foreground';
       default: return 'bg-primary';
     }
   };
@@ -49,8 +49,9 @@ export const NotificationBell: React.FC = () => {
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative h-9 w-9 shrink-0" aria-label="Notifications">
-          <Bell className="h-5 w-5" />
+        <Button variant="ghost" size="icon" className="relative h-9 w-9 shrink-0" aria-label={unreadCount > 0 ? `Notifications, ${unreadCount} non lue${unreadCount > 1 ? 's' : ''}` : 'Notifications'}>
+          <Bell className="h-5 w-5" aria-hidden="true" />
+          <span className="sr-only" aria-live="polite">{unreadCount > 0 ? `${unreadCount} notification(s) non lue(s)` : ''}</span>
           {unreadCount > 0 && (
             <Badge 
               variant="destructive" 
@@ -100,8 +101,11 @@ export const NotificationBell: React.FC = () => {
                   }`}
                 >
                   <div
-                    className="cursor-pointer"
+                    role="button"
+                    tabIndex={0}
+                    className="cursor-pointer rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     onClick={() => handleNotificationClick(notification)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); void handleNotificationClick(notification); } }}
                   >
                     <div className="flex items-start gap-2 pr-8">
                       <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${getNotificationColor(notification.type)}`} />
@@ -129,13 +133,21 @@ export const NotificationBell: React.FC = () => {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="absolute top-2 right-2 h-7 w-7 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100"
+                    className="absolute top-2 right-2 h-7 w-7 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100"
+                    aria-label="Supprimer la notification"
                     onClick={(e) => handleDelete(e, notification.id)}
                   >
                     <Trash2 className="h-3 w-3" />
                   </Button>
                 </div>
               ))}
+              {hasMore && (
+                <div className="p-2 text-center">
+                  <Button variant="ghost" size="sm" className="min-h-11 w-full" disabled={loadingMore} onClick={loadMore}>
+                    {loadingMore ? 'Chargement…' : 'Charger plus'}
+                  </Button>
+                </div>
+              )}
             </div>
           )}
         </ScrollArea>

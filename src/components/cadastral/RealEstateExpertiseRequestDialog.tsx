@@ -1,4 +1,5 @@
 import { PROPERTY_CATEGORY_OPTIONS as SHARED_PROPERTY_CATEGORY_OPTIONS, CATEGORY_TO_CONSTRUCTION_TYPES as SHARED_CATEGORY_TO_CONSTRUCTION_TYPES } from '@/lib/ccc/propertyCategories';
+import { insertNotification } from '@/utils/notificationHelper';
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { createLongLivedSignedUrl } from '@/utils/storageSignedUrl';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -1195,7 +1196,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
       }
 
       // Create notification
-      await supabase.from('notifications').insert({
+      await insertNotification({
         user_id: user.id,
         type: 'success',
         title: 'Demande d\'expertise soumise',
