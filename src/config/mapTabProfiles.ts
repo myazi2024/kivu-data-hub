@@ -1,3 +1,4 @@
+import { monthlyRent, salePrice } from '@/utils/rentalMarketAnalytics';
 /**
  * Map tab profiles — controls how the DRC choropleth map is colored,
  * tooltip-ed and legended depending on the active Analytics tab.
@@ -446,10 +447,10 @@ const rentalMarketProfile: MapTabProfile = {
   tooltipLines: ({ analytics, provinceName }) => {
     const c = filterProv(analytics.contributions as any[], provinceName);
     const rented = c.filter((r: any) => r.is_rented === true);
-    const rents = rented.map((r: any) => Number(r.monthly_rent_usd || 0)).filter((n: number) => n > 0);
+    const rents = rented.map(monthlyRent).filter((n): n is number => !!n);
     const avgRent = rents.length ? rents.reduce((s, n) => s + n, 0) / rents.length : 0;
     const sellers = c.filter((r: any) => r.would_sell_if_offered === true);
-    const prices = c.map((r: any) => Number(r.resale_price_usd || 0)).filter((n: number) => n > 0);
+    const prices = c.map(salePrice).filter((n): n is number => !!n);
     const avgPrice = prices.length ? prices.reduce((s, n) => s + n, 0) / prices.length : 0;
     return [
       { label: 'En location',   value: fmtN(rented.length),                     color: 'text-emerald-600' },
