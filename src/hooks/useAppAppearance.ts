@@ -16,6 +16,8 @@ interface AppearanceConfig {
   app_name?: string;
   app_tagline?: string;
   hero_image_url?: string;
+  land_data_preview_desktop_url?: string;
+  land_data_preview_mobile_url?: string;
   hero_title?: string;
   hero_overlay_opacity?: number;
   hero_parcels_count?: number;
