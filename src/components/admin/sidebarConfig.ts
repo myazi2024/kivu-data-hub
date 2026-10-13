@@ -5,7 +5,7 @@ import {
   Tag, Tags, Building2, Receipt, TrendingUp, Smartphone, Grid3X3, TestTube,
   Key, Scale, Award, Handshake, Presentation, PieChart, Wallet, ArrowLeftRight,
   Layers, FileSearch, Landmark, ScrollText, History, Compass, Percent, Activity,
-  SlidersHorizontal, BookOpen, Newspaper, Palette, UserCog, CalendarCheck, Ruler,
+  SlidersHorizontal, BookOpen, Newspaper, Palette, UserCog, CalendarCheck, Ruler, ShoppingBag,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -148,6 +148,7 @@ export const menuItems: AdminMenuSection[] = [
       { icon: Activity, label: 'Hub Système', value: 'system-hub', badge: null, keywords: ['hub', 'tableau', 'overview', 'kpi'] },
       { icon: SlidersHorizontal, label: 'Paramètres', value: 'system-settings', badge: null, keywords: ['settings', 'config', 'global', 'timezone', 'devise'] },
       { icon: Settings, label: 'Actions Parcelle', value: 'parcel-actions-config', badge: null, keywords: ['boutons', 'actions', 'parcelle'] },
+      { icon: ShoppingBag, label: 'Catalogue Données foncières', value: 'analytics-catalog', badge: null, keywords: ['analytics', 'visuels', 'prix', 'accès payant', 'données foncières'] },
       { icon: Palette, label: 'Apparence', value: 'appearance', badge: null, keywords: ['thème', 'couleurs', 'logo', 'design', 'style', 'favicon'] },
       { icon: TestTube, label: 'Mode Test', value: 'test-mode', badge: null, keywords: ['sandbox', 'debug', 'développement', 'test'] },
       { icon: Shield, label: "Logs d'Audit", value: 'audit-logs', badge: null, keywords: ['journal', 'historique', 'trace', 'activité'] },

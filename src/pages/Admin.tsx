@@ -100,6 +100,7 @@ const tabComponents: Record<string, React.LazyExoticComponent<any>> = {
   'test-mode': lazy(() => import('@/components/admin/AdminTestMode')),
   'audit-logs': lazy(() => import('@/components/admin/AdminAuditLogs')),
   'system-health': lazy(() => import('@/components/admin/AdminSystemHealth')),
+  'analytics-catalog': lazy(() => import('@/components/admin/AdminAnalyticsCatalog')),
   'appearance': lazy(() => import('@/components/admin/AdminAppearance')),
   'hr': lazy(() => import('@/components/admin/hr/AdminHR')),
   'system-hub': lazy(() => import('@/components/admin/AdminSystemHub')),

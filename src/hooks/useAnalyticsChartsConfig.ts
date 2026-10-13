@@ -1,3 +1,4 @@
+import { useAnalyticsAccessContext, accessKey } from '@/hooks/useAnalyticsAccess';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useMemo } from 'react';
@@ -114,7 +115,9 @@ export function useAnalyticsTabsConfig() {
     }).sort((a, b) => a.display_order - b.display_order);
   }, [configs]);
 
-  const visibleTabs = useMemo(() => tabs.filter(t => t.is_visible), [tabs]);
+  const access = useAnalyticsAccessContext();
+  const visibleTabs = useMemo(() => tabs.filter(t => t.is_visible
+    && (!access.restricted || [...access.allowed].some(k => k.startsWith(`${t.key}::`)))), [tabs, access]);
 
   return { tabs, visibleTabs, isLoading };
 }
@@ -143,11 +146,14 @@ export function useTabChartsConfig(tabKey: string, defaults: ChartConfigItem[]) 
     }).sort((a, b) => a.display_order - b.display_order);
   }, [configs, tabKey, defaults]);
 
+  const access = useAnalyticsAccessContext();
   const isChartVisible = useMemo(() => {
     const map = new Map<string, boolean>();
     merged.forEach(m => map.set(m.item_key, m.is_visible));
+    // Profil non habilité : seuls les visuels achetés et valides sont affichés.
+    if (access.restricted) return (key: string) => (map.get(key) ?? true) && access.allowed.has(accessKey(tabKey, key));
     return (key: string) => map.get(key) ?? true;
-  }, [merged]);
+  }, [merged, access, tabKey]);
 
   const getChartConfig = useMemo(() => {
     const map = new Map<string, ChartConfigItem>();

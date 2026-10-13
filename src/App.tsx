@@ -39,6 +39,7 @@ import ResetPassword from "./pages/ResetPassword";
 const Publications = lazyWithRetry(() => import("./pages/Publications"));
 const Map = lazyWithRetry(() => import("./pages/Map"));
 const CadastralMap = lazyWithRetry(() => import("./pages/CadastralMap"));
+const LandDataCatalog = lazyWithRetry(() => import("./pages/LandDataCatalog"));
 const Admin = lazyWithRetry(() => import("./pages/Admin"));
 
 
@@ -113,6 +114,11 @@ const App = () => (
                     <LandDataAccessGate>
                       <Map />
                     </LandDataAccessGate>
+                  } />
+                  <Route path="/donnees-foncieres/catalogue" element={
+                    <ProtectedRoute>
+                      <LandDataCatalog />
+                    </ProtectedRoute>
                   } />
                   <Route path="/cadastral-map" element={
                     <ProtectedRoute>

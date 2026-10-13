@@ -61,6 +61,17 @@ Deno.serve(async (req) => {
         .maybeSingle();
       if (!inv || inv.user_id !== userId) return json({ error: "Facture introuvable" }, 404);
       reference = `TEST-${Date.now()}`;
+    } else if (kind === "analytics_invoice") {
+      invoiceId = typeof body.invoice_id === "string" ? body.invoice_id : null;
+      if (!invoiceId) return json({ error: "invoice_id requis" }, 400);
+      const { data: inv } = await admin
+        .from("analytics_visual_invoices")
+        .select("id, user_id, status, total_amount_usd")
+        .eq("id", invoiceId)
+        .maybeSingle();
+      if (!inv || inv.user_id !== userId || inv.status !== "pending") return json({ error: "Facture introuvable" }, 404);
+      amount = Number(inv.total_amount_usd);
+      reference = `TEST-DATA-${Date.now()}`;
     } else if (kind === "permit_request") {
       const n = Number(body.amount_usd);
       if (!Number.isFinite(n) || n < 0 || n > 100000) return json({ error: "Montant invalide" }, 400);

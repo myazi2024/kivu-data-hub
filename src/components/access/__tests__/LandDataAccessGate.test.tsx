@@ -10,6 +10,11 @@ const { auth } = vi.hoisted(() => ({
 }));
 const { appearance } = vi.hoisted(() => ({ appearance: { config: {} as Record<string, string> } }));
 vi.mock('@/hooks/useAppAppearance', () => ({ useAppAppearance: () => ({ config: appearance.config, loading: false }) }));
+const { purchased } = vi.hoisted(() => ({ purchased: { keys: [] as string[] } }));
+vi.mock('@/hooks/useAnalyticsAccess', () => ({
+  useMyAnalyticsAccess: () => ({ allowed: new Set(purchased.keys), isLoading: false }),
+  AnalyticsAccessProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+}));
 vi.mock('@/hooks/useAuth', () => ({ useAuth: () => auth }));
 vi.mock('@/components/ui/navigation', () => ({ default: () => <nav aria-label="Navigation" /> }));
 vi.mock('@/components/ui/loading-indicator', () => ({ LoadingIndicator: () => <span>Chargement</span> }));
@@ -34,14 +39,15 @@ afterEach(() => {
   auth.loading = false;
   localStorage.clear();
   appearance.config = {};
+  purchased.keys = [];
 });
 
 describe('LandDataAccessGate', () => {
   it('invites a non-authorized user without exposing protected content', () => {
     renderGate();
     expect(screen.getByRole('heading', { name: 'Données foncières' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Demander l’accès' })).toHaveAttribute('href', '/partnership');
-    expect(screen.getByText(/après examen de votre demande/)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Demander l’accès' })).toHaveAttribute('href', '/donnees-foncieres/catalogue');
+    expect(screen.getByText(/ne payez que ce dont vous avez besoin/)).toBeInTheDocument();
     expect(screen.queryByText('Données protégées')).not.toBeInTheDocument();
     expect(screen.queryByText(/non accessibles|Accès réservé|PII/)).not.toBeInTheDocument();
     expect(screen.getByText('Visualisez les territoires')).toBeInTheDocument();
@@ -68,6 +74,13 @@ describe('LandDataAccessGate', () => {
     renderGate();
     expect(screen.getByText('Données protégées')).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Demander l’accès' })).not.toBeInTheDocument();
+  });
+
+  it('lets a non-authorized user in once a visual is purchased', () => {
+    purchased.keys = ['taxes::kpi-total'];
+    renderGate();
+    expect(screen.getByText('Données protégées')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Acheter d'autres visuels/ })).toHaveAttribute('href', '/donnees-foncieres/catalogue');
   });
 
   it('redirects a signed-out visitor to authentication', () => {
