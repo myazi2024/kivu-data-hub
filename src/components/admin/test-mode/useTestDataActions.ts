@@ -102,7 +102,7 @@ export const useTestDataActions = ({ userId, onComplete }: UseTestDataActionsPro
     return result;
   }, []);
 
-  const cleanupTestData = useCallback(async () => {
+  const cleanupTestData = useCallback(async (): Promise<boolean> => {
     try {
       setCleaningUp(true);
       setCleanupPerStep(null);
@@ -130,10 +130,12 @@ export const useTestDataActions = ({ userId, onComplete }: UseTestDataActionsPro
         });
       }
       await onComplete();
+      return true;
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Veuillez réessayer';
       console.error('Erreur lors du nettoyage:', error);
       toast.error('Erreur lors du nettoyage', { description: message });
+      return false;
     } finally {
       setCleaningUp(false);
     }

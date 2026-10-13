@@ -153,7 +153,12 @@ const AdminTestMode: React.FC = () => {
       setSaving(true);
       // Delegate purge to the hook so progress streams via cleanupPerStep /
       // cleanupFailedStep / cleanupTruncatedSteps + CleanupProgress.
-      await cleanupTestData();
+      const purged = await cleanupTestData();
+      if (!purged) {
+        setConfig(prev => ({ ...prev, enabled: true }));
+        toast.error('Mode test toujours actif', { description: "La suppression a échoué : le mode test n'a pas été désactivé." });
+        return;
+      }
 
       const oldConfig = { ...savedConfig };
       await upsertSearchConfig('test_mode', toRecord(validatedConfig), "Configuration du mode test global pour l'admin");

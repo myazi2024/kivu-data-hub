@@ -8425,14 +8425,9 @@ export type Database = {
         Returns: Json
       }
       check_service_usage: { Args: { service_id_param: string }; Returns: Json }
-      cleanup_all_test_data: { Args: never; Returns: Json }
       cleanup_all_test_data_auto: { Args: never; Returns: Json }
       cleanup_expired_data: { Args: never; Returns: undefined }
       cleanup_rate_limits: { Args: never; Returns: undefined }
-      cleanup_test_data_chunk: {
-        Args: { p_limit?: number; p_step: string }
-        Returns: number
-      }
       close_fiscal_period: {
         Args: { p_month: number; p_year: number }
         Returns: Json
