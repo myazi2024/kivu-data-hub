@@ -32,3 +32,5 @@
 - [x] Alléger « Location et valeur » : retirer quatre classements par localité/prix et les KPI « Biens recensés » / « Avec autorisation de bâtir ».
 - [x] Ajouter « À propos de ce service » en tête de la page d’introduction CCC (vérification au cadastre numérique + numéro recherché rappelé).
 - [x] Reformuler « À propos de ce service » : vérification poussée, absence de correspondance (frappe ou méthodologie), demande de vérification auprès du cadastre, ajout par BIC au registre national.
+
+- [x] CCC : fermeture accidentelle du formulaire bloquée (clic extérieur/Echap → confirmation, brouillon restauré = modifié, message édition corrigé) — 2026-10-13
