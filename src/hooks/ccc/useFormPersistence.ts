@@ -146,7 +146,7 @@ export interface UseFormPersistenceResult {
 export function useFormPersistence(params: UseFormPersistenceParams): UseFormPersistenceResult {
   const { toast } = useToast();
   const {
-    open, parcelNumber, editingContributionId, isLoadingFromDbRef,
+    open, parcelNumber, editingContributionId, isLoadingFromDbRef, markDirty,
     formData, currentOwners, previousOwners, taxRecords, mortgageRecords,
     permitMode, buildingPermits, permitRequest, gpsCoordinates, parcelSides,
     obligationType, sectionType, hasMortgage, hasDispute, ownershipMode, leaseYears,
@@ -277,6 +277,8 @@ export function useFormPersistence(params: UseFormPersistenceParams): UseFormPer
       if (parsed.disputeFormData) setDisputeFormData(parsed.disputeFormData);
       if (parsed.soundEnvironment) setSoundEnvironment(parsed.soundEnvironment);
       if (parsed.nearbySoundSources) setNearbySoundSources(parsed.nearbySoundSources);
+      // Un brouillon restauré contient des données : toute fermeture doit demander confirmation.
+      markDirty();
       toast({ title: "Données restaurées", description: "Vos données précédentes ont été restaurées." });
     } catch (error) {
       console.error('Erreur chargement:', error);
