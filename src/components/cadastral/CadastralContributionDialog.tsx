@@ -112,11 +112,12 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
         <DialogContent
           ref={dialogContentRef}
           className="!left-0 !top-0 h-dvh !max-h-dvh w-screen max-w-none translate-x-0 translate-y-0 grid-cols-[minmax(0,1fr)] content-start gap-0 overflow-x-hidden overflow-y-auto overscroll-contain border-0 bg-background p-0 pb-[env(safe-area-inset-bottom)] shadow-2xl rounded-none z-[9999] lg:!left-auto lg:right-0 lg:w-[420px] lg:rounded-l-2xl lg:data-[state=open]:slide-in-from-right lg:data-[state=closed]:slide-out-to-right"
-          onInteractOutside={(e) => {
-            const target = e.target as HTMLElement;
-            if (target.closest('[data-whatsapp-button="true"]')) {
-              e.preventDefault();
-            }
+          // Un clic en dehors du formulaire ne doit jamais le fermer : la fermeture
+          // passe uniquement par le bouton Fermer ou Échap, qui demandent confirmation.
+          onInteractOutside={(e) => e.preventDefault()}
+          onEscapeKeyDown={(e) => {
+            e.preventDefault();
+            state.handleAttemptClose();
           }}
         >
           <DialogHeader className="min-w-0 px-3 sm:px-4 pt-[calc(env(safe-area-inset-top)+0.75rem)] pb-2 pr-14 border-b bg-gradient-to-r from-primary/5 to-transparent">
@@ -324,7 +325,11 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
         <AlertDialogContent className="z-[100000]">
           <AlertDialogHeader>
             <AlertDialogTitle>Modifications non enregistrées</AlertDialogTitle>
-            <AlertDialogDescription>Vous avez des données non soumises. Vos données ont été sauvegardées en brouillon et seront restaurées à votre prochaine visite.</AlertDialogDescription>
+            <AlertDialogDescription>
+              {editingContributionId
+                ? 'Vous avez des modifications non enregistrées. Si vous fermez maintenant, elles seront perdues.'
+                : 'Vous avez des données non soumises. Vos données ont été sauvegardées en brouillon et seront restaurées à votre prochaine visite.'}
+            </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Continuer l'édition</AlertDialogCancel>

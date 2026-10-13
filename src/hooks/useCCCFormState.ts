@@ -315,7 +315,7 @@ export const useCCCFormState = ({
     resetUploadedTracker,
     removeUploadedPath,
   } = useFormPersistence({
-    open, parcelNumber, editingContributionId, isLoadingFromDbRef,
+    open, parcelNumber, editingContributionId, isLoadingFromDbRef, markDirty,
     formData, currentOwners, previousOwners, taxRecords, mortgageRecords,
     permitMode, buildingPermits, permitRequest, gpsCoordinates, parcelSides,
     obligationType, sectionType, hasMortgage, hasDispute, ownershipMode, leaseYears,
@@ -1141,8 +1141,10 @@ export const useCCCFormState = ({
       return true;
     });
     const hasData = hasFilledFormField || currentOwners.some(o => o.lastName || o.firstName) || previousOwners.some(o => o.name) || taxRecords.some(t => t.taxAmount) || mortgageRecords.some(m => m.mortgageAmount) || buildingPermits.some(p => p.permitNumber) || gpsCoordinates.some(g => g.lat || g.lng);
-    if (hasData) { saveFormDataToStorage(); setShowExitConfirmation(true); } else { handleClose(); }
-  }, [formData, currentOwners, previousOwners, taxRecords, mortgageRecords, buildingPermits, gpsCoordinates, showSuccess, saveFormDataToStorage]);
+    // En mode édition d'une contribution existante, aucun brouillon n'est écrit
+    // (la persistance locale est désactivée) : on demande seulement confirmation.
+    if (hasData) { if (!editingContributionId) saveFormDataToStorage(); setShowExitConfirmation(true); } else { handleClose(); }
+  }, [formData, currentOwners, previousOwners, taxRecords, mortgageRecords, buildingPermits, gpsCoordinates, showSuccess, saveFormDataToStorage, editingContributionId]);
 
   // ─── Effects ───
 

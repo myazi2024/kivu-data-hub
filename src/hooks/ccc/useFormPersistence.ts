@@ -69,6 +69,8 @@ interface UseFormPersistenceParams {
   parcelNumber: string;
   editingContributionId?: string;
   isLoadingFromDbRef: React.MutableRefObject<boolean>;
+  /** Marque le formulaire comme modifié (appelé après restauration d'un brouillon). */
+  markDirty: () => void;
 
   // State slices (lecture pour save)
   formData: CadastralContributionData;
@@ -144,7 +146,7 @@ export interface UseFormPersistenceResult {
 export function useFormPersistence(params: UseFormPersistenceParams): UseFormPersistenceResult {
   const { toast } = useToast();
   const {
-    open, parcelNumber, editingContributionId, isLoadingFromDbRef,
+    open, parcelNumber, editingContributionId, isLoadingFromDbRef, markDirty,
     formData, currentOwners, previousOwners, taxRecords, mortgageRecords,
     permitMode, buildingPermits, permitRequest, gpsCoordinates, parcelSides,
     obligationType, sectionType, hasMortgage, hasDispute, ownershipMode, leaseYears,
@@ -275,11 +277,13 @@ export function useFormPersistence(params: UseFormPersistenceParams): UseFormPer
       if (parsed.disputeFormData) setDisputeFormData(parsed.disputeFormData);
       if (parsed.soundEnvironment) setSoundEnvironment(parsed.soundEnvironment);
       if (parsed.nearbySoundSources) setNearbySoundSources(parsed.nearbySoundSources);
+      // Un brouillon restauré contient des données : toute fermeture doit demander confirmation.
+      markDirty();
       toast({ title: "Données restaurées", description: "Vos données précédentes ont été restaurées." });
     } catch (error) {
       console.error('Erreur chargement:', error);
     }
-  }, [STORAGE_KEY, toast, setFormData, setCurrentOwners, setPreviousOwners, setTaxRecords, setMortgageRecords, setPermitMode, setBuildingPermits, setPermitRequest, setGpsCoordinates, setParcelSides, setObligationType, setSectionType, setHasMortgage, setHasDispute, setOwnershipMode, setLeaseYears, setRoadSides, setServitude, setCustomTitleName, setConstructionMode, setAdditionalConstructions, setBuildingShapes, setDisputeFormData, setSoundEnvironment, setNearbySoundSources]);
+  }, [STORAGE_KEY, toast, markDirty, setFormData, setCurrentOwners, setPreviousOwners, setTaxRecords, setMortgageRecords, setPermitMode, setBuildingPermits, setPermitRequest, setGpsCoordinates, setParcelSides, setObligationType, setSectionType, setHasMortgage, setHasDispute, setOwnershipMode, setLeaseYears, setRoadSides, setServitude, setCustomTitleName, setConstructionMode, setAdditionalConstructions, setBuildingShapes, setDisputeFormData, setSoundEnvironment, setNearbySoundSources]);
 
   // Effet: chargement initial au montage / ouverture
   useEffect(() => {
