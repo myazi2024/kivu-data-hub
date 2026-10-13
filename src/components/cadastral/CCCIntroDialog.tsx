@@ -65,20 +65,24 @@ const CCCIntroDialog = ({ open, onOpenChange, onContinue, parcelNumber }: CCCInt
               <div className="flex-1 min-w-0">
                 <h3 className="font-semibold text-sm mb-1">À propos de ce service</h3>
                 <p className="text-sm leading-relaxed text-foreground/80">
-                  Ce formulaire permet d'abord de vérifier si votre parcelle figure déjà au cadastre
-                  numérique de la République Démocratique du Congo :{' '}
+                  Ce formulaire permet de faire une vérification poussée : votre parcelle
+                  figure-t-elle déjà au cadastre numérique de la République Démocratique du Congo ?
+                  {' '}
                   {checkedParcel ? (
                     <>
-                      si « <strong className="text-foreground">{checkedParcel}</strong> » y apparaît
+                      Si cette parcelle « <strong className="text-foreground">{checkedParcel}</strong> »
+                      n'a pas eu de correspondance
                     </>
                   ) : (
-                    'si elle y apparaît déjà'
+                    'Si aucune correspondance n'a été trouvée pour votre parcelle'
                   )}
-                  , son dossier s'ouvre et vous n'avez rien à déclarer. Si elle est introuvable, vous
-                  la décrivez ici avec vos documents ; après vérification par notre équipe, elle
-                  rejoint le registre national, où elle sera consultable par tous et vous ouvrira les
-                  autres démarches foncières (titre foncier, autorisation de bâtir, expertise,
-                  mutation).
+                  , c'est probablement parce qu'il y a une erreur de frappe ou parce que la parcelle
+                  est enregistrée avec une méthodologie différente. Ce formulaire vous aide alors à
+                  soumettre une demande de vérification supplémentaire auprès du cadastre numérique :
+                  décrivez cette parcelle avec toutes les informations et documents demandés. Après
+                  vérification, BIC pourra l'ajouter au registre national, où elle sera consultable
+                  pour renforcer sa sécurisation et vous ouvrira l'accès à d'autres démarches
+                  foncières en ligne (titre foncier, autorisation de bâtir, expertise, mutation).
                 </p>
               </div>
             </div>
