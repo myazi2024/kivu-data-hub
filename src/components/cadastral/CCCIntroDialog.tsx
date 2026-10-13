@@ -14,7 +14,8 @@ interface CCCIntroDialogProps {
   parcelNumber: string;
 }
 
-const CCCIntroDialog = ({ open, onOpenChange, onContinue }: CCCIntroDialogProps) => {
+const CCCIntroDialog = ({ open, onOpenChange, onContinue, parcelNumber }: CCCIntroDialogProps) => {
+  const checkedParcel = parcelNumber.trim();
   const [hasScrolledToBottom, setHasScrolledToBottom] = React.useState(false);
   const contentRef = React.useRef<HTMLDivElement>(null);
 
