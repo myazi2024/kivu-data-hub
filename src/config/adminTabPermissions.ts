@@ -29,6 +29,7 @@ export const ADMIN_TAB_PERMISSIONS: Record<string, TabPermission> = {
   'system-hub': { resource: 'system', action: 'view' },
   'test-mode': { resource: 'test_mode', action: 'manage' },
   'appearance': { resource: 'appearance', action: 'manage' },
+  'analytics-catalog': { resource: 'appearance', action: 'manage' },
 
   // --- Comptabilité avancée ---
   'fec-export': { resource: 'accounting', action: 'export' },
