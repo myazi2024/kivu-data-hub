@@ -272,6 +272,11 @@ const AdminAppearance = () => {
   );
   const [uploadingHero, setUploadingHero] = useState(false);
 
+  // Land data discovery previews
+  const [previewDesktopUrl, setPreviewDesktopUrl] = useState('');
+  const [previewMobileUrl, setPreviewMobileUrl] = useState('');
+  const [uploadingPreview, setUploadingPreview] = useState<'desktop' | 'mobile' | null>(null);
+
   // Google Fonts custom URL
   const [googleFontUrl, setGoogleFontUrl] = useState('');
   useGoogleFontInjection(googleFontUrl);
@@ -319,6 +324,8 @@ const AdminAppearance = () => {
               case 'font_size_base': setFontSizeBase(typeof val === 'string' ? val : '16'); break;
               case 'border_radius': setBorderRadius(typeof val === 'string' ? val : '0.375'); break;
               case 'hero_image_url': setHeroImageUrl(typeof val === 'string' ? val : ''); break;
+              case 'land_data_preview_desktop_url': setPreviewDesktopUrl(typeof val === 'string' ? val : ''); break;
+              case 'land_data_preview_mobile_url': setPreviewMobileUrl(typeof val === 'string' ? val : ''); break;
               case 'hero_title': setHeroTitle(typeof val === 'string' ? val : 'Consultez les informations cadastrales des parcelles depuis chez vous.'); break;
               case 'hero_overlay_opacity': setHeroOverlayOpacity(typeof val === 'number' ? val : 80); break;
               case 'hero_parcels_count':
@@ -368,6 +375,18 @@ const AdminAppearance = () => {
     if (!file) return;
     const url = await uploadFile(file, 'hero', setUploadingHero);
     if (url) setHeroImageUrl(url);
+  };
+
+  const handlePreviewUpload = (variant: 'desktop' | 'mobile') => async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type) || file.size > 5 * 1024 * 1024) {
+      toast({ title: 'Image invalide', description: 'Choisissez une image PNG, JPG ou WebP de 5 Mo maximum.', variant: 'destructive' });
+      return;
+    }
+    const url = await uploadFile(file, 'land-data-preview', (v) => setUploadingPreview(v ? variant : null));
+    if (url) (variant === 'desktop' ? setPreviewDesktopUrl : setPreviewMobileUrl)(url);
   };
 
   const handleLoadingLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -424,6 +443,8 @@ const AdminAppearance = () => {
         upsertConfig('font_size_base', fontSizeBase),
         upsertConfig('border_radius', borderRadius),
         upsertConfig('hero_image_url', heroImageUrl),
+        upsertConfig('land_data_preview_desktop_url', previewDesktopUrl),
+        upsertConfig('land_data_preview_mobile_url', previewMobileUrl),
         upsertConfig('hero_title', heroTitle),
         upsertConfig('hero_overlay_opacity', heroOverlayOpacity),
         ...HOME_BIC_INDICATORS.map(({ key }) => upsertConfig(key, Number(heroCounts[key]))),
@@ -601,6 +622,46 @@ const AdminAppearance = () => {
                   </div>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Section: Page Données foncières */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Image className="h-4 w-4" /> Page Données foncières
+              </CardTitle>
+              <CardDescription>Captures d'aperçu montrées aux profils qui n'ont pas encore accès. N'utilisez pas de capture contenant des noms ou données personnelles.</CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-4 sm:grid-cols-2">
+              {([
+                { variant: 'desktop' as const, label: 'Capture ordinateur', hint: 'Format paysage conseillé', url: previewDesktopUrl, set: setPreviewDesktopUrl },
+                { variant: 'mobile' as const, label: 'Capture mobile', hint: 'Format portrait conseillé', url: previewMobileUrl, set: setPreviewMobileUrl },
+              ]).map(({ variant, label, hint, url, set }) => (
+                <div key={variant} className="space-y-2 min-w-0">
+                  <Label className="text-xs">{label}</Label>
+                  <p className="text-[11px] text-muted-foreground">{hint} · PNG, JPG ou WebP · 5 Mo max</p>
+                  {url && (
+                    <div className="rounded-md border bg-muted/30 p-2">
+                      <img src={url} alt={label} className="mx-auto max-h-40 object-contain rounded" />
+                    </div>
+                  )}
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Button variant="outline" size="sm" asChild disabled={uploadingPreview === variant}>
+                      <label className="cursor-pointer">
+                        {uploadingPreview === variant ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Upload className="h-3 w-3 mr-1" />}
+                        {url ? 'Remplacer' : 'Choisir une image'}
+                        <input type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={handlePreviewUpload(variant)} />
+                      </label>
+                    </Button>
+                    {url && (
+                      <Button variant="ghost" size="sm" className="text-destructive" onClick={() => { if (window.confirm('Retirer cette capture ? Pensez à sauvegarder.')) set(''); }}>
+                        <Trash2 className="h-3 w-3 mr-1" /> Retirer
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              ))}
             </CardContent>
           </Card>
 

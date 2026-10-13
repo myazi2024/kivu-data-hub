@@ -8,6 +8,8 @@ import LandDataAccessGate from '../LandDataAccessGate';
 const { auth } = vi.hoisted(() => ({
   auth: { user: { id: 'test-user' } as { id: string } | null, profile: { role: 'user' } as { role: string } | null, loading: false },
 }));
+const { appearance } = vi.hoisted(() => ({ appearance: { config: {} as Record<string, string> } }));
+vi.mock('@/hooks/useAppAppearance', () => ({ useAppAppearance: () => ({ config: appearance.config, loading: false }) }));
 vi.mock('@/hooks/useAuth', () => ({ useAuth: () => auth }));
 vi.mock('@/components/ui/navigation', () => ({ default: () => <nav aria-label="Navigation" /> }));
 vi.mock('@/components/ui/loading-indicator', () => ({ LoadingIndicator: () => <span>Chargement</span> }));
@@ -31,6 +33,7 @@ afterEach(() => {
   auth.profile = { role: 'user' };
   auth.loading = false;
   localStorage.clear();
+  appearance.config = {};
 });
 
 describe('LandDataAccessGate', () => {
@@ -51,6 +54,13 @@ describe('LandDataAccessGate', () => {
     expect(container.querySelector('[data-preview="desktop"]')).toHaveClass('hidden', 'md:flex', 'aspect-video');
     expect(container.querySelector('[data-preview="mobile"]')).toHaveClass('md:hidden', 'aspect-[3/4]');
     expect(container.querySelector('img')).toBeNull();
+  });
+
+  it('shows admin-managed captures for each screen size', () => {
+    appearance.config = { land_data_preview_desktop_url: 'https://x/d.png', land_data_preview_mobile_url: 'https://x/m.png' };
+    const { container } = renderGate();
+    expect(container.querySelector('[data-preview="desktop"] img')).toHaveAttribute('src', 'https://x/d.png');
+    expect(container.querySelector('[data-preview="mobile"] img')).toHaveAttribute('src', 'https://x/m.png');
   });
 
   it.each(LAND_DATA_ROLES)('preserves access for %s', (role) => {

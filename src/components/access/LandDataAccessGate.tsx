@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Helmet } from "react-helmet-async";
 import Navigation from "@/components/ui/navigation";
 import { LoadingIndicator } from "@/components/ui/loading-indicator";
+import { useAppAppearance } from "@/hooks/useAppAppearance";
 
 interface LandDataAccessGateProps {
   children: ReactNode;
@@ -18,7 +19,22 @@ const benefits = [
   { icon: Share2, text: "Partagez vos analyses" },
 ];
 
-const LandDataAccessDenied = () => (
+const PreviewPlaceholder = () => (
+  <div className="flex flex-col items-center gap-3 text-center text-muted-foreground">
+    <Image aria-hidden="true" className="h-9 w-9 opacity-60" />
+    <p className="text-sm font-medium">Aperçu des Données foncières</p>
+  </div>
+);
+
+const PreviewImage = ({ src }: { src: string }) => (
+  <img src={src} alt="Aperçu des Données foncières" loading="lazy" className="h-full w-full rounded-lg object-contain" />
+);
+
+const LandDataAccessDenied = () => {
+  const { config } = useAppAppearance();
+  const desktop = config.land_data_preview_desktop_url?.trim();
+  const mobile = config.land_data_preview_mobile_url?.trim();
+  return (
   <div className="min-h-dvh bg-background flex flex-col">
     <Helmet>
       <title>Découvrez les Données foncières | BIC</title>
@@ -48,18 +64,11 @@ const LandDataAccessDenied = () => (
       </section>
 
       <section aria-label="Aperçu des Données foncières" className="mt-8 sm:mt-10">
-        {/* Replace each placeholder with the corresponding supplied capture, using object-contain. */}
-        <div data-preview="desktop" className="hidden aspect-video items-center justify-center rounded-lg border border-dashed border-border bg-muted/40 p-6 md:flex">
-          <div className="flex flex-col items-center gap-3 text-center text-muted-foreground">
-            <Image aria-hidden="true" className="h-9 w-9 opacity-60" />
-            <p className="text-sm font-medium">Aperçu des Données foncières</p>
-          </div>
+        <div data-preview="desktop" className={`hidden aspect-video items-center justify-center rounded-lg md:flex ${desktop ? '' : 'border border-dashed border-border bg-muted/40 p-6'}`}>
+          {desktop ? <PreviewImage src={desktop} /> : <PreviewPlaceholder />}
         </div>
-        <div data-preview="mobile" className="mx-auto flex aspect-[3/4] w-full max-w-sm items-center justify-center rounded-lg border border-dashed border-border bg-muted/40 p-6 md:hidden">
-          <div className="flex flex-col items-center gap-3 text-center text-muted-foreground">
-            <Image aria-hidden="true" className="h-9 w-9 opacity-60" />
-            <p className="text-sm font-medium">Aperçu des Données foncières</p>
-          </div>
+        <div data-preview="mobile" className={`mx-auto flex aspect-[3/4] w-full max-w-sm items-center justify-center rounded-lg md:hidden ${mobile ? '' : 'border border-dashed border-border bg-muted/40 p-6'}`}>
+          {mobile ? <PreviewImage src={mobile} /> : <PreviewPlaceholder />}
         </div>
       </section>
 
@@ -82,7 +91,8 @@ const LandDataAccessDenied = () => (
       </div>
     </main>
   </div>
-);
+  );
+};
 
 const LandDataAccessGate = ({ children }: LandDataAccessGateProps) => {
   const { user, profile, loading } = useAuth();
