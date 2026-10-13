@@ -61,7 +61,7 @@ const LandDataAccessDenied = () => {
           </Link>
         </Button>
         <p className="mx-auto mt-3 max-w-lg text-xs leading-relaxed text-muted-foreground">
-          L’accès est accordé après examen de votre demande, selon votre profil et votre activité.
+          Choisissez les visuels qui vous intéressent et ne payez que ce dont vous avez besoin.
         </p>
       </section>
 
