@@ -1,11 +1,9 @@
 import { ReactNode } from "react";
 import { Navigate, Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { Lock, ShieldCheck, MapPin, FileText, Users, Scale, BarChart3, Handshake, Home, Building2, Banknote, Layers } from "lucide-react";
+import { ArrowRight, Map, BarChart3, Share2, Image, ArrowLeft } from "lucide-react";
 import { LAND_DATA_ROLES } from "@/constants/roles";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Helmet } from "react-helmet-async";
 import Navigation from "@/components/ui/navigation";
 import { LoadingIndicator } from "@/components/ui/loading-indicator";
@@ -14,122 +12,70 @@ interface LandDataAccessGateProps {
   children: ReactNode;
 }
 
-const restrictedItems = [
-  { icon: MapPin, text: "Parcelles cadastrales géolocalisées et leurs limites (GPS)" },
-  { icon: FileText, text: "Titres fonciers, certificats d'enregistrement, contrats de location" },
-  { icon: Users, text: "Identités des propriétaires et co-titulaires (PII)" },
-  { icon: Banknote, text: "Hypothèques et inscriptions de garanties" },
-  { icon: Scale, text: "Litiges fonciers et historiques contentieux" },
-  { icon: Layers, text: "Mutations, transferts et historiques de propriété" },
-  { icon: Building2, text: "Autorisations de bâtir et constructions déclarées" },
-  { icon: FileText, text: "Données fiscales (impôt foncier, bâtisse, IRL)" },
-  { icon: BarChart3, text: "Statistiques croisées multi-variables (genre, usage, zone, statut)" },
-  { icon: MapPin, text: "Cartographie territoriale par province / territoire / commune / quartier" },
-];
-
-const grantedItems = [
-  { icon: MapPin, text: "Carte interactive choroplèthe RDC (4 niveaux territoriaux)" },
-  { icon: BarChart3, text: "Filtres et croisements analytiques (8 onglets)" },
-  { icon: FileText, text: "Export d'images et partage des graphiques" },
-  { icon: Layers, text: "Cartographie cadastrale détaillée par parcelle" },
-  { icon: ShieldCheck, text: "Tableaux de bord territoriaux et indicateurs de répartition" },
-  { icon: FileText, text: "Téléchargement et partage de rapports visuels" },
+const benefits = [
+  { icon: Map, text: "Visualisez les territoires" },
+  { icon: BarChart3, text: "Analysez les tendances foncières" },
+  { icon: Share2, text: "Partagez vos analyses" },
 ];
 
 const LandDataAccessDenied = () => (
   <div className="min-h-dvh bg-background flex flex-col">
     <Helmet>
-      <title>Accès restreint — Données foncières | BIC</title>
-      <meta name="description" content="L'accès aux données foncières est réservé aux profils habilités. Soumettez votre demande de partenariat." />
+      <title>Découvrez les Données foncières | BIC</title>
+      <meta name="description" content="Explorez les territoires et les tendances foncières de la RDC avec BIC. Demandez un accès adapté à votre profil et à votre activité." />
     </Helmet>
     <Navigation />
-    <main className="flex-1 max-w-5xl mx-auto w-full px-4 py-8 sm:py-12 space-y-6">
-      {/* Header */}
-      <div className="text-center space-y-3">
-        <div className="inline-flex items-center justify-center h-14 w-14 rounded-full bg-muted">
-          <Lock className="h-7 w-7 text-muted-foreground" />
-        </div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
-          Accès réservé aux profils habilités
+    <main className="flex-1 mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
+      <section aria-labelledby="land-data-heading" className="mx-auto max-w-3xl text-center">
+        <h1 id="land-data-heading" className="text-3xl font-bold text-foreground sm:text-4xl">
+          Données foncières
         </h1>
-        <p className="text-sm sm:text-base text-muted-foreground max-w-2xl mx-auto">
-          Le menu <strong>Données foncières</strong> contient des informations sensibles dont l'accès est strictement encadré.
-          Votre profil actuel (<Badge variant="secondary" className="mx-1">Utilisateur</Badge>) ne permet pas la consultation.
+        <p className="mt-3 text-xl font-medium text-primary sm:text-2xl">
+          Une nouvelle perspective sur le foncier en RDC.
         </p>
-      </div>
+        <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-muted-foreground">
+          Explorez la carte, comparez les territoires et appuyez vos analyses sur les données disponibles du cadastre numérique.
+        </p>
+        <Button asChild size="lg" className="mt-6 min-h-11 w-full sm:w-auto">
+          <Link to="/partnership">
+            Demander l’accès
+            <ArrowRight aria-hidden="true" className="ml-2 h-4 w-4 shrink-0" />
+          </Link>
+        </Button>
+        <p className="mx-auto mt-3 max-w-lg text-xs leading-relaxed text-muted-foreground">
+          L’accès est accordé après examen de votre demande, selon votre profil et votre activité.
+        </p>
+      </section>
 
-      {/* Bloc A — Données traitées */}
-      <Card className="border-destructive/30">
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <Lock className="h-5 w-5 text-destructive" />
-            <CardTitle className="text-lg">Données traitées (non accessibles)</CardTitle>
+      <section aria-label="Aperçu des Données foncières" className="mt-8 sm:mt-10">
+        {/* Replace each placeholder with the corresponding supplied capture, using object-contain. */}
+        <div data-preview="desktop" className="hidden aspect-video items-center justify-center rounded-lg border border-dashed border-border bg-muted/40 p-6 md:flex">
+          <div className="flex flex-col items-center gap-3 text-center text-muted-foreground">
+            <Image aria-hidden="true" className="h-9 w-9 opacity-60" />
+            <p className="text-sm font-medium">Aperçu des Données foncières</p>
           </div>
-          <CardDescription>
-            Catégories d'informations cadastrales gérées dans ce module et actuellement hors de portée de votre profil.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ul className="grid sm:grid-cols-2 gap-2.5">
-            {restrictedItems.map((item, i) => (
-              <li key={i} className="flex items-start gap-2.5 text-sm text-muted-foreground">
-                <item.icon className="h-4 w-4 mt-0.5 shrink-0 text-destructive/70" />
-                <span>{item.text}</span>
-              </li>
-            ))}
-          </ul>
-        </CardContent>
-      </Card>
+        </div>
+        <div data-preview="mobile" className="mx-auto flex aspect-[3/4] w-full max-w-sm items-center justify-center rounded-lg border border-dashed border-border bg-muted/40 p-6 md:hidden">
+          <div className="flex flex-col items-center gap-3 text-center text-muted-foreground">
+            <Image aria-hidden="true" className="h-9 w-9 opacity-60" />
+            <p className="text-sm font-medium">Aperçu des Données foncières</p>
+          </div>
+        </div>
+      </section>
 
-      {/* CTA Partnership */}
-      <Card className="border-primary/40 bg-primary/5">
-        <CardContent className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-6">
-          <div className="inline-flex items-center justify-center h-12 w-12 rounded-full bg-primary/10 shrink-0">
-            <Handshake className="h-6 w-6 text-primary" />
-          </div>
-          <div className="flex-1 space-y-1">
-            <h3 className="font-semibold text-foreground">Soumettez votre demande d'accès</h3>
-            <p className="text-sm text-muted-foreground">
-              Devenez partenaire BIC pour accéder aux données foncières correspondant à votre activité (notaire, géomètre, expert immobilier, agent hypothécaire, urbaniste, etc.).
-            </p>
-          </div>
-          <Button asChild size="lg" className="w-full sm:w-auto">
-            <Link to="/partnership">
-              <Handshake className="h-4 w-4 mr-2" />
-              Soumettre une demande de partenariat
-            </Link>
-          </Button>
-        </CardContent>
-      </Card>
+      <ul className="mt-8 grid gap-5 border-y border-border py-6 sm:grid-cols-3 sm:gap-6">
+        {benefits.map(({ icon: Icon, text }) => (
+          <li key={text} className="flex min-w-0 items-center gap-3 sm:flex-col sm:text-center">
+            <Icon aria-hidden="true" className="h-5 w-5 shrink-0 text-primary" />
+            <span className="text-sm font-medium text-foreground">{text}</span>
+          </li>
+        ))}
+      </ul>
 
-      {/* Bloc B — Données accessibles après validation */}
-      <Card className="border-primary/30">
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <ShieldCheck className="h-5 w-5 text-primary" />
-            <CardTitle className="text-lg">Données accessibles après validation</CardTitle>
-          </div>
-          <CardDescription>
-            Une fois votre demande approuvée, vous pourrez commencer à accéder aux fonctionnalités suivantes :
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ul className="grid sm:grid-cols-2 gap-2.5">
-            {grantedItems.map((item, i) => (
-              <li key={i} className="flex items-start gap-2.5 text-sm text-foreground">
-                <item.icon className="h-4 w-4 mt-0.5 shrink-0 text-primary" />
-                <span>{item.text}</span>
-              </li>
-            ))}
-          </ul>
-        </CardContent>
-      </Card>
-
-      {/* Retour accueil */}
-      <div className="text-center pt-2">
-        <Button asChild variant="ghost" size="sm">
+      <div className="mt-5 text-center">
+        <Button asChild variant="ghost" size="sm" className="min-h-11 text-muted-foreground">
           <Link to="/">
-            <Home className="h-4 w-4 mr-2" />
+            <ArrowLeft aria-hidden="true" className="mr-2 h-4 w-4" />
             Retour à l'accueil
           </Link>
         </Button>
