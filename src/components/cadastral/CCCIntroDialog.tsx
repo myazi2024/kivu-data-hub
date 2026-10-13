@@ -56,6 +56,34 @@ const CCCIntroDialog = ({ open, onOpenChange, onContinue, parcelNumber }: CCCInt
           onScroll={handleScroll}
           className="flex-1 min-h-0 space-y-2.5 px-3 pb-28 overflow-y-auto"
         >
+          {/* À propos de ce service */}
+          <Card className="p-3 rounded-xl border-primary/25 bg-primary/5 shadow-sm">
+            <div className="flex items-start gap-2.5">
+              <div className="p-2 bg-primary/20 rounded-lg flex-shrink-0">
+                <Info className="h-4 w-4 text-primary" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="font-semibold text-sm mb-1">À propos de ce service</h3>
+                <p className="text-sm leading-relaxed text-foreground/80">
+                  Ce formulaire permet d'abord de vérifier si votre parcelle figure déjà au cadastre
+                  numérique de la République Démocratique du Congo :{' '}
+                  {checkedParcel ? (
+                    <>
+                      si « <strong className="text-foreground">{checkedParcel}</strong> » y apparaît
+                    </>
+                  ) : (
+                    'si elle y apparaît déjà'
+                  )}
+                  , son dossier s'ouvre et vous n'avez rien à déclarer. Si elle est introuvable, vous
+                  la décrivez ici avec vos documents ; après vérification par notre équipe, elle
+                  rejoint le registre national, où elle sera consultable par tous et vous ouvrira les
+                  autres démarches foncières (titre foncier, autorisation de bâtir, expertise,
+                  mutation).
+                </p>
+              </div>
+            </div>
+          </Card>
+
           {/* Temps estimé */}
           <Card className="p-3 rounded-xl border-primary/20 bg-primary/5 shadow-sm">
             <div className="flex items-start gap-2.5">
