@@ -315,7 +315,7 @@ export const useCCCFormState = ({
     resetUploadedTracker,
     removeUploadedPath,
   } = useFormPersistence({
-    open, parcelNumber, editingContributionId, isLoadingFromDbRef,
+    open, parcelNumber, editingContributionId, isLoadingFromDbRef, markDirty,
     formData, currentOwners, previousOwners, taxRecords, mortgageRecords,
     permitMode, buildingPermits, permitRequest, gpsCoordinates, parcelSides,
     obligationType, sectionType, hasMortgage, hasDispute, ownershipMode, leaseYears,

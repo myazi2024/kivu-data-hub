@@ -69,6 +69,8 @@ interface UseFormPersistenceParams {
   parcelNumber: string;
   editingContributionId?: string;
   isLoadingFromDbRef: React.MutableRefObject<boolean>;
+  /** Marque le formulaire comme modifié (appelé après restauration d'un brouillon). */
+  markDirty: () => void;
 
   // State slices (lecture pour save)
   formData: CadastralContributionData;
