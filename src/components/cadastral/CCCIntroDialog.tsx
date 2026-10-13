@@ -74,7 +74,7 @@ const CCCIntroDialog = ({ open, onOpenChange, onContinue, parcelNumber }: CCCInt
                       n'a pas eu de correspondance
                     </>
                   ) : (
-                    'Si aucune correspondance n'a été trouvée pour votre parcelle'
+                    "Si aucune correspondance n'a été trouvée pour votre parcelle"
                   )}
                   , c'est probablement parce qu'il y a une erreur de frappe ou parce que la parcelle
                   est enregistrée avec une méthodologie différente. Ce formulaire vous aide alors à
