@@ -283,7 +283,7 @@ export function useFormPersistence(params: UseFormPersistenceParams): UseFormPer
     } catch (error) {
       console.error('Erreur chargement:', error);
     }
-  }, [STORAGE_KEY, toast, setFormData, setCurrentOwners, setPreviousOwners, setTaxRecords, setMortgageRecords, setPermitMode, setBuildingPermits, setPermitRequest, setGpsCoordinates, setParcelSides, setObligationType, setSectionType, setHasMortgage, setHasDispute, setOwnershipMode, setLeaseYears, setRoadSides, setServitude, setCustomTitleName, setConstructionMode, setAdditionalConstructions, setBuildingShapes, setDisputeFormData, setSoundEnvironment, setNearbySoundSources]);
+  }, [STORAGE_KEY, toast, markDirty, setFormData, setCurrentOwners, setPreviousOwners, setTaxRecords, setMortgageRecords, setPermitMode, setBuildingPermits, setPermitRequest, setGpsCoordinates, setParcelSides, setObligationType, setSectionType, setHasMortgage, setHasDispute, setOwnershipMode, setLeaseYears, setRoadSides, setServitude, setCustomTitleName, setConstructionMode, setAdditionalConstructions, setBuildingShapes, setDisputeFormData, setSoundEnvironment, setNearbySoundSources]);
 
   // Effet: chargement initial au montage / ouverture
   useEffect(() => {
