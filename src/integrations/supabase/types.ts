@@ -112,6 +112,24 @@ export type Database = {
         }
         Relationships: []
       }
+      analytics_catalog_settings: {
+        Row: {
+          default_access_days: number
+          id: boolean
+          updated_at: string
+        }
+        Insert: {
+          default_access_days?: number
+          id?: boolean
+          updated_at?: string
+        }
+        Update: {
+          default_access_days?: number
+          id?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
       analytics_charts_config: {
         Row: {
           chart_type: string | null
@@ -190,6 +208,107 @@ export type Database = {
           id?: string
           item_count?: number
           tab_key?: string | null
+        }
+        Relationships: []
+      }
+      analytics_visual_access: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          invoice_id: string
+          item_key: string
+          tab_key: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at: string
+          id?: string
+          invoice_id: string
+          item_key: string
+          tab_key: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          invoice_id?: string
+          item_key?: string
+          tab_key?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "analytics_visual_access_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "analytics_visual_invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      analytics_visual_catalog: {
+        Row: {
+          access_days: number | null
+          description: string | null
+          id: string
+          is_active: boolean
+          item_key: string
+          price_usd: number
+          tab_key: string
+          updated_at: string
+        }
+        Insert: {
+          access_days?: number | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          item_key: string
+          price_usd?: number
+          tab_key: string
+          updated_at?: string
+        }
+        Update: {
+          access_days?: number | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          item_key?: string
+          price_usd?: number
+          tab_key?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      analytics_visual_invoices: {
+        Row: {
+          created_at: string
+          id: string
+          items: Json
+          paid_at: string | null
+          status: string
+          total_amount_usd: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          items: Json
+          paid_at?: string | null
+          status?: string
+          total_amount_usd: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          items?: Json
+          paid_at?: string | null
+          status?: string
+          total_amount_usd?: number
+          user_id?: string
         }
         Relationships: []
       }
@@ -8446,6 +8565,10 @@ export type Database = {
       count_audit_logs: { Args: never; Returns: number }
       count_test_data_stats: { Args: never; Returns: Json }
       count_test_data_to_cleanup: { Args: never; Returns: Json }
+      create_analytics_visual_invoice: {
+        Args: { p_items: Json }
+        Returns: Json
+      }
       create_cadastral_invoice_safe: {
         Args: {
           p_client_address?: string
@@ -8812,6 +8935,14 @@ export type Database = {
       get_land_title_parcel_prefill: {
         Args: { p_parcel_number: string }
         Returns: Json
+      }
+      get_my_analytics_access: {
+        Args: never
+        Returns: {
+          expires_at: string
+          item_key: string
+          tab_key: string
+        }[]
       }
       get_orphan_reseller_invoices_count: { Args: never; Returns: number }
       get_orphan_reseller_invoices_count__impl: { Args: never; Returns: number }
