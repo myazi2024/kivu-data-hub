@@ -16,7 +16,7 @@ const corsHeaders = {
 interface PaymentRequest {
   items?: string[];
   invoice_id?: string;
-  payment_type: 'publications' | 'cadastral_service' | 'expertise_fee' | 'certificate_access' | 'mutation_request' | 'permit_request' | 'mortgage_cancellation' | 'land_title_request' | 'subdivision_request';
+  payment_type: 'publications' | 'cadastral_service' | 'expertise_fee' | 'certificate_access' | 'mutation_request' | 'permit_request' | 'mortgage_cancellation' | 'land_title_request' | 'subdivision_request' | 'analytics_access';
   amount_usd?: number;
   permit_context?: unknown;
 }
@@ -119,6 +119,24 @@ Deno.serve(async (req) => {
       totalAmount = Math.round(invoice.total_amount_usd * 100);
       orderMetadata.invoice_id = invoice_id;
       orderMetadata.parcel_number = invoice.parcel_number;
+    }
+    // Accès aux visuels Données foncières : montant de la facture serveur
+    else if (payment_type === 'analytics_access' && invoice_id) {
+      const { data: inv } = await supabase
+        .from("analytics_visual_invoices")
+        .select("id, status, total_amount_usd, items")
+        .eq("id", invoice_id).eq("user_id", user.id).maybeSingle();
+      if (!inv || inv.status !== 'pending') throw new Error("Facture introuvable ou déjà réglée");
+      totalAmount = Math.round(Number(inv.total_amount_usd) * 100);
+      lineItems = [{
+        price_data: {
+          currency: "usd",
+          product_data: { name: "Accès Données foncières", description: `${(inv.items as unknown[]).length} visuel(s)` },
+          unit_amount: totalAmount,
+        },
+        quantity: 1,
+      }];
+      orderMetadata.invoice_id = invoice_id;
     }
     // Handle Expertise Fee / Certificate Access payment
     else if ((payment_type === 'expertise_fee' || payment_type === 'certificate_access') && invoice_id && amount_usd) {
@@ -388,7 +406,10 @@ Deno.serve(async (req) => {
     let successUrl: string;
     let cancelUrl: string;
 
-    if (payment_type === 'expertise_fee' || payment_type === 'certificate_access' || payment_type === 'mutation_request' || payment_type === 'permit_request' || payment_type === 'mortgage_cancellation' || payment_type === 'land_title_request' || payment_type === 'subdivision_request') {
+    if (payment_type === 'analytics_access') {
+      successUrl = `${origin}/donnees-foncieres/catalogue?payment=success`;
+      cancelUrl = `${origin}/donnees-foncieres/catalogue?payment=cancelled`;
+    } else if (payment_type === 'expertise_fee' || payment_type === 'certificate_access' || payment_type === 'mutation_request' || payment_type === 'permit_request' || payment_type === 'mortgage_cancellation' || payment_type === 'land_title_request' || payment_type === 'subdivision_request') {
       successUrl = `${origin}/cadastral-map?payment=success&type=${payment_type}&session_id={CHECKOUT_SESSION_ID}`;
       cancelUrl = `${origin}/cadastral-map?payment=cancelled`;
     } else if (payment_type === 'cadastral_service') {
@@ -460,7 +481,7 @@ Deno.serve(async (req) => {
           mutation_request_id: invoice_id,
         },
       });
-    } else if ((payment_type === 'land_title_request' || payment_type === 'permit_request' || payment_type === 'mortgage_cancellation' || payment_type === 'subdivision_request') && invoice_id) {
+    } else if ((payment_type === 'land_title_request' || payment_type === 'permit_request' || payment_type === 'mortgage_cancellation' || payment_type === 'subdivision_request' || payment_type === 'analytics_access') && invoice_id) {
       await supabase.from("payment_transactions").insert({
         user_id: user.id,
         invoice_id,

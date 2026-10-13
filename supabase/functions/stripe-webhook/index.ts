@@ -234,7 +234,8 @@ Deno.serve(async (req) => {
               action_url: "/mon-compte?tab=mutations",
             });
           }
-        } else if (paymentType === "land_title_request" || paymentType === "permit_request" || paymentType === "mortgage_cancellation") {
+        } else if (paymentType === "land_title_request" || paymentType === "permit_request" || paymentType === "mortgage_cancellation" || paymentType === "analytics_access") {
+          // analytics_access : l'accès est ouvert par le déclencheur trg_grant_analytics_access.
           // Generic handler for cadastral service payment types
           const { data: paymentTransaction } = await supabase
             .from("payment_transactions")
