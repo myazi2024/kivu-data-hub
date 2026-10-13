@@ -16,7 +16,7 @@ import { computePermitTotal, parsePermitContext, verifyPermitPayment } from "../
 const ALLOWED_TYPES = new Set([
   'publication', 'cadastral_service', 'expertise_fee', 'certificate_access',
   'mutation_request', 'mortgage_cancellation', 'land_title_request',
-  'permit_request', 'permit_fee',
+  'permit_request', 'permit_fee', 'analytics_access',
 ]);
 
 interface PaymentRequest {
@@ -190,6 +190,19 @@ Deno.serve(async (req) => {
     }
 
     // Service cadastral : facture de l'appelant, non payée, montant identique.
+    // Accès aux visuels Données foncières : facture de l'appelant, en attente, montant serveur.
+    // L'accès est ouvert par le déclencheur trg_grant_analytics_access quand la transaction passe à « completed ».
+    if (payment_type === 'analytics_access') {
+      if (!invoice_id) throw new Error('Facture manquante.');
+      const { data: inv } = await supabase
+        .from('analytics_visual_invoices')
+        .select('id, status, total_amount_usd')
+        .eq('id', invoice_id).eq('user_id', user.id).maybeSingle();
+      if (!inv) throw new Error('Facture introuvable.');
+      if (inv.status !== 'pending') throw new Error('Cette facture n\'est plus payable.');
+      if (!sameCents(inv.total_amount_usd, amount_usd)) throw new Error('Le montant ne correspond pas à la facture.');
+    }
+
     if (payment_type === 'cadastral_service') {
       if (!invoice_id) throw new Error('Facture manquante.');
       const { data: inv } = await supabase
