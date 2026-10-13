@@ -23,7 +23,7 @@ import { useTestEnvironment } from '@/hooks/useTestEnvironment';
 import { useTabChartsConfig, useAnalyticsTabsConfig, ANALYTICS_TABS_REGISTRY } from '@/hooks/useAnalyticsChartsConfig';
 import { getLandDistrictAnchor, getSectionTypeForLandDistrict, getTerritoiresForProvince, getProvinceForTerritoire } from '@/lib/geographicData';
 import { MAP_TAB_PROFILES, computeAdaptiveTiers, NO_DATA_COLOR, type MapTabProfile, type MapTier } from '@/config/mapTabProfiles';
-import { norm, buildScopePredicate, sliceAnalyticsByPredicate, type GeoScopedRecord } from './map/meta/mapMeta';
+import { norm, buildScopePredicate, TOOLTIP_LINE_KEYS, DENSITY_TIER_KEYS, DEFAULT_DENSITY_TIERS, sliceAnalyticsByPredicate, type GeoScopedRecord } from './map/meta/mapMeta';
 import { resolveMapView } from './map/meta/mapView';
 import { useMapDrilldown } from './map/hooks/useMapDrilldown';
 import LandDistrictMap from './map/LandDistrictMap';
@@ -128,12 +128,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
 
   /** Build tooltip line configs from admin config */
   const tooltipLineConfigs = useMemo(() => {
-    const keys = [
-      'tooltip-cert-enreg', 'tooltip-contrat-loc', 'tooltip-fiche-parc', 'tooltip-title-req',
-      'tooltip-disputes', 'tooltip-mortgages', 'tooltip-mutations', 'tooltip-expertises',
-      'tooltip-avg-surface', 'tooltip-avg-building', 'tooltip-avg-height',
-    ];
-    return keys.map(key => ({
+    return TOOLTIP_LINE_KEYS.map(key => ({
       key,
       visible: isChartVisible(key),
       title: getChartConfig(key)?.custom_title || '',
@@ -224,15 +219,8 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
 
   /** Paliers choroplèthes — configurables depuis admin */
   const DENSITY_TIERS = useMemo(() => {
-    const tierKeys = ['map-tier-1', 'map-tier-2', 'map-tier-3', 'map-tier-4'];
-    const defaultTiers = [
-      { label: 'Faible', min: 0, max: 30, color: '#bec8d1' },
-      { label: 'Modéré', min: 31, max: 100, color: '#f0b90b' },
-      { label: 'Élevé', min: 101, max: 500, color: '#e87422' },
-      { label: 'Très élevé', min: 501, max: Infinity, color: '#b31942' },
-    ];
-    return defaultTiers.map((d, i) => {
-      const cfg = getChartConfig(tierKeys[i]);
+    return DEFAULT_DENSITY_TIERS.map((d, i) => {
+      const cfg = getChartConfig(DENSITY_TIER_KEYS[i]);
       return {
         ...d,
         label: cfg?.custom_title?.replace(/\s*\(.*\)/, '') || d.label,
