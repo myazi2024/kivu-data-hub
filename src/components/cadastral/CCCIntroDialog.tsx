@@ -65,8 +65,8 @@ const CCCIntroDialog = ({ open, onOpenChange, onContinue, parcelNumber }: CCCInt
               <div className="flex-1 min-w-0">
                 <h3 className="font-semibold text-sm mb-1">À propos de ce service</h3>
                 <p className="text-sm leading-relaxed text-foreground/80">
-                  Ce formulaire permet de faire une vérification poussée : votre parcelle
-                  figure-t-elle déjà au cadastre numérique de la République Démocratique du Congo ?
+                  Ce formulaire permet de faire une vérification poussée de l'enregistrement d'une
+                  parcelle au cadastre numérique de la République Démocratique du Congo.
                   {' '}
                   {checkedParcel ? (
                     <>
