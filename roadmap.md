@@ -1,5 +1,7 @@
 # Roadmap
 
+- [x] Refonte accueillante de la page Données foncières pour profils non habilités, avec emplacements de captures ordinateur/mobile et contrôle d’accès inchangé (13 tests ; apparence et lien vérifiés en aperçu isolé, authentification réelle non vérifiable sur la base externe).
+
 - [x] Combiner les limites territoriales et communales fiables sur la carte d’Accueil.
 - [x] Maintenir les suggestions non validées hors des limites affichées.
 - [x] Ajouter le zoom animé, le second clic et le bouton de retour.
