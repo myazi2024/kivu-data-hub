@@ -223,48 +223,7 @@ const parcelsTitledProfile: MapTabProfile = {
   },
 };
 
-const contributionsProfile: MapTabProfile = {
-  tabKey: 'contributions',
-  label: 'Contributions',
-  legendTitle: 'Contributions soumises',
-  tiers: makeTiers([10, 50, 200], PALETTES.indigo),
-  palette: PALETTES.indigo,
-  dataSource: 'cadastral_contributions',
-  hasData: ({ analytics, provinceName }) => filterProv(analytics.contributions, provinceName).length > 0,
-  metric: ({ analytics, provinceName }) => filterProv(analytics.contributions, provinceName).length,
-  tooltipLines: ({ analytics, provinceName }) => {
-    const c = filterProv(analytics.contributions, provinceName);
-    return [
-      { label: 'Soumises',   value: fmtN(c.length), color: 'text-primary' },
-      { label: 'Approuvées', value: fmtN(c.filter(x => x.status === 'approved').length), color: 'text-emerald-600' },
-      { label: 'Suspectes',  value: fmtN(c.filter(x => x.is_suspicious).length), color: 'text-orange-500' },
-      { label: 'En appel',   value: fmtN(c.filter(x => x.appeal_submitted).length), color: 'text-blue-600' },
-    ];
-  },
-};
 
-const expertiseProfile: MapTabProfile = {
-  tabKey: 'expertise',
-  label: 'Expertises',
-  legendTitle: 'Demandes d\'expertise',
-  tiers: makeTiers([5, 25, 100], PALETTES.cyan),
-  palette: PALETTES.cyan,
-  dataSource: 'real_estate_expertise_requests',
-  hasData: ({ analytics, provinceName }) => filterProv(analytics.expertiseRequests, provinceName).length > 0,
-  metric: ({ analytics, provinceName }) => filterProv(analytics.expertiseRequests, provinceName).length,
-  tooltipLines: ({ analytics, provinceName }) => {
-    const e = filterProv(analytics.expertiseRequests, provinceName);
-    const completed = e.filter(x => x.status === 'completed' || x.status === 'terminé').length;
-    const pending = e.filter(x => x.status === 'pending' || x.status === 'en_cours').length;
-    const avgVal = e.reduce((s, x) => s + (x.market_value_usd || 0), 0) / Math.max(1, e.filter(x => x.market_value_usd).length);
-    return [
-      { label: 'Total',     value: fmtN(e.length), color: 'text-primary' },
-      { label: 'En cours',  value: fmtN(pending),  color: 'text-amber-600' },
-      { label: 'Terminées', value: fmtN(completed),color: 'text-emerald-600' },
-      { label: 'Valeur moy.', value: e.length ? fmtUsd(avgVal) : '—', color: 'text-blue-600' },
-    ];
-  },
-};
 
 const mortgagesProfile: MapTabProfile = {
   tabKey: 'mortgages',
@@ -343,70 +302,8 @@ const disputesProfile: MapTabProfile = {
   },
 };
 
-const ownershipProfile: MapTabProfile = {
-  tabKey: 'ownership',
-  label: 'Historique propriété',
-  legendTitle: 'Transferts de propriété',
-  tiers: makeTiers([5, 25, 100], PALETTES.rose),
-  palette: PALETTES.rose,
-  dataSource: 'cadastral_ownership_history',
-  hasData: ({ analytics, provinceName }) => filterProv(analytics.ownershipHistory, provinceName).length > 0,
-  metric: ({ analytics, provinceName }) => filterProv(analytics.ownershipHistory, provinceName).length,
-  tooltipLines: ({ analytics, provinceName }) => {
-    const h = filterProv(analytics.ownershipHistory, provinceName);
-    const closed = h.filter(x => x.ownership_end_date).length;
-    const parcels = filterProv(analytics.parcels, provinceName);
-    const mismatch = parcels.filter(p => p.is_title_in_current_owner_name === false).length;
-    const pctMismatch = parcels.length ? (mismatch / parcels.length) * 100 : 0;
-    return [
-      { label: 'Transferts',   value: fmtN(h.length), color: 'text-primary' },
-      { label: 'Anciens prop.',value: fmtN(closed),   color: 'text-blue-600' },
-      { label: '% discordants',value: fmtPct(pctMismatch), color: 'text-orange-500' },
-    ];
-  },
-};
 
-const certificatesProfile: MapTabProfile = {
-  tabKey: 'certificates',
-  label: 'Certificats',
-  legendTitle: 'Certificats émis',
-  tiers: makeTiers([5, 20, 80], PALETTES.emerald),
-  palette: PALETTES.emerald,
-  dataSource: 'generated_certificates',
-  hasData: ({ analytics, provinceName }) => filterProv(analytics.certificates, provinceName).length > 0,
-  metric: ({ analytics, provinceName }) => filterProv(analytics.certificates, provinceName).length,
-  tooltipLines: ({ analytics, provinceName }) => {
-    const c = filterProv(analytics.certificates, provinceName);
-    const main = topValue(c, x => x.certificate_type);
-    return [
-      { label: 'Total',         value: fmtN(c.length), color: 'text-primary' },
-      { label: 'Type principal',value: main,           color: 'text-emerald-600' },
-    ];
-  },
-};
 
-const invoicesProfile: MapTabProfile = {
-  tabKey: 'invoices',
-  label: 'Factures',
-  legendTitle: 'Factures émises',
-  tiers: makeTiers([10, 50, 200], PALETTES.slate),
-  palette: PALETTES.slate,
-  dataSource: 'cadastral_invoices',
-  hasData: ({ analytics, provinceName }) => filterProv(analytics.invoices, provinceName).length > 0,
-  metric: ({ analytics, provinceName }) => filterProv(analytics.invoices, provinceName).length,
-  tooltipLines: ({ analytics, provinceName }) => {
-    const inv = filterProv(analytics.invoices, provinceName);
-    const paid = inv.filter(x => x.status === 'paid').length;
-    const unpaid = inv.length - paid;
-    const avg = inv.length ? inv.reduce((s, x) => s + (x.total_amount_usd || 0), 0) / inv.length : 0;
-    return [
-      { label: 'Total',      value: fmtN(inv.length), color: 'text-primary' },
-      { label: 'Payées',     value: fmtN(paid),       color: 'text-emerald-600' },
-      { label: 'Impayées',   value: fmtN(unpaid),     color: 'text-orange-500' },
-      { label: 'Montant moy.', value: inv.length ? fmtUsd(avg) : '—', color: 'text-blue-600' },
-    ];
-  },
-};
 
 const taxesProfile: MapTabProfile = {
   tabKey: 'taxes',
@@ -482,14 +379,9 @@ const rdcMapProfile: MapTabProfile = {
 export const MAP_TAB_PROFILES: Record<string, MapTabProfile> = {
   'title-requests': titleRequestsProfile,
   'parcels-titled': parcelsTitledProfile,
-  'contributions': contributionsProfile,
-  'expertise': expertiseProfile,
   'mortgages': mortgagesProfile,
   'subdivision': subdivisionProfile,
   'disputes': disputesProfile,
-  'ownership': ownershipProfile,
-  'certificates': certificatesProfile,
-  'invoices': invoicesProfile,
   'taxes': taxesProfile,
   'rental-market': rentalMarketProfile,
 };

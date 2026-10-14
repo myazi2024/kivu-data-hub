@@ -1,6 +1,6 @@
 import React, { useState, useEffect, memo, useMemo, Suspense } from 'react';
 import { useAppAppearance } from '@/hooks/useAppAppearance';
-import { FileText, Building, Search, Scissors, AlertTriangle, Loader2, Database, History, Award, Receipt, Landmark, DollarSign, Ruler, KeyRound, ChevronLeft, ChevronRight } from 'lucide-react';
+import { FileText, Building, Scissors, AlertTriangle, Loader2, Landmark, DollarSign, Ruler, KeyRound, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useLandDataAnalytics, LandAnalyticsData } from '@/hooks/useLandDataAnalytics';
 import { ProvinceData } from '@/types/province';
@@ -12,15 +12,10 @@ import { ProjectionTabContext } from './shared/ProjectionTabContext';
 // Lazy-loaded block components
 const TitleRequestsBlock = React.lazy(() => import('./blocks/TitleRequestsBlock').then(m => ({ default: m.TitleRequestsBlock })));
 const ParcelsWithTitleBlock = React.lazy(() => import('./blocks/ParcelsWithTitleBlock').then(m => ({ default: m.ParcelsWithTitleBlock })));
-const ContributionsBlock = React.lazy(() => import('./blocks/ContributionsBlock').then(m => ({ default: m.ContributionsBlock })));
-const ExpertiseBlock = React.lazy(() => import('./blocks/ExpertiseBlock').then(m => ({ default: m.ExpertiseBlock })));
 const SubdivisionBlock = React.lazy(() => import('./blocks/SubdivisionBlock').then(m => ({ default: m.SubdivisionBlock })));
 const DisputesBlock = React.lazy(() => import('./blocks/DisputesBlock').then(m => ({ default: m.DisputesBlock })));
 const MortgagesBlock = React.lazy(() => import('./blocks/MortgagesBlock').then(m => ({ default: m.MortgagesBlock })));
 const TaxesBlock = React.lazy(() => import('./blocks/TaxesBlock').then(m => ({ default: m.TaxesBlock })));
-const OwnershipHistoryBlock = React.lazy(() => import('./blocks/OwnershipHistoryBlock').then(m => ({ default: m.OwnershipHistoryBlock })));
-const CertificatesBlock = React.lazy(() => import('./blocks/CertificatesBlock').then(m => ({ default: m.CertificatesBlock })));
-const InvoicesBlock = React.lazy(() => import('./blocks/InvoicesBlock').then(m => ({ default: m.InvoicesBlock })));
 const BoundaryBlock = React.lazy(() => import('./blocks/BoundaryBlock').then(m => ({ default: m.BoundaryBlock })));
 const RentalMarketBlock = React.lazy(() => import('./blocks/RentalMarketBlock').then(m => ({ default: m.RentalMarketBlock })));
 
@@ -34,15 +29,10 @@ const BlockFallback = () => (
 const ICON_MAP: Record<string, React.ComponentType<any>> = {
   'title-requests': FileText,
   'parcels-titled': Building,
-  'contributions': Database,
-  'expertise': Search,
   'subdivision': Scissors,
   'disputes': AlertTriangle,
   'mortgages': Landmark,
   'taxes': DollarSign,
-  'ownership': History,
-  'certificates': Award,
-  'invoices': Receipt,
   'boundary': Ruler,
   'rental-market': KeyRound,
 };
@@ -50,15 +40,10 @@ const ICON_MAP: Record<string, React.ComponentType<any>> = {
 const BLOCK_MAP: Record<string, React.ComponentType<{ data: any }>> = {
   'title-requests': TitleRequestsBlock,
   'parcels-titled': ParcelsWithTitleBlock,
-  'contributions': ContributionsBlock,
-  'expertise': ExpertiseBlock,
   'subdivision': SubdivisionBlock,
   'disputes': DisputesBlock,
   'mortgages': MortgagesBlock,
   'taxes': TaxesBlock,
-  'ownership': OwnershipHistoryBlock,
-  'certificates': CertificatesBlock,
-  'invoices': InvoicesBlock,
   'boundary': BoundaryBlock,
   'rental-market': RentalMarketBlock,
 };
