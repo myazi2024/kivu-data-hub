@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import type {
   ParcelRecord, ContributionRecord, TitleRequestRecord,
   TaxHistoryRecord, MortgageRecord,
-  ExpertiseRequestRecord, MutationRequestRecord, SubdivisionRequestRecord,
+  ExpertiseRequestRecord, SubdivisionRequestRecord,
   DisputeRecord, OwnershipHistoryRecord, CertificateRecord, InvoiceRecord,
 } from '@/types/landAnalytics';
 
@@ -14,7 +14,6 @@ export interface LandAnalyticsData {
   taxHistory: TaxHistoryRecord[];
   mortgages: MortgageRecord[];
   expertiseRequests: ExpertiseRequestRecord[];
-  mutationRequests: MutationRequestRecord[];
   subdivisionRequests: SubdivisionRequestRecord[];
   disputes: DisputeRecord[];
   ownershipHistory: OwnershipHistoryRecord[];
@@ -24,7 +23,7 @@ export interface LandAnalyticsData {
 
 export const EMPTY_LAND_ANALYTICS: LandAnalyticsData = {
   titleRequests: [], parcels: [], contributions: [], taxHistory: [], mortgages: [],
-  expertiseRequests: [], mutationRequests: [], subdivisionRequests: [], disputes: [],
+  expertiseRequests: [], subdivisionRequests: [], disputes: [],
   ownershipHistory: [], certificates: [], invoices: [],
 };
 
@@ -108,7 +107,6 @@ export const useLandDataAnalytics = (isTestRoute = false, tabKey?: string | null
         taxHistory: enrich(d.taxHistory ?? []),
         mortgages: enrich(d.mortgages ?? []),
         expertiseRequests: enrich(d.expertiseRequests ?? []),
-        mutationRequests: [],
         subdivisionRequests: enrich(d.subdivisionRequests ?? []),
         disputes: enrich(d.disputes ?? []),
         ownershipHistory: enrich(d.ownershipHistory ?? []),

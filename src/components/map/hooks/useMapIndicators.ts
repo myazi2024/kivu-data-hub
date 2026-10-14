@@ -10,7 +10,6 @@ export function computeIndicators(
   titleRequests: any[],
   disputes: any[],
   mortgages: any[],
-  mutationRequests: any[],
   expertiseRequests: any[],
   contributions: any[],
 ) {
@@ -19,7 +18,6 @@ export function computeIndicators(
   const ficheParc = parcels.filter(p => normalizeTitleType(p.property_title_type) === "Fiche parcellaire").length;
 
   const activeMortgages = mortgages.filter((m: any) => m.mortgage_status === 'active').length;
-  const pendingMutations = mutationRequests.filter((m: any) => m.status === 'pending' || m.status === 'en_cours').length;
   const pendingExpertises = expertiseRequests.filter((e: any) => e.status === 'pending' || e.status === 'en_cours').length;
 
   const totalArea = parcels.reduce((s: number, p: any) => s + (p.area_sqm || 0), 0);
@@ -47,7 +45,6 @@ export function computeIndicators(
     titleRequestsCount: titleRequests.length,
     disputesCount: disputes.length,
     activeMortgagesCount: activeMortgages,
-    pendingMutationsCount: pendingMutations,
     pendingExpertisesCount: pendingExpertises,
     avgParcelSurfaceSqm: Math.round(avgSurface * 10) / 10,
     avgBuildingSurfaceSqm: buildingSurfaceCount > 0 ? Math.round((buildingSurfaceSum / buildingSurfaceCount) * 10) / 10 : 0,
@@ -83,7 +80,7 @@ export function useMapIndicators({
   const provincesData: ProvinceData[] = useMemo(() => {
     if (!analytics) return PROVINCE_META.map(p => buildEmptyProvince(p));
 
-    const { parcels, titleRequests, contributions, disputes, mutationRequests, expertiseRequests, mortgages } = analytics;
+    const { parcels, titleRequests, contributions, disputes, expertiseRequests, mortgages } = analytics;
 
     return PROVINCE_META.map(meta => {
       const pFilter = (r: any) => r.province === meta.name;
@@ -92,7 +89,6 @@ export function useMapIndicators({
         titleRequests.filter(pFilter),
         disputes.filter(pFilter),
         (mortgages || []).filter(pFilter),
-        mutationRequests.filter(pFilter),
         expertiseRequests.filter(pFilter),
         contributions.filter(pFilter),
       );
@@ -112,14 +108,13 @@ export function useMapIndicators({
   const scopedStats = useMemo(() => {
     if (!analytics || !selectedProvince) return null;
     const predicate = buildScopePredicate(selectedProvince.name, selectedVille, selectedCommune, selectedQuartier, selectedTerritoire);
-    const { parcels, titleRequests, contributions, disputes, mutationRequests, expertiseRequests, mortgages } = analytics;
+    const { parcels, titleRequests, contributions, disputes, expertiseRequests, mortgages } = analytics;
 
     return computeIndicators(
       parcels.filter(predicate),
       titleRequests.filter(predicate),
       disputes.filter(predicate),
       (mortgages || []).filter(predicate),
-      mutationRequests.filter(predicate),
       expertiseRequests.filter(predicate),
       contributions.filter(predicate),
     );

@@ -9,7 +9,6 @@ interface ScopedStats {
   titleRequestsCount: number;
   disputesCount: number;
   activeMortgagesCount: number;
-  pendingMutationsCount: number;
   pendingExpertisesCount: number;
   avgParcelSurfaceSqm: number;
   avgBuildingSurfaceSqm: number;
@@ -64,11 +63,6 @@ export const MapKPICards: React.FC<MapKPICardsProps> = ({
       key: 'detail-mortgages',
       label: 'Hypothèques actives',
       value: formatNumber(scopedStats.activeMortgagesCount),
-    },
-    {
-      key: 'detail-mutations',
-      label: 'Mutations en cours',
-      value: formatNumber(scopedStats.pendingMutationsCount),
     },
     {
       key: 'detail-expertises',

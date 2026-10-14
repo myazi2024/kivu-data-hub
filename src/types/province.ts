@@ -9,7 +9,6 @@ export interface ProvinceData {
   titleRequestsCount: number;
   disputesCount: number;
   activeMortgagesCount: number;
-  pendingMutationsCount: number;
   pendingExpertisesCount: number;
   // Moyennes
   avgParcelSurfaceSqm: number;
