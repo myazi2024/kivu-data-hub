@@ -54,7 +54,7 @@ export const DENSITY_TIER_KEYS = ['map-tier-1', 'map-tier-2', 'map-tier-3', 'map
 /** Tooltip line config keys exposed to admin */
 export const TOOLTIP_LINE_KEYS = [
   'tooltip-cert-enreg', 'tooltip-contrat-loc', 'tooltip-fiche-parc', 'tooltip-title-req',
-  'tooltip-disputes', 'tooltip-mortgages', 'tooltip-mutations', 'tooltip-expertises',
+  'tooltip-disputes', 'tooltip-mortgages', 'tooltip-expertises',
   'tooltip-avg-surface', 'tooltip-avg-building', 'tooltip-avg-height',
 ];
 
