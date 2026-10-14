@@ -27,7 +27,7 @@ export default function AnalyticsCatalog() {
   const { currencies, selectedCurrency, setSelectedCurrency, convertFromUsd } = useCurrencyConfig();
   const price = (n: number) => `${formatCurrency(convertFromUsd(n), selectedCurrency)} ${selectedCurrency}`;
   const [activeTab, setActiveTab] = useState('');
-  const [checkout, setCheckout] = useState<{ invoiceId: string; total: number } | null>(null);
+  const [checkout, setCheckout] = useState<{ invoiceId: string; total: number; items: { tab_key: string; item_key: string }[] } | null>(null);
   const [creating, setCreating] = useState(false);
   const [showCart, setShowCart] = useState(false);
   const catalogQuery = useQuery({
@@ -75,13 +75,14 @@ export default function AnalyticsCatalog() {
       const invoice = data as { invoice_id: string; total_amount_usd: number; items?: { tab_key: string; item_key: string }[] };
       const amount = Number(invoice.total_amount_usd);
       if (Math.round(amount * 100) !== Math.round(total * 100)) toast.warning('Montant mis à jour', { description: `Montant retenu : ${amount.toFixed(2)} USD.` });
-      setCheckout({ invoiceId: invoice.invoice_id, total: amount });
+      setCheckout({ invoiceId: invoice.invoice_id, total: amount, items: invoice.items ?? cartItems.map(i => ({ tab_key: i.tab_key, item_key: i.item_key })) });
     } catch (e) { toast.error('Impossible de préparer le paiement', { description: e instanceof Error ? e.message : 'Veuillez réessayer.' }); }
     finally { setCreating(false); }
   };
 
   const onPaid = () => {
-    removeMany(cartItems);
+    if (!checkout) return;
+    removeMany(checkout.items);
     setCheckout(null);
     void qc.invalidateQueries({ queryKey: ['my-analytics-access'] });
     toast.success('Accès ouvert', { description: 'Vos visuels sont disponibles dans Données foncières.' });
