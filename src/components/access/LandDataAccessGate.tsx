@@ -9,7 +9,7 @@ import Navigation from "@/components/ui/navigation";
 import { LoadingIndicator } from "@/components/ui/loading-indicator";
 import { useAppAppearance } from "@/hooks/useAppAppearance";
 import { AnalyticsAccessProvider, useMyAnalyticsAccess } from "@/hooks/useAnalyticsAccess";
-import { ShoppingBag } from "lucide-react";
+import FloatingAnalyticsShopButton from "@/components/access/FloatingAnalyticsShopButton";
 import AnalyticsCatalogDialog from "@/components/analytics/catalog/AnalyticsCatalogDialog";
 
 interface LandDataAccessGateProps {
@@ -141,10 +141,7 @@ const PurchasedAccessGate = ({ children }: { children: ReactNode }) => {
   return (
     <AnalyticsAccessProvider value={{ restricted: true, allowed }}>
       {children}
-      <AnalyticsCatalogDialog trigger={<Button size="sm" variant="secondary" className="fixed left-3 top-20 z-40 min-h-11 rounded-full shadow-md">
-          <ShoppingBag aria-hidden="true" className="mr-2 h-4 w-4" />
-          Acheter d'autres visuels
-      </Button>} />
+      <FloatingAnalyticsShopButton />
     </AnalyticsAccessProvider>
   );
 };
