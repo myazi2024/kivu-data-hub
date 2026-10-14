@@ -176,50 +176,61 @@ export default function FloatingAnalyticsShopButton() {
           onPointerCancel={endDrag}
         >
           {collapsed ? (
-            <button
-              type="button"
-              onClick={onMainClick}
-              aria-label="Acheter d'autres visuels"
-              aria-expanded={false}
-              title="Acheter d'autres visuels"
-              className={cn(
-                'relative flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md transition-transform active:scale-95',
-                focusRing,
-              )}
-            >
-              <ShoppingBag aria-hidden="true" className="h-4 w-4" />
-            </button>
+            <div className="relative h-[54px] w-10">
+              <button
+                type="button"
+                onClick={onMainClick}
+                aria-label="Acheter d'autres visuels"
+                aria-expanded={false}
+                title="Acheter d'autres visuels"
+                className={cn(
+                  'absolute bottom-0 left-0 flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md transition-transform active:scale-95',
+                  focusRing,
+                )}
+              >
+                <ShoppingBag aria-hidden="true" className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                data-no-drag
+                onClick={toggleCollapsed}
+                aria-label="Développer"
+                className={cn(
+                  'absolute right-0 top-0 flex h-5 w-5 items-center justify-center rounded-full border border-border bg-background text-muted-foreground shadow-md transition-colors hover:text-foreground',
+                  focusRing,
+                )}
+              >
+                <ChevronRight aria-hidden="true" className="h-3 w-3" />
+              </button>
+            </div>
           ) : (
-            <button
-              type="button"
-              onClick={onMainClick}
-              aria-expanded={true}
-              className={cn(
-                'flex h-11 items-center gap-2 rounded-full border border-border bg-background/95 pl-3.5 pr-1.5 text-sm font-medium text-foreground shadow-md transition-colors hover:bg-accent/50',
-                focusRing,
-              )}
-            >
-              <ShoppingBag aria-hidden="true" className="h-4 w-4 shrink-0 text-primary" />
-              Acheter d'autres visuels
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={onMainClick}
+                aria-expanded={true}
+                className={cn(
+                  'flex h-11 items-center gap-2 rounded-full border border-border bg-background/95 pl-3.5 pr-1.5 text-sm font-medium text-foreground shadow-md transition-colors hover:bg-accent/50',
+                  focusRing,
+                )}
+              >
+                <ShoppingBag aria-hidden="true" className="h-4 w-4 shrink-0 text-primary" />
+                Acheter d'autres visuels
+              </button>
+              <button
+                type="button"
+                data-no-drag
+                onClick={toggleCollapsed}
+                aria-label="Réduire"
+                className={cn(
+                  'flex h-6 w-6 items-center justify-center rounded-full border border-border bg-background text-muted-foreground shadow-md transition-colors hover:text-foreground',
+                  focusRing,
+                )}
+              >
+                <ChevronLeft aria-hidden="true" className="h-3.5 w-3.5" />
+              </button>
+            </>
           )}
-          <button
-            type="button"
-            data-no-drag
-            onClick={toggleCollapsed}
-            aria-label={collapsed ? 'Développer' : 'Réduire'}
-            className={cn(
-              'flex h-6 w-6 items-center justify-center rounded-full border border-border bg-background text-muted-foreground shadow-md transition-colors hover:text-foreground',
-              focusRing,
-              collapsed && '-ml-2 mt-[-18px] h-5 w-5 self-start',
-            )}
-          >
-            {collapsed ? (
-              <ChevronRight aria-hidden="true" className="h-3 w-3" />
-            ) : (
-              <ChevronLeft aria-hidden="true" className="h-3.5 w-3.5" />
-            )}
-          </button>
         </div>
       </div>
       <AnalyticsCatalogDialog open={open} onOpenChange={setOpen} />
