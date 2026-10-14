@@ -80,6 +80,7 @@ export default function FloatingAnalyticsShopButton() {
   /** Après un déplacement, on ignore brièvement le clic résiduel pour éviter une ouverture accidentelle. */
   const suppressUntil = useRef(0);
   const drag = useRef<{ id: number; startX: number; startY: number; originX: number; originY: number; moved: boolean } | null>(null);
+  const [dragging, setDragging] = useState(false);
 
   const clamp = useCallback((next: { x: number; y: number }) => {
     const wrapper = wrapperRef.current;
@@ -181,9 +182,6 @@ export default function FloatingAnalyticsShopButton() {
         <div
           className="flex touch-none items-center gap-1 motion-reduce:transition-none"
           onPointerDown={onPointerDown}
-          onPointerMove={onPointerMove}
-          onPointerUp={endDrag}
-          onPointerCancel={endDrag}
         >
           {collapsed ? (
             <div className="relative h-[54px] w-10">
