@@ -106,7 +106,7 @@ const DRCInteractiveMap = ({ onFullscreenChange }: DRCInteractiveMapProps) => {
 
 
   const { isTestRoute } = useTestEnvironment();
-  const { data: analytics, isLoading, dataUpdatedAt } = useLandDataAnalytics(isTestRoute);
+  const { data: analytics, isLoading, dataUpdatedAt } = useLandDataAnalytics(isTestRoute, activeAnalyticsTab || null);
   const { config: brandingConfig } = useAppAppearance();
 
   const rdcMapDefaults = ANALYTICS_TABS_REGISTRY['rdc-map']
