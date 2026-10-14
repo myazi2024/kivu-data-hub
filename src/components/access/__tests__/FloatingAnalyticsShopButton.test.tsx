@@ -2,10 +2,12 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import FloatingAnalyticsShopButton from '../FloatingAnalyticsShopButton';
 
-const dialogProps = vi.hoisted(() => ({ last: null as { open?: boolean } | null }));
+const dialogProps = vi.hoisted(() => ({ opens: 0, prevOpen: false, lastOpen: false }));
 vi.mock('@/components/analytics/catalog/AnalyticsCatalogDialog', () => ({
   default: (props: { open?: boolean }) => {
-    dialogProps.last = props;
+    if (props.open === true && !dialogProps.prevOpen) dialogProps.opens += 1;
+    dialogProps.prevOpen = props.open === true;
+    dialogProps.lastOpen = props.open === true;
     return null;
   },
 }));
@@ -24,7 +26,9 @@ function firePointer(el: Element, type: string, opts: { pointerId?: number; clie
 
 beforeEach(() => {
   localStorage.clear();
-  dialogProps.last = null;
+  dialogProps.opens = 0;
+  dialogProps.prevOpen = false;
+  dialogProps.lastOpen = false;
 });
 
 afterEach(() => {
@@ -71,15 +75,16 @@ describe('FloatingAnalyticsShopButton', () => {
     firePointer(grab, 'pointerdown', { clientX: 0, clientY: 0 });
     firePointer(grab, 'pointerup', { clientX: 2, clientY: 1 });
     fireEvent.click(grab);
-    expect(dialogProps.last?.open).toBe(true);
+    expect(dialogProps.opens).toBe(1);
+    expect(dialogProps.lastOpen).toBe(true);
 
-    // Glissade : déplacement mémorisé, pas d'ouverture.
-    dialogProps.last = null;
+    // Glissade : déplacement mémorisé, pas de nouvelle ouverture.
+    dialogProps.opens = 0;
     firePointer(grab, 'pointerdown', { pointerId: 2, clientX: 0, clientY: 0 });
     firePointer(grab, 'pointermove', { pointerId: 2, clientX: 120, clientY: 240 });
     firePointer(grab, 'pointerup', { pointerId: 2, clientX: 120, clientY: 240 });
     fireEvent.click(grab);
-    expect(dialogProps.last?.open).toBe(false);
+    expect(dialogProps.opens).toBe(0);
     const stored = JSON.parse(localStorage.getItem(KEY)!);
     expect(stored.x).toBeGreaterThan(12);
     expect(stored.y).toBeGreaterThan(80);
