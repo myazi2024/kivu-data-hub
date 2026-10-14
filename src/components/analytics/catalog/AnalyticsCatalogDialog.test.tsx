@@ -31,6 +31,7 @@ describe('Analytics catalogue item', () => {
     fireEvent.click(screen.getByRole('checkbox', { name: item.title }));
     expect(onToggle).toHaveBeenCalledOnce();
     fireEvent.click(screen.getByRole('button', { name: `Détails : ${item.title}` }));
+    expect(onToggle).toHaveBeenCalledOnce();
     expect(screen.getByText('Accès 30 jours')).toBeVisible();
     expect(screen.getByText(item.description)).toBeVisible();
   });
@@ -40,6 +41,6 @@ describe('Analytics catalogue item', () => {
     expect(screen.getByRole('checkbox')).toBeDisabled();
     fireEvent.click(screen.getByRole('checkbox'));
     expect(onToggle).not.toHaveBeenCalled();
-    expect(screen.getByText('Déjà acheté')).toBeVisible();
+    expect(screen.getByText(/Déjà acheté/)).toBeVisible();
   });
 });

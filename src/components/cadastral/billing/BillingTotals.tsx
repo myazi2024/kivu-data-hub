@@ -8,6 +8,7 @@ import CurrencySelector from '@/components/payment/CurrencySelector';
 import { formatCurrency } from '@/utils/formatters';
 import { useTvaRate } from '@/hooks/useTvaRate';
 import type { CurrencyCode } from '@/hooks/useCurrencyConfig';
+import CatalogTotal from '@/components/shared/CatalogTotal';
 
 interface AppliedDiscount {
   code: string;
@@ -99,24 +100,10 @@ const BillingTotals: React.FC<BillingTotalsProps> = ({
             </div>
           </div>
 
-          <div className="flex items-center justify-between p-2.5 bg-primary/5 rounded-xl border border-primary/20">
-            <span className="text-sm font-semibold">Total TTC</span>
-            <div className="text-right">
-              <div className="text-lg font-bold text-primary">
-                {formatCurrency(convertFromUsd(discountedAmount * (1 + TVA_RATE)), selectedCurrency)}
-              </div>
-              {selectedCurrency !== 'USD' && (
-                <div className="text-[10px] text-muted-foreground">
-                  ≈ {formatCurrency(discountedAmount * (1 + TVA_RATE), 'USD')}
-                </div>
-              )}
-              {appliedDiscount && (
-                <div className="text-[10px] text-green-600 dark:text-green-400">
-                  Économie: {formatCurrency(convertFromUsd(appliedDiscount.amount * (1 + TVA_RATE)), selectedCurrency)} TTC
-                </div>
-              )}
-            </div>
-          </div>
+          <CatalogTotal label="Total TTC" amount={formatCurrency(convertFromUsd(discountedAmount * (1 + TVA_RATE)), selectedCurrency)} detail={<>
+            {selectedCurrency !== 'USD' && <div className="text-[10px] text-muted-foreground">≈ {formatCurrency(discountedAmount * (1 + TVA_RATE), 'USD')}</div>}
+            {appliedDiscount && <div className="text-[10px] text-primary">Économie: {formatCurrency(convertFromUsd(appliedDiscount.amount * (1 + TVA_RATE)), selectedCurrency)} TTC</div>}
+          </>} />
         </div>
       )}
 
