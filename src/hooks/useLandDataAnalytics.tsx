@@ -78,7 +78,7 @@ export const useLandDataAnalytics = (isTestRoute = false, tabKey?: string | null
       return {
         titleRequests: d.titleRequests ?? [],
         parcels,
-        contributions: d.contributions ?? [],
+        contributions: enrich(d.contributions ?? []),
         taxHistory: enrich(d.taxHistory ?? []),
         mortgages: enrich(d.mortgages ?? []),
         expertiseRequests: enrich(d.expertiseRequests ?? []),
