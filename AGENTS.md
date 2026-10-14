@@ -18,4 +18,4 @@
 - Test-data purge: only `_cleanup_test_data_chunk_internal` deletes (steps listed in `_shared/cleanupSteps.ts`); preview and nightly job mirror those steps, and the nightly job obeys test_mode auto_cleanup + retention, so settings are never bypassed.
 - Land-data analytics: data only via `get_analytics_tab_dataset(tab_key)` (role or valid tab purchase checked server-side); purchases granted by `trg_grant_analytics_access` on completed server-inserted payment_transactions; unpurchased tabs never reach the browser.
 - Land-data discovery uses contained previews and scoped viewport-height breakpoints, no global scroll suppression.
-- Analytics catalogue shares overlay/return-route content and a separate cart to avoid divergence.
+- Catalogues share row/total presentation for parity; analytics shares overlay/route content, not carts or payments.
