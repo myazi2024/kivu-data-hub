@@ -77,7 +77,8 @@ export default function FloatingAnalyticsShopButton() {
   posRef.current = pos;
   const collapsedRef = useRef(collapsed);
   collapsedRef.current = collapsed;
-  const suppressClick = useRef(false);
+  /** Après un déplacement, on ignore brièvement le clic résiduel pour éviter une ouverture accidentelle. */
+  const suppressUntil = useRef(0);
   const drag = useRef<{ id: number; startX: number; startY: number; originX: number; originY: number; moved: boolean } | null>(null);
 
   const clamp = useCallback((next: { x: number; y: number }) => {
@@ -115,6 +116,8 @@ export default function FloatingAnalyticsShopButton() {
   }, [collapsed]);
 
   const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    // Le chevron de réduction ne déclenche pas le déplacement.
+    if ((e.target as HTMLElement).closest('[data-no-drag]')) return;
     if (e.pointerType === 'mouse' && e.button !== 0) return;
     try {
       e.currentTarget.setPointerCapture(e.pointerId);
@@ -139,16 +142,13 @@ export default function FloatingAnalyticsShopButton() {
     if (!d || d.id !== e.pointerId) return;
     drag.current = null;
     if (d.moved) {
-      suppressClick.current = true;
+      suppressUntil.current = Date.now() + 400;
       save(posRef.current, collapsedRef.current);
     }
   };
 
   const onMainClick = () => {
-    if (suppressClick.current) {
-      suppressClick.current = false;
-      return;
-    }
+    if (Date.now() < suppressUntil.current) return;
     setOpen(true);
   };
 
@@ -205,6 +205,7 @@ export default function FloatingAnalyticsShopButton() {
           )}
           <button
             type="button"
+            data-no-drag
             onClick={toggleCollapsed}
             aria-label={collapsed ? 'Développer' : 'Réduire'}
             className={cn(
