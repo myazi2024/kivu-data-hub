@@ -115,36 +115,46 @@ export default function FloatingAnalyticsShopButton() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [collapsed]);
 
+  // Écouteurs de fenêtre : suivent le pointeur même en dehors du bouton, sans
+  // capture (la capture retargeterait le clic final vers le conteneur).
+  useEffect(() => {
+    if (!dragging) return;
+    const onMove = (ev: PointerEvent) => {
+      const d = drag.current;
+      if (!d || d.id !== ev.pointerId) return;
+      const dx = ev.clientX - d.startX;
+      const dy = ev.clientY - d.startY;
+      if (!d.moved && Math.hypot(dx, dy) < DRAG_THRESHOLD) return;
+      d.moved = true;
+      setPos(clamp({ x: d.originX + dx, y: d.originY + dy }));
+    };
+    const onEnd = (ev: PointerEvent) => {
+      const d = drag.current;
+      if (!d || d.id !== ev.pointerId) return;
+      drag.current = null;
+      setDragging(false);
+      if (d.moved) {
+        suppressUntil.current = Date.now() + 400;
+        save(posRef.current, collapsedRef.current);
+      }
+    };
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onEnd);
+    window.addEventListener('pointercancel', onEnd);
+    return () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onEnd);
+      window.removeEventListener('pointercancel', onEnd);
+    };
+  }, [dragging, clamp, save]);
+
   const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     // Le chevron de réduction ne déclenche pas le déplacement.
     if ((e.target as HTMLElement).closest('[data-no-drag]')) return;
     if (e.pointerType === 'mouse' && e.button !== 0) return;
-    try {
-      e.currentTarget.setPointerCapture(e.pointerId);
-    } catch {
-      /* capture indisponible : le suivi continue via les événements de la fenêtre */
-    }
+    if (drag.current) return;
     drag.current = { id: e.pointerId, startX: e.clientX, startY: e.clientY, originX: posRef.current.x, originY: posRef.current.y, moved: false };
-  };
-
-  const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    const d = drag.current;
-    if (!d || d.id !== e.pointerId) return;
-    const dx = e.clientX - d.startX;
-    const dy = e.clientY - d.startY;
-    if (!d.moved && Math.hypot(dx, dy) < DRAG_THRESHOLD) return;
-    d.moved = true;
-    setPos(clamp({ x: d.originX + dx, y: d.originY + dy }));
-  };
-
-  const endDrag = (e: React.PointerEvent<HTMLDivElement>) => {
-    const d = drag.current;
-    if (!d || d.id !== e.pointerId) return;
-    drag.current = null;
-    if (d.moved) {
-      suppressUntil.current = Date.now() + 400;
-      save(posRef.current, collapsedRef.current);
-    }
+    setDragging(true);
   };
 
   const onMainClick = () => {
