@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { CheckCircle, Loader2, ShoppingCart, Trash2 } from 'lucide-react';
+import { CheckCircle, CreditCard, Loader2, ShoppingCart, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import CatalogTotal from '@/components/shared/CatalogTotal';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { ANALYTICS_TABS_REGISTRY } from '@/config/analyticsTabsRegistry';
@@ -89,7 +91,7 @@ export default function AnalyticsCatalog() {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-3 sm:p-4">
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-3">
         {catalogQuery.isLoading || tabsLoading || accessLoading ? <div className="flex justify-center py-12"><LoadingIndicator /></div> : catalogQuery.isError || accessError ? (
           <div role="alert" className="space-y-3 py-8 text-center"><p>Impossible de charger le catalogue.</p><Button variant="outline" onClick={() => { void catalogQuery.refetch(); void qc.invalidateQueries({ queryKey: ['my-analytics-access'] }); }}>Réessayer</Button></div>
         ) : !sections.length ? <p className="py-8 text-center text-sm text-muted-foreground">Aucun visuel n’est en vente pour le moment.</p> : (
@@ -102,27 +104,31 @@ export default function AnalyticsCatalog() {
               const remaining = selectable.filter(i => !has(i.tab_key, i.item_key));
               const asCart = (i: CatalogVisual) => ({ ...i, tab_label: s.label });
               return <TabsContent key={s.key} value={s.key} className="space-y-3">
-                <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-primary/30 bg-primary/5 p-3">
-                  <span className="flex items-center gap-2 text-xs font-medium text-primary"><CheckCircle className="h-4 w-4" />{s.items.length} visuels · {s.label}</span>
-                  <Button size="sm" variant="outline" className="min-h-11" disabled={!selectable.length} onClick={() => remaining.length ? add(remaining.map(asCart)) : removeMany(selectable)}>{remaining.length ? `Tout ajouter · ${price(remaining.reduce((sum, i) => sum + i.price_usd, 0))}` : 'Tout retirer'}</Button>
-                </div>
+                {selectable.length > 1 && <div className="rounded-xl border border-primary/30 bg-gradient-to-br from-primary/5 to-primary/10 p-2.5 space-y-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0"><div className="text-xs font-semibold text-primary flex items-center gap-1.5"><CheckCircle className="h-3.5 w-3.5 shrink-0" />Dossier complet · {s.label}</div><p className="text-[11px] text-muted-foreground mt-0.5 leading-tight">{selectable.length} visuels pour {price(selectable.reduce((sum, i) => sum + i.price_usd, 0))}</p></div>
+                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0.5 shrink-0">{selectable.length} dispo.</Badge>
+                  </div>
+                  <Button size="sm" variant={remaining.length ? 'default' : 'outline'} className="w-full h-8 text-xs" onClick={() => remaining.length ? add(remaining.map(asCart)) : removeMany(selectable)}>{!remaining.length ? 'Tout retirer' : remaining.length === selectable.length ? `Tout ajouter — ${price(remaining.reduce((sum, i) => sum + i.price_usd, 0))}` : `Compléter le dossier (+${price(remaining.reduce((sum, i) => sum + i.price_usd, 0))})`}</Button>
+                </div>}
                 <div className="space-y-2">{s.items.map(i => <AnalyticsCatalogItem key={i.item_key} item={i} selected={has(i.tab_key, i.item_key)} owned={allowed.has(accessKey(i.tab_key, i.item_key))} expiry={purchases?.find(p => p.tab_key === i.tab_key && p.item_key === i.item_key)?.expires_at} priceLabel={price(i.price_usd)} onToggle={() => has(i.tab_key, i.item_key) ? remove(i.tab_key, i.item_key) : add(asCart(i))} />)}</div>
               </TabsContent>;
             })}
           </Tabs>
         )}
-      </div>
-      <footer className="shrink-0 space-y-2 border-t border-border bg-background p-3 sm:p-4">
+      <footer className="mt-2.5 space-y-2.5">
         {showCart && <ul className="max-h-32 overflow-y-auto divide-y divide-border">{cartItems.map(i => <li key={accessKey(i.tab_key, i.item_key)} className="flex items-center gap-2 text-xs"><span className="min-w-0 flex-1 break-words">{i.title}<span className="block text-muted-foreground">{i.tab_label}</span></span><span className="shrink-0">{price(i.price_usd)}</span><Button size="icon" variant="ghost" className="h-11 w-11 shrink-0" aria-label={`Retirer ${i.title}`} onClick={() => remove(i.tab_key, i.item_key)}><Trash2 className="h-4 w-4" /></Button></li>)}</ul>}
-        <div className="flex items-center justify-between gap-2">
-          <Button variant="ghost" size="sm" className="min-h-11" onClick={() => setShowCart(!showCart)} aria-expanded={showCart}><ShoppingCart className="mr-2 h-4 w-4" />{cartItems.length} sélectionné(s)</Button>
-          <div className="flex items-center gap-2"><span className="sr-only">Devise d’affichage</span><CurrencySelector currencies={currencies} selectedCurrency={selectedCurrency} onCurrencyChange={setSelectedCurrency} className="min-h-11" /></div>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => setShowCart(!showCart)} aria-expanded={showCart}><ShoppingCart className="mr-2 h-4 w-4" />{cartItems.length} sélectionné(s)</Button>
+          <div className="flex items-center gap-2"><span className="text-xs text-muted-foreground">Devise d’affichage</span><CurrencySelector currencies={currencies} selectedCurrency={selectedCurrency} onCurrencyChange={setSelectedCurrency} className="min-h-11" /></div>
         </div>
-        <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-primary/20 bg-primary/5 p-2.5">
-          <div><span className="text-xs text-muted-foreground">Total</span><p className="text-lg font-bold text-primary">{price(total)}</p></div>
-          <Button className="min-h-11" disabled={creating || !cartItems.length || catalogQuery.isError || accessError} onClick={startCheckout}>{creating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}Passer au paiement</Button>
-        </div>
+        {cartItems.length > 0 && <>
+          <div className="space-y-1 px-2.5 py-2 bg-muted/20 rounded-xl text-xs flex justify-between gap-2"><span className="text-muted-foreground">Sous-total ({cartItems.length} visuel{cartItems.length > 1 ? 's' : ''})</span><span className="font-medium">{price(total)}</span></div>
+          <CatalogTotal label="Total" amount={price(total)} detail={selectedCurrency !== 'USD' ? <div className="text-[10px] text-muted-foreground">≈ {total.toFixed(2)} USD</div> : undefined} />
+        </>}
+        <Button className="w-full h-10 text-sm font-semibold rounded-xl" disabled={creating || !cartItems.length || catalogQuery.isError || accessError} onClick={startCheckout}>{creating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CreditCard className="mr-2 h-4 w-4" />}{cartItems.length ? 'Payer' : 'Sélectionner des visuels'}</Button>
       </footer>
+      </div>
       <AnalyticsCheckoutDialog checkout={checkout} onClose={() => setCheckout(null)} onPaid={onPaid} />
     </div>
   );
