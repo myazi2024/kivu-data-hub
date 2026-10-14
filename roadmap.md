@@ -1,5 +1,7 @@
 # Roadmap
 
+- [ ] Aligner exactement les lignes, sélection groupée, récapitulatif et fenêtre des données sur les services ; vérifier ordinateur/mobile et absence de régression.
+
 - [x] Catalogue Données foncières superposé, design services, devises et panier conservé : 18 tests passent ; ouverture, sélection, fermeture/réouverture et fenêtre de paiement vérifiées en aperçu isolé sur 3 formats ; compilation sans erreur.
 - [ ] Vérifier un achat réel connecté et son accès après confirmation : bloqué par l’authentification Supabase externe non disponible pour les contrôles automatisés.
 
