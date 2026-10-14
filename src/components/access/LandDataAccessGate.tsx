@@ -29,61 +29,61 @@ const PreviewPlaceholder = () => (
 );
 
 const PreviewImage = ({ src }: { src: string }) => (
-  <img src={src} alt="Aperçu des Données foncières" loading="lazy" className="h-full w-full rounded-lg object-contain" />
+  <img src={src} alt="Aperçu des Données foncières" loading="lazy" className="h-full min-h-0 w-full rounded-lg object-contain" />
 );
 
-const LandDataAccessDenied = () => {
+export const LandDataAccessDenied = () => {
   const { config } = useAppAppearance();
   const desktop = config.land_data_preview_desktop_url?.trim();
   const mobile = config.land_data_preview_mobile_url?.trim();
   return (
-  <div className="min-h-dvh bg-background flex flex-col">
+  <div className="land-data-discovery h-dvh bg-background flex flex-col">
     <Helmet>
       <title>Découvrez les Données foncières | BIC</title>
       <meta name="description" content="Explorez les territoires et les tendances foncières de la RDC avec BIC. Demandez un accès adapté à votre profil et à votre activité." />
     </Helmet>
     <Navigation />
-    <main className="flex-1 mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
-      <section aria-labelledby="land-data-heading" className="mx-auto max-w-3xl text-center">
-        <h1 id="land-data-heading" className="text-3xl font-bold text-foreground sm:text-4xl">
+    <main className="land-data-discovery-main flex min-h-0 flex-1 flex-col gap-3 mx-auto w-full max-w-6xl px-4 py-3 sm:px-6 sm:py-4">
+      <section aria-labelledby="land-data-heading" className="land-data-intro mx-auto w-full max-w-3xl shrink-0 text-center">
+        <h1 id="land-data-heading" className="text-2xl font-bold text-foreground sm:text-3xl">
           Données foncières
         </h1>
-        <p className="mt-3 text-xl font-medium text-primary sm:text-2xl">
+        <p className="land-data-tagline mt-1 text-base font-medium text-primary sm:text-xl">
           Une nouvelle perspective sur le foncier en RDC.
         </p>
-        <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-muted-foreground">
+        <p className="land-data-description mx-auto mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
           Explorez la carte, comparez les territoires et appuyez vos analyses sur les données disponibles du cadastre numérique.
         </p>
-        <Button asChild size="lg" className="mt-6 min-h-11 w-full sm:w-auto">
+        <Button asChild size="lg" className="land-data-access-button mt-3 min-h-11 w-full sm:w-auto">
           <Link to="/donnees-foncieres/catalogue">
             Demander l’accès
             <ArrowRight aria-hidden="true" className="ml-2 h-4 w-4 shrink-0" />
           </Link>
         </Button>
-        <p className="mx-auto mt-3 max-w-lg text-xs leading-relaxed text-muted-foreground">
+        <p className="land-data-payment-note mx-auto mt-2 max-w-lg text-xs leading-relaxed text-muted-foreground">
           Choisissez les visuels qui vous intéressent et ne payez que ce dont vous avez besoin.
         </p>
       </section>
 
-      <section aria-label="Aperçu des Données foncières" className="mt-8 sm:mt-10">
-        <div data-preview="desktop" className={`hidden aspect-video items-center justify-center rounded-lg md:flex ${desktop ? '' : 'border border-dashed border-border bg-muted/40 p-6'}`}>
+      <section aria-label="Aperçu des Données foncières" className="land-data-preview flex min-h-0 flex-1">
+        <div data-preview="desktop" className={`hidden h-full min-h-0 w-full items-center justify-center rounded-lg md:flex ${desktop ? '' : 'border border-dashed border-border bg-muted/40 p-3'}`}>
           {desktop ? <PreviewImage src={desktop} /> : <PreviewPlaceholder />}
         </div>
-        <div data-preview="mobile" className={`mx-auto flex aspect-[3/4] w-full max-w-sm items-center justify-center rounded-lg md:hidden ${mobile ? '' : 'border border-dashed border-border bg-muted/40 p-6'}`}>
+        <div data-preview="mobile" className={`mx-auto flex h-full min-h-0 w-full max-w-sm items-center justify-center rounded-lg md:hidden ${mobile ? '' : 'border border-dashed border-border bg-muted/40 p-3'}`}>
           {mobile ? <PreviewImage src={mobile} /> : <PreviewPlaceholder />}
         </div>
       </section>
 
-      <ul className="mt-8 grid gap-5 border-y border-border py-6 sm:grid-cols-3 sm:gap-6">
+      <ul className="land-data-benefits grid shrink-0 grid-cols-3 gap-2 border-y border-border py-2 sm:gap-4">
         {benefits.map(({ icon: Icon, text }) => (
-          <li key={text} className="flex min-w-0 items-center gap-3 sm:flex-col sm:text-center">
-            <Icon aria-hidden="true" className="h-5 w-5 shrink-0 text-primary" />
-            <span className="text-sm font-medium text-foreground">{text}</span>
+          <li key={text} className="flex min-w-0 flex-col items-center gap-1 text-center sm:flex-row sm:justify-center sm:gap-2">
+            <Icon aria-hidden="true" className="h-4 w-4 shrink-0 text-primary" />
+            <span className="text-xs font-medium text-foreground">{text}</span>
           </li>
         ))}
       </ul>
 
-      <div className="mt-5 text-center">
+      <div className="land-data-return shrink-0 text-center">
         <Button asChild variant="ghost" size="sm" className="min-h-11 text-muted-foreground">
           <Link to="/">
             <ArrowLeft aria-hidden="true" className="mr-2 h-4 w-4" />
