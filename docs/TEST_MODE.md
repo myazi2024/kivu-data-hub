@@ -76,10 +76,6 @@ Côté front, la liste ordonnée des étapes de purge est partagée via un re-ex
 - N'agit que si `test_mode.enabled = true` ET `test_mode.auto_cleanup = true`.
 - Loggue dans `audit_logs` (`AUTO_TEST_DATA_CLEANUP`).
 
-#### RPC `cleanup_all_test_data()` — dépréciée
-- Conservée pour compat (cron auto + scripts), mais **plus appelée depuis l'UI** (timeout au-delà de ~14k lignes).
-- L'admin utilise désormais exclusivement `cleanup-test-data-batch`.
-
 ### 6.bis Trigger anti-insert prod (`prevent_test_data_in_prod`)
 - BEFORE INSERT sur **10 tables principales** : parcelles, contributions, factures,
   codes contributeurs, litiges, expertise, titres, mutations, lotissements, conflits limites.

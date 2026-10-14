@@ -225,22 +225,6 @@ export interface ExpertiseRequestRecord extends GeoFields {
   created_at: string;
 }
 
-export interface MutationRequestRecord extends GeoFields {
-  id: string;
-  parcel_number: string;
-  parcel_id?: string | null;
-  mutation_type?: string | null;
-  requester_type?: string | null;
-  status: string;
-  payment_status?: string | null;
-  total_amount_usd?: number | null;
-  market_value_usd?: number | null;
-  title_age?: number | null;
-  late_fee_amount?: number | null;
-  reviewed_at?: string | null;
-  created_at: string;
-}
-
 export interface SubdivisionRequestRecord extends GeoFields {
   id: string;
   parcel_number: string;

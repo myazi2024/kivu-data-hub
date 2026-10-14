@@ -25,7 +25,6 @@ const DEFAULT_LINES: { key: string; field: keyof ProvinceData; label: string; fo
   { key: 'tooltip-title-req', field: 'titleRequestsCount', label: 'Titres demandés', format: 'number', color: 'text-violet-600' },
   { key: 'tooltip-disputes', field: 'disputesCount', label: 'Litiges fonciers', format: 'number', color: 'text-orange-500' },
   { key: 'tooltip-mortgages', field: 'activeMortgagesCount', label: 'Hypothèques actives', format: 'number', color: 'text-red-600' },
-  { key: 'tooltip-mutations', field: 'pendingMutationsCount', label: 'Mutations en cours', format: 'number', color: 'text-violet-600' },
   { key: 'tooltip-expertises', field: 'pendingExpertisesCount', label: 'Expertises en cours', format: 'number', color: 'text-blue-600' },
   { key: 'tooltip-avg-surface', field: 'avgParcelSurfaceSqm', label: 'Sup. moy. parcelle', format: 'avg-sqm', color: 'text-emerald-700' },
   { key: 'tooltip-avg-building', field: 'avgBuildingSurfaceSqm', label: 'Sup. moy. construction', format: 'avg-sqm', color: 'text-emerald-600' },
