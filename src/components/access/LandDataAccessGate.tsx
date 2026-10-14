@@ -9,7 +9,7 @@ import Navigation from "@/components/ui/navigation";
 import { LoadingIndicator } from "@/components/ui/loading-indicator";
 import { useAppAppearance } from "@/hooks/useAppAppearance";
 import { AnalyticsAccessProvider, useMyAnalyticsAccess } from "@/hooks/useAnalyticsAccess";
-import { ShoppingBag } from "lucide-react";
+import FloatingAnalyticsShopButton from "@/components/access/FloatingAnalyticsShopButton";
 import AnalyticsCatalogDialog from "@/components/analytics/catalog/AnalyticsCatalogDialog";
 
 interface LandDataAccessGateProps {
