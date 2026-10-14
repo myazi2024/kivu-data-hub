@@ -267,23 +267,4 @@ export interface OwnershipHistoryRecord extends GeoFields {
   created_at: string;
 }
 
-export interface CertificateRecord extends GeoFields {
-  id: string;
-  certificate_type: string;
-  parcel_number: string;
-  reference_number: string;
-  status: string;
-  generated_at: string;
-}
 
-export interface InvoiceRecord extends GeoFields {
-  id: string;
-  invoice_number: string;
-  parcel_number: string;
-  total_amount_usd: number;
-  status: string;
-  payment_method?: string | null;
-  geographical_zone?: string | null;
-  discount_amount_usd?: number | null;
-  created_at: string;
-}
