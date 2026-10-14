@@ -1,5 +1,5 @@
 - Loading appearance: `app_appearance_config`, root CSS only.
-- Land-district maps and analytics filters share `getLandDistrictAnchor` (override table, then exact same-province match; never guess or approximate boundaries); the analytics map layer is derived by `resolveMapView` from filters.
+- Maps/analytics share `getLandDistrictAnchor`: overrides, then exact same-province match; never guess boundaries. `resolveMapView` derives the map layer from filters.
 - Home BIC figures and district activity totals: aggregates from service-only DB functions behind the counts-only home-bic-counts Edge Function (no individual records, no guessed districts), read through one shared hook `useHomeBicCounts`; each display figure switches after 10,000 real records.
 - CCC approve/reject/appeal/withdraw go through approve_ccc_contribution / reject_ccc_contribution / process_ccc_appeal / withdraw_ccc_contribution (admin or owner check + server status guard); never direct table updates.
 - Historique des propriétaires et des taxes : détail uniquement via `get_parcel_paid_history` (service « history » / « obligations » payé, ou admin) ; statistiques via `get_ownership_history_stats` / `get_tax_history_stats` sans nom ni justificatif ; plus aucune lecture directe par les utilisateurs connectés.
