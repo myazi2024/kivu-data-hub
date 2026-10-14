@@ -40,14 +40,9 @@ export interface TabFilterConfig {
 const TAB_FILTER_DEFAULTS: Record<string, TabFilterConfig> = {
   'title-requests': { hideTime: false, hideLocation: false, dateField: 'title_issue_date' },
   'parcels-titled': { hideTime: false, hideLocation: false, dateField: 'created_at' },
-  'contributions': { hideTime: false, hideLocation: false, dateField: 'created_at' },
-  'expertise': { hideTime: false, hideLocation: false, dateField: 'created_at' },
   'mortgages': { hideTime: false, hideLocation: false, dateField: 'created_at' },
   'subdivision': { hideTime: false, hideLocation: false, dateField: 'created_at' },
   'disputes': { hideTime: false, hideLocation: false, dateField: 'created_at' },
-  'ownership': { hideTime: false, hideLocation: false, dateField: 'ownership_start_date' },
-  'certificates': { hideTime: false, hideLocation: false, dateField: 'generated_at' },
-  'invoices': { hideTime: false, hideLocation: false, dateField: 'created_at' },
   'taxes': { hideTime: false, hideLocation: false, dateField: 'created_at' },
 };
 

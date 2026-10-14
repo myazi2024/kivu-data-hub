@@ -1,18 +1,15 @@
 import { admin as supabase } from '../testModeAdminClient.ts';
 import {
-  PROVINCES, COLLECTIVITES_SR, CONSTRUCTION_NATURES, CONSTRUCTION_TYPES,
+  PROVINCES, CONSTRUCTION_NATURES, CONSTRUCTION_TYPES,
   CONSTRUCTION_MATERIALS, DECLARED_USAGES, LEGAL_STATUSES, OWNER_NAMES,
   PROPERTY_CATEGORIES, STANDINGS, TITLE_TYPES,
   assertInserted, computeOccupancy, getProvinceInfo, pick, randInt, randomDateInPast, seededInt,
   withRetry, BATCH_DELAY_MS,
 } from './_shared.ts';
+import { buildTestLocation, buildTestMarketFields } from './marketFields.ts';
 
 /** Step 0b: Generate cadastral parcels (variable per province) */
 export const generateParcels = async (parcelNumbers: string[]) => {
-  const GROUPEMENTS_SR = ['Mudaka', 'Irhambi', 'Bugorhe', 'Miti', 'Katana'];
-  const VILLAGES_SR = ['Mugogo', 'Nyantende', 'Walungu-Centre', 'Kamanyola', 'Luhihi', 'Mulamba'];
-  const TERRITOIRES_SR = ['Kabare', 'Kalehe', 'Nyiragongo', 'Walungu', 'Uvira', 'Fizi'];
-
   const records = parcelNumbers.map((pn, idx) => {
     const { pIdx, localIdx, count } = getProvinceInfo(idx);
     const prov = PROVINCES[pIdx];
@@ -25,6 +22,9 @@ export const generateParcels = async (parcelNumbers: string[]) => {
     const areaSqm = seededInt(idx * 7 + 1, 200, 5000);
     const sideN = seededInt(idx * 7 + 2, 10, 50), sideS = seededInt(idx * 7 + 3, 10, 50), sideE = seededInt(idx * 7 + 4, 10, 50), sideO = seededInt(idx * 7 + 5, 10, 50);
     const houseNumber = idx % 2 === 0 ? String(seededInt(idx * 7 + 6, 1, 200)) : null;
+    const propertyCategory = pick(PROPERTY_CATEGORIES, idx);
+    const standing = constructionNature ? pick(STANDINGS, idx) : null;
+    const geo = buildTestLocation(idx, prov, isSR);
 
     return {
       parcel_number: pn,
@@ -45,15 +45,13 @@ export const generateParcels = async (parcelNumbers: string[]) => {
       construction_nature: constructionNature,
       construction_year: constructionNature ? seededInt(idx * 11 + 1, 1990, 2024) : null,
       construction_materials: constructionNature ? pick(CONSTRUCTION_MATERIALS, idx) : null,
-      standing: constructionNature ? pick(STANDINGS, idx) : null,
+      standing,
       lease_type: localIdx % 7 === 0 ? 'initial' : localIdx % 11 === 0 ? 'renewal' : null,
       lease_years: isSR ? randInt(10, 99) : (localIdx % 7 === 0 ? randInt(5, 25) : null),
       is_subdivided: idx % 20 === 0,
-      property_category: pick(PROPERTY_CATEGORIES, idx),
-      groupement: isSR ? pick(GROUPEMENTS_SR, idx) : null,
-      village: isSR ? pick(VILLAGES_SR, idx) : null,
-      territoire: isSR ? pick(TERRITOIRES_SR, idx) : null,
-      collectivite: isSR ? pick(COLLECTIVITES_SR, idx) : null,
+      property_category: propertyCategory,
+      ...geo,
+      ...buildTestMarketFields(idx, { constructionNature, propertyCategory, standing, areaSqm }),
       title_reference_number: `REF-${prov.province.substring(0, 3).toUpperCase()}-${String(idx).padStart(4, '0')}`,
       title_issue_date: randomDateInPast(10),
       house_number: houseNumber,

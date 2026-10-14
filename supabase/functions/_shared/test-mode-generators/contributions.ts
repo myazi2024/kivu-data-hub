@@ -1,11 +1,12 @@
 import { admin as supabase } from '../testModeAdminClient.ts';
 import {
-  PROVINCES, COLLECTIVITES_SR, CONSTRUCTION_NATURES, CONSTRUCTION_TYPES,
+  PROVINCES, CONSTRUCTION_NATURES, CONSTRUCTION_TYPES,
   CONSTRUCTION_MATERIALS, DECLARED_USAGES, LEGAL_STATUSES, OWNER_NAMES,
   PROPERTY_CATEGORIES, STANDINGS, TITLE_TYPES,
   assertInserted, computeOccupancy, getProvinceInfo, pick, randInt, randomDateInPast, seededInt,
   withRetry, BATCH_DELAY_MS,
 } from './_shared.ts';
+import { buildTestBoundaryHistory, buildTestLocation, buildTestMarketFields } from './marketFields.ts';
 
 /** Step 1: Generate contributions (1 per parcel) */
 export const generateContributions = async (userId: string, parcelNumbers: string[]) => {
@@ -26,6 +27,9 @@ export const generateContributions = async (userId: string, parcelNumbers: strin
     const areaSqm = seededInt(idx * 7 + 1, 200, 5000);
     const sideN = seededInt(idx * 7 + 2, 10, 50), sideS = seededInt(idx * 7 + 3, 10, 50), sideE = seededInt(idx * 7 + 4, 10, 50), sideO = seededInt(idx * 7 + 5, 10, 50);
     const houseNumber = idx % 2 === 0 ? String(seededInt(idx * 7 + 6, 1, 200)) : null;
+    const propertyCategory = pick(PROPERTY_CATEGORIES, idx);
+    const standing = constructionNature ? pick(STANDINGS, idx) : null;
+    const geo = buildTestLocation(idx, prov, isSR);
 
     return {
       parcel_number: pn,
@@ -37,9 +41,8 @@ export const generateContributions = async (userId: string, parcelNumbers: strin
       commune: prov.commune,
       quartier: prov.quartier,
       avenue: prov.avenue,
-      territoire: idx % 8 === 1 ? 'Nyiragongo' : null,
-      village: idx % 12 === 0 ? 'Test Village' : null,
-      collectivite: isSR ? pick(COLLECTIVITES_SR, idx) : null,
+      parcel_type: isSR ? 'SR' : 'SU',
+      ...geo,
       status: 'pending',
       contribution_type: pick(TYPES_CYCLE, idx),
       user_id: userId,
@@ -51,12 +54,13 @@ export const generateContributions = async (userId: string, parcelNumbers: strin
       construction_nature: constructionNature,
       construction_year: constructionYear,
       construction_materials: constructionNature ? pick(CONSTRUCTION_MATERIALS, idx) : null,
-      standing: constructionNature ? pick(STANDINGS, idx) : null,
+      standing,
       lease_type: localIdx % 7 === 0 ? 'initial' : localIdx % 11 === 0 ? 'renewal' : null,
       lease_years: isSR ? randInt(10, 99) : (localIdx % 7 === 0 ? randInt(5, 25) : null),
-      groupement: isSR ? pick(['Mudaka', 'Irhambi', 'Bugorhe', 'Miti'], idx) : null,
       current_owner_legal_status: pick(LEGAL_STATUSES, idx),
-      property_category: pick(PROPERTY_CATEGORIES, idx),
+      property_category: propertyCategory,
+      ...buildTestMarketFields(idx, { constructionNature, propertyCategory, standing, areaSqm }),
+      boundary_history: buildTestBoundaryHistory(idx, pn),
       title_reference_number: `REF-${prov.province.substring(0, 3).toUpperCase()}-${String(idx).padStart(4, '0')}`,
       title_issue_date: randomDateInPast(10),
       house_number: houseNumber,
