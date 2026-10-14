@@ -10,7 +10,6 @@ import { accessKey, useMyAnalyticsAccess } from '@/hooks/useAnalyticsAccess';
 import { useAnalyticsCart } from '@/hooks/useAnalyticsCart';
 import { useCurrencyConfig } from '@/hooks/useCurrencyConfig';
 import CurrencySelector from '@/components/payment/CurrencySelector';
-import { formatCurrency } from '@/utils/formatters';
 import { LoadingIndicator } from '@/components/ui/loading-indicator';
 import { toast } from 'sonner';
 import AnalyticsCatalogItem, { CatalogVisual } from './AnalyticsCatalogItem';
@@ -25,7 +24,7 @@ export default function AnalyticsCatalog() {
   const { allowed, data: purchases, isLoading: accessLoading, isError: accessError } = useMyAnalyticsAccess();
   const { items: cartItems, add, remove, removeMany, has, total } = useAnalyticsCart();
   const { currencies, selectedCurrency, setSelectedCurrency, convertFromUsd } = useCurrencyConfig();
-  const price = (n: number) => `${formatCurrency(convertFromUsd(n), selectedCurrency)} ${selectedCurrency}`;
+  const price = (n: number) => `${convertFromUsd(n).toLocaleString('fr-FR', { minimumFractionDigits: selectedCurrency === 'USD' ? 2 : 0, maximumFractionDigits: selectedCurrency === 'USD' ? 2 : 0 })} ${selectedCurrency}`;
   const [activeTab, setActiveTab] = useState('');
   const [checkout, setCheckout] = useState<{ invoiceId: string; total: number; items: { tab_key: string; item_key: string }[] } | null>(null);
   const [creating, setCreating] = useState(false);
