@@ -14,13 +14,22 @@ vi.mock('@/components/analytics/catalog/AnalyticsCatalogDialog', () => ({
 
 const KEY = 'bic-analytics-shop-fab';
 
-function firePointer(el: Element, type: string, opts: { pointerId?: number; clientX?: number; clientY?: number } = {}) {
-  fireEvent(el, new Event(type, { bubbles: true, cancelable: true }), {
+const POINTER_EVENTS = {
+  pointerdown: 'pointerDown',
+  pointermove: 'pointerMove',
+  pointerup: 'pointerUp',
+  pointercancel: 'pointerCancel',
+} as const;
+
+function firePointer(el: Element, type: keyof typeof POINTER_EVENTS, opts: { pointerId?: number; clientX?: number; clientY?: number } = {}) {
+  fireEvent[POINTER_EVENTS[type]](el, {
     pointerId: opts.pointerId ?? 1,
     pointerType: 'touch',
     clientX: opts.clientX ?? 0,
     clientY: opts.clientY ?? 0,
     button: 0,
+    bubbles: true,
+    cancelable: true,
   });
 }
 
