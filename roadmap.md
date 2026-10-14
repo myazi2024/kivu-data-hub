@@ -38,3 +38,4 @@
 - [x] Reformuler « À propos de ce service » : vérification poussée, absence de correspondance (frappe ou méthodologie), demande de vérification auprès du cadastre, ajout par BIC au registre national.
 
 - [x] CCC : fermeture accidentelle du formulaire bloquée (clic extérieur/Echap → confirmation, brouillon restauré = modifié, message édition corrigé) — 2026-10-13
+- [x] Mode test aligné sur les 8 onglets Données foncières (circonscriptions, statuts, location/vente, bornage, construction) ; 5 onglets masqués retirés. Reste : cliquer « Régénérer » dans le mode test.

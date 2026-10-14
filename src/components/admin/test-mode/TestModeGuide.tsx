@@ -38,6 +38,7 @@ const buildGuidelines = (counts: typeof EXPECTED_TEST_DATA_COUNTS, entityCount: 
   <>Utilisez <strong>"Nettoyer tout"</strong> pour purger immédiatement les <strong>{entityCount} entités suivies</strong> (respecte l'ordre FK via la RPC serveur)</>,
   <>Utilisez <strong>"Régénérer"</strong> pour supprimer et recréer un jeu de données test frais en une seule action</>,
   <><strong>Important :</strong> Les données test sont isolées dans l'environnement <code>/test/*</code> et sont exclues des analytics de production. Pour vérifier les visuels analytics, ouvrez <code>/test/map</code> (Données foncières test). La navigation reste dans l'environnement test automatiquement.</>,
+  <>Les données générées couvrent la carte des circonscriptions foncières et les 8 onglets de Données foncières (Titre foncier, Construction, Hypothèque, Lotissement, Litiges fonciers, Location et valeur, Taxes foncières, Bornage). Après une mise à jour du générateur, utilisez <strong>« Régénérer »</strong> pour remplacer les anciennes données test.</>,
 ];
 
 const TestModeGuide: React.FC = () => {
