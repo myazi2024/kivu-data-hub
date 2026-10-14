@@ -57,9 +57,11 @@ describe('LandDataAccessGate', () => {
 
   it('reserves separate desktop and mobile preview areas without fake images', () => {
     const { container } = renderGate();
-    expect(container.querySelector('[data-preview="desktop"]')).toHaveClass('hidden', 'md:flex', 'aspect-video');
-    expect(container.querySelector('[data-preview="mobile"]')).toHaveClass('md:hidden', 'aspect-[3/4]');
+    expect(container.querySelector('[data-preview="desktop"]')).toHaveClass('hidden', 'md:flex', 'h-full', 'min-h-0');
+    expect(container.querySelector('[data-preview="mobile"]')).toHaveClass('md:hidden', 'h-full', 'min-h-0');
     expect(container.querySelector('img')).toBeNull();
+    expect(container.querySelector('.land-data-discovery')).toHaveClass('h-dvh');
+    expect(container.querySelector('main')).toHaveClass('min-h-0', 'flex-1');
   });
 
   it('shows admin-managed captures for each screen size', () => {
@@ -67,6 +69,7 @@ describe('LandDataAccessGate', () => {
     const { container } = renderGate();
     expect(container.querySelector('[data-preview="desktop"] img')).toHaveAttribute('src', 'https://x/d.png');
     expect(container.querySelector('[data-preview="mobile"] img')).toHaveAttribute('src', 'https://x/m.png');
+    expect(container.querySelector('[data-preview="mobile"] img')).toHaveClass('object-contain', 'min-h-0');
   });
 
   it.each(LAND_DATA_ROLES)('preserves access for %s', (role) => {
