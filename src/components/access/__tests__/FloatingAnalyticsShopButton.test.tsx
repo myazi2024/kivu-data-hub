@@ -86,7 +86,7 @@ describe('FloatingAnalyticsShopButton', () => {
     fireEvent.click(grab);
     expect(dialogProps.opens).toBe(0);
     const stored = JSON.parse(localStorage.getItem(KEY)!);
-    expect(stored.x).toBeGreaterThan(12);
+    console.log("STORED", localStorage.getItem(KEY)); expect(stored.x).toBeGreaterThan(12);
     expect(stored.y).toBeGreaterThan(80);
   });
 });
