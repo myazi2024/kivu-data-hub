@@ -1,5 +1,7 @@
 # Roadmap
 
+- [ ] Refaire le catalogue Données foncières en dialogue superposé, design services, devises et panier conservé ; vérifier sélection, fermeture et paiement.
+
 - [x] Page d’accès payant sur un seul écran : 15 tests et 8 formats vérifiés avec/sans captures, sans défilement ; liens conservés. Vérification visuelle isolée, parcours authentifié indisponible sur la base externe.
 
 - [x] Refonte accueillante de la page Données foncières pour profils non habilités, avec emplacements de captures ordinateur/mobile et contrôle d’accès inchangé (13 tests ; apparence et lien vérifiés en aperçu isolé, authentification réelle non vérifiable sur la base externe).
