@@ -19,6 +19,8 @@ vi.mock('@/hooks/useAuth', () => ({ useAuth: () => auth }));
 vi.mock('@/components/ui/navigation', () => ({ default: () => <nav aria-label="Navigation" /> }));
 vi.mock('@/components/ui/loading-indicator', () => ({ LoadingIndicator: () => <span>Chargement</span> }));
 
+vi.mock('@/components/analytics/catalog/AnalyticsCatalogDialog', () => ({ default: ({ trigger }: { trigger: React.ReactNode }) => <>{trigger}</> }));
+
 function renderGate() {
   return render(
     <HelmetProvider>
@@ -46,7 +48,7 @@ describe('LandDataAccessGate', () => {
   it('invites a non-authorized user without exposing protected content', () => {
     renderGate();
     expect(screen.getByRole('heading', { name: 'Données foncières' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Demander l’accès' })).toHaveAttribute('href', '/donnees-foncieres/catalogue');
+    expect(screen.getByRole('button', { name: 'Demander l’accès' })).toBeInTheDocument();
     expect(screen.getByText(/ne payez que ce dont vous avez besoin/)).toBeInTheDocument();
     expect(screen.queryByText('Données protégées')).not.toBeInTheDocument();
     expect(screen.queryByText(/non accessibles|Accès réservé|PII/)).not.toBeInTheDocument();
@@ -76,14 +78,14 @@ describe('LandDataAccessGate', () => {
     auth.profile = { role };
     renderGate();
     expect(screen.getByText('Données protégées')).toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: 'Demander l’accès' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Demander l’accès' })).not.toBeInTheDocument();
   });
 
   it('lets a non-authorized user in once a visual is purchased', () => {
     purchased.keys = ['taxes::kpi-total'];
     renderGate();
     expect(screen.getByText('Données protégées')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Acheter d'autres visuels/ })).toHaveAttribute('href', '/donnees-foncieres/catalogue');
+    expect(screen.getByRole('button', { name: /Acheter d'autres visuels/ })).toBeInTheDocument();
   });
 
   it('redirects a signed-out visitor to authentication', () => {
@@ -100,6 +102,6 @@ describe('LandDataAccessGate', () => {
     renderGate();
     expect(screen.getByText('Chargement')).toBeInTheDocument();
     expect(screen.queryByText('Données protégées')).not.toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: 'Demander l’accès' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Demander l’accès' })).not.toBeInTheDocument();
   });
 });
