@@ -10,6 +10,7 @@ import { LoadingIndicator } from "@/components/ui/loading-indicator";
 import { useAppAppearance } from "@/hooks/useAppAppearance";
 import { AnalyticsAccessProvider, useMyAnalyticsAccess } from "@/hooks/useAnalyticsAccess";
 import { ShoppingBag } from "lucide-react";
+import AnalyticsCatalogDialog from "@/components/analytics/catalog/AnalyticsCatalogDialog";
 
 interface LandDataAccessGateProps {
   children: ReactNode;
@@ -54,12 +55,10 @@ export const LandDataAccessDenied = () => {
         <p className="land-data-description mx-auto mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
           Explorez la carte, comparez les territoires et appuyez vos analyses sur les données disponibles du cadastre numérique.
         </p>
-        <Button asChild size="lg" className="land-data-access-button mt-3 min-h-11 w-full sm:w-auto">
-          <Link to="/donnees-foncieres/catalogue">
+        <AnalyticsCatalogDialog trigger={<Button size="lg" className="land-data-access-button mt-3 min-h-11 w-full sm:w-auto">
             Demander l’accès
             <ArrowRight aria-hidden="true" className="ml-2 h-4 w-4 shrink-0" />
-          </Link>
-        </Button>
+        </Button>} />
         <p className="land-data-payment-note mx-auto mt-2 max-w-lg text-xs leading-relaxed text-muted-foreground">
           Choisissez les visuels qui vous intéressent et ne payez que ce dont vous avez besoin.
         </p>
@@ -142,12 +141,10 @@ const PurchasedAccessGate = ({ children }: { children: ReactNode }) => {
   return (
     <AnalyticsAccessProvider value={{ restricted: true, allowed }}>
       {children}
-      <Button asChild size="sm" variant="secondary" className="fixed left-3 top-20 z-40 min-h-11 rounded-full shadow-md">
-        <Link to="/donnees-foncieres/catalogue">
+      <AnalyticsCatalogDialog trigger={<Button size="sm" variant="secondary" className="fixed left-3 top-20 z-40 min-h-11 rounded-full shadow-md">
           <ShoppingBag aria-hidden="true" className="mr-2 h-4 w-4" />
           Acheter d'autres visuels
-        </Link>
-      </Button>
+      </Button>} />
     </AnalyticsAccessProvider>
   );
 };

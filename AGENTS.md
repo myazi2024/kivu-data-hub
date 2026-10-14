@@ -1,5 +1,5 @@
-- Loading-image settings: `app_appearance_config`, applied once at root via shared CSS; no per-indicator calls.
-- Land-district maps and analytics filters share `getLandDistrictAnchor` (override table, then exact same-province match; never guess or approximate boundaries); the analytics map layer is derived by `resolveMapView` from filters.
+- Loading appearance: `app_appearance_config`, root CSS only.
+- Maps/analytics share `getLandDistrictAnchor`: overrides, then exact same-province match; never guess boundaries. `resolveMapView` derives the map layer from filters.
 - Home BIC figures and district activity totals: aggregates from service-only DB functions behind the counts-only home-bic-counts Edge Function (no individual records, no guessed districts), read through one shared hook `useHomeBicCounts`; each display figure switches after 10,000 real records.
 - CCC approve/reject/appeal/withdraw go through approve_ccc_contribution / reject_ccc_contribution / process_ccc_appeal / withdraw_ccc_contribution (admin or owner check + server status guard); never direct table updates.
 - Historique des propriétaires et des taxes : détail uniquement via `get_parcel_paid_history` (service « history » / « obligations » payé, ou admin) ; statistiques via `get_ownership_history_stats` / `get_tax_history_stats` sans nom ni justificatif ; plus aucune lecture directe par les utilisateurs connectés.
@@ -17,4 +17,5 @@
 - Notifications: browser sends only via `notify_user` (`insertNotification`) and reads via shared `useNotifications` (server unread count); admin request decisions (mortgage, tax, land title, permit) use one `process_*_decision` RPC that writes effects, audit and `_notify` (dedupe key) in one transaction, so no silent decision.
 - Test-data purge: only `_cleanup_test_data_chunk_internal` deletes (steps listed in `_shared/cleanupSteps.ts`); preview and nightly job mirror those steps, and the nightly job obeys test_mode auto_cleanup + retention, so settings are never bypassed.
 - Land-data analytics: data only via `get_analytics_tab_dataset(tab_key)` (role or valid tab purchase checked server-side); purchases granted by `trg_grant_analytics_access` on completed server-inserted payment_transactions; unpurchased tabs never reach the browser.
-- Land-data discovery uses viewport height, flexible contained previews and scoped height breakpoints, avoiding global scroll suppression.
+- Land-data discovery uses contained previews and scoped viewport-height breakpoints, no global scroll suppression.
+- Analytics catalogue shares overlay/return-route content and a separate cart to avoid divergence.
