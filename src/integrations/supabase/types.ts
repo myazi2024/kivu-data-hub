@@ -8800,6 +8800,10 @@ export type Database = {
             }
             Returns: Json
           }
+      get_analytics_tab_dataset: {
+        Args: { p_tab_key: string; p_test?: boolean }
+        Returns: Json
+      }
       get_billing_summary: {
         Args: { p_from: string; p_to: string }
         Returns: Json
