@@ -10,7 +10,7 @@ import { LoadingIndicator } from "@/components/ui/loading-indicator";
 import { useAppAppearance } from "@/hooks/useAppAppearance";
 import { AnalyticsAccessProvider, useMyAnalyticsAccess } from "@/hooks/useAnalyticsAccess";
 import FloatingAnalyticsShopButton from "@/components/access/FloatingAnalyticsShopButton";
-import AnalyticsCatalogDialog from "@/components/analytics/catalog/AnalyticsCatalogDialog";
+import AccessPlansDialog from "@/components/access/AccessPlansDialog";
 
 interface LandDataAccessGateProps {
   children: ReactNode;
@@ -55,7 +55,7 @@ export const LandDataAccessDenied = () => {
         <p className="land-data-description mx-auto mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
           Explorez la carte, comparez les territoires et appuyez vos analyses sur les données disponibles du cadastre numérique.
         </p>
-        <AnalyticsCatalogDialog trigger={<Button size="lg" className="land-data-access-button mt-3 min-h-11 w-full sm:w-auto">
+        <AccessPlansDialog trigger={<Button size="lg" className="land-data-access-button mt-3 min-h-11 w-full sm:w-auto">
             Demander l’accès
             <ArrowRight aria-hidden="true" className="ml-2 h-4 w-4 shrink-0" />
         </Button>} />
