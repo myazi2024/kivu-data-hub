@@ -19,7 +19,7 @@ vi.mock('@/hooks/useAuth', () => ({ useAuth: () => auth }));
 vi.mock('@/components/ui/navigation', () => ({ default: () => <nav aria-label="Navigation" /> }));
 vi.mock('@/components/ui/loading-indicator', () => ({ LoadingIndicator: () => <span>Chargement</span> }));
 
-vi.mock('@/components/analytics/catalog/AnalyticsCatalogDialog', () => ({ default: ({ trigger }: { trigger: React.ReactNode }) => <>{trigger}</> }));
+vi.mock('@/components/access/AccessPlansDialog', () => ({ default: ({ trigger }: { trigger: React.ReactNode }) => <>{trigger}</> }));
 
 function renderGate() {
   return render(
