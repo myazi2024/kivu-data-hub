@@ -26,7 +26,7 @@ export default function AnalyticsCheckoutDialog({ checkout, onClose, onPaid }: {
   const payCard = async () => {
     if (!checkout) return;
     setBusy(true);
-    const { data, error } = await supabase.functions.invoke('create-payment', { body: { payment_type: 'analytics_access', invoice_id: checkout.invoiceId } });
+    const { data, error } = await supabase.functions.invoke('create-payment', { body: { payment_type: 'analytics_access', invoice_id: checkout.invoiceId, return_path: window.location.pathname } });
     setBusy(false);
     if (error || !data?.url) { toast.error('Paiement par carte indisponible'); return; }
     window.location.href = data.url;

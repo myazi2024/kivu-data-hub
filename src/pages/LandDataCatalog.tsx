@@ -1,26 +1,13 @@
-import { useEffect } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-import { useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft } from 'lucide-react';
 import Navigation from '@/components/ui/navigation';
 import { Button } from '@/components/ui/button';
 import AnalyticsCatalog from '@/components/analytics/catalog/AnalyticsCatalog';
-import { toast } from 'sonner';
+import { useAnalyticsPaymentReturn } from '@/hooks/useAnalyticsPaymentReturn';
 
 export default function LandDataCatalog() {
-  const [params, setParams] = useSearchParams();
-  const qc = useQueryClient();
-  const payment = params.get('payment');
-  useEffect(() => {
-    if (!payment) return;
-    if (payment === 'success') {
-      toast.success('Paiement reçu', { description: 'Vos visuels seront disponibles dès la confirmation.' });
-      void qc.invalidateQueries({ queryKey: ['my-analytics-access'] });
-    }
-    if (payment === 'cancelled') toast.info('Paiement annulé');
-    setParams(previous => { const next = new URLSearchParams(previous); next.delete('payment'); return next; }, { replace: true });
-  }, [payment, qc, setParams]);
+  useAnalyticsPaymentReturn();
   return (
     <div className="flex h-dvh flex-col bg-background">
       <Helmet><title>Catalogue des Données foncières | BIC</title><meta name="description" content="Choisissez les visuels Données foncières auxquels vous souhaitez accéder." /></Helmet>
