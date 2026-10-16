@@ -28,7 +28,7 @@ describe('AccessPlansDialog', () => {
     expect(screen.getByRole('dialog', { name: "Choisissez votre formule d'accès" })).toBeInTheDocument();
     expect(screen.getByText("Paiement à l'usage")).toBeVisible();
     expect(screen.getByText('Devenir Partenaire')).toBeVisible();
-    expect(screen.getByText(/analyses des\s+hypothèques/)).toBeVisible();
+    expect(screen.getByText(/données importantes : hypothèques/)).toBeVisible();
     fireEvent.pointerDown(document.body);
     expect(screen.getByRole('dialog')).toBeInTheDocument();
   });
