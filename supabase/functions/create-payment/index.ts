@@ -407,8 +407,11 @@ Deno.serve(async (req) => {
     let cancelUrl: string;
 
     if (payment_type === 'analytics_access') {
-      successUrl = `${origin}/donnees-foncieres/catalogue?payment=success`;
-      cancelUrl = `${origin}/donnees-foncieres/catalogue?payment=cancelled`;
+      // Retour sur la page d'origine, limité aux chemins internes autorisés.
+      const rp = (body as { return_path?: unknown }).return_path;
+      const back = typeof rp === 'string' && /^\/(map|donnees-foncieres\/catalogue)$/.test(rp) ? rp : '/donnees-foncieres/catalogue';
+      successUrl = `${origin}${back}?payment=success`;
+      cancelUrl = `${origin}${back}?payment=cancelled`;
     } else if (payment_type === 'expertise_fee' || payment_type === 'certificate_access' || payment_type === 'mutation_request' || payment_type === 'permit_request' || payment_type === 'mortgage_cancellation' || payment_type === 'land_title_request' || payment_type === 'subdivision_request') {
       successUrl = `${origin}/cadastral-map?payment=success&type=${payment_type}&session_id={CHECKOUT_SESSION_ID}`;
       cancelUrl = `${origin}/cadastral-map?payment=cancelled`;

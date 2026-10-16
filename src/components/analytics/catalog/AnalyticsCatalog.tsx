@@ -10,6 +10,10 @@ import { ANALYTICS_TABS_REGISTRY } from '@/config/analyticsTabsRegistry';
 import { useAnalyticsChartsConfig, useAnalyticsTabsConfig } from '@/hooks/useAnalyticsChartsConfig';
 import { accessKey, useMyAnalyticsAccess } from '@/hooks/useAnalyticsAccess';
 import { useAnalyticsCart } from '@/hooks/useAnalyticsCart';
+import { Link } from 'react-router-dom';
+
+/** Données importantes mises en avant (vendues à l'unité, incluses pour les partenaires). */
+const HIGHLIGHT_TABS = new Set(['mortgages', 'disputes', 'rental-market']);
 import { useCurrencyConfig } from '@/hooks/useCurrencyConfig';
 import CurrencySelector from '@/components/payment/CurrencySelector';
 import { LoadingIndicator } from '@/components/ui/loading-indicator';
@@ -104,6 +108,11 @@ export default function AnalyticsCatalog() {
               const remaining = selectable.filter(i => !has(i.tab_key, i.item_key));
               const asCart = (i: CatalogVisual) => ({ ...i, tab_label: s.label });
               return <TabsContent key={s.key} value={s.key} className="space-y-3">
+                {HIGHLIGHT_TABS.has(s.key) && <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-muted/40 p-2 text-xs">
+                  <Badge className="shrink-0">Donnée importante</Badge>
+                  <span className="text-muted-foreground">Accès complet ?</span>
+                  <Link to="/partnership" className="font-medium text-primary underline-offset-2 hover:underline">Devenir Partenaire</Link>
+                </div>}
                 {selectable.length > 1 && <div className="rounded-xl border border-primary/30 bg-gradient-to-br from-primary/5 to-primary/10 p-2.5 space-y-2">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0"><div className="text-xs font-semibold text-primary flex items-center gap-1.5"><CheckCircle className="h-3.5 w-3.5 shrink-0" />Dossier complet · {s.label}</div><p className="text-[11px] text-muted-foreground mt-0.5 leading-tight">{selectable.length} visuels pour {price(selectable.reduce((sum, i) => sum + i.price_usd, 0))}</p></div>

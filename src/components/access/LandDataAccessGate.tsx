@@ -11,6 +11,7 @@ import { useAppAppearance } from "@/hooks/useAppAppearance";
 import { AnalyticsAccessProvider, useMyAnalyticsAccess } from "@/hooks/useAnalyticsAccess";
 import FloatingAnalyticsShopButton from "@/components/access/FloatingAnalyticsShopButton";
 import AccessPlansDialog from "@/components/access/AccessPlansDialog";
+import { useAnalyticsPaymentReturn } from "@/hooks/useAnalyticsPaymentReturn";
 
 interface LandDataAccessGateProps {
   children: ReactNode;
@@ -129,6 +130,7 @@ const LandDataAccessGate = ({ children }: LandDataAccessGateProps) => {
 
 /** Profil non habilité : entre seulement avec au moins un visuel acheté et valide. */
 const PurchasedAccessGate = ({ children }: { children: ReactNode }) => {
+  useAnalyticsPaymentReturn();
   const { allowed, isLoading } = useMyAnalyticsAccess();
   if (isLoading) {
     return (

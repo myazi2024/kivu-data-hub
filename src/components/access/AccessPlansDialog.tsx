@@ -73,8 +73,10 @@ export default function AccessPlansDialog({ trigger }: AccessPlansDialogProps) {
                 </h3>
               </div>
               <p className="flex-1 text-sm leading-relaxed text-muted-foreground">
-                En plus des données de base, accédez aux données critiques : analyses des
-                hypothèques, litiges fonciers et valeurs marchandes des biens.
+                Accès complet à tous les onglets, sans achat à l'unité, dont les données
+                importantes : hypothèques, litiges fonciers, valeurs marchandes et leurs
+                analyses croisées. Idéal pour les banques, institutions de microfinance,
+                coopératives d'épargne et de crédit et sociétés d'assurances.
               </p>
               <Button variant="outline" className="min-h-11 w-full" onClick={goPartnership}>
                 Introduire ma demande
