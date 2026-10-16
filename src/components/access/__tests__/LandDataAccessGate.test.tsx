@@ -15,6 +15,7 @@ vi.mock('@/hooks/useAnalyticsAccess', () => ({
   useMyAnalyticsAccess: () => ({ allowed: new Set(purchased.keys), isLoading: false }),
   AnalyticsAccessProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
+vi.mock('@/hooks/useAnalyticsPaymentReturn', () => ({ useAnalyticsPaymentReturn: () => {} }));
 vi.mock('@/hooks/useAuth', () => ({ useAuth: () => auth }));
 vi.mock('@/components/ui/navigation', () => ({ default: () => <nav aria-label="Navigation" /> }));
 vi.mock('@/components/ui/loading-indicator', () => ({ LoadingIndicator: () => <span>Chargement</span> }));
