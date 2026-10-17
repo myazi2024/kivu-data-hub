@@ -33,6 +33,9 @@ const CadastralDashboardTabs = lazy(() => import('@/components/cadastral/Cadastr
 const UserPreferences = lazy(() => import('@/components/user/UserPreferences').then(module => ({ default: module.UserPreferences })));
 const UserAccountSecurity = lazy(() => import('@/components/user/UserAccountSecurity').then(module => ({ default: module.UserAccountSecurity })));
 const UserDataControls = lazy(() => import('@/components/user/data/UserDataControls').then(module => ({ default: module.UserDataControls })));
+const MyAnalyticsAccess = lazy(() => import('@/components/user/land-data/MyAnalyticsAccess').then(module => ({ default: module.MyAnalyticsAccess })));
+const MyAnalyticsPurchases = lazy(() => import('@/components/user/land-data/MyAnalyticsPurchases').then(module => ({ default: module.MyAnalyticsPurchases })));
+const MyPartnership = lazy(() => import('@/components/user/land-data/MyPartnership').then(module => ({ default: module.MyPartnership })));
 
 const TAB_CONTENT: Record<string, React.LazyExoticComponent<React.ComponentType>> = {
   profile: UserProfileSection,
@@ -52,6 +55,9 @@ const TAB_CONTENT: Record<string, React.LazyExoticComponent<React.ComponentType>
   preferences: UserPreferences,
   security: UserAccountSecurity,
   data: UserDataControls,
+  'land-data-access': MyAnalyticsAccess,
+  'land-data-purchases': MyAnalyticsPurchases,
+  partnership: MyPartnership,
 };
 
 const DashboardFallback = () => (
