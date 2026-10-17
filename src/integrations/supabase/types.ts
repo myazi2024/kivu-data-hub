@@ -4565,6 +4565,7 @@ export type Database = {
           organization: string | null
           status: string
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           created_at?: string
@@ -4575,6 +4576,7 @@ export type Database = {
           organization?: string | null
           status?: string
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string
@@ -4585,6 +4587,7 @@ export type Database = {
           organization?: string | null
           status?: string
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -9248,6 +9251,7 @@ export type Database = {
         Args: { p_construction_type: string; p_usage: string }
         Returns: string
       }
+      notify_expiring_analytics_access: { Args: never; Returns: number }
       notify_user: {
         Args: {
           _action_url?: string
