@@ -1,5 +1,8 @@
 import {
+  BarChart3,
   Building,
+  Handshake,
+  ShoppingBag,
   CreditCard,
   FileEdit,
   FileSearch,
@@ -66,6 +69,14 @@ export const userMenuSections: UserMenuSection[] = [
     items: [
       { icon: CreditCard, label: 'Factures', value: 'invoices', keywords: ['paiement', 'codes ccc', 'reçu'] },
       { icon: Receipt, label: 'Fiscalité déclarée', value: 'taxes', keywords: ['impôt', 'taxe', 'obligations'] },
+    ],
+  },
+  {
+    category: 'Données foncières',
+    items: [
+      { icon: BarChart3, label: 'Mes accès', value: 'land-data-access', keywords: ['visuels', 'analytics', 'expiration', 'renouveler'] },
+      { icon: ShoppingBag, label: 'Mes achats', value: 'land-data-purchases', keywords: ['commandes', 'reçu', 'catalogue'] },
+      { icon: Handshake, label: 'Partenariat', value: 'partnership', keywords: ['partenaire', 'abonnement', 'formule'] },
     ],
   },
   {
