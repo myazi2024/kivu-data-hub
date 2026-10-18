@@ -4557,37 +4557,64 @@ export type Database = {
       }
       partner_inquiries: {
         Row: {
+          address: string | null
+          cancelled_at: string | null
+          city: string | null
+          contact_role: string | null
           created_at: string
+          documents: Json
           email: string
           id: string
           message: string
           name: string
           organization: string | null
+          organization_type: string | null
+          phone: string | null
+          registration_number: string | null
           status: string
           updated_at: string
           user_id: string | null
+          website: string | null
         }
         Insert: {
+          address?: string | null
+          cancelled_at?: string | null
+          city?: string | null
+          contact_role?: string | null
           created_at?: string
+          documents?: Json
           email: string
           id?: string
           message: string
           name: string
           organization?: string | null
+          organization_type?: string | null
+          phone?: string | null
+          registration_number?: string | null
           status?: string
           updated_at?: string
           user_id?: string | null
+          website?: string | null
         }
         Update: {
+          address?: string | null
+          cancelled_at?: string | null
+          city?: string | null
+          contact_role?: string | null
           created_at?: string
+          documents?: Json
           email?: string
           id?: string
           message?: string
           name?: string
           organization?: string | null
+          organization_type?: string | null
+          phone?: string | null
+          registration_number?: string | null
           status?: string
           updated_at?: string
           user_id?: string | null
+          website?: string | null
         }
         Relationships: []
       }
@@ -8517,6 +8544,7 @@ export type Database = {
         Args: { p_request_id: string }
         Returns: undefined
       }
+      cancel_partner_inquiry: { Args: { p_id: string }; Returns: undefined }
       ccc_correctable_columns: { Args: never; Returns: string[] }
       check_and_consume_rate_limit: {
         Args: { _action: string; _key: string }
@@ -9427,6 +9455,22 @@ export type Database = {
           _selected_fee_ids: string[]
         }
         Returns: Json
+      }
+      submit_partner_inquiry: {
+        Args: {
+          p_address: string
+          p_city: string
+          p_contact_name: string
+          p_contact_role: string
+          p_documents?: Json
+          p_message: string
+          p_organization: string
+          p_organization_type: string
+          p_phone: string
+          p_registration_number: string
+          p_website: string
+        }
+        Returns: string
       }
       swap_theme_order: {
         Args: { _theme_a: string; _theme_b: string }
