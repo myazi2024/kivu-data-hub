@@ -2,10 +2,13 @@ import { Link } from 'react-router-dom';
 import { AlertCircle, ArrowRight, Building, CreditCard, FileText, MapPin, Scale, ScrollText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useUserDashboardStats } from '@/hooks/useUserDashboardStats';
+import { useMyAnalyticsAccess } from '@/hooks/useAnalyticsAccess';
 import { CADASTRAL_MAP_ROUTE } from '@/utils/userDashboardLinks';
 
 export function UserOverview() {
   const { data: stats, isLoading, isError, refetch } = useUserDashboardStats();
+  const { data: access } = useMyAnalyticsAccess();
+  const expiringSoon = (access ?? []).filter(a => new Date(a.expires_at).getTime() - Date.now() <= 7 * 86_400_000).length;
   const items = [
     { label: 'Contributions', value: stats?.contributions_total ?? 0, detail: `${stats?.contributions_pending ?? 0} en attente`, icon: FileText, tab: 'contributions' },
     { label: 'Titres fonciers', value: stats?.titles_total ?? 0, detail: `${stats?.titles_pending ?? 0} en attente`, icon: ScrollText, tab: 'titles' },
@@ -52,6 +55,13 @@ export function UserOverview() {
           );
         })}
       </div>
+
+      {(access?.length ?? 0) > 0 && (
+        <Link to="/mon-compte?tab=land-data-access" className="flex items-center justify-between gap-2 rounded-md border bg-card px-3 py-2 text-sm hover:bg-accent/40">
+          <span>Données foncières : <strong>{access?.length}</strong> accès actif(s){expiringSoon ? ` · ${expiringSoon} expirent sous 7 jours` : ''}</span>
+          <ArrowRight className="h-4 w-4 shrink-0" />
+        </Link>
+      )}
 
       <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
         <section className="rounded-md border bg-card">
