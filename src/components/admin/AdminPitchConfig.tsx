@@ -249,7 +249,7 @@ const InquiriesTab = () => {
     }
     const { data, error } = await query;
     if (error) { console.error(error); }
-    setInquiries((data as PartnerInquiry[]) || []);
+    setInquiries((data as unknown as PartnerInquiry[]) || []);
     setLoading(false);
   };
 
