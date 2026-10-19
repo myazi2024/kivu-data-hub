@@ -1,3 +1,4 @@
+import { openPartnerDoc, ORGANIZATION_TYPES, type PartnerDoc } from '@/lib/partnerInquiry';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -57,6 +58,10 @@ interface SlideConfig {
   sort_order: number;
 }
 
+const INQUIRY_STATUS: Record<string, string> = {
+  new: 'Nouvelle', pending: 'Nouvelle', in_review: 'En examen', approved: 'Acceptée', rejected: 'Refusée', cancelled: 'Annulée',
+};
+
 interface PartnerInquiry {
   id: string;
   name: string;
@@ -65,6 +70,12 @@ interface PartnerInquiry {
   message: string;
   status: string;
   created_at: string;
+  organization_type?: string | null;
+  registration_number?: string | null;
+  city?: string | null;
+  phone?: string | null;
+  website?: string | null;
+  documents?: PartnerDoc[] | null;
 }
 
 const SlidesTab = () => {
@@ -238,7 +249,7 @@ const InquiriesTab = () => {
     }
     const { data, error } = await query;
     if (error) { console.error(error); }
-    setInquiries((data as PartnerInquiry[]) || []);
+    setInquiries((data as unknown as PartnerInquiry[]) || []);
     setLoading(false);
   };
 
@@ -246,18 +257,16 @@ const InquiriesTab = () => {
 
   const updateStatus = async (id: string, status: string) => {
     const { error } = await supabase.from('partner_inquiries').update({ status }).eq('id', id);
-    if (error) { toast.error('Erreur'); return; }
-    toast.success(`Statut mis à jour : ${status}`);
+    if (error) { toast.error(error.message || 'Erreur'); return; }
+    toast.success('Statut mis à jour');
     loadInquiries();
   };
 
   const statusBadge = (status: string) => {
-    switch (status) {
-      case 'new': return <Badge variant="destructive">Nouveau</Badge>;
-      case 'read': return <Badge variant="secondary">Lu</Badge>;
-      case 'processed': return <Badge className="bg-primary text-primary-foreground">Traité</Badge>;
-      default: return <Badge variant="outline">{status}</Badge>;
-    }
+    const label = INQUIRY_STATUS[status] ?? status;
+    if (status === 'pending' || status === 'new') return <Badge variant="destructive">{label}</Badge>;
+    if (status === 'approved') return <Badge className="bg-primary text-primary-foreground">{label}</Badge>;
+    return <Badge variant="outline">{label}</Badge>;
   };
 
   return (
@@ -270,9 +279,7 @@ const InquiriesTab = () => {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Tous</SelectItem>
-            <SelectItem value="new">Nouveaux</SelectItem>
-            <SelectItem value="read">Lus</SelectItem>
-            <SelectItem value="processed">Traités</SelectItem>
+            {Object.entries(INQUIRY_STATUS).filter(([k]) => k !== 'new').map(([k, l]) => <SelectItem key={k} value={k}>{l}</SelectItem>)}
           </SelectContent>
         </Select>
       </div>
@@ -301,7 +308,19 @@ const InquiriesTab = () => {
               {inquiries.map(inq => (
                 <TableRow key={inq.id}>
                   <TableCell className="font-medium">{inq.name}</TableCell>
-                  <TableCell>{inq.organization || '—'}</TableCell>
+                  <TableCell className="text-sm">
+                    <div className="font-medium">{inq.organization || '—'}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {[inq.organization_type && (ORGANIZATION_TYPES[inq.organization_type] ?? inq.organization_type), inq.registration_number, inq.city, inq.phone].filter(Boolean).join(' · ')}
+                    </div>
+                    {inq.website && <a href={inq.website} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">{inq.website}</a>}
+                    {!!inq.documents?.length && (
+                      <div className="mt-1 flex flex-wrap gap-1">{inq.documents.map(d => (
+                        <button key={d.path} type="button" className="max-w-[140px] truncate rounded border px-1.5 text-xs hover:bg-muted"
+                          onClick={() => openPartnerDoc(d.path).catch(() => toast.error('Document indisponible'))}>{d.name}</button>))}
+                      </div>
+                    )}
+                  </TableCell>
                   <TableCell>
                     <a href={`mailto:${inq.email}`} className="text-primary hover:underline text-sm">{inq.email}</a>
                   </TableCell>
@@ -311,14 +330,12 @@ const InquiriesTab = () => {
                   </TableCell>
                   <TableCell>{statusBadge(inq.status)}</TableCell>
                   <TableCell>
-                    <Select value={inq.status} onValueChange={(v) => updateStatus(inq.id, v)}>
+                    <Select value={inq.status} disabled={inq.status === 'cancelled'} onValueChange={(v) => updateStatus(inq.id, v)}>
                       <SelectTrigger className="h-7 text-xs w-28">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="new">Nouveau</SelectItem>
-                        <SelectItem value="read">Lu</SelectItem>
-                        <SelectItem value="processed">Traité</SelectItem>
+                        {Object.entries(INQUIRY_STATUS).filter(([k]) => k !== 'new' && (k !== 'cancelled' || inq.status === 'cancelled')).map(([k, l]) => <SelectItem key={k} value={k}>{l}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </TableCell>
