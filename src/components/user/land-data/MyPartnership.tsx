@@ -67,7 +67,7 @@ function InquiryItem({ i, onCancelled }: { i: Inquiry; onCancelled: () => void }
       {open && (
         <div className="mt-2 space-y-2 rounded-md bg-muted/40 p-2 text-xs">
           <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
-            {rows.filter(([, v]) => v).map(([k, v]) => <><dt key={k + 'k'} className="text-muted-foreground">{k}</dt><dd key={k} className="break-words">{v}</dd></>)}
+            {rows.filter(([, v]) => v).flatMap(([k, v]) => [<dt key={k + '-k'} className="text-muted-foreground">{k}</dt>, <dd key={k} className="break-words">{v}</dd>])}
           </dl>
           <p className="whitespace-pre-line">{i.message}</p>
           {!!i.documents?.length && (
