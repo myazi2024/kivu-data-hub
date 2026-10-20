@@ -1147,6 +1147,7 @@ export type Database = {
           operational_capacity_unit: string | null
           original_parcel_id: string | null
           owner_document_url: string | null
+          owner_exploitation_proofs: Json
           ownership_history: Json | null
           parcel_number: string
           parcel_sides: Json | null
@@ -1181,6 +1182,7 @@ export type Database = {
           source_form_type: string | null
           standing: string | null
           status: string
+          submitter_role: string
           tax_history: Json | null
           territoire: string | null
           title_issue_date: string | null
@@ -1263,6 +1265,7 @@ export type Database = {
           operational_capacity_unit?: string | null
           original_parcel_id?: string | null
           owner_document_url?: string | null
+          owner_exploitation_proofs?: Json
           ownership_history?: Json | null
           parcel_number: string
           parcel_sides?: Json | null
@@ -1297,6 +1300,7 @@ export type Database = {
           source_form_type?: string | null
           standing?: string | null
           status?: string
+          submitter_role?: string
           tax_history?: Json | null
           territoire?: string | null
           title_issue_date?: string | null
@@ -1379,6 +1383,7 @@ export type Database = {
           operational_capacity_unit?: string | null
           original_parcel_id?: string | null
           owner_document_url?: string | null
+          owner_exploitation_proofs?: Json
           ownership_history?: Json | null
           parcel_number?: string
           parcel_sides?: Json | null
@@ -1413,6 +1418,7 @@ export type Database = {
           source_form_type?: string | null
           standing?: string | null
           status?: string
+          submitter_role?: string
           tax_history?: Json | null
           territoire?: string | null
           title_issue_date?: string | null
@@ -2055,6 +2061,8 @@ export type Database = {
           operational_capacity: number | null
           operational_capacity_unit: string | null
           owner_document_url: string | null
+          owner_linked_at: string | null
+          owner_user_id: string | null
           parcel_number: string
           parcel_sides: Json | null
           parcel_type: string
@@ -2149,6 +2157,8 @@ export type Database = {
           operational_capacity?: number | null
           operational_capacity_unit?: string | null
           owner_document_url?: string | null
+          owner_linked_at?: string | null
+          owner_user_id?: string | null
           parcel_number: string
           parcel_sides?: Json | null
           parcel_type: string
@@ -2243,6 +2253,8 @@ export type Database = {
           operational_capacity?: number | null
           operational_capacity_unit?: string | null
           owner_document_url?: string | null
+          owner_linked_at?: string | null
+          owner_user_id?: string | null
           parcel_number?: string
           parcel_sides?: Json | null
           parcel_type?: string
@@ -4554,6 +4566,78 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      parcel_ownership_claims: {
+        Row: {
+          claim_type: string
+          created_at: string
+          exploitation_docs: Json
+          id: string
+          identity_docs: Json
+          parcel_id: string
+          parcel_number: string
+          previous_owner_user_id: string | null
+          rejection_reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          rights_docs: Json
+          statement: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          claim_type: string
+          created_at?: string
+          exploitation_docs?: Json
+          id?: string
+          identity_docs?: Json
+          parcel_id: string
+          parcel_number: string
+          previous_owner_user_id?: string | null
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          rights_docs?: Json
+          statement?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          claim_type?: string
+          created_at?: string
+          exploitation_docs?: Json
+          id?: string
+          identity_docs?: Json
+          parcel_id?: string
+          parcel_number?: string
+          previous_owner_user_id?: string | null
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          rights_docs?: Json
+          statement?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parcel_ownership_claims_parcel_id_fkey"
+            columns: ["parcel_id"]
+            isOneToOne: false
+            referencedRelation: "cadastral_parcels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parcel_ownership_claims_parcel_id_fkey"
+            columns: ["parcel_id"]
+            isOneToOne: false
+            referencedRelation: "cadastral_parcels_public"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       partner_inquiries: {
         Row: {
@@ -8464,6 +8548,10 @@ export type Database = {
         Args: { _province: string; _ville: string; _zone: string }
         Returns: number
       }
+      _valid_ownership_docs: {
+        Args: { p_docs: Json; p_kinds: string[]; p_min: number; p_user: string }
+        Returns: boolean
+      }
       apply_ccc_correction_request: {
         Args: {
           p_decision: string
@@ -8544,6 +8632,7 @@ export type Database = {
         Args: { p_request_id: string }
         Returns: undefined
       }
+      cancel_ownership_claim: { Args: { p_id: string }; Returns: undefined }
       cancel_partner_inquiry: { Args: { p_id: string }; Returns: undefined }
       ccc_correctable_columns: { Args: never; Returns: string[] }
       check_and_consume_rate_limit: {
@@ -8979,6 +9068,20 @@ export type Database = {
           tab_key: string
         }[]
       }
+      get_my_owned_parcels: {
+        Args: never
+        Returns: {
+          area_sqm: number
+          commune: string
+          contribution_id: string
+          id: string
+          owner_linked_at: string
+          parcel_number: string
+          province: string
+          quartier: string
+          ville: string
+        }[]
+      }
       get_orphan_reseller_invoices_count: { Args: never; Returns: number }
       get_orphan_reseller_invoices_count__impl: { Args: never; Returns: number }
       get_ownership_history_stats: {
@@ -9195,6 +9298,10 @@ export type Database = {
       }
       is_expert_or_admin: { Args: { _user_id: string }; Returns: boolean }
       is_hr_admin: { Args: { _user_id: string }; Returns: boolean }
+      is_parcel_account_owner: {
+        Args: { p_parcel_number: string; p_user?: string }
+        Returns: boolean
+      }
       is_permit_valid: {
         Args: { issue_date: string; validity_months: number }
         Returns: boolean
@@ -9318,6 +9425,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      process_ownership_claim_decision: {
+        Args: { p_action: string; p_id: string; p_reason?: string }
+        Returns: undefined
+      }
       process_permit_decision: {
         Args: {
           p_action: string
@@ -9382,6 +9493,16 @@ export type Database = {
       request_account_deletion: {
         Args: { confirmation_email: string }
         Returns: Json
+      }
+      search_claimable_parcels: {
+        Args: { p_term: string }
+        Returns: {
+          claim_type: string
+          commune: string
+          parcel_number: string
+          province: string
+          ville: string
+        }[]
       }
       search_parcels_public: {
         Args: {
@@ -9455,6 +9576,16 @@ export type Database = {
           _selected_fee_ids: string[]
         }
         Returns: Json
+      }
+      submit_ownership_claim: {
+        Args: {
+          p_exploitation_docs: Json
+          p_identity_docs: Json
+          p_parcel_number: string
+          p_rights_docs: Json
+          p_statement: string
+        }
+        Returns: string
       }
       submit_partner_inquiry: {
         Args: {
