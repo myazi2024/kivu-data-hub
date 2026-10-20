@@ -1,0 +1,1 @@
+REVOKE ALL ON FUNCTION public.enforce_ccc_owner_declaration() FROM PUBLIC, anon, authenticated;
