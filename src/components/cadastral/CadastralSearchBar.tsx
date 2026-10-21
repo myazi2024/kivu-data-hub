@@ -544,7 +544,8 @@ const CadastralSearchBar = () => {
         <CCCIntroDialog 
           open={showIntroDialog} 
           onOpenChange={setShowIntroDialog} 
-          onContinue={() => {
+          onContinue={(d) => {
+            setOwnerDeclaration(d);
             setShowIntroDialog(false);
             setShowContributionDialog(true);
           }} 
@@ -554,6 +555,7 @@ const CadastralSearchBar = () => {
 
       {showContributionDialog && (
         <CadastralContributionDialog 
+          ownerDeclaration={ownerDeclaration}
           open={showContributionDialog} 
           onOpenChange={setShowContributionDialog} 
           parcelNumber={searchQuery} 

@@ -924,13 +924,14 @@ const CadastralMap = () => {
         <CCCIntroDialog
           open={showIntroDialog}
           onOpenChange={(open) => setShowIntroDialog(open)}
-          onContinue={() => { setShowIntroDialog(false); setShowContributionDialog(true); }}
+          onContinue={(d) => { setOwnerDeclaration(d); setShowIntroDialog(false); setShowContributionDialog(true); }}
           parcelNumber={searchQuery}
         />
       )}
 
       {showContributionDialog && (
         <CadastralContributionDialog
+          ownerDeclaration={ownerDeclaration}
           open={showContributionDialog}
           onOpenChange={setShowContributionDialog}
           parcelNumber={selectedParcel?.parcel_number || (searchMode === 'title' ? '' : searchQuery)}

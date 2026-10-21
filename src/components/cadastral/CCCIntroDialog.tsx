@@ -6,17 +6,20 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Clock, FileText, MessageCircle, CheckCircle, ArrowRight, Smartphone, MapPin, Building2, ClipboardList, Info } from 'lucide-react';
 import { FaWhatsapp } from 'react-icons/fa';
+import CCCOwnershipGate from './CCCOwnershipGate';
+import type { OwnerDeclaration } from '@/lib/ownership';
 
 interface CCCIntroDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onContinue: () => void;
+  onContinue: (declaration: OwnerDeclaration) => void;
   parcelNumber: string;
 }
 
 const CCCIntroDialog = ({ open, onOpenChange, onContinue, parcelNumber }: CCCIntroDialogProps) => {
   const checkedParcel = parcelNumber.trim();
   const [hasScrolledToBottom, setHasScrolledToBottom] = React.useState(false);
+  const [showGate, setShowGate] = React.useState(false);
   const contentRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
@@ -51,6 +54,13 @@ const CCCIntroDialog = ({ open, onOpenChange, onContinue, parcelNumber }: CCCInt
           </DialogHeader>
         </div>
 
+        {showGate ? (
+          <CCCOwnershipGate
+            onDone={onContinue}
+            onBack={() => setShowGate(false)}
+            onCloseAll={() => onOpenChange(false)}
+          />
+        ) : (<>
         <div
           ref={contentRef}
           onScroll={handleScroll}
@@ -259,7 +269,7 @@ const CCCIntroDialog = ({ open, onOpenChange, onContinue, parcelNumber }: CCCInt
         {/* Bouton fixé en bas */}
         <div className="mt-auto bg-gradient-to-t from-background via-background to-background/80 backdrop-blur-sm border-t border-border/20 p-3 space-y-2 sm:rounded-bl-2xl">
           <Button
-            onClick={onContinue}
+            onClick={() => setShowGate(true)}
             disabled={!hasScrolledToBottom}
             className={`w-full h-10 text-sm font-semibold rounded-xl shadow-lg transition-all duration-300 ${
               hasScrolledToBottom
@@ -282,6 +292,7 @@ const CCCIntroDialog = ({ open, onOpenChange, onContinue, parcelNumber }: CCCInt
             Toutes les informations sont vérifiées par notre équipe
           </p>
         </div>
+        </>)}
       </DialogContent>
     </Dialog>
   );
