@@ -8,6 +8,9 @@ import { isOwnerOccupiedUnit } from '@/utils/rentalStatus';
 
 export interface CadastralContributionData {
   parcelNumber: string;
+  /** Déclaration faite avant le formulaire (insertion seulement ; contrôlée par le serveur). */
+  submitterRole?: 'contributor' | 'owner';
+  ownerExploitationProofs?: { kind: string; path: string; name: string }[];
   parcelType?: 'SU' | 'SR';
   
   // Informations générales
@@ -724,6 +727,8 @@ export const useCadastralContribution = () => {
         ...buildContributionPayload(data),
         user_id: authenticatedUserId,
         status: 'pending',
+        submitter_role: data.submitterRole ?? 'contributor',
+        owner_exploitation_proofs: data.submitterRole === 'owner' ? (data.ownerExploitationProofs ?? []) : [],
       };
 
       const { data: contributionData, error: contributionError } = await supabase

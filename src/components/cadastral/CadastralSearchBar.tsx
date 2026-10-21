@@ -1,3 +1,4 @@
+import type { OwnerDeclaration } from '@/lib/ownership';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Search, X, Loader2, AlertCircle, MapPin } from 'lucide-react';
@@ -37,6 +38,7 @@ const CadastralSearchBar = () => {
   const [showResultsDialog, setShowResultsDialog] = useState(false);
   const [showContributionDialog, setShowContributionDialog] = useState(false);
   const [showIntroDialog, setShowIntroDialog] = useState(false);
+  const [ownerDeclaration, setOwnerDeclaration] = useState<OwnerDeclaration | undefined>(undefined);
   const [currentTextIndex, setCurrentTextIndex] = useState(0);
   const [isFocused, setIsFocused] = useState(false);
   const [fromMap, setFromMap] = useState(false);
@@ -544,7 +546,8 @@ const CadastralSearchBar = () => {
         <CCCIntroDialog 
           open={showIntroDialog} 
           onOpenChange={setShowIntroDialog} 
-          onContinue={() => {
+          onContinue={(d) => {
+            setOwnerDeclaration(d);
             setShowIntroDialog(false);
             setShowContributionDialog(true);
           }} 
@@ -554,6 +557,7 @@ const CadastralSearchBar = () => {
 
       {showContributionDialog && (
         <CadastralContributionDialog 
+          ownerDeclaration={ownerDeclaration}
           open={showContributionDialog} 
           onOpenChange={setShowContributionDialog} 
           parcelNumber={searchQuery} 

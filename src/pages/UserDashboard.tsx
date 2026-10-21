@@ -35,11 +35,15 @@ const UserAccountSecurity = lazy(() => import('@/components/user/UserAccountSecu
 const UserDataControls = lazy(() => import('@/components/user/data/UserDataControls').then(module => ({ default: module.UserDataControls })));
 const MyAnalyticsAccess = lazy(() => import('@/components/user/land-data/MyAnalyticsAccess').then(module => ({ default: module.MyAnalyticsAccess })));
 const MyAnalyticsPurchases = lazy(() => import('@/components/user/land-data/MyAnalyticsPurchases').then(module => ({ default: module.MyAnalyticsPurchases })));
+const UserOwnedParcels = lazy(() => import('@/components/user/ownership/UserOwnedParcels').then(m => ({ default: m.UserOwnedParcels })));
+const UserOwnershipClaims = lazy(() => import('@/components/user/ownership/UserOwnershipClaims').then(m => ({ default: m.UserOwnershipClaims })));
 const MyPartnership = lazy(() => import('@/components/user/land-data/MyPartnership').then(module => ({ default: module.MyPartnership })));
 
 const TAB_CONTENT: Record<string, React.LazyExoticComponent<React.ComponentType>> = {
   profile: UserProfileSection,
   contributions: UserContributions,
+  'my-parcels': UserOwnedParcels,
+  'ownership-claims': UserOwnershipClaims,
   rentals: RentalUnitsPanel,
   listings: ListingsPanel,
   'market-value': MarketValuePanel,

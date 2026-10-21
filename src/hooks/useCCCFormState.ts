@@ -1,3 +1,4 @@
+import type { OwnerDeclaration } from '@/lib/ownership';
 import { PROPERTY_CATEGORY_OPTIONS as SHARED_PROPERTY_CATEGORY_OPTIONS, CATEGORY_TO_CONSTRUCTION_TYPES as SHARED_CATEGORY_TO_CONSTRUCTION_TYPES } from '@/lib/ccc/propertyCategories';
 import { reindexShapesAfterRemoval } from '@/utils/buildingShapes';
 import { isConstructionRented, hasTenantRentalIncome } from '@/utils/rentalStatus';
@@ -52,6 +53,7 @@ interface UseCCCFormStateProps {
   initialTitleReferenceNumber?: string;
   /** Mode de recherche ayant ouvert le formulaire ('parcel' par défaut). */
   searchOrigin?: 'parcel' | 'title';
+  ownerDeclaration?: OwnerDeclaration;
 }
 
 export const useCCCFormState = ({
@@ -62,6 +64,7 @@ export const useCCCFormState = ({
   dialogContentRef,
   initialTitleReferenceNumber,
   searchOrigin = 'parcel',
+  ownerDeclaration,
 }: UseCCCFormStateProps) => {
   const { submitContribution, updateContribution, loading } = useCadastralContribution();
   const { getConfig } = useContributionConfig();
@@ -1064,6 +1067,8 @@ export const useCCCFormState = ({
         isOccupied: formData.isOccupied ?? undefined,
         occupantCount: formData.occupantCount || undefined,
         hostingCapacity: formData.hostingCapacity || undefined,
+        submitterRole: ownerDeclaration?.role ?? 'contributor',
+        ownerExploitationProofs: ownerDeclaration?.role === 'owner' ? ownerDeclaration.proofs : [],
       };
 
       const result = editingContributionId ? await updateContribution(editingContributionId, dataToSubmit) : await submitContribution(dataToSubmit);
