@@ -17,6 +17,7 @@ import MarketValueTab from './ccc-tabs/MarketValueTab';
 import WhatsAppFloatingButton from './WhatsAppFloatingButton';
 import { QuickAuthDialog } from './QuickAuthDialog';
 import { toast } from 'sonner';
+import type { OwnerDeclaration } from '@/lib/ownership';
 
 // Ordre & libellés des onglets — dupliqués depuis useFormValidation.ts pour éviter un export dédié.
 const TAB_ORDER = ['general', 'location', 'history', 'obligations', 'market-value', 'review'] as const;
@@ -38,16 +39,18 @@ interface CadastralContributionDialogProps {
   initialTitleReferenceNumber?: string;
   /** Origine de la recherche ayant ouvert le formulaire. */
   searchOrigin?: 'parcel' | 'title';
+  /** Réponse à « Êtes-vous propriétaire ? » donnée avant le formulaire. */
+  ownerDeclaration?: OwnerDeclaration;
 }
 
 const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = ({
-  open, onOpenChange, parcelNumber, editingContributionId, initialTitleReferenceNumber, searchOrigin
+  open, onOpenChange, parcelNumber, editingContributionId, initialTitleReferenceNumber, searchOrigin, ownerDeclaration
 }) => {
   const dialogContentRef = useRef<HTMLDivElement>(null);
 
   const state = useCCCFormState({
     open, onOpenChange, parcelNumber, editingContributionId, dialogContentRef,
-    initialTitleReferenceNumber, searchOrigin
+    initialTitleReferenceNumber, searchOrigin, ownerDeclaration
   });
 
   /**
@@ -124,6 +127,11 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
             <DialogTitle className="min-w-0 text-sm sm:text-base font-semibold leading-tight flex items-center gap-2 justify-start">
               <Badge variant="secondary" className="min-w-0 max-w-[50%] truncate text-[10px] sm:text-xs font-medium px-1.5 py-0.5 rounded-lg">{state.formData.parcelNumber || parcelNumber || 'Nouvelle parcelle'}</Badge>
               <span className="min-w-0 text-xs sm:text-sm text-muted-foreground">Contribution CCC</span>
+              {!editingContributionId && ownerDeclaration && (
+                <Badge variant={ownerDeclaration.role === 'owner' ? 'default' : 'outline'} className="shrink-0 text-[10px] px-1.5 py-0.5 rounded-lg">
+                  {ownerDeclaration.role === 'owner' ? 'Propriétaire déclaré' : 'Contributeur'}
+                </Badge>
+              )}
             </DialogTitle>
           </DialogHeader>
 
