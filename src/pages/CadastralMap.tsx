@@ -1,3 +1,4 @@
+import type { OwnerDeclaration } from '@/lib/ownership';
 import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import Navigation from '@/components/ui/navigation';
@@ -91,6 +92,7 @@ const CadastralMap = () => {
   /** True tant qu'un jeu de résultats provient de la recherche avancée. */
   const [advancedFiltersApplied, setAdvancedFiltersApplied] = useState(false);
   const [showIntroDialog, setShowIntroDialog] = useState(false);
+  const [ownerDeclaration, setOwnerDeclaration] = useState<OwnerDeclaration | undefined>(undefined);
   const [showContributionDialog, setShowContributionDialog] = useState(false);
   const [actionsExpanded, setActionsExpanded] = useState(false);
   const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
