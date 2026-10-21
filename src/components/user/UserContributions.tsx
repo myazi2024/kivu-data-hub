@@ -18,6 +18,8 @@ import { computeContributionStats } from '@/lib/contributions/contributionStats'
 import { detectFormType } from '@/utils/contributionFormMapping';
 import { UserContributionDeleteDialog } from '@/components/user/contributions/UserContributionDeleteDialog';
 import { FieldCorrectionDialog } from '@/components/user/contributions/FieldCorrectionDialog';
+import { useOwnedParcels } from '@/hooks/useOwnership';
+import { toast as sonnerToast } from 'sonner';
 import { UserCorrectionRequests } from '@/components/user/contributions/UserCorrectionRequests';
 import { trackEvent } from '@/lib/analytics';
 import { CADASTRAL_MAP_ROUTE } from '@/utils/userDashboardLinks';
@@ -242,6 +244,13 @@ export const UserContributions: React.FC = () => {
                         <div className="flex items-center gap-2">
                           <p className="text-sm font-medium truncate">{contribution.parcel_number}</p>
                           <span className={`text-[10px] ${typeInfo.color} font-medium`}>{typeInfo.label}</span>
+                          {ownedNumbers.has(contribution.parcel_number) ? (
+                            <Badge variant="default" className="h-4 px-1 text-[9px]">Ma parcelle</Badge>
+                          ) : contribution.submitter_role === 'owner' && contribution.status !== 'rejected' ? (
+                            <Badge variant="secondary" className="h-4 px-1 text-[9px]">Propriétaire déclaré · en vérification</Badge>
+                          ) : (
+                            <Badge variant="outline" className="h-4 px-1 text-[9px]">Contribution</Badge>
+                          )}
                         </div>
                         <p className="text-[10px] text-muted-foreground">
                           {[contribution.ville, contribution.province].filter(Boolean).join(', ') || 'Non spécifié'}
@@ -291,6 +300,10 @@ export const UserContributions: React.FC = () => {
                           className="h-7 w-7 p-0 text-muted-foreground hover:text-primary"
                           onClick={(e) => {
                             e.stopPropagation();
+                            if (!ownedNumbers.has(contribution.parcel_number)) {
+                              sonnerToast.info("Seul le propriétaire validé peut demander une modification ici. Pour une contribution, passez par la carte cadastrale, ou revendiquez la parcelle depuis « Revendiquer une parcelle ».");
+                              return;
+                            }
                             setCorrectionTarget(contribution);
                           }}
                           title="Modifier mes données"
