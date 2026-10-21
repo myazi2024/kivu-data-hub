@@ -28,6 +28,8 @@ import { CADASTRAL_MAP_ROUTE } from '@/utils/userDashboardLinks';
 type Contribution = ContributionRowFull;
 
 export const UserContributions: React.FC = () => {
+  const { data: ownedParcels = [] } = useOwnedParcels();
+  const ownedNumbers = React.useMemo(() => new Set(ownedParcels.map((p) => p.parcel_number)), [ownedParcels]);
   useAuth();
   const [selectedContribution, setSelectedContribution] = useState<Contribution | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
