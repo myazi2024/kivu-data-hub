@@ -89,6 +89,7 @@ const tabComponents: Record<string, React.LazyExoticComponent<any>> = {
   'ownership-history': lazy(() => import('@/components/admin/AdminOwnershipHistory')),
   'boundary-history': lazy(() => import('@/components/admin/AdminBoundaryHistory')),
   'partners': lazy(() => import('@/components/admin/AdminPartners')),
+  'ownership-claims': lazy(() => import('@/components/admin/AdminOwnershipClaims')),
   'pitch-config': lazy(() => import('@/components/admin/AdminPitchConfig')),
   'publications': lazy(() => import('@/components/admin/AdminPublications')),
   'articles': lazy(() => import('@/components/admin/AdminArticles')),
