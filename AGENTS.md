@@ -16,7 +16,7 @@
 - Mortgage cancellation: created only by `submit_mortgage_cancellation_request` (fee schedule, dedupe); active-mortgage check via `check_parcel_active_mortgage`, since the browser cannot read cadastral_mortgages.
 - Parcel account ownership: `cadastral_parcels.owner_user_id` is set only by `approve_ccc_contribution` (owner declaration with exploitation proofs) or `process_ownership_claim_decision`; claims via `submit_ownership_claim`; correction requests require it, so a self-declaration never grants rights.
 - Notifications: browser sends only via `notify_user` (`insertNotification`) and reads via shared `useNotifications` (server unread count); admin request decisions (mortgage, tax, land title, permit) use one `process_*_decision` RPC that writes effects, audit and `_notify` (dedupe key) in one transaction, so no silent decision.
-- Test-data purge: only `_cleanup_test_data_chunk_internal` deletes (steps listed in `_shared/cleanupSteps.ts`); preview and nightly job mirror those steps, and the nightly job obeys test_mode auto_cleanup + retention, so settings are never bypassed.
+- Test-data purge: only `_cleanup_test_data_chunk_internal` deletes (steps listed in `_shared/cleanupSteps.ts`) ; preview/nightly mirror them and obey auto_cleanup + retention.
 - Land-data analytics: data only via `get_analytics_tab_dataset(tab_key)` (role or valid tab purchase checked server-side); purchases granted by `trg_grant_analytics_access` on completed server-inserted payment_transactions; unpurchased tabs never reach the browser.
-- Land-data discovery uses contained previews and scoped viewport-height breakpoints, no global scroll suppression.
+- Land-data discovery: contained previews, scoped height breakpoints, no global scroll lock.
 - Catalogues share row/total presentation for parity; analytics shares overlay/route content, not carts or payments.
