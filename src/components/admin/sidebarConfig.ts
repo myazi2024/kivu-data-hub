@@ -1,4 +1,5 @@
 import {
+  KeyRound,
   LayoutDashboard, Users, FileText, CreditCard, BarChart3, Settings, Shield,
   MapPin, Bell, ClipboardList, Search, LayoutList, CheckSquare, DollarSign,
   ShoppingCart, FileCheck, AlertTriangle, Database, Globe, Gift, Map as MapIcon,
@@ -50,6 +51,7 @@ export const menuItems: AdminMenuSection[] = [
     category: 'Contributions CCC',
     items: [
       { icon: ClipboardList, label: 'Contributions CCC', value: 'ccc', badge: null, keywords: ['cadastre', 'parcelle', 'soumission', 'contribution'] },
+      { icon: KeyRound, label: 'Revendications de propriété', value: 'ownership-claims', badge: null, keywords: ['revendication', 'propriétaire', 'migration', 'contestation'] },
       { icon: FileCheck, label: 'File de validation', value: 'validation', badge: 'pending', keywords: ['en attente', 'pending', 'vérification', 'approuver', 'rejeter'] },
       { icon: Gift, label: 'Codes CCC', value: 'ccc-codes', badge: null, keywords: ['code promo', 'bon', 'récompense', 'coupon'] },
       { icon: BarChart3, label: 'Utilisation CCC', value: 'ccc-usage', badge: null, keywords: ['stats', 'métriques', 'usage'] },
