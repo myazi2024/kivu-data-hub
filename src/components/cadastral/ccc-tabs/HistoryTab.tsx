@@ -7,7 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Plus, Trash2, Info, ChevronRight, ChevronLeft, Paperclip, X, CheckCircle2 } from 'lucide-react';
-import { toast } from 'sonner';
+import { toast as sonnerToast } from 'sonner';
 import { validateProofFile } from '@/lib/ownership';
 import { MdEventNote } from 'react-icons/md';
 import BlockResetButton from '../BlockResetButton';
@@ -225,7 +225,7 @@ const HistoryTab: React.FC<HistoryTabProps> = ({
                               const f = e.target.files?.[0]; e.target.value = '';
                               if (!f) return;
                               const err = validateProofFile(f);
-                              if (err) { toast.error(err); return; }
+                              if (err) { sonnerToast.error(err); return; }
                               updatePreviousOwner(index, key, f);
                             }} />
                         </label>
