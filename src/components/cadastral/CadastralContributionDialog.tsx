@@ -186,7 +186,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                   titleDocFiles={state.titleDocFiles} handleFileChange={state.handleFileChange} removeFile={state.removeFile}
                   currentOwners={state.currentOwners} setCurrentOwners={state.setCurrentOwners}
                   ownershipMode={state.ownershipMode} setOwnershipMode={state.setOwnershipMode}
-                  ownerDocFile={state.ownerDocFile} updateCurrentOwner={state.updateCurrentOwner}
+                  ownerDocFile={state.ownerDocFile} showOwnerDoc={state.ownerDocRequired} updateCurrentOwner={state.updateCurrentOwner}
                   addCurrentOwner={state.addCurrentOwner} removeCurrentOwner={state.removeCurrentOwner}
                   showOwnerWarning={state.showOwnerWarning} highlightIncompleteOwner={state.highlightIncompleteOwner}
                   highlightRequiredFields={state.highlightRequiredFields}
@@ -298,7 +298,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                   hasDispute={state.hasDispute}
                   buildingPermits={state.buildingPermits} permitMode={state.permitMode}
                   constructionMode={state.constructionMode} additionalConstructions={state.additionalConstructions}
-                  ownerDocFile={state.ownerDocFile} titleDocFiles={state.titleDocFiles}
+                  ownerDocFile={state.ownerDocFile} showOwnerDoc={state.ownerDocRequired} titleDocFiles={state.titleDocFiles}
                   gpsCoordinates={state.gpsCoordinates} parcelSides={state.parcelSides}
                   leaseYears={state.leaseYears} customTitleName={state.customTitleName}
                    roadSides={state.roadSides} servitude={state.servitude}

@@ -29,6 +29,8 @@ export interface CurrentOwnersSectionProps {
   ownershipMode: 'unique' | 'multiple';
   setOwnershipMode: (v: 'unique' | 'multiple') => void;
   ownerDocFile: File | null;
+  /** Faux pour un simple contributeur : la pièce du propriétaire n'est ni demandée ni affichée. */
+  showOwnerDoc?: boolean;
   updateCurrentOwner: (index: number, field: string | Record<string, string>, value?: string) => void;
   addCurrentOwner: () => void;
   removeCurrentOwner: (index: number) => void;
@@ -150,7 +152,7 @@ const EtatFields: React.FC<{
 export const CurrentOwnersSection: React.FC<CurrentOwnersSectionProps> = ({
   formData, handleInputChange, customTitleName,
   currentOwners, setCurrentOwners, ownershipMode, setOwnershipMode,
-  ownerDocFile, updateCurrentOwner, addCurrentOwner, removeCurrentOwner,
+  ownerDocFile, showOwnerDoc = true, updateCurrentOwner, addCurrentOwner, removeCurrentOwner,
   showOwnerWarning, highlightIncompleteOwner, highlightRequiredFields,
   handleFileChange, removeFile, getPicklistOptions,
   resetOwnersBlock,
@@ -398,7 +400,8 @@ export const CurrentOwnersSection: React.FC<CurrentOwnersSectionProps> = ({
             </RadioGroup>
           </div>
 
-          {/* ID document */}
+          {/* ID document — masqué pour un simple contributeur */}
+          {showOwnerDoc && (
           <div className="space-y-1.5 pt-2 border-t border-border/50">
             <div className="flex items-center gap-2">
               <Label className="text-sm font-medium">
@@ -455,6 +458,7 @@ export const CurrentOwnersSection: React.FC<CurrentOwnersSectionProps> = ({
             )}
             <Input id="ownerDoc" type="file" accept="image/jpeg,image/jpg,image/png,image/webp,application/pdf" onChange={(e) => handleFileChange(e, 'owner')} className="hidden" />
           </div>
+          )}
         </div>
       ))}
 
