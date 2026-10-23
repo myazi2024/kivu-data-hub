@@ -1951,6 +1951,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          identity_document_url: string | null
           legal_status: string | null
           mutation_type: string | null
           owner_name: string
@@ -1962,6 +1963,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          identity_document_url?: string | null
           legal_status?: string | null
           mutation_type?: string | null
           owner_name: string
@@ -1973,6 +1975,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          identity_document_url?: string | null
           legal_status?: string | null
           mutation_type?: string | null
           owner_name?: string
