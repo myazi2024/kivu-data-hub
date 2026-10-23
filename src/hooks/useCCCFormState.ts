@@ -85,6 +85,8 @@ export const useCCCFormState = ({
   const [pendingSubmission, setPendingSubmission] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [ownerDocFile, setOwnerDocFile] = useState<File | null>(null);
+  /** Un simple contributeur (réponse « Non ») ne joint pas la pièce d'identité du propriétaire actuel. */
+  const ownerDocRequired = ownerDeclaration?.role !== 'contributor';
   const [titleDocFiles, setTitleDocFiles] = useState<File[]>([]);
   const [showRequiredFieldsPopover, setShowRequiredFieldsPopover] = useState(false);
   const [highlightRequiredFields, setHighlightRequiredFields] = useState(false);
@@ -1717,7 +1719,7 @@ export const useCCCFormState = ({
     // Title
     customTitleName, setCustomTitleName, leaseYears, setLeaseYears,
     // File handling
-    ownerDocFile, titleDocFiles, handleFileChange, removeFile,
+    ownerDocFile, ownerDocRequired, titleDocFiles, handleFileChange, removeFile,
     // Current owners
     currentOwners, setCurrentOwners, ownershipMode, setOwnershipMode,
     updateCurrentOwner, addCurrentOwner, removeCurrentOwner,
