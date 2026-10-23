@@ -31,6 +31,8 @@ export interface UseFormValidationParams {
   hasDispute: boolean | null;
   mortgageRecords: MortgageRecord[];
   ownerDocFile: File | null;
+  /** Faux pour un simple contributeur : la pièce du propriétaire actuel n'est pas exigée. */
+  ownerDocRequired?: boolean;
   titleDocFiles: File[];
   editingContributionId?: string;
   roadSides: any[];
@@ -85,7 +87,7 @@ export function useFormValidation(params: UseFormValidationParams) {
   const {
     formData, customTitleName, currentOwners, previousOwners, sectionType,
     permitMode, buildingPermits, parcelSides, taxRecords, hasMortgage, hasDispute,
-    mortgageRecords, ownerDocFile, titleDocFiles, editingContributionId,
+    mortgageRecords, ownerDocFile, ownerDocRequired = true, titleDocFiles, editingContributionId,
     roadSides, servitude, buildingShapes, constructionMode, additionalConstructions,
     soundEnvironment, nearbySoundSources, disputeFormData, parcelNumberRequired: parcelNumberRequiredParam,
     gpsCoordinates,
@@ -104,7 +106,7 @@ export function useFormValidation(params: UseFormValidationParams) {
     if (formData.propertyTitleType === 'Autre' && (!customTitleName || customTitleName.trim() === '')) missing.push({ field: 'customTitleName', label: 'Nom du titre de propriété (Autre)', tab: 'general' });
     if (PROPERTY_TITLE_TYPES.some(t => t.value === formData.propertyTitleType && t.isRenewable) && !formData.leaseType) missing.push({ field: 'leaseType', label: 'Type de bail (initial ou renouvellement)', tab: 'general' });
     if (formData.titleReferenceNumber && formData.titleReferenceNumber.trim() !== '' && formData.isTitleInCurrentOwnerName === undefined) missing.push({ field: 'isTitleInCurrentOwnerName', label: 'Ce titre est-il au nom du propriétaire actuel ?', tab: 'general' });
-    if (!ownerDocFile && !(editingContributionId && formData.ownerDocumentUrl)) missing.push({ field: 'ownerDocFile', label: 'Pièce jointe du propriétaire', tab: 'general' });
+    if (ownerDocRequired && !ownerDocFile && !(editingContributionId && formData.ownerDocumentUrl)) missing.push({ field: 'ownerDocFile', label: 'Pièce jointe du propriétaire', tab: 'general' });
     if (titleDocFiles.length === 0 && !(editingContributionId && formData.titleDocumentUrl)) missing.push({ field: 'titleDocFiles', label: 'Pièce jointe du titre de propriété', tab: 'general' });
 
     const firstOwner = currentOwners[0];
@@ -405,6 +407,9 @@ export function useFormValidation(params: UseFormValidationParams) {
       } else if (o.endDate && o.startDate > o.endDate) {
         missing.push({ field: `previousOwnerDates_${idx}`, label: `Dates incohérentes — Ancien #${idx + 1} (début après fin)`, tab: 'history' });
       }
+      if (!o.titleDocFile && !o.titleDocumentUrl) {
+        missing.push({ field: `previousOwnerTitleDoc_${idx}`, label: `Titre de propriété (pièce jointe) — Ancien #${idx + 1}`, tab: 'history' });
+      }
       if (!o.mutationType) {
         missing.push({ field: `previousOwnerMutation_${idx}`, label: `Type de mutation — Ancien #${idx + 1}`, tab: 'history' });
       }
@@ -649,7 +654,7 @@ export function useFormValidation(params: UseFormValidationParams) {
 
 
     return missing;
-  }, [formData, customTitleName, currentOwners, previousOwners, sectionType, permitMode, buildingPermits, parcelSides, taxRecords, hasMortgage, hasDispute, mortgageRecords, ownerDocFile, titleDocFiles, editingContributionId, roadSides, servitude, buildingShapes, constructionMode, additionalConstructions, soundEnvironment, nearbySoundSources, disputeFormData, parcelNumberRequiredParam, gpsCoordinates]);
+  }, [formData, customTitleName, currentOwners, previousOwners, sectionType, permitMode, buildingPermits, parcelSides, taxRecords, hasMortgage, hasDispute, mortgageRecords, ownerDocFile, ownerDocRequired, titleDocFiles, editingContributionId, roadSides, servitude, buildingShapes, constructionMode, additionalConstructions, soundEnvironment, nearbySoundSources, disputeFormData, parcelNumberRequiredParam, gpsCoordinates]);
 
   const getMissingFields = useCallback(() => missingFieldsList, [missingFieldsList]);
 
