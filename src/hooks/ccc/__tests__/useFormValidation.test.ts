@@ -34,7 +34,7 @@ const baseParams = (): UseFormValidationParams => ({
   } as any,
   customTitleName: '',
   currentOwners: [baseOwner],
-  previousOwners: [{ name: 'Mwamba', startDate: '2010-01-01', mutationType: 'Achat' } as any],
+  previousOwners: [{ name: 'Mwamba', startDate: '2010-01-01', mutationType: 'Achat', titleDocFile: file() } as any],
   sectionType: 'urbaine',
   permitMode: 'request',
   buildingPermits: [],
@@ -470,5 +470,28 @@ describe('Points GPS', () => {
     const pt = { lat: '-11.6', lng: '27.4' };
     expect(fields({ ...p, gpsCoordinates: [pt, pt] } as any)).toContain('gpsCoordinates');
     expect(fields({ ...p, gpsCoordinates: [pt, pt, pt] } as any)).not.toContain('gpsCoordinates');
+  });
+});
+
+describe('Pièces jointes propriétaires (contributeur / anciens propriétaires)', () => {
+  const missing = (p: UseFormValidationParams) =>
+    renderHook(() => useFormValidation(p)).result.current.getMissingFields().map((m) => m.field);
+
+  it('un simple contributeur n\'a pas à joindre la pièce du propriétaire actuel', () => {
+    expect(missing({ ...baseParams(), ownerDocFile: null, ownerDocRequired: false })).not.toContain('ownerDocFile');
+  });
+
+  it('la pièce du propriétaire reste exigée hors contributeur', () => {
+    expect(missing({ ...baseParams(), ownerDocFile: null })).toContain('ownerDocFile');
+  });
+
+  it('un ancien propriétaire sans titre de propriété bloque l\'envoi', () => {
+    const p = baseParams();
+    p.previousOwners = [{ name: 'Mwamba', startDate: '2010-01-01', mutationType: 'Achat' } as any];
+    expect(missing(p)).toContain('previousOwnerTitleDoc_0');
+  });
+
+  it('titre joint sans pièce d\'identité : accepté', () => {
+    expect(missing(baseParams()).some((f) => f.startsWith('previousOwnerTitleDoc'))).toBe(false);
   });
 });
