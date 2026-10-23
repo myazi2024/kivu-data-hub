@@ -33,6 +33,7 @@ interface ReviewTabProps {
   constructionMode: 'unique' | 'multiple';
   additionalConstructions: AdditionalConstruction[];
   ownerDocFile: File | null;
+  showOwnerDoc?: boolean;
   titleDocFiles: File[];
   gpsCoordinates: Array<{ borne: string; lat: string; lng: string }>;
   parcelSides: Array<{ name: string; length: string }>;
@@ -65,7 +66,7 @@ interface ReviewTabProps {
 const ReviewTab: React.FC<ReviewTabProps> = ({
   formData, sectionType, currentOwners, previousOwners,
   taxRecords, mortgageRecords, hasMortgage, hasDispute,
-  buildingPermits, permitMode, constructionMode, additionalConstructions, ownerDocFile, titleDocFiles,
+  buildingPermits, permitMode, constructionMode, additionalConstructions, ownerDocFile, showOwnerDoc = true, titleDocFiles,
   gpsCoordinates, parcelSides, leaseYears, customTitleName,
   roadSides, servitude, buildingShapes, disputeFormData, mapConfig, soundEnvironment, nearbySoundSources,
   calculateCCCValue, isFormValidForSubmission, getMissingFields,
@@ -459,6 +460,9 @@ const ReviewTab: React.FC<ReviewTabProps> = ({
                     {owner.legalStatus && <span>{owner.legalStatus}</span>}
                     {owner.mutationType && <span> • {owner.mutationType}</span>}
                   </div>
+                  <div className="text-muted-foreground text-[11px]">
+                    Titre : {owner.titleDocFile || owner.titleDocumentUrl ? '✓' : 'manquant'} • Pièce d'identité : {owner.identityDocFile || owner.identityDocumentUrl ? '✓' : 'Non'}
+                  </div>
                   {owner.startDate && (
                     <div className="text-muted-foreground text-[11px]">
                       {new Date(owner.startDate).toLocaleDateString('fr-FR')}
@@ -552,8 +556,8 @@ const ReviewTab: React.FC<ReviewTabProps> = ({
         <CardContent className="p-3 space-y-2">
           <h4 className="text-xs font-semibold flex items-center gap-1.5"><span>📎</span> Documents joints</h4>
           <div className="space-y-1 text-xs">
-            {/* Owner doc */}
-            {(() => {
+            {/* Owner doc (non demandée à un simple contributeur) */}
+            {showOwnerDoc && (() => {
               const hasOwnerDoc = ownerDocFile || formData.ownerDocumentUrl;
               return (
                 <div className={hasOwnerDoc ? "text-foreground flex items-center gap-1.5" : "text-muted-foreground flex items-center gap-1.5"}>

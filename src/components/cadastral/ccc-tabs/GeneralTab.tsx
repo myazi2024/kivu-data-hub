@@ -59,6 +59,7 @@ interface GeneralTabProps {
   ownershipMode: 'unique' | 'multiple';
   setOwnershipMode: (v: 'unique' | 'multiple') => void;
   ownerDocFile: File | null;
+  showOwnerDoc?: boolean;
   updateCurrentOwner: (index: number, field: string | Record<string, string>, value?: string) => void;
   addCurrentOwner: () => void;
   removeCurrentOwner: (index: number) => void;
@@ -83,7 +84,7 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
   customTitleName, setCustomTitleName, leaseYears, setLeaseYears,
   titleDocFiles, handleFileChange, removeFile,
   currentOwners, setCurrentOwners, ownershipMode, setOwnershipMode,
-  ownerDocFile, updateCurrentOwner, addCurrentOwner, removeCurrentOwner,
+  ownerDocFile, showOwnerDoc = true, updateCurrentOwner, addCurrentOwner, removeCurrentOwner,
   showOwnerWarning, highlightIncompleteOwner,
   highlightRequiredFields,
   getPicklistOptions,
@@ -289,6 +290,7 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
         ownershipMode={ownershipMode}
         setOwnershipMode={setOwnershipMode}
         ownerDocFile={ownerDocFile}
+        showOwnerDoc={showOwnerDoc}
         updateCurrentOwner={updateCurrentOwner}
         addCurrentOwner={addCurrentOwner}
         removeCurrentOwner={removeCurrentOwner}

@@ -6,7 +6,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Plus, Trash2, Info, ChevronRight, ChevronLeft } from 'lucide-react';
+import { Plus, Trash2, Info, ChevronRight, ChevronLeft, Paperclip, X, CheckCircle2 } from 'lucide-react';
+import { toast as sonnerToast } from 'sonner';
+import { validateProofFile } from '@/lib/ownership';
 import { MdEventNote } from 'react-icons/md';
 import BlockResetButton from '../BlockResetButton';
 import { CadastralContributionData } from '@/hooks/useCadastralContribution';
@@ -25,13 +27,20 @@ export interface PreviousOwner {
   startDate: string;
   endDate: string;
   mutationType: string;
+  /** Titre de propriété de cet ancien propriétaire (obligatoire). Fichier non conservé dans le brouillon. */
+  titleDocFile?: File | null;
+  /** Pièce d'identité (optionnelle). Fichier non conservé dans le brouillon. */
+  identityDocFile?: File | null;
+  /** URLs déjà enregistrées (modification d'une contribution). */
+  titleDocumentUrl?: string;
+  identityDocumentUrl?: string;
 }
 
 interface HistoryTabProps {
   formData: CadastralContributionData;
   currentOwners: CurrentOwner[];
   previousOwners: PreviousOwner[];
-  updatePreviousOwner: (index: number, field: string | Record<string, string>, value?: string) => void;
+  updatePreviousOwner: (index: number, field: string | Record<string, unknown>, value?: unknown) => void;
   addPreviousOwner: () => void;
   removePreviousOwner: (index: number) => void;
   highlightIncompletePreviousOwner: boolean;
@@ -187,6 +196,43 @@ const HistoryTab: React.FC<HistoryTabProps> = ({
                     onClick={() => toast({ title: "Auto-calculée", description: "Date basée sur le propriétaire suivant.", variant: "default" })}
                   />
                 </div>
+              </div>
+
+              {/* Pièces jointes de l'ancien propriétaire */}
+              <div className="space-y-1.5 pt-2 border-t border-border/50">
+                {([
+                  { key: 'titleDocFile', urlKey: 'titleDocumentUrl', label: 'Titre de propriété', required: true },
+                  { key: 'identityDocFile', urlKey: 'identityDocumentUrl', label: "Pièce d'identité (optionnel)", required: false },
+                ] as const).map(({ key, urlKey, label, required }) => {
+                  const file = owner[key];
+                  const saved = owner[urlKey];
+                  const inputId = `prev-${key}-${owner.id ?? index}`;
+                  return (
+                    <div key={key} className="flex items-center gap-2 rounded-xl border border-border p-2 min-w-0">
+                      {file || saved ? <CheckCircle2 className="h-4 w-4 text-primary shrink-0" /> : <Paperclip className="h-4 w-4 text-muted-foreground shrink-0" />}
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-medium text-foreground">{label}{required && <span className="text-destructive"> *</span>}</p>
+                        {(file || saved) && <p className="truncate text-[11px] text-muted-foreground">{file ? file.name : 'Document déjà enregistré'}</p>}
+                      </div>
+                      {file || saved ? (
+                        <Button type="button" variant="ghost" size="sm" aria-label={`Retirer ${label}`} className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10 rounded-lg"
+                          onClick={() => updatePreviousOwner(index, { [key]: null, [urlKey]: '' })}><X className="h-4 w-4" /></Button>
+                      ) : (
+                        <label htmlFor={inputId} className="cursor-pointer rounded-md border border-border px-2 py-1 text-[11px] font-medium text-foreground hover:bg-muted">
+                          Joindre
+                          <input id={inputId} type="file" className="sr-only" accept="application/pdf,image/jpeg,image/png,image/webp"
+                            onChange={(e) => {
+                              const f = e.target.files?.[0]; e.target.value = '';
+                              if (!f) return;
+                              const err = validateProofFile(f);
+                              if (err) { sonnerToast.error(err); return; }
+                              updatePreviousOwner(index, key, f);
+                            }} />
+                        </label>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
 
               {index === 0 && currentOwners[0]?.since && (

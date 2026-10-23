@@ -155,6 +155,8 @@ export interface CadastralContributionData {
     startDate: string;
     endDate?: string;
     mutationType?: string;
+    titleDocumentUrl?: string;
+    identityDocumentUrl?: string;
   }>;
   boundaryHistory?: Array<{
     pvReferenceNumber: string;
@@ -342,7 +344,8 @@ export const useCadastralContribution = () => {
       ownership_start_date: o.startDate,
       ownership_end_date: o.endDate || null,
       mutation_type: o.mutationType || null,
-      ownership_document_url: null
+      ownership_document_url: o.titleDocumentUrl || null,
+      identity_document_url: o.identityDocumentUrl || null
     })) || null;
 
     // Convert tax history to snake_case for DB trigger

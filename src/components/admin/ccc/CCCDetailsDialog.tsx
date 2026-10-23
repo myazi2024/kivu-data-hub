@@ -528,6 +528,13 @@ export const CCCDetailsDialog: React.FC<CCCDetailsDialogProps> = ({
                           <p><strong>Statut:</strong> {rr(owner, 'legal_status', 'legalStatus') || 'Non renseigné'}</p>
                           <p><strong>Période:</strong> {new Date(rr(owner, 'ownership_start_date', 'startDate')).toLocaleDateString('fr-FR')} - {rr(owner, 'ownership_end_date', 'endDate') ? new Date(rr(owner, 'ownership_end_date', 'endDate')).toLocaleDateString('fr-FR') : 'Actuel'}</p>
                           {rr(owner, 'mutation_type', 'mutationType') && <p><strong>Type de mutation:</strong> {rr(owner, 'mutation_type', 'mutationType')}</p>}
+                          <div className="flex flex-wrap gap-3 pt-1">
+                            {rr(owner, 'ownership_document_url', 'titleDocumentUrl')
+                              ? <a href={rr(owner, 'ownership_document_url', 'titleDocumentUrl')} target="_blank" rel="noopener noreferrer" className="text-primary underline text-xs">Titre de propriété</a>
+                              : <span className="text-xs text-muted-foreground">Titre non joint</span>}
+                            {rr(owner, 'identity_document_url', 'identityDocumentUrl') &&
+                              <a href={rr(owner, 'identity_document_url', 'identityDocumentUrl')} target="_blank" rel="noopener noreferrer" className="text-primary underline text-xs">Pièce d'identité</a>}
+                          </div>
                         </div>
                       ))}
                     </div>
