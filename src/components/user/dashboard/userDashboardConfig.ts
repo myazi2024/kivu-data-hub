@@ -8,7 +8,6 @@ import {
   FileSearch,
   FileText,
   Home,
-  KeyRound,
   MapPinned,
   Landmark,
   LayoutDashboard,

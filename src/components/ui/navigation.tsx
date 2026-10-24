@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Menu, X, User, LogOut, ChevronDown, Shield, Newspaper, Briefcase, Tag, Heart, Building2, Handshake, Scale, Presentation, Lock } from 'lucide-react';
+import { Menu, X, User, ChevronDown, Shield, Newspaper, Briefcase, Tag, Heart, Building2, Handshake, Scale, Presentation, Lock } from 'lucide-react';
 import { LAND_DATA_ROLES } from '@/constants/roles';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
@@ -47,7 +47,7 @@ const mediaColumns = [
 const Navigation = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [mobileMediaOpen, setMobileMediaOpen] = useState(false);
-  const { user, profile, signOut, loading } = useAuth();
+  const { user, profile, loading } = useAuth();
   const { isTestRoute } = useTestEnvironment();
   const { config: appearanceConfig } = useAppAppearance();
   const logoSrc = appearanceConfig.logo_url;

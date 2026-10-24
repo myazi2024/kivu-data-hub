@@ -1,11 +1,33 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { UserOwnershipClaims } from './UserOwnershipClaims';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Home, Loader2, MapPin } from 'lucide-react';
 import { useOwnedParcels } from '@/hooks/useOwnership';
 
 export const UserOwnedParcels: React.FC = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const sub = searchParams.get('sub') === 'claim' ? 'claim' : 'list';
+  const setSub = (v: string) => {
+    const next = new URLSearchParams(searchParams);
+    if (v === 'claim') next.set('sub', 'claim'); else next.delete('sub');
+    setSearchParams(next, { replace: true });
+  };
+  return (
+    <Tabs value={sub} onValueChange={setSub} className="space-y-3">
+      <TabsList className="grid w-full grid-cols-2">
+        <TabsTrigger value="list">Mes parcelles</TabsTrigger>
+        <TabsTrigger value="claim">Revendiquer une parcelle</TabsTrigger>
+      </TabsList>
+      <TabsContent value="list"><OwnedParcelsList onClaim={() => setSub('claim')} /></TabsContent>
+      <TabsContent value="claim"><UserOwnershipClaims /></TabsContent>
+    </Tabs>
+  );
+};
+
+const OwnedParcelsList: React.FC<{ onClaim: () => void }> = ({ onClaim }) => {
   const { data = [], isLoading, error } = useOwnedParcels();
   const navigate = useNavigate();
 
@@ -25,7 +47,7 @@ export const UserOwnedParcels: React.FC = () => {
             <p className="text-sm text-muted-foreground">Aucune parcelle validée à votre nom pour le moment.</p>
             <div className="flex flex-col gap-2 sm:flex-row sm:justify-center">
               <Button size="sm" onClick={() => navigate('/cadastral-map')}>Enregistrer ma parcelle</Button>
-              <Button size="sm" variant="outline" onClick={() => navigate('/mon-compte?tab=ownership-claims')}>Revendiquer une parcelle</Button>
+              <Button size="sm" variant="outline" onClick={onClaim}>Revendiquer une parcelle</Button>
             </div>
           </div>
         )}
