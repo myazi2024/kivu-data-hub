@@ -303,7 +303,7 @@ export const UserContributions: React.FC = () => {
                           onClick={(e) => {
                             e.stopPropagation();
                             if (!ownedNumbers.has(contribution.parcel_number)) {
-                              sonnerToast.info("Seul le propriétaire validé peut demander une modification ici. Pour une contribution, passez par la carte cadastrale, ou revendiquez la parcelle depuis « Revendiquer une parcelle ».");
+                              sonnerToast.info("Seul le propriétaire validé peut demander une modification ici. Pour une contribution, passez par la carte cadastrale, ou revendiquez la parcelle depuis « Mes parcelles › Revendiquer une parcelle ».");
                               return;
                             }
                             setCorrectionTarget(contribution);

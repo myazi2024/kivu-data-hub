@@ -48,9 +48,8 @@ export const userMenuSections: UserMenuSection[] = [
   {
     category: 'Mes biens',
     items: [
-      { icon: MapPinned, label: 'Mes parcelles', value: 'my-parcels', keywords: ['propriétaire', 'parcelle', 'propriété'] },
+      { icon: MapPinned, label: 'Mes parcelles', value: 'my-parcels', keywords: ['propriétaire', 'parcelle', 'propriété', 'revendication', 'revendiquer', 'migrer', 'rattacher'] },
       { icon: FileText, label: 'Contributions CCC', value: 'contributions', keywords: ['parcelle', 'données', 'ccc'] },
-      { icon: KeyRound, label: 'Revendiquer une parcelle', value: 'ownership-claims', keywords: ['revendication', 'propriété', 'migrer', 'rattacher'] },
       { icon: Home, label: 'Locations', value: 'rentals', keywords: ['loyer', 'locaux', 'occupation'] },
       { icon: Megaphone, label: 'Annonces', value: 'listings', keywords: ['publication', 'vente', 'location'] },
       { icon: WalletCards, label: 'Valeur & expertise', value: 'market-value', keywords: ['prix', 'estimation', 'rapport'] },
