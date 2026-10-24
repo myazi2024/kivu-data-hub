@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Menu, X, User, LogOut, ChevronDown, Shield, Newspaper, Briefcase, Tag, Heart, Building2, Handshake, Scale, Presentation, Lock } from 'lucide-react';
+import { Menu, X, User, ChevronDown, Shield, Newspaper, Briefcase, Tag, Heart, Building2, Handshake, Scale, Presentation, Lock } from 'lucide-react';
 import { LAND_DATA_ROLES } from '@/constants/roles';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
@@ -47,7 +47,7 @@ const mediaColumns = [
 const Navigation = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [mobileMediaOpen, setMobileMediaOpen] = useState(false);
-  const { user, profile, signOut, loading } = useAuth();
+  const { user, profile, loading } = useAuth();
   const { isTestRoute } = useTestEnvironment();
   const { config: appearanceConfig } = useAppAppearance();
   const logoSrc = appearanceConfig.logo_url;
@@ -189,15 +189,6 @@ const Navigation = () => {
                         <span className="text-xs bg-secondary text-secondary-foreground px-2 py-1 rounded">Partenaire</span>
                       )}
                     </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={signOut}
-                      className="hidden sm:flex items-center space-x-1 text-xs"
-                    >
-                      <LogOut className="h-3 w-3 sm:h-4 sm:w-4" />
-                      <span className="hidden md:inline">Déconnexion</span>
-                    </Button>
                   </>
                 ) : (
                   <Button variant="default" size="sm" asChild className="hidden sm:flex text-xs">
@@ -316,15 +307,6 @@ const Navigation = () => {
                           </Button>
                         </Link>
                       )}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={signOut}
-                        className="flex items-center space-x-1 px-3 py-2 w-full justify-start text-sm"
-                      >
-                        <LogOut className="h-4 w-4" />
-                        <span>Déconnexion</span>
-                      </Button>
                     </>
                   ) : (
                     <Button variant="ghost" size="sm" asChild className="flex items-center space-x-1 px-3 py-2 w-full justify-start text-sm">
