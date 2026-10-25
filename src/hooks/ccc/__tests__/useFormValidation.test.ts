@@ -494,4 +494,14 @@ describe('Pièces jointes propriétaires (contributeur / anciens propriétaires)
   it('titre joint sans pièce d\'identité : accepté', () => {
     expect(missing(baseParams()).some((f) => f.startsWith('previousOwnerTitleDoc'))).toBe(false);
   });
+
+  it("un ancien propriétaire sans acte de cession bloque l'envoi", () => {
+    const p = baseParams();
+    p.previousOwners = [{ name: 'Mwamba', startDate: '2010-01-01', mutationType: 'Vente', titleDocFile: new File(['x'], 't.pdf') } as any];
+    expect(missing(p)).toContain('previousOwnerCessionDoc_0');
+  });
+
+  it('acte de cession joint : accepté', () => {
+    expect(missing(baseParams()).some((f) => f.startsWith('previousOwnerCessionDoc'))).toBe(false);
+  });
 });
