@@ -22,6 +22,8 @@ export interface OwnershipHistoryEntry {
   ownership_end_date?: string | null;
   mutation_type?: string | null;
   ownership_document_url?: string | null;
+  identity_document_url?: string | null;
+  cession_document_url?: string | null;
 }
 
 export interface BoundaryHistoryEntry {

@@ -34,7 +34,7 @@ const baseParams = (): UseFormValidationParams => ({
   } as any,
   customTitleName: '',
   currentOwners: [baseOwner],
-  previousOwners: [{ name: 'Mwamba', startDate: '2010-01-01', mutationType: 'Achat', titleDocFile: file() } as any],
+  previousOwners: [{ name: 'Mwamba', startDate: '2010-01-01', mutationType: 'Achat', titleDocFile: file(), cessionDocFile: file() } as any],
   sectionType: 'urbaine',
   permitMode: 'request',
   buildingPermits: [],
