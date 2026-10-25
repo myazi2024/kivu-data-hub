@@ -1,3 +1,4 @@
+import { getCessionDocLabel } from '@/lib/ccc/cessionDoc';
 import { isConstructionRented, isNonResidentialCategory, isSingleUnitRentalCategory, isOwnerOccupiedUnit } from '@/utils/rentalStatus';
 import { minHeightForFloors } from '@/utils/buildingShapes';
 import { isResidentialActualUsage } from '@/utils/actualUsage';
@@ -409,6 +410,9 @@ export function useFormValidation(params: UseFormValidationParams) {
       }
       if (!o.titleDocFile && !o.titleDocumentUrl) {
         missing.push({ field: `previousOwnerTitleDoc_${idx}`, label: `Titre de propriété (pièce jointe) — Ancien #${idx + 1}`, tab: 'history' });
+      }
+      if (!o.cessionDocFile && !o.cessionDocumentUrl) {
+        missing.push({ field: `previousOwnerCessionDoc_${idx}`, label: `${getCessionDocLabel(o.mutationType)} (pièce jointe) — Ancien #${idx + 1}`, tab: 'history' });
       }
       if (!o.mutationType) {
         missing.push({ field: `previousOwnerMutation_${idx}`, label: `Type de mutation — Ancien #${idx + 1}`, tab: 'history' });

@@ -1949,6 +1949,7 @@ export type Database = {
       }
       cadastral_ownership_history: {
         Row: {
+          cession_document_url: string | null
           created_at: string
           id: string
           identity_document_url: string | null
@@ -1961,6 +1962,7 @@ export type Database = {
           parcel_id: string
         }
         Insert: {
+          cession_document_url?: string | null
           created_at?: string
           id?: string
           identity_document_url?: string | null
@@ -1973,6 +1975,7 @@ export type Database = {
           parcel_id: string
         }
         Update: {
+          cession_document_url?: string | null
           created_at?: string
           id?: string
           identity_document_url?: string | null

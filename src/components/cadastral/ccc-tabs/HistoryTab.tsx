@@ -1,3 +1,4 @@
+import { getCessionDocLabel } from '@/lib/ccc/cessionDoc';
 import React from 'react';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
@@ -34,6 +35,9 @@ export interface PreviousOwner {
   /** URLs déjà enregistrées (modification d'une contribution). */
   titleDocumentUrl?: string;
   identityDocumentUrl?: string;
+  /** Acte de cession (obligatoire), libellé selon la mutation. */
+  cessionDocFile?: File | null;
+  cessionDocumentUrl?: string;
 }
 
 interface HistoryTabProps {
@@ -202,6 +206,7 @@ const HistoryTab: React.FC<HistoryTabProps> = ({
               <div className="space-y-1.5 pt-2 border-t border-border/50">
                 {([
                   { key: 'titleDocFile', urlKey: 'titleDocumentUrl', label: 'Titre de propriété', required: true },
+                  { key: 'cessionDocFile', urlKey: 'cessionDocumentUrl', label: getCessionDocLabel(owner.mutationType), required: true },
                   { key: 'identityDocFile', urlKey: 'identityDocumentUrl', label: "Pièce d'identité (optionnel)", required: false },
                 ] as const).map(({ key, urlKey, label, required }) => {
                   const file = owner[key];

@@ -1032,9 +1032,9 @@ export const useCCCFormState = ({
 
       const validGpsCoordinates = gpsCoordinates.filter(coord => { const lat = parseFloat(coord.lat); const lng = parseFloat(coord.lng); return !isNaN(lat) && !isNaN(lng) && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180 && coord.lat !== '' && coord.lng !== ''; });
       const gpsCoordinatesData = validGpsCoordinates.length > 0 ? validGpsCoordinates.map(coord => ({ borne: coord.borne, lat: parseFloat(coord.lat), lng: parseFloat(coord.lng) })) : undefined;
-      const prevOwnerDocs = new Map<PreviousOwner, { title?: string; identity?: string }>();
+      const prevOwnerDocs = new Map<PreviousOwner, { title?: string; identity?: string; cession?: string }>();
       for (const owner of previousOwners.filter(o => o.name && o.startDate)) {
-        const docs: { title?: string; identity?: string } = { title: owner.titleDocumentUrl || undefined, identity: owner.identityDocumentUrl || undefined };
+        const docs: { title?: string; identity?: string; cession?: string } = { cession: owner.cessionDocumentUrl || undefined, title: owner.titleDocumentUrl || undefined, identity: owner.identityDocumentUrl || undefined };
         if (owner.titleDocFile) {
           const url = await uploadFile(owner.titleDocFile, 'previous-owners');
           if (!url) { await rollbackUploadedFiles(); uploadFailToast(`le titre de ${owner.name}`); setUploading(false); return; }
@@ -1045,9 +1045,14 @@ export const useCCCFormState = ({
           if (!url) { await rollbackUploadedFiles(); uploadFailToast(`la pièce d'identité de ${owner.name}`); setUploading(false); return; }
           docs.identity = url;
         }
+        if (owner.cessionDocFile) {
+          const url = await uploadFile(owner.cessionDocFile, 'previous-owners');
+          if (!url) { await rollbackUploadedFiles(); uploadFailToast(`l'acte de cession de ${owner.name}`); setUploading(false); return; }
+          docs.cession = url;
+        }
         prevOwnerDocs.set(owner, docs);
       }
-      const ownershipHistoryData = previousOwners.filter(owner => owner.name && owner.startDate).map(owner => ({ titleDocumentUrl: prevOwnerDocs.get(owner)?.title, identityDocumentUrl: prevOwnerDocs.get(owner)?.identity, ownerName: owner.name, legalStatus: owner.legalStatus, entityType: owner.entityType || undefined, entitySubType: owner.entitySubType || undefined, entitySubTypeOther: owner.entitySubTypeOther || undefined, stateExploitedBy: owner.stateExploitedBy || undefined, startDate: owner.startDate, endDate: owner.endDate || undefined, mutationType: owner.mutationType || undefined }));
+      const ownershipHistoryData = previousOwners.filter(owner => owner.name && owner.startDate).map(owner => ({ cessionDocumentUrl: prevOwnerDocs.get(owner)?.cession, titleDocumentUrl: prevOwnerDocs.get(owner)?.title, identityDocumentUrl: prevOwnerDocs.get(owner)?.identity, ownerName: owner.name, legalStatus: owner.legalStatus, entityType: owner.entityType || undefined, entitySubType: owner.entitySubType || undefined, entitySubTypeOther: owner.entitySubTypeOther || undefined, stateExploitedBy: owner.stateExploitedBy || undefined, startDate: owner.startDate, endDate: owner.endDate || undefined, mutationType: owner.mutationType || undefined }));
       const existingOwnerDocUrl = editingContributionId && ownerDocRequired ? formData.ownerDocumentUrl : undefined;
       const existingTitleDocUrl = editingContributionId ? formData.titleDocumentUrl : undefined;
 
@@ -1301,7 +1306,7 @@ export const useCCCFormState = ({
 
         const ownerHistory = contrib.ownership_history as any[];
         if (ownerHistory && Array.isArray(ownerHistory) && ownerHistory.length > 0) {
-          setPreviousOwners(ownerHistory.map((o: any) => ({ id: crypto.randomUUID(), name: o.owner_name || o.ownerName || '', legalStatus: o.legal_status || o.legalStatus || 'Personne physique', entityType: o.entity_type || o.entityType || '', entitySubType: o.entity_sub_type || o.entitySubType || '', entitySubTypeOther: o.entity_sub_type_other || o.entitySubTypeOther || '', stateExploitedBy: o.state_exploited_by || o.stateExploitedBy || '', startDate: o.ownership_start_date || o.startDate || '', endDate: o.ownership_end_date || o.endDate || '', mutationType: o.mutation_type || o.mutationType || 'Vente', titleDocumentUrl: o.ownership_document_url || undefined, identityDocumentUrl: o.identity_document_url || undefined })));
+          setPreviousOwners(ownerHistory.map((o: any) => ({ id: crypto.randomUUID(), name: o.owner_name || o.ownerName || '', legalStatus: o.legal_status || o.legalStatus || 'Personne physique', entityType: o.entity_type || o.entityType || '', entitySubType: o.entity_sub_type || o.entitySubType || '', entitySubTypeOther: o.entity_sub_type_other || o.entitySubTypeOther || '', stateExploitedBy: o.state_exploited_by || o.stateExploitedBy || '', startDate: o.ownership_start_date || o.startDate || '', endDate: o.ownership_end_date || o.endDate || '', mutationType: o.mutation_type || o.mutationType || 'Vente', titleDocumentUrl: o.ownership_document_url || undefined, identityDocumentUrl: o.identity_document_url || undefined, cessionDocumentUrl: o.cession_document_url || o.cessionDocumentUrl || undefined })));
         }
 
         const gpsCoords = contrib.gps_coordinates as any[];

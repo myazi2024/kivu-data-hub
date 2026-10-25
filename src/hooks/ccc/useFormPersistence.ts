@@ -169,7 +169,7 @@ export function useFormPersistence(params: UseFormPersistenceParams): UseFormPer
   const saveFormDataToStorage = useCallback(() => {
     const dataToSave = {
       formData, currentOwners,
-      previousOwners: previousOwners.map(o => ({ ...o, titleDocFile: null, identityDocFile: null })),
+      previousOwners: previousOwners.map(o => ({ ...o, titleDocFile: null, identityDocFile: null, cessionDocFile: null })),
       taxRecords: taxRecords.map(tax => ({ ...tax, receiptFile: null })),
       mortgageRecords: mortgageRecords.map(m => ({ ...m, receiptFile: null })),
       permitMode,

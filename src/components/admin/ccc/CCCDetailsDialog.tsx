@@ -532,6 +532,8 @@ export const CCCDetailsDialog: React.FC<CCCDetailsDialogProps> = ({
                             {rr(owner, 'ownership_document_url', 'titleDocumentUrl')
                               ? <a href={rr(owner, 'ownership_document_url', 'titleDocumentUrl')} target="_blank" rel="noopener noreferrer" className="text-primary underline text-xs">Titre de propriété</a>
                               : <span className="text-xs text-muted-foreground">Titre non joint</span>}
+                            {rr(owner, 'cession_document_url', 'cessionDocumentUrl') &&
+                              <a href={rr(owner, 'cession_document_url', 'cessionDocumentUrl')} target="_blank" rel="noopener noreferrer" className="text-primary underline text-xs mr-2">Acte de cession</a>}
                             {rr(owner, 'identity_document_url', 'identityDocumentUrl') &&
                               <a href={rr(owner, 'identity_document_url', 'identityDocumentUrl')} target="_blank" rel="noopener noreferrer" className="text-primary underline text-xs">Pièce d'identité</a>}
                           </div>

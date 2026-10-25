@@ -1,3 +1,4 @@
+import { getCessionDocLabel } from '@/lib/ccc/cessionDoc';
 import { isConstructionRented } from '@/utils/rentalStatus';
 import { roadSurfaceLabel } from '@/components/cadastral/RoadBorderingSidesPanel';
 import React from 'react';
@@ -461,7 +462,7 @@ const ReviewTab: React.FC<ReviewTabProps> = ({
                     {owner.mutationType && <span> • {owner.mutationType}</span>}
                   </div>
                   <div className="text-muted-foreground text-[11px]">
-                    Titre : {owner.titleDocFile || owner.titleDocumentUrl ? '✓' : 'manquant'} • Pièce d'identité : {owner.identityDocFile || owner.identityDocumentUrl ? '✓' : 'Non'}
+                    Titre : {owner.titleDocFile || owner.titleDocumentUrl ? '✓' : 'manquant'} • {getCessionDocLabel(owner.mutationType)} : {owner.cessionDocFile || owner.cessionDocumentUrl ? '✓' : 'manquant'} • Pièce d'identité : {owner.identityDocFile || owner.identityDocumentUrl ? '✓' : 'Non'}
                   </div>
                   {owner.startDate && (
                     <div className="text-muted-foreground text-[11px]">
