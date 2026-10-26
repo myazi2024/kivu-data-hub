@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { Home, Map as MapIcon, Layers, LayoutGrid, User, Lock, Shield, LogIn } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
+import { getActiveBottomNavKey } from '@/lib/bottomNav';
 
 interface MediaColumn {
   title: string;
@@ -21,6 +22,36 @@ interface MobileBottomNavProps {
 export function MobileBottomNav({ testPrefix, landDataRestricted, isLoggedIn, isAdmin, mediaColumns }: MobileBottomNavProps) {
   const { pathname } = useLocation();
   const [mediaOpen, setMediaOpen] = useState(false);
+  const [hidden, setHidden] = useState(false);
+
+  // Masque la barre quand le clavier est ouvert (champ en saisie) ou au défilement vers le bas.
+  useEffect(() => {
+    let lastY = window.scrollY;
+    let keyboard = false;
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const isTyping = () => {
+      const el = document.activeElement as HTMLElement | null;
+      return !!el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable);
+    };
+    const onViewport = () => {
+      const vv = window.visualViewport;
+      keyboard = !!vv && window.innerHeight - vv.height > 150 && isTyping();
+      setHidden(keyboard);
+    };
+    const onScroll = () => {
+      const y = window.scrollY;
+      if (keyboard) return;
+      if (!reduce && Math.abs(y - lastY) > 8) setHidden(y > lastY && y > 120);
+      lastY = y;
+    };
+    window.visualViewport?.addEventListener('resize', onViewport);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      window.visualViewport?.removeEventListener('resize', onViewport);
+      window.removeEventListener('scroll', onScroll);
+    };
+  }, []);
+  useEffect(() => setHidden(false), [pathname]);
 
   useEffect(() => {
     document.body.classList.add('has-bottom-nav');
@@ -31,12 +62,13 @@ export function MobileBottomNav({ testPrefix, landDataRestricted, isLoggedIn, is
   const mediaHrefs = mediaColumns.flatMap(c => c.items.map(i => i.href));
   const accountHref = isLoggedIn ? `${testPrefix}/mon-compte` : '/auth';
 
+  const activeKey = mediaOpen ? 'media' : getActiveBottomNavKey(pathname, mediaHrefs);
   const items = [
-    { key: 'home', label: 'Accueil', icon: Home, href: '/', active: pathname === '/' || pathname === '/index' },
-    { key: 'data', label: 'Données', icon: Layers, href: `${testPrefix}/map`, active: pathname.endsWith('/map'), locked: landDataRestricted },
-    { key: 'cadastre', label: 'Cadastre', icon: MapIcon, href: `${testPrefix}/cadastral-map`, active: pathname.endsWith('/cadastral-map') },
-    { key: 'media', label: 'Médias', icon: LayoutGrid, active: mediaOpen || mediaHrefs.some(h => pathname.startsWith(h)) },
-    { key: 'account', label: isLoggedIn ? 'Compte' : 'Connexion', icon: isLoggedIn ? User : LogIn, href: accountHref, active: pathname.startsWith(accountHref) || pathname === '/auth' },
+    { key: 'home', label: 'Accueil', icon: Home, href: '/', active: activeKey === 'home' },
+    { key: 'data', label: 'Données', icon: Layers, href: `${testPrefix}/map`, active: activeKey === 'data', locked: landDataRestricted },
+    { key: 'cadastre', label: 'Cadastre', icon: MapIcon, href: `${testPrefix}/cadastral-map`, active: activeKey === 'cadastre' },
+    { key: 'media', label: 'Médias', icon: LayoutGrid, active: activeKey === 'media' },
+    { key: 'account', label: isLoggedIn ? 'Compte' : 'Connexion', icon: isLoggedIn ? User : LogIn, href: accountHref, active: activeKey === 'account' },
   ];
   const activeIndex = Math.max(0, items.findIndex(i => i.active));
   const hasActive = items.some(i => i.active);
@@ -45,34 +77,37 @@ export function MobileBottomNav({ testPrefix, landDataRestricted, isLoggedIn, is
     <>
       <nav
         aria-label="Navigation principale"
-        className="md:hidden fixed inset-x-0 bottom-0 z-50 border-t border-border/60 bg-background/90 backdrop-blur-md supports-[backdrop-filter]:bg-background/75 pb-[env(safe-area-inset-bottom)]"
+        className={cn(
+          'md:hidden fixed inset-x-0 bottom-0 z-50 border-t border-border bg-background shadow-[0_-4px_16px_-6px_hsl(var(--foreground)/0.12)] pb-[env(safe-area-inset-bottom)] transition-transform duration-200 ease-out motion-reduce:transition-none',
+          hidden && 'translate-y-full',
+        )}
       >
-        <div className="relative mx-auto grid h-16 max-w-md grid-cols-5 px-1">
+        <div className="relative mx-auto grid h-16 max-w-md grid-cols-5">
           {/* Pastille animée sous l'entrée active */}
           <span
             aria-hidden
             className={cn(
-              'pointer-events-none absolute left-1 top-1.5 flex h-8 w-[calc((100%-0.5rem)/5)] justify-center transition-[transform,opacity] duration-200 ease-out motion-reduce:transition-none',
+              'pointer-events-none absolute left-0 top-2 flex h-8 w-1/5 justify-center transition-[transform,opacity] duration-200 ease-out motion-reduce:transition-none',
               hasActive ? 'opacity-100' : 'opacity-0',
             )}
             style={{ transform: `translateX(${activeIndex * 100}%)` }}
           >
-            <span className="h-8 w-14 rounded-full bg-primary/10" />
+            <span className="h-8 w-14 rounded-full bg-primary/15" />
           </span>
           {items.map(item => {
             const Icon = item.icon;
             const content = (
               <>
-                <span className="relative flex h-8 items-center justify-center">
-                  <Icon className={cn('h-5 w-5 transition-transform duration-200 motion-reduce:transition-none', item.active && '-translate-y-px scale-110')} />
+                <span className="relative flex h-8 w-14 items-center justify-center">
+                  <Icon className={cn('h-5 w-5 transition-transform duration-200 motion-reduce:transition-none', item.active && '-translate-y-px scale-110 stroke-[2.4]')} />
                   {item.locked && <Lock className="absolute -right-2.5 -top-0.5 h-2.5 w-2.5" />}
                 </span>
-                <span className="text-[11px] font-medium leading-none">{item.label}</span>
+                <span className="text-[11px] leading-none tracking-tight">{item.label}</span>
               </>
             );
             const cls = cn(
-              'relative flex flex-col items-center justify-center gap-1 pt-1 transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-lg',
-              item.active ? 'text-primary' : 'text-muted-foreground hover:text-foreground',
+              'relative flex min-w-0 flex-col items-center justify-start gap-1 pt-2 transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-lg',
+              item.active ? 'text-primary font-semibold' : 'text-foreground/70 font-medium hover:text-foreground',
             );
             return item.href ? (
               <Link key={item.key} to={item.href} className={cls} aria-current={item.active ? 'page' : undefined}>{content}</Link>
@@ -85,19 +120,21 @@ export function MobileBottomNav({ testPrefix, landDataRestricted, isLoggedIn, is
 
       <Sheet open={mediaOpen} onOpenChange={setMediaOpen}>
         <SheetContent side="bottom" className="max-h-[80dvh] overflow-y-auto rounded-t-2xl pb-[calc(1rem+env(safe-area-inset-bottom))]">
+          <div aria-hidden className="mx-auto -mt-2 mb-3 h-1.5 w-10 rounded-full bg-muted" />
           <SheetHeader className="text-left">
             <SheetTitle>Médias & informations</SheetTitle>
           </SheetHeader>
           <div className="mt-3 space-y-4">
             {mediaColumns.map(column => (
               <div key={column.title}>
-                <p className="px-1 pb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">{column.title}</p>
+                <p className="px-1 pb-1.5 text-[13px] font-semibold text-foreground/80">{column.title}</p>
                 <div className="grid grid-cols-2 gap-2">
                   {column.items.map(item => (
-                    <Link key={item.href} to={item.href} className="flex min-h-12 items-center gap-2 rounded-xl border border-border bg-card px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent">
+                    {(() => { const current = pathname === item.href || pathname.startsWith(item.href + '/'); return (
+                    <Link key={item.href} to={item.href} aria-current={current ? 'page' : undefined} className={cn('flex min-h-12 items-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium transition-colors', current ? 'border-primary bg-primary/10 text-primary' : 'border-border bg-card text-foreground hover:bg-accent')}>
                       <item.icon className="h-4 w-4 shrink-0 text-primary" />
                       <span className="truncate">{item.name}</span>
-                    </Link>
+                    </Link>); })()}
                   ))}
                 </div>
               </div>
