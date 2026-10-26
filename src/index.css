@@ -833,3 +833,13 @@ html[data-loading-logo="ready"][data-loading-animation="none"] .animate-spin.rou
   .land-data-tagline { display: none; }
   .land-data-access-button { margin-top: 0.5rem; }
 }
+
+/* Barre de navigation basse (téléphones) : réserve l'espace en bas des pages */
+@media (max-width: 767px) {
+  body.has-bottom-nav {
+    padding-bottom: calc(4rem + env(safe-area-inset-bottom));
+  }
+  body.has-bottom-nav .bottom-nav-offset {
+    bottom: calc(4rem + env(safe-area-inset-bottom) + 0.75rem) !important;
+  }
+}
