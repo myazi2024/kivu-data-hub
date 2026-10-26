@@ -1,3 +1,4 @@
+import { MobileBottomNav } from '@/components/ui/MobileBottomNav';
 import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -66,6 +67,7 @@ const Navigation = () => {
   const monCompteHref = `${testPrefix}/mon-compte`;
 
   return (
+    <>
     <nav className="bg-background/95 backdrop-blur-sm border-b border-border sticky top-0 z-50">
       <div className="max-w-7xl mx-auto container-padding">
         <div className="flex justify-between items-center h-14 sm:h-16 md:h-18">
@@ -204,7 +206,7 @@ const Navigation = () => {
             <Button
               variant="ghost"
               size="sm"
-              className="lg:hidden h-11 w-11 p-0"
+              className="hidden md:inline-flex lg:hidden h-11 w-11 p-0"
               onClick={() => setIsOpen(!isOpen)}
               aria-expanded={isOpen}
               aria-label="Menu de navigation"
@@ -216,7 +218,7 @@ const Navigation = () => {
 
         {/* Mobile Navigation */}
         <div className={cn(
-          "lg:hidden overflow-hidden border-t border-border bg-background/95 backdrop-blur-sm transition-all duration-300 ease-in-out",
+          "hidden md:block lg:hidden overflow-hidden border-t border-border bg-background/95 backdrop-blur-sm transition-all duration-300 ease-in-out",
           isOpen ? "max-h-[calc(100dvh-4rem)] overflow-y-auto overscroll-contain opacity-100" : "max-h-0 opacity-0"
         )}>
           <div className="pb-3 sm:pb-4 space-y-1 px-2">
@@ -323,6 +325,14 @@ const Navigation = () => {
         </div>
       </div>
     </nav>
+    <MobileBottomNav
+      testPrefix={testPrefix}
+      landDataRestricted={isLandDataRestricted}
+      isLoggedIn={!!user}
+      isAdmin={isAdminOrSuperAdmin}
+      mediaColumns={mediaColumns}
+    />
+    </>
   );
 };
 
