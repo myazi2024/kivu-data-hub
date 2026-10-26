@@ -127,7 +127,7 @@ const CookieBanner: React.FC = () => {
   }
 
   return (
-    <div className="fixed bottom-4 left-4 right-4 z-50 max-w-md ml-auto">
+    <div className="bottom-nav-offset fixed bottom-4 left-4 right-4 z-50 max-w-md ml-auto">
       <Card className="border-border shadow-lg">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-base">

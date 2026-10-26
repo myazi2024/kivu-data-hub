@@ -52,11 +52,13 @@ export function MobileBottomNav({ testPrefix, landDataRestricted, isLoggedIn, is
           <span
             aria-hidden
             className={cn(
-              'pointer-events-none absolute top-1.5 h-8 w-[calc(20%-1.5rem)] rounded-full bg-primary/12 transition-[transform,opacity] duration-200 ease-out motion-reduce:transition-none',
+              'pointer-events-none absolute left-1 top-1.5 flex h-8 w-[calc((100%-0.5rem)/5)] justify-center transition-[transform,opacity] duration-200 ease-out motion-reduce:transition-none',
               hasActive ? 'opacity-100' : 'opacity-0',
             )}
-            style={{ left: 'calc(0.25rem + 0.75rem)', transform: `translateX(calc(${activeIndex} * (100% + 1.5rem)))`, width: 'calc((100% - 0.5rem) / 5 - 1.5rem)' }}
-          />
+            style={{ transform: `translateX(${activeIndex * 100}%)` }}
+          >
+            <span className="h-8 w-14 rounded-full bg-primary/10" />
+          </span>
           {items.map(item => {
             const Icon = item.icon;
             const content = (
