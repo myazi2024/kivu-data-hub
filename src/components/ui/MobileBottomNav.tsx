@@ -134,7 +134,7 @@ export function MobileBottomNav({ testPrefix, landDataRestricted, isLoggedIn, is
                     return (
                       <Link key={item.href} to={item.href} aria-current={current ? 'page' : undefined} className={cn('flex min-h-12 items-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium transition-colors', current ? 'border-primary bg-primary/10 text-primary' : 'border-border bg-card text-foreground hover:bg-accent')}>
                         <item.icon className="h-4 w-4 shrink-0 text-primary" />
-                        <span className="truncate">{item.name}</span>
+                        <span className="leading-tight">{item.name}</span>
                       </Link>
                     );
                   })}
