@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { rentalQuestion, rentalNote, occupiedQuestion, rentalModeQuestion, subjectOf, agree } from '@/lib/ccc/propertyCategoryGrammar';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -556,9 +557,9 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
       {rentalEligible && (
         <div className="space-y-1.5">
           <Label className="text-sm font-medium">
-            Ce{data.propertyCategory === 'Maison' || data.propertyCategory === 'Maison basse' || data.propertyCategory === 'Villa' ? 'tte ' : ' '}
-            {data.propertyCategory?.toLowerCase() || 'bien'} est-il mis en location ?
+            {rentalQuestion(data.propertyCategory)}
           </Label>
+          <p className="text-[11px] text-muted-foreground leading-snug">{rentalNote(data.propertyCategory)}</p>
           <div className="flex gap-2">
             <button
               type="button"
@@ -622,7 +623,7 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
           <div className="space-y-3">
             <div className="space-y-1.5">
               <Label className="text-sm font-medium">
-                Votre {data.propertyCategory?.toLowerCase() || 'bien'} est-il habité ?
+                {occupiedQuestion(data.propertyCategory)}
               </Label>
               <div className="flex gap-2">
                 <Button

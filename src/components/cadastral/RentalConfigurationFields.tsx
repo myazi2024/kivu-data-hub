@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { rentalQuestion, rentalNote, occupiedQuestion, rentalModeQuestion, subjectOf, agree } from '@/lib/ccc/propertyCategoryGrammar';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -128,7 +129,8 @@ const TODAY = new Date().toISOString().slice(0, 10);
 export const RentalConfigurationSelector: React.FC<CommonProps> = ({
   state, onPatch, propertyCategory, constructionType, highlightRequired,
 }) => {
-  const subject = buildSubject(propertyCategory, constructionType);
+  const subject = propertyCategory ? subjectOf(propertyCategory) : buildSubject(propertyCategory, constructionType);
+  const { pron, e } = agree(propertyCategory);
   const vocab = unitVocab(propertyCategory, constructionType);
   const isMissing = highlightRequired && !state.rentalConfiguration;
 
@@ -199,11 +201,11 @@ export const RentalConfigurationSelector: React.FC<CommonProps> = ({
   return (
     <div className="space-y-2 animate-fade-in">
       <Label className={cn('text-sm font-medium leading-snug block', isMissing && 'text-destructive')}>
-        Comment ce bien est-il mis en location ?
+        {rentalModeQuestion(propertyCategory)}
         {isMissing && <span className="text-destructive ml-1">*</span>}
       </Label>
       <p className="text-[11px] text-muted-foreground leading-snug">
-        {subject} {vocab.introQuestion}
+        {subject} {vocab.introQuestion.replace('est-il loué', `est-${pron} loué${e}`)}
       </p>
 
       <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Mode de mise en location">
