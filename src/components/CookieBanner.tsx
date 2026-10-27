@@ -129,13 +129,13 @@ const CookieBanner: React.FC = () => {
   return (
     <div className="bottom-nav-offset fixed bottom-4 left-4 right-4 z-50 max-w-md ml-auto">
       <Card className="border-border shadow-lg">
-        <CardHeader className="pb-3">
+        <CardHeader className="pb-2 max-md:p-4 max-md:pb-1">
           <CardTitle className="flex items-center gap-2 text-base">
             <Cookie className="h-4 w-4" />
             Gestion des cookies
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-4 max-md:space-y-3 max-md:p-4 max-md:pt-0">
           <p className="text-sm text-muted-foreground">
             Nous utilisons des cookies pour améliorer votre expérience sur notre site. 
             Vous pouvez choisir quels cookies accepter.
