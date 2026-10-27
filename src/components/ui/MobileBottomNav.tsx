@@ -129,13 +129,15 @@ export function MobileBottomNav({ testPrefix, landDataRestricted, isLoggedIn, is
               <div key={column.title}>
                 <p className="px-1 pb-1.5 text-[13px] font-semibold text-foreground/80">{column.title}</p>
                 <div className="grid grid-cols-2 gap-2">
-                  {column.items.map(item => (
-                    {(() => { const current = pathname === item.href || pathname.startsWith(item.href + '/'); return (
-                    <Link key={item.href} to={item.href} aria-current={current ? 'page' : undefined} className={cn('flex min-h-12 items-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium transition-colors', current ? 'border-primary bg-primary/10 text-primary' : 'border-border bg-card text-foreground hover:bg-accent')}>
-                      <item.icon className="h-4 w-4 shrink-0 text-primary" />
-                      <span className="truncate">{item.name}</span>
-                    </Link>); })()}
-                  ))}
+                  {column.items.map(item => {
+                    const current = pathname === item.href || pathname.startsWith(item.href + '/');
+                    return (
+                      <Link key={item.href} to={item.href} aria-current={current ? 'page' : undefined} className={cn('flex min-h-12 items-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium transition-colors', current ? 'border-primary bg-primary/10 text-primary' : 'border-border bg-card text-foreground hover:bg-accent')}>
+                        <item.icon className="h-4 w-4 shrink-0 text-primary" />
+                        <span className="leading-tight">{item.name}</span>
+                      </Link>
+                    );
+                  })}
                 </div>
               </div>
             ))}
