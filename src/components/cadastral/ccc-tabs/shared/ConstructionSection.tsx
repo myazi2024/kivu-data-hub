@@ -1,4 +1,5 @@
 import React from 'react';
+import { rentalQuestion, rentalNote, occupiedQuestion, rentalModeQuestion, subjectOf, agree } from '@/lib/ccc/propertyCategoryGrammar';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -502,9 +503,9 @@ export const ConstructionSection: React.FC<ConstructionSectionProps> = ({
       {rentalEligible && (
         <div className="space-y-1.5">
           <Label className="text-sm font-medium">
-            Ce{formData.propertyCategory === 'Maison' || formData.propertyCategory === 'Maison basse' || formData.propertyCategory === 'Villa' ? 'tte ' : ' '}
-            {formData.propertyCategory?.toLowerCase() || 'bien'} est-il mis en location ?
+            {rentalQuestion(formData.propertyCategory)}
           </Label>
+          <p className="text-[11px] text-muted-foreground leading-snug">{rentalNote(formData.propertyCategory)}</p>
           <div className="flex gap-2">
             <button
               type="button"
@@ -562,7 +563,7 @@ export const ConstructionSection: React.FC<ConstructionSectionProps> = ({
 
           <div className="space-y-3 pl-1">
             <div className="space-y-1.5">
-              <Label className="text-sm font-medium">Votre {formData.propertyCategory?.toLowerCase() || 'bien'} est-il habité ?</Label>
+              <Label className="text-sm font-medium">{occupiedQuestion(formData.propertyCategory)}</Label>
               <div className="flex gap-2">
                 <button type="button" onClick={() => { handleInputChange('isOccupied', true); }} className={cn("flex-1 py-3 px-4 rounded-2xl text-sm font-semibold transition-all", formData.isOccupied === true ? 'bg-primary text-primary-foreground shadow-lg' : 'bg-muted text-muted-foreground hover:bg-muted/80')}>Oui</button>
                 <button type="button" onClick={() => {
