@@ -8502,6 +8502,10 @@ export type Database = {
         Args: { _e: Json; _province: string; _ville: string }
         Returns: Json
       }
+      _derive_rental_units_occupant: {
+        Args: { _snake: boolean; _units: Json }
+        Returns: Json
+      }
       _dispute_make_reference: { Args: { _prefix: string }; Returns: string }
       _dispute_notify_admins: {
         Args: { _message: string; _title: string }
