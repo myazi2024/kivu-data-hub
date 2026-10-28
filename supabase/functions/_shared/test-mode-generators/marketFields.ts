@@ -62,6 +62,7 @@ export function buildTestMarketFields(
         const vacant = !ownerOccupied && u === count - 1 && idx % 4 === 0;
         return {
           label: `Local ${u + 1}`,
+          is_offered_for_rent: !ownerOccupied,
           is_occupied: !vacant,
           occupied_by: ownerOccupied ? 'owner' : vacant ? null : 'tenant',
           monthly_rent_usd: ownerOccupied || vacant ? null : seededInt(idx * 31 + u, rMin, rMax),
