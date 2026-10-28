@@ -6,6 +6,7 @@ export interface RentalUnitLike {
   label?: string;
   monthlyRentUsd?: number;
   isOccupied?: boolean;
+  isOfferedForRent?: boolean;
   occupiedBy?: 'owner' | 'tenant';
   occupantCount?: number;
   hostingCapacity?: number;
@@ -81,6 +82,7 @@ export const RentalSummary: React.FC<RentalSummaryProps> = ({
                   : <div>Loyer: {u.monthlyRentUsd ? `${Number(u.monthlyRentUsd).toFixed(2)} USD` : 'Non renseigné'}</div>}
                 {u.floor && <div>Emplacement: {formatFloorLabel(u.floor)}</div>}
                 {u.isOccupied !== undefined && <div>Occupé: {u.isOccupied ? 'Oui' : 'Non (vacant)'}</div>}
+                {typeof u.isOfferedForRent === 'boolean' && <div>Proposé à la location : {u.isOfferedForRent ? 'oui' : 'non'}</div>}
                 {u.isOccupied === true && u.occupiedBy && <div>Occupé par: {u.occupiedBy === 'owner' ? 'le propriétaire (bailleur)' : 'un locataire'}</div>}
                 {u.isOccupied === true && u.occupantCount ? <div>Occupants: {u.occupantCount} personne(s)</div> : null}
                 {u.hostingCapacity ? <div>Capacité d'accueil: {u.hostingCapacity} personne(s)</div> : null}
