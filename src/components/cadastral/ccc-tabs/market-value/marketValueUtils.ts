@@ -168,7 +168,7 @@ export const buildVacantTargets = (
     const subj = subjectFor(cat, type);
     if (rentalConfiguration === 'multi' && Array.isArray(rentalUnits) && rentalUnits.length > 0) {
       rentalUnits.forEach((u, i) => {
-        if (u?.isOccupied !== false) return;
+        if (u?.isOccupied !== false || u?.isOfferedForRent === false) return;
         const floorLbl = u?.floor === 'RDC' ? 'RDC' : (u?.floor ? `${u.floor}e étage` : undefined);
         const cy = Number(constructionYear) || Number(formData.constructionYear) || undefined;
         out.push({
