@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { withSupabaseRetry, isTransientSupabaseError } from '@/lib/supabaseRetry';
-import { isOwnerOccupiedUnit } from '@/utils/rentalStatus';
+import { isOwnerOccupiedUnit, isOutOfRentalUnit, deriveUnitOccupant } from '@/utils/rentalStatus';
 
 export interface CadastralContributionData {
   parcelNumber: string;
@@ -52,6 +52,7 @@ export interface CadastralContributionData {
     label?: string;
     monthlyRentUsd?: number;
     isOccupied?: boolean;
+    isOfferedForRent?: boolean;
     occupiedBy?: 'owner' | 'tenant';
     occupantCount?: number;
     hostingCapacity?: number;
@@ -211,7 +212,8 @@ export interface CadastralContributionData {
       label?: string;
       monthlyRentUsd?: number;
       isOccupied?: boolean;
-      occupiedBy?: 'owner' | 'tenant';
+      isOfferedForRent?: boolean;
+    occupiedBy?: 'owner' | 'tenant';
       occupantCount?: number;
       hostingCapacity?: number;
       actualUsage?: string;
@@ -223,6 +225,7 @@ export interface CadastralContributionData {
       floor?: string;
     }>;
     isOccupied?: boolean;
+    isOfferedForRent?: boolean;
     occupiedBy?: 'owner' | 'tenant';
     occupantCount?: number;
     hostingCapacity?: number;
@@ -449,17 +452,18 @@ export const useCadastralContribution = () => {
       rental_units: data.rentalUnits && data.rentalUnits.length > 0
         ? data.rentalUnits.map(u => ({
             label: u.label ?? null,
-            monthly_rent_usd: isOwnerOccupiedUnit(u) ? null : blankNum(u.monthlyRentUsd),
+            monthly_rent_usd: isOwnerOccupiedUnit(u) || isOutOfRentalUnit(u) ? null : blankNum(u.monthlyRentUsd),
             is_occupied: u.isOccupied ?? null,
-            occupied_by: u.isOccupied === true ? (u.occupiedBy ?? null) : null,
+            is_offered_for_rent: u.isOfferedForRent ?? null,
+            occupied_by: deriveUnitOccupant(u.isOfferedForRent, u.isOccupied) ?? (u.isOccupied === true ? (u.occupiedBy ?? null) : null),
             occupant_count: blankNum(u.occupantCount),
             hosting_capacity: blankNum(u.hostingCapacity),
             actual_usage: blank(u.actualUsage),
             actual_usage_other: blank(u.actualUsageOther),
             operational_capacity: blankNum(u.operationalCapacity),
             operational_capacity_unit: blank(u.operationalCapacityUnit),
-            lease_contract_url: isOwnerOccupiedUnit(u) ? null : blank(u.leaseContractUrl),
-            rental_start_date: isOwnerOccupiedUnit(u) ? null : blankDate(u.rentalStartDate),
+            lease_contract_url: isOwnerOccupiedUnit(u) || isOutOfRentalUnit(u) ? null : blank(u.leaseContractUrl),
+            rental_start_date: isOwnerOccupiedUnit(u) || isOutOfRentalUnit(u) ? null : blankDate(u.rentalStartDate),
             floor: u.floor ?? null,
           }))
         : null,

@@ -115,6 +115,21 @@ export function isOwnerOccupiedUnit(u: any): boolean {
   return occupied === true && by === 'owner';
 }
 
+/**
+ * Occupant déduit d'un local : proposé à la location + occupé → locataire ;
+ * non proposé + occupé → propriétaire (bailleur) ; inoccupé → aucun.
+ */
+export function deriveUnitOccupant(isOfferedForRent?: boolean | null, isOccupied?: boolean | null): 'owner' | 'tenant' | undefined {
+  if (isOccupied !== true || isOfferedForRent === undefined || isOfferedForRent === null) return undefined;
+  return isOfferedForRent ? 'tenant' : 'owner';
+}
+
+/** Local explicitement non proposé à la location (aucun loyer, date ni contrat). */
+export function isOutOfRentalUnit(u: any): boolean {
+  if (!u || typeof u !== 'object') return false;
+  return (u.isOfferedForRent ?? u.is_offered_for_rent) === false;
+}
+
 /** Local déclaré inoccupé : son loyer demandé se saisit dans l'onglet Valeur. */
 export function isVacantUnit(u: any): boolean {
   if (!u || typeof u !== 'object') return false;
@@ -135,7 +150,16 @@ export function normalizeRentalUnitFromDb(u: any): any {
   const pick = (camel: string, snake: string) => (u[camel] !== undefined && u[camel] !== null ? u[camel] : u[snake] ?? undefined);
   const numOrUndef = (v: unknown) => (v === undefined || v === null || v === '' ? undefined : Number(v));
   const by = pick('occupiedBy', 'occupied_by');
+  const occ = pick('isOccupied', 'is_occupied');
+  let offered = pick('isOfferedForRent', 'is_offered_for_rent');
+  if (offered === undefined) {
+    // Anciens enregistrements : locataire → oui, bailleur → non, vacant → oui.
+    if (occ === true && by === 'owner') offered = false;
+    else if (occ === true && by === 'tenant') offered = true;
+    else if (occ === false) offered = true;
+  }
   return {
+    isOfferedForRent: typeof offered === 'boolean' ? offered : undefined,
     label: pick('label', 'label') ?? undefined,
     monthlyRentUsd: numOrUndef(pick('monthlyRentUsd', 'monthly_rent_usd')),
     isOccupied: pick('isOccupied', 'is_occupied'),

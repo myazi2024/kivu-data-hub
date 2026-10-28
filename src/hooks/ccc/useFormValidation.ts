@@ -1,5 +1,5 @@
 import { getCessionDocLabel } from '@/lib/ccc/cessionDoc';
-import { isConstructionRented, isNonResidentialCategory, isSingleUnitRentalCategory, isOwnerOccupiedUnit } from '@/utils/rentalStatus';
+import { isConstructionRented, isNonResidentialCategory, isSingleUnitRentalCategory, isOwnerOccupiedUnit, isOutOfRentalUnit } from '@/utils/rentalStatus';
 import { minHeightForFloors } from '@/utils/buildingShapes';
 import { isResidentialActualUsage } from '@/utils/actualUsage';
 import { useMemo, useCallback } from 'react';
@@ -200,7 +200,7 @@ export function useFormValidation(params: UseFormValidationParams) {
         const showFloor = !isTerrainNu && formData.floorNumber ? parseInt(formData.floorNumber, 10) >= 1 : false;
         const unitWord = isTerrainNu ? 'Terrain' : 'Local';
         units.forEach((u: any, i: number) => {
-          const ownerOcc = !isTerrainNu && isOwnerOccupiedUnit(u);
+          const ownerOcc = !isTerrainNu && (isOwnerOccupiedUnit(u) || isOutOfRentalUnit(u));
           const vacant = !isTerrainNu && u?.isOccupied === false;
           if (!ownerOcc && !vacant && (!u || !u.monthlyRentUsd || Number(u.monthlyRentUsd) <= 0)) {
             missing.push({ field: `rentalUnit_${i}`, label: `Loyer mensuel du ${unitWord.toLowerCase()} #${i + 1}`, tab: 'location' });
@@ -212,8 +212,8 @@ export function useFormValidation(params: UseFormValidationParams) {
             } else if (residentialUse && (!u.hostingCapacity || Number(u.hostingCapacity) <= 0)) {
               missing.push({ field: `rentalUnitCapacity_${i}`, label: `${unitWord} #${i + 1} : capacité d'accueil`, tab: 'location' });
             }
-            if (u && u.isOccupied === true && !u.occupiedBy) {
-              missing.push({ field: `rentalUnitOccupiedBy_${i}`, label: `${unitWord} #${i + 1} : occupé par le propriétaire ou un locataire`, tab: 'location' });
+            if (!u || typeof u.isOfferedForRent !== 'boolean') {
+              missing.push({ field: `rentalUnitOffered_${i}`, label: `${unitWord} #${i + 1} : proposé à la location ?`, tab: 'location' });
             }
             if (u && u.isOccupied === true && residentialUse) {
               if (!u.occupantCount || Number(u.occupantCount) <= 0) {
@@ -276,7 +276,7 @@ export function useFormValidation(params: UseFormValidationParams) {
           }
           const showFloor = !cIsTerrainNu && c.floorNumber ? parseInt(c.floorNumber, 10) >= 1 : false;
           units.forEach((u: any, i: number) => {
-            const ownerOcc = !cIsTerrainNu && isOwnerOccupiedUnit(u);
+            const ownerOcc = !cIsTerrainNu && (isOwnerOccupiedUnit(u) || isOutOfRentalUnit(u));
             if (!ownerOcc && (!u || !u.monthlyRentUsd || Number(u.monthlyRentUsd) <= 0)) {
               missing.push({ field: `additionalRentalUnit_${idx}_${i}`, label: `Loyer du ${unitWord.toLowerCase()} #${i + 1} (construction #${idx + 2})`, tab: 'location' });
             }
@@ -287,8 +287,8 @@ export function useFormValidation(params: UseFormValidationParams) {
               } else if (uResidentialUse && (!u.hostingCapacity || Number(u.hostingCapacity) <= 0)) {
                 missing.push({ field: `additionalRentalUnitCapacity_${idx}_${i}`, label: `${unitWord} #${i + 1} : capacité (construction #${idx + 2})`, tab: 'location' });
               }
-              if (u && u.isOccupied === true && !u.occupiedBy) {
-                missing.push({ field: `additionalRentalUnitOccupiedBy_${idx}_${i}`, label: `${unitWord} #${i + 1} : occupé par le propriétaire ou un locataire (construction #${idx + 2})`, tab: 'location' });
+              if (!u || typeof u.isOfferedForRent !== 'boolean') {
+                missing.push({ field: `additionalRentalUnitOffered_${idx}_${i}`, label: `${unitWord} #${i + 1} : proposé à la location ? (construction #${idx + 2})`, tab: 'location' });
               }
               if (u && u.isOccupied === true && uResidentialUse) {
                 if (!u.occupantCount || Number(u.occupantCount) <= 0) {
