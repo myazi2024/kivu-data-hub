@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { withSupabaseRetry, isTransientSupabaseError } from '@/lib/supabaseRetry';
-import { isOwnerOccupiedUnit } from '@/utils/rentalStatus';
+import { isOwnerOccupiedUnit, isOutOfRentalUnit, deriveUnitOccupant } from '@/utils/rentalStatus';
 
 export interface CadastralContributionData {
   parcelNumber: string;

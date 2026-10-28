@@ -12,15 +12,17 @@ import { Home, Building2, DollarSign } from 'lucide-react';
 import { isTerrainNuCategory as isTerrainNuCategoryShared } from '@/utils/cccPredicates';
 import { buildActualUsageOptions, isResidentialActualUsage, resolveOperationalCapacityField, ACTUAL_USAGE_OTHER } from '@/utils/actualUsage';
 import LeaseContractField from './LeaseContractField';
-import { isOwnerOccupiedUnit } from '@/utils/rentalStatus';
+import { isOwnerOccupiedUnit, isOutOfRentalUnit, deriveUnitOccupant } from '@/utils/rentalStatus';
 
 export type RentalConfiguration = 'single' | 'multi';
 
 export interface RentalUnit {
   label?: string;
   monthlyRentUsd?: number;
+  /** Le local est-il proposé à la location ? Sert à déduire l'occupant. */
+  isOfferedForRent?: boolean;
   isOccupied?: boolean;
-  /** Occupant d'un local occupé : propriétaire (bailleur) ou locataire. */
+  /** Occupant déduit (jamais saisi) : propriétaire (bailleur) ou locataire : propriétaire (bailleur) ou locataire. */
   occupiedBy?: 'owner' | 'tenant';
   /** Nombre de personnes vivant actuellement dans le local (si occupé). */
   occupantCount?: number;
@@ -342,7 +344,15 @@ export const MonthlyRentFields: React.FC<CommonProps> = ({
 
   const updateUnit = (idx: number, patch: Partial<RentalUnit>) => {
     const list = resizeUnits(state.rentalUnits, state.rentalUnitsCount ?? MIN_UNITS);
-    list[idx] = { ...list[idx], ...patch };
+    const next: RentalUnit = { ...list[idx], ...patch };
+    next.occupiedBy = deriveUnitOccupant(next.isOfferedForRent, next.isOccupied);
+    if (next.isOfferedForRent === false) {
+      // Hors location (bailleur ou inoccupé) : ni loyer, ni date, ni contrat.
+      next.monthlyRentUsd = undefined;
+      next.rentalStartDate = undefined;
+      next.leaseContractUrl = undefined;
+    }
+    list[idx] = next;
     onPatch({ rentalUnits: list });
   };
 
@@ -389,8 +399,14 @@ export const MonthlyRentFields: React.FC<CommonProps> = ({
               && (unit.isOccupied === false || residentialUse) && !unit.hostingCapacity;
             const missingOccupants = !vocab.isTerrainNu && highlightRequired && unit.isOccupied === true
               && residentialUse && !unit.occupantCount;
-            const ownerOccupied = !vocab.isTerrainNu && unit.isOccupied === true && unit.occupiedBy === 'owner';
-            const missingOccupiedBy = !vocab.isTerrainNu && highlightRequired && unit.isOccupied === true && !unit.occupiedBy;
+            const outOfRental = !vocab.isTerrainNu && isOutOfRentalUnit(unit);
+            const ownerOccupied = (!vocab.isTerrainNu && unit.isOccupied === true && unit.occupiedBy === 'owner') || outOfRental;
+            const missingOffered = !vocab.isTerrainNu && highlightRequired && typeof unit.isOfferedForRent !== 'boolean';
+            const occupantNote = vocab.isTerrainNu || typeof unit.isOfferedForRent !== 'boolean' || unit.isOccupied === undefined ? null
+              : unit.isOfferedForRent && unit.isOccupied ? 'Occupé par un locataire — loyer, date et contrat de bail demandés.'
+              : unit.isOfferedForRent ? 'Vacant et à louer — pas de loyer en cours.'
+              : unit.isOccupied ? 'Occupé par le bailleur — aucun loyer n\'est demandé.'
+              : 'Inoccupé et hors location — aucun loyer n\'est demandé.';
             const vacant = !vocab.isTerrainNu && unit.isOccupied === false;
             const showRent = vocab.isTerrainNu || (unit.isOccupied === true && !ownerOccupied);
             const missingRent = highlightRequired && showRent && !unit.monthlyRentUsd;
@@ -446,6 +462,34 @@ export const MonthlyRentFields: React.FC<CommonProps> = ({
 
                   {!vocab.isTerrainNu && (
                   <div className="space-y-1">
+                    <Label className={cn('text-xs font-medium', missingOffered ? 'text-destructive' : 'text-muted-foreground')}>
+                      Ce {vocab.singular} est-il proposé à la location ? {missingOffered && <span className="text-destructive">*</span>}
+                    </Label>
+                    <div className="flex gap-2" role="radiogroup" aria-label={`Local ${idx + 1} : proposé à la location`}>
+                      {([true, false] as const).map((v) => (
+                        <button
+                          key={String(v)}
+                          type="button"
+                          role="radio"
+                          aria-checked={unit.isOfferedForRent === v}
+                          onClick={() => updateUnit(idx, { isOfferedForRent: v })}
+                          className={cn(
+                            'flex-1 h-9 rounded-xl text-xs font-semibold transition-all border-2',
+                            unit.isOfferedForRent === v
+                              ? 'border-primary bg-primary/10 text-primary'
+                              : 'border-border bg-background text-foreground hover:border-primary/40',
+                            missingOffered && 'border-destructive/60',
+                          )}
+                        >
+                          {v ? 'Oui' : 'Non'}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  )}
+
+                  {!vocab.isTerrainNu && (
+                  <div className="space-y-1">
                     <Label className={cn('text-xs font-medium', missingOccupied ? 'text-destructive' : 'text-muted-foreground')}>
                       Ce local est-il actuellement occupé ? {missingOccupied && <span className="text-destructive">*</span>}
                     </Label>
@@ -468,7 +512,7 @@ export const MonthlyRentFields: React.FC<CommonProps> = ({
                         type="button"
                         role="radio"
                         aria-checked={unit.isOccupied === false}
-                        onClick={() => updateUnit(idx, { isOccupied: false, monthlyRentUsd: undefined, occupiedBy: undefined, occupantCount: undefined, actualUsage: undefined, actualUsageOther: undefined, operationalCapacity: undefined, operationalCapacityUnit: undefined, leaseContractUrl: undefined })}
+                        onClick={() => updateUnit(idx, { isOccupied: false, monthlyRentUsd: undefined, occupantCount: undefined, actualUsage: undefined, actualUsageOther: undefined, operationalCapacity: undefined, operationalCapacityUnit: undefined, leaseContractUrl: undefined })}
                         className={cn(
                           'flex-1 h-9 rounded-xl text-xs font-semibold transition-all border-2',
                           unit.isOccupied === false
@@ -482,37 +526,8 @@ export const MonthlyRentFields: React.FC<CommonProps> = ({
                   </div>
                   )}
 
-                  {!vocab.isTerrainNu && unit.isOccupied === true && (
-                    <div className="space-y-1">
-                      <Label className={cn('text-xs font-medium', missingOccupiedBy ? 'text-destructive' : 'text-muted-foreground')}>
-                        Ce {vocab.singular} est occupé par : {missingOccupiedBy && <span className="text-destructive">*</span>}
-                      </Label>
-                      <div className="flex gap-2" role="radiogroup" aria-label={`Local ${idx + 1} : occupant`}>
-                        {([
-                          { value: 'owner', label: 'Le propriétaire (bailleur)' },
-                          { value: 'tenant', label: 'Un locataire' },
-                        ] as const).map((opt) => (
-                          <button
-                            key={opt.value}
-                            type="button"
-                            role="radio"
-                            aria-checked={unit.occupiedBy === opt.value}
-                            onClick={() => updateUnit(idx, opt.value === 'owner'
-                              ? { occupiedBy: 'owner', monthlyRentUsd: undefined, rentalStartDate: undefined, leaseContractUrl: undefined }
-                              : { occupiedBy: 'tenant' })}
-                            className={cn(
-                              'flex-1 min-h-9 px-2 py-1.5 rounded-xl text-xs font-semibold transition-all border-2',
-                              unit.occupiedBy === opt.value
-                                ? 'border-primary bg-primary/10 text-primary'
-                                : 'border-border bg-background text-foreground hover:border-primary/40',
-                              missingOccupiedBy && 'border-destructive/60',
-                            )}
-                          >
-                            {opt.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
+                  {occupantNote && (
+                    <p className="text-[11px] text-muted-foreground italic">{occupantNote}</p>
                   )}
 
                   {!vocab.isTerrainNu && unit.isOccupied === true && (

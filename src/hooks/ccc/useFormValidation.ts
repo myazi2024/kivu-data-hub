@@ -1,5 +1,5 @@
 import { getCessionDocLabel } from '@/lib/ccc/cessionDoc';
-import { isConstructionRented, isNonResidentialCategory, isSingleUnitRentalCategory, isOwnerOccupiedUnit } from '@/utils/rentalStatus';
+import { isConstructionRented, isNonResidentialCategory, isSingleUnitRentalCategory, isOwnerOccupiedUnit, isOutOfRentalUnit } from '@/utils/rentalStatus';
 import { minHeightForFloors } from '@/utils/buildingShapes';
 import { isResidentialActualUsage } from '@/utils/actualUsage';
 import { useMemo, useCallback } from 'react';
