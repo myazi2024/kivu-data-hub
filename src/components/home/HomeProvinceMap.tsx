@@ -1,3 +1,4 @@
+import { cn } from '@/lib/utils';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -69,8 +70,8 @@ export default function HomeProvinceMap() {
   };
 
   return (
-    <div className="relative min-w-0 md:flex-1 md:flex md:flex-col md:min-h-[278px]" aria-label="Circonscriptions foncières de la RDC">
-      <div ref={containerRef} className="relative h-[180px] sm:h-[260px] md:h-auto md:min-h-[215px] md:flex-1">
+    <div className="relative min-w-0 max-md:flex max-md:flex-1 max-md:min-h-0 max-md:flex-col md:flex-1 md:flex md:flex-col md:min-h-[278px]" aria-label="Circonscriptions foncières de la RDC">
+      <div ref={containerRef} className="relative max-md:flex-1 max-md:min-h-[60px] max-md:max-h-[260px] md:h-auto md:min-h-[215px] md:flex-1">
         {features.length ? (
           <svg
             viewBox={`0 0 ${dims.w} ${dims.h}`}
@@ -128,7 +129,7 @@ export default function HomeProvinceMap() {
           </>
         )}
       </div>
-      <div className="min-h-[52px] sm:min-h-[64px] lg:min-h-[54px] border-t border-primary-foreground/25 pt-2 text-primary-foreground" aria-live="polite">
+      <div className={cn('shrink-0 md:min-h-[64px] lg:min-h-[54px] border-t border-primary-foreground/25 pt-2 text-primary-foreground', !activeArea?.district && 'max-md:hidden')} aria-live="polite">
         {activeArea?.district ? (
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex min-w-0 items-start gap-2">
