@@ -59,7 +59,7 @@ const Index = () => {
         {/* JSON-LD Organization */}
         <script type="application/ld+json">{JSON.stringify(orgJsonLd)}</script>
       </Helmet>
-      <div className="min-h-dvh lg:flex lg:flex-col">
+      <div className="max-md:flex max-md:flex-col max-md:h-[calc(100dvh-4rem-env(safe-area-inset-bottom))] max-md:overflow-hidden min-h-dvh max-md:min-h-0 lg:flex lg:flex-col">
         <Navigation />
         <HeroSection />
         <PartnersSection />
