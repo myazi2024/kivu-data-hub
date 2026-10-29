@@ -129,7 +129,7 @@ export default function HomeProvinceMap() {
           </>
         )}
       </div>
-      <div className={cn("shrink-0 md:min-h-[52px] sm:min-h-[64px]", !activeArea?.district && "max-md:hidden")} data-legend className="lg:min-h-[54px] border-t border-primary-foreground/25 pt-2 text-primary-foreground" aria-live="polite">
+      <div className={cn('shrink-0 md:min-h-[64px] lg:min-h-[54px] border-t border-primary-foreground/25 pt-2 text-primary-foreground', !activeArea?.district && 'max-md:hidden')} aria-live="polite">
         {activeArea?.district ? (
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex min-w-0 items-start gap-2">
