@@ -1,6 +1,6 @@
 import { MobileBottomNav } from '@/components/ui/MobileBottomNav';
 import React, { useState, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Menu, X, User, ChevronDown, Shield, Newspaper, Briefcase, Tag, Heart, Building2, Handshake, Scale, Presentation, Lock } from 'lucide-react';
 import { LAND_DATA_ROLES } from '@/constants/roles';
@@ -47,6 +47,8 @@ const mediaColumns = [
 
 const Navigation = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const { pathname } = useLocation();
+  const isHome = pathname === '/';
   const [mobileMediaOpen, setMobileMediaOpen] = useState(false);
   const { user, profile, loading } = useAuth();
   const { isTestRoute } = useTestEnvironment();
@@ -68,7 +70,7 @@ const Navigation = () => {
 
   return (
     <>
-    <nav className="bg-background/95 backdrop-blur-sm border-b border-border sticky top-0 z-50">
+    <nav className={cn(isHome && "max-md:hidden", "bg-background/95 backdrop-blur-sm border-b border-border sticky top-0 z-50")}>
       <div className="max-w-7xl mx-auto container-padding">
         <div className="flex justify-between items-center h-14 sm:h-16 md:h-18">
           {/* Logo */}
@@ -158,15 +160,6 @@ const Navigation = () => {
                 ))}
               </NavigationMenuList>
             </NavigationMenu>
-
-            {isAdminOrSuperAdmin && (
-              <Link to="/admin">
-                <Button variant="ghost" size="sm" className="gap-2 text-sm font-medium">
-                  <Shield className="h-4 w-4" />
-                  Admin
-                </Button>
-              </Link>
-            )}
           </div>
 
           {/* Auth & Mobile Menu Button */}
@@ -301,14 +294,6 @@ const Navigation = () => {
                           </p>
                         )}
                       </div>
-                      {isAdminOrSuperAdmin && (
-                        <Link to="/admin" onClick={() => setIsOpen(false)}>
-                          <Button variant="ghost" size="sm" className="flex items-center space-x-1 px-3 py-2 w-full justify-start text-sm">
-                            <Shield className="h-4 w-4" />
-                            <span>Admin</span>
-                          </Button>
-                        </Link>
-                      )}
                     </>
                   ) : (
                     <Button variant="ghost" size="sm" asChild className="flex items-center space-x-1 px-3 py-2 w-full justify-start text-sm">
@@ -329,7 +314,7 @@ const Navigation = () => {
       testPrefix={testPrefix}
       landDataRestricted={isLandDataRestricted}
       isLoggedIn={!!user}
-      isAdmin={isAdminOrSuperAdmin}
+      logoSrc={logoSrc}
       mediaColumns={mediaColumns}
     />
     </>

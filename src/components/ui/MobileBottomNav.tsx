@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Map as MapIcon, Layers, LayoutGrid, User, Lock, Shield, LogIn } from 'lucide-react';
+import { Home, Map as MapIcon, Layers, LayoutGrid, User, Lock, LogIn } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 import { getActiveBottomNavKey } from '@/lib/bottomNav';
@@ -14,12 +14,12 @@ interface MobileBottomNavProps {
   testPrefix: string;
   landDataRestricted: boolean;
   isLoggedIn: boolean;
-  isAdmin: boolean;
+  logoSrc?: string | null;
   mediaColumns: MediaColumn[];
 }
 
 /** Barre de navigation fixe en bas de l'écran, téléphones uniquement (< md). */
-export function MobileBottomNav({ testPrefix, landDataRestricted, isLoggedIn, isAdmin, mediaColumns }: MobileBottomNavProps) {
+export function MobileBottomNav({ testPrefix, landDataRestricted, isLoggedIn, logoSrc, mediaColumns }: MobileBottomNavProps) {
   const { pathname } = useLocation();
   const [mediaOpen, setMediaOpen] = useState(false);
   const [hidden, setHidden] = useState(false);
@@ -99,7 +99,11 @@ export function MobileBottomNav({ testPrefix, landDataRestricted, isLoggedIn, is
             const content = (
               <>
                 <span className="relative flex h-8 w-14 items-center justify-center">
+                  {item.key === 'home' && logoSrc ? (
+                    <img src={logoSrc} alt="" className={cn('h-6 w-6 rounded-full object-contain transition-[transform,filter,opacity] duration-200 motion-reduce:transition-none', item.active ? 'scale-110' : 'opacity-70 grayscale')} />
+                  ) : (
                   <Icon className={cn('h-5 w-5 transition-transform duration-200 motion-reduce:transition-none', item.active && '-translate-y-px scale-110 stroke-[2.4]')} />
+                  )}
                   {item.locked && <Lock className="absolute -right-2.5 -top-0.5 h-2.5 w-2.5" />}
                 </span>
                 <span className="text-[11px] leading-none tracking-tight">{item.label}</span>
@@ -141,11 +145,6 @@ export function MobileBottomNav({ testPrefix, landDataRestricted, isLoggedIn, is
                 </div>
               </div>
             ))}
-            {isAdmin && (
-              <Link to="/admin" className="flex min-h-12 items-center gap-2 rounded-xl border border-border bg-card px-3 py-2 text-sm font-medium text-foreground hover:bg-accent">
-                <Shield className="h-4 w-4 text-primary" /> Administration
-              </Link>
-            )}
           </div>
         </SheetContent>
       </Sheet>

@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronDown, Search, X } from 'lucide-react';
+import { ChevronDown, Search, Shield, X } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Input } from '@/components/ui/input';
@@ -14,6 +15,8 @@ interface UserSidebarProps {
 }
 
 export function UserSidebar({ activeTab, onNavigate }: UserSidebarProps) {
+  const { profile } = useAuth();
+  const isAdmin = profile?.role === 'admin' || profile?.role === 'super_admin';
   const [search, setSearch] = useState('');
   const [openSections, setOpenSections] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(userMenuSections.map(section => [section.category, true])),
@@ -69,6 +72,16 @@ export function UserSidebar({ activeTab, onNavigate }: UserSidebarProps) {
 
       <ScrollArea className="flex-1 py-2">
         <nav className="space-y-1.5 px-3" aria-label="Navigation de mon espace">
+          {isAdmin && !search && (
+            <Link
+              to="/admin"
+              onClick={onNavigate}
+              className="flex min-h-9 items-center gap-3 rounded-md border border-primary/30 bg-primary/10 px-3 py-2 text-sm font-medium text-primary transition-colors hover:bg-primary/15"
+            >
+              <Shield className="h-4 w-4 shrink-0" />
+              <span className="truncate">Administration</span>
+            </Link>
+          )}
           {sections.length === 0 && (
             <p className="p-3 text-center text-xs text-muted-foreground">Aucune rubrique trouvée</p>
           )}
