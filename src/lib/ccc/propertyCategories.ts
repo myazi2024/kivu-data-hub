@@ -14,3 +14,17 @@ export const CATEGORY_TO_CONSTRUCTION_TYPES: Record<string, string[]> = {
   'Local commercial': ['Commerciale'], 'Immeuble/Bâtiment': ['Résidentielle', 'Commerciale', 'Industrielle'],
   'Entrepôt/Hangar': ['Industrielle', 'Agricole'], 'Terrain nu': ['Terrain nu'],
 };
+
+/** Tous les types de construction proposés (ordre stable). */
+export const CONSTRUCTION_TYPE_OPTIONS: string[] = Array.from(
+  new Set(Object.values(CATEGORY_TO_CONSTRUCTION_TYPES).flat()),
+);
+
+/** Catégories de bien compatibles avec un type de construction (correspondance inverse). */
+export const getCategoriesForConstructionType = (
+  type: string | undefined | null,
+  categories: readonly string[] = PROPERTY_CATEGORY_OPTIONS,
+): string[] => {
+  if (!type) return [];
+  return categories.filter((c) => (CATEGORY_TO_CONSTRUCTION_TYPES[c] || []).includes(type));
+};
