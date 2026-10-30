@@ -291,6 +291,7 @@ export const useCCCFormState = ({
       parcelNumber: prev.parcelNumber
         ? composeParcelNumber(type, stripParcelPrefix(prev.parcelNumber))
         : prev.parcelNumber,
+      landDistrict: type === sectionType ? prev.landDistrict : undefined,
       ville: undefined, commune: undefined, quartier: undefined, avenue: undefined,
       territoire: undefined, collectivite: undefined, groupement: undefined, village: undefined
     }));
@@ -1274,6 +1275,7 @@ export const useCCCFormState = ({
           buildingHeight: (contrib as any).building_height != null ? Number((contrib as any).building_height) : undefined,
           areaSqm: contrib.area_sqm || undefined, province: contrib.province || undefined,
           landDistrict: (contrib as any).land_district || undefined,
+          isLakeside: (contrib as any).is_lakeside ?? undefined,
           ville: contrib.ville || undefined, commune: contrib.commune || undefined,
           quartier: contrib.quartier || undefined, avenue: contrib.avenue || undefined,
           houseNumber: (contrib as any).house_number || undefined, territoire: contrib.territoire || undefined,
@@ -1388,55 +1390,17 @@ export const useCCCFormState = ({
   // Zone déduite de la circonscription foncière (source de vérité principale).
   const districtSectionType = getSectionTypeForLandDistrict(formData.landDistrict);
 
-  // Circonscription → zone SU/SR. La purge des blocs géographiques n'a lieu que
-  // lorsqu'une zone déjà établie change réellement (pas au premier remplissage
-  // ni pendant la restauration d'une contribution).
-  useEffect(() => {
-    if (isLoadingFromDbRef.current) return;
-    if (!districtSectionType || districtSectionType === sectionType) return;
-    if (!sectionType) {
-      setSectionType(districtSectionType);
-      setFormData(prev => ({
-        ...prev,
-        parcelNumber: prev.parcelNumber
-          ? composeParcelNumber(districtSectionType, stripParcelPrefix(prev.parcelNumber))
-          : prev.parcelNumber,
-      }));
-      return;
-    }
-    handleSectionTypeChange(districtSectionType);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [districtSectionType]);
-
-  // Circonscription effacée (changement de province, remise à zéro du bloc) :
-  // la zone déduite et le préfixe SU/SR du numéro ne sont plus fondés.
-  // Exception : un numéro issu d'une recherche cadastrale reste la source.
-  const landDistrictValue = formData.landDistrict;
-  useEffect(() => {
-    if (isLoadingFromDbRef.current) return;
-    if (landDistrictValue && landDistrictValue.trim()) return;
-    if (sectionTypeAutoDetected) return;
-    if (!sectionType) return;
-    setSectionType('');
-    setFormData(prev => ({
-      ...prev,
-      parcelNumber: prev.parcelNumber ? stripParcelPrefix(prev.parcelNumber) : prev.parcelNumber,
-    }));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [landDistrictValue]);
-
   // Repli : détection depuis le numéro de parcelle uniquement quand la
   // circonscription est inconnue (saisie manuelle / province non répertoriée).
   // Les boutons SU/SR ne sont verrouillés que si le numéro REÇU de la recherche
   // portait réellement un préfixe SU/SR.
   useEffect(() => {
-    if (districtSectionType) { setSectionTypeAutoDetected(false); return; }
     const upper = (formData.parcelNumber || '').toUpperCase().trim();
     const lockable = /^S\s*[UR]/i.test((parcelNumber || '').trim());
     if (upper.startsWith('SU')) { setSectionType('urbaine'); setSectionTypeAutoDetected(lockable); }
     else if (upper.startsWith('SR')) { setSectionType('rurale'); setSectionTypeAutoDetected(lockable); }
     else { setSectionTypeAutoDetected(false); }
-  }, [formData.parcelNumber, parcelNumber, districtSectionType]);
+  }, [formData.parcelNumber, parcelNumber]);
 
 
 
