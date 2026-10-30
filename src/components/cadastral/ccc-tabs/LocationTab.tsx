@@ -187,151 +187,98 @@ const LocationTab: React.FC<LocationTabProps> = ({
               </Select>
             </div>
 
-            {/* Circonscription foncière — dépendante de la province */}
+            {/* Section — choisie manuellement */}
             <div className="space-y-1.5 min-w-0">
-              <Label htmlFor="landDistrict" className="text-sm min-h-10 flex items-end leading-tight">Circonscription foncière *</Label>
-              {formData.province && getLandDistrictsForProvince(formData.province).length > 0 ? (
-                <Select
-                  value={formData.landDistrict || ''}
-                  onValueChange={(value) => handleInputChange('landDistrict', value)}
-                >
-                  <SelectTrigger id="landDistrict" className="h-9 text-sm rounded-xl border min-w-0">
-                    <SelectValue placeholder="Sélectionner" />
-                  </SelectTrigger>
-                  <SelectContent className="rounded-xl max-h-48 overflow-y-auto w-56">
-                    {getLandDistrictsForProvince(formData.province).map(d => (
-                      <SelectItem key={d} value={d} className="text-sm py-2 rounded-lg">{d}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              ) : (
-                <Input
-                  id="landDistrict"
-                  value={formData.landDistrict || ''}
-                  onChange={(e) => handleInputChange('landDistrict', e.target.value)}
-                  disabled={!formData.province}
-                  placeholder={!formData.province ? "Province d'abord" : 'Saisir la circonscription'}
-                  className="h-9 text-sm rounded-xl border min-w-0"
-                />
-              )}
+              <div className="min-h-10 flex items-end gap-1">
+                <Label htmlFor="sectionType" className="text-sm leading-tight">Section *</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button type="button" variant="ghost" size="sm" className="h-5 w-5 p-0 hover:bg-primary/10 rounded-full">
+                      <Info className="h-3.5 w-3.5 text-muted-foreground" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-72 text-sm rounded-xl">
+                    <h4 className="font-semibold mb-1.5 text-sm">Section cadastrale</h4>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      Section urbaine (SU) : Ville → Commune → Quartier<br />
+                      Section rurale (SR) : Territoire → Collectivité → Village
+                    </p>
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <Select
+                value={sectionType || ''}
+                onValueChange={(value) => handleSectionTypeChange(value as 'urbaine' | 'rurale')}
+                disabled={!formData.province || sectionTypeAutoDetected}
+              >
+                <SelectTrigger id="sectionType" className={cn('h-9 text-sm rounded-xl border min-w-0', highlightRequiredFields && formData.province && !sectionType && 'ring-2 ring-destructive')}>
+                  <SelectValue placeholder={!formData.province ? "Province d'abord" : 'Sélectionner'} />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl">
+                  <SelectItem value="urbaine" className="text-sm py-2 rounded-lg">Section urbaine</SelectItem>
+                  <SelectItem value="rurale" className="text-sm py-2 rounded-lg">Section rurale</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
-          {formData.province && getLandDistrictsForProvince(formData.province).length === 0 && (
-            <p className="text-xs text-muted-foreground">
-              Aucune circonscription répertoriée pour cette province : saisissez-la manuellement.
+          {sectionTypeAutoDetected && (
+            <p className="text-xs text-primary flex items-center gap-1">
+              <CheckCircle2 className="h-3 w-3" />
+              Section reprise du numéro de votre recherche
             </p>
           )}
 
-          {/* Zone cadastrale : déduite de la circonscription foncière */}
-          {formData.province && (
-            <div className="space-y-2 animate-fade-in">
-              {districtSectionType ? (
-                <>
-                  <div className="flex items-center gap-2">
-                    <Badge variant="secondary" className="text-xs">
-                      {districtSectionType === 'urbaine' ? 'Section urbaine (SU)' : 'Section rurale (SR)'}
-                    </Badge>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button type="button" variant="ghost" size="sm" className="h-5 w-5 p-0 hover:bg-primary/10 rounded-full">
-                          <Info className="h-3.5 w-3.5 text-muted-foreground" />
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-72 text-sm rounded-xl">
-                        <h4 className="font-semibold mb-1.5 text-sm">Section cadastrale</h4>
-                        <p className="text-xs text-muted-foreground leading-relaxed">
-                          La zone est déduite de la circonscription foncière.<br />
-                          SU (Urbain) : Ville → Commune → Quartier<br />
-                          SR (Rural) : Territoire → Collectivité → Village
-                        </p>
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-                  {/^S\s*[UR]/i.test((parcelNumber || '').trim()) &&
-                    ((parcelNumber || '').trim().toUpperCase().startsWith('SU') ? 'urbaine' : 'rurale') !== districtSectionType && (
-                    <Alert variant="destructive" className="rounded-xl">
-                      <AlertTriangle className="h-4 w-4" />
-                      <AlertDescription className="text-xs">
-                        Le numéro repris de votre recherche indique une autre zone que la circonscription
-                        sélectionnée : vérifiez la circonscription foncière.
-                      </AlertDescription>
-                    </Alert>
-                  )}
-                </>
-              ) : (
-                <>
-                  <div className="flex items-center justify-between">
-                    <Label className="text-sm">Zone urbaine ou Zone rurale ? *</Label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button type="button" variant="ghost" size="sm" className="h-5 w-5 p-0 hover:bg-primary/10 rounded-full">
-                          <Info className="h-3.5 w-3.5 text-muted-foreground" />
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-72 text-sm rounded-xl">
-                        <h4 className="font-semibold mb-1.5 text-sm">Section cadastrale</h4>
-                        <p className="text-xs text-muted-foreground leading-relaxed">
-                          SU (Urbain): Ville → Commune → Quartier<br />
-                          SR (Rural): Territoire → Collectivité → Village
-                        </p>
-                      </PopoverContent>
-                    </Popover>
-                  </div>
+          {/* Circonscription foncière — dépendante de la province et de la section */}
+          {(() => {
+            const districts = formData.province && sectionType ? getLandDistrictsForProvince(formData.province, sectionType) : [];
+            const hasList = !!formData.province && getLandDistrictsForProvince(formData.province).length > 0;
+            return (
+              <div className="space-y-1.5 min-w-0">
+                <Label htmlFor="landDistrict" className="text-sm">Circonscription foncière *</Label>
+                {hasList ? (
+                  <Select
+                    value={formData.landDistrict || ''}
+                    onValueChange={(value) => handleInputChange('landDistrict', value)}
+                    disabled={!sectionType}
+                  >
+                    <SelectTrigger id="landDistrict" className="h-9 text-sm rounded-xl border min-w-0">
+                      <SelectValue placeholder={!sectionType ? "Section d'abord" : 'Sélectionner'} />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl max-h-48 overflow-y-auto">
+                      {districts.map(d => (
+                        <SelectItem key={d} value={d} className="text-sm py-2 rounded-lg">{d}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <Input
+                    id="landDistrict"
+                    value={formData.landDistrict || ''}
+                    onChange={(e) => handleInputChange('landDistrict', e.target.value)}
+                    disabled={!formData.province || !sectionType}
+                    placeholder={!formData.province ? "Province d'abord" : !sectionType ? "Section d'abord" : 'Saisir la circonscription'}
+                    className="h-9 text-sm rounded-xl border min-w-0"
+                  />
+                )}
+                {formData.province && !hasList && (
                   <p className="text-xs text-muted-foreground">
-                    Circonscription non répertoriée : précisez la zone manuellement.
+                    Aucune circonscription répertoriée pour cette province : saisissez-la manuellement.
                   </p>
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => !sectionTypeAutoDetected && handleSectionTypeChange('urbaine')}
-                      disabled={sectionTypeAutoDetected}
-                      className={cn(
-                        "flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all",
-                        sectionType === 'urbaine'
-                          ? 'bg-primary text-primary-foreground shadow-md'
-                          : 'bg-muted text-muted-foreground hover:bg-muted/80',
-                        sectionTypeAutoDetected && 'cursor-not-allowed opacity-70'
-                      )}
-                    >
-                      SU - Urbaine
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => !sectionTypeAutoDetected && handleSectionTypeChange('rurale')}
-                      disabled={sectionTypeAutoDetected}
-                      className={cn(
-                        "flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all",
-                        sectionType === 'rurale'
-                          ? 'bg-primary text-primary-foreground shadow-md'
-                          : 'bg-muted text-muted-foreground hover:bg-muted/80',
-                        sectionTypeAutoDetected && 'cursor-not-allowed opacity-70'
-                      )}
-                    >
-                      SR - Rurale
-                    </button>
-                  </div>
-                  {sectionTypeAutoDetected && (
-                    <p className="text-xs text-primary flex items-center gap-1 justify-center">
-                      <CheckCircle2 className="h-3 w-3" />
-                      Type auto-détecté depuis le numéro
-                    </p>
-                  )}
-                </>
-              )}
+                )}
+              </div>
+            );
+          })()}
 
-              {/* Numéro de la parcelle — dépendant de la zone déduite et du type de titre.
-                  « Fiche parcellaire » : non demandé (sauf si déjà identifié par une recherche). */}
-              {sectionType && isParcelNumberRequired && (
-                <ParcelNumberField
-                  sectionType={sectionType}
-                  value={formData.parcelNumber || ''}
-                  onChange={(v) => handleInputChange('parcelNumber', v)}
-                  locked={sectionTypeAutoDetected}
-                  highlight={highlightRequiredFields}
-                />
-              )}
-            </div>
-
+          {/* Numéro de la parcelle — dépendant de la section et du type de titre. */}
+          {formData.province && sectionType && isParcelNumberRequired && (
+            <ParcelNumberField
+              sectionType={sectionType}
+              value={formData.parcelNumber || ''}
+              onChange={(v) => handleInputChange('parcelNumber', v)}
+              locked={sectionTypeAutoDetected}
+              highlight={highlightRequiredFields}
+            />
+          )}
           )}
 
         </CardContent>
@@ -356,6 +303,24 @@ const LocationTab: React.FC<LocationTabProps> = ({
           availableTerritoires={availableTerritoires}
           availableCollectivites={availableCollectivites}
         />
+      )}
+
+
+      {/* Parcelle au bord du lac */}
+      {sectionType && formData.province && (
+        <Card className={cn('rounded-2xl', highlightRequiredFields && formData.isLakeside === undefined && 'ring-2 ring-destructive')}>
+          <CardContent className="p-3 space-y-2">
+            <Label className="text-sm font-medium">Parcelle au bord du lac *</Label>
+            <RadioGroup
+              value={formData.isLakeside === undefined ? '' : formData.isLakeside ? 'yes' : 'no'}
+              onValueChange={(v) => handleInputChange('isLakeside', v === 'yes')}
+              className="flex gap-4"
+            >
+              <div className="flex items-center gap-2"><RadioGroupItem value="yes" id="lakeside-yes" /><Label htmlFor="lakeside-yes" className="text-sm font-normal">Oui</Label></div>
+              <div className="flex items-center gap-2"><RadioGroupItem value="no" id="lakeside-no" /><Label htmlFor="lakeside-no" className="text-sm font-normal">Non</Label></div>
+            </RadioGroup>
+          </CardContent>
+        </Card>
       )}
 
       {/* Construction block (moved from Infos tab) — between admin block and map.
