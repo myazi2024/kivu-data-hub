@@ -134,6 +134,8 @@ export interface CadastralContributionData {
   parcelSides?: Array<{ name: string; length: string }>;
   province?: string;
   landDistrict?: string;
+  /** Parcelle riveraine d'un lac (active la taxe compensatoire des 10 m de rive). */
+  isLakeside?: boolean;
   ville?: string;
   commune?: string;
   quartier?: string;
@@ -471,6 +473,7 @@ export const useCadastralContribution = () => {
       previous_permit_number: data.previousPermitNumber || data.permitRequest?.originalPermitNumber,
       province: data.province,
       land_district: data.landDistrict || null,
+      is_lakeside: data.isLakeside ?? null,
       ville: data.ville,
       commune: data.commune,
       quartier: data.quartier,
