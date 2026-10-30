@@ -429,13 +429,20 @@ export const landDistrictsData: { [province: string]: string[] } = {
 };
 
 /** Circonscriptions foncières d'une province (matching tolérant aux accents/tirets). */
-export const getLandDistrictsForProvince = (province: string): string[] => {
+export const getLandDistrictsForProvince = (province: string, section?: 'urbaine' | 'rurale' | ''): string[] => {
   if (!province) return [];
-  const direct = landDistrictsData[province];
-  if (direct) return direct;
-  const target = normalizeProvinceName(province);
-  const key = Object.keys(landDistrictsData).find(p => normalizeProvinceName(p) === target);
-  return key ? landDistrictsData[key] : [];
+  let list = landDistrictsData[province];
+  if (!list) {
+    const target = normalizeProvinceName(province);
+    const key = Object.keys(landDistrictsData).find(p => normalizeProvinceName(p) === target);
+    list = key ? landDistrictsData[key] : [];
+  }
+  if (!section) return list;
+  // Les circonscriptions non classées restent proposées dans les deux sections.
+  return list.filter(d => {
+    const zone = getSectionTypeForLandDistrict(d);
+    return !zone || zone === section;
+  });
 };
 
 /**
