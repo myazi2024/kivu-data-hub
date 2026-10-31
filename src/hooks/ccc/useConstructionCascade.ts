@@ -1,5 +1,6 @@
 import { isUnbuiltLand } from '@/utils/cccPredicates';
-import { useCallback, useEffect } from 'react';
+import { useEffect } from 'react';
+import { getCategoriesForConstructionType } from '@/lib/ccc/propertyCategories';
 import { resolveAvailableUsages } from '@/utils/constructionUsageResolver';
 import type { CadastralContributionData } from '@/hooks/useCadastralContribution';
 
@@ -28,8 +29,7 @@ interface Params {
 }
 
 /**
- * Construction cascade: PropertyCategory → Type → (Natures + Materials) → Usage / Standing.
- * Auto-fills nature from material via reverse map.
+ * Cascade construction : Type → Catégorie de bien ; Type → Nature → Matériaux ; Type + Nature → Usage ; Nature → Standing.
  */
 export function useConstructionCascade({
   formData,
@@ -42,119 +42,57 @@ export function useConstructionCascade({
   setAvailableDeclaredUsages,
   setAvailableStandings,
 }: Params): void {
-  // Helper: build reverse mapping material -> nature
-  const buildMaterialToNatureMap = useCallback(
-    (materialsMap: Record<string, string[]>): Record<string, string> => {
-      const reverseMap: Record<string, string> = {};
-      for (const [nature, materials] of Object.entries(materialsMap)) {
-        for (const mat of materials) {
-          if (!reverseMap[mat]) reverseMap[mat] = nature;
-        }
-      }
-      return reverseMap;
-    },
-    [],
-  );
-
-  // PropertyCategory → ConstructionType
+  // Types proposés : tous (le type vient en premier).
   useEffect(() => {
-    if (!formData.propertyCategory) {
-      setAvailableConstructionTypes([]);
-      handleInputChange('constructionType', undefined);
-      return;
-    }
-    const allowedTypes = categoryToConstructionTypes[formData.propertyCategory] || [];
-    setAvailableConstructionTypes(allowedTypes);
-    if (allowedTypes.length === 1) {
-      if (formData.constructionType !== allowedTypes[0]) handleInputChange('constructionType', allowedTypes[0]);
-    } else if (formData.constructionType && !allowedTypes.includes(formData.constructionType)) {
-      handleInputChange('constructionType', undefined);
-    }
+    setAvailableConstructionTypes(Array.from(new Set(Object.values(categoryToConstructionTypes).flat())));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [formData.propertyCategory]);
+  }, []);
 
-  // ConstructionType → Natures + Materials (and reset downstream)
+  // ConstructionType → Catégorie de bien + Natures (et purge des valeurs incompatibles)
   useEffect(() => {
     if (!formData.constructionType) {
       setAvailableConstructionNatures([]);
       handleInputChange('constructionNature', undefined);
-      setAvailableDeclaredUsages([]);
-      handleInputChange('declaredUsage', undefined);
       setAvailableConstructionMaterials([]);
       handleInputChange('constructionMaterials', undefined);
-      setAvailableStandings([]);
-      handleInputChange('standing', undefined);
       return;
     }
+    const categories = getCategoriesForConstructionType(formData.constructionType);
+    if (categories.length === 1) {
+      if (formData.propertyCategory !== categories[0]) handleInputChange('propertyCategory', categories[0]);
+    } else if (formData.propertyCategory && !categories.includes(formData.propertyCategory)) {
+      handleInputChange('propertyCategory', undefined);
+    }
+
     const natureMap = getPicklistDependentOptions('picklist_construction_nature');
     const natures = natureMap[formData.constructionType] || [];
     setAvailableConstructionNatures(natures);
-
-    const dbMaterialsMap = getPicklistDependentOptions('picklist_construction_materials');
-    const hasMaterialsInDb = Object.keys(dbMaterialsMap).length > 0;
-    const allMaterials: string[] = [];
-    const seen = new Set<string>();
-    for (const nature of natures) {
-      if (nature === 'Non bâti') continue;
-      const mats = hasMaterialsInDb
-        ? (dbMaterialsMap[nature] || [])
-        : (MATERIALS_BY_NATURE_FALLBACK[nature] || []);
-      for (const m of mats) {
-        if (!seen.has(m)) {
-          seen.add(m);
-          allMaterials.push(m);
-        }
-      }
-    }
-    setAvailableConstructionMaterials(allMaterials);
-
-    if (formData.constructionMaterials && !allMaterials.includes(formData.constructionMaterials)) {
-      handleInputChange('constructionMaterials', undefined);
+    if (natures.length === 1) {
+      if (formData.constructionNature !== natures[0]) handleInputChange('constructionNature', natures[0]);
+    } else if (formData.constructionNature && !natures.includes(formData.constructionNature)) {
       handleInputChange('constructionNature', undefined);
-    }
-    if (formData.constructionNature && !natures.includes(formData.constructionNature)) {
-      handleInputChange('constructionNature', undefined);
-    }
-    // Auto-select when only one nature is available (e.g. Terrain nu → Non bâti)
-    if (natures.length === 1 && formData.constructionNature !== natures[0]) {
-      handleInputChange('constructionNature', natures[0]);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData.constructionType, getPicklistDependentOptions]);
 
-  // Materials → auto-fill Nature via reverse lookup
+  // Nature → Matériaux
   useEffect(() => {
-    if (!formData.constructionMaterials || !formData.constructionType) {
-      if (!formData.constructionMaterials) {
-        // Ne pas effacer une nature auto-sélectionnée : nature non bâtie
-        // (Terrain nu, Agricole non bâti) ou type n'offrant qu'une seule
-        // nature (ex. Industrielle → Durable). Elles n'ont pas encore de
-        // matériau au moment où l'utilisateur choisit le type.
-        const natureMap = getPicklistDependentOptions('picklist_construction_nature');
-        const natures = formData.constructionType ? (natureMap[formData.constructionType] || []) : [];
-        const isAutoSelected =
-          formData.constructionNature === 'Non bâti' ||
-          natures.length === 1;
-        if (!isAutoSelected) {
-          handleInputChange('constructionNature', undefined);
-        }
-
-        setAvailableStandings([]);
-        handleInputChange('standing', undefined);
-      }
+    if (!formData.constructionNature || formData.constructionNature === 'Non bâti') {
+      setAvailableConstructionMaterials([]);
+      if (formData.constructionMaterials) handleInputChange('constructionMaterials', undefined);
       return;
     }
     const dbMaterialsMap = getPicklistDependentOptions('picklist_construction_materials');
     const hasMaterialsInDb = Object.keys(dbMaterialsMap).length > 0;
-    const materialsMap = hasMaterialsInDb ? dbMaterialsMap : MATERIALS_BY_NATURE_FALLBACK;
-    const reverseMap = buildMaterialToNatureMap(materialsMap);
-    const deducedNature = reverseMap[formData.constructionMaterials];
-    if (deducedNature && deducedNature !== formData.constructionNature) {
-      handleInputChange('constructionNature', deducedNature);
+    const mats = (hasMaterialsInDb
+      ? dbMaterialsMap[formData.constructionNature]
+      : MATERIALS_BY_NATURE_FALLBACK[formData.constructionNature]) || [];
+    setAvailableConstructionMaterials(mats);
+    if (formData.constructionMaterials && !mats.includes(formData.constructionMaterials)) {
+      handleInputChange('constructionMaterials', undefined);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [formData.constructionMaterials, formData.constructionType, getPicklistDependentOptions, buildMaterialToNatureMap]);
-
+  }, [formData.constructionNature, getPicklistDependentOptions]);
 
   // Type + Nature → Declared usages (shared resolver)
   useEffect(() => {
