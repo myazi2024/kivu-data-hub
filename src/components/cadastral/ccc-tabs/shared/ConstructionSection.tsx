@@ -72,6 +72,7 @@ export const ConstructionSection: React.FC<ConstructionSectionProps> = ({
   resetConstructionBlock,
   buildingShapes, onBuildingShapesChange
 }) => {
+  const availableCategories = getCategoriesForConstructionType(formData.constructionType, PROPERTY_CATEGORY_OPTIONS);
   const isRented = isConstructionRented(formData as any);
   const rentalEligible = isRentalEligible(formData.constructionType, formData.constructionNature);
   /** Catégorie louée individuellement comme une construction unique (un seul locataire). */
