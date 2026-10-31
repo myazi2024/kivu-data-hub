@@ -117,24 +117,19 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
     return (Object.keys(dbMap).length > 0 ? dbMap[data.constructionNature] : STANDING_BY_NATURE_FALLBACK[data.constructionNature]) || [];
   }, [data.constructionNature, getPicklistDependentOptions]);
 
-  // Type -> catégorie (auto si une seule, purge si incompatible)
+  // Type -> catégorie + nature (un seul patch pour éviter les écrasements)
   useEffect(() => {
     if (!data.constructionType) return;
-    if (availableCategories.length === 1 && data.propertyCategory !== availableCategories[0]) {
-      update('propertyCategory', availableCategories[0]);
-    } else if (data.propertyCategory && !availableCategories.includes(data.propertyCategory)) {
-      update('propertyCategory', '');
+    const patch: Partial<AdditionalConstruction> = {};
+    if (availableCategories.length === 1 && data.propertyCategory !== availableCategories[0]) patch.propertyCategory = availableCategories[0];
+    else if (data.propertyCategory && !availableCategories.includes(data.propertyCategory)) patch.propertyCategory = '';
+    if (availableNatures.length === 1 && data.constructionNature !== availableNatures[0]) {
+      Object.assign(patch, { constructionNature: availableNatures[0], constructionMaterials: '', declaredUsage: '', standing: '' });
+    } else if (data.constructionNature && !availableNatures.includes(data.constructionNature)) {
+      Object.assign(patch, { constructionNature: '', constructionMaterials: '', declaredUsage: '', standing: '' });
     }
-  }, [data.constructionType]);
-
-  // Type -> nature (purge si incompatible, auto si une seule)
-  useEffect(() => {
-    if (data.constructionNature && !availableNatures.includes(data.constructionNature)) {
-      onChange(index, { ...data, constructionNature: availableNatures.length === 1 ? availableNatures[0] : '', constructionMaterials: '', declaredUsage: '', standing: '' });
-    } else if (availableNatures.length === 1 && data.constructionNature !== availableNatures[0]) {
-      update('constructionNature', availableNatures[0]);
-    }
-  }, [availableNatures.join('|')]);
+    if (Object.keys(patch).length) onChange(index, { ...data, ...patch });
+  }, [data.constructionType, availableNatures.join('|')]);
 
   // Nature -> matériaux (purge si incompatible)
   useEffect(() => {
