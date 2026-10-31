@@ -1,3 +1,4 @@
+import { LAKESIDE_TAX_TYPE } from '@/lib/ccc/lakesideTax';
 import { getCessionDocLabel } from '@/lib/ccc/cessionDoc';
 import { isConstructionRented, isNonResidentialCategory, isSingleUnitRentalCategory, isOwnerOccupiedUnit, isOutOfRentalUnit } from '@/utils/rentalStatus';
 import { minHeightForFloors } from '@/utils/buildingShapes';
@@ -423,6 +424,9 @@ export function useFormValidation(params: UseFormValidationParams) {
     taxRecords.forEach((tax, idx) => {
       const isDeclared = Boolean(tax.taxAmount && tax.taxYear);
       if (!isDeclared) return;
+      if (tax.taxType === LAKESIDE_TAX_TYPE && formData.isLakeside !== true) {
+        missing.push({ field: `taxLakeside_${idx}`, label: `${LAKESIDE_TAX_TYPE} : réservée aux parcelles au bord du lac`, tab: 'obligations' });
+      }
       const isPaid = PAID_TAX_STATUSES.includes(tax.paymentStatus);
       if (isPaid && !tax.receiptFile && !tax.existingReceiptUrl) {
         missing.push({ field: `taxReceipt_${idx}`, label: `Reçu de ${tax.taxType} ${tax.taxYear}`, tab: 'obligations' });

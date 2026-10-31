@@ -1,3 +1,4 @@
+import { LAKESIDE_TAX_TYPE } from '@/lib/ccc/lakesideTax';
 import type { OwnerDeclaration } from '@/lib/ownership';
 import { PROPERTY_CATEGORY_OPTIONS as SHARED_PROPERTY_CATEGORY_OPTIONS, CATEGORY_TO_CONSTRUCTION_TYPES as SHARED_CATEGORY_TO_CONSTRUCTION_TYPES } from '@/lib/ccc/propertyCategories';
 import { reindexShapesAfterRemoval } from '@/utils/buildingShapes';
@@ -1389,6 +1390,18 @@ export const useCCCFormState = ({
 
   // Zone déduite de la circonscription foncière (source de vérité principale).
   const districtSectionType = getSectionTypeForLandDistrict(formData.landDistrict);
+
+  // « Parcelle au bord du lac » repassée à Non : la taxe des 10 m de rive n'a plus lieu d'être.
+  useEffect(() => {
+    if (isLoadingFromDbRef.current || formData.isLakeside !== false) return;
+    if (!taxRecords.some(t => t.taxType === LAKESIDE_TAX_TYPE)) return;
+    setTaxRecords(prev => {
+      const kept = prev.filter(t => t.taxType !== LAKESIDE_TAX_TYPE);
+      return kept.length ? kept : [{ ...prev[0], taxType: '', taxYear: '', taxAmount: '' } as TaxRecord];
+    });
+    toast({ title: 'Taxe retirée', description: `La « ${LAKESIDE_TAX_TYPE} » a été retirée car la parcelle n'est pas au bord du lac.` });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData.isLakeside]);
 
   // Repli : détection depuis le numéro de parcelle uniquement quand la
   // circonscription est inconnue (saisie manuelle / province non répertoriée).
