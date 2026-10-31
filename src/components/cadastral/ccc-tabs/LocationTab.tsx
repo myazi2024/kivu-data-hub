@@ -279,7 +279,6 @@ const LocationTab: React.FC<LocationTabProps> = ({
               highlight={highlightRequiredFields}
             />
           )}
-          )}
 
         </CardContent>
       </Card>

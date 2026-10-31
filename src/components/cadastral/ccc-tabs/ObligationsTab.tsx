@@ -1,3 +1,4 @@
+import { getAvailableTaxTypes } from '@/lib/ccc/lakesideTax';
 import { isConstructionRented, hasTenantRentalIncome, isOwnerOccupiedUnit } from '@/utils/rentalStatus';
 import React from 'react';
 import { Input } from '@/components/ui/input';
@@ -215,7 +216,7 @@ const ObligationsTab: React.FC<ObligationsTabProps> = ({
                         {(() => {
                           const additional = additionalConstructions ?? (Array.isArray((formData as any).additionalConstructions) ? (formData as any).additionalConstructions : []);
                           const hasAnyRental = hasTenantRentalIncome(formData as any) || additional.some((c: any) => hasTenantRentalIncome(c));
-                          return ['Impôt foncier annuel', ...(hasAnyRental ? ['Impôt sur les revenus locatifs'] : [])].map(opt => (
+                          return getAvailableTaxTypes({ hasRental: hasAnyRental, isLakeside: formData.isLakeside }).map(opt => (
                             <SelectItem key={opt} value={opt}>{opt}</SelectItem>
                           ));
                         })()}

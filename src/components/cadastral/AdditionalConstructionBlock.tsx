@@ -23,7 +23,8 @@ import { ACTUAL_USAGE_OTHER, buildActualUsageOptions, isResidentialActualUsage, 
 
 export type { AdditionalConstruction, AdditionalConstructionPermit } from './additional-construction/types';
 import type { AdditionalConstruction, AdditionalConstructionPermit } from './additional-construction/types';
-import { PROPERTY_CATEGORY_OPTIONS_NO_TERRAIN, CATEGORY_TO_CONSTRUCTION_TYPES, MATERIALS_BY_NATURE_FALLBACK, STANDING_BY_NATURE_FALLBACK } from './additional-construction/constants';
+import { CONSTRUCTION_TYPE_OPTIONS, getCategoriesForConstructionType } from '@/lib/ccc/propertyCategories';
+import { PROPERTY_CATEGORY_OPTIONS_NO_TERRAIN, MATERIALS_BY_NATURE_FALLBACK, STANDING_BY_NATURE_FALLBACK } from './additional-construction/constants';
 import BuildingPermitSection from './additional-construction/BuildingPermitSection';
 
 interface Props {
@@ -79,51 +80,30 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
     onChange(index, { ...data, permit: { ...permit, [field]: value } });
   };
 
-  // Cascade: category -> construction types
-  const availableTypes = useMemo(() => {
-    if (!data.propertyCategory) return [];
-    return CATEGORY_TO_CONSTRUCTION_TYPES[data.propertyCategory] || [];
-  }, [data.propertyCategory]);
+  // Cascade : type -> catégories compatibles
+  const availableCategories = useMemo(
+    () => getCategoriesForConstructionType(data.constructionType, PROPERTY_CATEGORY_OPTIONS_NO_TERRAIN),
+    [data.constructionType],
+  );
+  const availableTypes = useMemo(
+    () => CONSTRUCTION_TYPE_OPTIONS.filter(t => getCategoriesForConstructionType(t, PROPERTY_CATEGORY_OPTIONS_NO_TERRAIN).length > 0),
+    [],
+  );
 
-  // Cascade: type -> all materials (flattened from all natures)
-  const availableMaterials = useMemo(() => {
-    if (!data.constructionType) return [];
-    const natureMap = getPicklistDependentOptions('picklist_construction_nature');
-    const natures = natureMap[data.constructionType] || [];
-    const dbMap = getPicklistDependentOptions('picklist_construction_materials');
-    const hasDb = Object.keys(dbMap).length > 0;
-    const allMats: string[] = [];
-    const seen = new Set<string>();
-    for (const nature of natures) {
-      if (nature === 'Non bâti') continue;
-      const mats = hasDb ? (dbMap[nature] || []) : (MATERIALS_BY_NATURE_FALLBACK[nature] || []);
-      for (const m of mats) {
-        if (!seen.has(m)) { seen.add(m); allMats.push(m); }
-      }
-    }
-    return allMats;
-  }, [data.constructionType, getPicklistDependentOptions]);
-
-  // Reverse lookup: material -> nature
-  const materialToNatureMap = useMemo(() => {
-    const dbMap = getPicklistDependentOptions('picklist_construction_materials');
-    const hasDb = Object.keys(dbMap).length > 0;
-    const source = hasDb ? dbMap : MATERIALS_BY_NATURE_FALLBACK;
-    const reverseMap: Record<string, string> = {};
-    for (const [nature, materials] of Object.entries(source)) {
-      for (const mat of materials) {
-        if (!reverseMap[mat]) reverseMap[mat] = nature;
-      }
-    }
-    return reverseMap;
-  }, [getPicklistDependentOptions]);
-
-  // Cascade: type -> natures (for downstream usage/standing)
+  // Cascade : type -> natures
   const availableNatures = useMemo(() => {
     if (!data.constructionType) return [];
     const natureMap = getPicklistDependentOptions('picklist_construction_nature');
     return natureMap[data.constructionType] || [];
   }, [data.constructionType, getPicklistDependentOptions]);
+
+  // Cascade : nature -> matériaux
+  const availableMaterials = useMemo(() => {
+    if (!data.constructionNature || data.constructionNature === 'Non bâti') return [];
+    const dbMap = getPicklistDependentOptions('picklist_construction_materials');
+    const hasDb = Object.keys(dbMap).length > 0;
+    return (hasDb ? dbMap[data.constructionNature] : MATERIALS_BY_NATURE_FALLBACK[data.constructionNature]) || [];
+  }, [data.constructionNature, getPicklistDependentOptions]);
 
   // Cascade: type + nature -> usages (shared logic via resolveAvailableUsages)
   const availableUsages = useMemo(() => {
@@ -137,47 +117,26 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
     return (Object.keys(dbMap).length > 0 ? dbMap[data.constructionNature] : STANDING_BY_NATURE_FALLBACK[data.constructionNature]) || [];
   }, [data.constructionNature, getPicklistDependentOptions]);
 
-  // Auto-select single option for construction type
+  // Type -> catégorie + nature (un seul patch pour éviter les écrasements)
   useEffect(() => {
-    if (availableTypes.length === 1 && data.constructionType !== availableTypes[0]) {
-      update('constructionType', availableTypes[0]);
-    } else if (data.constructionType && !availableTypes.includes(data.constructionType)) {
-      onChange(index, { ...data, constructionType: '', constructionNature: '', constructionMaterials: '', declaredUsage: '', standing: '' });
-    }
-  }, [data.propertyCategory]);
-
-  // Auto-fill nature when materials changes
-  useEffect(() => {
-    if (!data.constructionMaterials) {
-      // Ne pas effacer une nature non bâtie : elle n'a par définition aucun matériau.
-      const isUnbuilt =
-        data.constructionNature === 'Non bâti' ||
-        (availableNatures.length === 1 && availableNatures[0] === 'Non bâti');
-      if (data.constructionNature && !isUnbuilt) {
-        onChange(index, { ...data, constructionNature: '', declaredUsage: '', standing: '' });
-      }
-      return;
-    }
-    const deducedNature = materialToNatureMap[data.constructionMaterials];
-    if (deducedNature && deducedNature !== data.constructionNature) {
-      onChange(index, { ...data, constructionNature: deducedNature, declaredUsage: '', standing: '' });
-    }
-  }, [data.constructionMaterials]);
-
-
-  // Reset materials when type changes
-  useEffect(() => {
-    if (data.constructionMaterials && availableMaterials.length > 0 && !availableMaterials.includes(data.constructionMaterials)) {
-      onChange(index, { ...data, constructionMaterials: '', constructionNature: '', declaredUsage: '', standing: '' });
-    }
-  }, [data.constructionType]);
-
-  // Auto-select single-option nature (e.g. Terrain nu → Non bâti)
-  useEffect(() => {
+    if (!data.constructionType) return;
+    const patch: Partial<AdditionalConstruction> = {};
+    if (availableCategories.length === 1 && data.propertyCategory !== availableCategories[0]) patch.propertyCategory = availableCategories[0];
+    else if (data.propertyCategory && !availableCategories.includes(data.propertyCategory)) patch.propertyCategory = '';
     if (availableNatures.length === 1 && data.constructionNature !== availableNatures[0]) {
-      update('constructionNature', availableNatures[0]);
+      Object.assign(patch, { constructionNature: availableNatures[0], constructionMaterials: '', declaredUsage: '', standing: '' });
+    } else if (data.constructionNature && !availableNatures.includes(data.constructionNature)) {
+      Object.assign(patch, { constructionNature: '', constructionMaterials: '', declaredUsage: '', standing: '' });
     }
-  }, [availableNatures.join('|')]);
+    if (Object.keys(patch).length) onChange(index, { ...data, ...patch });
+  }, [data.constructionType, availableNatures.join('|')]);
+
+  // Nature -> matériaux (purge si incompatible)
+  useEffect(() => {
+    if (data.constructionMaterials && !availableMaterials.includes(data.constructionMaterials)) {
+      update('constructionMaterials', '');
+    }
+  }, [data.constructionNature]);
 
   // Auto-select single-option usage
   useEffect(() => {
@@ -274,69 +233,62 @@ const AdditionalConstructionBlock: React.FC<Props> = ({
         </Button>
       </div>
 
-      {/* Catégorie de bien */}
-      <div className="space-y-1.5">
-        <Label className="text-sm font-medium">Catégorie de bien</Label>
-        <Select value={data.propertyCategory} onValueChange={(v) => update('propertyCategory', v)}>
-          <SelectTrigger className="h-10 rounded-xl text-sm">
-            <SelectValue placeholder="Sélectionner la catégorie" />
-          </SelectTrigger>
-          <SelectContent className="rounded-xl">
-            {PROPERTY_CATEGORY_OPTIONS_NO_TERRAIN.map(opt => (
-              <SelectItem key={opt} value={opt}>{opt}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Type et Matériaux */}
+      {/* Type de construction → Catégorie de bien */}
       <div className="grid grid-cols-2 gap-2">
         <div className="space-y-1.5">
           <Label className="text-sm font-medium">Type de construction</Label>
-          {availableTypes.length <= 1 ? (
-            <div className="h-10 px-3 flex items-center text-sm rounded-xl border-2 bg-muted text-muted-foreground">
-              {data.constructionType || (data.propertyCategory ? '—' : "Catégorie d'abord")}
-            </div>
+          <Select value={data.constructionType} onValueChange={(v) => update('constructionType', v)}>
+            <SelectTrigger className="h-10 rounded-xl text-sm"><SelectValue placeholder="Sélectionner" /></SelectTrigger>
+            <SelectContent className="rounded-xl">
+              {availableTypes.map(opt => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1.5">
+          <Label className="text-sm font-medium">Catégorie de bien</Label>
+          {availableCategories.length === 1 ? (
+            <div className="h-10 px-3 flex items-center text-sm rounded-xl border-2 bg-muted text-muted-foreground">{data.propertyCategory || '—'}</div>
           ) : (
-            <Select value={data.constructionType} onValueChange={(v) => update('constructionType', v)} disabled={!data.propertyCategory}>
-              <SelectTrigger className="h-10 rounded-xl text-sm">
-                <SelectValue placeholder={!data.propertyCategory ? "Catégorie d'abord" : "Sélectionner"} />
-              </SelectTrigger>
+            <Select value={data.propertyCategory} onValueChange={(v) => update('propertyCategory', v)} disabled={!data.constructionType}>
+              <SelectTrigger className="h-10 rounded-xl text-sm"><SelectValue placeholder={!data.constructionType ? "Type d'abord" : 'Sélectionner'} /></SelectTrigger>
               <SelectContent className="rounded-xl">
-                {availableTypes.map(opt => (
-                  <SelectItem key={opt} value={opt}>{opt}</SelectItem>
-                ))}
+                {availableCategories.map(opt => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}
               </SelectContent>
             </Select>
           )}
         </div>
+      </div>
 
-        {!isTerrainNuBlock && availableMaterials.length > 0 ? (
-          <div className="space-y-1.5">
-            <Label className="text-sm font-medium">Matériaux</Label>
-            <Select value={data.constructionMaterials} onValueChange={(v) => update('constructionMaterials', v)} disabled={availableMaterials.length === 0}>
-              <SelectTrigger className="h-10 rounded-xl text-sm">
-                <SelectValue placeholder={!data.constructionType ? "Type d'abord" : "Sélectionner"} />
-              </SelectTrigger>
+      {/* Nature de la construction → Matériaux de construction */}
+      <div className="grid grid-cols-2 gap-2">
+        <div className="space-y-1.5">
+          <Label className="text-sm font-medium">Nature de la construction</Label>
+          {availableNatures.length <= 1 ? (
+            <div className="h-10 px-3 flex items-center text-sm rounded-xl border-2 bg-muted text-muted-foreground">{data.constructionNature || (data.constructionType ? '—' : "Type d'abord")}</div>
+          ) : (
+            <Select value={data.constructionNature} onValueChange={(v) => update('constructionNature', v)}>
+              <SelectTrigger className="h-10 rounded-xl text-sm"><SelectValue placeholder="Sélectionner" /></SelectTrigger>
               <SelectContent className="rounded-xl">
-                {availableMaterials.map(opt => (
-                  <SelectItem key={opt} value={opt}>{opt}</SelectItem>
-                ))}
+                {availableNatures.map(opt => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          )}
+        </div>
+        {!isTerrainNuBlock && data.constructionNature !== 'Non bâti' ? (
+          <div className="space-y-1.5">
+            <Label className="text-sm font-medium">Matériaux de construction</Label>
+            <Select value={data.constructionMaterials} onValueChange={(v) => update('constructionMaterials', v)} disabled={availableMaterials.length === 0}>
+              <SelectTrigger className="h-10 rounded-xl text-sm"><SelectValue placeholder={!data.constructionNature ? "Nature d'abord" : 'Sélectionner'} /></SelectTrigger>
+              <SelectContent className="rounded-xl">
+                {availableMaterials.map(opt => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
         ) : <div />}
       </div>
 
-      {/* Nature (auto-remplie) et Usage */}
+      {/* Usage */}
       <div className="grid grid-cols-2 gap-2">
-        <div className="space-y-1.5">
-          <Label className="text-sm font-medium">Nature</Label>
-          <div className="h-10 px-3 flex items-center text-sm rounded-xl border-2 bg-muted text-muted-foreground">
-            {data.constructionNature ? `Construction ${data.constructionNature.toLowerCase()}` : (data.constructionMaterials ? '—' : "Matériaux d'abord")}
-          </div>
-        </div>
-
         <div className="space-y-1.5">
           <div className="flex items-center gap-1">
             <Label className="text-sm font-medium">Usage</Label>

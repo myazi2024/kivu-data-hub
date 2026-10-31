@@ -184,6 +184,7 @@ const ReviewTab: React.FC<ReviewTabProps> = ({
           <div className="space-y-1 text-xs">
             {formData.province && <ReviewLine label="Province" value={formData.province} />}
             {formData.landDistrict && <ReviewLine label="Circonscription foncière" value={formData.landDistrict} />}
+            {formData.isLakeside !== undefined && <ReviewLine label="Parcelle au bord du lac" value={formData.isLakeside ? 'Oui' : 'Non'} />}
             {sectionType && <ReviewLine label="Section" value={sectionType === 'urbaine' ? 'Urbaine' : 'Rurale'} />}
             {sectionType === 'urbaine' && (<>
               {formData.ville && <ReviewLine label="Ville" value={formData.ville} />}

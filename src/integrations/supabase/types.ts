@@ -1130,6 +1130,7 @@ export type Database = {
           hosting_capacity: number | null
           house_number: string | null
           id: string
+          is_lakeside: boolean | null
           is_occupied: boolean | null
           is_rented: boolean
           is_suspicious: boolean | null
@@ -1248,6 +1249,7 @@ export type Database = {
           hosting_capacity?: number | null
           house_number?: string | null
           id?: string
+          is_lakeside?: boolean | null
           is_occupied?: boolean | null
           is_rented?: boolean
           is_suspicious?: boolean | null
@@ -1366,6 +1368,7 @@ export type Database = {
           hosting_capacity?: number | null
           house_number?: string | null
           id?: string
+          is_lakeside?: boolean | null
           is_occupied?: boolean | null
           is_rented?: boolean
           is_suspicious?: boolean | null
@@ -2048,6 +2051,7 @@ export type Database = {
           hosting_capacity: number | null
           house_number: string | null
           id: string
+          is_lakeside: boolean | null
           is_occupied: boolean | null
           is_rented: boolean | null
           is_subdivided: boolean | null
@@ -2144,6 +2148,7 @@ export type Database = {
           hosting_capacity?: number | null
           house_number?: string | null
           id?: string
+          is_lakeside?: boolean | null
           is_occupied?: boolean | null
           is_rented?: boolean | null
           is_subdivided?: boolean | null
@@ -2240,6 +2245,7 @@ export type Database = {
           hosting_capacity?: number | null
           house_number?: string | null
           id?: string
+          is_lakeside?: boolean | null
           is_occupied?: boolean | null
           is_rented?: boolean | null
           is_subdivided?: boolean | null

@@ -22,6 +22,7 @@ import { isTerrainNuCategory, isUnbuiltLand, isSingleStoreyCategory } from '@/ut
 import BuildingHeightField from '@/components/cadastral/BuildingHeightField';
 import { getShapeForConstructionIndex, withShapeHeight, minHeightForFloors } from '@/utils/buildingShapes';
 import LeaseContractField from '@/components/cadastral/LeaseContractField';
+import { getCategoriesForConstructionType } from '@/lib/ccc/propertyCategories';
 import { ACTUAL_USAGE_OTHER, buildActualUsageOptions, isResidentialActualUsage, resolveOperationalCapacityField } from '@/utils/actualUsage';
 
 export interface ConstructionSectionProps {
@@ -71,6 +72,7 @@ export const ConstructionSection: React.FC<ConstructionSectionProps> = ({
   resetConstructionBlock,
   buildingShapes, onBuildingShapesChange
 }) => {
+  const availableCategories = getCategoriesForConstructionType(formData.constructionType, PROPERTY_CATEGORY_OPTIONS);
   const isRented = isConstructionRented(formData as any);
   const rentalEligible = isRentalEligible(formData.constructionType, formData.constructionNature);
   /** Catégorie louée individuellement comme une construction unique (un seul locataire). */
@@ -244,46 +246,65 @@ export const ConstructionSection: React.FC<ConstructionSectionProps> = ({
         </div>
       </div>
 
-      {/* Property category */}
-      <div className={`space-y-1.5 ${highlightRequiredFields && !formData.propertyCategory ? 'ring-2 ring-destructive rounded-xl p-2 bg-destructive/5 animate-pulse' : ''}`}>
-        <Label className="text-sm font-medium flex items-center gap-1">
-          Catégorie de bien
-          {highlightRequiredFields && !formData.propertyCategory && <span className="text-destructive text-xs font-semibold">*</span>}
-        </Label>
-        <Select value={formData.propertyCategory || ''} onValueChange={(value) => { handleInputChange('propertyCategory', value); setHighlightRequiredFields(false); }}>
-          <SelectTrigger className="h-10 rounded-xl text-sm"><SelectValue placeholder="Sélectionner la catégorie" /></SelectTrigger>
-          <SelectContent className="rounded-xl">
-            {PROPERTY_CATEGORY_OPTIONS.map(opt => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Type & Matériaux */}
+      {/* Type de construction → Catégorie de bien */}
       <div className="grid grid-cols-2 gap-2">
         <div className={`space-y-1.5 ${highlightRequiredFields && !formData.constructionType ? 'ring-2 ring-destructive rounded-xl p-2 bg-destructive/5 animate-pulse' : ''}`}>
           <Label className="text-sm font-medium flex items-center gap-1">
             Type de construction
             {highlightRequiredFields && !formData.constructionType && <span className="text-destructive text-xs font-semibold">*</span>}
           </Label>
-          {availableConstructionTypes.length <= 1 ? (
+          <Select value={formData.constructionType || ''} onValueChange={(value) => { handleInputChange('constructionType', value); setHighlightRequiredFields(false); }}>
+            <SelectTrigger className="h-10 rounded-xl text-sm"><SelectValue placeholder="Sélectionner" /></SelectTrigger>
+            <SelectContent className="rounded-xl">
+              {availableConstructionTypes.map(opt => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className={`space-y-1.5 ${highlightRequiredFields && !formData.propertyCategory ? 'ring-2 ring-destructive rounded-xl p-2 bg-destructive/5 animate-pulse' : ''}`}>
+          <Label className="text-sm font-medium flex items-center gap-1">
+            Catégorie de bien
+            {highlightRequiredFields && !formData.propertyCategory && <span className="text-destructive text-xs font-semibold">*</span>}
+          </Label>
+          {availableCategories.length === 1 ? (
+            <div className="h-10 px-3 flex items-center text-sm rounded-xl border-2 bg-muted text-muted-foreground">{formData.propertyCategory || '—'}</div>
+          ) : (
+            <Select value={formData.propertyCategory || ''} onValueChange={(value) => { handleInputChange('propertyCategory', value); setHighlightRequiredFields(false); }} disabled={!formData.constructionType}>
+              <SelectTrigger className="h-10 rounded-xl text-sm"><SelectValue placeholder={!formData.constructionType ? "Type d'abord" : 'Sélectionner'} /></SelectTrigger>
+              <SelectContent className="rounded-xl">
+                {availableCategories.map(opt => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          )}
+        </div>
+      </div>
+
+      {/* Nature de la construction → Matériaux de construction */}
+      <div className="grid grid-cols-2 gap-2">
+        <div className={`space-y-1.5 ${highlightRequiredFields && !isTerrainNu && !formData.constructionNature ? 'ring-2 ring-destructive rounded-xl p-2 bg-destructive/5 animate-pulse' : ''}`}>
+          <Label className="text-sm font-medium flex items-center gap-1">
+            Nature de la construction
+            {highlightRequiredFields && !isTerrainNu && !formData.constructionNature && <span className="text-destructive text-xs font-semibold">*</span>}
+          </Label>
+          {availableConstructionNatures.length <= 1 ? (
             <div className="h-10 px-3 flex items-center text-sm rounded-xl border-2 bg-muted text-muted-foreground">
-              {formData.constructionType || (formData.propertyCategory ? '—' : "Catégorie d'abord")}
+              {formData.constructionNature || (formData.constructionType ? '—' : "Type d'abord")}
             </div>
           ) : (
-            <Select value={formData.constructionType || ''} onValueChange={(value) => { handleInputChange('constructionType', value); setHighlightRequiredFields(false); }} disabled={!formData.propertyCategory}>
-              <SelectTrigger className="h-10 rounded-xl text-sm"><SelectValue placeholder={!formData.propertyCategory ? "Catégorie d'abord" : "Sélectionner"} /></SelectTrigger>
+            <Select value={formData.constructionNature || ''} onValueChange={(value) => { handleInputChange('constructionNature', value); setHighlightRequiredFields(false); }}>
+              <SelectTrigger className="h-10 rounded-xl text-sm"><SelectValue placeholder="Sélectionner" /></SelectTrigger>
               <SelectContent className="rounded-xl">
-                {availableConstructionTypes.map(opt => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}
+                {availableConstructionNatures.map(opt => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}
               </SelectContent>
             </Select>
           )}
         </div>
 
-        {!isTerrainNu && availableConstructionMaterials.length > 0 ? (
+        {!isTerrainNu && formData.constructionNature !== 'Non bâti' ? (
           <div className="space-y-1.5">
-            <Label className="text-sm font-medium">Matériaux</Label>
+            <Label className="text-sm font-medium">Matériaux de construction</Label>
             <Select value={formData.constructionMaterials || ''} onValueChange={(value) => handleInputChange('constructionMaterials', value)} disabled={availableConstructionMaterials.length === 0}>
-              <SelectTrigger className="h-10 rounded-xl text-sm"><SelectValue placeholder={!formData.constructionType ? "Type d'abord" : "Sélectionner"} /></SelectTrigger>
+              <SelectTrigger className="h-10 rounded-xl text-sm"><SelectValue placeholder={!formData.constructionNature ? "Nature d'abord" : 'Sélectionner'} /></SelectTrigger>
               <SelectContent className="rounded-xl">
                 {availableConstructionMaterials.map(opt => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}
               </SelectContent>
@@ -292,18 +313,8 @@ export const ConstructionSection: React.FC<ConstructionSectionProps> = ({
         ) : <div />}
       </div>
 
-      {/* Nature (auto-remplie) & Usage */}
+      {/* Usage */}
       <div className="grid grid-cols-2 gap-2">
-        <div className={`space-y-1.5 ${highlightRequiredFields && !isTerrainNu && !formData.constructionNature ? 'ring-2 ring-destructive rounded-xl p-2 bg-destructive/5 animate-pulse' : ''}`}>
-          <Label className="text-sm font-medium flex items-center gap-1">
-            Nature
-            {highlightRequiredFields && !isTerrainNu && !formData.constructionNature && <span className="text-destructive text-xs font-semibold">*</span>}
-          </Label>
-          <div className="h-10 px-3 flex items-center text-sm rounded-xl border-2 bg-muted text-muted-foreground">
-            {formData.constructionNature ? `Construction ${formData.constructionNature.toLowerCase()}` : (isTerrainNu ? 'Non bâti' : (formData.constructionMaterials ? '—' : "Matériaux d'abord"))}
-          </div>
-        </div>
-
         <div className={`space-y-1.5 ${highlightRequiredFields && !isTerrainNu && !formData.declaredUsage ? 'ring-2 ring-destructive rounded-xl p-2 bg-destructive/5 animate-pulse' : ''}`}>
           <div className="flex items-center gap-1">
             <Label className="text-sm font-medium flex items-center gap-1">
