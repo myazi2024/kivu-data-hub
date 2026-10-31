@@ -25,6 +25,7 @@ const baseParams = (): UseFormValidationParams => ({
     parcelNumber: 'SU12345',
     province: 'Haut-Katanga',
     landDistrict: 'Lubumbashi-Est',
+    isLakeside: false,
     ville: 'Lubumbashi',
     commune: 'Kampemba',
     quartier: 'Bel-Air',
