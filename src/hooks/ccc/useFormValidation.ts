@@ -329,11 +329,10 @@ export function useFormValidation(params: UseFormValidationParams) {
     if (!formData.province || formData.province.trim() === '') missing.push({ field: 'province', label: 'Province', tab: 'location' });
     if (!formData.landDistrict || formData.landDistrict.trim() === '') missing.push({ field: 'landDistrict', label: 'Circonscription foncière', tab: 'location' });
     if (!isAppartement && (!formData.areaSqm || Number(formData.areaSqm) <= 0)) missing.push({ field: 'areaSqm', label: 'Superficie (m²)', tab: 'location' });
-    // La zone n'est plus saisie : elle découle de la circonscription foncière.
-    // Si elle reste vide alors qu'une circonscription est renseignée, c'est que
-    // la circonscription saisie à la main n'est pas répertoriée.
     if (!sectionType || (sectionType !== 'urbaine' && sectionType !== 'rurale')) {
-      missing.push({ field: 'sectionType', label: 'Circonscription foncière répertoriée (zone urbaine ou rurale indéterminée)', tab: 'location' });
+      missing.push({ field: 'sectionType', label: 'Section (urbaine ou rurale)', tab: 'location' });
+    } else if (formData.isLakeside === undefined || formData.isLakeside === null) {
+      missing.push({ field: 'isLakeside', label: 'Parcelle au bord du lac', tab: 'location' });
     }
     if (sectionType === 'urbaine') {
       if (!formData.ville || formData.ville.trim() === '') missing.push({ field: 'ville', label: 'Ville', tab: 'location' });
