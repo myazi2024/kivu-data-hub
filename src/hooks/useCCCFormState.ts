@@ -1397,7 +1397,7 @@ export const useCCCFormState = ({
     if (!taxRecords.some(t => t.taxType === LAKESIDE_TAX_TYPE)) return;
     setTaxRecords(prev => {
       const kept = prev.filter(t => t.taxType !== LAKESIDE_TAX_TYPE);
-      return kept.length ? kept : [{ ...prev[0], taxType: '', taxYear: '', taxAmount: '' } as TaxRecord];
+      return kept.length ? kept : [{ taxType: 'Impôt foncier annuel', taxYear: '', taxAmount: '', paymentStatus: 'Payé', paymentDate: '', receiptFile: null } as TaxRecord];
     });
     toast({ title: 'Taxe retirée', description: `La « ${LAKESIDE_TAX_TYPE} » a été retirée car la parcelle n'est pas au bord du lac.` });
     // eslint-disable-next-line react-hooks/exhaustive-deps
