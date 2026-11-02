@@ -56,7 +56,7 @@ const HeroSection = () => {
             <div className="mt-2 sm:mt-4 lg:mt-1 max-w-xl text-left [&>div]:justify-start [&_p]:!mx-0 [&_p]:!px-0 [&_p]:!text-primary-foreground/90">
               <TypewriterAnimation />
             </div>
-            <div className="mt-1 sm:mt-2 lg:mt-1 flex flex-col lg:flex-row gap-3 lg:gap-2 items-stretch">
+            <div className="mt-1 sm:mt-2 lg:mt-1 grid grid-cols-2 lg:flex lg:flex-row gap-2 items-stretch">
             <Link
               to={cadastreTarget}
               className="w-full lg:w-auto"
@@ -64,11 +64,11 @@ const HeroSection = () => {
             >
               <Button
                 size="lg"
-                className="w-full bg-background text-primary hover:bg-background/90 font-bold px-5 h-11 lg:h-10 text-sm sm:text-base group"
+                className="w-full bg-background text-primary hover:bg-background/90 font-bold px-3 sm:px-5 h-11 lg:h-10 text-sm sm:text-base group"
               >
                 <Map className="h-5 w-5" />
-                <span>Cadastre numérique</span>
-                <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform duration-300" />
+                <span className="sm:hidden">Cadastre</span><span className="max-sm:hidden">Cadastre numérique</span>
+                <ArrowRight className="max-sm:hidden h-4 w-4 group-hover:translate-x-1 transition-transform duration-300" />
               </Button>
             </Link>
 
@@ -80,10 +80,10 @@ const HeroSection = () => {
               <Button
                 variant="outline"
                 size="lg"
-                className="w-full bg-primary/30 border border-primary-foreground/50 text-primary-foreground hover:bg-background hover:text-primary font-semibold px-5 h-11 lg:h-10 text-sm sm:text-base"
+                className="w-full bg-primary/30 border border-primary-foreground/50 text-primary-foreground hover:bg-background hover:text-primary font-semibold px-3 sm:px-5 h-11 lg:h-10 text-sm sm:text-base"
               >
                 <MapPin className="h-5 w-5" />
-                <span>Données foncières</span>
+                <span className="sm:hidden">Données</span><span className="max-sm:hidden">Données foncières</span>
               </Button>
             </Link>
             </div>

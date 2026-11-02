@@ -288,8 +288,8 @@ export const CCCDetailsDialog: React.FC<CCCDetailsDialogProps> = ({
                                 Route: {side.roadType} {side.roadName ? `- ${side.roadName}` : ''} {side.roadWidth ? `(${side.roadWidth}m)` : ''}
                               </p>
                             )}
-                            {isWall && (side.boundaryKind === 'limite' ? (
-                              <p className="text-[10px] text-muted-foreground mt-0.5 ml-4">Limite (sans mur)</p>
+                            {(isWall || side.boundaryKind === 'limite' || side.boundaryKind === 'limite_mitoyenne') && (side.boundaryKind === 'limite' || side.boundaryKind === 'limite_mitoyenne' ? (
+                              <p className="text-[10px] text-muted-foreground mt-0.5 ml-4">{side.boundaryKind === 'limite' ? 'Limite (sans mur)' : 'Limite (sans mur) mitoyenne'}</p>
                             ) : side.wallMaterial ? (
                               <p className="text-[10px] text-muted-foreground mt-0.5 ml-4">
                                 {side.boundaryKind === 'mur_mitoyen' ? 'Mur mitoyen' : 'Mur'}: {side.wallMaterial} {side.wallHeight ? `(H: ${side.wallHeight}m)` : ''}
@@ -353,9 +353,10 @@ export const CCCDetailsDialog: React.FC<CCCDetailsDialogProps> = ({
                               ].filter(Boolean).join(' · ')}
                             </p>
                           )}
-                          {(side.hasWall ?? side.borderType === 'mur_mitoyen') && (
+                          {((side.hasWall ?? side.borderType === 'mur_mitoyen') || side.boundaryKind === 'limite' || side.boundaryKind === 'limite_mitoyenne') && (
                             <p className="text-muted-foreground ml-4">
-                              {side.boundaryKind === 'limite'
+                              {side.boundaryKind === 'limite_mitoyenne' ? 'Limite (sans mur) mitoyenne'
+                                : side.boundaryKind === 'limite'
                                 ? 'Limite (sans mur)'
                                 : `${side.boundaryKind === 'mur_mitoyen' ? 'Mur mitoyen' : 'Mur'}${side.wallMaterial ? `: ${side.wallMaterial}` : ''}${side.wallHeight ? ` · Hauteur: ${side.wallHeight} m` : ''}`}
                             </p>

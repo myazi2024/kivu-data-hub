@@ -287,10 +287,11 @@ const ReviewTab: React.FC<ReviewTabProps> = ({
                   if (hasRoad && side.hasGutter === true) details.push(side.gutterConnected ? 'Caniveau raccordé' : 'Caniveau non raccordé');
                   if (hasRoad && side.hasGutter === false) details.push('Sans caniveau');
                   if (side.hasEntrance) details.push('🚪 Entrée');
-                  if (hasWall) {
+                  if (hasWall || side.boundaryKind === 'limite' || side.boundaryKind === 'limite_mitoyenne') {
                     const kind = side.boundaryKind ?? ((side.wallMaterial || side.wallHeight) ? 'mur' : side.borderType === 'mur_mitoyen' ? 'mur' : undefined);
                     details.push(
-                      kind === 'limite'
+                      kind === 'limite_mitoyenne' ? 'Limite (sans mur) mitoyenne'
+                        : kind === 'limite'
                         ? 'Limite (sans mur)'
                         : `${kind === 'mur_mitoyen' ? 'Mur mitoyen' : 'Mur'}${side.wallMaterial ? `: ${side.wallMaterial}` : ''}${side.wallHeight ? ` (${side.wallHeight} m)` : ''}`
                     );
