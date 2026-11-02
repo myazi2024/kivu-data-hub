@@ -116,8 +116,8 @@ const LocationSection: React.FC<LocationSectionProps> = ({ number, parcel, bound
                     : s.hasGutter === false ? 'Non' : '—'}
                 </td>
                 <td className="text-xs">
-                  {(s.hasWall ?? s.borderType === 'mur_mitoyen')
-                    ? (((s as any).boundaryKind ?? (s.wallMaterial || s.wallHeight ? 'mur' : 'mur')) === 'limite'
+                  {((s.hasWall ?? s.borderType === 'mur_mitoyen') || (s as any).boundaryKind === 'limite' || (s as any).boundaryKind === 'limite_mitoyenne')
+                    ? ((s as any).boundaryKind === 'limite_mitoyenne' ? 'Limite (sans mur) mitoyenne' : (s as any).boundaryKind === 'limite'
                         ? 'Limite (sans mur)'
                         : `${(s as any).boundaryKind === 'mur_mitoyen' ? 'Mur mitoyen' : 'Mur'}${s.wallMaterial ? ` — ${s.wallMaterial}` : ''}${s.wallHeight ? ` — ${s.wallHeight} m` : ''}`)
                     : '—'}
