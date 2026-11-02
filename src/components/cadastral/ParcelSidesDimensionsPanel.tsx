@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Ruler, Compass, Info, Trash2, Check, Route, X, Lightbulb, BrickWall, AlertTriangle, DoorOpen, Pencil, Minus } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -25,7 +26,11 @@ export interface ParcelSide {
 export type SideBorderType = 'route' | 'mur_mitoyen';
 
 /** Nature de la limite non routière d'un côté : mur ou simple limite de parcelle. */
-export type BoundaryKind = 'mur' | 'mur_mitoyen' | 'limite';
+export type BoundaryKind = 'mur' | 'mur_mitoyen' | 'limite' | 'limite_mitoyenne';
+
+/** « Mur » et « Limite (sans mur) » signifient que le côté borde une route. */
+export const boundaryKindImpliesRoad = (kind?: BoundaryKind | null): boolean =>
+  kind === 'mur' || kind === 'limite';
 
 export interface RoadSideInfo {
   sideIndex: number;
@@ -92,7 +97,10 @@ export const isWallKind = (kind?: BoundaryKind | null): boolean =>
   kind === 'mur' || kind === 'mur_mitoyen';
 
 export const boundaryKindLabel = (kind?: BoundaryKind | null): string =>
-  kind === 'mur_mitoyen' ? 'Mur mitoyen' : kind === 'limite' ? 'Limite (sans mur)' : 'Mur';
+  kind === 'mur_mitoyen' ? 'Mur mitoyen'
+    : kind === 'limite' ? 'Limite (sans mur)'
+    : kind === 'limite_mitoyenne' ? 'Limite (sans mur) mitoyenne'
+    : 'Mur';
 
 export interface ServitudeInfo {
   hasServitude: boolean;
@@ -203,7 +211,11 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
   const handleConfirmSide = (sideIndex: number) => {
     const side = roadSides.find(s => s.sideIndex === sideIndex);
     if (side && canConfirm(side)) {
-      onRoadSideUpdate(sideIndex, { isConfirmed: true });
+      const kind = sideBoundaryKind(side) ?? side.boundaryKind;
+      onRoadSideUpdate(sideIndex, {
+        isConfirmed: true,
+        ...(boundaryKindImpliesRoad(kind) ? { hasRoad: true, borderType: 'route' as const } : {}),
+      });
       setEditingSide(null);
     }
   };
@@ -252,27 +264,18 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
   };
 
   /** Bascule Mur / Mur mitoyen / Limite. Un mur mitoyen désactive la route. */
+  /** Mur / Limite ⇒ le côté borde une route ; les choix mitoyens excluent la route. */
   const handleBoundaryKindChange = (sideIndex: number, kind: BoundaryKind) => {
-    const prev = sideBoundaryKind(roadSides.find(s => s.sideIndex === sideIndex));
+    const road = boundaryKindImpliesRoad(kind);
     onRoadSideUpdate(sideIndex, {
       boundaryKind: kind,
       bordersRoad: true,
       hasWall: isWallKind(kind),
-      ...(prev === 'mur_mitoyen' && kind !== 'mur_mitoyen'
-        ? { hasRoad: undefined, borderType: undefined }
-        : {}),
-      ...(kind === 'limite' ? WALL_FIELDS_RESET : {}),
-      ...(kind === 'mur_mitoyen'
-        ? { hasRoad: false, borderType: 'mur_mitoyen' as const, ...ROAD_FIELDS_RESET }
-        : {}),
+      ...(isWallKind(kind) ? {} : WALL_FIELDS_RESET),
+      ...(road
+        ? { hasRoad: true, borderType: 'route' as const }
+        : { hasRoad: false, borderType: kind === 'mur_mitoyen' ? 'mur_mitoyen' as const : undefined, ...ROAD_FIELDS_RESET }),
     });
-  };
-
-  /** Réponse à « Une route borde-t-elle ce côté ? ». */
-  const handleRoadAnswer = (sideIndex: number, value: boolean) => {
-    onRoadSideUpdate(sideIndex, value
-      ? { hasRoad: true, borderType: 'route' }
-      : { hasRoad: false, borderType: undefined, ...ROAD_FIELDS_RESET });
   };
 
   const canConfirm = (side: RoadSideInfo) => {
@@ -280,8 +283,8 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
     const hasRoad = sideHasRoad(side);
     const kind = sideBoundaryKind(side) ?? side.boundaryKind;
     if (!kind) return false;
-    if (kind !== 'mur_mitoyen' && !hasRoad && side.hasRoad !== false) return false;
-    if (hasRoad) {
+    const needsRoad = boundaryKindImpliesRoad(kind);
+    if (needsRoad) {
       const base = !!side.roadType && !!side.roadWidth && side.roadWidth > 0
         && !!side.roadSurface && side.hasStreetLighting !== undefined
         && side.hasGutter !== undefined;
@@ -291,7 +294,7 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
       if (!(base && lighting && gutter)) return false;
     }
     if (isWallKind(kind) && !side.wallMaterial) return false;
-    if (kind === 'mur_mitoyen' && hasRoad) return false;
+
     return true;
   };
 
@@ -369,7 +372,8 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
           const isEditing = editingSide === index;
           const hasConfirmed = roadSide?.bordersRoad && roadSide?.isConfirmed;
           const isEditingThis = roadSide?.bordersRoad && !roadSide?.isConfirmed;
-          const isRoad = sideHasRoad(roadSide);
+          const boundaryKindEarly = sideBoundaryKind(roadSide);
+          const isRoad = sideHasRoad(roadSide) || (!roadSide?.isConfirmed && boundaryKindImpliesRoad(boundaryKindEarly));
           const isWall = sideHasWall(roadSide);
           const boundaryKind = sideBoundaryKind(roadSide);
           const isPlainBoundary = boundaryKind === 'limite';
@@ -518,6 +522,18 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
                         <div className="flex items-center gap-1.5 mb-1">
                           <Route className="h-3.5 w-3.5 text-green-600" />
                           <span className="text-xs font-medium text-green-700 dark:text-green-300">Informations sur la route</span>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <button type="button" aria-label="Pourquoi renseigner la route ?" onClick={(e) => e.stopPropagation()} className="text-muted-foreground hover:text-foreground">
+                                <Info className="h-3.5 w-3.5" />
+                              </button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-72 text-xs leading-relaxed">
+                              Vous avez choisi « Mur » ou « Limite (sans mur) » : cela signifie que ce côté de la parcelle donne sur une route. Merci de renseigner les informations de cette route.
+                              <br /><br />
+                              Si ce côté touche plutôt une parcelle voisine, choisissez « Mur mitoyen » ou « Limite (sans mur) mitoyenne ».
+                            </PopoverContent>
+                          </Popover>
                         </div>
 
                         <Select
@@ -702,6 +718,7 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
                             <SelectItem value="mur" className="text-xs">Mur</SelectItem>
                             <SelectItem value="mur_mitoyen" className="text-xs">Mur mitoyen</SelectItem>
                             <SelectItem value="limite" className="text-xs">Limite (sans mur)</SelectItem>
+                            <SelectItem value="limite_mitoyenne" className="text-xs">Limite (sans mur) mitoyenne</SelectItem>
                           </SelectContent>
                         </Select>
 
@@ -713,7 +730,13 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
 
                         {boundaryKind === 'limite' && (
                           <p className="text-[11px] text-muted-foreground leading-snug animate-fade-in">
-                            Aucune information supplémentaire n'est requise pour une simple limite — cliquez sur « Ajouter » pour valider ce côté.
+                            Une limite sans mur donne sur une route : renseignez les informations de la route ci-dessus.
+                          </p>
+                        )}
+
+                        {boundaryKind === 'limite_mitoyenne' && (
+                          <p className="text-[11px] text-muted-foreground leading-snug animate-fade-in">
+                            Limite partagée avec la parcelle voisine, matérialisée par de simples bornes. Aucune information supplémentaire n'est requise — cliquez sur « Ajouter » pour valider ce côté.
                           </p>
                         )}
 
@@ -760,33 +783,6 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
                           </div>
                         )}
 
-                        {(boundaryKind === 'mur' || boundaryKind === 'limite') && (
-                          <div className="space-y-1 pt-1 animate-fade-in">
-                            <p className="text-xs font-medium text-foreground">Une route borde-t-elle ce côté ? *</p>
-                            <div role="radiogroup" aria-label="Une route borde-t-elle ce côté ?" className="grid grid-cols-2 gap-1.5">
-                              {([['oui', true], ['non', false]] as const).map(([label, value]) => {
-                                const selected = value ? isRoad : roadSide?.hasRoad === false;
-                                return (
-                                  <Button
-                                    key={label}
-                                    type="button"
-                                    role="radio"
-                                    aria-checked={selected}
-                                    variant={selected ? 'default' : 'outline'}
-                                    size="sm"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleRoadAnswer(index, value);
-                                    }}
-                                    className="h-8 text-xs rounded-lg"
-                                  >
-                                    {value ? 'Oui' : 'Non'}
-                                  </Button>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        )}
                       </div>
                     )}
                     {/* Boutons d'action — communs aux blocs Mur et Route */}
