@@ -376,7 +376,7 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
           const isRoad = sideHasRoad(roadSide) || (!roadSide?.isConfirmed && boundaryKindImpliesRoad(boundaryKindEarly));
           const isWall = sideHasWall(roadSide);
           const boundaryKind = sideBoundaryKind(roadSide);
-          const isPlainBoundary = boundaryKind === 'limite';
+          const isPlainBoundary = boundaryKind === 'limite' || boundaryKind === 'limite_mitoyenne';
 
           return (
             <div
