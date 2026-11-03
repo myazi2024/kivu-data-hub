@@ -8,6 +8,10 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
+    --security-low: 0 72% 51%;
+    --security-medium: 25 95% 53%;
+    --security-good: 45 93% 47%;
+    --security-high: 142 71% 38%;
     --background: 0 0% 100%;
     --foreground: 0 0% 13%;
 
