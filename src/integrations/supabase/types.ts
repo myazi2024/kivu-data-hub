@@ -8540,6 +8540,8 @@ export type Database = {
         }
         Returns: undefined
       }
+      _parcel_security_criteria: { Args: { _parcel_id: string }; Returns: Json }
+      _parcel_security_score: { Args: { _criteria: Json }; Returns: number }
       _purge_stale_test_generation_jobs: { Args: never; Returns: number }
       _purge_stale_test_generation_jobs__impl: { Args: never; Returns: number }
       _require_admin: { Args: never; Returns: string }
@@ -9095,8 +9097,13 @@ export type Database = {
           parcel_number: string
           province: string
           quartier: string
+          security_score: number
           ville: string
         }[]
+      }
+      get_my_parcel_security_report: {
+        Args: { _parcel_id: string }
+        Returns: Json
       }
       get_orphan_reseller_invoices_count: { Args: never; Returns: number }
       get_orphan_reseller_invoices_count__impl: { Args: never; Returns: number }

@@ -15,6 +15,7 @@ export interface OwnedParcel {
   area_sqm: number | null;
   owner_linked_at: string | null;
   contribution_id: string | null;
+  security_score: number | null;
 }
 
 export interface OwnershipClaim {
@@ -126,3 +127,18 @@ export const CLAIM_STATUS_LABELS: Record<OwnershipClaim['status'], string> = {
   rejected: 'Refusée',
   cancelled: 'Annulée',
 };
+
+export interface SecurityCriterion { key: string; theme: string; label: string; weight: number; applicable: boolean; done: boolean }
+export interface ParcelSecurityReport { score: number; criteria: SecurityCriterion[] }
+
+export function useParcelSecurityReport(parcelId: string | null) {
+  return useQuery({
+    queryKey: ['parcel-security-report', parcelId],
+    enabled: !!parcelId,
+    queryFn: async (): Promise<ParcelSecurityReport> => {
+      const { data, error } = await rpc('get_my_parcel_security_report', { _parcel_id: parcelId });
+      if (error) throw error;
+      return data as ParcelSecurityReport;
+    },
+  });
+}
