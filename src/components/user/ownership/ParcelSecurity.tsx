@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { CheckCircle2, CircleAlert, Loader2, Lightbulb } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { getSecurityLevel } from '@/lib/parcelSecurity';
+import { getSecurityLevel, getQuickAction } from '@/lib/parcelSecurity';
 import { useParcelSecurityReport, type SecurityCriterion } from '@/hooks/useOwnership';
 
 export const SecurityScoreRing: React.FC<{ score: number; size?: number; onClick?: () => void }> = ({ score, size = 64, onClick }) => {
@@ -38,7 +38,8 @@ export const SecurityScoreRing: React.FC<{ score: number; size?: number; onClick
 
 export const ParcelSecurityReportDialog: React.FC<{
   parcelId: string | null; parcelNumber?: string; onOpenChange: (o: boolean) => void; onComplete?: () => void;
-}> = ({ parcelId, parcelNumber, onOpenChange, onComplete }) => {
+  onAction?: (kind: 'map' | 'edit') => void;
+}> = ({ parcelId, parcelNumber, onOpenChange, onComplete, onAction }) => {
   const { data, isLoading, error } = useParcelSecurityReport(parcelId);
   const applicable = (data?.criteria ?? []).filter((c) => c.applicable);
   const done = applicable.filter((c) => c.done);
@@ -64,7 +65,7 @@ export const ParcelSecurityReportDialog: React.FC<{
                 <span><strong>Prochaine étape recommandée :</strong> {todo[0].label} (+{todo[0].weight} pts).</span>
               </div>
             )}
-            <CriteriaList title="À compléter" items={todo} done={false} />
+            <CriteriaList title="À compléter" items={todo} done={false} onAction={onAction} />
             <CriteriaList title="Complétés" items={done} done />
             {todo.length > 0 && onComplete && (
               <Button className="w-full" onClick={onComplete}>Compléter les informations</Button>
@@ -76,19 +77,24 @@ export const ParcelSecurityReportDialog: React.FC<{
   );
 };
 
-const CriteriaList: React.FC<{ title: string; items: SecurityCriterion[]; done: boolean }> = ({ title, items, done }) => {
+const CriteriaList: React.FC<{ title: string; items: SecurityCriterion[]; done: boolean; onAction?: (kind: 'map' | 'edit') => void }> = ({ title, items, done, onAction }) => {
   if (!items.length) return null;
   return (
     <div className="space-y-1.5">
       <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{title} ({items.length})</p>
-      {items.map((c) => (
-        <div key={c.key} className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm">
+      {items.map((c) => { const qa = !done && onAction ? getQuickAction(c.key) : null; return (
+        <div key={c.key} className="rounded-lg border border-border px-3 py-2 text-sm">
+        <div className="flex items-center gap-2">
           {done ? <CheckCircle2 className="h-4 w-4 shrink-0" style={{ color: 'hsl(var(--security-high))' }} />
             : <CircleAlert className="h-4 w-4 shrink-0" style={{ color: 'hsl(var(--security-medium))' }} />}
           <span className="flex-1">{c.label}<span className="block text-[11px] text-muted-foreground">{c.theme}</span></span>
           <span className="text-xs text-muted-foreground">{c.weight} pts</span>
         </div>
-      ))}
+        {qa && (
+          <Button size="sm" variant="link" className="h-auto p-0 pl-6 text-xs" onClick={() => onAction!(qa.kind)}>{qa.label} →</Button>
+        )}
+        </div>
+      ); })}
     </div>
   );
 };
